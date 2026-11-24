@@ -72,6 +72,8 @@ export interface TranscriptLine {
   sentence?: Sentence;
   text?: string;
   understood?: boolean;
+  /** How the resolved answer should appear in the conversation. */
+  answerDisplay?: "matched" | "clarify" | "retry";
   tips?: Tip[];
   lineKey?: string;
   slow?: boolean;

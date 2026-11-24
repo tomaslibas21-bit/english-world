@@ -438,7 +438,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   font-family: var(--en); font-size: 1.25em; line-height: 1.3; box-shadow: 0 2px 4px rgba(12, 52, 57, 0.18), 0 8px 18px -10px rgba(31, 111, 120, 0.7);
 }
 .msg.you.miss .bubble { background: #f4ede3; color: var(--ink-soft); border: 1.5px dashed #d9cbb6; box-shadow: none; }
-.msg.you .ok { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); margin-left: 8px; vertical-align: 1px; }
+.convo .msg.you .ok { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); margin-left: 8px; vertical-align: 1px; }
 .msg.note .bubble { display: flex; gap: 10px; align-items: flex-start; background: #fff8dc; border: 1px solid #f1dd92; border-radius: 14px; padding: 10px 13px; font-family: var(--en); font-size: 1.2em; }
 .msg.note .note-ico { color: #a07400; margin-top: 1px; }
 
@@ -568,39 +568,33 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .convo :is(.gx, .hint-row) .nat-star::before { content: none; }
 .convo :is(.gx, .hint-row) .u-dot:has(+ .nat-pin) { position: static; display: inline-block; vertical-align: super; margin-inline-start: 2px; }
 
-.inputbar { display: flex; gap: 12px; align-items: center; }
-.mic {
+.convo .inputbar { display: flex; gap: 8px; align-items: center; }
+.convo .mic {
   width: 64px; height: 64px; border-radius: 50%; border: 0; color: #fff; flex: none; position: relative; display: grid; place-items: center;
   background: radial-gradient(circle at 50% 28%, #2b8c96 0%, var(--accent) 58%, #195c64 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -3px 0 rgba(0, 0, 0, 0.14), 0 2px 4px rgba(12, 52, 57, 0.25), 0 10px 22px -8px rgba(31, 111, 120, 0.7);
   transition: transform 0.12s ease, filter 0.15s ease;
 }
-.mic:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
-.mic:active:not(:disabled) { transform: scale(0.95); }
-.mic.listening { background: radial-gradient(circle at 50% 28%, #e8765d 0%, var(--bad) 58%, #b4432a 100%); animation: pulse 1.3s ease-in-out infinite; }
-.mic:disabled { background: #c2cad1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08); cursor: default; }
-@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217, 87, 58, 0.45), 0 8px 18px -8px rgba(217, 87, 58, 0.7); } 50% { box-shadow: 0 0 0 14px rgba(217, 87, 58, 0), 0 8px 18px -8px rgba(217, 87, 58, 0.7); } }
+.convo .mic:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+.convo .mic:active:not(:disabled) { transform: scale(0.95); }
+.convo .mic.listening { background: #1f6f78; color: #fff; box-shadow: none; }
+.convo .mic:disabled { background: #c2cad1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08); cursor: default; }
 .mic-status { flex: 1; min-width: 0; font-size: 0.92em; line-height: 1.35; }
 .mic-status b { display: block; }
-.mic-status .heard { font-family: var(--en); font-size: 1.15em; color: var(--ink); overflow-wrap: anywhere; }
 .mic-status .sub { color: var(--ink-soft); font-size: 0.88em; }
-.type-toggle {
+.convo .type-toggle {
   flex: none; width: 48px; height: 48px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; color: var(--ink-soft);
   display: grid; place-items: center; transition: border-color 0.15s, color 0.15s, background-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.type-toggle:hover { border-color: #d5c6ae; color: var(--ink); }
-.type-toggle:active { transform: scale(0.95); }
-.type-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
-.typebox { display: flex; gap: 8px; margin-top: 10px; }
-.typebox input {
+.convo .type-toggle:hover { border-color: #d5c6ae; color: var(--ink); }
+.convo .type-toggle:active { transform: scale(0.95); }
+.convo .type-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
+.convo .typebox { display: flex; gap: 8px; margin-top: 8px; }
+.convo .typebox input {
   flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 13px; font-family: var(--en); font-size: 1.2em; background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.typebox input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
-.miss-box { background: #fff; border: 1.5px dashed #e3c38f; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.92em; }
-.miss-box .heard { font-family: var(--en); font-size: 1.15em; }
-.convo .miss-box { overflow-wrap: anywhere; }
-.convo .miss-box .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.convo .typebox input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
 .convo[data-phase="ended"] .transcript { flex: 1 1 0; min-height: 0; }
 .convo[data-phase="ended"] .ended-box {
   flex: 0 1 auto; max-height: none; overflow-y: auto;
@@ -966,7 +960,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .convo .transcript { scroll-behavior: auto; }
   .nat-star { transition: none; }
   .minimap.live, .minimap.live canvas, .minimap.live .label, .minimap.live .mm-card, .minimap.live.inside canvas, .minimap.live.inside .label, .minimap.live.inside .mm-card { transition: none; }
-  .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
+  .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
 }
@@ -1125,7 +1119,7 @@ body.scene-on .tag-layer { display: none; }
   .scene-backdrop img { width: 25vw; height: 100%; bottom: 0; }
   .convo .yt-title { flex-wrap: wrap; }
   .convo .yt-bottom { padding: 4px 8px; }
-  .convo .mic { width: 44px; height: 44px; }
+  .convo :is(.mic, .type-toggle) { width: 44px; height: 44px; }
   .convo .guide { padding: 4px; gap: 4px; }
   .convo .guide-examples .gx { padding-block: 3px; }
 }

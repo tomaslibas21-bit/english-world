@@ -206,4 +206,25 @@ describe("automatic-only learner microphone", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(attempts).toHaveLength(2);
   });
+
+  it("finishes repeat practice in the same turn without submitting an answer", async () => {
+    await opening();
+    const before = useStore.getState().conv;
+    await session.practice("Friday, please.", "Friday, please.");
+    expect(useStore.getState().conv).toMatchObject({ mic: { status: "off" }, practice: { status: "listening" } });
+    expect(attempts).toHaveLength(1);
+    session.stopPractice();
+    expect(attempts[0].finish).toHaveBeenCalledOnce();
+    attempts[0].options.onCommit("Friday please", []);
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const after = useStore.getState().conv;
+    expect(after).toMatchObject({
+      phase: "you", stepId: before.stepId, practice: { status: "done", result: { verdict: "great" } },
+    });
+    expect(after.transcript).toBe(before.transcript);
+    expect(after.bestPhrase).toBe(before.bestPhrase);
+    expect(attempts).toHaveLength(1);
+    expect(audio.sfx).not.toHaveBeenCalledWith("success");
+  });
 });

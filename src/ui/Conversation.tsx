@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SceneIntro, sceneText } from "./SceneIntro";
 import { isTownQuest } from "../content/townQuests";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
@@ -57,7 +57,30 @@ export function Conversation() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [typed, setTyped] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const missRef = useRef<HTMLDivElement>(null);
+  const recoveryRef = useRef<HTMLDivElement>(null);
+
+  const lastAnswer = conv.transcript.findLast((line) => line.who === "you");
+  const pendingChoices = conv.speechChoices?.length ? conv.speechChoices : undefined;
+  const confirmationQuestion = pendingChoices && (pendingChoices.length > 1
+    ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?"
+    : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.");
+  const showMiss = !pendingChoices && conv.failures > 0 && conv.phase === "you" && !!conv.lastHeard;
+  const missKey = showMiss ? lastAnswer?.id ?? conv.lastHeard : null;
+  const revealed = useRef<{ run: number; miss: typeof missKey; choices?: string[] }>({ run: conv.run, miss: null });
+
+  const matchKey = conv.active && conv.phase !== "ended" && lastAnswer?.answerDisplay === "matched" ? `${conv.run}:${lastAnswer.id}` : null;
+  const interruptMatch = conv.phase === "thinking" || !!pendingChoices || !!conv.practice
+    || (conv.mic.status !== "off" && conv.mic.status !== "unsupported");
+  const lastMatch = useRef(matchKey);
+  const [matchEcho, setMatchEcho] = useState<string | null>(null);
+  useEffect(() => {
+    const newMatch = matchKey !== null && matchKey !== lastMatch.current;
+    lastMatch.current = matchKey;
+    if (!newMatch || interruptMatch) { setMatchEcho(null); return; }
+    setMatchEcho(matchKey);
+    const timer = setTimeout(() => setMatchEcho(null), 800);
+    return () => clearTimeout(timer);
+  }, [matchKey, interruptMatch]);
 
   const lastLineId = conv.transcript.at(-1)?.id;
   useEffect(() => {
@@ -67,14 +90,22 @@ export function Conversation() {
   useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
   // half-typed text doesn't carry over into the next conversation
   useEffect(() => { setTyped(""); }, [conv.sitId, conv.active]);
-  // "Did you mean…?" appeared: scroll it into view (phones show only a little of "your turn")
-  useEffect(() => {
-    const box = missRef.current;
-    const sc = box?.closest(".yt-scroll") as HTMLElement | null;
-    if (!conv.guess || !box || !sc) return;
-    const b = box.getBoundingClientRect(), v = sc.getBoundingClientRect();
-    if (b.bottom > v.bottom) sc.scrollTop += Math.min(b.top - v.top - 6, b.bottom - v.bottom);
-  }, [conv.guess, conv.phase]);
+  // Reveal each attempt's explanation in its own scroller, even when there are no suggestions.
+  useLayoutEffect(() => {
+    if (revealed.current.run !== conv.run) revealed.current = { run: conv.run, miss: null };
+    if (pendingChoices ? pendingChoices === revealed.current.choices : missKey === null || missKey === revealed.current.miss) return;
+    const box = recoveryRef.current;
+    const scroll = box?.closest<HTMLElement>(".yt-scroll");
+    if (!box || !scroll) return;
+    if (pendingChoices) revealed.current.choices = pendingChoices;
+    else revealed.current.miss = missKey;
+    const card = box.getBoundingClientRect();
+    const viewport = scroll.getBoundingClientRect();
+    const top = card.top - viewport.top;
+    const bottom = card.bottom - viewport.bottom;
+    if (top < 0 || card.height + 8 > scroll.clientHeight) scroll.scrollTop += top - 4;
+    else if (bottom > 0) scroll.scrollTop += bottom + 4;
+  }, [conv.run, missKey, pendingChoices]);
 
   // keyboard shortcuts while talking
   useEffect(() => {
@@ -88,7 +119,7 @@ export function Conversation() {
       if (e.defaultPrevented) return;
       const st = useStore.getState();
       if (!st.conv.active) return; // walking around: the world has its own keys (Game.onKeyDown)
-      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, [contenteditable='true']"))) return;
+      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, .mic-status .heard, [contenteditable='true']"))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (k === "escape") { game?.closeConversation(); return; }
       if (k === "h") { e.preventDefault(); st.setConv({ openHint: st.conv.openHint ? null : (st.conv.hints[0] ?? "g_clarify") }); return; }
@@ -179,22 +210,22 @@ export function Conversation() {
             </div>
           </div>
 
-          {!!conv.speechChoices?.length && <div className="miss-box speech-confirm">
-            <p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>
-            {conv.speechChoices.map(text => <button className="dym-opt" key={text} lang="en" disabled={conv.phase !== "you"}
+          {pendingChoices && <div className="miss-box speech-confirm" ref={recoveryRef}>
+            <p className="recovery-title">{confirmationQuestion}</p>
+            {pendingChoices.map(text => <button className="dym-opt" key={text} lang="en" disabled={conv.phase !== "you"}
               onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
               onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>Pataisyti tekstą</button>
           </div>}
-          {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
-            <div className="miss-box" ref={missRef}>
-              <div>Neatpažinau{conv.prefix ? " – atrodo, sakinys nebaigtas" : ""}. Girdėjau:</div>
+          {showMiss && (
+            <div className="miss-box" ref={recoveryRef}>
+              <div className="recovery-title"><Icon name="restart" size={16} /><span>Neatpažinau{conv.prefix ? " – atrodo, sakinys nebaigtas" : ""}. Girdėjau:</span></div>
               <div className="heard" lang="en">„{conv.guess ? <Marked words={conv.guess.heard} /> : conv.lastHeard}“</div>
               {conv.guess && <DidYouMean guess={conv.guess} lt={settings.sayLt} />}
               <div className="acts">
                 {speechSupported() && <button className="btn small" onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> Bandyti dar</button>}
                 <button className="btn soft small" onClick={() => game?.activeSession?.repeatLast(true)}><Icon name="turtle" size={17} /> Paklausyk lėčiau</button>
-                <button className="btn soft small" onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> Pataisyti tekstą</button>
+                <button className={speechSupported() ? "btn soft small" : "btn small"} onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> Pataisyti tekstą</button>
                 <button className="btn ghost small" onClick={() => copyConversation(sit)} title="Nukopijuok ir atsiųsk mokytojui"><Icon name="clipboard" size={17} /> Kopijuoti</button>
               </div>
             </div>
@@ -208,12 +239,17 @@ export function Conversation() {
           <div className="yt-bottom">
           <div className="inputbar">
             <MicButton />
-            <MicStatus />
+            <MicStatus confirmationQuestion={confirmationQuestion} />
+            <span className="match-echo" aria-hidden="true">
+              {!interruptMatch && matchEcho !== null && matchEcho === matchKey && (
+                <span className="ok"><Icon name="check" size={16} strokeWidth={2.5} /></span>
+              )}
+            </span>
             <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title={keyboardHints ? "Rašyti (T)" : "Rašyti"} aria-label={keyboardHints ? "Rašyti (T)" : "Rašyti"} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
           </div>
           {conv.typing && (
             <form className="typebox" onSubmit={(e) => { e.preventDefault(); send(); }}>
-              <input ref={inputRef} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Parašyk angliškai…" lang="en" autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
+              <input ref={inputRef} value={typed} onChange={(e) => { setTyped(e.target.value); setMatchEcho(null); }} placeholder="Parašyk angliškai…" lang="en" autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
               <button className="btn" type="submit" disabled={conv.phase !== "you" || !typed.trim()}>Siųsti</button>
             </form>
           )}
@@ -668,9 +704,19 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
     );
   }
   if (l.who === "you") {
+    const matched = l.answerDisplay === "matched";
+    const clarify = l.answerDisplay === "clarify";
+    const retry = l.answerDisplay === "retry";
+    const accepted = matched || (l.answerDisplay === undefined && l.understood);
+    const appearance = matched ? " matched" : clarify ? " clarify" : retry || !l.understood ? " miss" : "";
     return (
-      <div className={"msg you" + (l.understood ? "" : " miss")}>
-        <div className="bubble">{l.via && <Via via={l.via} />}{l.text}{l.understood ? <span className="ok"><Icon name="check" size={14} strokeWidth={2.5} label="Suprasta" /></span> : null}</div>
+      <div className={"msg you" + appearance}>
+        <div className="bubble">
+          {l.via && <Via via={l.via} />}
+          <span lang="en">{clarify ? `„${l.text}“` : l.text}</span>
+          {accepted && <span className="ok"><Icon name="check" size={matched ? 16 : 14} strokeWidth={2.5} label="Suprasta" /></span>}
+          {retry && <Icon name="restart" size={16} className="retry-mark" />}
+        </div>
       </div>
     );
   }
@@ -818,25 +864,33 @@ function RepeatButton({ ex }: { ex: Sentence }) {
 }
 
 const VERDICT = { great: "Puiku!", almost: "Beveik!", again: "Pabandyk dar kartą" } as const;
+const PRACTICE_STATUS = {
+  playing: "Klausyk…",
+  listening: "Dabar tu – pakartok garsiai",
+  nothing: "Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk.",
+  denied: "Leisk naršyklei naudoti mikrofoną ir bandyk dar.",
+  error: "Nepavyko išgirsti. Pabandyk dar kartą.",
+} as const;
 
 /** Under a guide example: what happens now, then which words were said and a short verdict. */
 function RepeatResult({ en }: { en: string }) {
   const p = useStore((s) => s.conv.practice);
   if (!p || p.en !== en) return null;
-  switch (p.status) {
-    case "playing": return <div className="rp-res wait">Klausyk…</div>;
-    case "listening": return <div className="rp-res wait"><span className="rp-dot" />{p.heard ? <span className="rp-heard" lang="en">„{p.heard}“</span> : "Dabar tu – pakartok garsiai"}</div>;
-    case "nothing": return <div className="rp-res">Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk.</div>;
-    case "denied": return <div className="rp-res">Leisk naršyklei naudoti mikrofoną ir bandyk dar.</div>;
-    case "error": return <div className="rp-res">Nepavyko išgirsti. Pabandyk dar kartą.</div>;
-  }
-  const r = p.result;
-  if (!r) return null;
+  const result = p.status === "done" ? p.result : null;
+  const waiting = p.status === "playing" || p.status === "listening";
+  const liveWords = p.status === "listening" ? p.heard : "";
+  const message = p.status === "done" ? result && VERDICT[result.verdict] : PRACTICE_STATUS[p.status];
+  if (!message) return null;
   return (
-    <div className={"rp-res done " + r.verdict} aria-live="polite">
-      <span className="rp-verdict">{VERDICT[r.verdict]}</span>
-      <span className="rp-words" lang="en"><Marked words={r.words} /></span>
-      {r.verdict !== "great" && <span className="rp-heard">Girdėjau: <span lang="en">„{p.heard}“</span></span>}
+    <div className={"rp-res" + (result ? ` done ${result.verdict}` : waiting ? " wait" : "")}>
+      {p.status === "listening" && <span className="rp-dot" aria-hidden="true" />}
+      <span className={result ? "rp-verdict" : liveWords ? "status-only" : undefined} role="status">
+        {result && <Icon name={result.verdict === "great" ? "check" : "restart"} size={16} strokeWidth={2.5} />}
+        {message}
+      </span>
+      {liveWords && <span className="rp-heard" lang="en">„{liveWords}“</span>}
+      {result && <span className="rp-words" lang="en"><Marked words={result.words} /></span>}
+      {result && result.verdict !== "great" && <span className="rp-heard">Girdėjau: <span lang="en">„{p.heard}“</span></span>}
     </div>
   );
 }
@@ -852,7 +906,8 @@ function MicButton() {
   const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const supported = speechSupported();
-  const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
+  const listening = conv.phase === "you" && !conv.typing && !conv.speechChoices?.length
+    && ["listening", "starting", "reconnecting"].includes(conv.mic.status);
   if (!supported) return <button className="mic" disabled title="Balso atpažinimas šioje naršyklėje nepalaikomas" aria-label="Balso atpažinimas šioje naršyklėje nepalaikomas"><Icon name="mic" size={30} /></button>;
   const title = (listening ? "Baigti atsakymą" : "Įjungti mikrofoną dar kartą") + (keyboardHints ? " (tarpo klavišas)" : "");
   return (
@@ -867,22 +922,65 @@ function MicButton() {
 const MIC = <InlineIcon name="mic" label="mikrofono mygtuką" />;
 const KEYS = <InlineIcon name="keyboard" label="klaviatūra" />;
 
-function MicStatus() {
+function MicStatus({ confirmationQuestion }: { confirmationQuestion?: string }) {
   const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
-  if (!speechSupported()) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).</span></div>;
-  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">{conv.typing ? "Klausyk…" : "Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)"}</span></div>;
-  if (conv.phase === "thinking") return <div className="mic-status"><span className="sub">…</span></div>;
-  if (conv.typing) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Jei nori kalbėti, spausk {MIC}.</span></div>;
-  switch (m.status) {
-    case "starting": return <div className="mic-status"><b>Jungiamas mikrofonas…</b></div>;
-    case "listening": case "reconnecting":
-      return <div className="mic-status"><b>Klausau – kalbėk {f ? "neskubėdama" : "neskubėdamas"}</b>{m.heard ? <span className="heard">„{m.heard}“</span> : <span className="sub">Gali daryti pauzes – palauksiu.</span>}</div>;
-    case "denied": return <div className="mic-status"><b>Leisk naudoti mikrofoną</b><span className="sub">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</span></div>;
-    case "error": return <div className="mic-status"><b>{m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}</b><span className="sub">Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</span></div>;
-    case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC}{keyboardHints && " (arba tarpo klavišą)"}, kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
-    default: return <div className="mic-status"><b>Tavo eilė</b><span className="sub">Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {MIC}{keyboardHints && " arba tarpo klavišą"}. Rašyti – {KEYS}{keyboardHints && " (T)"}.</span></div>;
+  const supported = speechSupported();
+  let title: string | undefined;
+  let helper: ReactNode;
+  let listening = false;
+  let liveWords = "";
+  const confirming = conv.phase === "you" && !!confirmationQuestion;
+
+  if (conv.phase === "npc") {
+    helper = conv.typing || !supported ? "Klausyk…" : "Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)";
+  } else if (conv.phase === "thinking" || m.status === "processing") {
+    helper = "…";
+  } else if (confirming) {
+    title = confirmationQuestion;
+  } else if (!supported) {
+    title = "Rašyk atsakymą";
+    helper = "Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).";
+  } else if (conv.typing) {
+    title = "Rašyk atsakymą";
+    helper = <>Jei nori kalbėti, spausk {MIC}.</>;
+  } else {
+    switch (m.status) {
+      case "starting":
+        title = "Jungiamas mikrofonas…";
+        break;
+      case "listening": case "reconnecting":
+        title = `Klausau – kalbėk ${f ? "neskubėdama" : "neskubėdamas"}`;
+        helper = "Gali daryti pauzes – palauksiu.";
+        listening = true;
+        liveWords = m.heard;
+        break;
+      case "denied":
+        title = "Leisk naudoti mikrofoną";
+        helper = <>Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</>;
+        break;
+      case "error":
+        title = m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko";
+        helper = <>Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</>;
+        break;
+      case "nothing":
+        title = "Nieko negirdėjau";
+        helper = <>Spausk {MIC}{keyboardHints && " (arba tarpo klavišą)"}, kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</>;
+        break;
+      default:
+        title = "Tavo eilė";
+        helper = <>Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {MIC}{keyboardHints && " arba tarpo klavišą"}. Rašyti – {KEYS}{keyboardHints && " (T)"}.</>;
+    }
   }
+  return (
+    <div className="mic-status">
+      <div className={confirming || liveWords ? "status-only" : undefined} role="status">
+        {title && <b>{listening && <span className="listening-bars" aria-hidden="true"><i /><i /><i /></span>}{title}</b>}
+        {helper && <span className="sub">{helper}</span>}
+      </div>
+      {liveWords && <span className="heard" lang="en" tabIndex={0}>„{liveWords}“</span>}
+    </div>
+  );
 }
