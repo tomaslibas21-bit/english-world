@@ -4,6 +4,7 @@ import type { StreetSnapshot } from "./street/schedule";
 import { ROUTE } from "../content/route";
 // The game: renderer, zones (town + interiors), player, NPCs, input, guidance and conversations.
 import * as THREE from "three";
+import townCollisionURL from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { loadedCarModelCount } from "./world/carModels";
@@ -15,7 +16,7 @@ import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig, FOLLOW } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
-import { Ledges, LAND } from "./ledges";
+import { LAND, type Ledges } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
@@ -55,8 +56,10 @@ import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
-import { OcclusionField } from "./occlusion";
-import { PropFader } from "./fade";
+import type { OcclusionField } from "./occlusion";
+import { STYLED } from "./style";
+import { initTownCollision, readTownCollision } from "./townCollisionCache";
+import type { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
@@ -357,6 +360,7 @@ export class Game implements GameApi {
   /** What the follow camera keeps clear of, from the town's own geometry (occlusion.ts), and the trees that fade out of
    *  its way (fade.ts). */
   private field!: OcclusionField;
+  private readonly collisionAbort = new AbortController();
   private fader!: PropFader;
   onReady?: () => void;
 
@@ -391,12 +395,9 @@ export class Game implements GameApi {
   async init() {
     const st = useStore.getState();
     st.setScreen("loading");
+    const collisionRead = townCollisionURL && !STYLED ? readTownCollision(townCollisionURL, this.collisionAbort) : undefined;
     this.setupLights();
     this.town = buildTown();
-    // the follow camera never goes into or behind anything built in the town (the church, a gazebo, a canopy…: all of
-    // it, from the meshes themselves), and the trees in its way fade; not what moves (clouds, gulls, boats)
-    // (nor what is thin and looked through, userData.thin: the sign on the gas station's canopy)
-    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.group;
     const taxiScenery: THREE.Mesh[] = [];
     const taxiRay = new THREE.Raycaster();
     const taxiHits: THREE.Intersection[] = [];
@@ -422,29 +423,6 @@ export class Game implements GameApi {
       taxiRay.intersectObjects(taxiScenery, false, taxiHits);
       return taxiHits.length === 0;
     };
-    this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
-    this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
-    this.fader = new PropFader(this.town.group, moves);
-    // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
-    // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
-    // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
-    this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
-      beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
-    }, (next) => setTimeout(next, 16));
-    // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
-    this.ledges.dynamic = (x, z) => {
-      const moving = this.ambient.carPieces(x, z);
-      const parked = this.rides.townCarPieces(x, z);
-      return parked.length ? moving.concat(parked) : moving;
-    };
-    // Any scenery boats stay in the ledge map. Ride boats use moving collision boxes.
-    const hull = new THREE.Box3();
-    for (const o of this.town.group.children) if (o.userData.boat && !o.userData.rideBoat) {
-      hull.setFromObject(o);
-      this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
-    }
-    withCutout(this.town.group);
     const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     const island = LIGHTHOUSE_ISLAND;
     if (island) openIslandNav(island, nav, this.town.colliders);
@@ -462,6 +440,21 @@ export class Game implements GameApi {
       nav.setCost(v.x1 + v.w / 2 - 0.2, h.z1 - h.w / 2, v.x1 + v.w / 2 + 1.8, h.z1 + h.w / 2, 1.2);
     }
     for (const cx of [-50, 22, 100]) nav.setCost(cx - 1.5, -13, cx + 1.5, -3, 1.2);
+    // Capture the same town geometry and colliders before adding actors or handing boats to rides.
+    const collisionBytes = collisionRead ? await collisionRead : undefined;
+    if (this.disposed) return;
+    const { field, ledges, fader } = initTownCollision(this.town, collisionBytes,
+      (next) => setTimeout(() => { if (!this.disposed) next(); }, 16));
+    this.field = field;
+    this.ledges = ledges;
+    this.fader = fader;
+    // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
+    ledges.dynamic = (x, z) => {
+      const moving = this.ambient.carPieces(x, z);
+      const parked = this.rides.townCarPieces(x, z);
+      return parked.length ? moving.concat(parked) : moving;
+    };
+    withCutout(this.town.group);
     this.zones.set("town", { id: "town", group: this.town.group, colliders: this.town.colliders, nav });
     // pigeons round the fountain (in the town's group, so they are hidden indoors); their wings when they take off
     this.pigeons = new Pigeons(FOUNTAIN.x, FOUNTAIN.z, 4.6, 9.5);
@@ -3628,6 +3621,8 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    this.disposed = true;
+    this.collisionAbort.abort();
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);
@@ -3636,7 +3631,6 @@ export class Game implements GameApi {
     this.sceneDelays.clear();
     this.keepsake.dispose();
     this.streetLife?.dispose();
-    this.disposed = true;
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();

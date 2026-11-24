@@ -47,41 +47,47 @@ function Play() {
     let g: Game | null = null, gone = false;
     import("../game/Game").then(({ Game }) => {
       if (gone) return;
-      g = new Game(stage.current!, tags.current!);
-      setGame(g);
-      g.onReady = () => {
+      const current = g = new Game(stage.current!, tags.current!);
+      current.onReady = () => {
+        if (gone) return;
+        setGame(current);
+        (window as any).__ew = {
+          game: current, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
+          barista: current.debugBarista(), gofish: current.debugGoFish(), billiards: current.debugBilliards(), carStats: () => current.carStats(),
+          ...(import.meta.env.DEV ? {
+            sea: () => current.seaDebug(), seaSteer: (lane: number) => current.seaSteer(lane),
+            seaTimer: (seconds?: number) => current.seaTimer(seconds),
+            seaPlaceBoat: (x: number, z: number, heading?: number) => current.seaPlaceBoat(x, z, heading),
+            seaWay: (way?: PlayWay) => current.wordGameWay("sea", way),
+            seaStart: (way?: PlayWay) => current.wordGameStart("sea", way),
+            seaForceGate: (correct: boolean) => current.wordGameForceGate("sea", correct),
+          } : {}),
+          road: { state: () => current.roadDebug(), steer: (lane: number) => current.roadSteer(lane), jumpTimer: (seconds?: number) => current.roadJumpTimer(seconds),
+            ...(import.meta.env.DEV ? {
+              previewOptions: (options?: readonly string[]) => current.roadPreviewOptions(options),
+              way: (way?: PlayWay) => current.wordGameWay("road", way),
+              start: (way?: PlayWay) => current.wordGameStart("road", way),
+              forceGate: (correct: boolean) => current.wordGameForceGate("road", correct),
+            } : {}) },
+        };
         // (the 3D game opens with the town itself: from the air on a first visit, Game.beginFlight; where the learner
         // left off on later ones. The list of situations opens from its button; owner, 18 Nov 2026. The pictures-only
         // mode's home is the list, LightHome.tsx.)
         setReady(true); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
-        if (debugBaristaLink) g!.debugBarista()?.start();
-        else if (debugGoFishLink) g!.debugGoFish()?.start();
-        else if (debugBilliardsLink) g!.debugBilliards()?.start();
-        else if (sit) g!.startScenario(sit);
+        if (debugBaristaLink) current.debugBarista()?.start();
+        else if (debugGoFishLink) current.debugGoFish()?.start();
+        else if (debugBilliardsLink) current.debugBilliards()?.start();
+        else if (sit) current.startScenario(sit);
       };
-      g.init();
-      (window as any).__ew = {
-        game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
-        barista: g.debugBarista(), gofish: g.debugGoFish(), billiards: g.debugBilliards(), carStats: () => g!.carStats(),
-        ...(import.meta.env.DEV ? {
-          sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
-          seaTimer: (seconds?: number) => g!.seaTimer(seconds),
-          seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
-          seaWay: (way?: PlayWay) => g!.wordGameWay("sea", way),
-          seaStart: (way?: PlayWay) => g!.wordGameStart("sea", way),
-          seaForceGate: (correct: boolean) => g!.wordGameForceGate("sea", correct),
-        } : {}),
-        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds),
-          ...(import.meta.env.DEV ? {
-            previewOptions: (options?: readonly string[]) => g!.roadPreviewOptions(options),
-            way: (way?: PlayWay) => g!.wordGameWay("road", way),
-            start: (way?: PlayWay) => g!.wordGameStart("road", way),
-            forceGate: (correct: boolean) => g!.wordGameForceGate("road", correct),
-          } : {}) },
-      };
+      void current.init();
     });
-    return () => { gone = true; g?.dispose(); setGame(null); };
+    return () => {
+      gone = true;
+      if (g && game === g) setGame(null);
+      if (g && (window as any).__ew?.game === g) delete (window as any).__ew;
+      g?.dispose();
+    };
   }, []);
   return (
     <>

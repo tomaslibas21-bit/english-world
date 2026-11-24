@@ -11,18 +11,14 @@ import { STREET_PHONE_CARD_BOTTOM } from "../src/game/street/StreetLife";
 import { TownStreet } from "../src/game/street/world";
 import { OUTDOOR_NPCS, WORLD } from "../src/game/world/layout";
 import { buildTown } from "../src/game/world/town";
+import { townCanvasDocument } from "../tools/town-canvas-stub";
 
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
 const look = { skin: "#f2d3bd", hair: { style: "short" as const, color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653", female: true };
 let town: ReturnType<typeof buildTown>, field: OcclusionField, nav: NavGrid, ambient: Ambient;
 
 beforeAll(() => {
-  const draw = () => {};
-  const gradient = () => ({ addColorStop: draw });
-  const canvas = new Proxy({
-    measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
-  }, { get: (target, key) => Reflect.get(target, key) ?? draw });
-  vi.stubGlobal("document", { createElement: () => ({ getContext: () => canvas }) });
+  vi.stubGlobal("document", townCanvasDocument());
   try {
     town = buildTown();
     field = OcclusionField.fromObject(town.group, WORLD, {

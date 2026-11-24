@@ -96,6 +96,14 @@ export class Ledges {
    *  comes within it of a top lands on it), a kerb from the ground, a gentle slope up on something. */
   private static rise(feet: number, air: boolean) { return air ? TOE : feet < 0.2 ? STEP : SLOPE; }
 
+  static restore(pieces: readonly Piece[], things: Thing[]) {
+    const led = new Ledges();
+    for (const piece of pieces) led.add(piece);
+    led.things = things;
+    led.ready = true;
+    return led;
+  }
+
   add(p: Piece) {
     this.pieces.push(p);
     const B = Ledges.B;
