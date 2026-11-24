@@ -52,7 +52,7 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
   // the deck (as it was): up its three steps, along it, down its steps and on under the water
   const x3 = dx + 3.05, x2 = dx + 1.6, x1 = dx - 1.6, x0 = dx - 4.6;
   FLOORS.push({ x0, x1: x3, z0: z - 1.2, z1: z + 1.2, y: (px) => (px > x2 ? (top * (x3 - px)) / (x3 - x2) : px > x1 ? top : top - ((top + 0.75) * (x1 - px)) / (x1 - x0)) });
-  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2);
+  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2, "edge");
   // the beach and the rock steps: the ground goes down to the water's bed between the rim's stones
   for (const g of GAPS) {
     const [mx, mz] = polar(x, z, g.a, 6.6);
@@ -64,7 +64,7 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
   }
   // El Salto: the stair of stones up the cliff's back, the ledge on its top; open only at the water's side
   FLOORS.push({ x0: x - SALTO.foot, x1: x - SALTO.top0, z0: z - SALTO.half, z1: z + SALTO.half, y: (px) => (px > x - SALTO.top1 ? SALTO.y : (SALTO.y * (px - (x - SALTO.foot))) / (SALTO.foot - SALTO.top1)) });
-  for (const s of [-1, 1]) col.addBox(x - (SALTO.foot + SALTO.top0) / 2, z + s * (SALTO.half + 0.2), SALTO.foot - SALTO.top0, 0.3);
+  for (const s of [-1, 1]) col.addBox(x - (SALTO.foot + SALTO.top0) / 2, z + s * (SALTO.half + 0.2), SALTO.foot - SALTO.top0, 0.3, "edge");
   // El Ojo's pit
   const ojo = ways(x, z)[2];
   FLOORS.push({ x0: ojo.x - OJO.r, x1: ojo.x + OJO.r, z0: ojo.z - OJO.r, z1: ojo.z + OJO.r, y: (px, pz) => (Math.hypot(px - ojo.x, pz - ojo.z) < OJO.r - 0.1 ? -OJO.deep : 0) });
@@ -73,17 +73,17 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     if (Math.abs(ang(a)) < 0.3 || GAPS.some((g) => Math.abs(ang(a - g.a)) < g.half - 0.1) || atLedge(a, 0.27)) continue;
-    col.addCircle(x + Math.cos(a) * ring, z + Math.sin(a) * ring, 0.8);
+    col.addCircle(x + Math.cos(a) * ring, z + Math.sin(a) * ring, 0.8, "edge");
   }
   // La Grieta's two slabs (one walks up to them, not through)
   { const [sx, sz] = polar(x, z, 0.68 * Math.PI, 7.9); col.addCircle(sx, sz, 1.25); }
   // the taquilla's palapa, the sign's posts, the palms on the clearing (as they were), the ceibas' trunks
-  col.addBox(x + R + 4.8 + 0.3, z + 4.6, 3.4, 2.8);
+  col.addBox(x + R + 4.8 + 0.3, z + 4.6, 3.4, 2.8, "counter");
   for (const s of [-1, 1]) col.addCircle(x + R + 6.2, z - 2.4 + s * 1.35, 0.15);
   for (const [px, pz, r] of [[x + R + 7.5, z + 7.5, 0.3], [x + R + 3.2, z - 5.5, 0.3], [x + R + 8, z - 7, 1.2], [x + R + 7.5, z + 9.5, 1.5], [x + 2.5, z + R + 1.6, 0.3], [x + 0.5, z - R - 1.8, 0.3], [x - 3.5, z + R + 0.8, 0.3]]) col.addCircle(px, pz, r);
   for (const [px, pz] of ceibas) col.addCircle(px, pz, 0.8);
   // the low jungle: each crown, and the grounds' edge behind them
-  for (const [px, pz, size] of crowns(x, z, edge)) col.addCircle(px, pz, size * 0.72);
+  for (const [px, pz, size] of crowns(x, z, edge)) col.addCircle(px, pz, size * 0.72, "edge");
   const n0 = z - REACH.ns, s0 = z + REACH.ns, w0 = x - REACH.w;
   // (`edge`: never something to jump onto, however low the jungle on it: ledges.ts)
   col.addBox((w0 + edge) / 2 - 1, n0 - 0.8, edge - w0 + 2, 1.6, "edge");

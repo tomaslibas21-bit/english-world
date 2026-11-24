@@ -64,7 +64,7 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "en", environment: "node", include: ["tests/**/*.test.ts"], exclude: ["tests/es/**", "tests/es-lt/**", "**/node_modules/**"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,layout,street-schedule,street-world,traffic}.test.ts"] } },
+      { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,jump-more,layout,movement,street-schedule,street-world,traffic}.test.ts"] } },
       { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/phrase-game-play.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts"] } },
     ],
   },

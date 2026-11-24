@@ -6,12 +6,14 @@ import { EDITION } from "../../edition";
 import { loteriaTables } from "../loteria/scene";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
 import * as THREE from "three";
+import { Ledges } from "../ledges";
+import type { OcclusionField } from "../occlusion";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, OUTDOOR_NPCS, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mergeCarParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
@@ -68,6 +70,18 @@ export interface Town {
   /** (theme.ts `casas`, graphics round 6) the houses' portals overhead (their slab and the terrace's railing on it): the
    *  conversation's camera treats a line through one as hidden (Game.ts fitTalk). Empty in Maple Harbor. */
   portals: { minX: number; maxX: number; minZ: number; maxZ: number; y0: number; y1: number }[];
+}
+
+export function buildTownLedges(town: Town, field: Pick<OcclusionField, "overSolid">, slice?: (next: () => void) => void) {
+  const beside: [number, number][] = OUTDOOR_NPCS.flatMap(({ x, z, ax, az }) => ax !== undefined && az !== undefined ? [[x, z], [ax, az]] : [[x, z]]);
+  const keep: [number, number][] = town.doors.map(({ x, z }) => [x, z]);
+  for (const seat of town.seats) if (seat.table) keep.push([seat.x, seat.z]); // tables and chairs under umbrellas
+  return Ledges.build(town.group, town.colliders, {
+    skip: (o) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || o === town.parkedCars.group,
+    thin: (o) => !!(o.userData.thin || o.userData.roofOnly),
+    tall: (x, z) => field.overSolid(x, z),
+    beside, keep,
+  }, slice);
 }
 
 const PPM = 6; // ground texture pixels per metre
@@ -256,7 +270,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const hammock = THEME.hammock;
   if (hammock) beachPalms.push([hammock.x1, hammock.z], [hammock.x2, hammock.z]);
   if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, photo, beachPalms));
-  if (hammock) addBeachHammock(M, photo, hammock);
+  if (hammock) addBeachHammock(M, colliders, photo, hammock);
   if (EDITION.id === "en") addMapleQuestProps(M, colliders, group, photo);
   addHarbor(M, colliders, group, r, photo);
   addTransport(M, colliders, group, photo);
@@ -294,14 +308,14 @@ export function buildTown({ movableParking = false } = {}): Town {
     const cz = THEME.cenote.z, open = !!THEME.cenote.open, g0 = cz - (open ? GROUNDS.REACH.ns : 3.6), g1 = cz + (open ? GROUNDS.REACH.ns : 2.6);
     // (theme.ts `ruins.walk`: and at the ruins' gateway where the beach ends; the precinct has its own walls, mexican.ts ruinsWalk)
     const ru = THEME.ruins?.walk ? THEME.ruins : null, r0 = ru ? ru.z + MX.RUINS.gate - MX.RUINS.gateHalf : -110, r1 = ru ? ru.z + MX.RUINS.gate + MX.RUINS.gateHalf : -110;
-    colliders.addBox(WORLD.minX - 1, (r0 - 110) / 2, 2, r0 + 110);
-    colliders.addBox(WORLD.minX - 1, (g0 + r1) / 2, 2, g0 - r1);
-    colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1);
+    colliders.addBox(WORLD.minX - 1, (r0 - 110) / 2, 2, r0 + 110, "edge");
+    colliders.addBox(WORLD.minX - 1, (g0 + r1) / 2, 2, g0 - r1, "edge");
+    colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1, "edge");
     if (ru) MX.ruinsWalk(colliders, ru.x, ru.z);
     if (open) GROUNDS.groundsWalk(colliders, THEME.cenote.x, cz, WORLD.minX, THEME.meadow?.ceibas);
     else MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
   } else colliders.addBox(WORLD.minX - 1, 0, 2, 220, "town-edge");
-  colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
+  colliders.addBox(WORLD.maxX + 1, 0, 2, 220, "edge");
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
   colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60, "sea");
@@ -1194,7 +1208,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
       for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
     }
-    for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
+    for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14, "edge");
     if (THEME.mexican) {
       // a low wall with an iron gate and a potted plant instead of the picket fence, the mailbox and the chimney
       const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
@@ -1599,7 +1613,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
   /** A collider box of `a` metres along the facade and `b` out from it. */
   const block = (u: number, v: number, a: number, b: number) => {
     const [x, z] = P(u, v);
-    col.addBox(x, z, Math.abs(t[0]) * a + Math.abs(n[0]) * b, Math.abs(t[1]) * a + Math.abs(n[1]) * b);
+    return col.addBox(x, z, Math.abs(t[0]) * a + Math.abs(n[0]) * b, Math.abs(t[1]) * a + Math.abs(n[1]) * b);
   };
   /** A flat notice on the facade (or on a window), facing the street. */
   const notice = (text: string, bg: string, fg: string, u: number, y: number, w: number, h: number, v = 0.12) => {
@@ -1641,7 +1655,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
     // a bench by the window, and a low sign on the lawn with a medical cross
     streetBench(M, col, ...P(-2.6, 1.1), rotY);
     box("plinth", mat("#d8d2c4"), 1.9, 0.9, 0.24, 3, 0.45, 1.25);
-    block(3, 1.25, 2, 0.4);
+    block(3, 1.25, 2, 0.4).vault = 0.9;
     const cv = document.createElement("canvas"); cv.width = 512; cv.height = 228;
     const x = cv.getContext("2d")!;
     x.fillStyle = "#ffffff"; roundRect(x, 4, 4, 504, 220, 26); x.fill();
@@ -1676,8 +1690,13 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
         details.push([at(new THREE.BoxGeometry(0.48, 0.035, 0.035).translate(0, 0.86, 0.42)), "#26292e"]);
       }
     }
-    block(5, 1.05, 1.1, 1.65);
-    block(5, 1, 1.6, 0.7);
+    block(5, 1, 1.6, 0.7).vault = 0.775;
+    if (!STYLED) {
+      // The taller saddles and handlebars occupy only part of the bikes' footprint.
+      block(5, 1.05, 1.1, 1.65).vault = 0.675;
+      block(5, 0.83, 0.74, 0.24).vault = 0.805;
+      block(5, 1.47, 1.08, 0.12).vault = 0.8775;
+    }
     notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.75, 1.5, 0.5);
     notice("First session FREE!", "#f0883e", "#ffffff", 6.33, 1.95, 2.1, 0.5);
   }
@@ -1909,6 +1928,8 @@ function addBushes(group: THREE.Group, col: Colliders) {
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   // bushes
   const bushGeo = STYLED ? bushGeometry() : new THREE.IcosahedronGeometry(0.7, 0);
+  bushGeo.computeBoundingBox();
+  const bushTop = 0.35 + 0.8 * bushGeo.boundingBox!.max.y;
   const bushes = new THREE.InstancedMesh(bushGeo, STYLED ? bushMaterial() : new THREE.MeshLambertMaterial({ color: "#4f8f3f", flatShading: true }), 60);
   let k = 0;
   for (const b of BUILDINGS) {
@@ -1921,7 +1942,7 @@ function addBushes(group: THREE.Group, col: Colliders) {
       if (THEME.tiendita && col.blocked(x, z, 0.3)) continue; // a corner shop's crates are there (theme.ts)
       m4.compose(v.set(x, 0.35, z), q.identity(), s.set(1, 0.8, 1));
       bushes.setMatrixAt(k++, m4);
-      col.addCircle(x, z, 0.62);
+      col.addCircle(x, z, 0.62).vault = bushTop;
     }
   }
   bushes.count = k;
@@ -2707,11 +2728,11 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   // (each on its rail, and a ledge for the player: the rail's height is read there, and a jump from the boards gets
   // onto it and down to the beach beside the pier; from the sand it is too high: ledges.ts)
   // (the last of each, by the restaurant's front and under its awning, stays the wall it was)
-  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge"); col.addBox(rx, -74.5, 0.2, 3); }
+  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge"); col.addBox(rx, -74.5, 0.2, 3, "edge"); }
   // (one walks on the boards, not on the sand sloping away under them: water.ts)
   DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62, y: 0.3 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges
-  col.addBox(-41.2, -80, 0.3, 16); col.addBox(-18.8, -80, 0.3, 16); col.addBox(-30, -88.2, 22, 0.3);
+  col.addBox(-41.2, -80, 0.3, 16, "edge"); col.addBox(-18.8, -80, 0.3, 16, "edge"); col.addBox(-30, -88.2, 22, 0.3, "edge");
   // (the beach side's edge is a wall for the passers-by and the way-finding, a ledge with its posts for the player:
   // one jumps up onto the boards from the sand and hops along the posts, ledges.ts)
   col.addBox(-37.5, -72.2, 7.6, 0.3, "ledge"); col.addBox(-22.5, -72.2, 7.6, 0.3, "ledge");
