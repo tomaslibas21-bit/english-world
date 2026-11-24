@@ -652,7 +652,9 @@ export class Ambient {
       const ex = s * b.hl + co * b.hw, ez = co * b.hl + s * b.hw;
       if (b.x - ex > c.to + h.x || b.x + ex < c.from - h.x) continue;
       const a = (b.x - c.x) * c.dir, across = Math.abs(b.z - c.lane);
-      if (a <= 0 || a >= 18 + ex || across >= ez + h.z + 0.15) continue;
+      // Use the full footprint for mode cars. A wider band would permanently block traffic at some curbs.
+      const lateralReach = ez + h.z + (b.modeCar ? 0 : 0.15);
+      if (a <= 0 || a >= 18 + ex || across >= lateralReach) continue;
       // Let traffic already alongside a yielding mode car finish passing. Use the car's round-ended
       // collision shape, with room for the few centimetres of contact left by a physics step.
       const collisionEdge = co * (b.hl - b.hw) + b.hw + h.z;

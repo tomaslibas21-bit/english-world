@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { Ambient } from "../src/game/ambient";
 import { Ledges } from "../src/game/ledges";
+import { reactionTestSpot } from "../src/game/life/townReactions";
 import { Hop } from "../src/game/movement";
 import { PARKED_CARS, TRAFFIC_LANES, ROADS, TAXI } from "../src/game/world/layout";
 import { carFootprint, carModelEntry } from "../src/game/world/carModels";
 import { RIDES } from "../src/game/world/rides";
 import { CAR } from "../src/game/rides/drive";
 import type { NavGrid } from "../src/game/nav";
+import { Colliders } from "../src/game/world/util";
 
 type Box = ReturnType<typeof carFootprint>;
 const overlap = (a: Box, b: Box) => Math.min(a.maxX, b.maxX) > Math.max(a.minX, b.minX) && Math.min(a.maxZ, b.maxZ) > Math.max(a.minZ, b.minZ);
@@ -17,6 +19,10 @@ const STILL = PARKED_CARS.map(carFootprint);
 const taxiBox = carModelEntry(TAXI.model).collisionBox;
 const rideBoxes = [
   ...RIDES.cars.map(({ x, z, rot }) => ({ x, z, heading: rot, hl: CAR.half, hw: CAR.wide })),
+  ...PARKED_CARS.map(({ x, z, rot, model }) => {
+    const box = carModelEntry(model).collisionBox;
+    return { x, z, heading: rot, hl: box.length / 2, hw: box.width / 2, modeCar: true };
+  }),
   { x: TAXI.x, z: TAXI.z, heading: TAXI.rot, hl: taxiBox.length / 2, hw: taxiBox.width / 2 },
 ];
 
@@ -40,22 +46,25 @@ describe("traffic", () => {
   });
 
   for (const quality of ["high", "low"] as const) {
-    it(`moving cars never overlap (${quality} quality, 10 minutes, the player stopping a lane now and then)`, () => {
+    it(`moving cars finish their lanes without overlapping (${quality} quality, the player stopping traffic now and then)`, () => {
       const amb = new Ambient(nav, [[0, 0]], quality);
       amb.rideBoxes = rideBoxes;
       const cars = amb.traffic;
-      const eastbound = cars.find((car) => car.dir === 1 && car.lane === TRAFFIC_LANES[0].z)!;
       const player = new THREE.Vector3(0, 0, -200);
       let worst = Infinity;
       let overlapAt: { x: number; z: number } | undefined;
-      let reachedEnd = false;
+      const trips = cars.map(() => 0);
+      const wasHidden = cars.map((car) => car.hidden > 0);
       for (let step = 0; step < 12000; step++) {
         // every 40 s the player stands in a different lane for 15 s
         const k = Math.floor(step / 800), inLane = step % 800 < 300;
         const lane = TRAFFIC_LANES[k % TRAFFIC_LANES.length];
         player.set(inLane ? -40 + (k % 5) * 30 : 0, 0, inLane ? lane.z : -200);
         amb.update(0.05, player);
-        reachedEnd ||= eastbound.hidden > 0;
+        for (const car of cars) {
+          if (car.hidden > 0 && !wasHidden[car.index]) trips[car.index]++;
+          wasHidden[car.index] = car.hidden > 0;
+        }
         const live = cars.filter((c) => c.hidden <= 0 && c.mesh.visible && c.mesh.scale.x > 0.05);
         for (const c of live) {
           const b = { minX: c.x - c.half.x, maxX: c.x + c.half.x, minZ: c.lane - c.half.z, maxZ: c.lane + c.half.z };
@@ -64,11 +73,29 @@ describe("traffic", () => {
         }
       }
       expect(overlapAt, "there is no moving car inside a parked car").toBeUndefined();
-      expect(reachedEnd, "eastbound traffic can reach the lane end with the taxi at the stand").toBe(true);
+      for (const car of cars) {
+        // The first trip can start partway down the lane, past a parked car.
+        expect(trips[car.index], `${car.kind} ${car.index} completes lane z ${car.lane} with curbside parking`).toBeGreaterThan(1);
+      }
       // bumper to bumper, cars in a lane always keep a gap
       expect(worst).toBeGreaterThan(0.5);
     });
   }
+
+  it("can set up a honk encounter with a respawned car", () => {
+    const amb = new Ambient(nav, [[0, 0]], "low");
+    const car = amb.traffic[0];
+    car.hidden = 0.01;
+    const player = new THREE.Vector3(0, 0, -200);
+    const step = () => amb.update(0.05, player);
+    for (let i = 0; i < 20; i++) step();
+
+    const spot = reactionTestSpot(amb, new Colliders(), new THREE.Vector3(car.x, 0, car.lane), "honk");
+    expect(spot?.carIndex).toBe(car.index);
+    player.set(spot!.x, 0, spot!.z);
+    for (let i = 0; i < 60; i++) step();
+    expect(car.brakingForPlayer).toBe(true);
+  });
 
   it("a car that has stopped for the player is climbed like a parked one, waits while they are on it, and drives on", () => {
     const amb = new Ambient(nav, [[0, 0]], "high");
