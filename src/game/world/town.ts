@@ -94,7 +94,7 @@ export function buildTown(): Town {
   group.name = "town";
   const colliders = new Colliders();
   const doors: Door[] = [];
-  const M = new Merger();
+  const M = new Merger({ directBake: true });
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   DECKS.length = 0;

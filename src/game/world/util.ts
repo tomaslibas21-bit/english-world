@@ -4,8 +4,17 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { STYLED, IS_REAL, styledMat, refineForKey, wantsOutline, makeOutline, outlineColorFor, bevelRadius } from "../style";
 import { chamferBox, boxProjectUV } from "./shapes";
 
+type BakeMaterial = Pick<THREE.MeshLambertMaterial, "color" | "emissive" | "emissiveIntensity" | "flatShading">;
+type BakePart = THREE.BufferGeometry | { geo: THREE.BufferGeometry; mat: BakeMaterial };
+
 export class Merger {
   private groups = new Map<string, { mat: THREE.Material; geos: THREE.BufferGeometry[]; cast: boolean; receive: boolean; key: string }>();
+  private borrowedGeometries?: WeakSet<THREE.BufferGeometry>;
+
+  constructor({ directBake = false } = {}) {
+    if (directBake && !STYLED) this.borrowedGeometries = new WeakSet();
+  }
+
   add(key: string, mat: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
     if (STYLED) mat = refineForKey(key, mat); // trial styles: glass, wood, metal… (see style.ts)
     let g = this.groups.get(key);
@@ -22,6 +31,9 @@ export class Merger {
       }
     }
     const ng = geo.index ? geo.toNonIndexed() : geo;
+    if (this.borrowedGeometries && (ng === geo || geo.toNonIndexed !== THREE.BufferGeometry.prototype.toNonIndexed)) {
+      this.borrowedGeometries.add(ng);
+    }
     if (STYLED && g.mat.userData.uvScale) boxProjectUV(ng, g.mat.userData.uvScale);
     g.geos.push(ng);
   }
@@ -31,22 +43,30 @@ export class Merger {
    *  were each as wide as the town and so drawn in every frame, twice (the picture and the sun's shadow map). The
    *  picture is the same; a street's draw calls halve. `keep`: keys that stay meshes of their own, by their name. */
   build(parent: THREE.Object3D, bake?: { name: string; cell?: number; keep?: RegExp }) {
-    const chunks = new Map<string, { geos: THREE.BufferGeometry[]; cast: boolean; receive: boolean }>();
+    const chunks = new Map<string, { parts: BakePart[]; cast: boolean; receive: boolean }>();
     for (const [name, g] of this.groups) {
       if (!g.geos.length) continue;
       if (bake && !STYLED && !bake.keep?.test(name) && plainLambert(g.mat)) {
         const m = g.mat as THREE.MeshLambertMaterial, cell = bake.cell ?? Infinity;
+        const shadows = `${+g.cast}${+g.receive}`;
+        const borrowed = this.borrowedGeometries;
+        const direct = borrowed && !m.lightMap && !m.aoMap && !m.bumpMap && !m.normalMap
+          && !m.displacementMap && !m.specularMap && !m.envMap && m.onBeforeCompile === THREE.Material.prototype.onBeforeCompile;
+        let material: BakeMaterial | undefined;
         for (const geo of g.geos) {
-          const b = bakeColours(geo, m);
-          let k = `${+g.cast}${+g.receive}`;
-          if (cell !== Infinity) {
-            b.computeBoundingBox();
-            const c = b.boundingBox!;
-            k += `|${Math.floor((c.min.x + c.max.x) / 2 / cell)},${Math.floor((c.min.z + c.max.z) / 2 / cell)}`;
+          // Indexed inputs are private snapshots. Borrowed nonindexed geometries retain the legacy bake and disposal.
+          let part: BakePart;
+          if (direct && !borrowed.has(geo) && canPack(geo, m.flatShading)) {
+            // Read the group's current material when it is baked, after any changes since add().
+            material ??= { color: m.color.clone(), emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, flatShading: m.flatShading };
+            part = { geo, mat: material };
+          } else {
+            part = bakeColours(geo, m);
           }
+          const k = cell === Infinity ? shadows : `${shadows}|${part instanceof THREE.BufferGeometry ? geometryCell(part, cell) : positionCell(part.geo, cell)}`;
           let ch = chunks.get(k);
-          if (!ch) chunks.set(k, ch = { geos: [], cast: g.cast, receive: g.receive });
-          ch.geos.push(b);
+          if (!ch) chunks.set(k, ch = { parts: [], cast: g.cast, receive: g.receive });
+          ch.parts.push(part);
         }
         continue;
       }
@@ -68,8 +88,7 @@ export class Merger {
     }
     let n = 0;
     for (const ch of chunks.values()) {
-      const merged = mergeGeometries(ch.geos, false);
-      for (const g of ch.geos) g.dispose();
+      const merged = mergeBakeParts(ch.parts, !!this.borrowedGeometries);
       if (!merged) continue;
       const mesh = new THREE.Mesh(merged, bakedMaterial());
       mesh.name = `${bake!.name}-${n++}`;
@@ -83,6 +102,113 @@ export class Merger {
   }
 }
 
+function positionCell(geo: THREE.BufferGeometry, cell: number) {
+  const positions = geo.attributes.position.array;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (let i = 0; i < positions.length; i += 3) {
+    minX = Math.min(minX, positions[i]); maxX = Math.max(maxX, positions[i]);
+    minZ = Math.min(minZ, positions[i + 2]); maxZ = Math.max(maxZ, positions[i + 2]);
+  }
+  return `${Math.floor((minX + maxX) / 2 / cell)},${Math.floor((minZ + maxZ) / 2 / cell)}`;
+}
+
+function geometryCell(geo: THREE.BufferGeometry, cell: number) {
+  geo.computeBoundingBox();
+  const { min, max } = geo.boundingBox!;
+  return `${Math.floor((min.x + max.x) / 2 / cell)},${Math.floor((min.z + max.z) / 2 / cell)}`;
+}
+
+function packedAttribute(attr: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | undefined, count: number) {
+  return attr instanceof THREE.BufferAttribute && attr.array.constructor === Float32Array && attr.itemSize === 3
+    && !attr.normalized && attr.gpuType === THREE.FloatType && attr.count === count && attr.array.length === count * 3;
+}
+
+function canPack(geo: THREE.BufferGeometry, flat: boolean) {
+  const { position, normal } = geo.attributes;
+  const count = position?.count;
+  return !geo.index && !geo.morphTargetsRelative && !Object.keys(geo.morphAttributes).length
+    && count % 3 === 0 && packedAttribute(position, count) && (flat || !normal || packedAttribute(normal, count));
+}
+
+function mergeBakeParts(parts: BakePart[], directBake: boolean) {
+  // A chunk with unusual attributes still uses Three's merge, including its compatibility checks.
+  if (!directBake) return mergeBakedGeometries(parts);
+  let size = 0;
+  let hasDirectPart = false;
+  for (const part of parts) {
+    if (part instanceof THREE.BufferGeometry) {
+      const { position, normal, color, emi } = part.attributes;
+      if (!canPack(part, false) || !normal || Object.keys(part.attributes).length !== 4
+        || !packedAttribute(color, position.count) || !packedAttribute(emi, position.count)) return mergeBakedGeometries(parts);
+      size += position.array.length;
+    } else {
+      size += part.geo.attributes.position.array.length;
+      hasDirectPart = true;
+    }
+  }
+  if (!hasDirectPart) return mergeBakedGeometries(parts);
+  const positions = new Float32Array(size), normals = new Float32Array(size);
+  const colours = new Float32Array(size), emission = new Float32Array(size);
+  let offset = 0;
+  for (const part of parts) {
+    const baked = part instanceof THREE.BufferGeometry;
+    const geo = baked ? part : part.geo;
+    const { position, normal, color, emi } = geo.attributes;
+    positions.set(position.array, offset);
+    const end = offset + position.array.length;
+    if (baked || (!part.mat.flatShading && normal)) normals.set(normal.array, offset);
+    else writeFaceNormals(positions, normals, offset, end);
+    if (baked) {
+      colours.set(color.array, offset);
+      emission.set(emi.array, offset);
+    } else {
+      const { color: c, emissive: e, emissiveIntensity: intensity } = part.mat;
+      const er = e.r * intensity, eg = e.g * intensity, eb = e.b * intensity;
+      for (let i = offset; i < end; i += 3) {
+        colours[i] = c.r; colours[i + 1] = c.g; colours[i + 2] = c.b;
+        emission[i] = er; emission[i + 1] = eg; emission[i + 2] = eb;
+      }
+    }
+    offset = end;
+  }
+
+  const merged = new THREE.BufferGeometry();
+  const first = parts[0];
+  const firstAttrs = Object.keys((first instanceof THREE.BufferGeometry ? first : first.geo).attributes);
+  // Three merges attributes in the first geometry's order. Generated normals follow positions.
+  const normalIndex = firstAttrs.indexOf("normal");
+  const normalFirst = (first instanceof THREE.BufferGeometry || !first.mat.flatShading)
+    && normalIndex >= 0 && normalIndex < firstAttrs.indexOf("position");
+  const position = new THREE.BufferAttribute(positions, 3), normal = new THREE.BufferAttribute(normals, 3);
+  if (normalFirst) merged.setAttribute("normal", normal);
+  merged.setAttribute("position", position);
+  if (!normalFirst) merged.setAttribute("normal", normal);
+  merged.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+  merged.setAttribute("emi", new THREE.BufferAttribute(emission, 3));
+  for (const part of parts) (part instanceof THREE.BufferGeometry ? part : part.geo).dispose();
+  return merged;
+}
+
+function mergeBakedGeometries(parts: BakePart[]) {
+  const geos = parts.map((part) => part instanceof THREE.BufferGeometry ? part : bakeColours(part.geo, part.mat));
+  const merged = mergeGeometries(geos, false);
+  for (const geo of geos) geo.dispose();
+  return merged;
+}
+
+function writeFaceNormals(positions: Float32Array, normals: Float32Array, start: number, end: number) {
+  for (let i = start; i < end; i += 9) {
+    const ax = positions[i] - positions[i + 3], ay = positions[i + 1] - positions[i + 4], az = positions[i + 2] - positions[i + 5];
+    const bx = positions[i + 6] - positions[i + 3], by = positions[i + 7] - positions[i + 4], bz = positions[i + 8] - positions[i + 5];
+    // Three stores the cross product in a Float32 attribute before normalizing it.
+    const x = Math.fround(by * az - bz * ay), y = Math.fround(bz * ax - bx * az), z = Math.fround(bx * ay - by * ax);
+    const invLength = 1 / (Math.sqrt(x * x + y * y + z * z) || 1);
+    normals[i] = normals[i + 3] = normals[i + 6] = x * invLength;
+    normals[i + 1] = normals[i + 4] = normals[i + 7] = y * invLength;
+    normals[i + 2] = normals[i + 5] = normals[i + 8] = z * invLength;
+  }
+}
+
 /** A material whose shapes `Merger.build`'s `bake` can draw from their vertices' colours: Lambert, one colour (and a
  *  glow), opaque, one-sided, no texture and no shader of its own (`userData`: the windows' `reflective` glass; the
  *  camera's cutout, which the baked material learns itself, doesn't count). */
@@ -92,7 +218,7 @@ function plainLambert(m: THREE.Material) {
     && !l.alphaTest && l.depthWrite && l.depthTest && !l.wireframe && !Object.keys(l.userData).length;
 }
 /** The shape with its material's colour and glow in its vertices (and flat faces where the material shaded flat). */
-function bakeColours(g0: THREE.BufferGeometry, m: THREE.MeshLambertMaterial) {
+function bakeColours(g0: THREE.BufferGeometry, m: BakeMaterial) {
   const g = g0.index ? g0.toNonIndexed() : g0;
   for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal") g.deleteAttribute(k);
   if (m.flatShading) g.deleteAttribute("normal");
