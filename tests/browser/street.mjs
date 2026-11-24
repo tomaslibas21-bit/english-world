@@ -120,11 +120,12 @@ async function assertPicture(card) {
 }
 
 async function assertBubbleFits(bubble, viewport, label) {
-  const fit = await bubble.evaluate((el) => {
+  const fit = await bubble.evaluate((el, mapleHarbor) => {
     const a = el.getBoundingClientRect();
     const hits = [];
+    const tags = mapleHarbor && el.getAttribute("aria-expanded") === "true" ? ", .nametag" : "";
     for (const hud of document.querySelectorAll(".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, " +
-      ".minimap, .toolbar, .toolbar-drawer, .toolbar button, .joy, .jump-btn, .act-btn, .prompt")) {
+      ".minimap, .toolbar, .toolbar-drawer, .toolbar button, .joy, .jump-btn, .act-btn, .prompt" + tags)) {
       const b = hud.getBoundingClientRect();
       if (b.width > 0 && b.height > 0 && getComputedStyle(hud).visibility === "visible" &&
         a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) hits.push(hud.className);
@@ -136,10 +137,10 @@ async function assertBubbleFits(bubble, viewport, label) {
     }).map((line) => line.textContent);
     return { hits, clipped, onScreen: a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth &&
       a.top >= 0 && a.bottom <= innerHeight && getComputedStyle(el).visibility === "visible" };
-  });
+  }, storage === "english-world");
   const context = `${viewport.join("x")} ${label}`;
   assert(fit.onScreen, `${context}: bubble is visible and fits on screen`);
-  assert.deepEqual(fit.hits, [], `${context}: bubble clears all visible HUD rectangles`);
+  assert.deepEqual(fit.hits, [], `${context}: bubble clears all visible blockers`);
   assert.deepEqual(fit.clipped, [], `${context}: bubble text fits inside the button`);
 }
 
@@ -334,6 +335,7 @@ try {
       await assertBubbleFits(bubble, viewport, "first line with reopened task");
       await press(bubble);
       assert(await bubble.locator(".street-tr").isVisible());
+      await step(2, 0);
       await assertBubbleFits(bubble, viewport, "translated line with expanded task");
       await shot("chatter");
       await wait(async () => await bubble.isVisible() && !(await bubble.locator(".street-tr").isVisible()) && await bubble.innerText() !== first,

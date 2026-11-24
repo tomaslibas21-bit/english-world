@@ -3461,22 +3461,39 @@ export class Game implements GameApi {
     // already placed (Kate and Paul at their table; below one only when nothing else is free); beside, below or above
     // the task card, the little map and the buttons, which would cover it. Always inside the picture.
     shown.sort((a, b) => a.dist - b.dist);
-    const hud = this.hudBoxes(), m = 6;
+    let hud = this.hudBoxes();
+    const bubble = document.querySelector<HTMLElement>(".street-bubble");
+    let bubbleBox: TagBox | undefined;
+    if (bubble?.style.visibility === "visible") {
+      // Read the bubble every frame: it moves with the speaker and grows as soon as it is translated.
+      const r = bubble.getBoundingClientRect();
+      if (r.width && r.height) {
+        const c = this.container.getBoundingClientRect(), tail = 6;
+        bubbleBox = { x0: r.left - c.left - tail, x1: r.right - c.left + tail,
+          y0: r.top - c.top - tail, y1: r.bottom - c.top + tail };
+        hud = [...hud, bubbleBox];
+      }
+    }
+    const m = 6;
     const placed: TagBox[] = [];
     for (const s of shown) {
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
+      const hits = (x: number, y: number, p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
       for (const p of hud) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
       let best: [number, number] | null = null, bestD = Infinity;
       for (const [sx, sy, extra] of spots) {
         const x = Math.min(w - m - tw / 2, Math.max(m + tw / 2, sx)), y = Math.min(h - m, Math.max(m + th, sy));
-        const hits = (p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
-        if (hud.some(hits) || placed.some(hits)) continue;
+        if (hud.some((p) => hits(x, y, p)) || placed.some((p) => hits(x, y, p))) continue;
         const d = Math.hypot(x - s.x, y - s.y) + extra;
         if (d < bestD) { bestD = d; best = [x, y]; }
       }
       const [x, y] = best ?? [Math.min(w - m - tw / 2, Math.max(m + tw / 2, s.x)), Math.min(h - m, Math.max(m + th, s.y))];
+      if (!best && bubbleBox && hits(x, y, bubbleBox)) {
+        s.n.tag.style.display = "none";
+        continue;
+      }
       placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
     }
@@ -3489,7 +3506,7 @@ export class Game implements GameApi {
     this.hudCheck = 10;
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
-    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .phone-ring, .street-card, .street-bubble, .directions-card, .photo-chip, .minimap, .toolbar, .toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools, .portrait-toolbar.menu-open .toolbar-drawer, .portrait-toolbar.in-ride:not(.menu-open) .radio-tool")) {
+    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, .minimap, .toolbar, .toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools, .portrait-toolbar.menu-open .toolbar-drawer, .portrait-toolbar.in-ride:not(.menu-open) .radio-tool")) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });
