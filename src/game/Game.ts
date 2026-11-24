@@ -620,7 +620,7 @@ export class Game implements GameApi {
       this.road = new RoadEntry({
         ...host,
         environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
-          environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity }),
+          environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity, exitHills: this.town.exitHills }),
         roadSign: () => this.town.group.getObjectByName("desert-road-sign"),
         roadOpening: () => this.town.roadOpening,
         viewport: () => ({ width: this.screenW, height: this.screenH }),
@@ -2802,9 +2802,16 @@ export class Game implements GameApi {
   }
 
   private drawTown() {
-    this.renderer.render(this.scene, this.rig.cam);
+    const firstExterior = !this.zone.interior && this.firstExteriorAt === undefined;
+    const scenery = firstExterior && this.town.exitHills
+      ? [this.town.exitHills, this.town.group.getObjectByName("desert-road-crest")!]
+      : undefined;
+    // Submit the static exit meshes under the loader even when the restored camera faces away from them.
+    if (scenery) for (const mesh of scenery) mesh.frustumCulled = false;
+    try { this.renderer.render(this.scene, this.rig.cam); }
+    finally { if (scenery) for (const mesh of scenery) mesh.frustumCulled = true; }
     this.presentWorld("town");
-    if (!this.zone.interior && this.firstExteriorAt === undefined) {
+    if (firstExterior) {
       this.firstExteriorAt = this.t;
       this.firstExteriorDraw?.();
       this.firstExteriorDraw = undefined;

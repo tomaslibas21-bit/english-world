@@ -70,8 +70,9 @@ export class PreparedRoad {
     const track = this.track ??= new Track(this.host.roadOpening());
     if (this.index < 5) { track.prepare(this.index++); return; }
     const model = carModelEntry(this.source.model ?? TAXI.model);
-    const view = this.view = new RoadView(this.source.mesh, rideSize(this.source), model);
-    view.prepareDeparture(this.host.environment());
+    const town = this.host.environment();
+    const view = this.view = new RoadView(this.source.mesh, rideSize(this.source), model, town.exitHills);
+    view.prepareDeparture(town);
     const gate = this.gate = new Gate(FIRST_GATE, this.first, view.gateMaterial);
     view.scene.add(track.group, gate.mesh);
     view.stream(track, 0, 0, true);
@@ -193,7 +194,8 @@ export class RoadMode {
     const seat = this.run?.view.seatedPose();
     this.clearRun();
     const model = carModelEntry(this.source?.model ?? TAXI.model);
-    const track = new Track(this.host.roadOpening()), view = new RoadView(mesh, size, model), car = new RoadCar();
+    const track = new Track(this.host.roadOpening());
+    const view = new RoadView(mesh, size, model, this.host.environment().exitHills), car = new RoadCar();
     view.scene.add(track.group);
     if (seat) view.seatPlayer(this.host.player().root, seat.position, seat.rotation);
     if (this.lift) {

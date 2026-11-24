@@ -68,7 +68,8 @@ describe("Maple Harbor collision asset", () => {
     expect([restored.field.nx, restored.field.nz]).toEqual([684, 496]);
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("3a41842feb4299e2f364f4bffdedb6ab4630544cf9c87821e8c8bb187ff7f623");
+    // The west ridge is outside the driving boundary and occupies camera cells behind it.
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("64efe5089eeed807b69a9e815f0e89ad842e0c4e1b79575a92202eae0392d2fc");
     expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
     expect(ledges.pieces.slice(boats.length)).toStrictEqual(baked.ledges.pieces);
     expect(restored.ledges.pieces).toStrictEqual(ledges.pieces);

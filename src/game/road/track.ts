@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { EXIT_ASPHALT, EXIT_SHARED_LENGTH, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
+import { CREST_HEIGHT, EXIT_ASPHALT, EXIT_MEADOW, EXIT_PREVIEW_LENGTH, EXIT_SHARED_LENGTH, EXIT_VERGE, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
 import { colourMerge, rand } from "../world/util";
 import { FIRST_GATE, nextGate } from "./run";
 import { ROAD_LOOK } from "./look";
@@ -38,28 +38,59 @@ export function dune(s: number, x: number) {
 export const ground = (s: number, x: number, y = 0) => new THREE.Vector3(center(s) + x, height(s) + dune(s, x) + y, -s);
 
 const ACROSS = [ROAD_HALF, 8.3, 12, 20, 34, 56, 92, 160, 320];
+const PREVIEW_ACROSS = [ROAD_HALF, 8.3, 12, 20, 28, EXIT_VERGE, 40, EXIT_MEADOW.blend, EXIT_MEADOW.edge];
+const OPENING_ACROSS = [...PREVIEW_ACROSS, ...ACROSS.filter((x) => x > EXIT_MEADOW.edge)];
 const SAND = ROAD_LOOK.sand.map((c) => new THREE.Color(c));
 const SHOULDER = new THREE.Color(ROAD_LOOK.shoulder);
+const { lerp, smoothstep } = THREE.MathUtils;
 
 /** Both sides of the desert floor for one piece: flat-shaded facets in three tones of sand. */
-function terrain(s0: number) {
-  const across = ACROSS;
+function terrain(s0: number, length = PIECE_LENGTH, meadow?: THREE.Color, townPreview = false) {
+  const across = !meadow ? ACROSS : !townPreview ? OPENING_ACROSS
+    : s0 >= EXIT_PREVIEW_LENGTH ? [0, ...PREVIEW_ACROSS] : PREVIEW_ACROSS;
   const positions: number[] = [], colours: number[] = [];
-  const tone = new THREE.Color();
-  const corner = (s: number, x: number) => { const p = ground(s, x, -0.07); positions.push(p.x, p.y, p.z); };
+  const tone = new THREE.Color(), colour = new THREE.Color();
   for (const side of [-1, 1]) for (let i = 0; i < STEPS; i++) for (let j = 0; j + 1 < across.length; j++) {
-    const a = s0 + i * PIECE_LENGTH / STEPS, b = a + PIECE_LENGTH / STEPS, lo = side * across[j], hi = side * across[j + 1];
+    const a = s0 + i * length / STEPS, b = s0 + (i + 1) * length / STEPS, lo = side * across[j], hi = side * across[j + 1];
     // Alternate the diagonal so the facets do not line up in rows.
     const quads = (i + j) % 2 ? [[a, lo], [b, lo], [b, hi], [a, lo], [b, hi], [a, hi]] : [[a, lo], [b, lo], [a, hi], [b, lo], [b, hi], [a, hi]];
     for (let k = 0; k < 2; k++) {
       const tri = quads.slice(k * 3, k * 3 + 3);
-      for (const [s, x] of side < 0 ? tri : [tri[0], tri[2], tri[1]]) corner(s, x);
       const ms = (tri[0][0] + tri[1][0] + tri[2][0]) / 3, mx = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
       const n = Math.sin(ms * 0.171 + mx * 0.093) * Math.sin(ms * 0.047 - mx * 0.131 + 2.1);
       if (across[j] === ROAD_HALF) tone.copy(SHOULDER);
       else if (n > 0) tone.copy(SAND[0]).lerp(SAND[2], Math.min(1, n * 1.7));
       else tone.copy(SAND[0]).lerp(SAND[1], Math.min(1, -n * 1.7));
-      for (let v = 0; v < 3; v++) colours.push(tone.r, tone.g, tone.b);
+      for (const [s, x] of side < 0 ? tri : [tri[0], tri[2], tri[1]]) {
+        const p = ground(s, x, -0.07);
+        colour.copy(tone);
+        if (meadow) {
+          // The asphalt and near shoulders follow the road. The outside edge meets the straight meadow cutout.
+          const opening = townPreview ? 1 : 1 - smoothstep(s, 128, EXIT_PREVIEW_LENGTH);
+          p.x -= center(s) * opening * smoothstep(Math.abs(x), 20, EXIT_MEADOW.blend);
+          const verge = side > 0 ? EXIT_MEADOW.coastVerge : EXIT_VERGE;
+          const blend = side > 0 ? EXIT_MEADOW.coastBlend : EXIT_MEADOW.blend;
+          const shoulder = 1 - smoothstep(Math.abs(p.x), verge, blend);
+          const corridor = townPreview ? smoothstep(s, -EXIT_MEADOW.apron, 0) * (1 - smoothstep(s, EXIT_PREVIEW_LENGTH, EXIT_MEADOW.blendEnd)) : 1;
+          const grass = opening * (1 - corridor * shoulder);
+          const meadowY = EXIT_MEADOW.y - CREST_HEIGHT;
+          // Overlap the meadow's cut edges and sink the apron and the back edge into its surface.
+          const overlap = smoothstep(s, -EXIT_MEADOW.apron, 0) * (1 - smoothstep(s, EXIT_MEADOW.cutEnd, EXIT_PREVIEW_LENGTH + PIECE_LENGTH))
+            * (1 - smoothstep(Math.abs(p.x), EXIT_MEADOW.cut, EXIT_MEADOW.edge));
+          p.y = lerp(p.y, meadowY - 0.02 + 0.04 * overlap, grass);
+          colour.lerp(meadow, grass);
+          // The last row meets the coarser dunes of the next streamed piece.
+          if (!townPreview && s === EXIT_PREVIEW_LENGTH) {
+            const j = ACROSS.findIndex((width) => width >= Math.abs(x));
+            if (j > 0) {
+              const lo = ACROSS[j - 1], hi = ACROSS[j];
+              p.y = height(s) - 0.07 + lerp(dune(s, side * lo), dune(s, side * hi), (Math.abs(x) - lo) / (hi - lo));
+            }
+          }
+        }
+        positions.push(p.x, p.y, p.z);
+        colours.push(colour.r, colour.g, colour.b);
+      }
     }
   }
   const g = new THREE.BufferGeometry();
@@ -239,11 +270,25 @@ export class Track {
     this.material.dispose();
   }
 
-  static opening(): RoadOpening {
-    return [0, 1, 2].map(Track.build);
+  static opening(meadow?: THREE.Color): RoadOpening {
+    return [0, 1, 2].map((index) => Track.build(index, meadow));
   }
 
-  private static build(index: number): PieceGeometry {
+  /** Reuse the opening's asphalt and props, with town terrain fitted between the meadow flanks. */
+  static previewParts(opening: RoadOpening, meadow: THREE.Color) {
+    const apron = terrain(-EXIT_MEADOW.apron, EXIT_MEADOW.apron, meadow, true);
+    const tail = terrain(EXIT_PREVIEW_LENGTH, PIECE_LENGTH, meadow, true);
+    const parts = opening.flatMap(({ geometry, terrainStart }, index) => {
+      const strip = new THREE.BufferGeometry();
+      for (const [name, attribute] of Object.entries(geometry.attributes)) {
+        strip.setAttribute(name, new THREE.BufferAttribute(attribute.array.subarray(0, terrainStart * attribute.itemSize), attribute.itemSize));
+      }
+      return [strip, terrain(index * PIECE_LENGTH, PIECE_LENGTH, meadow, true)];
+    });
+    return [apron, ...parts, tail];
+  }
+
+  private static build(index: number, meadow?: THREE.Color): PieceGeometry {
     const s = index * PIECE_LENGTH;
     const r = rand(317 + index * 1709);
     const parts: Part[] = [], features: Feature[] = [], scenery: Scenery[] = [];
@@ -357,7 +402,7 @@ export class Track {
     if (obstacleParts.length) for (const [part] of parts) {
       offsets.push(offsets[offsets.length - 1] + (part.index?.count ?? part.attributes.position.count));
     }
-    const built = [colourMerge(parts), terrain(s)];
+    const built = [colourMerge(parts)];
     let vergeVertices = 0, stripVertices = 0;
     if (index === 0) {
       const { strip, verge } = makeExitGeometry();
@@ -367,8 +412,10 @@ export class Track {
     }
     const obstacles = obstacleParts.map(({ kind, start, end }) =>
       ({ kind, start: offsets[start] + stripVertices, end: offsets[end] + stripVertices }));
+    const terrainStart = stripVertices + built[built.length - 1].attributes.position.count;
+    if (index === 0 && meadow) built.push(terrain(-EXIT_MEADOW.apron, EXIT_MEADOW.apron, meadow, true));
+    built.push(terrain(s, PIECE_LENGTH, meadow));
     const geometry = mergeGeometries(built, false)!;
-    const terrainStart = geometry.attributes.position.count - built[built.length - 1].attributes.position.count;
     built.forEach((g) => g.dispose());
     return { geometry, features, vergeVertices, terrainStart, obstacles };
   }

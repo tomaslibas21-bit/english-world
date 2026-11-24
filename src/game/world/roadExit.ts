@@ -9,13 +9,15 @@ const { lerp, smoothstep } = THREE.MathUtils;
 const nx = Math.sin(edge.outward), nz = Math.cos(edge.outward);
 export const CREST_DISTANCE = 32;
 export const ASPHALT_END = 2.3 - CREST_DISTANCE;
-const CREST_HEIGHT = 1.32;
+export const CREST_HEIGHT = 1.32;
 export const ROAD_HALF = 6.3;
 export const LANE = 4;
 export const EXIT_SHARED_LENGTH = 64;
 export const EXIT_VERGE = 34;
 export const EXIT_ASPHALT = "#5b626b";
 export const EXIT_HAZE = { near: 120, far: 180 };
+export const EXIT_PREVIEW_LENGTH = 3 * EXIT_SHARED_LENGTH;
+export const EXIT_MEADOW = { coastVerge: 22, coastBlend: 38, blend: 46, cut: 48, edge: 52, y: -0.05, apron: 20, blendEnd: 240, cutEnd: 244 };
 
 const yaw = edge.outward - Math.PI;
 const origin = new THREE.Vector3(edge.x + nx * CREST_DISTANCE, CREST_HEIGHT, edge.z + nz * CREST_DISTANCE);
@@ -50,21 +52,51 @@ export function keepOnExit(point: { x: number; z: number }, radius: number) {
   point.z += (side - x) * nx;
 }
 
-export function exitSightline(x: number, z: number, halfX: number, halfZ: number) {
+/** Squeeze the road-facing side of a hill onto the flank, keeping its far edge and peak where there is room. */
+export function shapeExitHill(geometry: THREE.BufferGeometry, x: number, z: number, halfX: number, halfZ: number) {
   const p = exitCoordinates(x, z);
   const far = p.s + Math.abs(nx) * halfX + Math.abs(nz) * halfZ;
-  return far > 32 && Math.abs(p.x) < Math.min(310, EXIT_VERGE + far) + Math.abs(nz) * halfX + Math.abs(nx) * halfZ;
+  const half = Math.abs(nz) * halfX + Math.abs(nx) * halfZ;
+  const center = Math.abs(p.x);
+  const side = p.x < 0 ? -1 : 1;
+  const verge = side > 0 ? EXIT_MEADOW.coastVerge : EXIT_VERGE;
+  if (far < 0 || center - half >= verge) return;
+  const peak = Math.max(center, verge + half * 0.18);
+  const edge = Math.max(center + half, peak + half * 0.5);
+  const positions = geometry.getAttribute("position");
+  for (let i = 0; i < positions.count; i++) {
+    const vx = positions.getX(i), vz = positions.getZ(i);
+    const lateral = exitCoordinates(vx, vz).x;
+    const offset = (lateral * side - center) / half;
+    const flank = offset < 0 ? lerp(peak, verge, -offset) : lerp(peak, edge, offset);
+    const shift = side * flank - lateral;
+    positions.setX(i, vx - shift * nz);
+    positions.setZ(i, vz + shift * nx);
+  }
+  geometry.computeVertexNormals();
 }
 
-/** Town ground and water must not show through the low parts of the desert dunes. */
-export function exitBackdropCutout(position: string) {
-  const vec = (x: number, z: number) => `vec2(${x.toFixed(6)}, ${z.toFixed(6)})`;
-  return `
-    vec2 exitDelta = ${position}.xz - ${vec(origin.x, origin.z)};
-    float exitDistance = dot(exitDelta, ${vec(nx, nz)});
-    float exitSide = dot(exitDelta, ${vec(-nz, nx)});
-    if (exitDistance >= 0.0 && abs(exitSide) < min(310.0, ${EXIT_VERGE}.0 + exitDistance)) discard;
-  `;
+/** The low coastal ridge between the road and the beach, rising beside the crest and joining the west hills. */
+export function makeCoastalRidge() {
+  // Distance along the road, lateral position of the ridge, and height above the meadow.
+  const profile = [[-29, 29, 0], [-20, 27, 1.4], [-12, 25, 4.4], [-4, 24, 7.8], [9, 25, 11.3],
+    [24, 27, 12.4], [39, 30, 12.1], [59, 37, 10.6], [81, 42, 9.3], [102, 44, 5.6], [126, 43, 0]];
+  const rows = profile.map(([s, ridge, height]) => {
+    const foot = roadCenter(s) + exitHalf(s) + 3;
+    const points = [[foot, 0], [lerp(foot, ridge, 0.45), 0.55], [ridge, 1], [ridge + 9, 0.84], [ridge + 26, 0]];
+    return points.map(([x, fraction]) => new THREE.Vector3(x, EXIT_MEADOW.y - CREST_HEIGHT - 0.08 + height * fraction, -s));
+  });
+  const vertices: THREE.Vector3[] = [], uv: number[] = [];
+  for (let i = 1; i < rows.length; i++) for (let j = 1; j < rows[i].length; j++) {
+    const a = rows[i - 1][j - 1], b = rows[i - 1][j], c = rows[i][j - 1], d = rows[i][j];
+    const triangles = (i + j) % 2 ? [a, b, d, a, d, c] : [a, b, c, b, d, c];
+    vertices.push(...triangles);
+    for (const p of triangles) uv.push(p.x / 70, -p.z / 155);
+  }
+  const geometry = new THREE.BufferGeometry().setFromPoints(vertices);
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geometry.computeVertexNormals();
+  return geometry.applyMatrix4(exitToTown);
 }
 
 export const exitPostTops = [-1, 1].map((side) =>
@@ -120,12 +152,16 @@ export function makeExitGeometry() {
     parts.push([new THREE.BoxGeometry(0.11, 0.20, 0.028).translate(base.x, base.y + 0.81, base.z + 0.101), "#b65e38"]);
   }
   // Sloped talus, a sediment band and a sheer cap form two silhouettes on either shoulder.
-  for (const [s, x, w, h, spin] of [[54, -27, 12, 5.6, 0.3], [62, -38, 17, 8.9, 0.8],
-    [77, 34, 16, 6.6, 0.5], [81, 46, 22, 9.4, 0.1], [101, -52, 20, 8.5, 0.9], [114, 59, 27, 11.7, 0.2]]) {
+  for (const [s, x, w, h, spin] of [[54, -27, 12, 5.6, 0.3], [62, -38, 17, 7.4, 0.8],
+    [77, 34, 16, 5.8, 0.5], [81, 46, 22, 7.0, 0.1], [101, -52, 20, 7.6, 0.9], [114, 59, 27, 9.0, 0.2]]) {
     const base = point(s, x, -0.25);
+    // Keep the shared mesas inside the valley and clear of the asphalt through its first bends.
+    const clear = x > 0 ? 17 : 12;
+    const width = Math.min(w * 0.78, (EXIT_VERGE - clear) / 2);
+    base.x = THREE.MathUtils.clamp(base.x, -EXIT_VERGE + width, EXIT_VERGE - width);
     const tier = (bottom: number, top: number, y0: number, y1: number, colour: THREE.ColorRepresentation) =>
       parts.push([new THREE.CylinderGeometry(top, bottom, y1 - y0, 7).rotateY(spin)
-        .scale(w * 0.78, h, w).translate(base.x, base.y + (y0 + y1) * h / 2, base.z), colour]);
+        .scale(width, h, w).translate(base.x, base.y + (y0 + y1) * h / 2, base.z), colour]);
     tier(1, 0.57, 0, 0.51, ROAD_LOOK.rock[1]);
     tier(0.57, 0.56, 0.51, 0.60, ROAD_LOOK.sand[2]);
     tier(0.56, 0.48, 0.60, 1, ROAD_LOOK.rock[0]);

@@ -11,12 +11,12 @@ import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
-import { EXIT_HAZE, exitBackdropCutout, exitSightline, exitToTown, makeExitSign } from "./roadExit";
+import { EXIT_HAZE, EXIT_MEADOW, EXIT_PREVIEW_LENGTH, EXIT_VERGE, exitToTown, makeCoastalRidge, makeExitSign, shapeExitHill } from "./roadExit";
 import { ROAD_EDITION } from "../../content/road";
 import { makeGateSilhouette } from "../road/gates";
 import { previewCones } from "../road/props";
 import { FIRST_GATE } from "../road/run";
-import { PIECE_LENGTH, ribbon, Track, type RoadOpening } from "../road/track";
+import { Track, type RoadOpening } from "../road/track";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
@@ -50,6 +50,7 @@ export interface Town {
   groundCanvas: HTMLCanvasElement;
   sea: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   roadOpening?: RoadOpening;
+  exitHills?: THREE.Mesh;
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
 }
@@ -57,6 +58,10 @@ export interface Town {
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
+const OUTER_GRASS = "#7fb85e";
+const OUTER_GRASS_ORIGIN = { x: 35, z: SEA_Z + 1 + 320 };
+// Keep both surfaces beyond the town haze when the camera looks down the crest's shallow slope.
+const WEST_BACKDROP_EXTENSION = ROAD_EDITION.enabled ? 160 : 0;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
 /** The letters' colour on a building's printed sign: its trim, or a dark one when the trim is too pale to read on the
@@ -119,25 +124,15 @@ export function buildTown(): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outerGrass = mat("#7fb85e");
-  const outer = new THREE.Mesh(outerGeometry(), ROAD_EDITION.enabled ? outerGrass.clone() : outerGrass);
-  if (ROAD_EDITION.enabled) {
-    const shaderKey = outerGrass.customProgramCacheKey();
-    outer.material.customProgramCacheKey = () => `${shaderKey}-road-exit`;
-    outer.material.onBeforeCompile = (shader, renderer) => {
-      outerGrass.onBeforeCompile(shader, renderer);
-      shader.vertexShader = `varying vec3 vExitGround;\n` + shader.vertexShader.replace("#include <project_vertex>",
-        "#include <project_vertex>\nvExitGround = (modelMatrix * vec4(transformed, 1.0)).xyz;");
-      shader.fragmentShader = `varying vec3 vExitGround;\n` + shader.fragmentShader.replace("void main() {",
-        `void main() { ${exitBackdropCutout("vExitGround")}`);
-    };
-  }
+  const outer = new THREE.Mesh(outerGeometry(), mat(OUTER_GRASS));
+  outer.name = "outer-grass";
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
-  outer.position.set(35, -0.05, SEA_Z + 1 + 320);
+  outer.position.set(OUTER_GRASS_ORIGIN.x, EXIT_MEADOW.y, OUTER_GRASS_ORIGIN.z);
   outer.receiveShadow = true;
   group.add(outer);
   const hillMat = mat("#79ad5a", { flat: true });
+  const westHills: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 1.2 - 0.1;
     let hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
@@ -155,8 +150,18 @@ export function buildTown(): Town {
     // Low rolling hills leave sky above them in the narrow phone view, rather than a tall flat green face.
     g.scale(1.6, 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
-    if (ROAD_EDITION.enabled && exitSightline(hx, hz, 1.6 * s, 1.2 * s)) g.dispose();
-    else M.add("hills", hillMat, g, false, true);
+    if (ROAD_EDITION.enabled && hx < WORLD.minX) {
+      shapeExitHill(g, hx, hz, 1.6 * s, 1.2 * s);
+      westHills.push(g);
+    } else M.add("hills", hillMat, g, false, true);
+  }
+  if (ROAD_EDITION.enabled) westHills.push(makeCoastalRidge());
+  const exitHills = westHills.length ? new THREE.Mesh(mergeGeometries(westHills, false)!, hillMat) : undefined;
+  westHills.forEach((hill) => hill.dispose());
+  if (exitHills) {
+    exitHills.name = "exit-hills";
+    exitHills.receiveShadow = true;
+    group.add(exitHills);
   }
 
   // --- sea ------------------------------------------------------------------
@@ -185,12 +190,10 @@ export function buildTown(): Town {
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
-  if (ROAD_EDITION.enabled) seaMat.fragmentShader = seaMat.fragmentShader.replace("void main(){",
-    `void main(){ ${exitBackdropCutout("vW")}`);
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(900 + WEST_BACKDROP_EXTENSION, 320, 90 + WEST_BACKDROP_EXTENSION / 10, 32), seaMat);
   sea.renderOrder = 2;
   sea.rotation.x = -Math.PI / 2;
-  sea.position.set(35, -0.25, SEA_Z - 158);
+  sea.position.set(35 - WEST_BACKDROP_EXTENSION / 2, -0.25, SEA_Z - 158);
   group.add(sea);
 
   const photoSpots: PhotoSpot[] = [];
@@ -210,17 +213,26 @@ export function buildTown(): Town {
   addStreetProps(M, colliders, photo);
   const parkedCars = makeParkedCars();
   group.add(parkedCars.group);
-  const roadOpening = ROAD_EDITION.enabled ? Track.opening() : undefined;
+  const meadow = grade(OUTER_GRASS);
+  const roadOpening = ROAD_EDITION.enabled ? Track.opening(meadow) : undefined;
   if (roadOpening) {
-    // A continuation beyond the preview is already fully in the exchange haze.
-    const hazeFloor = colourMerge([[ribbon(3 * PIECE_LENGTH, 2 * PIECE_LENGTH, -320, 320, -0.09, 1), "#ffffff"]]);
-    const extras = [previewCones(roadOpening), makeGateSilhouette(FIRST_GATE), hazeFloor];
-    const geometry = mergeGeometries([...roadOpening.map((piece) => piece.geometry), ...extras], false)!;
-    extras.forEach((part) => part.dispose());
+    const parts = [...Track.previewParts(roadOpening, meadow), previewCones(roadOpening), makeGateSilhouette(FIRST_GATE)];
+    const geometry = mergeGeometries(parts, false)!;
+    parts.forEach((part) => part.dispose());
     const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     material.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace("#include <fog_fragment>",
-        THREE.ShaderChunk.fog_fragment.replace("fogNear, fogFar", `${EXIT_HAZE.near}.0, ${EXIT_HAZE.far}.0`));
+      shader.vertexShader = `varying vec2 vExitGround;\n${shader.vertexShader}`.replace("#include <begin_vertex>",
+        "#include <begin_vertex>\nvExitGround = vec2(position.x, -position.z);");
+      shader.fragmentShader = `varying vec2 vExitGround;\n${shader.fragmentShader}`.replace("#include <fog_fragment>", `
+        #ifdef USE_FOG
+          float flank = vExitGround.x > 0.0 ? smoothstep(${EXIT_MEADOW.coastVerge}.0, ${EXIT_MEADOW.coastBlend}.0, vExitGround.x)
+            : smoothstep(${EXIT_VERGE}.0, ${EXIT_MEADOW.blend}.0, -vExitGround.x);
+          float meadow = max(flank, smoothstep(${EXIT_PREVIEW_LENGTH}.0, ${EXIT_MEADOW.blendEnd}.0, vExitGround.y));
+          float roadFog = smoothstep(${EXIT_HAZE.near}.0, ${EXIT_HAZE.far}.0, vFogDepth);
+          float meadowFog = smoothstep(fogNear, fogFar, vFogDepth);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, mix(roadFog, meadowFog, meadow));
+        #endif
+      `);
     };
     const preview = new THREE.Mesh(geometry, material);
     preview.name = "desert-road-crest";
@@ -290,7 +302,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening,
+    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening, exitHills,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -350,15 +362,36 @@ function groundGeometry() {
   return g;
 }
 
-/** The grass beyond the town (900 × 640 m, laid out as PlaneGeometry lays its own), cut back from the sea along the
+/** The grass beyond the town, cut back from the sea along the
  *  town's own beach, where the ground's sand slopes down below it (groundGeometry). */
 function outerGeometry() {
-  const back = 2.6, x0 = WORLD.minX + 1 - 35, x1 = WORLD.maxX - 1 - 35;
+  const back = 2.6, x0 = WORLD.minX + 1 - OUTER_GRASS_ORIGIN.x, x1 = WORLD.maxX - 1 - OUTER_GRASS_ORIGIN.x;
+  const meadow = ROAD_EDITION.enabled ? meadowWithRoadOpening(back) : new THREE.PlaneGeometry(900, 640 - back).translate(0, -back / 2, 0);
   return mergeGeometries([
-    new THREE.PlaneGeometry(900, 640 - back).translate(0, -back / 2, 0),
-    new THREE.PlaneGeometry(x0 + 450, back).translate((x0 - 450) / 2, 320 - back / 2, 0),
+    meadow,
+    new THREE.PlaneGeometry(x0 + 450 + WEST_BACKDROP_EXTENSION, back).translate((x0 - 450 - WEST_BACKDROP_EXTENSION) / 2, 320 - back / 2, 0),
     new THREE.PlaneGeometry(450 - x1, back).translate((x1 + 450) / 2, 320 - back / 2, 0),
   ], false)!;
+}
+
+/** Cut the part covered by the preview mesh. Its grass shoulders extend past the hole on every side. */
+function meadowWithRoadOpening(back: number) {
+  const top = 320 - back;
+  const west = -450 - WEST_BACKDROP_EXTENSION;
+  const shape = new THREE.Shape().moveTo(west, -320).lineTo(450, -320).lineTo(450, top).lineTo(west, top);
+  const hole = new THREE.Path();
+  const { cut, cutEnd } = EXIT_MEADOW;
+  for (const [i, [side, distance]] of [[-cut, 0], [cut, 0], [cut, cutEnd], [-cut, cutEnd]].entries()) {
+    const p = new THREE.Vector3(side, 0, -distance).applyMatrix4(exitToTown);
+    const x = p.x - OUTER_GRASS_ORIGIN.x, y = OUTER_GRASS_ORIGIN.z - p.z;
+    if (i === 0) hole.moveTo(x, y);
+    else hole.lineTo(x, y);
+  }
+  shape.holes.push(hole);
+  const geometry = new THREE.ShapeGeometry(shape);
+  const position = geometry.getAttribute("position"), uv = geometry.getAttribute("uv");
+  for (let i = 0; i < position.count; i++) uv.setXY(i, (position.getX(i) + 450) / 900, (position.getY(i) + 320) / (640 - back));
+  return geometry;
 }
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
