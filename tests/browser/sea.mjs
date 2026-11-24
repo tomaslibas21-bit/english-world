@@ -177,7 +177,7 @@ try {
   }
 
   async function patches(state, label) {
-    const points = await page.evaluate(() => {
+    const points = await page.evaluate((hullFrame) => {
       const { game } = window.__ew;
       const camera = game.sea.active ? game.sea.mode.view.camera : game.rig.cam;
       const boat = game.rides.riding.mesh, rider = game.player.root;
@@ -200,19 +200,30 @@ try {
         return water > 0 && water < 45 ? "water" : null;
       };
       const points = { hull: [], water: [] };
-      for (let dy = 18; dy >= -72; dy -= 5) for (let dx = -65; dx <= 65; dx += 5) {
-        if (points.hull.length === 12 && points.water.length === 12) break;
-        const cx = Math.round(x + dx), cy = Math.round(y + dy);
-        if (!clear(cx, cy)) continue;
-        const type = sample(cx, cy);
-        if (!type || points[type].length >= 12) continue;
-        if ([-2, 2].every(a => [-2, 2].every(b => sample(cx + a, cy + b) === type))) points[type].push([cx, cy]);
+      const scan = (left, top, right, bottom, types) => {
+        for (let cy = bottom; cy >= top; cy -= 5) for (let cx = left; cx <= right; cx += 5) {
+          if (types.every(type => points[type].length === 12)) return;
+          if (!clear(cx, cy)) continue;
+          const type = sample(cx, cy);
+          if (!types.includes(type) || points[type].length === 12) continue;
+          if ([-2, 2].every(a => [-2, 2].every(b => sample(cx + a, cy + b) === type))) points[type].push([cx, cy]);
+        }
+      };
+      scan(Math.round(x) - 65, Math.round(y) - 72, Math.round(x) + 65, Math.round(y) + 18, ["hull", "water"]);
+      const missing = ["hull", "water"].filter(type => !points[type].length);
+      if (hullFrame && missing.length) {
+        // The crossing camera can fill the fixed window with the hull. Include nearby water around its projected edges.
+        const margin = 12;
+        scan(Math.max(3, Math.floor(hullFrame.left * w) - margin), Math.max(3, Math.floor(hullFrame.top * h) - margin),
+          Math.min(w - 3, Math.ceil(hullFrame.right * w) + margin), Math.min(h - 3, Math.ceil(hullFrame.bottom * h) + margin), missing);
       }
       return points;
-    });
+    }, state.hullFrame ?? null);
     const image = await page.screenshot({ scale: "css" });
     try {
-      assert.ok(points.hull.length && points.water.length, `${label}: unobstructed hull and water patches`);
+      const age = state.returnAge ?? state.crossingAge;
+      assert.ok(points.hull.length && points.water.length,
+        `${label}: unobstructed hull and water patches (hull ${points.hull.length}, water ${points.water.length}, crossing age ${age ?? "n/a"})`);
       const colors = await pixels(image, [...points.hull, ...points.water]);
       const hull = colors.slice(0, points.hull.length), water = colors.slice(points.hull.length);
       assert.ok(hull.some(a => water.some(b => a.median.some((c, i) => Math.abs(c - b.median[i]) >= 20))),
