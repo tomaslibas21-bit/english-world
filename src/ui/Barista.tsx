@@ -5,6 +5,7 @@ import { matchesPick, trayRows } from "../game/barista/tray";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
 import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard } from "./kit/ScoreCard";
 import "./barista.css";
@@ -30,7 +31,7 @@ export function BaristaOffer() {
 }
 
 function OrderTray({ touch }: { touch: boolean }) {
-  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line } = useBarista();
+  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line, trayPhrases } = useBarista();
   const highlight = line?.key === "bs_c_sorry" ? null : target;
   if (!menu) return null;
 
@@ -70,10 +71,13 @@ function OrderTray({ touch }: { touch: boolean }) {
           </div>
         );
       })}
-      <div className="barista-give">
-        <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
-          {words.give}{!touch && <kbd>Enter</kbd>}
-        </button>
+      <div className="barista-tray-actions">
+        {trayPhrases && <PhraseChooser entries={trayPhrases} bilingual />}
+        <div className="barista-give">
+          <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
+            {words.give}{!touch && <kbd>Enter</kbd>}
+          </button>
+        </div>
       </div>
     </div>
   );

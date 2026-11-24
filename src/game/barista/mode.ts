@@ -11,7 +11,7 @@ import { ModeDialogue, type KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases, PhraseRun } from "../kit/phrases";
+import { keepPhrases, PhraseRun, type ResolvedPhrase } from "../kit/phrases";
 import { useStore } from "../../state/store";
 import { sitProgress } from "../../state/progress";
 import { countPlay } from "../../state/playStats";
@@ -219,13 +219,27 @@ class BaristaMode implements GameMode {
     const { shift } = run;
     const guided = shift.step === "order" && shift.help < 2;
     const fix = shift.correction;
+    const tray = guided || shift.step === "build" || shift.step === "correction";
+    let trayPhrases: readonly ResolvedPhrase[] | undefined;
+    if (tray) {
+      const previous = useBarista.getState();
+      const rows = trayRows(shift.built);
+      trayPhrases = previous.trayPhrases;
+      if (!trayPhrases || rows !== trayRows(previous.built)) {
+        // The numbered pages change the shortcuts, while every chip in these rows stays visible.
+        trayPhrases = rows.flatMap((row) => run.menu[row].map(({ en, lt }) => ({
+          sentence: { en, nat: lt, say: en, units: [] }, situationId: situation,
+        })));
+        run.review.lines(trayPhrases);
+      }
+    }
     ui({
       customer: shift.step === "intro" || shift.step === "closing" ? 0 : shift.index + 1,
       step: shift.step, built: { ...shift.built },
       highlight: fix?.chip ?? (guided && shift.help === 0 ? shift.currentPiece : null),
       repair: !!fix,
       correctionSelected: fix?.selected ?? null,
-      tray: guided || shift.step === "build" || shift.step === "correction",
+      tray, trayPhrases,
       ready: (guided && run.guidedReady) || (shift.step === "build" && !run.replaying),
     });
   }

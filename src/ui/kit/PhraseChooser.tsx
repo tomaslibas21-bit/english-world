@@ -5,7 +5,7 @@ import PhraseReview, { type PhraseReviewEntry } from "./PhraseReview";
 import "./phraseChooser.css";
 
 /** A shared chooser for options whose buttons need to keep their original size and behavior. */
-export function PhraseChooser({ entries }: { entries: readonly PhraseReviewEntry[] }) {
+export function PhraseChooser({ entries, bilingual = false }: { entries: readonly PhraseReviewEntry[]; bilingual?: boolean }) {
   const [open, setOpen] = useState(false);
   const label = PHRASE_CARD_UI.phrases;
   const key = (event: KeyboardEvent<HTMLElement>) => {
@@ -18,6 +18,6 @@ export function PhraseChooser({ entries }: { entries: readonly PhraseReviewEntry
   return entries.length > 0 && <details className="phrase-chooser" onToggle={(event) => setOpen(event.currentTarget.open)}
     onKeyDown={key} onKeyUp={(event) => { if (event.key === " ") event.stopPropagation(); }}>
     <summary className="btn soft" title={label} aria-label={label}><Icon name="bookOpen" size={19} /></summary>
-    {open && <div className="phrase-chooser-panel"><PhraseReview entries={entries} targetOnly /></div>}
+    {open && <div className="phrase-chooser-panel"><PhraseReview entries={entries} targetOnly={!bilingual} /></div>}
   </details>;
 }

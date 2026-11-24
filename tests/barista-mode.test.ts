@@ -12,6 +12,7 @@ import type { ModeHost } from "../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../src/game/kit/modes";
 import { coachVoice, npcVoice } from "../src/content/voices";
 import { NPCS } from "../src/content/npcs";
+import { cardKey, useCards } from "../src/state/cards";
 import { useStore } from "../src/state/store";
 
 const playback = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => true));
@@ -166,6 +167,7 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
         expect(ui().highlight?.id).toBe("medium");
         pick("size", "medium");
       }
+      if (i === 3) expect(ui().trayPhrases?.map(({ sentence }) => sentence.en)).not.toContain("No milk");
       const drink = room.getObjectsByProperty("name", "barista-serving").find((item) => item.position.equals(CUP_AT));
       expect(drink).toBeDefined();
       const [width, height, trayTop] = [[390, 664, 259], [390, 844, 439], [1280, 800, 497]][i % 3];
@@ -200,6 +202,11 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
 
     await until(() => ui().result?.served === 6);
     expect(ui().result).toMatchObject({ firstTime: 5, served: 6 });
+    expect(ui().result?.cards).toBe(32);
+    expect(ui().review?.filter(({ sentence }) => cardKey(sentence.en) === cardKey("For here"))).toEqual([
+      { sentence: { en: "For here", nat: "čia", say: "For here", units: [] }, situationId: "s72-cafe" },
+    ]);
+    expect(useCards.getState().keys.has(cardKey("For here"))).toBe(false);
     expect(playback).toHaveBeenCalledWith(npcVoice(NPCS.mia), 1, "Want to try my side of the counter?", expect.anything());
     expect(playback).toHaveBeenCalledWith(coachVoice("f"), 1, "Oh, sorry, that's not what I ordered.", expect.anything());
     expect(playback).toHaveBeenCalledWith(coachVoice("m"), 1, "I'd like a cappuccino, please.", expect.anything());

@@ -21,6 +21,7 @@ interface BaristaUi {
   correctionSelected: boolean | null;
   menu: Record<Row, { id: string; en: string; lt: string }[]> | null;
   tray: boolean;
+  trayPhrases?: readonly ResolvedPhrase[];
   ready: boolean;
   row: Row;
   page: number;
@@ -32,7 +33,8 @@ interface BaristaUi {
 const empty: BaristaUi = {
   offered: false, line: null, hiddenOrder: [], revealed: false, choices: [],
   mic: { status: "off", heard: "" }, micOn: true, customer: 0, step: "intro", built: { extras: [] },
-  highlight: null, repair: false, correctionSelected: null, menu: null, tray: false, ready: false, row: "drink", page: 0, price: null, result: null, review: undefined,
+  highlight: null, repair: false, correctionSelected: null, menu: null, tray: false, trayPhrases: undefined,
+  ready: false, row: "drink", page: 0, price: null, result: null, review: undefined,
 };
 
 export const useBarista = create<BaristaUi>(() => empty);
