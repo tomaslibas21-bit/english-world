@@ -1,7 +1,7 @@
 // Puerto Colibrí's conversations have their places (docs/es/TOWN.md "Every conversation's spot"): the checks that need
 // no browser. The rooms themselves are drawn on a canvas, so the tour (tools/es-tour.mjs) walks to every spot in Chromium.
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
-import { InstancedMesh, Mesh } from "three";
+import { InstancedMesh, Material, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
@@ -27,7 +27,7 @@ it("keeps the model footprints clear of the generated town props", () => {
   }, { get: (target, key) => Reflect.get(target, key) ?? noop });
   vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
   try {
-    const { colliders, parkedCars, group, groundCanvas } = buildTown();
+    const { colliders, parkedCars, group, groundCanvas, sea } = buildTown();
     const boxes = colliders.boxes.filter((box) => !(box.tag === "car" && box.split));
     for (const spot of parkedCars.placements) {
       const { minX, maxX, minZ, maxZ } = carFootprint(spot);
@@ -48,6 +48,10 @@ it("keeps the model footprints clear of the generated town props", () => {
       const { index, attributes } = mesh.geometry;
       return (index?.count ?? attributes.position.count) / 3 * (mesh instanceof InstancedMesh ? mesh.count : 1);
     };
+    expect(sea).toBeInstanceOf(Mesh);
+    expect(sea.children).toHaveLength(0);
+    expect(sea.material).toBeInstanceOf(Material);
+    expect(triangles(sea)).toBe(5760);
     for (const [name, count] of Object.entries({
       ground: 2792,
       "markings-center": 444,
