@@ -2124,7 +2124,7 @@ function addTownMx(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   }
   // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
-  if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign, !!THEME.cenote.open);
+  if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote);
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);

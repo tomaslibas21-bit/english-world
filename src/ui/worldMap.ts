@@ -83,7 +83,7 @@ function drawGrounds(ctx: CanvasRenderingContext2D) {
 }
 
 /** Paint in world coordinates so the two town maps share the same ground and cenote landmarks. */
-export function drawTownMap(canvas: HTMLCanvasElement, ground: HTMLCanvasElement, view: MapBounds) {
+export function drawTownMap(canvas: HTMLCanvasElement, ground: HTMLCanvasElement, view: MapBounds, minimap = false) {
   const ctx = canvas.getContext("2d")!;
   ctx.save();
   ctx.scale(canvas.width / (view.maxX - view.minX), canvas.height / (view.maxZ - view.minZ));
@@ -101,6 +101,16 @@ export function drawTownMap(canvas: HTMLCanvasElement, ground: HTMLCanvasElement
   const groundsVisible = !!meadow && view.minX < meadow.maxX && view.maxX > meadow.minX && view.minZ < meadow.maxZ && view.maxZ > meadow.minZ;
   if (groundsVisible) drawGrounds(ctx);
   ctx.restore();
+  const guide = minimap && cenote?.guide;
+  if (guide) {
+    const [u, v] = mapPoint(view, guide.x, guide.z);
+    if (Math.hypot(u - 0.5, v - 0.5) <= 0.5) {
+      const scale = canvas.width / (canvas.clientWidth || canvas.width);
+      ctx.fillStyle = "#137d79"; ctx.strokeStyle = "#fff4dc"; ctx.lineWidth = scale;
+      ctx.beginPath(); ctx.arc(u * canvas.width, v * canvas.height, 3 * scale, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+      canvas.dataset.cenoteTour = `${u},${v}`;
+    }
+  }
   return groundsVisible;
 }
 

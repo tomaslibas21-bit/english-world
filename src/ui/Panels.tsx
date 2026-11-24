@@ -8,7 +8,7 @@ import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 // The route is the town's tasks. Off-route conversations appear in the journal once completed.
 import { SITUATION_BY_ID, SITUATIONS as CATALOG } from "../content/situations/catalog";
-import { ROUTE as SITUATIONS } from "../content/route";
+import { CENOTE_TOUR, LIGHT_ROUTE, pickerSituations, ROUTE as SITUATIONS } from "../content/route";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
@@ -221,16 +221,16 @@ function Scenarios({ close }: { close: () => void }) {
   const light = useStore((s) => s.settings.play === "light");
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
-      if (light && isTownQuest(s.id)) continue;
+    for (const s of pickerSituations(light)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, [light]);
-  const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const route = light ? LIGHT_ROUTE : SITUATIONS;
+  const done = route.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   return (
     <div className="sheet scenarios">
-      <SheetHead icon="clapper" title={L("Pasirink situaciją · {done}/{total}", { done, total: SITUATIONS.length })} close={close} />
+      <SheetHead icon="clapper" title={L("Pasirink situaciją · {done}/{total}", { done, total: route.length })} close={close} />
       <div className="sheet-body">
         <p className="scn-lead">{L("Paspausk situaciją – iškart atsidursi vietoje ir kalbėsi su žmogumi. Po pokalbio galėsi pakartoti arba rinktis kitą.")}</p>
         <HowToPlay />
@@ -324,7 +324,7 @@ function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
-  const s = SITUATIONS.find((x) => x.location === loc);
+  const s = loc === CENOTE_TOUR?.location ? CENOTE_TOUR : SITUATIONS.find((x) => x.location === loc);
   const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
   return o ? { x: o.x, z: o.z } : null;
 }
@@ -347,7 +347,11 @@ function MapPanel({ close }: { close: () => void }) {
     return { left: `${u * 100}%`, top: `${v * 100}%` };
   };
   const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
-  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
+  const mapSits = (loc: string) => {
+    if (loc === CAVE_ZONE) return aluxSits;
+    if (loc === CENOTE_TOUR?.location) return [CENOTE_TOUR];
+    return (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
+  };
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
   const selSits = sel ? mapSits(sel) : [];
   return (
@@ -363,11 +367,12 @@ function MapPanel({ close }: { close: () => void }) {
               const p = locationPoint(l.id);
               if (!p) return null;
               const sits = mapSits(l.id);
+              const tour = l.id === CENOTE_TOUR?.location ? CENOTE_TOUR : undefined;
               const allDone = sits.some((s) => !isTownQuest(s.id))
                 && sits.every((s) => isTownQuest(s.id) || sitProgress(progress, s.id).completions > 0);
               return (
-                <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
-                  <Icon name={locIcon(l.id)} size={18} />
+                <button key={l.id} data-location={l.id} className={"map-pin" + (tour ? " taquilla" : "") + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
+                  {tour ? <SitIcon id={tour.id} size={18} /> : <Icon name={locIcon(l.id)} size={18} />}
                   {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label={L("įveikta")} /></span>}
                 </button>
               );

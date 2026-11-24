@@ -541,6 +541,7 @@ function Minimap({ w, h }: Screen) {
   useEffect(() => {
     const c = ref.current;
     const g = game?.groundCanvas;
+    if (c) delete c.dataset.cenoteTour;
     if (!c || inside || (!cave && !g)) return;
     const x = c.getContext("2d")!;
     const S = 220, view = 90;
@@ -548,7 +549,7 @@ function Minimap({ w, h }: Screen) {
     const bounds = cave ? caveBounds : mapWindow(mm.px, mm.pz, view);
     const [px, pz] = mapPoint(bounds, mm.px, mm.pz);
     if (cave) drawCaveMap(c, mm.gates ?? 0);
-    const grounds = !cave && drawTownMap(c, g!, bounds);
+    const grounds = !cave && drawTownMap(c, g!, bounds, true);
     c.dataset.map = cave ? "gruta" : grounds ? "cenote" : "town";
     c.dataset.player = `${px},${pz}`;
     c.dataset.gates = cave ? String(mm.gates ?? 0) : "";
