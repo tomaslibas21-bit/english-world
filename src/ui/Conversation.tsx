@@ -19,8 +19,7 @@ import { sitProgress, stars } from "../state/progress";
 import { toImperative } from "./lt";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import { isPhone, objectiveLabels, sitIcon, walkToSituation } from "./objective";
-import { showToast } from "./Toasts";
-import { Confetti } from "./Confetti";
+import { showToast, Toasts } from "./Toasts";
 import { answerFrames, hintVars, modelAnswers, ownNameNote, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
@@ -119,7 +118,7 @@ export function Conversation() {
       if (e.defaultPrevented) return;
       const st = useStore.getState();
       if (!st.conv.active) return; // walking around: the world has its own keys (Game.onKeyDown)
-      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, .mic-status .heard, [contenteditable='true']"))) return;
+      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, .convo-tools .toasts, .mic-status .heard, [contenteditable='true']"))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (k === "escape") { game?.closeConversation(); return; }
       if (k === "h") { e.preventDefault(); st.setConv({ openHint: st.conv.openHint ? null : (st.conv.hints[0] ?? "g_clarify") }); return; }
@@ -182,6 +181,7 @@ export function Conversation() {
       <AudioRecovery />
       {!townPhone && (sit.mode === "video" || sit.mode === "phone") && <CallStrip key={conv.run} sit={sit} />}
       <Mission />
+      <Toasts placement="conversation" />
       </div>
 
       <div className="transcript" ref={scrollRef} aria-live="polite">
@@ -297,7 +297,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
       </div>}
-      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
+      {modeOffer && <button className={`btn ${modeOffer.id}-cta ended-offer`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
@@ -478,26 +478,13 @@ function ReplayButtons({ replay }: { replay: (slow: boolean) => void }) {
 function Mission() {
   const conv = useStore((s) => s.conv);
   const [open, setOpen] = useState(false);
-  // the moment the task is done: confetti from the bar (the chime is Session.onCompleted's)
-  const bar = useRef<HTMLButtonElement>(null);
-  const was = useRef(conv.completed);
-  const [burst, setBurst] = useState(0);
-  useEffect(() => {
-    if (conv.completed && !was.current) setBurst(Date.now());
-    was.current = conv.completed;
-  }, [conv.completed]);
-  useEffect(() => {
-    if (!burst) return;
-    const t = setTimeout(() => setBurst(0), 2600);
-    return () => clearTimeout(t);
-  }, [burst]);
   const items = conv.checklist;
   if (!items.length) return null;
   const done = items.filter((i) => i.done).length;
   const cur = items.find((i) => i.current) ?? items.find((i) => !i.done);
   return (
     <div className={"mission" + (conv.completed ? " complete" : "")}>
-      <button ref={bar} className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="mission-count">{done}/{items.length}</span>
         <span className="mission-dots" aria-hidden>{items.map((i) => <i key={i.id} className={i.done ? "d" : i.current ? "c" : ""} />)}</span>
         <span className="mission-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> Užduotis įvykdyta!</> : cur ? toImperative(cur.lt) : ""}</span>
@@ -508,7 +495,6 @@ function Mission() {
           {items.map((i) => <li key={i.id} className={i.done ? "d" : i.current ? "c" : ""}><span className="mk"><Icon name={i.done ? "check" : i.current ? "arrowRight" : "ring"} size={16} strokeWidth={i.done ? 2.25 : 2} /></span>{toImperative(i.lt)}</li>)}
         </ol>
       )}
-      {burst > 0 && <Confetti key={burst} from={bar} />}
     </div>
   );
 }
