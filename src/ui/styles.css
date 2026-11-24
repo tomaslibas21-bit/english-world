@@ -154,29 +154,27 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   border-radius: inherit; color: var(--accent); white-space: nowrap; text-align: left;
 }
 .objective-card .objective-summary {
-  position: relative; inset: auto; display: flex; align-items: center; gap: 6px;
+  position: relative; inset: auto; display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  grid-template-areas: "icon title toggle" ". details toggle";
+  align-content: center; gap: 0 6px;
   inline-size: 100%; min-inline-size: 0; height: 100%; min-height: 44px; margin: 0; padding: 0 8px;
-  border: 1px solid; border-color: inherit; border-radius: inherit; color: var(--accent); text-align: left;
+  border: 1px solid; border-color: inherit; border-radius: inherit; color: var(--accent); text-align: start;
 }
 .objective-card .objective-summary::before { content: none; }
-.objective-summary :is(.objective-title, .objective-destination) { min-inline-size: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.objective-summary > svg { flex: none; }
-.objective-summary .objective-title { flex: 1 1 auto; font-size: calc(15px * var(--scale)); line-height: 1.1; font-weight: 900; color: var(--ink); }
-.objective-summary .objective-meta { max-inline-size: 46%; font-size: calc(13px * var(--scale)); line-height: 1.1; }
-.objective-summary .dist { gap: 3px; font-size: inherit; }
-.objective-summary .arrow { width: 14px; height: 14px; flex: none; }
-.objective-summary .objective-ico { padding: 2px; border-radius: 6px; }
-@media (max-width: 600px) and (orientation: portrait) {
-  .objective-card .objective-summary {
-    display: grid; grid-template-columns: 18px minmax(0, 1fr) 16px;
-    grid-template-areas: "icon title toggle" ". details toggle";
-    align-content: center; gap: 0 6px;
-  }
-  .objective-summary > svg:first-child { grid-area: icon; align-self: start; }
-  .objective-summary > svg:last-child { grid-area: toggle; }
-  .objective-summary .objective-title { grid-area: title; }
-  .objective-summary .objective-meta { grid-area: details; max-inline-size: none; }
+.objective-card .objective-summary > svg:first-child { grid-area: icon; align-self: start; }
+.objective-card .objective-summary > svg:last-child { grid-area: toggle; }
+.objective-card .objective-summary :is(.objective-title, .objective-meta) {
+  justify-self: stretch; min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; text-align: start;
 }
+.objective-card .objective-summary :is(.objective-title, .objective-destination) {
+  min-inline-size: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.objective-card .objective-summary .objective-title { grid-area: title; font-size: calc(15px * var(--scale)); line-height: 1.1; font-weight: 900; color: var(--ink); }
+.objective-card .objective-summary .objective-meta { grid-area: details; font-size: calc(13px * var(--scale)); line-height: 1.1; }
+.objective-card .objective-summary .dist { gap: 3px; font-size: inherit; }
+.objective-card .objective-summary .arrow { width: 14px; height: 14px; flex: none; }
+.objective-card .objective-summary .objective-ico { padding: 2px; border-radius: 6px; }
 
 /* The little map: round outdoors; indoors it folds into a small card with the place's name (Hud.tsx Minimap). The
    frame glides between the two: indoors its size is the card's, set on the element. */
