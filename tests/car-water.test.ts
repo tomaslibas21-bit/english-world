@@ -1370,7 +1370,15 @@ it("stops the occupied stock convertible at the real pier rail under 52 frames o
 it("opens only a boarded real fleet car, unhides its driver at an exterior step and repairs its box and ledges on handback", async () => {
   const { town, window, player, ambient, rides, simulate, noOp, adapter, jumpClock } = occupiedTownFixture({ ...RIDES, cars: [] });
   const parked = town.parkedCars.fleet.cars.map((entry, index) => rides.createModeCar({ ...entry.spot, id: `fleet-${index}` }, entry.root, noOp));
+  expect(rides).not.toHaveProperty("waterFleet");
+  expect(window).not.toHaveProperty("__carWater");
   const car = parked.find((r) => rides.roofed(r))!;
+  const parkedObstacle = parked.find((r) => r !== car)!;
+  const [clearedWhileLoading, blockedAtStartup, blockedWhileLoading] = RIDES.carWater.landings;
+  const register = (id: string, at: Ride["home"]) =>
+    rides.createModeCar({ ...town.parkedCars.fleet.cars[0].spot, ...at, id }, new Group());
+  rides.resetPosition(parkedObstacle, blockedAtStartup);
+  const removed = register("removed-before-load", clearedWhileLoading);
   let leaves = 0;
   rides.onLeft = (x, y, z, rot) => {
     leaves++;
@@ -1384,21 +1392,48 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(rides.water).toBeUndefined();
   simulate(40);
   expect(player.root.visible).toBe(false);
+  let eligible = true;
+  rides.prefetchWater(car, { ...adapter, eligible: (ride) => eligible && adapter.eligible(ride) });
+  eligible = false;
+  await vi.dynamicImportSettled();
+  expect(rides).not.toHaveProperty("waterFleet");
+  expect(rides.water).toBeUndefined();
+  const staleEligible = vi.fn(adapter.eligible);
+  rides.prefetchWater(car, { ...adapter, eligible: staleEligible });
   rides.prefetchWater(car, adapter);
-  await vi.waitFor(() => expect(rides.water?.open(car)).toBe(true));
+  const added = register("added-during-load", blockedWhileLoading);
+  rides.removeModeCar(removed);
+  expect(rides).not.toHaveProperty("waterFleet");
+  await vi.waitFor(() => expect(rides.water).toBeDefined());
+  expect(staleEligible).not.toHaveBeenCalled();
+  const fleet = rides["waterFleet"]!;
+  expect(fleet).toHaveLength(parked.length + 1);
+  parked.forEach((ride, i) => expect(fleet[i]).toBe(ride));
+  expect(fleet.at(-1)).toBe(added);
+  const firstSpares = rides.water!.inspect().spares;
+  const atSite = ({ x, z }: Ride["home"]) => expect.objectContaining({ x, z });
+  expect(firstSpares).toContainEqual(atSite(clearedWhileLoading));
+  expect(firstSpares).not.toContainEqual(atSite(blockedAtStartup));
+  expect(firstSpares).not.toContainEqual(atSite(blockedWhileLoading));
+  rides.removeModeCar(added);
+  rides.resetPosition(parkedObstacle, parkedObstacle.home);
+  expect(rides.water!.open(car)).toBe(true);
   expect(rides.water!.ground.has(shore.x, BAY.z0)).toBe(true);
   for (let i = 0; i < 600 && !rides.water!.wet; i++) simulate(1, 1);
   expect(car.m.z).toBeLessThan(SHORE.top + CAR.wide + 0.5);
   expect(car.m.pace).toBeGreaterThan(1.2);
   const [primary, alternate] = rides.water!.inspect().spares;
-  const temporary = rides.createModeCar({ ...town.parkedCars.fleet.cars[0].spot, id: "temporary", x: primary.x, z: primary.z, rot: primary.heading }, new Group());
+  const temporary = register("temporary", { x: primary.x, z: primary.z, rot: primary.heading });
+  expect(rides["waterFleet"]).toBe(fleet);
+  expect(fleet.at(-1)).toBe(temporary);
   const [replacement] = rides.water!.inspect().spares;
   expect(replacement).not.toEqual(primary);
   expect(rides.water!.inspect().spares).toContainEqual(alternate);
   expect(rides.townCar(temporary)).toBe(false);
-  rides.removeModeCar(temporary);
   town.colliders.addBox(replacement.x, replacement.z, 2, 2);
-  simulate(1);
+  rides.removeModeCar(temporary);
+  expect(rides["waterFleet"]).toBe(fleet);
+  expect(fleet).toHaveLength(parked.length);
   expect(rides.water!.inspect().spares).toContainEqual(primary);
   expect(rides.leave()).toBe(true);
   expect(rides.riding).toBeNull();
@@ -1424,6 +1459,7 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(player.root.visible).toBe(true);
   expect(rides.near(player.root.position.x, player.root.position.z)).toBe(car);
   rides.disposeWater();
+  expect(rides["waterFleet"]).toBeUndefined();
   expect(window).not.toHaveProperty("__carWater");
 });
 

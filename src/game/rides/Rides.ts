@@ -170,7 +170,8 @@ export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
-  private readonly modeRides: Ride[] = [];
+  // Clearance keeps this array by reference after the first eligible boarding.
+  declare private waterFleet?: Ride[];
   private readonly convertibleTops = new WeakMap<Ride, { x: number; z: number; heading: number; pieces: Piece[] }>();
   private readonly surfaceCars = new WeakMap<Piece, Ride>();
   private readonly parkingKeys: THREE.InstancedMesh;
@@ -297,11 +298,13 @@ export class Rides {
     snap(): void;
     peopleClear: ConstructorParameters<typeof import("./carWaterRecovery").CarWaterClearance>[0]["peopleClear"];
   }) {
+    if (this.waterDisposed) return;
     const request = ++this.waterRequest;
     if (this.water) { this.water.begin(r); return; }
     const pending = carWaterModule ??= import("./carWaterRecovery");
     void pending.then(({ CarWaterRecovery, CarWaterClearance, carWaterSurface }) => {
       if (request !== this.waterRequest || this.waterDisposed || this.riding !== r || !adapter.eligible(r)) return;
+      const parked = this.waterFleet ??= [...this.modeCars.keys()];
       this.water = new CarWaterRecovery(this.plan.carWater, {
         ...adapter,
         eligible: (ride) => (!this.riding || this.riding === ride) && adapter.eligible(ride),
@@ -309,7 +312,7 @@ export class Rides {
         effectRoot: this.group,
         clearance: new CarWaterClearance({
           colliders: this.host.colliders, dry: this.drivable, ambient: this.host.ambient, rides: this.list,
-          parked: this.modeRides, fixedHulls: this.sea.circles,
+          parked, fixedHulls: this.sea.circles,
           peopleClear: adapter.peopleClear,
         }),
         reserve: (boxes) => { this.host.ambient.waterReservations = boxes; },
@@ -337,6 +340,8 @@ export class Rides {
     this.waterDisposed = true;
     this.waterRequest++;
     this.water?.dispose();
+    this.water = undefined;
+    this.waterFleet = undefined;
     if (import.meta.env.DEV && (window as Window & { __carWater?: unknown }).__carWater === this.waterDebug) {
       delete (window as Window & { __carWater?: unknown }).__carWater;
     }
@@ -364,7 +369,7 @@ export class Rides {
     const box = { ...this.carBox(car), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
     if (parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, car);
     this.modeCars.set(car, box);
-    this.modeRides.push(car);
+    this.waterFleet?.push(car);
     this.host.ambient.rideBoxes.push(box);
     this.place(car, 0, 0);
     this.water?.fleetChanged();
@@ -378,7 +383,11 @@ export class Rides {
     else this.water?.cancelEffects(car);
     this.crashEffects.heal(car);
     this.modeCars.delete(car);
-    this.modeRides.splice(this.modeRides.indexOf(car), 1);
+    const fleet = this.waterFleet;
+    if (fleet) {
+      const index = fleet.indexOf(car);
+      if (index >= 0) fleet.splice(index, 1);
+    }
     const traffic = this.host.ambient.rideBoxes;
     const index = traffic.indexOf(box);
     if (index >= 0) traffic.splice(index, 1);
