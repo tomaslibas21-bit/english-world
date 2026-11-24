@@ -39,10 +39,11 @@
   .road-result .road-lift-line { padding: 5px 8px; }
   .road-result .road-lift-line .il { justify-content: center; font-size: 1.1em; gap: 3px 7px; }
 }
+/* Keep horn next to drift when the phone rotates. */
+.road-mode .jump-btn.brake-btn { right: calc(18px + env(safe-area-inset-right)); bottom: calc(21px + env(safe-area-inset-bottom)); }
+.road-mode .drive-horn { right: calc(103px + env(safe-area-inset-right)); bottom: calc(31px + env(safe-area-inset-bottom)); width: 52px; height: 52px; background: #314450; }
 @media (max-width: 520px) {
   .road-mode .joy { width: 112px; height: 112px; }
-  .road-mode .jump-btn.brake-btn { right: calc(18px + env(safe-area-inset-right)); bottom: calc(21px + env(safe-area-inset-bottom)); }
-  .road-mode .drive-horn { right: calc(103px + env(safe-area-inset-right)); bottom: calc(31px + env(safe-area-inset-bottom)); width: 52px; height: 52px; background: #314450; }
   .road-lift { bottom: calc(12px + env(safe-area-inset-bottom)); }
 }
 
