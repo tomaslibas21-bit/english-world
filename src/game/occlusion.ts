@@ -63,25 +63,15 @@ export class OcclusionField {
     root.updateMatrixWorld(true);
     const v = new THREE.Vector3();
     const m = new THREE.Matrix4();
-    const blocker = new THREE.BoxGeometry();
-    const bounds = new THREE.Box3(), size = new THREE.Vector3(), center = new THREE.Vector3();
     const walk = (o: THREE.Object3D) => {
       if (opts.skip?.(o)) return;
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh && !(o as THREE.InstancedMesh).isInstancedMesh && !(o as THREE.SkinnedMesh).isSkinnedMesh && solidMaterial(mesh.material)) {
-        const clearance = o.userData.cameraClearance as number | undefined;
-        if (clearance) {
-          // A wide roof can cover the lens from the side even when the centre ray just clears its edge.
-          bounds.setFromObject(mesh).getSize(size);
-          bounds.getCenter(center);
-          m.makeScale(size.x + 2 * clearance, size.y, size.z + 2 * clearance).setPosition(center);
-          f.addGeometry(blocker, m, v);
-        } else f.addGeometry(mesh.geometry, m.copy(mesh.matrixWorld), v);
+        f.addGeometry(mesh.geometry, m.copy(mesh.matrixWorld), v);
       }
       for (const c of o.children) walk(c);
     };
     walk(root);
-    blocker.dispose();
     f.dropSmall(opts.minCells ?? 6);
     return f;
   }

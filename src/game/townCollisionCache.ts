@@ -11,7 +11,7 @@ export const TOWN_COLLISION_HASH_OFFSET = 8;
 export const TOWN_COLLISION_HEADER = TOWN_COLLISION_HASH_OFFSET + 32;
 const bounds = TOWN_FIELD_BOUNDS;
 export const TOWN_COLLISION_FORMAT = {
-  version: 1, edition: "mh", style: "blocks",
+  version: 2, edition: "mh", style: "blocks",
   minX: bounds.minX, maxX: bounds.maxX, minZ: bounds.minZ, maxZ: bounds.maxZ, cell: OCCLUSION_CELL,
   nx: Math.ceil((bounds.maxX - bounds.minX) / OCCLUSION_CELL),
   nz: Math.ceil((bounds.maxZ - bounds.minZ) / OCCLUSION_CELL),

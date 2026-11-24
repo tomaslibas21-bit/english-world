@@ -25,7 +25,7 @@ export function buildTownField(town: Town) {
 export function buildTownLedges(town: Town, field: OcclusionField, slice?: (next: () => void) => void) {
   return Ledges.build(town.group, town.colliders, {
     skip: (o) => skipsLedges(town, o),
-    thin: (o) => !!(o.userData.thin || o.userData.roofOnly),
+    thin: (o) => !!o.userData.thin,
     keep: town.seats.filter((s) => s.table).map((s) => [s.x, s.z]),
     tall: (x, z) => field.overSolid(x, z),
     beside: OUTDOOR_NPCS.flatMap((n): [number, number][] =>

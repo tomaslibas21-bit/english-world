@@ -68,7 +68,8 @@ describe("Maple Harbor collision asset", () => {
     expect([restored.field.nx, restored.field.nz]).toEqual([684, 496]);
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("a9d7ba32718046d5fdfc9d3f892e2037fac2ed9f2d9fabddea8779a7875cded3");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("3a41842feb4299e2f364f4bffdedb6ab4630544cf9c87821e8c8bb187ff7f623");
+    expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
     expect(ledges.pieces.slice(boats.length)).toStrictEqual(baked.ledges.pieces);
     expect(restored.ledges.pieces).toStrictEqual(ledges.pieces);
     expect(restored.ledges.things).toStrictEqual(ledges.things);
@@ -130,7 +131,7 @@ describe("Maple Harbor collision asset", () => {
       bytes.write(to, offset);
       return bytes.buffer;
     };
-    const invalid = [raw.slice(0, -1), replace('"version":1', '"version":2'), replace('"nx":684', '"nx":683'),
+    const invalid = [raw.slice(0, -1), replace('"version":2', '"version":1'), replace('"nx":684', '"nx":683'),
       replace('"style":"blocks"', '"style":"styled"'), replace('"edition":"mh"', '"edition":"pc"')];
     for (const bytes of invalid) {
       expect(restoreTownCollision(town, bytes)).toBeUndefined();

@@ -276,15 +276,11 @@ export function buildTown(): Town {
   }
   // (the pier's own meshes stay as they are: under water the town is put away but for them, Game.ts)
   M.build(group, { name: "town-solid", cell: 100, keep: /^(pier|gas-canopy)/ });
-  // The roof still guides the camera, but the whole canopy fades if its edge comes into the foreground.
+  // Keep the roof, trim and sign together. The follow camera looks through their overlapping pixels via cutout.ts.
   const gasCanopy = new THREE.Group();
   gasCanopy.name = "gas-canopy-assembly";
-  gasCanopy.userData.fadeNearCamera = true;
+  gasCanopy.userData.thin = true;
   for (const o of group.children.filter((o) => /^gas-canopy(?:-trim|-sign)?(?:~\d+)?$/.test(o.name))) {
-    if (!o.userData.thin) {
-      o.userData.roofOnly = true;
-      o.userData.cameraClearance = 0.6;
-    }
     gasCanopy.add(o);
   }
   group.add(gasCanopy);
@@ -1867,12 +1863,11 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, photo: AddP
     col.addBox(px, z, 1.1, 0.8);
   }
   // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
-  // the street). The camera can look through the sign itself.
+  // the street).
   const gasName = BUILDINGS.find((b) => b.id === "gas")?.sign;
   if (gasName) {
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
     gs.name = "gas-canopy-sign";
-    gs.userData.thin = true;
     gs.position.set(x, 5.0, z - depth / 2 - 0.06); gs.rotation.y = Math.PI;
     group.add(gs);
   }
