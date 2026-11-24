@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { chipLabel } from "./chip-label";
 import { SceneIntro, sceneText } from "./SceneIntro";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
@@ -15,6 +15,7 @@ import type { EntityDef, HintGroup, SituationDef, SituationMeta } from "../conte
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
 import { speechSupported } from "../convo/speech";
+import { displayUtterance } from "../convo/normalize";
 import { sitProgress, stars } from "../state/progress";
 import { toImperative } from "./lt";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
@@ -61,41 +62,117 @@ export function Conversation() {
   const setConv = useStore((s) => s.setConv);
   const sit = getSituation(conv.sitId);
   const npc = NPCS[conv.npcId];
+  const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [typed, setTyped] = useState("");
+  const [matchEcho, setMatchEcho] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const missRef = useRef<HTMLDivElement>(null);
+  const focusTyping = useRef(false);
+  const recoveryRef = useRef<HTMLDivElement>(null);
+  const lastAnswer = conv.transcript.findLast((line) => line.who === "you");
+  const pendingChoices = conv.speechChoices?.length ? conv.speechChoices : undefined;
+  const confirmationQuestion = pendingChoices && (pendingChoices.length > 1
+    ? L("Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?")
+    : L("Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."));
+  const heardAnswer = lastAnswer?.answerDisplay && lastAnswer.text !== displayUtterance(conv.lastHeard)
+    ? lastAnswer.text ?? conv.lastHeard : conv.lastHeard;
+  const showRetry = conv.active && !pendingChoices && conv.phase === "you" && !!heardAnswer
+    && (lastAnswer?.answerDisplay === "retry" || (lastAnswer?.answerDisplay === undefined && conv.failures > 0));
+  const retryKey = showRetry ? lastAnswer?.id ?? heardAnswer : null;
+  const revealed = useRef<{ run: number; retry: typeof retryKey; choices?: string[] }>({ run: conv.run, retry: null });
+  const supported = speechSupported();
+  const practiceActive = conv.practice?.status === "playing" || conv.practice?.status === "listening";
+  const capturing = supported && conv.phase === "you" && !conv.typing && !pendingChoices && !practiceActive
+    && (conv.mic.status === "starting" || conv.mic.status === "listening" || conv.mic.status === "reconnecting");
+
+  // Observe the answer as it lands, even when its NPC reply arrives in the same React render.
+  useLayoutEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clearMatch = () => {
+      if (timer === undefined) return;
+      clearTimeout(timer);
+      timer = undefined;
+      setMatchEcho(null);
+    };
+    const unsubscribe = useStore.subscribe(({ conv: current }, { conv: previous }) => {
+      if (current === previous) return;
+      if (!current.active || current.run !== previous.run || current.phase === "ended"
+        || (current.phase === "thinking" && previous.phase !== "thinking")
+        || (current.typing && !previous.typing) || current.practice || current.speechChoices?.length
+        || (current.mic.status !== "off" && current.mic.status !== "unsupported")) {
+        clearMatch();
+        return;
+      }
+      if (current.transcript === previous.transcript) return;
+      const answer = current.transcript.findLast((line) => line.who === "you");
+      if (!answer || answer.id === previous.transcript.findLast((line) => line.who === "you")?.id) return;
+      clearMatch();
+      if (answer.answerDisplay !== "matched") return;
+      setMatchEcho(`${current.run}:${answer.id}`);
+      timer = setTimeout(clearMatch, 800);
+    });
+    return () => { unsubscribe(); clearTimeout(timer); };
+  }, []);
 
   const lastLineId = conv.transcript.at(-1)?.id;
   useEffect(() => {
     const transcript = scrollRef.current;
     transcript?.scrollTo({ top: transcript.scrollHeight });
   }, [lastLineId, conv.run, conv.phase]);
-  useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
+  useLayoutEffect(() => {
+    if (focusTyping.current && conv.typing) inputRef.current?.focus({ preventScroll: true });
+    focusTyping.current = false;
+  }, [conv.typing]);
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    const viewport = window.visualViewport;
+    if (!conv.typing || !panel || !viewport) return;
+    const fitKeyboard = () => {
+      const inset = viewport.scale === 1 ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
+      panel.toggleAttribute("data-keyboard", inset > 0);
+      panel.style.setProperty("--convo-keyboard-inset", `${inset}px`);
+    };
+    fitKeyboard();
+    viewport.addEventListener("resize", fitKeyboard);
+    viewport.addEventListener("scroll", fitKeyboard);
+    return () => {
+      viewport.removeEventListener("resize", fitKeyboard);
+      viewport.removeEventListener("scroll", fitKeyboard);
+      panel.removeAttribute("data-keyboard");
+      panel.style.removeProperty("--convo-keyboard-inset");
+    };
+  }, [conv.active, conv.typing]);
   // half-typed text doesn't carry over into the next conversation
   useEffect(() => { setTyped(""); }, [conv.sitId, conv.active]);
-  // "Did you mean…?" appeared: scroll it into view (phones show only a little of "your turn")
-  useEffect(() => {
-    const box = missRef.current;
-    const sc = box?.closest(".yt-scroll") as HTMLElement | null;
-    if (!conv.guess || !box || !sc) return;
-    const b = box.getBoundingClientRect(), v = sc.getBoundingClientRect();
-    if (b.bottom > v.bottom) sc.scrollTop += Math.min(b.top - v.top - 6, b.bottom - v.bottom);
-  }, [conv.guess, conv.phase]);
+  useLayoutEffect(() => {
+    if (revealed.current.run !== conv.run) revealed.current = { run: conv.run, retry: null };
+    if (pendingChoices ? pendingChoices === revealed.current.choices : retryKey === null || retryKey === revealed.current.retry) return;
+    const card = recoveryRef.current;
+    const scroll = card?.closest<HTMLElement>(".yt-scroll");
+    if (!card || !scroll) return;
+    if (pendingChoices) revealed.current.choices = pendingChoices;
+    else revealed.current.retry = retryKey;
+    const box = card.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
+    const top = box.top - viewport.top, bottom = box.bottom - viewport.bottom;
+    if (top < 4 || box.height + 8 > scroll.clientHeight) scroll.scrollTop += top - 4;
+    else if (bottom > -4) scroll.scrollTop += bottom + 4;
+  }, [conv.run, pendingChoices, retryKey]);
 
   // keyboard shortcuts while talking
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) {
-        if (e.key === "Escape") { (t as HTMLInputElement).blur(); }
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) {
+        if (e.key === "Escape") t.blur();
         return;
       }
       const k = e.key.toLowerCase();
       if (e.defaultPrevented) return;
       const st = useStore.getState();
       if (!st.conv.active) return; // walking around: the world has its own keys (Game.onKeyDown)
-      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, [contenteditable='true']"))) return;
+      if (st.hud.panel || t.closest("select, [contenteditable]:not([contenteditable='false'])")
+        || ((k === " " || k === "enter") && t.closest("button, a, summary, .live-quote, .yt-scroll[tabindex], .transcript[tabindex]"))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (k === "escape") { game?.closeConversation(); return; }
       if (k === "h") { e.preventDefault(); st.setConv({ openHint: st.conv.openHint ? null : (st.conv.hints[0] ?? "g_clarify") }); return; }
@@ -103,7 +180,12 @@ export function Conversation() {
       if (k === "n") { e.preventDefault(); st.setSettings({ ltNatural: !st.settings.ltNatural }); return; }
       if (k === "i") { e.preventDefault(); st.setSettings({ ipa: !st.settings.ipa }); return; }
       if (k === "p" && st.settings.play !== "light") { e.preventDefault(); st.setSettings({ scenes: !picturesOn(st.settings) }); return; }
-      if (k === "t") { e.preventDefault(); st.setConv({ typing: !st.conv.typing }); return; }
+      if (k === "t") {
+        e.preventDefault();
+        focusTyping.current = !st.conv.typing;
+        st.setConv({ typing: !st.conv.typing });
+        return;
+      }
       if (k === "r") { e.preventDefault(); game?.activeSession?.repeatLast(false); return; }
       if ((k === " " || k === "enter") && st.conv.phase === "you") {
         e.preventDefault();
@@ -127,14 +209,23 @@ export function Conversation() {
     setTyped("");
     game?.activeSession?.submit(v);
   };
+  const edit = (text: string) => {
+    setMatchEcho(null);
+    setTyped(text);
+    focusTyping.current = !conv.typing;
+    setConv({ typing: true, speechChoices: undefined });
+    inputRef.current?.focus({ preventScroll: true });
+  };
 
   const turn = turnAnswers(sit, conv, formal, gender);
   const townPhone = sit.mode === "phone" && !game?.light;
   const livePhone = townPhone && conv.phase !== "ended";
   const openingCall = livePhone && conv.phase === "npc" && !conv.transcript.length && !conv.note;
+  const showMatch = conv.phase !== "thinking" && !!lastAnswer && matchEcho === `${conv.run}:${lastAnswer.id}`;
+  const retryWithMic = supported && !conv.typing;
   return (
     <>
-    <div className="convo" data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
+    <div className="convo" ref={panelRef} data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
       <div className="convo-tools">
       {townPhone && <PhoneCallHeader key={conv.run} />}
       <div className="convo-head">
@@ -164,7 +255,8 @@ export function Conversation() {
         {conv.transcript.length === 0 && <div style={{ color: "var(--ink-faint)", textAlign: "center", marginTop: 20 }}>…</div>}
         {groupLines(conv.transcript).map((grp) => grp.length > 1
           ? <NpcGroup key={grp[0].id} lines={grp} speakingId={conv.speaking} lt={settings.lt} ipa={settings.ipa} nat={settings.ltNatural} reveal={conv.reveal} />
-          : <Line key={grp[0].id} l={grp[0]} speaking={conv.speaking === grp[0].id} lt={settings.lt || !!conv.reveal[grp[0].id]} ipa={settings.ipa} nat={settings.ltNatural || !!conv.reveal[grp[0].id]} />)}
+          : <Line key={grp[0].id} l={grp[0]} speaking={conv.speaking === grp[0].id} lt={settings.lt || !!conv.reveal[grp[0].id]} ipa={settings.ipa} nat={settings.ltNatural || !!conv.reveal[grp[0].id]}
+              animateMatch={showMatch && grp[0].id === lastAnswer?.id} />)}
         {conv.note && <div className="msg note"><div className="bubble"><Icon name="note" size={22} className="note-ico" /><span>{conv.note.en}</span></div></div>}
       </div>
 
@@ -186,22 +278,22 @@ export function Conversation() {
             </div>
           </div>
 
-          {!!conv.speechChoices?.length && <div className="miss-box speech-confirm">
-            <p>{conv.speechChoices.length > 1 ? L("Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?") : L("Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.")}</p>
-            {conv.speechChoices.map(text => <button className="dym-opt" key={text} lang={TL} disabled={conv.phase !== "you"}
+          {pendingChoices && <div className="miss-box speech-confirm" ref={recoveryRef}>
+            <p className="recovery-title">{confirmationQuestion}</p>
+            {pendingChoices.map(text => <button className="dym-opt" key={text} lang={TL} disabled={conv.phase !== "you"}
               onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}><span className="dym-en">{text}</span></button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
-              onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>{L("Pataisyti tekstą")}</button>
+              onClick={() => edit(conv.lastHeard)}><Icon name="pencil" size={17} /> {L("Pataisyti tekstą")}</button>
           </div>}
-          {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
-            <div className="miss-box" ref={missRef}>
-              <div>{conv.prefix ? L("Neatpažinau – atrodo, sakinys nebaigtas. Girdėjau:") : L("Neatpažinau. Girdėjau:")}</div>
-              <div className="heard" lang={TL}>{Lx("„{heard}“", { heard: conv.guess ? <Marked words={conv.guess.heard} /> : conv.lastHeard })}</div>
+          {showRetry && (
+            <div className="miss-box" ref={recoveryRef}>
+              <div className="recovery-title" role="status"><Icon name="restart" size={17} />{conv.prefix ? L("Neatpažinau – atrodo, sakinys nebaigtas. Girdėjau:") : L("Neatpažinau. Girdėjau:")}</div>
+              <div className="heard" lang={TL}>{Lx("„{heard}“", { heard: conv.guess ? <Marked words={conv.guess.heard} /> : heardAnswer })}</div>
               {conv.guess && <DidYouMean guess={conv.guess} lt={settings.sayLt} />}
               <div className="acts">
-                {speechSupported() && <button className="btn small" onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> {L("Bandyti dar")}</button>}
+                {supported && <button className={"btn small" + (retryWithMic ? "" : " soft")} onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> {L("Bandyti dar")}</button>}
                 <button className="btn soft small" onClick={() => game?.activeSession?.repeatLast(true)}><Icon name="turtle" size={17} /> {L("Paklausyk lėčiau")}</button>
-                <button className="btn soft small" onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> {L("Pataisyti tekstą")}</button>
+                <button className={"btn small" + (retryWithMic ? " soft" : "")} onClick={() => edit(heardAnswer)}><Icon name="pencil" size={17} /> {L("Pataisyti tekstą")}</button>
                 <button className="btn ghost small" onClick={() => copyConversation(sit)} title={L("Nukopijuok ir atsiųsk mokytojui")}><Icon name="clipboard" size={17} /> {L("Kopijuoti")}</button>
               </div>
             </div>
@@ -214,13 +306,19 @@ export function Conversation() {
 
           <div className="yt-bottom">
           <div className="inputbar">
-            <MicButton />
-            <MicStatus />
-            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-label={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
+            <div className="mic-control">
+              <MicButton capturing={capturing} supported={supported} disabled={conv.phase !== "you"} />
+              {showMatch && <span className="match-echo" aria-hidden="true"><Icon name="check" size={17} strokeWidth={2.5} /></span>}
+            </div>
+            <MicStatus capturing={capturing} supported={supported} confirmationQuestion={confirmationQuestion} />
+            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => {
+              focusTyping.current = !conv.typing;
+              setConv({ typing: !conv.typing });
+            }} title={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-label={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
           </div>
           {conv.typing && (
             <form className="typebox" onSubmit={(e) => { e.preventDefault(); send(); }}>
-              <input ref={inputRef} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={L("Parašyk angliškai…")} lang={TL} autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
+              <input ref={inputRef} value={typed} onChange={(e) => { setTyped(e.target.value); setMatchEcho(null); }} placeholder={L("Parašyk angliškai…")} lang={TL} autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
               <button className="btn" type="submit" disabled={conv.phase !== "you" || !typed.trim()}>{L("Siųsti")}</button>
             </form>
           )}
@@ -649,7 +747,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
   return sit.entities?.[options] ?? [];
 }
 
-function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
+function Line({ l, speaking, lt, ipa, nat, animateMatch }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean; animateMatch: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
     const replay = (slow: boolean) => { game?.activeSession?.stopListening(); playVoice(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
@@ -668,9 +766,19 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
     );
   }
   if (l.who === "you") {
+    const matched = l.answerDisplay === "matched";
+    const clarify = l.answerDisplay === "clarify";
+    const retry = l.answerDisplay === "retry";
+    const accepted = matched || (l.answerDisplay === undefined && l.understood);
+    const appearance = matched ? " matched" : clarify ? " clarify" : retry ? " miss retry" : l.understood ? "" : " miss";
     return (
-      <div className={"msg you" + (l.understood ? "" : " miss")}>
-        <div className="bubble">{l.via && <Via via={l.via} />}{l.text}{l.understood ? <span className="ok"><Icon name="check" size={14} strokeWidth={2.5} label={L("Suprasta")} /></span> : null}</div>
+      <div className={"msg you" + appearance}>
+        <div className="bubble">
+          {l.via && <Via via={l.via} />}
+          <span lang={TL}>{clarify ? Lx("„{heard}“", { heard: l.text }) : l.text}</span>
+          {accepted && <span className={"ok" + (animateMatch ? " appear" : "")}><Icon name="check" size={matched ? 24 : 14} strokeWidth={2.5} label={L("Suprasta")} /></span>}
+          {retry && <Icon name="restart" size={17} className="retry-mark" label={L("Bandyti dar")} />}
+        </div>
       </div>
     );
   }
@@ -815,25 +923,32 @@ function RepeatButton({ ex }: { ex: Sentence }) {
 }
 
 const VERDICT = { great: L("Puiku!"), almost: L("Beveik!"), again: L("Pabandyk dar kartą") } as const;
+const PRACTICE_STATUS = {
+  playing: L("Klausyk…"),
+  listening: L("Dabar tu – pakartok garsiai"),
+  nothing: L("Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk."),
+  denied: L("Leisk naršyklei naudoti mikrofoną ir bandyk dar."),
+  error: L("Nepavyko išgirsti. Pabandyk dar kartą."),
+};
 
 /** Under a guide example: what happens now, then which words were said and a short verdict. */
 function RepeatResult({ en }: { en: string }) {
   const p = useStore((s) => s.conv.practice);
   if (!p || p.en !== en) return null;
-  switch (p.status) {
-    case "playing": return <div className="rp-res wait">{L("Klausyk…")}</div>;
-    case "listening": return <div className="rp-res wait"><span className="rp-dot" />{p.heard ? <span className="rp-heard" lang={TL}>{Lx("„{heard}“", { heard: p.heard })}</span> : L("Dabar tu – pakartok garsiai")}</div>;
-    case "nothing": return <div className="rp-res">{L("Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk.")}</div>;
-    case "denied": return <div className="rp-res">{L("Leisk naršyklei naudoti mikrofoną ir bandyk dar.")}</div>;
-    case "error": return <div className="rp-res">{L("Nepavyko išgirsti. Pabandyk dar kartą.")}</div>;
-  }
-  const r = p.result;
-  if (!r) return null;
+  const result = p.status === "done" ? p.result : undefined;
+  const message = p.status === "done" ? result && VERDICT[result.verdict] : PRACTICE_STATUS[p.status];
+  if (!message) return null;
+  const listening = p.status === "listening";
+  const waiting = listening || p.status === "playing";
   return (
-    <div className={"rp-res done " + r.verdict} aria-live="polite">
-      <span className="rp-verdict">{VERDICT[r.verdict]}</span>
-      <span className="rp-words" lang={TL}><Marked words={r.words} /></span>
-      {r.verdict !== "great" && <span className="rp-heard">{L("Girdėjau:")} <span lang={TL}>{Lx("„{heard}“", { heard: p.heard })}</span></span>}
+    <div className={"rp-res" + (result ? " done " + result.verdict : waiting ? " wait" : "")}>
+      <span className="rp-verdict" role="status">
+        {listening ? <ListeningBars /> : !waiting && <Icon name={result?.verdict === "great" ? "check" : "restart"} size={17} strokeWidth={2.5} />}
+        {message}
+      </span>
+      {listening && p.heard && <LiveQuote className="rp-heard" heard={p.heard} />}
+      {result && <span className="rp-words" lang={TL}><Marked words={result.words} /></span>}
+      {result && result.verdict !== "great" && <span className="rp-heard">{L("Girdėjau:")} <span lang={TL}>{Lx("„{heard}“", { heard: p.heard })}</span></span>}
     </div>
   );
 }
@@ -845,18 +960,16 @@ function renderGap(en: string) {
 
 // --------------------------------------------------------------------------------------------
 
-function MicButton() {
+function MicButton({ capturing, supported, disabled }: { capturing: boolean; supported: boolean; disabled: boolean }) {
   const keyboardHints = useKeyboardHints();
-  const conv = useStore((s) => s.conv);
-  const supported = speechSupported();
-  const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
-  if (!supported) return <button className="mic" disabled title={L("Balso atpažinimas šioje naršyklėje nepalaikomas")} aria-label={L("Balso atpažinimas šioje naršyklėje nepalaikomas")}><Icon name="mic" size={30} /></button>;
-  const title = listening ? (keyboardHints ? L("Baigti atsakymą (tarpo klavišas)") : L("Baigti atsakymą")) : (keyboardHints ? L("Įjungti mikrofoną dar kartą (tarpo klavišas)") : L("Įjungti mikrofoną dar kartą"));
+  const title = !supported ? L("Balso atpažinimas šioje naršyklėje nepalaikomas")
+    : capturing ? (keyboardHints ? L("Baigti atsakymą (tarpo klavišas)") : L("Baigti atsakymą"))
+      : (keyboardHints ? L("Įjungti mikrofoną dar kartą (tarpo klavišas)") : L("Įjungti mikrofoną dar kartą"));
   return (
-    <button className={"mic" + (listening ? " listening" : "")} disabled={conv.phase !== "you"} aria-pressed={listening}
+    <button className={"mic" + (capturing ? " listening" : "")} disabled={disabled || !supported} aria-pressed={capturing}
       title={title} aria-label={title}
-      onClick={() => { const s = game?.activeSession; if (!s) return; if (listening) s.finishListening(); else s.listen(); }}>
-      {listening ? <Icon name="stop" size={24} /> : <Icon name="mic" size={30} />}
+      onClick={() => { const s = game?.activeSession; if (!s) return; if (capturing) s.finishListening(); else s.listen(); }}>
+      {capturing ? <Icon name="stop" size={24} /> : <Icon name="mic" size={30} />}
     </button>
   );
 }
@@ -864,22 +977,74 @@ function MicButton() {
 const MIC = <InlineIcon name="mic" label={L("mikrofono mygtuką")} />;
 const KEYS = <InlineIcon name="keyboard" label={L("klaviatūra")} />;
 
-function MicStatus() {
+function ListeningBars() {
+  return <span className="listening-bars" aria-hidden="true"><i /><i /><i /></span>;
+}
+
+function LiveQuote({ className, heard }: { className: string; heard: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const quote = ref.current;
+    if (quote) quote.scrollTop = quote.scrollHeight;
+  }, [heard]);
+  return <span className={className + " live-quote"} ref={ref} lang={TL} tabIndex={0}>{Lx("„{heard}“", { heard })}</span>;
+}
+
+function MicStatus({ capturing, supported, confirmationQuestion }: { capturing: boolean; supported: boolean; confirmationQuestion?: string }) {
   const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
-  if (!speechSupported()) return <div className="mic-status"><b>{L("Rašyk atsakymą")}</b><span className="sub">{L("Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).")}</span></div>;
-  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">{conv.typing ? L("Klausyk…") : L("Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)")}</span></div>;
-  if (conv.phase === "thinking") return <div className="mic-status"><span className="sub">…</span></div>;
-  if (conv.typing) return <div className="mic-status"><b>{L("Rašyk atsakymą")}</b><span className="sub">{Lx("Jei nori kalbėti, spausk {mic}.", { mic: MIC })}</span></div>;
-  switch (m.status) {
-    case "starting": return <div className="mic-status"><b>{L("Jungiamas mikrofonas…")}</b></div>;
-    case "listening": case "reconnecting":
-      return <div className="mic-status"><b>{L("Klausau – kalbėk {calmly}", { calmly: f ? L("neskubėdama") : L("neskubėdamas") })}</b>{m.heard ? <span className="heard">{Lx("„{heard}“", { heard: m.heard })}</span> : <span className="sub">{L("Gali daryti pauzes – palauksiu.")}</span>}</div>;
-    case "denied": return <div className="mic-status"><b>{L("Leisk naudoti mikrofoną")}</b><span className="sub">{Lx("Naršyklės adreso juostoje leisk mikrofoną ir spausk {mic} dar kartą. Arba rašyk {keys}.", { mic: MIC, keys: KEYS })}</span></div>;
-    case "error": return <div className="mic-status"><b>{m.error === "network" ? L("Nepavyko prisijungti prie atpažinimo") : m.error === "audio-capture" ? L("Nerastas mikrofonas") : L("Klausymas nepavyko")}</b><span className="sub">{Lx("Spausk {mic} ir bandyk dar arba rašyk {keys}.", { mic: MIC, keys: KEYS })}</span></div>;
-    case "nothing": return <div className="mic-status"><b>{L("Nieko negirdėjau")}</b><span className="sub">{keyboardHints ? Lx("Spausk {mic} (arba tarpo klavišą), kai būsi {ready}.", { mic: MIC, ready: f ? L("pasiruošusi") : L("pasiruošęs") }) : Lx("Spausk {mic}, kai būsi {ready}.", { mic: MIC, ready: f ? L("pasiruošusi") : L("pasiruošęs") })}</span></div>;
-    default: return <div className="mic-status"><b>{L("Tavo eilė")}</b><span className="sub">{keyboardHints ? Lx("Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {mic} arba tarpo klavišą. Rašyti – {keys} (T).", { mic: MIC, keys: KEYS }) : Lx("Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {mic}. Rašyti – {keys}.", { mic: MIC, keys: KEYS })}</span></div>;
+  const listening = capturing && (m.status === "listening" || m.status === "reconnecting");
+  const confirming = conv.phase === "you" && confirmationQuestion;
+  let title: string | undefined;
+  let helper: ReactNode;
+  let recoveryIcon: IconName | undefined;
+  if (conv.phase === "npc") {
+    helper = conv.typing || !supported ? L("Klausyk…") : L("Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)");
+  } else if (conv.phase === "thinking" || m.status === "processing") {
+    helper = "…";
+  } else if (!confirming) {
+    if (!supported || m.status === "unsupported") {
+      title = L("Rašyk atsakymą");
+      helper = L("Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).");
+      recoveryIcon = "keyboard";
+    } else if (conv.typing) {
+      title = L("Rašyk atsakymą");
+      helper = Lx("Jei nori kalbėti, spausk {mic}.", { mic: MIC });
+    } else if (listening) {
+      title = L("Klausau – kalbėk {calmly}", { calmly: f ? L("neskubėdama") : L("neskubėdamas") });
+      helper = L("Gali daryti pauzes – palauksiu.");
+    } else if (capturing && m.status === "starting") {
+      title = L("Jungiamas mikrofonas…");
+    } else if (m.status === "denied") {
+      title = L("Leisk naudoti mikrofoną");
+      helper = Lx("Naršyklės adreso juostoje leisk mikrofoną ir spausk {mic} dar kartą. Arba rašyk {keys}.", { mic: MIC, keys: KEYS });
+      recoveryIcon = "restart";
+    } else if (m.status === "error") {
+      title = m.error === "network" ? L("Nepavyko prisijungti prie atpažinimo") : m.error === "audio-capture" ? L("Nerastas mikrofonas") : L("Klausymas nepavyko");
+      helper = Lx("Spausk {mic} ir bandyk dar arba rašyk {keys}.", { mic: MIC, keys: KEYS });
+      recoveryIcon = "restart";
+    } else if (m.status === "nothing") {
+      title = L("Nieko negirdėjau");
+      const ready = f ? L("pasiruošusi") : L("pasiruošęs");
+      helper = keyboardHints ? Lx("Spausk {mic} (arba tarpo klavišą), kai būsi {ready}.", { mic: MIC, ready }) : Lx("Spausk {mic}, kai būsi {ready}.", { mic: MIC, ready });
+      recoveryIcon = "restart";
+    } else if (conv.practice?.status === "playing") {
+      helper = L("Klausyk…");
+    } else if (conv.practice?.status !== "listening") {
+      title = L("Tavo eilė");
+      helper = keyboardHints ? Lx("Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {mic} arba tarpo klavišą. Rašyti – {keys} (T).", { mic: MIC, keys: KEYS }) : Lx("Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {mic}. Rašyti – {keys}.", { mic: MIC, keys: KEYS });
+    }
   }
+  return (
+    <div className="mic-status">
+      <div role="status">
+        {confirming && <span className="confirmation-announcement">{confirmationQuestion}</span>}
+        {title && <b>{listening && <ListeningBars />}{recoveryIcon && <Icon name={recoveryIcon} size={17} />}{title}</b>}
+        {helper && <span className="sub">{helper}</span>}
+      </div>
+      {listening && m.heard && <LiveQuote className="heard" heard={m.heard} />}
+    </div>
+  );
 }

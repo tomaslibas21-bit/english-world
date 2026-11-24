@@ -206,4 +206,24 @@ describe("automatic-only learner microphone", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(attempts).toHaveLength(2);
   });
+
+  it("finishes repeat practice without answering the NPC or changing the best phrase", async () => {
+    await opening();
+    const { transcript, bestPhrase } = useStore.getState().conv;
+    vi.mocked(audio.play).mockClear();
+    const text = "Hi, I'm new here!";
+    await session.practice(text, text);
+    expect(attempts).toHaveLength(1);
+    attempts[0].options.onUpdate({ status: "listening", heard: "Hi, I'm new" });
+    expect(useStore.getState().conv.practice).toMatchObject({ status: "listening", heard: "Hi, I'm new" });
+    session.stopPractice();
+    expect(attempts[0].finish).toHaveBeenCalledOnce();
+    attempts[0].options.onCommit(text, []);
+    const conv = useStore.getState().conv;
+    expect(conv.practice).toMatchObject({ status: "done", heard: text, result: { verdict: "great" } });
+    expect(conv.transcript).toBe(transcript);
+    expect(conv.bestPhrase).toBe(bestPhrase);
+    expect(audio.play).toHaveBeenCalledOnce();
+    expect(audio.sfx).not.toHaveBeenCalled();
+  });
 });

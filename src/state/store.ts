@@ -71,6 +71,7 @@ export interface TranscriptLine {
   sentence?: Sentence;
   text?: string;
   understood?: boolean;
+  answerDisplay?: "matched" | "clarify" | "retry";
   tips?: Tip[];
   lineKey?: string;
   slow?: boolean;

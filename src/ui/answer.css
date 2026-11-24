@@ -6,10 +6,23 @@
   background: #fde4d5; color: #9a3b22; border-radius: 5px; padding: 0 3px; margin: 0 -1px;
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
+.convo .hw-miss {
+  background: #fff0c8; color: #664b22; text-decoration: underline dotted; text-underline-offset: 2px;
+}
 
 /* Sentence choices after a miss or a speech confirmation. */
 .convo .yt-scroll { --model-control-size: 36px; scroll-padding-block: 4px; }
-.convo .yt-scroll .miss-box { overflow-wrap: anywhere; }
+.convo .miss-box, .convo .msg.you.retry .bubble {
+  background: #fff8e8; border: 1px solid #eadfcc; border-inline-start: 3px solid #946722; color: var(--ink);
+}
+.convo .miss-box.speech-confirm, .convo .msg.you.clarify .bubble {
+  background: #fff; border: 1px solid var(--line); border-inline-start: 3px solid #75838c; color: var(--ink); box-shadow: none;
+}
+.convo .miss-box { overflow-wrap: anywhere; }
+.convo .miss-box .heard { margin-top: 4px; }
+.convo .miss-box .acts { gap: 6px; }
+.convo .miss-box .recovery-title { display: flex; align-items: baseline; gap: 6px; }
+.convo .miss-box .recovery-title .ui-icon { align-self: start; color: #664b22; }
 .convo :is(.dym, .speech-confirm) { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .convo .speech-confirm p { margin: 0; }
 .convo .dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; }
@@ -36,7 +49,7 @@
   border: 1.5px solid var(--line); background: #fffdf9; color: var(--accent);
 }
 .convo .gx .rp-btn:is(:hover, .playing) { background: var(--accent-soft); border-color: #b7dad6; }
-.convo .gx .rp-btn.listening { background: var(--bad); border-color: var(--bad); color: #fff; }
+.convo .gx .rp-btn.listening { background: #1f6f78; border-color: #1f6f78; color: #fff; }
 .convo :is(.gx, .hint-row) .play:hover { box-shadow: none; }
 
 .convo .yt-scroll :is(button:not(.nat-star), summary) {
@@ -67,14 +80,63 @@
 .rp-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: rp-pulse 1.2s ease-in-out infinite; }
 @keyframes rp-pulse { 50% { opacity: 0.35; } }
 
+.convo :is(.mic-status b, .recovery-title, .rp-verdict) {
+  font: 800 calc(15px * var(--scale))/1.25 var(--ui);
+}
+.convo :is(.mic-status .sub, .dym-hint, .rp-res) {
+  font: 600 calc(14px * var(--scale))/1.3 var(--ui); color: #465563;
+}
+.convo .mic-status { position: relative; min-width: 0; }
+.convo :is(.mic-status, .rp-res, .msg.you .bubble) { overflow-wrap: anywhere; }
+.convo .mic-status b { display: flex; align-items: baseline; gap: 6px; }
+.convo .mic-status b > .ui-icon { align-self: start; color: #664b22; }
+.convo .mic-status .sub { display: block; }
+.convo .mic-status b + .sub { margin-top: 2px; }
+.convo .listening-bars { display: inline-flex; flex: none; align-items: end; gap: 2px; height: 12px; }
+.convo .listening-bars i { width: 3px; height: 6px; border-radius: 1px; background: #1f6f78; }
+.convo .listening-bars i:nth-child(2) { height: 12px; }
+.convo .listening-bars i:nth-child(3) { height: 8px; }
+.convo .confirmation-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.convo .mic-status .heard, .convo .miss-box .heard, .convo .rp-words, .convo .rp-heard[lang], .convo .rp-heard [lang] {
+  font: 500 calc(20px * var(--scale))/1.22 var(--en); color: var(--ink); overflow-wrap: anywhere;
+}
+.convo .live-quote {
+  display: block; max-block-size: calc(var(--heard-lines, 3) * 1.22em);
+  overflow: auto; overscroll-behavior: contain;
+  border-inline-start: 3px solid #1f6f78; padding-inline: 8px 2px; margin-top: 2px;
+}
+.convo .live-quote:focus-visible { outline-offset: -2px; }
+@media (max-height: 700px) and (orientation: portrait) {
+  .convo .live-quote { --heard-lines: 2; }
+}
+.convo .rp-res .rp-verdict { display: inline-flex; align-items: baseline; gap: 6px; }
+.convo .rp-verdict > .ui-icon { align-self: center; }
+.convo .rp-res.great .rp-verdict { color: #185a62; }
+.convo .rp-res:is(.almost, .again) .rp-verdict { color: #664b22; }
+.convo .rp-res .live-quote { flex: 0 1 100%; min-inline-size: 0; }
+
 /* ---- the learner's bubble: spoken (mic), typed (keyboard) or a picked suggestion ---- */
 .msg.you .via { display: inline-grid; place-items: center; margin-right: 7px; vertical-align: -1px; opacity: 0.8; }
 .msg.you.miss .via { color: var(--ink-faint); opacity: 1; }
+.convo .msg.you .retry-mark { margin-inline-start: 8px; color: #664b22; }
+.convo .match-echo, .convo .msg.you.matched .ok {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+}
+.convo .match-echo {
+  position: absolute; inset-inline-end: -4px; inset-block-start: -2px;
+  pointer-events: none; background: #185a62; color: #fff; box-shadow: 0 0 0 2px #fbf6ee;
+}
+.convo .msg.you.matched .ok { color: #185a62; background: #fff; vertical-align: middle; }
+.convo .msg.you.matched .ok.appear { animation: convo-match 180ms ease-out; }
+@keyframes convo-match { from { transform: scale(.88); } to { transform: scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   .rp-dot { animation: none; }
   .convo .yt-scroll :is(button:not(.nat-star), summary, .hint-toggle .chev, .il .u.tap) { transition: none; }
   .convo .yt-scroll .yt-title.phase-you b::before { animation: none; }
+  .convo .msg.you.matched .ok.appear { animation: none; }
+  .convo .yt-bottom :is(button, input) { transition: none; }
+  .convo .yt-bottom button:is(:hover, :active):not(:disabled) { transform: none; }
 }
 
 .beta-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 18px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-muted,var(--ink));}

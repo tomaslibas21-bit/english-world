@@ -314,8 +314,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 /* ---------- conversation panel ---------- */
 .convo {
-  --convo-height: calc(100dvh - 28px);
-  position: fixed; z-index: 20; right: 14px; top: 14px; bottom: 14px; width: min(500px, 42vw);
+  --convo-height: calc(100dvh - 14px - max(14px, var(--convo-keyboard-inset, 0px)));
+  position: fixed; z-index: 20; right: 14px; top: 14px; bottom: max(14px, var(--convo-keyboard-inset, 0px)); width: min(500px, 42vw);
   background: var(--panel); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 0 0 1px rgba(31, 42, 51, 0.06), 0 2px 6px rgba(20, 30, 40, 0.06), 0 22px 60px -16px rgba(20, 30, 40, 0.42);
   animation: slidein 0.35s cubic-bezier(.2,.9,.3,1.2);
@@ -630,6 +630,14 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .miss-box { background: #fff; border: 1.5px dashed #e3c38f; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.92em; }
 .miss-box .heard { font-family: var(--en); font-size: 1.15em; }
 .miss-box .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.convo .inputbar { gap: 8px; }
+.convo .mic-control { position: relative; flex: none; }
+.convo .mic.listening { background: #1f6f78; color: #fff; box-shadow: none; animation: none; }
+.convo .mic.listening:hover:not(:disabled) { filter: none; }
+.convo .type-toggle { min-width: 44px; min-height: 44px; }
+.convo .typebox { gap: 8px; margin-top: 8px; }
+.convo .typebox :is(input, button) { min-height: 44px; }
+.convo .typebox input { min-width: 0; font-size: max(16px, calc(20px * var(--scale))); }
 .convo[data-phase="ended"] .transcript { flex: 1 1 0; min-height: 0; }
 .convo[data-phase="ended"] .ended-box {
   flex: 0 1 auto; max-height: none; overflow-y: auto;
@@ -885,9 +893,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 @media (max-width: 900px) {
   .convo {
-    --convo-height: calc(100dvh - var(--conversation-image-height));
+    --convo-height: calc(100dvh - var(--conversation-image-height) - var(--convo-keyboard-inset, 0px));
     left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right));
-    top: var(--conversation-image-height); bottom: 0; width: auto; height: auto;
+    top: var(--conversation-image-height); bottom: var(--convo-keyboard-inset, 0px); width: auto; height: auto;
     border-radius: 20px 20px 0 0; animation: slideup 0.35s ease;
   }
   @keyframes slideup { from { transform: translateY(30px); opacity: 0; } }
@@ -1145,8 +1153,8 @@ body.scene-on .tag-layer { display: none; }
    own column; the input controls stay at the bottom even with large text or a long answer. */
 @media (max-height: 520px) and (orientation: landscape) {
   .convo {
-    --convo-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(6px, env(safe-area-inset-bottom)));
-    top: max(6px, env(safe-area-inset-top)); bottom: max(6px, env(safe-area-inset-bottom));
+    --convo-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(6px, env(safe-area-inset-bottom), var(--convo-keyboard-inset, 0px)));
+    top: max(6px, env(safe-area-inset-top)); bottom: max(6px, env(safe-area-inset-bottom), var(--convo-keyboard-inset, 0px));
     left: max(25vw, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right)); width: auto; height: auto;
     border-radius: 18px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -1159,9 +1167,12 @@ body.scene-on .tag-layer { display: none; }
   .scene-backdrop img { width: 25vw; height: 100%; bottom: 0; }
   .convo .yt-title { flex-wrap: wrap; }
   .convo .yt-bottom { padding: 4px 8px; }
-  .convo .mic { width: 44px; height: 44px; }
+  .convo :is(.mic, .type-toggle) { width: 44px; height: 44px; }
   .convo .guide-examples .gx { padding-block: 4px; }
 }
+.convo[data-keyboard]:not([data-phase="ended"]) > .transcript { flex: 0 1 14%; min-height: 0; }
+.convo[data-keyboard] > .yourturn:not(.ended-box) { flex: 1 1 0; max-height: none; }
+.convo[data-keyboard] .yt-bottom { max-block-size: max(116px, 60%); overflow-y: auto; overscroll-behavior: contain; }
 
 /* Keep all three control groups intact when the panel narrows. */
 .convo { container-type: inline-size; }
