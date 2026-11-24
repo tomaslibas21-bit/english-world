@@ -19,6 +19,8 @@ import { Icon } from "./icons";
 import "./surf.css";
 
 const SurfSave = memo(PhraseSave);
+const situationId = SURF?.situation;
+const source = situationId ? { situationId } : undefined;
 
 /** The picture of what her line asks for, in a small frame: the new one slides in over the one before it (no blank
  *  between two commands); still, with reduced motion (surf.css). Her words say the same, so it is hidden from a
@@ -144,7 +146,6 @@ export function SurfOverlay() {
   const [shown, setShown] = useState<SurfUi["line"]>(null);
   if (!s.active) return null;
   const sc = s.score;
-  const situationId = SURF?.situation;
   const hidden = s.support === 2 && shown !== s.line;
   const riding = s.phase === "ride";
   // the picture is help too: it stays while the words lose their translation, and goes when only her voice is left
@@ -169,8 +170,8 @@ export function SurfOverlay() {
               {hidden
                 ? <button className="surf-listen" onClick={() => setShown(s.line)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
                 : <div className="phrase-save-row">
-                  <GlossLine sentence={s.line.s} gloss={s.support === 0} />
-                  {situationId && <SurfSave sentence={s.line.s} situationId={situationId} iconOnly />}
+                  <GlossLine sentence={s.line.s} gloss={s.support === 0} source={source} />
+                  {source && <SurfSave sentence={s.line.s} {...source} iconOnly />}
                 </div>}
               {riding && <div className="surf-balance" role="meter" aria-label="Pusiausvyra" aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>

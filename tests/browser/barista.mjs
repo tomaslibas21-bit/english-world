@@ -8,6 +8,7 @@ const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
 const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.env.SHOTS_DIR || "/tmp";
 const cafe = "s72-cafe";
+const otherConversation = "s65a-passport";
 const startLabel = "Pabandyti už prekystalio";
 const sizes = [
   [1280, 800],
@@ -78,6 +79,58 @@ function installControls([key, save]) {
   };
 }
 
+async function checkOfferSaves(page, row, press, phone) {
+  const index = 1;
+  const { conversation, words, word, phrase } = await page.evaluate(async ([index, cafe]) => {
+    const { useBarista } = await import("/src/game/barista/store.ts");
+    const { sentenceInput, unitInput } = await import("/src/state/cards.ts");
+    const { PHRASE_CARD_UI } = await import("/src/content/phrase-card-ui.ts");
+    const { conv } = window.__ew.store.getState();
+    const { sentence } = useBarista.getState().line;
+    return { conversation: [conv.active, conv.sitId], words: PHRASE_CARD_UI,
+      word: unitInput(sentence, index, cafe), phrase: sentenceInput(sentence, cafe) };
+  }, [index, cafe]);
+  assert.deepEqual(conversation, [false, otherConversation]);
+  assert.ok(word && word.en !== phrase.en);
+  const readCards = (en) => page.evaluate(async ([key, en]) => {
+    const { cardKey } = await import("/src/state/cards.ts");
+    const cards = JSON.parse(localStorage.getItem(key) ?? "null")?.cards ?? [];
+    return cards.filter((card) => cardKey(card.en) === cardKey(en));
+  }, [`${storage}-cards-v1`, en]);
+  const checkSaved = async (expected) => {
+    const cards = await readCards(expected.en);
+    assert.equal(cards.length, 1, `one card for ${expected.en}`);
+    const [card] = cards;
+    const { en, lt, ipa, sentence, situationId } = card;
+    assert.deepEqual({ en, lt, ipa, sentence, situationId }, expected);
+    return card;
+  };
+  assert.deepEqual(await readCards(word.en), []);
+  assert.deepEqual(await readCards(phrase.en), []);
+
+  const unit = row.locator(`.u[data-i="${index}"] .en`);
+  const standalone = row.locator("[data-phrase-save]");
+  const popover = page.locator(".wpop");
+  let first;
+  if (!phone) {
+    await standalone.press("Enter");
+    first = await checkSaved(phrase);
+  }
+  await press(unit);
+  await press(popover.getByRole("button", { name: words.add, exact: true }));
+  await checkSaved(word);
+  if (phone) {
+    await press(popover.getByRole("button", { name: words.whole, exact: true }));
+    first = await checkSaved(phrase);
+  }
+  await popover.getByText(words.wholeInCards, { exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  await popover.waitFor({ state: "detached" });
+  if (phone) await press(standalone);
+  assert.equal(await standalone.getAttribute("aria-label"), words.inCards);
+  assert.deepEqual(await readCards(phrase.en), [first], "both actions share the first saved record");
+}
+
 const browser = await chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
   headless: true,
@@ -138,11 +191,13 @@ try {
       p.sits[id] = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
     }), cafe);
     await wait(() => prompt.isVisible(), "counter prompt appears");
+    await page.evaluate((sitId) => window.__ew.store.getState().setConv({ sitId }), otherConversation);
     await press(prompt);
     await wait(() => offer.isVisible(), "Mia gives the offer with its gloss");
     assert.equal(await offer.locator('[data-line="bs_offer"]').count(), 1);
     assert.match(await offer.innerText(), /Norite pabandyti pabūti už prekystalio/);
     await shot("offer");
+    await checkOfferSaves(page, offer.locator('[data-line="bs_offer"]'), press, phone);
 
     if (!phone) {
       await page.evaluate(() => window.__ew.game.player.root.position.set(-2.55, 0, 0.3));

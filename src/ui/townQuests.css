@@ -155,7 +155,7 @@
   overscroll-behavior: contain;
 }
 .directions-card .direction-lines { display: grid; gap: 3px; }
-.direction-lines button {
+.direction-lines [data-line] {
   border: 0;
   border-radius: 8px;
   background: var(--accent-soft);
@@ -164,8 +164,8 @@
   text-align: left;
   line-height: 1.12;
 }
-.direction-lines button .kit-gloss-compact { font-size: 0.94em; }
-.directions-card .btn { min-height: 38px; white-space: normal; text-align: left; padding: 3px 7px; font-size: 0.78em; }
+.direction-lines [data-line] .kit-gloss-compact { font-size: 0.94em; }
+.directions-card footer .btn { min-height: 38px; white-space: normal; text-align: left; padding: 3px 7px; font-size: 0.78em; }
 .directions-card .quest-close { align-self: start; }
 
 .objective-notes:has(.directions-card) {
@@ -216,11 +216,11 @@
   .directions-card header > .ui-icon { width: 15px; height: 15px; }
   .directions-card p { margin-top: 2px; }
   .directions-card .quest-close { flex-basis: 30px; width: 30px; height: 30px; border-radius: 8px; }
-  .directions-card .direction-lines { gap: 2px; }
-  .direction-lines button { padding: 3px 5px; border-radius: 6px; }
+  .directions-card .direction-lines { gap: 2px; --kit-phrase-size: 18px; --kit-translation-size: 14px; }
+  .direction-lines [data-line] { padding: 3px 5px; border-radius: 6px; }
   .direction-lines .kit-gloss-compact { gap: 1px; line-height: 1.1; }
   .directions-card footer { gap: 4px; }
-  .directions-card .btn.small { min-height: 28px; padding: 2px 4px; font-size: 0.82em; }
+  .directions-card footer .btn.small { min-height: 28px; padding: 2px 4px; font-size: 0.82em; }
   .directions-card footer .ui-icon { width: 13px; height: 13px; }
 }
 @media (max-width: 600px) and (orientation: portrait) {

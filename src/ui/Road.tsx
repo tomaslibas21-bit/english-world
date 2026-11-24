@@ -11,11 +11,13 @@ import "./road.css";
 const act = (name: string, value?: string | boolean) => game?.modeAction("road", name, value);
 const done = () => game?.modeExit();
 const { situation: situationId } = ROAD_EDITION.driver;
+const source = { situationId };
+
 function LiftLine() {
   const line = useRoad((s) => s.line);
   if (!line) return null;
   return <div className="road-lift-line phrase-save-row" data-line={line.key}>
-    <GlossLine sentence={line.sentence} gloss /><PhraseSave sentence={line.sentence} situationId={situationId} iconOnly />
+    <GlossLine sentence={line.sentence} gloss source={source} /><PhraseSave sentence={line.sentence} {...source} iconOnly />
   </div>;
 }
 

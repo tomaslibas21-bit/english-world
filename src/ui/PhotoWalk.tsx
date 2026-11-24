@@ -18,6 +18,7 @@ import "./townQuests.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("photowalk", name, value);
 const openBook = () => game?.modeStart("photowalk", "book");
+const photoSource = { situationId: PHOTO_WALK_SITUATION };
 const photoLine = (key: string) => conversationLine(PHOTO_WALK_SITUATION, PHOTO_WALK_NPC, key, PHOTO_WALK_LINES, false)!;
 const useWalk = () => useStore((s) => s.progress.photoWalk ?? EMPTY_WALK);
 
@@ -71,7 +72,8 @@ function PhotoPage({ thing, found }: { thing: typeof PHOTO_THINGS[number]; found
 
 function PhotoPhrase({ sentence, lineKey }: { sentence: ReturnType<typeof photoLine>; lineKey?: string }) {
   return <div className="phrase-save-row" data-line={lineKey}>
-    <GlossLine sentence={sentence} gloss /><PhraseSave sentence={sentence} situationId={PHOTO_WALK_SITUATION} iconOnly />
+    <GlossLine sentence={sentence} gloss source={photoSource} />
+    <PhraseSave sentence={sentence} {...photoSource} iconOnly />
   </div>;
 }
 
@@ -190,7 +192,7 @@ function DirectionLines({ place }: { place: Destination }) {
           onClick={() => setRevealed((ids) => gloss ? ids.filter((id) => id !== key) : [...ids, key])}>
           <GlossLine sentence={sentence} gloss compact />
         </button>
-        {gloss && <PhraseSave sentence={sentence} situationId={ASK_WAY_SITUATION} iconOnly />}
+        <PhraseSave sentence={sentence} situationId={ASK_WAY_SITUATION} iconOnly />
       </div>;
     })}
   </div>;

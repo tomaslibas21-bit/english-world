@@ -12,6 +12,7 @@ const cash = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const act = (name: string, value?: string | boolean) => game?.modeAction("taxi", name, value);
 const actionIcons = { left: "arrowLeft", right: "arrowRight", straight: "arrowUp", stop: "stop" } as const;
 const { situation: situationId } = TAXI_CONVERSATION;
+const source = { situationId };
 
 export function TaxiOverlay({ touch }: { touch: boolean }) {
   const { line, revealed, action, gloss, choices, mic, micOn, result, review } = useTaxi();
@@ -35,7 +36,10 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
       {line && (
         <div className="taxi-cue">
           {gloss || revealed === line
-            ? <div className="taxi-line phrase-save-row" data-line={line.key} lang="en"><GlossLine sentence={line.sentence} gloss={gloss} /><PhraseSave sentence={line.sentence} situationId={situationId} iconOnly /></div>
+            ? <div className="taxi-line phrase-save-row" data-line={line.key} lang="en">
+                <GlossLine sentence={line.sentence} gloss={gloss} source={source} />
+                <PhraseSave sentence={line.sentence} {...source} iconOnly />
+              </div>
             : <button className="taxi-line taxi-reveal" data-line={line.key} onClick={() => useTaxi.setState({ revealed: line })} lang="lt">
                 <Icon name="speaker" size={20} /><span>{words.hear}<small>{words.show}</small></span>
               </button>}

@@ -21,6 +21,7 @@ const exit = () => game?.modeExit();
 const pictureFor = (id: string) => `${import.meta.env.BASE_URL}gofish/${id}.webp`;
 const labelUnits = (text: string) => Math.max(...text.split(/\s+/u).map((part) => part.length)) * 0.64;
 const { situation: situationId } = GOFISH_CONVERSATION;
+const source = { situationId };
 
 export function PictureCard({ word, picture }: { word: GoFishWord; picture?: string }) {
   const [loaded, setLoaded] = useState<string>();
@@ -92,14 +93,14 @@ export default function GoFishOverlay({ touch }: { touch: boolean }) {
             <Icon name="speaker" size={16} />
           </span>}
         </b>}
-        <GlossLine sentence={line.sentence} gloss={gloss} />
+        <GlossLine sentence={line.sentence} gloss={gloss} source={source} />
       </div>
       <div className="gofish-replay">
         <button type="button" title={ROAD_UI.replay} aria-label={ROAD_UI.replay} disabled={busy} onClick={() => act("hear")}>
           <Icon name="speaker" size={18} />
         </button>
         {!gloss && <button type="button" onClick={() => act("show")}>{BARISTA_UI.show}</button>}
-        <PhraseSave sentence={line.sentence} situationId={situationId} iconOnly />
+        <PhraseSave sentence={line.sentence} {...source} iconOnly />
       </div>
     </div>}
     {drawn && <div className="gofish-drawn" data-word={drawn} data-say-it={!!drawSayIt} aria-hidden={drawSayIt ? undefined : true}>
