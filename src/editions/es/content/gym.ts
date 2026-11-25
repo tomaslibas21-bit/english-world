@@ -14,6 +14,8 @@ export const GYM_UI = {
   replay: "Listen again",
   reveal: "Show words",
   choices: "Choose a move",
+  sayItTip: "Say it aloud for +1",
+  sayItMiss: "Almost! You can try again",
   scoreTitle: "Workout complete",
   completed: "Moves completed",
   firstTry: "Right on the first try",

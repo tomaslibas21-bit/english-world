@@ -1,3 +1,5 @@
+import { SAY_IT_UI } from "./say-it";
+
 export const targetLang = "en-US";
 export const learnerLang = "lt";
 
@@ -11,6 +13,8 @@ export const GYM_UI = {
   replay: "Klausyti dar kartą",
   reveal: "Rodyti žodžius",
   choices: "Pasirinkti judesį",
+  sayItTip: SAY_IT_UI.tip,
+  sayItMiss: SAY_IT_UI.miss,
   scoreTitle: "Treniruotė baigta",
   completed: "Atlikti judesiai",
   firstTry: "Teisingai iš pirmo karto",

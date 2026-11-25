@@ -14,6 +14,8 @@ export const GYM_UI = {
   replay: "Klausyti dar kartą",
   reveal: "Rodyti žodžius",
   choices: "Pasirinkti judesį",
+  sayItTip: "Pasakyk garsiai – gausi +1",
+  sayItMiss: "Beveik! Gali pabandyti dar kartą.",
   scoreTitle: "Treniruotė baigta",
   completed: "Atlikti judesiai",
   firstTry: "Teisingai iš pirmo karto",

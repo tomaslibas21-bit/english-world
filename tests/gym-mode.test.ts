@@ -41,14 +41,14 @@ const learnerLook = withBackpack({
 });
 const trainerLook = { ...NPCS.jordan.look, female: NPCS.jordan.look.female ?? NPCS.jordan.gender === "f" };
 const pc = EDITION.id === "es";
-const intro = pc ? "¡Muévase conmigo!" : "Move with me!";
-const jacks = pc ? "¡Haga saltos de tijera!" : "Jumping jacks!";
-const toes = pc ? "¡Tóquese los pies!" : "Touch your toes!";
+const intro = pc ? "¡Muévete conmigo!" : "Move with me!";
+const jacks = pc ? "¡Haz saltos de tijera!" : "Jumping jacks!";
+const toes = pc ? "¡Tócate los pies!" : "Touch your toes!";
 const firstHelp = pc
-  ? EDITION.helper === "lt" ? "Šokinėkite, skėskite kojas ir kelkite rankas!" : "Do jumping jacks!"
+  ? EDITION.helper === "lt" ? "Šokinėk, skėsk kojas ir kelk rankas!" : "Do jumping jacks!"
   : "Pašokite, išskėskite kojas ir pakelkite rankas!";
 const firstGloss = pc
-  ? EDITION.helper === "lt" ? ["Darykite", "šuoliukus išskečiant kojas!"] : ["Do", "jumping jacks!"]
+  ? EDITION.helper === "lt" ? ["Daryk", "šuoliukus išskečiant kojas!"] : ["Do", "jumping jacks!"]
   : ["Šuoliukai išskečiant kojas!"];
 
 function setup(constructorPhase?: number) {
@@ -502,20 +502,20 @@ it.skipIf(!pc)("requires a distinctive Spanish command and discards transcripts 
     const { options } = mocks.attempts[0];
     expect(variety()).toBe("default");
     expect(options.lang).toBe("es-MX");
-    expect(options.evaluate("Haga una")).toBe("prefix");
-    expect(options.evaluate("Haga una lagartija")).toBe("none");
-    expect(options.evaluate("Haga un desplante")).toBe("none");
-    expect(options.evaluate("Haga una sentadilla")).toBe("complete");
-    options.onCommit("Haga una", []);
+    expect(options.evaluate("Haz una")).toBe("prefix");
+    expect(options.evaluate("Haz una lagartija")).toBe("none");
+    expect(options.evaluate("Haz un desplante")).toBe("none");
+    expect(options.evaluate("Haz una sentadilla")).toBe("complete");
+    options.onCommit("Haz una", []);
     expect(game.view()).toMatchObject({ phase: "choose", micStatus: "miss", score: { said: 0, completed: 2 } });
     game.view().sayIt!.toggle();
     game.entry.action("pick", "squats");
     expect(mocks.attempts[1].dispose).toHaveBeenCalledOnce();
     await game.until("choose");
-    mocks.attempts[1].options.onCommit("Haga una sentadilla", []);
+    mocks.attempts[1].options.onCommit("Haz una sentadilla", []);
     expect(game.view()).toMatchObject({ callId: "circles", micStatus: "idle", score: { said: 0, completed: 3 } });
     game.view().sayIt!.toggle();
-    mocks.attempts[2].options.onCommit("Haga círculos con los brazos", []);
+    mocks.attempts[2].options.onCommit("Haz círculos con los brazos", []);
     expect(game.view()).toMatchObject({ phase: "choose", micStatus: "hit", score: { said: 1, completed: 3 } });
     game.dispose();
     expect(game.registry.engaged).toBe(false);

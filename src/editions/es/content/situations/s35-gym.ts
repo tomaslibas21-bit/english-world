@@ -163,7 +163,7 @@ export const gym: SituationDef = {
     "en calor": { reason: "lexical_expression", split: "en → in + calor → heat is false; = warm (after exercise).", minimal: "Two words." },
     "con calma": { reason: "lexical_expression", split: "con → with + calma → calm; the manner phrase = nice and easy.", minimal: "Two words." },
     "mucho gusto": { reason: "lexical_expression", split: "mucho → much + gusto → pleasure; the greeting = nice to meet you.", minimal: "Two words." },
-    "saltos de tijera": { reason: "lexical_expression", split: "saltos → jumps + de → of + tijera → scissors. Together they name jumping jacks.", minimal: "The three words name the exercise. Haga stays separate." },
+    "saltos de tijera": { reason: "lexical_expression", split: "saltos → jumps + de → of + tijera → scissors. Together they name jumping jacks.", minimal: "The three words name the exercise. Haz stays separate." },
   },
 
   grammar: {

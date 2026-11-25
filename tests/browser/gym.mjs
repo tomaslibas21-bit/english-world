@@ -38,21 +38,21 @@ const progress = {
   coach: { done: true, run: true, view: true, seen: { list: true } },
 };
 
-// Pinned from the PC writing brief, EN authoring rows and the compact LT table.
+// Pinned from the PC workout script and the compact LT table.
 // There are no browser imports of workout content or of the s35 situation/table.
 const sourceLines = {
-  gy_jacks: ["¡Haga | saltos de tijera!", "Do | jumping jacks!", "Do jumping jacks!", "Darykite | šuoliukus išskečiant kojas!", "Šokinėkite, skėskite kojas ir kelkite rankas!"],
-  gy_toes: ["¡Tóquese | los | pies!", "Touch | your | feet!", "Bend down and touch your feet!", "Palieskite | — | pėdas!", "Pasilenkite ir palieskite pėdas!"],
-  gy_squats: ["¡Haga | una | sentadilla!", "Do | a | squat!", "Do a squat!", "Padarykite | vieną | pritūpimą!", "Pritūpkite!"],
-  gy_circles: ["¡Haga | círculos | con | los | brazos!", "Make | circles | with | your | arms!", "Circle your arms!", "Darykite | ratus | — | — | rankomis!", "Sukite rankas ratu!"],
-  gy_run: ["¡Corra | en | su | lugar!", "Run | in | your | spot!", "Run in place!", "Bėkite | — | savo | vietoje!", "Bėkite vietoje!"],
-  gy_reach: ["¡Levante | los | brazos!", "Raise | your | arms!", "Raise your arms!", "Pakelkite | — | rankas!", "Pakelkite rankas aukštyn!"],
-  gy_lunges: ["¡Haga | un | desplante!", "Do | a | lunge!", "Do a lunge!", "Padarykite | vieną | įtūpstą!", "Ženkite pirmyn ir padarykite įtūpstą!"],
-  gy_pushups: ["¡Haga | una | lagartija!", "Do | a | push-up!", "Do a push-up!", "Padarykite | vieną | atsispaudimą!", "Padarykite atsispaudimą!"],
-  gy_intro: ["¡Muévase | conmigo!", "Move | with me!", "Move with me!", "Judėkite | su manimi!", "Pajudėkime kartu!"],
+  gy_jacks: ["¡Haz | saltos de tijera!", "Do | jumping jacks!", "Do jumping jacks!", "Daryk | šuoliukus išskečiant kojas!", "Šokinėk, skėsk kojas ir kelk rankas!"],
+  gy_toes: ["¡Tócate | los | pies!", "Touch | your | feet!", "Bend down and touch your feet!", "Paliesk | — | pėdas!", "Pasilenk ir paliesk pėdas!"],
+  gy_squats: ["¡Haz | una | sentadilla!", "Do | a | squat!", "Do a squat!", "Padaryk | vieną | pritūpimą!", "Pritūpk!"],
+  gy_circles: ["¡Haz | círculos | con | los | brazos!", "Make | circles | with | your | arms!", "Circle your arms!", "Daryk | ratus | — | — | rankomis!", "Suk rankas ratu!"],
+  gy_run: ["¡Corre | en | tu | lugar!", "Run | in | your | spot!", "Run in place!", "Bėk | — | savo | vietoje!", "Bėk vietoje!"],
+  gy_reach: ["¡Levanta | los | brazos!", "Raise | your | arms!", "Raise your arms!", "Pakelk | — | rankas!", "Pakelk rankas aukštyn!"],
+  gy_lunges: ["¡Haz | un | desplante!", "Do | a | lunge!", "Do a lunge!", "Padaryk | vieną | įtūpstą!", "Ženk pirmyn ir padaryk įtūpstą!"],
+  gy_pushups: ["¡Haz | una | lagartija!", "Do | a | push-up!", "Do a push-up!", "Padaryk | vieną | atsispaudimą!", "Padaryk atsispaudimą!"],
+  gy_intro: ["¡Muévete | conmigo!", "Move | with me!", "Move with me!", "Judėk | su manimi!", "Judėk kartu su manimi!"],
   gy_right_a: ["¡Eso es!", "That’s it!", "That’s it!", "Štai taip!", "Štai taip!"],
   gy_right_b: ["¡Muy | bien!", "Very | well!", "Nice work!", "Labai | gerai!", "Puikiai!"],
-  gy_retry: ["Pruebe | otra | vez.", "Try | one more | time.", "Try again.", "Pabandykite | dar | kartą.", "Pabandykite dar kartą."],
+  gy_retry: ["Prueba | otra | vez.", "Try | one more | time.", "Try again.", "Pabandyk | dar | kartą.", "Pabandyk dar kartą."],
   gy_end: ["¡Terminamos!", "We finished!", "We’re done!", "Baigėme!", "Štai ir baigėme!"],
 };
 const fixture = {
@@ -87,7 +87,7 @@ const fixture = {
       jacks: "Šokinėti išskečiant kojas ir keliant rankas", toes: "Paliesti pėdas", squats: "Pritūpti", circles: "Sukti rankas ratu",
       run: "Bėgti vietoje", reach: "Pakelti rankas aukštyn", lunges: "Daryti įtūpstą", pushups: "Daryti atsispaudimą",
     },
-    speech: { mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1", miss: "Beveik! Galite pabandyti dar kartą.", stat: "Pasakyta garsiai" },
+    speech: { mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1", miss: "Beveik! Gali pabandyti dar kartą.", stat: "Pasakyta garsiai" },
   }),
 };
 
@@ -1469,7 +1469,7 @@ async function journey(browser, [width, height], audible) {
         }
         if (audible && n === 3) {
           assert.deepEqual((await micState()).starts, [], "the mic only starts on demand");
-          await speak("haga una", "miss", { prefixPause: true });
+          await speak("haz una", "miss", { prefixPause: true });
           await speak(lines.gy_pushups.target, "miss");
           assert.deepEqual((await read()).score, result, "partial or competing exercise leaves the choice open");
         }
@@ -1525,7 +1525,7 @@ async function journey(browser, [width, height], audible) {
           await countIs(count);
         }
         if (!audible && n === 10) {
-          assert.equal(await caption.getAttribute("data-gym-target"), "¡Haga saltos de tijera!");
+          assert.equal(await caption.getAttribute("data-gym-target"), "¡Haz saltos de tijera!");
           await checkLine("gy_jacks", true);
         }
         if (n === 7) {

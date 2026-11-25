@@ -100,7 +100,9 @@ function GymRoundView({ view, touch }: { view: GymView; touch: boolean }) {
               disabled={view.revealed || (!choose && phase !== "listen")} onClick={() => act("reveal")}>
               <span>{words.reveal}</span>
             </button>
-            <div className="gym-mic"><SayIt game="gym" cue={view.sayIt} /></div>
+            <div className="gym-mic">
+              <SayIt game="gym" cue={view.sayIt} feedback={{ tip: words.sayItTip, miss: words.sayItMiss }} />
+            </div>
           </div>
         </div>}
         {phase === "score" && <div className="gym-result">
