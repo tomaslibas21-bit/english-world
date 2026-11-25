@@ -22,7 +22,12 @@ const missingPictures = new Set<string>();
 /** The deck's own back (public/loteria/back.webp) over the drawn pattern, which shows if the picture is missing. */
 const BACK_ART = { "--card-back-art": `url("${import.meta.env.BASE_URL}loteria/back.webp")` } as CSSProperties;
 
-export function LoteriaTile({ card, label, pictureUrl }: { card: LoteriaCard; label: CardLabel; pictureUrl?: string }) {
+export function LoteriaTile({ card, label, pictureUrl, bean }: {
+  card: LoteriaCard;
+  label: CardLabel;
+  pictureUrl?: string;
+  bean?: ReactNode;
+}) {
   const [missing, setMissing] = useState<string>();
   return (
     <span className="loteria-tile">
@@ -31,6 +36,7 @@ export function LoteriaTile({ card, label, pictureUrl }: { card: LoteriaCard; la
         {pictureUrl && missing !== pictureUrl && !missingPictures.has(pictureUrl)
           ? <img src={pictureUrl} alt="" decoding="async" onError={() => { missingPictures.add(pictureUrl); setMissing(pictureUrl); }} />
           : <span className="loteria-icon" aria-hidden="true">{card.icon}</span>}
+        {bean}
       </span>
       <strong lang={TL}>{label.name}</strong>
       <small lang={HL}>{label.gloss}</small>
@@ -134,9 +140,9 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
             return <button type="button" key={card.id} className="loteria-cell" data-card={card.id}
               data-focus={!touch && focus === index} data-glow={glow === index} data-winning={ready && winningCells.includes(index)} data-corner={kind === "esquinas" && isCorner(index)}
               aria-pressed={marked} disabled={!playable} onClick={() => act("cover", String(index))}>
-              <LoteriaTile card={card} label={labels[card.id]} pictureUrl={picture(card)} />
-              {marked && <span className="loteria-bean" aria-hidden="true" />}
-              {!marked && bounce?.index === index && <span key={bounce.count} className="loteria-bean loteria-bounce" aria-hidden="true" />}
+              <LoteriaTile card={card} label={labels[card.id]} pictureUrl={picture(card)} bean={marked
+                ? <span className="loteria-bean" aria-hidden="true" />
+                : bounce?.index === index && <span key={bounce.count} className="loteria-bean loteria-bounce" aria-hidden="true" />} />
             </button>;
           })}
         </div>
