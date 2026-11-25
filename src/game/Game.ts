@@ -21,7 +21,7 @@ import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY 
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
-import { cenoteGuide, registerCenoteTown } from "./cenoteTour/town";
+import { cenoteGuide, registerCenoteTown, townNpcs } from "./cenoteTour/town";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -122,7 +122,6 @@ const JOG_AFTER = 1.5, JOG_EASE = 0.9;
 const ARRIVAL = { x: -14, z: -1, rot: Math.PI };
 const isCall = (s: SituationMeta) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
 const cenoteGrounds = THEME.cenote?.open && groundsBounds(THEME.cenote.x, THEME.cenote.z, WORLD.minX);
-const townNpcs = cenoteGuide ? OUTDOOR_NPCS.filter((sp) => sp !== cenoteGuide) : OUTDOOR_NPCS;
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
 /** A person's name tag: their name, their role in the practised language (in the Spanish chosen: roleSaid) and in the
  *  learner's language under it (unless it is the same word, like "Barista"). */
@@ -717,12 +716,8 @@ export class Game implements GameApi {
       container: this.container, undersea: this.undersea, inTown: () => !this.disposed && this.zone?.id === "town",
       wasHidden: () => this.wasHidden, cancelRide: () => this.cancelRide(), resetFootInput: () => this.resetFootInput(),
       save: () => this.savePlace(), drawStats: () => this.drawStats(),
-      spawnGuide: (spot) => {
-        const index = this.npcs.length;
-        this.spawnNpcs([spot]);
-        return this.npcs[index];
-      },
-      removeGuide: (actor) => this.removeGuide(actor), refreshObstacles: () => this.refreshTownObstacles(),
+      actors: () => this.npcs, colliders: () => this.zone.colliders, ambient: this.ambient,
+      spawnNpc: (spot) => this.spawnNpc(spot), disposeNpc: (actor) => this.disposeNpc(actor),
     });
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
@@ -1008,10 +1003,8 @@ export class Game implements GameApi {
         coach.begin();
       }
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
-      if (this.zone) {
-        this.clearNpcs();
-        this.scene.remove(this.zone.group);
-      }
+      this.clearActorColliders();
+      if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
@@ -1044,9 +1037,7 @@ export class Game implements GameApi {
       CUT.r.value = 0;
       this.moveVel.set(0, 0, 0);
       this.nearest = null;
-      this.spawnNpcs(z.interior?.npcs ?? townNpcs);
-      if (!indoor) this.refreshTownObstacles();
-      this.spawnRoomPeople();
+      this.spawnNpcs();
       // lighting & atmosphere
       this.sky.visible = !indoor;
       this.ambient.group.visible = !indoor;
@@ -1113,17 +1104,16 @@ export class Game implements GameApi {
     return p?.datePartner ?? (p?.gender === "f" ? "sam" : "emma");
   }
 
-  private spawnNpcs(spots: readonly NpcSpot[]) {
+  private spawnNpcs() {
+    this.clearNpcs();
+    const spots = this.zone.interior ? this.zone.interior.npcs : townNpcs;
     const partner = this.chosenDatePartner();
     for (const sp of spots) {
       if ((sp.npc === "sam" || sp.npc === "emma") && sp.npc !== partner) continue;
-      const def = NPCS[sp.npc];
-      if (!def) continue;
-      const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
-      ch.watch = this.learnerAt;
       const poolKid = !this.zone.interior && HOTEL_POOL_ENABLED ? POOL_KIDS.find((kid) => kid === sp.npc) : undefined;
-      ch.root.position.set(sp.x, poolKid ? hotelPoolKidY(poolKid) : 0, sp.z);
-      ch.root.rotation.y = sp.rot;
+      const actor = this.spawnNpc(sp, poolKid ? hotelPoolKidY(poolKid) : 0);
+      if (!actor) continue;
+      const { ch } = actor;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       ch.busy = AT_WORK[sp.npc] ?? null;
       if (sp.npc === BILLIARDS_NPC) {
@@ -1133,19 +1123,31 @@ export class Game implements GameApi {
         cue.rotation.z = 0.12;
         ch.rightHand.add(cue);
       }
-      this.npcLayer.add(ch.root);
-      const tag = document.createElement("div");
-      tag.className = "nametag";
-      tag.style.display = "none";
-      tag.innerHTML = nameTagHtml(def);
-      this.tagLayer.appendChild(tag);
-      this.npcs.push({
-        id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
-        approach: sp.ax !== undefined && sp.az !== undefined ? new THREE.Vector3(sp.ax, 0, sp.az) : undefined,
-        alux: this.zone.cave ? { next: 6 + Math.random() * 6, hop: 0 } : undefined,
-      });
+      if (this.zone.cave) actor.alux = { next: 6 + Math.random() * 6, hop: 0 };
+      this.npcs.push(actor);
       this.zone.colliders.circles.push({ x: sp.x, z: sp.z, r: 0.45, npc: sp.npc });
     }
+    // passers-by step round the people standing in town
+    if (!this.zone.interior) this.ambient.obstacles = this.npcs.map((n) => [n.home.x, n.home.z]);
+    this.spawnRoomPeople();
+  }
+
+  private spawnNpc(sp: NpcSpot, y = 0): NpcActor | undefined {
+    const def = NPCS[sp.npc];
+    if (!def) return;
+    const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
+    ch.watch = this.learnerAt;
+    ch.root.position.set(sp.x, y, sp.z);
+    ch.root.rotation.y = sp.rot;
+    this.npcLayer.add(ch.root);
+    const tag = document.createElement("div");
+    tag.className = "nametag";
+    tag.innerHTML = nameTagHtml(def);
+    this.tagLayer.appendChild(tag);
+    return {
+      id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
+      approach: sp.ax !== undefined && sp.az !== undefined ? new THREE.Vector3(sp.ax, 0, sp.az) : undefined,
+    };
   }
 
   private disposeNpc(n: NpcActor) {
@@ -1156,34 +1158,27 @@ export class Game implements GameApi {
   }
 
   private clearNpcs() {
-    this.cenoteTour?.forgetGuide();
     for (const n of this.npcs) this.disposeNpc(n);
     this.npcs = [];
+  }
+
+  private clearRoomPeople() {
     for (const ch of this.extras) { ch.dispose?.(); this.npcLayer.remove(ch.root); }
     this.extras = [];
     this.extraChats = [];
     this.staff = [];
+  }
+
+  private clearActorColliders() {
+    this.cenoteTour?.removeGuide();
+    // The rooms and the cave keep their collider sets when cached.
     if (this.zone) this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !c.npc && !c.extra);
-  }
-
-  private removeGuide(n: NpcActor) {
-    const index = this.npcs.indexOf(n);
-    if (index < 0) return;
-    this.npcs.splice(index, 1);
-    this.disposeNpc(n);
-    const circles = this.zone.colliders.circles;
-    const i = circles.findIndex((c) => c.npc === n.id);
-    if (i >= 0) circles.splice(i, 1);
-  }
-
-  /** Passers-by step round the people standing in town. */
-  private refreshTownObstacles() {
-    this.ambient.obstacles = this.npcs.map((n) => [n.home.x, n.home.z]);
   }
 
   /** The room's townspeople: guests, customers, colleagues (roomPeople.ts), with looks drawn per room. Outdoors the
    *  passers-by are Ambient's. */
   private spawnRoomPeople() {
+    this.clearRoomPeople();
     const people = this.zone.interior ? ROOM_PEOPLE[this.zone.id] ?? [] : [];
     const r = rand([...this.zone.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 100000, 17));
     const talking = new Map<number, GameCharacter>();
@@ -4178,7 +4173,9 @@ export class Game implements GameApi {
     audio.motor(null);
     audio.stop();
     radio.shutdown();
+    this.clearActorColliders();
     this.clearNpcs();
+    this.clearRoomPeople();
     this.cave?.dispose();
     this.cave = null;
     this.renderer.domElement.remove();

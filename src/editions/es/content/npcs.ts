@@ -107,7 +107,6 @@ const LOOK: Record<string, Partial<Look>> = {
   // customs (s65b)
   // a coral rash guard and board shorts, barefoot in flip-flops (her portrait: public/scenes-es/ref/cast/surf.webp, 15 Nov 2026)
   surf: { skin: "#a8734b", hair: { style: "braid", color: "#3a2a1f", tie: "#ff7a59" }, top: "#ff6a3d", bottom: "#17708a", shoes: "#3a2a1f", shorts: true, sleeves: "short", flipflops: true, acc: ["earrings"], build: 0.96 },
-  ines: { skin: "#a9704e", hair: { style: "braid", color: "#372820", tie: "#e9ab4b" }, top: "#287e79", bottom: "#bf965f", shorts: true, sleeves: "short", acc: [] },
   // Tienda El Faro's cashier (x05-tienda): a young man in the station's red polo with its name badge
   tienda: { skin: "#b07a52", hair: { style: "short", color: "#1f1a17" }, top: "#c8352a", bottom: "#2f3e55", sleeves: "short", acc: ["badge"], build: 0.98 },
   // the people of the ruins (x06–x08): Don Efraín in his jipi and guayabera, Citlali in her painter's apron, Doña Rosario
@@ -123,6 +122,7 @@ const LOOK: Record<string, Partial<Look>> = {
   // the Yaxché, the great tree of the grotto's heart (x04): it speaks, but nobody stands for it (its conversation has
   // no figure in the grotto: src/game/cave). The look is only what a person's record must have.
   yaxche: { skin: "#8f7f66", hair: { style: "long", color: "#3f8a3a" }, top: "#4f9a3e", bottom: "#857560" },
+  ines: { skin: "#a9704e", hair: { style: "braid", color: "#372820", tie: "#e9ab4b" }, top: "#287e79", bottom: "#bf965f", shorts: true, sleeves: "short", acc: [] },
 };
 
 /** Who is who. Roles are neutral Spanish (a role label isn't a line: no Mexican-only words in them). */

@@ -1,16 +1,21 @@
 import { CENOTE_TOUR } from "../../content/route";
 import { useStore } from "../../state/store";
 import { L } from "../../ui/i18n";
+import type { Ambient } from "../ambient";
 import type { GameCharacter } from "../characters";
 import type { ModeHost } from "../kit/host";
 import type { ModeRegistry } from "../kit/modes";
 import type { Undersea } from "../rides/undersea";
 import { floorY, waterY } from "../water";
 import type { NpcSpot } from "../world/interiors";
+import { OUTDOOR_NPCS } from "../world/layout";
 import { THEME } from "../world/theme";
+import type { Colliders } from "../world/util";
 import { CENOTE_MODE, CenoteTourEntry } from "./entry";
 
 export const cenoteGuide = THEME.cenote?.guide;
+// Keep the guide's spot in the outdoor layout for walking and conversation staging.
+export const townNpcs = cenoteGuide ? OUTDOOR_NPCS.filter((spot) => spot !== cenoteGuide) : OUTDOOR_NPCS;
 
 interface TownOperations<Actor> {
   container: HTMLElement;
@@ -21,15 +26,17 @@ interface TownOperations<Actor> {
   undersea: Pick<Undersea, "update">;
   save(): void;
   drawStats(): { calls: number; triangles: number };
-  spawnGuide(spot: NpcSpot): Actor | undefined;
-  removeGuide(actor: Actor): void;
-  refreshObstacles(): void;
+  actors(): Actor[];
+  colliders(): Pick<Colliders, "circles">;
+  ambient: Pick<Ambient, "obstacles">;
+  spawnNpc(spot: NpcSpot): Actor | undefined;
+  disposeNpc(actor: Actor): void;
 }
 
 const FADE_STEPS = 60;
 let opacityValues: string[] | undefined;
 
-export function registerCenoteTown<Actor extends { ch: GameCharacter }>(
+export function registerCenoteTown<Actor extends { ch: GameCharacter; tag: HTMLDivElement }>(
   modes: ModeRegistry,
   host: Pick<ModeHost, "player" | "rig" | "add" | "time" | "canStart" | "entered" | "left" | "owns" | "prepare" | "place">,
   town: TownOperations<Actor>,
@@ -37,6 +44,8 @@ export function registerCenoteTown<Actor extends { ch: GameCharacter }>(
   if (!CENOTE_TOUR || !cenoteGuide) return;
   const spot = cenoteGuide;
   const home = { x: spot.ax, z: spot.az, rot: Math.atan2(spot.x - spot.ax, spot.z - spot.az) };
+  const collider = { x: spot.x, z: spot.z, r: 0.45, npc: spot.npc };
+  const obstacle: [number, number] = [spot.x, spot.z];
   let guide: Actor | undefined;
   let curtainIndex = 0;
   let curtainStyle: CSSStyleDeclaration | undefined;
@@ -69,14 +78,29 @@ export function registerCenoteTown<Actor extends { ch: GameCharacter }>(
     },
   }, CENOTE_TOUR.id);
 
+  function removeGuide() {
+    if (!guide) return;
+    // Zone changes call this while the old town's lists are still active.
+    const actors = town.actors(), { circles } = town.colliders(), { obstacles } = town.ambient;
+    actors.splice(actors.indexOf(guide), 1);
+    circles.splice(circles.indexOf(collider), 1);
+    obstacles.splice(obstacles.indexOf(obstacle), 1);
+    town.disposeNpc(guide);
+    guide = undefined;
+  }
+
   function updateGuide() {
     if (!town.inTown()) return;
     const { x, z } = host.player().root.position;
     const present = tour.active || Math.hypot(x - spot.x, z - spot.z) <= 24;
-    if (present === !!guide) return;
-    if (present) guide = town.spawnGuide(spot);
-    else if (guide) { town.removeGuide(guide); guide = undefined; }
-    town.refreshObstacles();
+    if (!present) { removeGuide(); return; }
+    if (guide) return;
+    guide = town.spawnNpc(spot);
+    if (!guide) return;
+    guide.tag.style.display = "none";
+    town.actors().push(guide);
+    town.colliders().circles.push(collider);
+    town.ambient.obstacles.push(obstacle);
   }
 
   modes.register(tour);
@@ -89,7 +113,7 @@ export function registerCenoteTown<Actor extends { ch: GameCharacter }>(
   return Object.assign(tour, {
     home,
     updateGuide,
-    forgetGuide: () => { guide = undefined; },
+    removeGuide,
     savedPlace: () => host.owns(CENOTE_MODE) ? { zone: "town", ...home } : undefined,
     removeInspection: () => {
       if (Object.getOwnPropertyDescriptor(window, "__cenoteTour")?.value === inspection) Reflect.deleteProperty(window, "__cenoteTour");
