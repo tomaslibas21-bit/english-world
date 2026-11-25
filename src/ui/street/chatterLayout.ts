@@ -1,8 +1,16 @@
 import type { NametagLayout, NametagSize, PlacedNametag, TagBox } from "../../game/gameRef";
+import { PORTRAIT_PHONE } from "../useScreen";
 import { createBubblePlacement } from "./bubblePlacement";
 
 const HUD_BLOCKERS = ".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, .minimap, " +
-  ".toolbar, .toolbar .radio-tool, .joy, .jump-btn, .act-btn, .prompt, .toolbar-drawer, .toolbar.folds .toolbar-tools";
+  ".toolbar, .toolbar .radio-tool, .toolbar .ride-menu, .toolbar .due-badge, .joy, .jump-btn, .act-btn, .prompt, " +
+  ".toolbar-drawer, .toolbar.folds .toolbar-tools";
+// On a short upright phone an open task card and the controls beside it fill the top: the bubble goes below them.
+const OPEN_TASK = ".objective-card:not(.collapsed)";
+const TOP_CONTROLS = ".minimap, .toolbar .ride-menu, .toolbar .due-badge";
+const SHORT_PORTRAIT = 760;
+// A bubble that can't fit whole may shrink to this and scroll its text.
+const MIN_HEIGHT = 44;
 const VISIBLE_BOX = { visibilityProperty: true };
 const GEOMETRY_ATTRIBUTES = ["class", "style", "hidden"];
 const HUD_DECORATIONS = ".street-marker, .reaction-bubble, .radio-strip, .fade";
@@ -14,7 +22,7 @@ function affectsBlockers(el: Element) {
 
 function readBlockers(hud: HTMLElement) {
   return Array.from(hud.querySelectorAll<HTMLElement>(HUD_BLOCKERS), (el) => ({
-    el, visible: false, left: 0, right: 0, top: 0, bottom: 0,
+    el, task: el.matches(OPEN_TASK), topHud: el.matches(TOP_CONTROLS), visible: false, left: 0, right: 0, top: 0, bottom: 0,
   }));
 }
 
@@ -24,7 +32,8 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
   const chatter: TagBox = { x0: 0, x1: 0, y0: 0, y1: 0 };
   let elements = readBlockers(hud);
   let tagCount = layer.childElementCount;
-  let scratch = createBubblePlacement(elements.length + tagCount);
+  // One slot more for the top band on short upright phones.
+  let scratch = createBubblePlacement(elements.length + tagCount + 1);
   let sizes = new WeakMap<HTMLElement, NametagSize>();
   let geometryDirty = true, groupDirty = true;
   let blockersDirty = true, blockersChanged = false;
@@ -38,6 +47,11 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
   let layerX = 0, layerY = 0, layerScaleX = 1, layerScaleY = 1;
   let width = 0, height = 0;
   let x = 0, y = 0, positioned = false;
+  // When the bubble is held shorter than its text, the hidden part of the text (its full height = height + overflow).
+  const copy = group.querySelector<HTMLElement>(".street-bubble-copy");
+  const portrait = window.matchMedia(PORTRAIT_PHONE);
+  let constrained = false, overflow = 0;
+  const readOverflow = () => constrained && copy ? Math.max(0, copy.scrollHeight - copy.clientHeight) : 0;
 
   function invalidateFrame() {
     geometryDirty = groupDirty = blockersDirty = true;
@@ -83,6 +97,7 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
       } else if (entry.target === group) {
         width = inlineSize;
         height = blockSize;
+        overflow = readOverflow();
         groupDirty = false;
       } else if (frameBoxes.has(entry.target)) {
         invalidateFrame();
@@ -108,7 +123,7 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
   }
 
   function growScratch() {
-    if (scratch.blockers.length <= elements.length + tagCount) scratch = createBubblePlacement(elements.length + tagCount);
+    if (scratch.blockers.length <= elements.length + tagCount + 1) scratch = createBubblePlacement(elements.length + tagCount + 1);
   }
 
   function watchBlockers() {
@@ -257,6 +272,7 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
       const rect = group.getBoundingClientRect();
       width = rect.width / screenScaleX;
       height = rect.height / screenScaleY;
+      overflow = readOverflow();
     }
   }
 
@@ -326,26 +342,52 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
       }
     }
     const { blockers, place } = scratch;
-    let count = 0;
     // Placement expands the scratch boxes in place. Keep the cached coordinates in HUD space.
-    for (const cached of elements) {
-      if (!cached.visible) continue;
-      const bounds = blockers[count++];
-      bounds.left = cached.left;
-      bounds.right = cached.right;
-      bounds.top = cached.top;
-      bounds.bottom = cached.bottom;
+    const fill = (band: number) => {
+      let count = 0;
+      for (const cached of elements) {
+        if (!cached.visible) continue;
+        const bounds = blockers[count++];
+        bounds.left = cached.left;
+        bounds.right = cached.right;
+        bounds.top = cached.top;
+        bounds.bottom = cached.bottom;
+      }
+      if (layout.rect) for (const { tag, x0, x1, y0, y1 } of boxes) {
+        if (tag.parentElement !== layer || tag.style.display === "none" || tag.style.visibility === "hidden") continue;
+        const bounds = blockers[count++];
+        // Offset sizes round to whole CSS pixels.
+        bounds.left = layerX + (x0 - 0.5) * layerScaleX;
+        bounds.right = layerX + (x1 + 0.5) * layerScaleX;
+        bounds.top = layerY + (y0 - 0.5) * layerScaleY;
+        bounds.bottom = layerY + y1 * layerScaleY;
+      }
+      if (band > 0) {
+        // The top HUD across the whole width.
+        const bounds = blockers[count++];
+        bounds.left = 0;
+        bounds.right = screenWidth;
+        bounds.top = 0;
+        bounds.bottom = band;
+      }
+      return count;
+    };
+    let taskBottom = 0, controlsBottom = 0;
+    if (portrait.matches && screenHeight <= SHORT_PORTRAIT) {
+      for (const cached of elements) {
+        if (!cached.visible) continue;
+        if (cached.task) taskBottom = cached.bottom;
+        if (cached.topHud) controlsBottom = Math.max(controlsBottom, cached.bottom);
+      }
     }
-    if (layout.rect) for (const { tag, x0, x1, y0, y1 } of boxes) {
-      if (tag.parentElement !== layer || tag.style.display === "none" || tag.style.visibility === "hidden") continue;
-      const bounds = blockers[count++];
-      // Offset sizes round to whole CSS pixels.
-      bounds.left = layerX + (x0 - 0.5) * layerScaleX;
-      bounds.right = layerX + (x1 + 0.5) * layerScaleX;
-      bounds.top = layerY + (y0 - 0.5) * layerScaleY;
-      bounds.bottom = layerY + y1 * layerScaleY;
+    const headX = anchor.x * screenWidth / 100, headY = anchor.y * screenHeight / 100;
+    const full = height + overflow;
+    if (taskBottom > 0) {
+      // With the task card open the bubble may shrink and scroll its text rather than cover the card.
+      return place(headX, headY, width, full, screenWidth, screenHeight, fill(Math.max(taskBottom, controlsBottom)), MIN_HEIGHT)
+        ?? place(headX, headY, width, full, screenWidth, screenHeight, fill(0), MIN_HEIGHT);
     }
-    return place(anchor.x * screenWidth / 100, anchor.y * screenHeight / 100, width, height, screenWidth, screenHeight, count);
+    return place(headX, headY, width, full, screenWidth, screenHeight, fill(0));
   }
 
   function position(boxes: readonly PlacedNametag[]) {
@@ -356,6 +398,14 @@ export function createChatterLayout(group: HTMLElement, hud: HTMLElement, layer:
       x = placement.x;
       y = placement.y;
       const { tail } = placement;
+      if (placement.height < height + overflow - 0.5) {
+        group.style.setProperty("--street-bubble-max-height", `${placement.height}px`);
+        constrained = true;
+      } else if (constrained) {
+        group.style.removeProperty("--street-bubble-max-height");
+        constrained = false;
+        overflow = 0;
+      }
       group.style.transform = `translate(${x}px, ${y}px)`;
       group.style.setProperty("--street-tail-x", `${tail.x}px`);
       group.style.setProperty("--street-tail-y", `${tail.y}px`);

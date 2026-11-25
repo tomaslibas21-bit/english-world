@@ -481,14 +481,16 @@ try {
       assert.equal(await card.locator(".street-picture").count(), 0);
       assert(await card.locator(".street-scene").isVisible(), "the wallet description stays visible with the first choices");
       const assertCardFits = async () => {
+        // The town reads the HUD's boxes for the name tags about six times a second: let it see the card as it is now.
+        await step(11, 16);
         const fit = await card.evaluate((element) => {
           const a = element.getBoundingClientRect();
           const controls = document.querySelectorAll(".joy, .act-btn, .jump-btn, .toolbar button, .minimap, .nametag");
-          const overlap = [...controls].some((control) => {
+          const overlap = [...controls].filter((control) => {
             const b = control.getBoundingClientRect();
             return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
               a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-          });
+          }).map((control) => `${control.className}: ${JSON.stringify(control.getBoundingClientRect())} vs card ${JSON.stringify(a)}`);
           // Playwright considers text visible even when the card's scrollport clips its last line.
           const clipped = [...element.querySelectorAll(".street-scene, .street-tr, .street-choice small")].filter((line) => {
             const box = line.getBoundingClientRect();
@@ -496,7 +498,7 @@ try {
           }).map((line) => line.textContent);
           return { overlap, clipped, height: a.height, viewport: innerHeight };
         });
-        assert.equal(fit.overlap, false, "card clears the walking controls and toolbar");
+        assert.deepEqual(fit.overlap, [], "card clears the walking controls and toolbar");
         assert.deepEqual(fit.clipped, [], "the scene and translations fit inside the card");
         assert(fit.height <= fit.viewport * 0.75 + 1, "the card stays within its height limit");
       };
@@ -614,7 +616,8 @@ try {
         for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 4) {
           await page.evaluate(({ x, z, angle }) =>
             window.__ew.game.placeOnFoot(x + 3.5 * Math.sin(angle), z + 3.5 * Math.cos(angle), angle + Math.PI), { ...pair, angle });
-          await step(6);
+          // Let the following camera settle behind the player before reading which tags it shows.
+          await step(checkMoving ? 40 : 6);
           inView = await page.evaluate((tagsRequired) => window.__ew.game.streetLife.world.pairs(5).length > 0 &&
             (!tagsRequired || [...document.querySelectorAll(".nametag")].some((tag) => tag.checkVisibility({ visibilityProperty: true }))), checkMoving);
           if (inView) break;

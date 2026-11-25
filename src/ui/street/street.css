@@ -135,6 +135,7 @@
   pointer-events: none;
 }
 .street-bubble.phrase-save-row {
+  --street-bubble-padding-y: 8px;
   position: absolute;
   z-index: 4;
   top: 0;
@@ -155,7 +156,7 @@
 .street-bubble-text {
   align-self: stretch;
   min-height: 44px;
-  padding: 8px 0 8px 11px;
+  padding: var(--street-bubble-padding-y) 0 var(--street-bubble-padding-y) 11px;
   background: transparent;
   border-radius: inherit;
   cursor: pointer;
