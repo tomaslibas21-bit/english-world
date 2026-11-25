@@ -151,8 +151,9 @@ class ConversationPose implements NaturalPoseDriver {
   private talk = 0;
   private stress = 0;
   private readonly energy: number;
-  private readonly swayA = Math.random() * 6.283;
-  private readonly swayB = Math.random() * 6.283;
+  /** Each person's own drift, from where they stand: no random draw, so seeded runs keep their sequence. */
+  private readonly swayA: number;
+  private readonly swayB: number;
 
   private voice: VoiceVisualOwner | null = null;
   private line: TalkLineId | null = null;
@@ -204,6 +205,9 @@ class ConversationPose implements NaturalPoseDriver {
     this.lips = options.mouth ?? new VoiceMouth();
     this.role = options.role ?? "cast";
     this.energy = options.energy ?? 1;
+    const spot = Math.abs(actor.root.position.x * 12.9898 + actor.root.position.z * 78.233);
+    this.swayA = spot % 6.283;
+    this.swayB = (spot * 1.618) % 6.283;
     this.counterY = options.counterY;
     this.leftThigh = thigh(rig.thighL);
     this.rightThigh = thigh(rig.thighR);
