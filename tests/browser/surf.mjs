@@ -198,6 +198,8 @@ try {
     await step(30);
     check(`${label}: the prompt at the boards is the lesson's`, (await hud()).prompt?.kind === "surf", (await hud()).prompt);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
+    // (the level's choice is a lazy chunk since stones-cards: wait for it, as surf-find and MH's surf.mjs do)
+    await page.locator(".surf-pick .surf-level").first().waitFor();
     await step(5);
     check(`${label}: the level's choice comes up`, await page.locator(".surf-pick .surf-level").count() === 2);
     await page.locator(".surf-later").click();
