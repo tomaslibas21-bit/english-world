@@ -25,7 +25,7 @@ declare global {
   interface Window { __speedFeel?: SpeedFeelReadout }
 }
 
-/** Feedback and the last presented camera for the player at the town wheel. */
+/** Shared feedback for the player at the wheel, in town and on the open road. */
 export class SpeedFeel {
   private readonly strips = document.createElement("div");
   private readonly readout: SpeedFeelReadout;
@@ -45,12 +45,15 @@ export class SpeedFeel {
   private presentedY = 0;
   private holdingTown = false;
   private readonly lastTown;
+  private roadCamera?: PerspectiveCamera;
+  private roadDelta = 0;
+  private roadAmplitude = 0;
 
   constructor(stage: HTMLElement, private readonly cam: PerspectiveCamera, private readonly motion?: MediaQueryList) {
     this.lastTown = {
       w: 0, h: 0, position: cam.position.clone(), quaternion: cam.quaternion.clone(),
       near: cam.near, far: cam.far, zoom: cam.zoom, aspect: cam.aspect,
-      fov: cam.fov, delta: 0, baseFov: cam.fov, baseY: 0, offsetY: 0,
+      fov: cam.fov, delta: 0, baseFov: cam.fov, baseY: 0, offsetY: 0, amplitude: 0,
       hasView: false, view: { enabled: false, fullWidth: 0, fullHeight: 0, offsetX: 0, offsetY: 0, width: 0, height: 0 },
     };
     this.strips.className = "speed-feel";
@@ -62,11 +65,11 @@ export class SpeedFeel {
 
     const feel = this;
     this.readout = Object.freeze({
-      get fov() { return cam.fov; },
-      get baseFov() { return feel.baseFov; },
-      get fovDelta() { return feel.fovDelta; },
+      get fov() { return feel.roadCamera?.fov ?? cam.fov; },
+      get baseFov() { return feel.roadCamera ? feel.roadCamera.fov - feel.roadDelta : feel.baseFov; },
+      get fovDelta() { return feel.roadCamera ? feel.roadDelta : feel.fovDelta; },
       get speed() { return feel.speed; },
-      get shakeAmplitude() { return feel.amplitude; },
+      get shakeAmplitude() { return feel.roadCamera ? feel.roadAmplitude : feel.amplitude; },
       get streakCount() { return feel.tier * 2; },
       get enginePitch() { return feel.active ? audio.carPitchTarget : 0; },
       get windGain() { return feel.active ? audio.windGainTarget : 0; },
@@ -77,15 +80,27 @@ export class SpeedFeel {
   }
 
   get reducedMotion() { return this.motion?.matches ?? false; }
+  get townPoseHeld() { return this.holdingTown; }
   private get fovDelta() { return this.cam.fov === this.presentedFov ? this.lensDelta : 0; }
   get baseFov() { return this.fovDelta ? this.cleanFov : this.cam.fov; }
-  private get townOffsetY() { return this.cam.position.y === this.presentedY ? this.offsetY : 0; }
+  get townOffsetY() { return this.cam.position.y === this.presentedY ? this.offsetY : 0; }
+  get townAmplitude() { return this.cam.position.y === this.presentedY ? this.amplitude : 0; }
+  private get visualStrength() {
+    if (!this.active || this.reducedMotion) return 0;
+    const k = this.resume / RESUME_SECONDS;
+    return k * k * (3 - 2 * k);
+  }
+  get visualPace() { return this.envelope * this.visualStrength; }
+  get visualAmplitude() { return 0.0025 * this.envelope * this.envelope * this.visualStrength; }
 
-  stepTown(dt: number, pace: number) {
+  stepTown(dt: number, pace: number) { this.step(dt, pace, CAR.max); }
+  stepRoad(dt: number, speed: number) { this.step(dt, speed, 28); }
+
+  private step(dt: number, pace: number, max: number) {
     this.syncMotion();
     this.active = true;
     this.speed = pace;
-    const target = Math.max(0, Math.min(1, pace / CAR.max));
+    const target = Math.max(0, Math.min(1, pace / max));
     const tau = target > this.envelope ? 0.22 : 0.32;
     const seconds = Math.max(0, Math.min(0.05, dt));
     if (seconds > 0) this.envelope = target + (this.envelope - target) * Math.exp(-seconds / tau);
@@ -116,7 +131,7 @@ export class SpeedFeel {
     const reduced = this.reducedMotion;
     if (reduced === this.appliedReduced) return;
     this.appliedReduced = reduced;
-    this.resume = reduced || this.active ? 0 : RESUME_SECONDS;
+    this.resume = reduced || this.active || this.roadCamera || this.holdingTown ? 0 : RESUME_SECONDS;
     if (reduced) {
       this.clearPose();
       this.setTier(0);
@@ -124,28 +139,28 @@ export class SpeedFeel {
     this.setStripStrength(this.resume === 0 ? 0 : 1);
   };
 
-  /** Apply speed offsets once the rig and the view offset are in place. */
-  presentTown(base: number, dt: number, time: number, follow: boolean) {
+  stepVisuals(dt: number, follow: boolean) {
     this.syncMotion();
     const show = this.active && follow && !this.appliedReduced;
-    let strength = 0;
     if (show) {
       if (dt > 0 && this.resume < RESUME_SECONDS) this.resume = Math.min(RESUME_SECONDS, this.resume + dt);
-      const k = this.resume / RESUME_SECONDS;
-      strength = k * k * (3 - 2 * k);
-      this.setStripStrength(strength);
+      this.setStripStrength(this.visualStrength);
     }
     const e = this.envelope;
     if (!show) this.setTier(0);
     else if (e >= (this.tier === 2 ? 0.79 : 0.83)) this.setTier(2);
     else this.setTier(e >= (this.tier > 0 ? 0.55 : 0.59) ? 1 : 0);
+  }
 
-    this.amplitude = 0.0025 * e * e * strength;
+  /** Apply speed offsets once the rig and the view offset are in place. */
+  presentTown(base: number, dt: number, time: number, follow: boolean) {
+    this.stepVisuals(dt, follow);
+    this.amplitude = follow ? this.visualAmplitude : 0;
     this.offsetY = this.amplitude * Math.sin(2 * Math.PI * 7 * time);
     this.cleanY = this.cam.position.y;
     this.presentedY = this.cam.position.y += this.offsetY;
     this.cleanFov = base;
-    this.lensDelta = 3.5 * e * strength;
+    this.lensDelta = follow ? 3.5 * this.visualPace : 0;
     return this.presentedFov = base + this.lensDelta;
   }
 
@@ -164,16 +179,19 @@ export class SpeedFeel {
     frame.delta = this.fovDelta;
     frame.baseFov = this.baseFov;
     frame.offsetY = this.townOffsetY;
+    frame.amplitude = this.townAmplitude;
     frame.baseY = frame.offsetY ? this.cleanY : cam.position.y;
     frame.hasView = cam.view !== null;
     if (cam.view) Object.assign(frame.view, cam.view);
   }
 
   /** The road and its town terrain reference start from the actual last draw. */
+  hasTownPose(w: number, h: number) { return this.lastTown.w === w && this.lastTown.h === h; }
+
   holdTownPose(w: number, h: number) {
     this.syncMotion();
     const frame = this.lastTown, { cam } = this;
-    if (frame.w === w && frame.h === h) {
+    if (this.hasTownPose(w, h)) {
       cam.position.copy(frame.position);
       cam.quaternion.copy(frame.quaternion);
       cam.near = frame.near;
@@ -185,6 +203,7 @@ export class SpeedFeel {
       this.cleanY = frame.baseY;
       this.lensDelta = this.appliedReduced ? 0 : frame.delta;
       this.offsetY = this.appliedReduced ? 0 : frame.offsetY;
+      this.amplitude = this.appliedReduced ? 0 : frame.amplitude;
       cam.fov = this.presentedFov = this.appliedReduced ? frame.baseFov : frame.fov;
       if (this.appliedReduced) cam.position.y = frame.baseY;
       this.presentedY = cam.position.y;
@@ -210,6 +229,16 @@ export class SpeedFeel {
 
   restoreTownPose() { if (this.holdingTown) this.clearPose(); }
 
+  presentRoad(camera: PerspectiveCamera, delta: number, amplitude: number) {
+    this.roadCamera = camera;
+    this.roadDelta = delta;
+    this.roadAmplitude = amplitude;
+    // A motion preference can change while the briefing is frozen.
+    this.syncMotion();
+  }
+
+  clearRoadPose() { this.roadCamera = undefined; }
+
   release() {
     if (!this.active) return false;
     this.active = false;
@@ -226,6 +255,7 @@ export class SpeedFeel {
   dispose() {
     this.release();
     this.restoreTownPose();
+    this.clearRoadPose();
     this.motion?.removeEventListener("change", this.syncMotion);
     this.strips.remove();
     if (window.__speedFeel === this.readout) delete window.__speedFeel;

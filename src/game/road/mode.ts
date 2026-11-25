@@ -151,10 +151,9 @@ export class RoadMode {
     this.pool = Promise.resolve(prepared.pool);
     resetRoadUi();
     this.host.entered("road");
-    this.host.holdTownPose();
-    this.host.clearTownHud();
     const setup = prepared.take();
-    if (!setup) { this.brief(); return; }
+    if (!setup) { this.host.clearTownHud(); this.brief(); return; }
+    this.host.holdTownPose();
     const { view, track, gate } = setup, car = new RoadCar(), { m, mesh } = prepared.source;
     car.x = exitCoordinates(m.x, m.z).x;
     car.speed = Math.max(0, m.speed);
@@ -162,7 +161,10 @@ export class RoadMode {
     car.yaw = Math.atan2(Math.sin(heading), Math.cos(heading)) + Math.PI - course(0);
     car.slide = -m.slip * Math.cos(heading) - m.speed * Math.sin(heading);
     const dimensions = this.host.viewport();
-    view.depart(mesh, this.host.player().root, this.host.rig.cam, dimensions.width, dimensions.height);
+    view.depart(mesh, this.host.player().root, this.host.rig.cam, dimensions.width, dimensions.height, this.host.speedFeel());
+    this.host.clearTownHud();
+    audio.stopAmbience();
+    audio.rush("squeal", 0);
     const run = this.newRun(track, view, car);
     run.gate = gate;
     this.crest = prepared.pool;
@@ -214,7 +216,7 @@ export class RoadMode {
     }
     const run = this.newRun(track, view, car, pick, way);
     view.stream(track, 0, 0);
-    view.pose(car.pose, undefined, 0.7, false, 0, 0, 0);
+    view.pose(car.pose, undefined, false, 0, 0, 0);
     this.drive(run);
     this.openGate(run, first);
   }
@@ -246,6 +248,8 @@ export class RoadMode {
     audio.stopAmbience();
     countPlay("games", "road");
     useRoad.setState({ phase: "drive", way: run.way, remaining: DRIVE_SECONDS, streak: 0, ghost: !!this.best, result: undefined, feedback: undefined });
+    this.host.speedFeel(() => this.run === run && this.phase === "drive" && this.host.owns("road"));
+    this.driveFeedback(run.car.speed, 0);
   }
 
   private warmNextPrompt(run: Run) {
@@ -283,7 +287,7 @@ export class RoadMode {
     if (!session) return;
     this.dialogue.update(frame.dt, frame.blocked);
     if (frame.blocked) {
-      if (this.run) { audio.motor(null); audio.rush("wind", 0); audio.rush("squeal", 0); }
+      if (this.run) this.releaseDrive();
       return;
     }
     if (this.phase === "approach" && this.lift?.arrive(frame.dt)) {
@@ -314,6 +318,23 @@ export class RoadMode {
     else if (!prompt.gap) this.play(prompt.word.clip);
   }
 
+  private driveFeedback(speed: number, dt: number) {
+    const feel = this.host.speedFeel();
+    if (feel) {
+      feel.stepRoad(dt, speed);
+      feel.stepVisuals(dt, true);
+      feel.sound();
+    } else audio.motor("car", 0);
+  }
+
+  private releaseDrive() {
+    if (!this.host.speedFeel()?.release()) {
+      audio.motor(null);
+      audio.rush("wind", 0);
+    }
+    audio.rush("squeal", 0);
+  }
+
   private updateRun(frame: ModeFrame, run: Run) {
     const { car, score, view, track } = run;
     const dt = Math.min(frame.dt, DRIVE_SECONDS - score.elapsed);
@@ -337,8 +358,6 @@ export class RoadMode {
     run.ghost.sample(run.sampledTime, car.pose);
     if (!oldBoost && car.boost > 0) audio.kickRush();
     if (car.wobble > oldWobble + 0.05) audio.bump(0.6);
-    audio.motor("car", motion.pace);
-    audio.rush("wind", Math.max(0, (motion.pace - 0.25) * 0.9), motion.pace);
     audio.rush("squeal", motion.drifting ? 0.46 : 0, motion.pace);
     view.stream(track, car.s, score.elapsed, motion.changed);
     run.drifting = motion.drifting;
@@ -391,17 +410,16 @@ export class RoadMode {
       if (run.feedback > 0 && (run.feedback -= dt) <= 0) useRoad.setState({ feedback: undefined });
       if ((run.promptIn -= dt) <= 0 && !ended && !run.gate) this.openGate(run);
     }
-    const pace = car.boost > 0 ? Math.max(1.08, motion.pace) : motion.pace;
-    view.pose(car.pose, this.best && ghostAt(this.best.frames, score.elapsed), pace, motion.drifting,
+    this.driveFeedback(car.speed, dt);
+    view.pose(car.pose, this.best && ghostAt(this.best.frames, score.elapsed), motion.drifting,
       car.wobble, frame.time, dt, car.boost > 0, car.speed);
     if (view.hasSeatedPlayer) {
       const player = this.host.player();
       player.steer = -car.yaw * 3;
       player.update(dt);
     }
-    const remaining = Math.ceil(DRIVE_SECONDS - score.elapsed), wind = motion.pace > 0.7 || car.boost > 0;
-    const ui = useRoad.getState();
-    if (ui.remaining !== remaining || ui.wind !== wind) useRoad.setState({ remaining, wind });
+    const remaining = Math.ceil(DRIVE_SECONDS - score.elapsed);
+    if (useRoad.getState().remaining !== remaining) useRoad.setState({ remaining });
     if (ended && !this.finishingPhrase(run)) this.finish(run);
   }
 
@@ -414,9 +432,7 @@ export class RoadMode {
     run.gate = undefined;
     karaoke.road.stop();
     audio.stop();
-    audio.motor(null);
-    audio.rush("wind", 0);
-    audio.rush("squeal", 0);
+    this.releaseDrive();
     const { score } = run;
     rememberRun(edition, run.way, score.history);
     const best = { points: score.points, frames: run.ghost.frames };
@@ -424,7 +440,7 @@ export class RoadMode {
     if (record) this.best = best;
     const cards = keepRunPhrases(score);
     useStore.getState().setHud({ ride: null });
-    useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, gateId: undefined, stampedLane: undefined, sayIt: undefined, wind: false, result: {
+    useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, gateId: undefined, stampedLane: undefined, sayIt: undefined, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: run.distance,
       record, cards, ...practiceResult(score, run.way), ...score.sayIt.result,
     } });
@@ -434,7 +450,9 @@ export class RoadMode {
   render(renderer: WebGLRenderer, width: number, height: number) {
     const run = this.run;
     if (!run) return false;
-    run.view.render(renderer, width, height, run.gate);
+    const feel = this.host.speedFeel(), { view } = run;
+    view.render(renderer, width, height, run.gate, feel);
+    feel?.presentRoad(view.camera, view.speedFovDelta, view.shakeAmplitude);
     karaoke.road.align();
     return true;
   }
@@ -504,9 +522,8 @@ export class RoadMode {
     karaoke.road.stop();
     this.clearRun();
     audio.stop();
-    audio.motor(null);
-    audio.rush("wind", 0);
-    audio.rush("squeal", 0);
+    this.releaseDrive();
+    this.host.speedFeel()?.clearRoadPose();
     if (this.lift) {
       this.host.deferLift();
       this.host.hideNpc(driver.npc, false);

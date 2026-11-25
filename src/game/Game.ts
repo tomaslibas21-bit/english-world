@@ -380,6 +380,7 @@ export class Game implements GameApi {
   private speedFeelLoad?: Promise<typeof import("./rides/speedFeel") | undefined>;
   private speedFeelRetry?: URL;
   private speedFeelAttempt = 0;
+  private roadTownView?: THREE.PerspectiveCamera;
   private carMotionQuery?: MediaQueryList;
   private road?: RoadEntry;
   private sea?: SeaEntry;
@@ -663,6 +664,7 @@ export class Game implements GameApi {
         if (!!state.hud.roadApproach !== roadApproach) state.setHud({ roadApproach });
       },
       holdTownPose: () => {
+        if (this.roadTownView) this.rig.cam.copy(this.roadTownView, false);
         this.speedFeel?.holdTownPose(this.screenW, this.screenH);
         this.sky.position.copy(this.rig.cam.position);
       },
@@ -671,6 +673,10 @@ export class Game implements GameApi {
         this.nearest = null;
         this.tagLayer.style.visibility = "hidden";
         useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
+      },
+      speedFeel: (acquire) => {
+        if (acquire) this.loadSpeedFeel(acquire);
+        return this.speedFeel;
       },
       left: (id) => { this.speedFeel?.restoreTownPose(); this.tagLayer.style.visibility = ""; host.left(id); },
       deferLift: () => this.road?.deferLift(),
@@ -1535,8 +1541,14 @@ export class Game implements GameApi {
 
   private loadTownSpeedFeel(ride: Ride) {
     if (this.speedFeel || this.disposed) return;
-    this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
     const request = this.speedFeelRequest = {}, zone = this.zone, session = this.session;
+    this.loadSpeedFeel(() => this.speedFeelRequest === request && this.zone === zone && this.session === session
+      && !this.session?.active && !this.modes.engaged && this.rides.riding === ride && this.rides.phase !== "out");
+  }
+
+  private loadSpeedFeel(accept: () => boolean) {
+    if (this.speedFeel || this.disposed) return;
+    this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (!this.speedFeelLoad) {
       const retry = this.speedFeelRetry;
       if (retry) retry.searchParams.set("speed-feel-retry", String(++this.speedFeelAttempt));
@@ -1557,8 +1569,7 @@ export class Game implements GameApi {
       });
     }
     void this.speedFeelLoad.then((module) => {
-      if (!module || this.speedFeelRequest !== request || this.disposed || this.speedFeel || this.zone !== zone || this.session !== session
-        || this.session?.active || this.modes.engaged || this.rides.riding !== ride || this.rides.phase === "out") return;
+      if (!module || this.disposed || this.speedFeel || !accept()) return;
       const { screen, settings } = useStore.getState();
       if (screen === "play" && settings.play === "town") {
         this.speedFeel = new module.SpeedFeel(this.container, this.rig.cam, this.carMotionQuery);
@@ -3057,6 +3068,9 @@ export class Game implements GameApi {
     // the conversation's camera leans in a little while the other person speaks, and eases back when they stop
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
+    const roadAtCrest = !blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding);
+    // The live camera still has the last draw if the lazy feedback controller missed that frame.
+    if (roadAtCrest && !this.speedFeel?.hasTownPose(w, h)) this.roadTownView = this.rig.cam.clone();
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
@@ -3129,11 +3143,14 @@ export class Game implements GameApi {
     this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
     if (!covered) {
       this.road?.stage(this.renderer);
-      if (!blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding)
-        && this.modes.start("road") && this.road.render(this.renderer, w, h)) {
-        this.presentWorld("road");
-        this.sampleFps(true);
-        return;
+      if (roadAtCrest) {
+        const started = this.modes.start("road");
+        this.roadTownView = undefined;
+        if (started && this.road?.render(this.renderer, w, h)) {
+          this.presentWorld("road");
+          this.sampleFps(true);
+          return;
+        }
       }
       if (!blocked && !mode && riding?.kind === "boat" && this.rides.phase === "on" && this.sea?.shouldStart(riding)) {
         if (import.meta.env.DEV) {
