@@ -5,7 +5,7 @@ import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
-import { coachVoice, npcVoice } from "../content/voices";
+import { coachVoice } from "../content/voices";
 import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
 import { KIND, keepsakeFor } from "../content/keepsakes";
 import { GLOBAL } from "../content/global";
@@ -14,6 +14,7 @@ import { compose, type Sentence } from "../convo/compose";
 import type { EntityDef, HintGroup, SituationDef, SituationMeta } from "../content/types";
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
+import { replayNpc } from "./replayNpc";
 import { speechSupported } from "../convo/speech";
 import { sitProgress, stars } from "../state/progress";
 import { toImperative } from "./lt";
@@ -400,21 +401,9 @@ function groupLines(lines: TranscriptLine[]): TranscriptLine[][] {
   return out;
 }
 
-async function replayNpc(lines: readonly TranscriptLine[], slow: boolean) {
-  const session = game?.activeSession;
-  session?.stopListening();
-  for (const l of lines) {
-    if (game?.activeSession !== session || (session && !session.active)) return;
-    const npc = NPCS[l.npc!];
-    const visual = session?.replayVoice(l.npc!, l.id);
-    if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say,
-      { slow, male: npc?.gender === "m", ...(visual ? { visual } : {}) })) return;
-  }
-}
-
 function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
   const npc = NPCS[lines[0].npc!];
-  const replay = (slow: boolean) => { void replayNpc(lines, slow); };
+  const replay = (slow: boolean) => void replayNpc(lines, slow);
   return (
     <div className={"msg npc" + (speaking ? " speaking" : "")}>
       <div className="meta">
@@ -653,7 +642,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
-    const replay = (slow: boolean) => { void replayNpc([l], slow); };
+    const replay = (slow: boolean) => void replayNpc([l], slow);
     return (
       <div className={"msg npc" + (speaking ? " speaking" : "")}>
         <div className="meta">

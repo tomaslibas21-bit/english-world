@@ -30,7 +30,7 @@ export class ModeDialogue {
   private acting?: ActorTalk;
   micOn = true;
 
-  constructor(private ui: {
+  constructor(private readonly ui: {
     say(line: KitLine | null): void;
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
@@ -44,19 +44,16 @@ export class ModeDialogue {
   }) {}
 
   private presentation() {
-    if (this.acting) return this.acting;
-    const acting = this.ui.acting?.();
-    if (!acting) return;
-    this.acting = acting;
-    acting.pause(this.paused);
-    const { choices, mic, answer } = this.ui;
-    this.ui = {
-      ...this.ui,
-      choices: (lines) => { this.attend(lines.length > 0); choices(lines); },
-      mic: (state) => { if (state.status === "unclear") this.feedback("puzzled"); mic(state); },
-      answer: (line) => { this.feedback("understood"); answer?.(line); },
-    };
-    return acting;
+    if (!this.acting) {
+      this.acting = this.ui.acting?.();
+      this.acting?.pause(this.paused);
+    }
+    return this.acting;
+  }
+
+  private showChoices(lines: KitLine[]) {
+    if (this.acting) this.attend(lines.length > 0);
+    this.ui.choices(lines);
   }
 
   attend(waiting: boolean) {
@@ -177,7 +174,7 @@ export class ModeDialogue {
     this.presentation();
     return new Promise<KitLine | null>((finish) => {
       this.turn = { options, speech, spokenNames, finish, retries: 0 };
-      this.ui.choices(options);
+      this.showChoices(options);
       this.listen();
     });
   }
@@ -194,7 +191,8 @@ export class ModeDialogue {
     const turn = this.turn, line = turn?.options.find((option) => option.key === key);
     if (!turn || !line || turn.choosing || this.paused || this.playback) return;
     this.stopListening();
-    this.ui.choices([]);
+    this.showChoices([]);
+    this.feedback("understood");
     this.ui.answer?.(line);
     if (spoken) {
       this.turn = null;
@@ -217,7 +215,7 @@ export class ModeDialogue {
       const turn = this.turn;
       this.turn = null;
       this.stopListening();
-      this.ui.choices([]);
+      this.showChoices([]);
       turn.finish(null);
     }
   }
@@ -259,6 +257,7 @@ export class ModeDialogue {
           if (answer.line) this.choose(answer.line.key, true);
           else { turn.retries = 0; this.retryIn = 0.15; }
         } else {
+          this.feedback("puzzled");
           this.ui.mic({ status: "unclear", heard: text });
           if (++turn.retries < 3) this.retryIn = 1.3;
         }
@@ -307,7 +306,7 @@ export class ModeDialogue {
     this.turn = null;
     this.stopListening();
     turn?.finish(null);
-    this.ui.choices([]);
+    this.showChoices([]);
     this.clearLine();
     this.paused = false;
     this.micHeld = false;

@@ -59,7 +59,7 @@ import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import type { TalkPresentation } from "./talkFraming";
-import type { NaturalSession, SessionReaction } from "./talkNatural/session";
+import { bindNaturalTalk } from "./talkNatural/view";
 import type { VoiceVisualOwner } from "./talkNatural/contract";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance } from "./guidance";
@@ -206,13 +206,8 @@ export class Game implements GameApi {
   private talkCast: NpcActor[] = [];
   private talkSpeaker: NpcActor | null = null;
   private talkCamera?: TalkPresentation;
-  private naturalTalk?: NaturalSession;
-  private naturalView?: {
-    sync(): void;
-    transition(): void;
-    stop(): void;
-    feedback(id: string, kind: SessionReaction): void;
-  };
+  private naturalView?: ReturnType<typeof bindNaturalTalk>;
+  private get naturalTalk() { return this.naturalView?.presentation; }
   private get talkLayout() { return this.talkCamera?.layout ?? null; }
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
@@ -1968,8 +1963,6 @@ export class Game implements GameApi {
 
   private phoneVisibility = () => {
     this.wasHidden = true;
-    this.naturalView?.sync();
-    if (document.hidden && this.naturalTalk?.releasing) this.stopNaturalTalk(false);
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.observeStreetAndPhone();
   };
@@ -2008,19 +2001,19 @@ export class Game implements GameApi {
       this.aimTalk(actor);
       this.player.setAnim("idle");
     }
-    const acting = !!actor && !isCall(sit);
+    const people = this.npcs, acting = !!actor && !isCall(sit);
     const voice = (n: NpcActor | undefined, line: number, replay?: VoiceVisualOwner["replay"]) =>
-      acting && n && !this.disposed && this.session === session && session.active ? { actor: n.ch, line, replay } : undefined;
+      acting && n && this.npcs === people && !this.disposed && this.session === session && session.active ? { actor: n.ch, line, replay } : undefined;
     const session: Session = new Session(sit.id, {
-      npcTalk: (npcId, _secs, _text, line, replay) => {
+      npcTalk: (npcId, line, replay) => {
         const n = this.npcs.find((x) => x.id === npcId);
         // the camera follows changes of speaker
         if (n && this.rig.mode === "talk" && this.talkCast.includes(n)) this.aimTalk(n);
         return voice(n, line, replay);
       },
-      npcVoice: (id, line, replay) => voice(this.npcs.find((n) => n.id === id), line, replay),
-      npcReact: (id, kind, repeat) => {
-        if (this.session === session && session.active) this.naturalView?.feedback(id, repeat ? "repeat" : kind);
+      npcVoice: (id, line, replay) => voice(people.find((n) => n.id === id), line, replay),
+      npcReact: (id, kind) => {
+        if (this.session === session && session.active) this.naturalView?.feedback(id, kind);
       },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
@@ -2041,7 +2034,11 @@ export class Game implements GameApi {
         && this.zone === zone && this.talkNpc === actor && this.rig.mode === "talk"
         && !!this.talkSpeaker && this.npcs.includes(this.talkSpeaker);
     };
-    if (!isCall(session.sit)) this.startNaturalTalk(actor, session, zone, run, hasArt, valid);
+    if (!isCall(session.sit)) this.naturalView = bindNaturalTalk({
+      run, zone, host: actor, cast: this.talkCast, people: this.npcs,
+      extras: this.extras.filter((_, i) => ROOM_PEOPLE[zone.id]?.[i]?.chat === undefined),
+      authoredCast: session.sit.npcs, player: this.player, audio, free: (n) => !this.modes.active?.ownsNpc?.(n.id),
+    }, hasArt, valid, () => this.transitioning || !!this.modes.active);
     void loadTalkFraming().then((module) => {
       if (!module || !valid() || !this.talkSpeaker) return;
       this.talkCamera = new module.TalkPresentation(this.renderer.domElement, this.rig, this.talkSpeaker, valid, hasArt, () => {
@@ -2057,81 +2054,8 @@ export class Game implements GameApi {
     });
   }
 
-  private startNaturalTalk(actor: NpcActor, session: Session, zone: ZoneState, run: number, hasArt: boolean, valid: () => boolean) {
-    const motion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    let shown = false, loading = false, allowCurrent = true, transition = this.transitioning, mode = this.modes.active;
-    let pending: { id: string; kind: SessionReaction; at: number } | undefined;
-    const visible = () => {
-      const { settings, hud } = useStore.getState();
-      return !document.hidden && !this.transitioning && !this.modes.active && !hud.panel &&
-        settings.play !== "light" && !(hasArt && picturesOn(settings));
-    };
-    const suppressPendingWave = () => {
-      if (!shown || !motion?.matches || this.naturalTalk) return;
-      for (const { ch } of this.talkCast) if (ch.anim === "wave") { ch.setAnim("idle"); ch.update(0); }
-    };
-    const motionChanged = () => {
-      if (!motion?.matches) return;
-      allowCurrent = false;
-      pending = undefined;
-      this.naturalTalk?.discardPending(useStore.getState().conv);
-      suppressPendingWave();
-    };
-    const sync = () => {
-      transition = this.transitioning;
-      mode = this.modes.active;
-      if (!valid() || !visible()) {
-        if (shown) this.naturalTalk?.suspend();
-        shown = allowCurrent = false;
-        pending = undefined;
-        return;
-      }
-      if (shown) return;
-      shown = true;
-      suppressPendingWave();
-      if (this.naturalTalk) { this.naturalTalk.present(useStore.getState().conv, false); return; }
-      if (loading) return;
-      loading = true;
-      void import("./talkNatural/session").then(({ NaturalSession }) => {
-        loading = false;
-        if (this.naturalView !== view || !shown || !valid() || !visible()) return;
-        const natural = this.naturalTalk = new NaturalSession({
-          run, zone, host: actor, cast: this.talkCast, people: this.npcs,
-          extras: this.extras.filter((_, i) => ROOM_PEOPLE[zone.id]?.[i]?.chat === undefined),
-          authoredCast: session.sit.npcs, player: this.player, audio, free: (n) => !this.modes.active?.ownsNpc?.(n.id),
-        });
-        const { conv } = useStore.getState();
-        natural.present(conv, allowCurrent);
-        const owner = audio.visualOwner;
-        const repeating = owner?.replay === "turn" && owner.line === conv.speaking;
-        if (pending && (performance.now() - pending.at < 500 || (pending.kind === "repeat" && repeating))) {
-          natural.feedback(pending.id, pending.kind);
-        }
-        pending = undefined;
-      }).catch(() => { loading = false; pending = undefined; });
-    };
-    const unsubscribe = useStore.subscribe((next, previous) => {
-      if (next.conv.run !== previous.conv.run || next.conv.active !== previous.conv.active ||
-        next.settings !== previous.settings || next.hud.panel !== previous.hud.panel) sync();
-    });
-    const view = this.naturalView = {
-      sync, transition: () => { if (transition !== this.transitioning || mode !== this.modes.active) sync(); },
-      stop: () => { pending = undefined; unsubscribe(); motion?.removeEventListener("change", motionChanged); },
-      feedback: (id: string, kind: SessionReaction) => {
-        if (!shown || !visible() || motion?.matches) return;
-        if (this.naturalTalk) this.naturalTalk.feedback(id, kind);
-        else pending = { id, kind, at: performance.now() };
-      },
-    };
-    motion?.addEventListener("change", motionChanged);
-    sync();
-  }
-
   private stopNaturalTalk(release: boolean) {
-    this.naturalView?.stop();
-    this.naturalView = undefined;
-    if (release) this.naturalTalk?.close();
-    else { this.naturalTalk?.dispose(); this.naturalTalk = undefined; }
+    if (!this.naturalView?.stop(release)) this.naturalView = undefined;
   }
 
   private stopTalkLayout(release = false) {
@@ -2534,8 +2458,7 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const talking = !!this.session?.active;
     const mode = this.modes.active;
-    this.naturalView?.transition();
-    if (this.naturalTalk && !this.naturalTalk.update(st.conv, dt)) this.stopNaturalTalk(false);
+    if (this.naturalView && !this.naturalView.update(st.conv, dt)) this.naturalView = undefined;
     const speaker = this.naturalTalk?.speaker;
     if (speaker) {
       speaker.headJoint.getWorldPosition(this.talkAt);
