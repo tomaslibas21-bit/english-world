@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
 import { STREET_WORDS } from "../game/street/words";
-import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
+import { useCards, unitInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -16,6 +16,8 @@ import { Icon } from "./icons";
 import { ltCount } from "./lt";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
+import { PhraseSave } from "./kit/PhraseSave";
+import type { PhraseSource } from "./kit/phraseLine";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -88,17 +90,20 @@ export function inView(el: HTMLElement): boolean {
 /** What a tapped word offers: the word with its Lithuanian, „+ Į korteles“ and „+ Visą sakinį“
  *  (only the sentence for words glossed "—"). Closes on an outside tap, Esc, or when the word
  *  scrolls away. */
-export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index: number; anchor: HTMLElement; onClose: () => void }) {
+export function WordPopover({ s, index, anchor, onClose, source, portalHost, targetLang = TL, helperLang = EDITION.helper }: {
+  s: Sentence; index: number; anchor: HTMLElement; onClose: () => void;
+  source?: PhraseSource; portalHost?: HTMLElement; targetLang?: string; helperLang?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
-  const sitId = useStore((st) => st.conv.sitId);
+  const situationId = useStore((st) => source?.situationId ?? st.conv.sitId);
+  const sourceLabel = source?.sourceLabel;
   const [spot, setSpot] = useState<Spot | null>(null);
   const [saved, setSaved] = useState(false);
   const u = s.units[index];
-  const word = useMemo(() => unitInput(s, index, sitId, keepCaps), [s, index, sitId]);
-  const whole = useMemo(() => sentenceInput(s, sitId), [s, sitId]);
+  const word = useMemo(() => unitInput(s, index, situationId, keepCaps), [s, index, situationId]);
   const dash = !u || isDashGloss(u.lt) || !word;
 
   // follow the word (scrolling, new lines, the LT/IPA toggles), close when it's gone
@@ -127,34 +132,30 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
       closeRef.current();
     };
     // capture, so Esc closes only the popover (not the conversation)
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeRef.current(); } };
+    const key = (e: KeyboardEvent) => { if (!e.defaultPrevented && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeRef.current(); } };
     document.addEventListener("pointerdown", down, true);
     window.addEventListener("keydown", key, true);
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [anchor]);
 
   if (!u) return null;
-  const add = (x: typeof whole | null) => { if (x && useCards.getState().add(x)) setSaved(true); };
   const wordIn = !!word && keys.has(cardKey(word.en));
-  const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })}
+    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })} onClick={(event) => event.stopPropagation()}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
-      <div className="wpop-en" lang={TL}>{shown}</div>
+      <div className="wpop-en" lang={targetLang}>{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugokite visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
+      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugokite visą sakinį.")}</div> : <div className="wpop-lt" lang={helperLang}>{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
-          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
-        {sentIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Sakinys kortelėse")}</span>
-          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> {L("Visą sakinį")}</button>}
+          : <button className="btn small" onClick={() => { if (useCards.getState().add({ ...word, sourceLabel })) setSaved(true); }}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
+        <PhraseSave sentence={s} situationId={situationId} sourceLabel={sourceLabel} popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
       </div>
       {saved && <div className="wpop-hint">{L("Kortelę rasite „Frazių knygelėje“.")}</div>}
     </div>,
-    document.body,
+    portalHost ?? document.body,
   );
 }
 
@@ -322,7 +323,8 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
         <div className="rv-label">
           {L("Pasakyk angliškai")}
           {sit ? <span className="rv-sit"> · <SitIcon id={sit.id} size="1.15em" />{"\u00a0"}{sit.title.lt}</span>
-            : card.situationId === "street" && <span className="rv-sit"> · {STREET_WORDS.cards}{card.sourceLabel && ` · ${card.sourceLabel}`}</span>}
+            : card.situationId === "street" ? <span className="rv-sit"> · {STREET_WORDS.cards}{card.sourceLabel && ` · ${card.sourceLabel}`}</span>
+            : card.sourceLabel && <span className="rv-sit"> · {card.sourceLabel}</span>}
         </div>
         <div className="rv-lt" lang={EDITION.helper}>{card.lt}</div>
         {shown ? (

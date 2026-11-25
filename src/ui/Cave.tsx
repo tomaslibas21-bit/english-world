@@ -1,14 +1,14 @@
 // Puerto Colibrí's grotto on the screen (src/game/cave): the chamber and quest card
 // (which chamber, how many of its stones are lit, what opens next), and the card of the glyph stone the learner is
 // at: the stone says its phrase; they pick what it means, or say it back.
-import { useEffect, useState, type ComponentType } from "react";
+import { lazy, Suspense, useState, type ComponentType } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
 import { SitIcon } from "./SitIcon";
-import { Interlinear } from "./Interlinear";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
+import { stoneReading } from "./kit/stoneReading";
 
 /** Which chamber one is in and what comes next. */
 export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ angle: number }>; phoneToast: boolean }) {
@@ -68,68 +68,16 @@ export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ 
 }
 
 /** At a glyph stone. */
+const GlyphReader = lazy(() => import("./CaveGlyphReader"));
+
 export function GlyphCard() {
-  const g = useStore((s) => s.hud.glyph);
-  const lt = useStore((s) => s.settings.lt);
-  const ipa = useStore((s) => s.settings.ipa);
+  const glyph = useStore((s) => s.hud.glyph);
   const cave = game?.cave;
-  useEffect(() => {
-    if (!g) return;
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { cave?.close(); return; }
-      if (e.key.toLowerCase() === "r" || (!g.solved && e.key === " ")) {
-        e.preventDefault();
-        if (!e.repeat) cave?.say();
-      } else if (!g.solved && ["1", "2", "3"].includes(e.key) && Number(e.key) <= g.options.length) {
-        e.preventDefault();
-        cave?.pick(Number(e.key) - 1);
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [g, cave]);
-  if (!g || !cave) return null;
-  const listening = g.mic === "listening";
-  return (
-    <div className="glyph-veil" onClick={(e) => { if (e.target === e.currentTarget) cave.close(); }}>
-      <div className={"glyph-card" + (g.solved ? " solved" : "")} role="dialog" aria-label={L("Kalbantis akmuo")}>
-        <button className="glyph-x" onClick={() => cave.close()} title={L("Uždaryti")} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
-        <div className="glyph-head">
-          <span className="glyph-rune" aria-hidden><i /><i /><i /></span>
-          <h2>{g.solved ? L("Akmuo užsidegė!") : L("Akmuo kalba. Ką jis sako?")}</h2>
-        </div>
-        <div className="glyph-say">
-          <button className="glyph-play" onClick={() => cave.say()} title={L("Klausyti dar kartą")} aria-label={L("Klausyti dar kartą")}><Icon name="speaker" size={26} /></button>
-          {g.shown
-            // (a stone's own line, once lit: the words with their sounds and meanings, as in the conversations)
-            ? g.solved && g.s ? <div className="glyph-text glyph-line" lang={TL}><Interlinear s={g.s} lt={lt} ipa={ipa} nat={lt} /></div>
-              : <div className="glyph-text" lang={TL}>{g.text}{g.solved && lt && <small lang={EDITION.helper}>{g.lt}</small>}</div>
-            : <button className="glyph-show" onClick={() => cave.showWords()}><span aria-hidden>· · ·</span> {L("Rodyti žodžius")}</button>}
-        </div>
-        {!g.solved && (
-          <>
-            <p className="glyph-q">{L("Pasirink, ką tai reiškia:")}</p>
-            <div className="glyph-opts">
-              {g.options.map((o, i) => (
-                <button key={i} className={"glyph-opt" + (g.wrong.includes(i) ? " wrong" : "")} disabled={g.wrong.includes(i)} lang={EDITION.helper} onClick={() => cave.pick(i)}>
-                  <kbd>{i + 1}</kbd><span>{o}</span>
-                </button>
-              ))}
-            </div>
-            {g.mic !== "unsupported" && (
-              <div className="glyph-mic">
-                <span className="glyph-or">{L("arba")}</span>
-                <button className={"btn small" + (listening ? "" : " soft")} onClick={() => cave.listen()}>
-                  <Icon name={listening ? "stop" : "mic"} size={18} /> {listening ? L("Klausau…") : L("Pasakyk tai balsu")}
-                </button>
-                {g.heard && <span className={"glyph-heard" + (g.mic === "missed" ? " miss" : "")} lang={TL}>{L("„{line}“", { line: g.heard })}</span>}
-                {g.mic === "missed" && !g.heard && <span className="glyph-heard miss">{L("Neišgirdau. Bandyk dar kartą.")}</span>}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
+  if (!glyph || !cave) return null;
+  return <Suspense fallback={<dialog className="glyph-loading" aria-label={L("Kalbantis akmuo")}
+    ref={(node) => { if (node) { node.showModal(); return () => node.close(); } }}
+    onCancel={(event) => { event.preventDefault(); cave.close(); }} />}>
+    <GlyphReader key={glyph.opening} g={glyph} cave={cave} reader={stoneReading} />
+  </Suspense>;
 }
 

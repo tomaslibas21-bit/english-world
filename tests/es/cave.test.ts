@@ -1,12 +1,247 @@
 // Puerto Colibrí's grotto under Cenote Ka'an (src/game/cave): its plan holds together and its rules are the owner's:
 // the first chamber for everyone, one more per ten conversations finished; the stones speak what the learner knows.
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { Vector3 } from "three";
 import * as P from "@/game/cave/plan";
+import type { CaveView } from "@/game/cave/Cave";
+import { CaveQuest } from "@/game/cave/quest";
+import { audio } from "@/game/audio";
+import * as catalog from "@/content/situations/catalog";
+import { useStore } from "@/state/store";
+import { L } from "@/ui/i18n";
 import { SITUATIONS, SITUATION_BY_ID } from "@/content/situations";
 import { ROUTE } from "@/content/route";
 import { NPCS } from "@/content/npcs";
 import { LOCATIONS } from "@/content/locations";
 import { THEME } from "@/game/world/theme";
+
+describe("live glyph openings with local media fixtures", () => {
+  const first = "agua-1", canonical = "El agua guarda la memoria.";
+  const starter = "¡Muchas gracias!", starter2 = "¡Adiós!";
+  const borrowed = { en: "¿Cuánto cuesta?", lt: "How much is it?", sitId: "s72-cafe", count: 3, last: 10 };
+  const bookKey = P.TREE_SIT + ":agua_01";
+  const initial = useStore.getState();
+  const ready = audio.ready;
+  let tree: NonNullable<Awaited<ReturnType<typeof catalog.loadSituation>>>;
+  let quest: CaveQuest | undefined;
+  const glyph = () => useStore.getState().hud.glyph!;
+  const progress = () => useStore.getState().progress;
+  const tick = () => vi.advanceTimersByTimeAsync(0);
+  const create = () => {
+    const view = { setGate: vi.fn(), setStone: vi.fn(), setCalling: vi.fn(), setHeart: vi.fn(), burst: vi.fn() };
+    const gates = vi.fn();
+    quest = new CaveQuest(view as unknown as CaveView, { gates });
+    gates.mockClear();
+    return { cave: quest, view, gates };
+  };
+
+  beforeAll(async () => {
+    const def = await catalog.loadSituation(P.TREE_SIT);
+    if (!def) throw new Error("Missing x04 stone phrases");
+    tree = def;
+  });
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal("document", { hidden: false });
+    useStore.setState({ progress: { ...initial.progress, cave: { lit: [], passed: ["kin"], seen: true }, phrases: {} }, toast: vi.fn() });
+    audio.ready = true;
+    vi.spyOn(audio, "init").mockResolvedValue();
+    vi.spyOn(audio, "hasClip").mockReturnValue(true);
+    vi.spyOn(audio, "play").mockResolvedValue(true);
+    for (const method of ["stop", "stopCall", "stopCave", "cave", "chime", "sfx"] as const) vi.spyOn(audio, method).mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    quest?.dispose();
+    quest = undefined;
+    useStore.setState(initial, true);
+    audio.ready = ready;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("uses the manifested line even if its asset fails, and credits it while the reader remains open", async () => {
+    vi.mocked(audio.play).mockResolvedValue(false);
+    const { cave, view } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening).toMatchObject({ text: canonical, source: { situationId: P.TREE_SIT }, shown: false });
+    expect(new Set(opening.options).size).toBe(3);
+    cave.showWords();
+    cave.pick(opening.answer);
+    expect(progress().cave).toMatchObject({ lit: [first], heard: ["agua_01"] });
+    expect(progress().phrases[bookKey]).toMatchObject({ en: canonical, sitId: P.TREE_SIT, count: 1 });
+    expect(view.setStone).toHaveBeenLastCalledWith(first, true);
+    await vi.advanceTimersByTimeAsync(5000);
+    cave.say();
+    expect(audio.play).toHaveBeenLastCalledWith(expect.any(String), 1, canonical, expect.objectContaining({ optional: true, recordingOnly: true }));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(glyph()).toMatchObject({ opening: opening.opening, solved: true });
+    cave.close();
+    expect(glyph()).toBeNull();
+  });
+
+  it("borrows a recorded book entry with its source when the first asset is absent from the manifest", async () => {
+    vi.mocked(audio.hasClip).mockImplementation((_voice, _speed, en) => en !== canonical);
+    useStore.getState().updateProgress((p) => { p.phrases.cafe = borrowed; });
+    const { cave } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening).toMatchObject({ text: borrowed.en, lt: borrowed.lt, source: { situationId: borrowed.sitId } });
+    expect(opening.s).toBeUndefined();
+    cave.pick(opening.answer);
+    expect(progress().cave?.heard ?? []).toEqual([]);
+    expect(progress().phrases).toEqual({ cafe: borrowed });
+  });
+
+  it("keeps recorded starter pairs and real distractors in a starter-only manifest", async () => {
+    vi.mocked(audio.hasClip).mockImplementation((_voice, _speed, en) => en === starter || en === starter2);
+    useStore.getState().updateProgress((p) => { p.cave!.heart = p.cave!.tree = true; });
+    const { cave } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening).toMatchObject({ text: starter, source: { situationId: "", sourceLabel: L("Kalbantis akmuo") } });
+    expect(opening.s).toBeUndefined();
+    expect(new Set(opening.options).size).toBe(3);
+    expect(opening.options[opening.answer]).toBe(opening.lt);
+    cave.pick(opening.answer);
+    cave.close();
+    cave.update(41, new Vector3(-8.2, 0, -24.5), 0, true);
+    cave.open(first);
+    expect(glyph()?.text).toBe(starter2);
+    expect(progress().cave?.heard ?? []).toEqual([]);
+  });
+
+  it("opens the authored first stone and can finish and refresh a post-heart round with an empty manifest", async () => {
+    vi.mocked(audio.hasClip).mockReturnValue(false);
+    const start = create().cave;
+    await tick();
+    start.open(first);
+    expect(glyph()).toMatchObject({ text: canonical, options: expect.any(Array), source: { situationId: P.TREE_SIT } });
+    expect(new Set(glyph().options).size).toBe(3);
+    start.close();
+    expect(progress().cave?.lit).toEqual([]);
+    start.dispose();
+
+    useStore.getState().updateProgress((p) => {
+      p.cave!.heart = p.cave!.tree = true;
+      p.cave!.lit = P.CHAMBERS.flatMap((chamber) => chamber.stones.map((stone) => stone.id));
+      p.cave!.heard = P.CHAMBERS.flatMap(({ id }) => tree.hints[P.stoneGroup(id)].items.map((line) => line.id)).filter((id) => id !== "agua_01");
+    });
+    expect(progress().cave?.heard).toHaveLength(214);
+    const { cave } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening.text).toBe(canonical);
+    cave.pick(opening.answer);
+    expect(progress().cave?.heard).toHaveLength(215);
+    const at = new Vector3(-8.2, 0, -24.5);
+    cave.update(41, at, 0, true);
+    expect(glyph()).toMatchObject({ opening: opening.opening, text: canonical, solved: true });
+    expect(cave.near(at)).toBeNull();
+    expect(progress().cave?.rounds).toBeUndefined();
+    cave.close();
+    expect(progress().cave).toMatchObject({ rounds: 1, heard: [] });
+    cave.update(.1, at, 0, true);
+    expect(cave.near(at)?.id).toBe(first);
+    cave.open(first);
+    expect(glyph()?.text).not.toBe(canonical);
+    expect(progress().cave?.lit).toHaveLength(15);
+  });
+
+  it("keeps an open borrowing and its choices across late x04 loading", async () => {
+    let finishTree!: (def: typeof tree) => void;
+    vi.spyOn(catalog, "loadSituation").mockReturnValueOnce(new Promise((resolve) => { finishTree = resolve; }));
+    useStore.getState().updateProgress((p) => { p.phrases.cafe = borrowed; });
+    const { cave } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening.text).toBe(borrowed.en);
+    finishTree(tree);
+    await tick();
+    cave.showWords();
+    expect(glyph()).toMatchObject({ opening: opening.opening, text: borrowed.en, source: { situationId: borrowed.sitId } });
+    expect(glyph().options).toBe(opening.options);
+    cave.say();
+    expect(audio.play).toHaveBeenLastCalledWith(expect.any(String), 1, borrowed.en, expect.any(Object));
+    cave.pick(opening.answer);
+    expect(progress().phrases[bookKey]).toBeUndefined();
+    expect(progress().cave?.heard ?? []).toEqual([]);
+  });
+
+  it("keeps an authored opening and credits its exact line when the audio manifest resolves later", async () => {
+    audio.ready = false;
+    let finishManifest!: () => void;
+    vi.mocked(audio.init).mockReturnValueOnce(new Promise((resolve) => { finishManifest = resolve; }));
+    const { cave } = create();
+    await tick();
+    cave.open(first);
+    const opening = glyph();
+    expect(opening.text).toBe(canonical);
+    audio.ready = true;
+    vi.mocked(audio.hasClip).mockImplementation((_voice, _speed, en) => en === starter);
+    finishManifest();
+    await tick();
+    expect(glyph().options).toBe(opening.options);
+    cave.say();
+    expect(audio.play).toHaveBeenLastCalledWith(expect.any(String), 1, canonical, expect.any(Object));
+    cave.pick(opening.answer);
+    expect(progress().phrases[bookKey]).toMatchObject({ en: opening.text, lt: opening.lt, count: 1 });
+  });
+
+  it("cancels the 500 ms replay and consumes completion once, even when reopening before old playback settles", async () => {
+    useStore.getState().updateProgress((p) => { p.cave!.lit = ["agua-1", "agua-2"]; });
+    const { cave, gates } = create();
+    await tick();
+    cave.open("agua-3");
+    cave.pick((glyph().answer + 1) % 3);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    cave.pick((glyph().answer + 2) % 3);
+    await vi.advanceTimersByTimeAsync(499);
+    cave.close();
+    expect(progress().cave?.lit).toHaveLength(2);
+    cave.open("agua-3");
+    await vi.advanceTimersByTimeAsync(1);
+    expect(audio.play).toHaveBeenCalledTimes(3);
+    cave.pick(glyph().answer);
+    expect(progress().cave?.lit).toHaveLength(3);
+    expect(gates).not.toHaveBeenCalled();
+    let finishClip!: (ok: boolean) => void;
+    vi.mocked(audio.play).mockReturnValueOnce(new Promise((resolve) => { finishClip = resolve; }));
+    cave.say();
+    cave.close();
+    cave.close();
+    expect(gates).toHaveBeenCalledTimes(1);
+    cave.open("raices-1");
+    const reopened = glyph();
+    finishClip(true);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(glyph()).toBe(reopened);
+    expect(gates).toHaveBeenCalledTimes(1);
+  });
+
+  it("disposes a solved glyph without firing its pending gate callback", async () => {
+    useStore.getState().updateProgress((p) => { p.cave!.lit = ["agua-1", "agua-2"]; });
+    const { cave, gates } = create();
+    await tick();
+    cave.open("agua-3");
+    cave.pick(glyph().answer);
+    cave.dispose();
+    cave.close();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(glyph()).toBeNull();
+    expect(gates).not.toHaveBeenCalled();
+    expect(progress().cave?.lit).toHaveLength(3);
+  });
+});
 
 describe("the grotto's plan", () => {
   it("is switched on at Cenote Ka'an", () => { expect(THEME.cenote?.grotto).toBe(true); });

@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
+import { LOTERIA_SITUATION, LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import type { KitLine } from "../game/kit/dialogue";
@@ -42,7 +42,7 @@ function Line({ line, kind }: { line: KitLine | null; kind: "caller" | "verse" |
   return line && <div className={`loteria-line loteria-${kind}`} data-line={line.key}
     data-card-name={kind === "caller" && line.key.startsWith("lt_c_") || undefined}>
     {kind === "neighbor" && <b className="loteria-speaker">{TONA_LT.nom}</b>}
-    <GlossLine sentence={line.sentence} gloss />
+    <GlossLine sentence={line.sentence} gloss source={{ situationId: LOTERIA_SITUATION }} />
   </div>;
 }
 

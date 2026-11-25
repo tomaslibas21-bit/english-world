@@ -1228,7 +1228,7 @@ export class Game implements GameApi {
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
     // (at a glyph stone: its card has the keys; Esc puts it away)
-    if (st.hud.glyph) { if (k === "escape") this.cave?.close(); return; }
+    if (st.hud.glyph) { if (k === "escape" && !e.defaultPrevented) { e.preventDefault(); if (!e.repeat) this.cave?.close(); } return; }
     if (this.modes.modal) {
       if (k === "escape") this.modes.exit();
       return;

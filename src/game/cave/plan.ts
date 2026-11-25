@@ -236,7 +236,7 @@ export function nextStep(chamber: number, save: CaveSave, all = false):
 /** `en`: what is said (Spanish here: the field keeps the town's phrasebook's name); `lt`: its meaning in the learner's
  *  language. A stone's own line (x04-yaxche's hint groups, content/stones.ts) also has its `id` there, the chamber
  *  it belongs to and the whole sentence `s` (its units, glosses and notes, for the card once the stone is lit). */
-export interface Phrase { en: string; lt: string; id?: string; chamber?: number; s?: Sentence }
+export interface Phrase { en: string; lt: string; id?: string; chamber?: number; s?: Sentence; sitId?: string }
 
 /** The stone's first line: the nth stone of a chamber says the nth line of that chamber's group ("agua-2" → "agua_02"). */
 export const firstLine = (stoneId: string) => stoneId.replace(/-(\d+)$/, (_, n: string) => "_" + n.padStart(2, "0"));
@@ -263,13 +263,13 @@ export const allHeard = (byChamber: string[][], heard: readonly string[]) => { c
 /** The phrases the stones speak: the learner's own (their phrasebook, the ones said last and most first), then the
  *  greetings everyone starts with, each once, only those that have a recording (`has`), and none too long to say back.
  *  Stable for the same phrasebook: the stones keep their phrases from visit to visit. */
-export function pickPhrases(book: { en: string; lt: string; count: number; last: number }[], starters: Phrase[], n: number, has: (en: string) => boolean): Phrase[] {
+export function pickPhrases(book: (Phrase & { count: number; last: number })[], starters: Phrase[], n: number, has: (en: string) => boolean): Phrase[] {
   const key = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").trim();
   const seen = new Set<string>(), out: Phrase[] = [];
   const take = (p: Phrase) => {
     const k = key(p.en), words = k.split(/\s+/).length;
     if (!k || seen.has(k) || words > 9 || p.en.length > 60 || !p.lt.trim() || /[{}|]/.test(p.en) || !has(p.en)) return;
-    seen.add(k); out.push({ en: p.en, lt: p.lt });
+    seen.add(k); out.push(p.sitId ? { en: p.en, lt: p.lt, sitId: p.sitId } : { en: p.en, lt: p.lt });
   };
   for (const p of [...book].sort((a, b) => b.last - a.last || b.count - a.count)) { if (out.length >= n) break; take(p); }
   for (const p of starters) { if (out.length >= n) break; take(p); }

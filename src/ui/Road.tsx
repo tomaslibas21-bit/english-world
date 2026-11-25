@@ -1,4 +1,4 @@
-import { ROAD_UI as words } from "../content/road";
+import { ROAD_EDITION, ROAD_UI as words } from "../content/road";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { useRoad } from "../game/road/store";
@@ -14,7 +14,7 @@ const done = () => game?.modeExit();
 function LiftLine() {
   const line = useRoad((s) => s.line);
   if (!line) return null;
-  return <div className="road-lift-line" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>;
+  return <div className="road-lift-line" data-line={line.key}><GlossLine sentence={line.sentence} gloss source={{ situationId: ROAD_EDITION.driver.situation }} /></div>;
 }
 
 function LiftOffer({ touch }: { touch: boolean }) {

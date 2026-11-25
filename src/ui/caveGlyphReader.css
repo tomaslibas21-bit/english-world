@@ -1,0 +1,21 @@
+.glyph-head { display: flex; align-items: center; gap: 12px; }
+.glyph-card.solved { box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 0 0 2px #ffd15c, 0 0 46px 0 rgba(255, 209, 92, 0.7); }
+.glyph-rune { width: 42px; height: 42px; flex: none; border-radius: 13px; border: 3px solid var(--accent); display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 6px; box-shadow: 0 0 14px -2px rgba(63, 217, 255, 0.8); }
+.glyph-rune i { background: var(--accent); border-radius: 4px; }
+.glyph-rune i:first-child { grid-row: span 2; border-radius: 7px; }
+.glyph-card.solved .glyph-rune { border-color: #e0a61c; box-shadow: 0 0 16px 0 rgba(255, 209, 92, 0.9); }
+.glyph-card.solved .glyph-rune i { background: #e0a61c; }
+.glyph-show { border: 1.5px dashed var(--line, #cfd6dc); background: transparent; border-radius: 12px; padding: 9px 14px; min-height: 44px; justify-self: start; font: inherit; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+.glyph-show span { letter-spacing: 0.2em; margin-right: 6px; }
+.glyph-q { margin: 4px 0 0; font-weight: 800; color: var(--ink-soft); font-size: 0.92em; }
+.glyph-opts { display: grid; gap: 8px; }
+.glyph-opt { display: flex; align-items: center; gap: 11px; text-align: left; font: inherit; font-weight: 700; font-size: 1.02em; line-height: 1.25; padding: 11px 13px; min-height: 50px; border-radius: 14px; border: 1.5px solid var(--line, #d6dde2); background: var(--panel-solid, #fff); color: var(--ink); cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+.glyph-opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+.glyph-opt kbd { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-family: var(--ui, inherit); font-weight: 900; font-size: 0.85em; }
+.glyph-opt.wrong { opacity: 0.45; text-decoration: line-through; cursor: default; }
+.glyph-opt.wrong:hover { border-color: var(--line, #d6dde2); background: var(--panel-solid, #fff); }
+.glyph-mic { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line, #e1e6ea); }
+.glyph-or { font-weight: 800; font-size: 0.85em; color: var(--ink-faint); }
+.glyph-heard { font-family: var(--en, inherit); font-size: 0.95em; color: var(--ink-soft); }
+.glyph-heard.miss { color: #a8552c; }
+@media (max-width: 900px) { .glyph-opt kbd { display: none; } }

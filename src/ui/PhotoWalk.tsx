@@ -18,6 +18,7 @@ import "./townQuests.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("photowalk", name, value);
 const openBook = () => game?.modeStart?.("photowalk", "book");
+const photoSource = { situationId: PHOTO_WALK_SITUATION };
 const photoLine = (key: string) => conversationLine(PHOTO_WALK_SITUATION, PHOTO_WALK_NPC, key, PHOTO_WALK_LINES, false)!;
 const stopLabel = STRINGS[`photowalk:${words.quit}`] ?? L(words.quit);
 const useWalk = () => useStore((s) => s.progress.photoWalk ?? EMPTY_WALK);
@@ -55,7 +56,7 @@ function PhotoPage({ thing, found }: { thing: typeof PHOTO_THINGS[number]; found
       : <>
         <span lang={HL}>{name.nat}</span>
         <button type="button" className="btn ghost small" aria-expanded={showNote} onClick={() => setShowNote((value) => !value)}>{L(words.where)}</button>
-        {showNote && <GlossLine sentence={photoLine(`pw_w_${thing.id}`)} gloss />}
+        {showNote && <GlossLine sentence={photoLine(`pw_w_${thing.id}`)} gloss source={photoSource} />}
       </>}
   </li>;
 }
@@ -71,7 +72,7 @@ function PhotoBook() {
       <div><h2>{title}</h2><p>{L(words.found, { n: found.length, of: PHOTO_THINGS.length })}</p></div>
       <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
-    {visit && line && <div className="photo-visit" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+    {visit && line && <div className="photo-visit" data-line={line.key}><GlossLine sentence={line.sentence} gloss source={photoSource} /></div>}
     <ol className="photo-pages">
       {PHOTO_THINGS.map((thing) => <PhotoPage key={thing.id} thing={thing} found={found.includes(thing.id)} />)}
     </ol>
@@ -113,7 +114,7 @@ function PhotoQuiz() {
         <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
       </header>
       {quiz.got ? <>
-        {line && <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+        {line && <div data-line={line.key}><GlossLine sentence={line.sentence} gloss source={photoSource} /></div>}
         <button type="button" className="btn small" onClick={() => act("book")}>{L(words.open)}</button>
       </> : <>
         <div className="photo-choices">
@@ -134,7 +135,7 @@ function PhotoFinale() {
       <h2>{L(words.book)}</h2>
       <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
-    {line && <div aria-live="polite" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+    {line && <div aria-live="polite" data-line={line.key}><GlossLine sentence={line.sentence} gloss source={photoSource} /></div>}
     {choices.length > 0 && <div className="photo-choices">
       {choices.map(({ key, sentence }) => <button key={key} data-line={key} type="button" className="btn soft" onClick={() => act("choose", key)}>
         <GlossLine sentence={sentence} gloss compact />

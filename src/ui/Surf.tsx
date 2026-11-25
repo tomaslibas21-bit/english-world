@@ -22,6 +22,7 @@ import { EDITION } from "../edition";
 import "./surf.css";
 
 /** A line of Spanish with nothing under it but the same words: no second translation for it. */
+const surfSource = { situationId: SURF?.situation ?? "" };
 const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const sameAsGloss = (s: SurfLine["s"]) => bare(s.units.map((u) => u.lt).join(" ")) === bare(s.nat ?? "");
 
@@ -30,7 +31,7 @@ const sameAsGloss = (s: SurfLine["s"]) => bare(s.units.map((u) => u.lt).join(" "
  *  their translation after a few hearings read as untranslated). With the setting off, the Spanish alone; a tap on a
  *  word still gives its meaning. */
 function Line({ line, lt }: { line: SurfLine; lt: boolean }) {
-  return <Interlinear s={line.s} lt={lt} ipa={false} nat={lt && !sameAsGloss(line.s)} />;
+  return <Interlinear s={line.s} lt={lt} ipa={false} nat={lt && !sameAsGloss(line.s)} source={surfSource} />;
 }
 
 /** One of the learner's answers inside its button: the Spanish, each word with its meaning under it, and the whole

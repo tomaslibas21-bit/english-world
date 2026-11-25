@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TAXI_CONVERSATION } from "../content/taxi";
 import { priceEn } from "../convo/target";
 import { HL, L, TL } from "./i18n";
 import { speechSupported } from "../convo/speech";
@@ -40,7 +41,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
       {line && (
         <div className="taxi-cue">
           {gloss || revealed === line
-            ? <div className="taxi-line" data-line={line.key} lang={TL}><GlossLine sentence={line.sentence} gloss={gloss} /></div>
+            ? <div className="taxi-line" data-line={line.key} lang={TL}><GlossLine sentence={line.sentence} gloss={gloss} source={{ situationId: TAXI_CONVERSATION.situation }} /></div>
             : <button className="taxi-line taxi-reveal" data-line={line.key} onClick={() => setRevealed(line)} lang={HL}>
                 <Icon name="speaker" size={20} /><span>{L("Klausyk")}<small>{L("Rodyti tekstą")}</small></span>
               </button>}

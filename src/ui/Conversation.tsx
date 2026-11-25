@@ -4,6 +4,7 @@ import { chipLabel } from "./chip-label";
 import { SceneIntro, sceneText } from "./SceneIntro";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
+import { PhraseSave } from "./kit/PhraseSave";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { coachVoice, npcVoice } from "../content/voices";
@@ -260,6 +261,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
           game?.activeSession?.stopListening();
           void playVoice(coachVoice(progress.profile?.gender), 1, bestPhrase.say);
         }}><Icon name="speaker" size={20} /></button>
+        {bestPhrase.nat.trim() && <PhraseSave sentence={{ ...bestPhrase, units: [] }} situationId={sit.id} />}
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
         {completed && kind && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {L("Gavai {item}", { item: L(KIND[kind].accusative) })}</div>}

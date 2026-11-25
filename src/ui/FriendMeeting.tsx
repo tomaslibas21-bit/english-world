@@ -7,6 +7,8 @@ import { Icon } from "./icons";
 import { L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
 
+const source = { situationId: "s83-invite-call" };
+
 export default function FriendMeeting() {
   const { line, choices, mic, micOn } = useMeeting();
   const gloss = useStore((s) => s.settings.lt);
@@ -23,10 +25,10 @@ export default function FriendMeeting() {
           </button>
         )}
       </header>
-      {line && <div data-meeting-line={line.key}><GlossLine sentence={line.sentence} gloss={gloss} /></div>}
+      {line && <div data-meeting-line={line.key}><GlossLine sentence={line.sentence} gloss={gloss} source={source} /></div>}
       {choices.map(({ key, sentence }) => (
         <button className="btn soft" key={key} data-meeting-answer={key} onClick={() => game?.modeAction("friend-meeting", "answer", key)}>
-          <GlossLine sentence={sentence} gloss={answerGloss} />
+          <GlossLine sentence={sentence} gloss={answerGloss} source={source} />
         </button>
       ))}
       {mic.heard && <small lang={TL} aria-live="polite">{mic.heard}</small>}

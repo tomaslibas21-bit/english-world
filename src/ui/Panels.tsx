@@ -30,6 +30,7 @@ import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
+import { PhraseSave } from "./kit/PhraseSave";
 import { showToast } from "./Toasts";
 import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
@@ -592,20 +593,15 @@ function Phrasebook({ close }: { close: () => void }) {
             {[...bySit.entries()].map(([sid, list]) => (
               <div key={sid} className="chapter">
                 <h3><SitIcon id={sid} size="1.15em" />{SITUATION_BY_ID[sid]?.title.lt ?? sid}</h3>
-                {list.map(([k, v]) => {
-                  const inCards = cardKeys.has(cardKey(v.en));
-                  return (
-                    <div key={k} className="hint-row">
-                      <div className="ex"><div style={{ fontFamily: "var(--en)", fontSize: "1.25em" }}>{v.en}</div>{lt && <div className="nat">{v.lt}</div>}</div>
-                      <div className="pb-acts">
-                        <button className="play" onClick={() => audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, v.en)} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
-                        {inCards
-                          ? <span className="pb-in" role="img" title={L("Jau kortelėse")} aria-label={L("Jau kortelėse")}><Icon name="check" size={20} strokeWidth={2.25} /></span>
-                          : <button className="play add" onClick={() => useCards.getState().add(asCard(v))} title={L("Į korteles")} aria-label={L("Į korteles")}><Glyph name="plus" size={20} /></button>}
-                      </div>
+                {list.map(([k, v]) => (
+                  <div key={k} className="hint-row">
+                    <div className="ex"><div style={{ fontFamily: "var(--en)", fontSize: "1.25em" }}>{v.en}</div>{lt && <div className="nat">{v.lt}</div>}</div>
+                    <div className="pb-acts">
+                      <button className="play" onClick={() => audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, v.en)} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
+                      <PhraseSave className="add" sentence={{ en: v.en, say: v.en, nat: v.lt, units: [] }} situationId={v.sitId} />
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ))}
           </>

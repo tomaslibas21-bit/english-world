@@ -3,6 +3,7 @@ import { SAY_IT_UI } from "../../content/say-it";
 import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
 import { HL, L } from "../i18n";
+import PhraseReview, { type PhraseReviewEntry } from "./PhraseReview";
 import "./scoreCard.css";
 
 interface ScoreCardProps {
@@ -12,6 +13,9 @@ interface ScoreCardProps {
   ratio?: number;
   rows: { label: string; value: ReactNode }[];
   phrases?: { label: string; count: number };
+  review?: readonly PhraseReviewEntry[];
+  /** Supply a run identifier if the score remains mounted between runs. */
+  reviewRun?: string | number;
   children?: ReactNode;
   /** The learner won: a burst of confetti from the title. */
   celebrate?: boolean;
@@ -43,7 +47,7 @@ function ScoreStars({ ratio }: { ratio: number }) {
   </div>;
 }
 
-export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, actions, again, done, children, celebrate }: ScoreCardProps & ScoreActions) {
+export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, review, reviewRun, actions, again, done, children, celebrate }: ScoreCardProps & ScoreActions) {
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
@@ -58,6 +62,7 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, action
           {phrases && <div><dt>{phrases.label}</dt><dd>{phrases.count}</dd></div>}
         </dl>
         {children}
+        {!!review?.length && <PhraseReview key={reviewRun} entries={review} />}
         <div className="mode-score-actions">
           {again && done ? <>
             <button className="btn" onClick={again.run}>{again.label}</button>

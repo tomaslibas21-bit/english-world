@@ -1,0 +1,21 @@
+.btn[data-phrase-save] {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+  pointer-events: auto;
+  transition: filter .15s, box-shadow .15s, background-color .15s, border-color .15s;
+}
+.btn[data-phrase-save][data-icon-only] { width: 44px; height: 44px; padding: 0; flex: none; }
+.wpop-acts .btn[data-phrase-save] { display: inline-grid; grid-template-columns: auto minmax(0, 1fr); min-height: 44px; }
+.wpop-acts .btn[data-phrase-save] > bdi, .wpop-acts .btn[data-phrase-save]::after {
+  grid-area: 1 / 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Reserve room for both translated states. */
+.wpop-acts .btn[data-phrase-save]::after { content: attr(data-other-label); visibility: hidden; }
+button.btn[data-phrase-save]:active { transform: none; filter: brightness(.97); }
+.btn[data-phrase-save]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.phrase-save-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; }
+.ended-phrase:has(> [data-phrase-save]) { column-gap: 6px; }
+.ended-phrase > div:first-child { flex: 1; }

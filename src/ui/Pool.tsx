@@ -1,5 +1,6 @@
 import { game } from "../game/gameRef";
 import { usePool } from "../game/pool/store";
+import { POOL_SITUATION } from "../game/world/pool";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
@@ -34,8 +35,8 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
       <div className="pool-top">
         <div className="pool-counter" lang={HL}>{L("Kamuolys ore")} <b>{streak}</b></div>
         <div className="pool-cues">
-          {cue && <div className="pool-cue" data-line={cue.key} lang={TL}><GlossLine sentence={cue.sentence} gloss /></div>}
-          {aside && <div className="pool-aside" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss /></div>}
+          {cue && <div className="pool-cue" data-line={cue.key} lang={TL}><GlossLine sentence={cue.sentence} gloss source={{ situationId: POOL_SITUATION }} /></div>}
+          {aside && <div className="pool-aside" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss source={{ situationId: POOL_SITUATION }} /></div>}
         </div>
       </div>
       <div className={`pool-help-stack${touch ? " pool-help-touch" : ""}`} lang={HL}>

@@ -139,7 +139,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
           {!prompt.gap && <button className="road-icon road-replay" aria-label={L(words.replay)} title={L(words.replay)} onClick={replay}><Icon name="speaker" size={21} /></button>}
           <SayIt game={game} cue={sayIt} />
         </div>
-        {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>}
+        {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss source={{ situationId: prompt.gap.word.situation }} /></div>}
         {showHint && <p className="road-hint">{L(words.hint)}</p>}
       </div>)}
     </header>

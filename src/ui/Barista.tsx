@@ -1,4 +1,4 @@
-import { BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
+import { BARISTA_CONVERSATION, BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
 import { speechSupported } from "../convo/speech";
 import { useBarista } from "../game/barista/store";
 import { matchesPick, trayRows } from "../game/barista/tray";
@@ -20,7 +20,7 @@ export function BaristaOffer() {
   if (!offered || !line) return null;
   return (
     <section className="barista-offer barista-panel" lang={HL}>
-      <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
+      <div data-line={line.key}><GlossLine sentence={line.sentence} gloss source={{ situationId: BARISTA_CONVERSATION.situation }} /></div>
       <button type="button" className="btn" onClick={() => act("start")}>{L(words.start)}</button>
     </section>
   );
@@ -98,7 +98,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
       </header>
       {!concealed && line && (
         <div className="barista-cue" data-line={line.key} aria-live="polite">
-          <div className="barista-cue-text barista-panel"><GlossLine sentence={line.sentence} gloss /></div>
+          <div className="barista-cue-text barista-panel"><GlossLine sentence={line.sentence} gloss source={{ situationId: BARISTA_CONVERSATION.situation }} /></div>
         </div>
       )}
       <div className="barista-bottom">
