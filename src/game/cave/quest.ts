@@ -16,11 +16,11 @@ import { NPCS } from "../../content/npcs";
 import { coachVoice } from "../../content/voices";
 import { compose } from "../../convo/compose";
 import { createSpeechAttempt, speechSupported } from "../../convo/speech";
-import { rand } from "../world/util";
 import { L } from "../../ui/i18n";
 import type { CaveView } from "./Cave";
 import * as P from "./plan";
 import { caveQuestTarget } from "./routing";
+import { assignStonePhrases, stoneMeaningChoices, type StoneMeanings } from "./stonePhrases";
 import type { Sentence } from "../../convo/compose";
 import { SITUATIONS, loadSituation } from "../../content/situations/catalog";
 import type { PhraseSource } from "../../ui/kit/phraseLine";
@@ -73,8 +73,7 @@ let openingNumber = 0;
 export class CaveQuest {
   /** Each stone's phrase, and the real meanings available as quiz distractors. */
   private phrases = new Map<string, P.Phrase>();
-  private all: P.Phrase[] = [];
-  private extraMeanings: P.Phrase[] = [];
+  private meanings: StoneMeanings = { preferred: [], extra: [] };
   private lines: string[][] = [];
   private readonly starters = starters();
   private voice = "";
@@ -134,55 +133,13 @@ export class CaveQuest {
   /** The authored lines in the current round, by chamber. */
   private sayable(): string[][] { return this.lines; }
 
-  /** The stones' phrases. The first time through: each stone its own first line (plan.ts firstLine). Once the stones
-   *  speak again: each a line not heard yet (plan.ts nextLine). A stone whose line has no recording (the clips not
-   *  uploaded, the file not in yet) says one of the learner's own phrases, the newest first, then the greetings, as the
-   *  stones did at first: a stone never stands silent. */
   private assign(waking?: string) {
-    const st = useStore.getState(), ready = audio.ready;
-    const has = (en: string) => !ready || audio.hasClip(this.voice, 1, en);
-    const stones = P.CHAMBERS.flatMap((c, ci) => c.stones.map((q) => ({ q, ci })));
-    const book = Object.values(st.progress.phrases).filter((v) => v.sitId !== P.TREE_SIT);
-    const limit = stones.length + 6;
-    const spare = P.pickPhrases(book, this.starters, limit, has);
-    const texts = P.pickPhrases(book, this.starters, limit, () => true);
-    const authored = [...this.pool.values()], recorded = authored.filter((p) => has(p.en));
-    const lines: string[][] = P.CHAMBERS.map(() => []);
-    // Keep recorded borrowings in use. When the entire recording pool is empty, the authored text can still make a round.
-    const candidates = recorded.length || spare.length ? recorded : authored;
-    for (const p of candidates) lines[p.chamber!].push(p.id!);
-    this.lines = lines;
-    const heard = save().heard ?? [];
-    const opening = this.glyphOpening;
-    const taken = opening?.phrase.id ? [opening.phrase.id] : [];
-    const fallback = spare.length ? spare : texts;
-    const previous = this.phrases;
-    const previousLine = waking ? previous.get(waking) : undefined;
-    const picked = stones.map(({ q, ci }) => {
-      if (opening?.id === q.id) return opening.phrase;
-      const had = previous.get(q.id);
-      const avoid = q.id === waking ? previousLine?.id : undefined;
-      const first = P.firstLine(q.id);
-      let id: string | null = null;
-      if (q.id !== waking && had?.id && lines[had.chamber!].includes(had.id) && !taken.includes(had.id) && (this.replay || had.id === first)) {
-        id = had.id;
-      } else if (this.replay) {
-        if (avoid) id = P.nextLine(lines, ci, heard, [...taken, avoid], Math.random);
-        id ??= P.nextLine(lines, ci, heard, taken, Math.random);
-      } else if (lines[ci].includes(first)) id = first;
-      if (id) { taken.push(id); return this.pool.get(id); }
-      if (q.id !== waking && had && fallback.some((line) => line.en === had.en)) return had;
-    });
-    const used = new Set(picked.flatMap((p) => p ? [p.en] : []));
-    this.phrases = new Map();
-    stones.forEach(({ q }, i) => {
-      const avoid = q.id === waking ? previousLine?.en : undefined;
-      const p = picked[i] ?? fallback.find((line) => !used.has(line.en) && line.en !== avoid)
-        ?? fallback.find((line) => line.en !== avoid) ?? fallback[0];
-      if (p) { this.phrases.set(q.id, p); used.add(p.en); }
-    });
-    this.all = [...this.phrases.values(), ...candidates, ...spare];
-    this.extraMeanings = [...authored, ...texts, ...this.starters];
+    const { progress } = useStore.getState(), ready = audio.ready;
+    ({ phrases: this.phrases, lines: this.lines, meanings: this.meanings } = assignStonePhrases({
+      pool: this.pool, previous: this.phrases, book: Object.values(progress.phrases), starters: this.starters,
+      heard: progress.cave?.heard ?? [], replay: this.replay, opening: this.glyphOpening, waking,
+      has: (en) => !ready || audio.hasClip(this.voice, 1, en),
+    }));
   }
 
   /** The stones wake again: all of them wait, each with a line not heard yet. */
@@ -333,16 +290,12 @@ export class CaveQuest {
     const phrase = this.phrases.get(id);
     if (!this.alive || !phrase || useStore.getState().hud.glyph) return;
     audio.stopCall(); this.callingId = null; this.view.setCalling(null);
-    const seed = [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) + save().lit.length * 977 + [...phrase.en].reduce((a, ch) => (a * 33 + ch.charCodeAt(0)) >>> 0, 5);
-    const others = this.all.filter((q) => q.en !== phrase.en);
-    const preferred = P.meaningChoices(phrase, others, rand(seed));
-    const { options, answer } = preferred.options.length === 3 ? preferred
-      : P.meaningChoices(phrase, [...others, ...this.extraMeanings.filter((q) => q.en !== phrase.en)], rand(seed));
     const line = { ...phrase }, situationId = line.id ? P.TREE_SIT : line.sitId ?? "";
+    const { options, answer } = stoneMeaningChoices(id, line, save().lit.length, this.meanings);
     const source = situationId ? { situationId } : { situationId, sourceLabel: L("Kalbantis akmuo") };
     this.glyphOpening = { id, phrase: line };
     useStore.getState().setHud({ prompt: null, glyph: { id, opening: ++openingNumber, source, text: line.en, lt: line.lt, s: line.s, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
-    void this.playGlyph(line);
+    void this.playGlyph(line.en);
   }
   private patch(p: Partial<GlyphQuiz>) { const g = useStore.getState().hud.glyph; if (g) useStore.getState().setHud({ glyph: { ...g, ...p } }); }
   /** The stone says it again. */
@@ -350,12 +303,12 @@ export class CaveQuest {
     const opening = this.glyphOpening;
     if (!opening) return;
     clearTimeout(opening.wrongReplay);
-    void this.playGlyph(opening.phrase);
+    void this.playGlyph(opening.phrase.en);
   }
 
-  private playGlyph(phrase: P.Phrase) {
+  private playGlyph(text: string) {
     this.stopMic();
-    return audio.play(this.voice, 1, phrase.en, { male: this.voice.endsWith("_m"), optional: true, recordingOnly: true });
+    return audio.play(this.voice, 1, text, { male: this.voice.endsWith("_m"), optional: true, recordingOnly: true });
   }
 
   showWords() { this.patch({ shown: true }); }
@@ -368,14 +321,15 @@ export class CaveQuest {
     this.patch({ wrong: [...g.wrong, i], shown: true });
     clearTimeout(opening.wrongReplay);
     opening.wrongReplay = setTimeout(() => {
-      if (this.glyphOpening === opening && !useStore.getState().hud.glyph?.solved) void this.playGlyph(opening.phrase);
+      if (this.glyphOpening === opening && !useStore.getState().hud.glyph?.solved) void this.playGlyph(opening.phrase.en);
     }, 500);
   }
   /** Saying it back: the microphone listens for the stone's phrase. */
   listen() {
-    const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
-    if (!g || g.solved || !opening || !speechSupported()) return;
-    clearTimeout(opening.wrongReplay);
+    if (!this.glyphOpening) return;
+    const g = useStore.getState().hud.glyph;
+    if (!g || g.solved || !speechSupported()) return;
+    clearTimeout(this.glyphOpening.wrongReplay);
     if (this.attempt?.running) { this.attempt.finish(); return; }
     audio.stop();
     this.attempt?.dispose();
