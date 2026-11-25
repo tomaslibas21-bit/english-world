@@ -73,6 +73,7 @@ const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
   photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay,
   gym: GymOverlay,
 };
+const CaveHud = lazy(() => import("./Cave"));
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
 type Screen = ReturnType<typeof useScreen>;
@@ -88,6 +89,7 @@ export function Hud() {
   const goFishOffer = useGoFish((s) => s.offered);
   const surfUi = surfing || surfPicking ? getSurfOverlay() : undefined;
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
+  const inCave = hud.minimap.zone === "gruta";
   const ride = townRide(hud.ride);
   const riding = ride !== null;
   const questHud = inTown && !hud.ride && !hud.panel && !surfPicking;
@@ -147,8 +149,9 @@ export function Hud() {
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
-        <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
-          <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
+        <div className={"objective-notes" + (inCave ? " cave-notes task-folded" : "") + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
+          {inCave ? <Suspense><CaveHud phoneToast={phoneToast} /></Suspense>
+            : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />}
           {streetCard && portrait && <StreetCard compactChoices={screen.h <= 720} />}
           {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && splitLead(subtitle).rest.trim() !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
@@ -537,10 +540,9 @@ function Minimap({ w, h }: Screen) {
   const card = useRef<HTMLSpanElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
-  // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
-  // many lines as it needs) and unfolds again at the door. The frame glides between the two shapes, so indoors it
-  // takes the card's own size, measured here (styles.css ".minimap").
-  const inside = mm.zone !== "town";
+  // Town rooms fold the round map into a place label. The cave has its own ground plan.
+  const region = mm.zone === "gruta" ? mm.zone : game?.mapRegion?.(mm.px, mm.pz);
+  const inside = mm.zone !== "town" && region !== "gruta";
   const place = useRef("");
   if (inside) place.current = zoneName;
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
@@ -571,46 +573,56 @@ function Minimap({ w, h }: Screen) {
     const c = ref.current;
     const g = game?.groundCanvas;
     // indoors the last picture of the town stays on the canvas while it fades out
-    if (!c || !g || mm.zone !== "town") return;
+    if (!c || !g || inside) return;
     const x = c.getContext("2d")!;
     const S = 220;
-    c.width = S; c.height = S;
+    if (c.width !== S || c.height !== S) { c.width = S; c.height = S; }
     x.clearRect(0, 0, S, S);
     const PPM = g.width / (WORLD.maxX - WORLD.minX);
-    const view = 90; // metres across
-    const sx = (mm.px - WORLD.minX) * PPM - (view / 2) * PPM;
-    const sz = (mm.pz - (SEA_Z - 2)) * PPM - (view / 2) * PPM;
+    const cave = game?.caveMapBounds;
+    const view = cave ? cave.maxZ - cave.minZ + 12 : region === "slate-cove" ? 42 : 90;
+    const px = cave ? 0 : mm.px, pz = cave ? (cave.minZ + cave.maxZ) / 2 : mm.pz;
+    const west = px - view / 2, north = pz - view / 2;
+    const playerX = (mm.px - west) / view, playerZ = (mm.pz - north) / view;
+    if (region) c.dataset.player = `${playerX},${playerZ}`;
+    else delete c.dataset.player;
+    const sx = (west - WORLD.minX) * PPM;
+    const sz = (north - (SEA_Z - 2)) * PPM;
     x.fillStyle = "#3f8fb5"; x.fillRect(0, 0, S, S);
-    // (beyond the town's own picture: the sea to the north, grass everywhere else)
-    { const shore = ((SEA_Z + 1 - mm.pz) / view + 0.5) * S; if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); } }
-    x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    const shore = (SEA_Z + 1 - north) / view * S;
+    if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); }
+    if (mm.zone === "town") x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    game?.drawRegionMap?.(x, west, north, S / view);
     const island = LIGHTHOUSE_ISLAND;
-    if (island && Math.abs(island.center.x - mm.px) < view / 2 + 20 && Math.abs(island.center.z - mm.pz) < view / 2 + 12) {
+    if (mm.zone === "town" && island && Math.abs(island.center.x - mm.px) < view / 2 + 20 && Math.abs(island.center.z - mm.pz) < view / 2 + 12) {
       drawIslandMap(x, island, mm.px - view / 2, mm.pz - view / 2, S / view);
     }
     // target
-    if (mm.targetX !== undefined && mm.targetZ !== undefined) {
-      const tx = ((mm.targetX - mm.px) / view + 0.5) * S, tz = ((mm.targetZ - mm.pz) / view + 0.5) * S;
+    for (const [markX, markZ, color] of cave
+      ? [[mm.questX, mm.questZ, "#249b9e"], [mm.exitX, mm.exitZ, "#ffb703"]] as const
+      : [[mm.targetX, mm.targetZ, "#ffb703"]] as const) {
+      if (markX === undefined || markZ === undefined) continue;
+      const tx = (markX - west) / view * S, tz = (markZ - north) / view * S;
       const inside = tx > 10 && tx < S - 10 && tz > 10 && tz < S - 10;
       const cx = Math.max(12, Math.min(S - 12, tx)), cz = Math.max(12, Math.min(S - 12, tz));
-      x.fillStyle = "#ffb703"; x.strokeStyle = "#fff"; x.lineWidth = 3;
+      x.fillStyle = color; x.strokeStyle = "#fff"; x.lineWidth = 3;
       x.beginPath(); x.arc(cx, cz, inside ? 9 : 7, 0, Math.PI * 2); x.fill(); x.stroke();
     }
     // what one can take: the boats and the convertibles, where they are now
-    if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
-    drawSurfMark(x, mm.px, mm.pz, view, S);
+    if (mm.zone === "town" && game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
+    if (mm.zone === "town") drawSurfMark(x, mm.px, mm.pz, view, S);
     // player arrow
-    x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
+    x.save(); x.translate(playerX * S, playerZ * S); x.rotate(Math.PI - mm.heading);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(0, -12); x.lineTo(9, 10); x.lineTo(0, 5); x.lineTo(-9, 10); x.closePath(); x.stroke(); x.fill();
     x.restore();
-  }, [mm]);
+  }, [mm, inside, region]);
   return (
-    <button type="button" className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <button type="button" data-map={region} data-gates={mm.gates} className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
       onClick={() => useStore.getState().setHud({ panel: "map" })}
       onKeyDown={activateHudButton} title="Žemėlapis (M)" aria-label="Žemėlapis (M)">
-      <canvas ref={ref} />
+      <canvas ref={ref} data-map={region} data-gates={mm.gates} />
       <span className="label">{inside ? "" : zoneName}</span>
       <span className="mm-card" ref={card} aria-hidden={!inside}>
         <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
@@ -674,7 +686,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"

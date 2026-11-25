@@ -160,10 +160,12 @@ export interface Toast {
 }
 
 export interface HudState {
+  cave?: import("../game/cave/quest").CaveCard | null;
+  glyph?: import("../game/cave/quest").GlyphQuiz | null;
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "listen" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
@@ -177,7 +179,7 @@ export interface HudState {
   /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
   objective: { followUp?: true; targetLoc?: string; sitId: string; title: string; titleLt?: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
-  minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string };
+  minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string; gates?: number; questX?: number; questZ?: number; exitX?: number; exitZ?: number };
   fade: number;
   fadeOnFrames: boolean;
   phoneCard: string | null;

@@ -1,6 +1,7 @@
 // Authoring types for situations. See AUTHORING.md for the full guide.
 import type { Gender } from "../convo/lt-morph";
 import type { SlotDefs } from "../convo/grammar";
+import type { ComponentType } from "react";
 
 /** An authored sentence. `en` and `lt` are unit strings separated by " | " and line up one to one
  *  (TOMAS-INTERLINEAR-v2: one English word per unit unless a registered merge applies; articles
@@ -184,12 +185,22 @@ export interface StepDef {
 
 export type Handler = (ctx: Ctx, slots: any, seg: Segment) => void;
 
+export interface ConversationCopy {
+  guides?: Readonly<Record<string, string>>;
+  ownName?: string;
+  clarification?: string;
+  bestPhrase?: { spoken: string; typed: string };
+  received?: string;
+  Ending?: ComponentType;
+}
+
 export interface SituationDef {
   id: string;
   /** Optional conversation outside the town’s route. */
   bonus?: boolean;
   /** Let this conversation continue through the transcript when voice playback is interrupted or unavailable. */
   optionalVoice?: boolean;
+  conversationCopy?: ConversationCopy;
   /** Mission checklist shown to the learner from the start: 3–6 short imperative labels ("Užsisakyk gėrimą").
    *  Each item is either tied to a step (`step`: ticked when the step is done or resolved) or has its own
    *  `done` predicate on the conversation state. `when` (or the step's `when`) + `optional` hides items that

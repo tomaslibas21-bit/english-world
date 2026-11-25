@@ -48,6 +48,8 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("sproutly", "Sproutly", "Startuolis „Sproutly“", "harbor", "interior", "🌱"),
   L("phone", "Phone call", "Skambutis telefonu", "phone", "phone", "📱"),
   L("lighthouse", "Lighthouse", "Švyturys", "harbor", "outdoor", "🌅"),
+  L("gruta", "Slate Cove Cave", "Skalūnų įlankos ola", "harbor", "interior", "🪨"),
+  L("old-stone-ring", "Old Stone Ring", "Senasis akmenų ratas", "harbor", "outdoor", "🪨"),
 ].map((l) => [l.id, l]));
 
 /** The town's name for beginners: how it sounds in Lithuanian and what it means. */

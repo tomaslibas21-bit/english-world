@@ -186,7 +186,9 @@ export class Session {
     if (!this.alive) return;
     const st = useStore.getState();
     const sup = this.conv.support();
-    st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(),
+    const guides = this.sit.conversationCopy?.guides;
+    const suggest = guides ? sup.suggest.map((s) => s.hint && guides[s.hint] ? { ...s, lt: guides[s.hint] } : s) : sup.suggest;
+    st.setConv({ phase: "you", suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(),
       stepProgress: this.stepProgress(st.conv.stepProgress),
       openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
     if (speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);

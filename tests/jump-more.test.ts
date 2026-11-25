@@ -149,12 +149,12 @@ it("keeps the built Maple Harbor and its rooms inside their bounds with a way ba
     expect(audit.fresh.every((f) => f.out !== "stuck")).toBe(true);
 
     const cafe = getInterior("sunny-cup")!;
-    expect(cafe.ledges.support(5.8, 2.6, Hop.PEAK, true)).toBeCloseTo(0.79);
-    expect(cafe.ledges.support(-2, -3.2, Hop.TOP, true)).toBe(0);
+    expect(cafe.ledges?.support(5.8, 2.6, Hop.PEAK, true)).toBeCloseTo(0.79);
+    expect(cafe.ledges?.support(-2, -3.2, Hop.TOP, true)).toBe(0);
     for (const id of INTERIOR_IDS) {
       const room = getInterior(id)!;
       const bounds = { minX: -room.w / 2, maxX: room.w / 2, minZ: -room.d / 2, maxZ: room.d / 2 + 1.1 };
-      const audit = climbAudit(room.colliders, room.ledges, bounds, [room.spawn.x, room.spawn.z]);
+      const audit = climbAudit(room.colliders, room.ledges!, bounds, [room.spawn.x, room.spawn.z]);
       expect(audit.outside, id).toBe(0);
       expect(audit.maxHeight, id).toBeLessThanOrEqual(Hop.PEAK);
       expect(audit.fresh.every((f) => f.out !== "stuck"), id).toBe(true);

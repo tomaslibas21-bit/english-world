@@ -20,6 +20,9 @@ interface FitInput {
   lens: THREE.PerspectiveCamera;
   screen: Screen;
   room?: { w: number; d: number };
+  /** Slate Cove's cave (mh-cave): open rock instead of a room's box; a lens must stand in its open space and see the
+   *  speaker's face through it. */
+  wild?: { inside(pos: THREE.Vector3): boolean; free(from: THREE.Vector3, to: THREE.Vector3): number };
   field?: OcclusionField;
   max: number;
   previous?: Framing;
@@ -322,7 +325,7 @@ export class TalkFraming {
 
   fit(input: FitInput): Framing | null {
     const started = performance.now();
-    const { speaker, learner, screen, lens, room, field, previous, presented, scene } = input;
+    const { speaker, learner, screen, lens, room, wild, field, previous, presented, scene } = input;
     const { width: w, height: h, picture, obstacles } = screen;
     const feet = speaker.ch.root.position;
     scene.updateMatrixWorld(true);
@@ -377,7 +380,9 @@ export class TalkFraming {
       projected.y = (1 - projected.y) * h / 2;
       return projected.z >= -1 && projected.z <= 1;
     };
-    const roomForLens = (pos: THREE.Vector3) => (!room || (Math.abs(pos.x) <= room.w / 2 - 0.5 && pos.z >= -room.d / 2 + 0.5))
+    const roomForLens = (pos: THREE.Vector3) => (wild
+      ? !wild.inside(pos) && wild.free(pos, head.middle) >= 0.999 && wild.free(pos, legacyFace) >= 0.999
+      : !room || (Math.abs(pos.x) <= room.w / 2 - 0.5 && pos.z >= -room.d / 2 + 0.5))
       && !field?.solidAt(pos.x, pos.y, pos.z, 0.06) && !head.bounds.containsPoint(pos)
       && !inside(pos, actor) && !inside(pos, me) && !crowd.some((body) => inside(pos, body));
     const placeLens = (f: Candidate) => {
@@ -495,6 +500,8 @@ export class TalkFraming {
       } else pose(84 * s, 2.1, 16, "close");
       pose(22 * s, 2.6, 28, "raised");
       pose(48 * s, Math.min(3.5, Math.max(2.45, estimate)), 27, "raised");
+      // In the cave's narrow ways, nearer and flatter lenses beside the learner (as Puerto Colibrí's grotto).
+      if (wild) for (const yaw of [28, 48, 68]) for (const d of [1.25, 1.85, 2.5, 3.4, 4.4]) pose(yaw * s, d, 8, "close");
     }
     // A narrow opening may line up with the counter's authored front even as the learner steps to either side.
     const straight = feet.clone().addScaledVector(authored, 1.8);

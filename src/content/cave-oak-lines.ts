@@ -1,0 +1,45 @@
+import { t } from "./dsl";
+import type { SentSrc } from "./types";
+
+export const oakLines = {
+  greet: [t("I | heard | you | coming.", "Aš | girdėjau | Jus | ateinant.", "Girdėjau, kaip artėjote.")],
+  stones_lit: [t("Five | stones | have | carried | your | voice | to | me.", "Penki | akmenys | — | atnešė | Jūsų | balsą | — | man.", "Penki akmenys man atnešė Jūsų balsą.")],
+  again: [t("Ah, | those | footsteps | again. | Welcome back.", "Ak, | tie | žingsniai | vėl. | Sveiki sugrįžę.", "Ak, ir vėl tie žingsniai. Gera Jus vėl girdėti.")],
+  ask_who: [t("Do | you | know | who | is | speaking?", "Ar | Jūs | žinote, | kas | — | kalba?", "Ar žinote, kas kalba?")],
+  i_am: [t("I | am | the | old | oak | under | this | hill.", "Aš | esu | — | senasis | ąžuolas | po | šia | kalva.", "Aš – senasis ąžuolas po šia kalva.")],
+  know_yes: [t("Yes. | I | know | your | voice, | too.", "Taip. | Aš | pažįstu | Jūsų | balsą | irgi.", "Taip. Ir aš pažįstu Jūsų balsą.")],
+  i_am2: [t("My | roots | drink | rain. | My | leaves | touch | the | sky.", "Mano | šaknys | geria | lietų. | Mano | lapai | liečia | — | dangų.", "Mano šaknys geria lietų, o lapai siekia dangų.")],
+  root: [t("A | word | can | take root, | too.", "— | žodis | gali | įleisti šaknis | irgi.", "Ir žodis gali įleisti šaknis.")],
+  home: [t("There is | a | place | for | you | under | my | branches.", "Yra | — | vieta | — | Jums | po | mano | šakomis.", "Po mano šakomis yra vietos ir Jums.")],
+  ask_feel: [t("How | do | you | feel | here?", "Kaip | — | Jūs | jaučiatės | čia?", "Kaip čia jaučiatės?")],
+  feel_space: [t("Stay | a | little | while.", "Pabūkite | — | trumpą | valandėlę.", "Dar truputį pabūkite.")],
+  home_again: [t("You | have | a | home | here.", "Jūs | turite | — | namus | čia.", "Čia ir Jūsų namai.")],
+  thanks_back: [t("Thank | you | for | stopping | to | listen.", "Ačiū | Jums | už | sustojimą | — | pasiklausyti.", "Ačiū, kad sustojote pasiklausyti.")],
+  like_back: [t("Then | stay | a little | longer.", "Tada | pabūkite | šiek tiek | ilgiau.", "Tada dar truputį pabūkite.")],
+  slow: [t("Take your time. | Oaks | grow | slowly.", "Neskubėkite. | Ąžuolai | auga | lėtai.", "Neskubėkite. Ąžuolai auga lėtai.")],
+  ask_go: [t("Will | you | keep | learning?", "Ar | Jūs | toliau | mokysitės?", "Ar mokysitės ir toliau?")],
+  glad: [t("I'm | glad | to | hear | it.", "Man | malonu | — | girdėti | tai.", "Gera tai girdėti.")],
+  rest: [t("Rest | now. | Your | words | will | wait.", "Pailsėkite | dabar. | Jūsų | žodžiai | — | palauks.", "Dabar pailsėkite. Jūsų žodžiai palauks.")],
+  keep: [t("Keep | one | word | close. | Let | it | grow.", "Laikykite | vieną | žodį | arti. | Leiskite | jam | augti.", "Pasilikite vieną žodį širdyje. Leiskite jam augti.")],
+  back: [t("Come back. | The | stones | have | more | to | say.", "Sugrįžkite. | — | akmenys | turi | dar | ką | pasakyti.", "Sugrįžkite. Akmenys dar turi ką pasakyti.")],
+  bye: [t("Walk | home | in | peace. | I'll | be | here.", "Keliaukite | namo | — | ramybėje. | Aš | būsiu | čia.", "Ramiai keliaukite namo. Aš būsiu čia.")],
+  age: [t("I | stopped | counting | winters | long ago.", "Aš | nustojau | skaičiuoti | žiemas | seniai.", "Jau seniai nebeskaičiuoju žiemų.")],
+  spirits: [t("By | the | path | and | the | bridge. | Listen | for | laughter.", "Prie | — | tako | ir | — | tilto. | Įsiklausykite | — | juoko.", "Prie tako ir prie tilto. Įsiklausykite – gal išgirsite juoką.")],
+  stone_ok: [t("I | know | that | voice. | A | stone | taught | you.", "Aš | pažįstu | tą | balsą. | — | akmuo | pamokė | Jus.", "Pažįstu tą balsą. Jus pamokė akmuo.")],
+} satisfies Record<string, SentSrc[]>;
+
+export const oakModels = {
+  w_who: t("Who | are | you?", "Kas | esate | Jūs?", "Kas Jūs?"),
+  w_oak: t("You're | the | old | oak.", "Jūs | — | senasis | ąžuolas.", "Jūs – senasis ąžuolas."),
+  th_home: t("I | feel | at home | here.", "Aš | jaučiuosi | kaip namie | čia.", "Čia jaučiuosi kaip namie."),
+  th_like: t("I | like | it | here.", "Man | patinka | — | čia.", "Man čia patinka."),
+  th_thanks: t("Thank | you, | old | oak.", "Ačiū | Jums, | senasis | ąžuole.", "Ačiū Jums, senasis ąžuole."),
+  th_new: t("It | still | feels | new.", "Tai | dar | atrodo | nauja.", "Man čia dar viskas nauja."),
+  p_rest: t("Not | today.", "Ne | šiandien.", "Šiandien ne."),
+  p_keep: t("Yes, | I'll | keep | learning.", "Taip, | aš | toliau | mokysiuosi.", "Taip, mokysiuosi ir toliau."),
+  p_little: t("A little | every | day.", "Po truputį | kas | dieną.", "Kasdien po truputį."),
+  p_promise: t("I | promise.", "Aš | pažadu.", "Pažadu."),
+  p_sure: t("Of course.", "Žinoma.", "Žinoma."),
+  q_age: t("How | old | are | you?", "Kiek | metų | yra | Jums?", "Kiek Jums metų?"),
+  q_spirits: t("Where | are | the | spirits?", "Kur | yra | — | dvasios?", "Kur olos dvasios?"),
+} satisfies Record<string, SentSrc>;

@@ -16,14 +16,16 @@ import { TEXT_THREADS } from "../content/texts";
 import { TextList, TextThread } from "./TextThread";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
-import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
-import { LIGHTHOUSE_ISLAND } from "../game/world/island";
-import { drawIslandMap } from "./mapMarks";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
+import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
+import { LIGHTHOUSE_ISLAND } from "../game/world/island";
+import { COVE_DOORS, RING_TARGET, inSlateCove } from "../game/world/slateCovePlan";
+import { CAVE_COPY } from "../content/cave-copy";
+import { drawIslandMap } from "./mapMarks";
 import { isPhone, locIcon, walkToSituation } from "./objective";
 import { SitIcon } from "./SitIcon";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
@@ -38,6 +40,9 @@ import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
 import { HARBOR_SURF } from "../game/world/surf";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { CavePicker } from "./CavePicker";
+
+const WorldMapPanel = lazy(() => import("./worldMap"));
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -118,6 +123,13 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const light = useStore((st) => st.settings.play === "light");
   const current = progress.objective === s.id;
+  if (!light && s.location === "gruta") {
+    const guide = () => { close(); game?.guideToPlace?.(s.location, undefined, s.npc); };
+    return <div className="sit-actions" data-place={s.location}>
+      <button type="button" className="btn ghost small" onClick={guide}><Icon name="target" size={17} /> Rodyti kelią</button>
+      <button type="button" className="btn soft small" onClick={() => { guide(); game?.autoWalkToObjective("cave"); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+    </div>;
+  }
   return (
     <div className="sit-actions">
       <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> Pradėti dabar</button>
@@ -214,7 +226,7 @@ function Scenarios({ close }: { close: () => void }) {
   }, []);
   const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   const light = useStore((s) => s.settings.play === "light");
-  const bonus = SITUATIONS.filter((s) => s.bonus && !(light && isTownQuest(s.id)) && sitProgress(progress, s.id).completions > 0);
+  const bonus = SITUATIONS.filter((s) => s.bonus && s.location !== "gruta" && !(light && isTownQuest(s.id)) && sitProgress(progress, s.id).completions > 0);
   return (
     <div className="sheet scenarios">
       <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${ROUTE.length}`} close={close} />
@@ -235,6 +247,7 @@ function Scenarios({ close }: { close: () => void }) {
         {bonus.length > 0 && <div className="chapter"><div className="scn-grid">
           {bonus.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}
         </div></div>}
+        <CavePicker grid="scn-grid" card={(s) => <ScenarioCard key={s.id} s={s} close={close} />} />
         <div className="scn-foot" style={{ flexWrap: "wrap", gap: 8 }}>
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
           {!light && <button type="button" className="btn soft small" style={{ minHeight: 44 }} onClick={() => { close(); game?.guideToPlace?.(GYM_ENTRY.location); }}>
@@ -249,15 +262,15 @@ function Scenarios({ close }: { close: () => void }) {
 function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const loc = LOCATIONS[s.location];
-  const n = mainNpc(s);
+  const n = mainNpc(s), cave = s.npc === "cave_bram";
   const st = stars(sitProgress(progress, s.id));
   return (
     <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
       <span className="ico"><SitIcon id={s.id} size={24} /></span>
       <span className="txt">
-        <b lang="lt">{s.title.lt}</b>
-        <i lang="en">{s.title.en}</i>
-        <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
+        <b lang="lt">{cave ? loc.lt : s.title.lt}</b>
+        <i lang="en">{cave ? loc.name : s.title.en}</i>
+        <span>{n?.name}{!cave && " · "}{cave ? null : isPhone(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
       </span>
       <Stars n={st} />
     </button>
@@ -309,9 +322,15 @@ function Journal({ close }: { close: () => void }) {
 
 const MapPlaces = lazy(() => import("./MapPlaces"));
 
+/** Slate Cove's two places (mh-cave): pins of their own on the town map, and a guide to each under it. */
+const COVE_LANDMARKS = ["gruta", "old-stone-ring"];
+const NO_LANDMARKS: string[] = [];
+
 function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
   if (loc === HARBOR_SURF.location) return HARBOR_SURF.shack;
+  if (loc === "gruta") return COVE_DOORS.main;
+  if (loc === "old-stone-ring") return RING_TARGET;
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
   const s = SITUATIONS.find((x) => x.location === loc);
@@ -323,15 +342,28 @@ function MapPlaceIcon({ loc, size }: { loc: string; size: number }) {
   return loc === HARBOR_SURF.location ? <SitIcon id={SURF.situation} size={size} /> : <Icon name={locIcon(loc)} size={size} />;
 }
 
+/** Inside the cave the big map is the cave's own (worldMap.tsx, with its switch to the cove's trails); in town, the
+ *  town's map with its packed place pins, the cove's landmarks to the west. */
 function MapPanel({ close }: { close: () => void }) {
+  const inCave = useStore((s) => s.hud.minimap.zone === "gruta") && !!game?.caveMapBounds;
+  return inCave ? <Suspense fallback={null}><WorldMapPanel close={close} {...{ SheetHead, SitCard, SitActions }} /></Suspense>
+    : <TownMapPanel close={close} />;
+}
+
+function TownMapPanel({ close }: { close: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<string | null>(null);
   const progress = useStore((s) => s.progress);
+  const caveArea = useStore((s) => s.hud.minimap.zone === "town" && inSlateCove(s.hud.minimap.px, s.hud.minimap.pz));
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
   const lighthouse = LOCATIONS.lighthouse;
   const north = island ? WORLD.minZ : SEA_Z - 2;
-  const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
+  // the town and, to its west, Slate Cove's headland (drawn by the game: drawRegionMap)
+  const west = game?.townMapWest ?? WORLD.minX;
+  const region = game?.townMapWest !== undefined ? "slate-cove" : undefined;
+  const landmarks = game?.guideToPlace && game.townMapWest !== undefined ? COVE_LANDMARKS : NO_LANDMARKS;
+  const W = WORLD.maxX - west, D = WORLD.maxZ - north;
   useLayoutEffect(() => {
     const map = sheet.current!;
     const opener = document.activeElement as HTMLElement | null;
@@ -356,32 +388,49 @@ function MapPanel({ close }: { close: () => void }) {
   useEffect(() => {
     const g = game?.groundCanvas, c = ref.current;
     if (!g || !c) return;
-    const ppm = g.width / W, sea = (SEA_Z - 2 - north) * ppm;
-    c.width = g.width; c.height = g.height + sea;
+    const ppm = g.width / (WORLD.maxX - WORLD.minX), sea = (SEA_Z - 2 - north) * ppm, town = (WORLD.minX - west) * ppm;
+    c.width = Math.round(W * ppm); c.height = Math.round(g.height + sea);
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = "#3f8fb5";
-    ctx.fillRect(0, 0, c.width, sea);
-    ctx.drawImage(g, 0, sea);
-    if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
-  }, [W, island, north]);
+    ctx.fillRect(0, 0, c.width, town ? c.height : sea);
+    if (town) {
+      ctx.fillStyle = "#86b866";
+      ctx.fillRect(0, (SEA_Z + 1 - north) * ppm, town, c.height);
+    }
+    ctx.drawImage(g, town, sea);
+    if (town) game?.drawRegionMap?.(ctx, west, north, ppm, true);
+    if (island) drawIslandMap(ctx, island, west, north, ppm);
+  }, [W, island, north, west]);
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
+  const guideTo = (loc: string) => {
+    close();
+    game?.guideToPlace?.(loc);
+    game?.autoWalkToObjective("cave");
+  };
   return (
     <div className="sheet map-sheet" ref={sheet} role="dialog" aria-modal="true" aria-label="Maple Harbor">
       <SheetHead icon="map" title="Maple Harbor" close={close} />
       <div className="sheet-body">
         <div className="town-lt" lang="lt">{TOWN_LT}</div>
         <div className="map-wrap">
-          <div className="map-canvas" style={{ aspectRatio: W / D }}>
-            <canvas ref={ref} />
+          <div>
+            <div className="map-canvas" style={{ aspectRatio: W / D }}>
+              <canvas ref={ref} data-map={region} />
+            </div>
+            {landmarks.length > 0 && <div className="cave-landmarks">
+              {landmarks.map((id) => <button key={id} type="button" className="btn ghost small" aria-pressed={sel === id}
+                aria-label={(id === "gruta" ? CAVE_COPY.map.entrancePin : CAVE_COPY.map.ringPin).lt}
+                onClick={() => setSel(id)}><span lang="en">{LOCATIONS[id].name}</span>{" "}<span lang="lt">· {LOCATIONS[id].lt}</span></button>)}
+            </div>}
           </div>
           <div>
             <Suspense fallback={null}>
               {/* Pass the existing UI and content through so opening the map is their only new chunk boundary. */}
-              <MapPlaces canvas={ref} island={island} north={north} positionFor={locationPoint} progress={progress}
+              <MapPlaces canvas={ref} island={island} north={north} west={west} landmarks={landmarks} positionFor={locationPoint} progress={progress}
                 selected={sel} onSelect={setSel} route={ROUTE} situations={SITUATIONS} doors={game?.doors}
                 landmark={HARBOR_SURF.location} Icon={Icon} MapPlaceIcon={MapPlaceIcon} portal={createPortal} />
             </Suspense>
-            {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
+            {!sel && <div className="info-box">{caveArea ? CAVE_COPY.map.legend.lt : "Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu."}<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && (
               <div>
                 <h3 className="place-title" tabIndex={0}>{lighthouse.name}</h3>
@@ -397,6 +446,7 @@ function MapPanel({ close }: { close: () => void }) {
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 {sel === GYM_ENTRY.location && game?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
+                {landmarks.includes(sel) && <button type="button" className="btn soft" onClick={() => guideTo(sel)}><Icon name="walk" size={17} /> Nuvesk mane</button>}
                 <div className="sit-list">
                   {selSits.map((s) => (
                     <div key={s.id}>
@@ -404,7 +454,7 @@ function MapPanel({ close }: { close: () => void }) {
                       <div style={{ padding: "6px 4px" }}><div style={{ color: "var(--ink-soft)", fontSize: "0.9em" }}>{s.goal}</div><SitActions s={s} close={close} /></div>
                     </div>
                   ))}
-                  {!selSits.length && <div className="info-box">Čia kol kas nėra užduočių.</div>}
+                  {!selSits.length && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
                 </div>
               </div>
             )}

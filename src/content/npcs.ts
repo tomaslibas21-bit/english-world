@@ -240,6 +240,13 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     acc: ["beard"], top: "#284c59", bottom: "#71604e", shoes: "#374548",
     height: 1.02, build: 1.08, face: { lines: true },
   }, { speed: 1 }),
+  N("cave_bram", "Bram", ["Path keeper", "Tako sargas"], "m", "am_liam",
+    { skin: SK.tan, hair: { style: "short", color: HAIR.brown }, top: "#586b4e", bottom: "#4b4137", acc: ["cap", "vest"], accColor: "#4b4137", height: 0.52, build: 1.2 }),
+  N("cave_fern", "Fern", ["Bridge keeper", "Tilto sargė"], "f", "af_river",
+    { skin: SK.olive, hair: { style: "braid", color: HAIR.chestnut, side: -1, tie: "#788649" }, top: "#a75e42", bottom: "#49596a", skirt: true, acc: ["cardigan"], height: 0.50, build: 1.12 }),
+  // The cave uses this voice and role without constructing a person at the tree.
+  N("cave_oak", "The Old Oak", ["Speaking oak", "Kalbantis ąžuolas"], "m", "am_onyx",
+    { skin: SK.tan, hair: { style: "bald", color: HAIR.brown }, top: "#594a36", bottom: "#594a36" }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

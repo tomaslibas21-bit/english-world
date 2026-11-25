@@ -80,3 +80,11 @@ export function drawIslandMap(c: CanvasRenderingContext2D, island: IslandPlan, x
   c.fill();
   c.restore();
 }
+
+/** Both maps project from world dimensions, retaining the ground texture's scale. */
+export function mapPosition(bounds: { minX: number; minZ: number; maxX: number; maxZ: number }, x: number, z: number) {
+  return {
+    left: `${(x - bounds.minX) / (bounds.maxX - bounds.minX) * 100}%`,
+    top: `${(z - bounds.minZ) / (bounds.maxZ - bounds.minZ) * 100}%`,
+  };
+}

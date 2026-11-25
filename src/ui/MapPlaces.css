@@ -120,3 +120,6 @@
 .map-wrap .map-member:focus-visible { outline-color: var(--accent); }
 .map-wrap .map-member[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .map-wrap :is(.map-member, .place-title) { scroll-margin-block: 6px; }
+/* Slate Cove's landmarks under the town map (the cave's own map styles them in cave.css) */
+.map-wrap .cave-landmarks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.map-wrap .cave-landmarks button { min-height: 44px; white-space: normal; }

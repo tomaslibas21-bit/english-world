@@ -245,6 +245,8 @@ const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
   water_bottle: "M9 3h6v4l2 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l2-3zM9 7h6m-8 6h10",
   prescription: "M5 3h10l4 4v14H5zM15 3v5h4m-7 2v7m-3.5-3.5h7",
   wallet: WALLET,
+  slate_pebble: "M4 15l2-6 6-3 6 2 2 5-4 5H7z",
+  oak_leaf: "M5 20l13-14M8 17C2 15 5 10 8 11c-1-4 2-6 5-4 1-3 5-4 7-3 1 3 0 6-3 7 2 3-1 6-4 5 0 3-4 4-5 1z",
 };
 
 export function KeepsakeIcon({ kind, named = false }: { kind: KeepsakeKind; named?: boolean }) {

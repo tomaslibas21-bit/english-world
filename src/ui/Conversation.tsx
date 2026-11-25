@@ -272,6 +272,7 @@ export function Conversation() {
 
 function EndCard({ sit }: { sit: SituationDef }) {
   const { completed, bestPhrase, newExpressions } = useStore((s) => s.conv);
+  const { bestPhrase: phraseLabels, received = "Gavai", Ending } = sit.conversationCopy ?? {};
   const progress = useStore((s) => s.progress);
   const earned = stars(sitProgress(progress, sit.id));
   const kind = keepsakeFor(sit.id);
@@ -297,7 +298,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
       </div>
       {bestPhrase && <div className="ended-phrase">
         <div>
-          <div className="ended-phrase-label">{bestPhrase.spoken ? "Geriausiai pasakei" : "Tavo frazė"}</div>
+          <div className="ended-phrase-label">{bestPhrase.spoken ? phraseLabels?.spoken ?? "Geriausiai pasakei" : phraseLabels?.typed ?? "Tavo frazė"}</div>
           <div className="ended-phrase-en" lang="en">{bestPhrase.en}</div>
           {bestPhrase.nat && <div className="nat" lang="lt">{bestPhrase.nat}</div>}
         </div>
@@ -308,9 +309,10 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {bestPhrase.nat && <PhraseSave sentence={{ en: bestPhrase.en, nat: bestPhrase.nat, say: bestPhrase.say, units: [] }} situationId={sit.id} iconOnly />}
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
-        {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
+        {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {received} {KIND[kind].accusative}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
       </div>}
+      {completed && Ending && <Suspense fallback={null}><Ending /></Suspense>}
       {!baristaOffer && modeAction}
       {light ? (
         <div className="sit-actions">
@@ -320,7 +322,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         </div>
       ) : completed ? (
         <>
-          {next && <EndDestination sit={next} close={close} />}
+          {next && !Ending && <EndDestination sit={next} close={close} />}
           <div className="sit-actions ended-secondary">
             <div>
               <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> Tęsti</button>
@@ -753,7 +755,7 @@ function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
           {groups.map(([id, g]) => <HintGroupView key={id} id={id} g={g} sit={sit} formal={formal} gender={gender} chosen={conv.chosen[id]} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />)}
           {!conv.hints.includes("g_clarify") && (
             <details className="hint-group">
-              <summary className="hint-summary">Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…</summary>
+              <summary className="hint-summary">{sit.conversationCopy?.clarification ?? "Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…"}</summary>
               <HintGroupView id="g_clarify" g={GLOBAL.hints.g_clarify} sit={sit} formal={formal} gender={gender} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />
             </details>
           )}
@@ -790,7 +792,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
     <div className="hint-group">
       <h4>{g.lt}</h4>
       {items.map(({ it, gap, full, hasGap }, i) => {
-        const note = [it.note, g.ownName ? undefined : ownNameNote(it.s.en)].filter(Boolean).join(" ");
+        const note = [it.note, g.ownName ? undefined : ownNameNote(it.s.en, sit.conversationCopy?.ownName)].filter(Boolean).join(" ");
         return (
           <div className={"hint-row" + (used.includes(it.id) ? " used" : "")} key={it.id + i}>
             {hasGap && <div className="pat">{renderGap(gap.en)}{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : it.register === "casual" ? "laisviau" : ""}</span>}</div>}

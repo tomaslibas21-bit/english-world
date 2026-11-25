@@ -185,11 +185,13 @@ export class LightGame implements GameApi {
       onEnd: (s, completed) => {
         if (this.session !== session) return;
         this.session = null;
+        audio.recordedDialogue = false;
         useStore.getState().setConv({ active: false });
         if (completed && !s.bonus) this.advanceObjective(s);
       },
     });
     this.session = session;
+    audio.recordedDialogue = sit.location === "gruta";
     session.begin();
   }
 

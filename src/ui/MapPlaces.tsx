@@ -12,22 +12,24 @@ import type { Icon as PlaceIcon } from "./icons";
 import { packMapPlaces, type MapPoint } from "./mapPacking";
 import "./MapPlaces.css";
 
+const NO_LANDMARKS: readonly string[] = [];
 type PositionFor = (loc: string) => IslandPoint | null;
 type Bounds = { width: number; height: number; size: number };
 
-function project({ x, z }: IslandPoint, north: number): MapPoint {
-  return { x: (x - WORLD.minX) / (WORLD.maxX - WORLD.minX), y: (z - north) / (WORLD.maxZ - north) };
+/** `west`: the map's west edge (the town's, or Slate Cove's headland beyond it). */
+function project({ x, z }: IslandPoint, north: number, west: number = WORLD.minX): MapPoint {
+  return { x: (x - west) / (WORLD.maxX - west), y: (z - north) / (WORLD.maxZ - north) };
 }
 
 function position({ x, y }: MapPoint) {
   return { left: `${x * 100}%`, top: `${y * 100}%` };
 }
 
-function PlayerDot({ north }: { north: number }) {
+function PlayerDot({ north, west }: { north: number; west: number }) {
   const x = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.px : undefined);
   const z = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.pz : undefined);
   return x === undefined || z === undefined ? null
-    : <div className="map-me" style={position(project({ x, z }, north))} title="Tu esi čia" />;
+    : <div className="map-me" style={position(project({ x, z }, north, west))} title="Tu esi čia" />;
 }
 
 function outdoorObjective(sit: SituationMeta | undefined, targetLoc: string | undefined, doors: Door[] | undefined, positionFor: PositionFor) {
@@ -55,11 +57,15 @@ function faceOffset(pin: MapPoint, mark: MapPoint | null, { size, height }: Boun
   return y - pin.y;
 }
 
-export default function MapPlaces({ canvas, island, north, positionFor, progress, selected, onSelect,
+export default function MapPlaces({ canvas, island, north, west = WORLD.minX, landmarks = NO_LANDMARKS, positionFor, progress, selected, onSelect,
   route, situations, doors, landmark, Icon, MapPlaceIcon, portal }: {
   canvas: RefObject<HTMLCanvasElement | null>;
   island?: IslandPlan;
   north: number;
+  /** The map's west edge, when it shows more than the town (Slate Cove). */
+  west?: number;
+  /** Places pinned with no conversation of their own (Slate Cove's cave and ring), each on a pin of its own. */
+  landmarks?: readonly string[];
   positionFor: PositionFor;
   progress: Progress;
   selected: string | null;
@@ -101,13 +107,14 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
 
   const places = useMemo(() => {
     const points = Object.values(LOCATIONS).flatMap(({ id, kind, lt, name }) => {
-      if (kind === "phone" || (id !== "pool-hall" && id !== landmark && !route.some((s) => s.location === id))) return [];
+      const own = landmarks.includes(id);
+      if (kind === "phone" || (id !== "pool-hall" && id !== landmark && !own && !route.some((s) => s.location === id))) return [];
       const point = positionFor(id);
-      return point ? [{ id, lt, name, reserved: id === "airport" || id === landmark, ...project(point, north) }] : [];
+      return point ? [{ id, lt, name, reserved: id === "airport" || id === landmark || own, ...project(point, north, west) }] : [];
     });
-    if (island) points.push({ id: "lighthouse", lt: island.lt, name: island.name, reserved: true, ...project(island.center, north) });
+    if (island) points.push({ id: "lighthouse", lt: island.lt, name: island.name, reserved: true, ...project(island.center, north, west) });
     return points;
-  }, [north, island, positionFor, route, doors, landmark]);
+  }, [north, west, landmarks, island, positionFor, route, doors, landmark]);
 
   const completed = useMemo(() => {
     const names = new Set<string>();
@@ -129,8 +136,8 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
     // The minimap can show the temporary directions route. The full map marks the task itself.
     const point = island && objectiveId === island.keeper.says ? island.keeper.approach
       : outdoorObjective(situations.find((s) => s.id === objectiveId), targetLoc, doors, positionFor);
-    return point && project(point, north);
-  }, [objectiveId, targetLoc, island, north, positionFor, doors, situations]);
+    return point && project(point, north, west);
+  }, [objectiveId, targetLoc, island, north, west, positionFor, doors, situations]);
   const active = pins.find((pin) => pin.members.length > 1 && pin.members.some((p) => p.id === openPlace));
   const details = () => canvas.current?.closest(".map-wrap")?.querySelector<HTMLElement>(".place-title") ?? null;
   const pinId = (key: string) => `${prefix}-pin-${key}`;
@@ -165,7 +172,7 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
 
   return <>
     {portal(<>
-      <PlayerDot north={north} />
+      <PlayerDot north={north} west={west} />
       {objective && <div className="map-objective" style={position(objective)} aria-hidden />}
       {pins.map((pin) => {
         const place = pin.members[0];

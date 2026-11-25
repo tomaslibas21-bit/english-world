@@ -60,6 +60,7 @@ export interface Progress {
   wordGames?: Record<string, import("../game/road/save").WordGameProgress>;
   taxi?: { nextRoute: number };
   lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
+  cave?: import("../game/cave/quest").CaveSave;
   phone?: PhoneProgress;
   texts?: TextProgress;
   street?: import("../game/street/memory").StreetMemory;

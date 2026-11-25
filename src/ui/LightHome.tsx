@@ -26,6 +26,8 @@ import { SectionHelpButton } from "./sectionHelp";
 import { Loading } from "./Loading";
 import { StreetLight } from "./street/StreetLight";
 import { usePortrait } from "./usePortrait";
+import { CavePicker } from "./CavePicker";
+import { CAVE_PRACTICE } from "../content/cave-picker-copy";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -151,6 +153,8 @@ function LightHome() {
           </section>
         ))}
 
+        <CavePicker grid="lh-grid" card={(s) => <SitCard key={s.id} s={s} />} />
+
         <footer className="lh-foot">
           <button className="btn ghost" onClick={() => switchPlayMode("town")}><Icon name="map" size={19} /> Atidaryti 3D miestą</button>
           <span>Vaikščiok po Maple Harbor ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.</span>
@@ -171,7 +175,7 @@ function SitCard({ s }: { s: SituationMeta }) {
       <span className="lh-txt">
         <b lang="lt">{s.title.lt}</b>
         <i lang="en">{s.title.en}</i>
-        <span>{n?.name} · {isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
+        <span>{n?.name} · {s.location === "gruta" ? CAVE_PRACTICE.lt : isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
       </span>
       <Stars n={st} />
     </button>
@@ -192,13 +196,14 @@ function CallCard() {
   const sit = SITUATION_BY_ID[conv.sitId];
   const call = conv.mode !== "talk";
   const talking = conv.speaking !== null && conv.transcript.find((l) => l.id === conv.speaking)?.npc === conv.hostId;
-  const face = usePortrait(conv.hostId);
+  const oak = conv.hostId === "cave_oak";
+  const face = usePortrait(oak ? null : conv.hostId);
   return (
     <div className="lc" aria-hidden="true">
       <Skyline className="lc-sky" />
       <div className="lc-center">
         <div className={"lc-avatar" + (face ? " lc-face" : "") + (talking ? " talking" : "")} style={{ background: avatarColor(conv.hostId) }}>
-          {face ? <img src={face} alt="" draggable={false} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}
+          {oak ? <SitIcon id={conv.sitId} size={42} /> : face ? <img src={face} alt="" draggable={false} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}
         </div>
         <div className="lc-name">{npc?.name}</div>
         <div className="lc-sub">

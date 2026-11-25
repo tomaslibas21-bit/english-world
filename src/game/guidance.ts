@@ -19,6 +19,7 @@ export function guideVisualTarget(
   const end = path?.at(-1);
   return end ? { kind: target.kind, x: end[0], z: end[1] } : null;
 }
+import type { GuideKind } from "./gameRef";
 
 /** One mark of the way: where it lies, which way it points (a heading: 0 towards +z) and how strongly it shows (0–1). */
 export interface WayMark { x: number; z: number; rot: number; alpha: number }
@@ -107,6 +108,10 @@ export class Guidance {
     this.beacon.add(this.beam, this.gem, this.ring);
     this.beacon.visible = false;
     this.group.add(this.beacon);
+  }
+
+  setKind(kind: GuideKind) {
+    (this.dots.material as THREE.ShaderMaterial).uniforms.uFill.value.set(kind === "cave" ? "#b8eee1" : "#ffe9ad");
   }
 
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }

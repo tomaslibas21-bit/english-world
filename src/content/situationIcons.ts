@@ -81,4 +81,7 @@ export const SITUATION_ICONS: Record<string, string> = {
   "x01-pool-hall": "circle-dot",         // pool at The Corner Pocket
   "x04-surf": "waves-horizontal",
   "x05-lighthouse-keeper": "flame",
+  "x06-bram": "mountain",                // Bram on the gray path under the slate cliffs (the keeper has the flame)
+  "x07-fern": "puzzle",
+  "x08-old-oak": "tree-deciduous",
 };

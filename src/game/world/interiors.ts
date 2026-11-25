@@ -24,7 +24,7 @@ export interface Interior {
   id: string;
   group: THREE.Group;
   colliders: Colliders;
-  ledges: Ledges;
+  ledges?: Ledges;
   w: number; d: number;
   exit: { x: number; z: number };
   spawn: { x: number; z: number; rot: number };
@@ -34,6 +34,25 @@ export interface Interior {
   warm?: boolean;
   /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
   update?(t: number, dt: number): void;
+  wild?: {
+    fog: THREE.FogExp2 | THREE.Fog; background: string;
+    /** The light on the people there: the sky's and the ground's colours and their strength; the sun's. */
+    hemi: [string, string, number]; sun: [string, number];
+    /** What keeps the camera inside (camera.ts `space`). */
+    space: { free(a: THREE.Vector3, b: THREE.Vector3): number; inside(p: THREE.Vector3): boolean; overSolid(x: number, z: number): boolean };
+    floor(x: number, z: number): number;
+    walkable(x: number, z: number, r?: number): boolean;
+    bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+    /** Its ways out (the first is the room's own `exit`): from how near each is offered, and within what walking on
+     *  into it (towards `dir`) goes out. Where each comes up in the town is the game's to say. */
+    exits: readonly { id: string; x: number; z: number; reach: number; push: number; dir: readonly [number, number] }[];
+    /** The dry spawn for each entrance. */
+    spawns: Record<string, { x: number; z: number; rot: number }>;
+    /** The follow camera's lean and distance there (a roof worth seeing: lower and nearer than in the town). */
+    camera?: { pitch: number; dist: number };
+    /** Every frame while someone is there (`at`: where they are; `h`: the picture's height in pixels). */
+    frame?(t: number, dt: number, cam: THREE.PerspectiveCamera, at: THREE.Vector3, h: number): void;
+  };
 }
 
 type Builder = (ctx: Ctx) => void;

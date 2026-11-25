@@ -21,6 +21,7 @@ import { Track, type RoadOpening } from "../road/track";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
+import { addSlateCoveColliders, inSlateCove, RING_MAPLES } from "./slateCovePlan";
 import { GROUND_BLOCKS, MAPLE_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -291,7 +292,7 @@ export function buildTown(): Town {
   // bay's own edge, water.ts BAY)
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2, "town-edge");
-  colliders.addBox(WORLD.minX - 1, 0, 2, 220, "town-edge");
+  addSlateCoveColliders(colliders);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220, "edge");
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
@@ -355,7 +356,7 @@ export function buildTown(): Town {
       }
     },
     walkableAt(x, z) {
-      return x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ && !colliders.blocked(x, z, 0.3, island !== undefined && islandGroundY(island, x, z) !== undefined);
+      return (inSlateCove(x, z) || (x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ)) && !colliders.blocked(x, z, 0.3, island !== undefined && islandGroundY(island, x, z) !== undefined);
     },
   };
 }
@@ -1672,6 +1673,9 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: Ad
   for (const [x, z] of [[-96, -48], [-72, -46], [-4, -46], [68, -46], [-100, 70], [-62, 70], [-16, 70], [8, 68], [70, 68], [100, 68], [120, 30], [128, 24], [-100, 28], [118, -60], [126, -40]]) add(x, z, 1 + r() * 0.3);
   // square
   for (const [x, z] of [[9, -18], [47, -18], [9, -46], [47, -46.5]]) add(x, z, 0.8);
+  // old maples south of the Old Stone Ring (slateCovePlan.ts), on their own seed: the town's draws stay as they were
+  const town = spots.length, ring = rand(40417);
+  for (const [x, z, sc] of RING_MAPLES) add(x, z, sc);
 
   const n = spots.length;
   const trunkGeo = STYLED ? trunkGeometry() : new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
@@ -1688,12 +1692,15 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: Ad
   const palette = STYLED ? ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"] : FALL;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI);
-    m4.compose(v.set(x, 0, z), q, s.set(sc, sc * (0.9 + r() * 0.3), sc));
+    const own = i >= town, rr = own ? ring : r;
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr() * Math.PI);
+    m4.compose(v.set(x, own ? RING_MAPLES[i - town][3] - 0.08 : 0, z), q, s.set(sc, sc * (0.9 + rr() * 0.3), sc));
     trunks.setMatrixAt(i, m4);
     leaves.setMatrixAt(i, m4);
-    const leafCol = palette[Math.floor(r() * palette.length)];
+    // (the ring's maples have all turned: they stand against the slate, not among the street's greens)
+    const leafCol = own ? FALL[Math.floor(rr() * 7)] : palette[Math.floor(r() * palette.length)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
+    if (own) { col.addCircle(x, z, 0.35 * sc); return; }
     treeSpots.push({ x, z, s: sc, color: leafCol });
     if (["#d9542b", "#c8402f", "#b5382c", "#e0692c"].includes(leafCol)) photo("maple", x, 3.2 * s.y, z);
     col.addCircle(x, z, 0.35 * sc);
