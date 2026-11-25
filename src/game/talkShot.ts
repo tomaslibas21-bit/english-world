@@ -22,6 +22,12 @@ export function covers(pos: THREE.Vector3, face: THREE.Vector3, body: Body): boo
 
 /** How far from the people the nearer view starts (m): a figure about half the picture's height on a computer. */
 export const NEAR_TALK = 3.3;
+/** Phone camera offsets from the head, just over the café display and behind the bank's teller glass. */
+export const COUNTER_PHONE_SHOTS: Readonly<Partial<Record<string, { speaker: string; distance: number; lift: number }>>> = {
+  "sunny-cup": { speaker: "mia", distance: 0.98, lift: 0.31 },
+  bank: { speaker: "aaron", distance: 1.12, lift: 0.09 },
+};
+
 /** Round from behind the learner (0°) towards side-on (90°): the angles tried, the best-looking first. */
 const ANGLES = [46, 58, 36, 70, 82];
 
