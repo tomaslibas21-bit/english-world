@@ -31,6 +31,7 @@ export class RoadChase {
   private yaw = 0;
   private pan = 0;
   private back = 0;
+  private speedBack = 0;
   private widen = 0;
   private lens = 1;
   private focus = new Vector3();
@@ -201,7 +202,10 @@ export class RoadChase {
       eyeY, dx, dz, vertical, aspect, upper, gateBlend, gate) : baseFit;
     // Keep the gate's back easing independent of the speed contribution.
     this.back = Math.max(baseFit, lerp(this.back, baseFit, ease));
-    let back = fit + (this.back - baseFit);
+    // The speed shot eases towards its own fit in the same way. Each fit follows whichever corner limits it, and the
+    // two fits change corners at different moments, so carrying their raw difference would jolt the camera.
+    this.speedBack = visualPace ? Math.max(fit, lerp(this.speedBack, fit, ease)) : this.back;
+    let back = this.speedBack;
     // Give the tall silhouette breathing room through the shared road opening.
     // Return to the ordinary chase as the gate fills the shot.
     if (portrait && this.openingRoadRoom && distance < OPENING_VERGE_END) {
