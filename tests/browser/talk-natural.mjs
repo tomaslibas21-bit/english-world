@@ -64,7 +64,7 @@ function installPage({ key, seed, native, mic, nullTree }) {
       scenes: false, phoneCalls: false, textMessages: false, lt: true, confirmSpeech: false, onDevice: false },
     sits: {}, phrases: {}, seenIntro: {}, started: 1,
     place: { zone: "airport", x: -14, z: -1, rot: Math.PI },
-    coach: { done: true, run: true, view: true },
+    coach: { done: true, seen: { list: true }, run: true, view: true },
     cave: { lit: nullTree ? ["agua", "raices", "rio", "estrellas", "corazon"].flatMap((chamber) => [1, 2, 3].map((i) => `${chamber}-${i}`)) : [],
       passed: ["kin", "nikte"], seen: true, told: 5, heart: nullTree },
   };
@@ -286,6 +286,8 @@ function observe({ hash, shorten }) {
         completions: progress.sits[conv.sitId]?.completions ?? 0, phone: !!hud.phoneCard },
       scene: { zone: game.zone.id, mode: game.rig.mode, modeId: game.modes.active?.id, cast: game.talkCast.map(({ id }) => id),
         talkSpeaker: game.talkSpeaker?.id, nearest: game.nearest?.id, mountedZone: bodyWithin(game.zone.group, game.scene),
+        prompt: hud.prompt?.kind, banner: !!hud.zoneBanner, coach: hud.coach?.step,
+        walking: !!game.autoPath?.length, streetEligible: game.streetLife?.canStart(),
         tree: game.talkTree, panel: bounds(panel), panelId: panel && panels.get(panel), panelAnimating,
         canvas: bounds(game.renderer.domElement), layout: game.talkLayout?.picture, fonts: document.fonts.status,
         picture: !!document.querySelector(".scene-backdrop"), covered: game.covered, quality: settings.quality,
@@ -310,6 +312,7 @@ function observe({ hash, shorten }) {
   };
   window.__naturalTest = { requests, clears, sample, observers,
     drain: () => frames.splice(0),
+    watchTownActor(id) { put(id, game.npcs.find((npc) => npc.id === id)?.ch); },
     pin(label, actor) {
       const ch = actors.get(actor);
       if (!ch) throw new Error(`Cannot pin absent actor ${actor}`);
@@ -376,7 +379,10 @@ const compact = (f) => f && ({ wall: f.wall, gameTime: f.gameTime, frame: f.fram
   identity: f.actual[f.p?.speakerId ?? f.conv.npc]?.identity, run: f.conv.run, phase: f.conv.phase, step: f.conv.step,
   lineKey: f.conv.lineKey ?? f.p?.lineId, line: f.conv.line, text: f.conv.text, request: f.request, media: f.media,
   cue: f.p?.gesture, reaction: f.p?.reaction, gaze: f.p?.gaze?.target, mouth: f.p?.mouth, camera: f.scene.lens, scene: f.scene.mode,
-  canvas: f.scene.canvas, panel: f.scene.panel, mode: f.scene.modeId, board: f.scene.board, street: f.street });
+  canvas: f.scene.canvas, panel: f.scene.panel, mode: f.scene.modeId, board: f.scene.board, street: f.street,
+  nearest: f.scene.nearest, prompt: f.scene.prompt, walking: f.scene.walking,
+  transition: f.scene.transition, phone: f.conv.phone, banner: f.scene.banner, coach: f.scene.coach,
+  streetEligible: f.scene.streetEligible });
 
 class Route {
   constructor(page, context, row, options) {
@@ -532,13 +538,14 @@ class Route {
     }
     assert(hit, `${action} must be visible, enabled and hit-testable`);
     const at = this.last;
+    const from = this.frames.length;
     const wall = Date.now();
     if (this.size.touch) await this.page.touchscreen.tap(hit.x, hit.y);
     else if (key || focus) {
       await locator.focus();
       if (key) await this.page.keyboard.press("Enter");
     } else await this.page.mouse.click(hit.x, hit.y);
-    const event = { action, wall, gameTime: at.gameTime, frame: at.frame, hit,
+    const event = { action, wall, gameTime: at.gameTime, frame: at.frame, from, hit,
       input: this.size.touch ? "tap" : key ? "Enter" : focus ? "focus" : "click" };
     this.row.actions.push(event);
     await this.pull();
@@ -569,8 +576,11 @@ class Route {
     }
   }
 
-  async interact() {
-    if (this.size.touch) return this.press(this.page.locator(".act-btn"), "walk-up talk");
+  async interact(actor) {
+    if (this.size.touch) {
+      const action = this.page.locator(".act-btn");
+      return this.press(actor === "vinnie" ? action.filter({ hasText: /^(Talk|Kalbėti)$/ }) : action, "walk-up talk");
+    }
     await this.page.keyboard.press("e");
   }
 
@@ -586,22 +596,53 @@ class Route {
       const near = member.approach ?? member.home.clone().add(member.home.clone().set(Math.sin(member.rot) * 2.2, 0, Math.cos(member.rot) * 2.2));
       return game.enterZone("town", { x: near.x, z: near.z, rot: Math.atan2(member.home.x - near.x, member.home.z - near.z) }, true);
     }, { actor, id, spot });
-    await this.wait((f) => f.scene.nearest === actor && !f.scene.transition && !f.conv.phone, `walk-up prompt for ${actor}`);
-    const before = this.last;
-    assertGameplayLens(before.scene.lens, this.size, `before ${id}`);
-    this.gameplay = before.scene.lens;
     if (actor === "vinnie") {
+      const start = await this.wait((f) => f.scene.zone === "town" && f.scene.mountedZone && !f.scene.transition
+        && !f.scene.banner && !f.scene.coach && !f.conv.phone,
+        "town rendered outside Don Rigo's wave range", 8000, { from: this.approachAt });
+      const path = await this.page.evaluate(() => {
+        const { game } = window.__ew;
+        const { x, z } = game.player.root.position;
+        const { home } = game.npcs.find((npc) => npc.id === "vinnie");
+        // East of the driver, the sidewalk clears the lamp at (124, -0.4) and the taxi sign to the south.
+        const stop = [home.x + 1, home.z + 0.9];
+        const taxi = game.modes.get("taxi");
+        const talkDistance = Math.hypot(stop[0] - home.x, stop[1] - home.z);
+        return { start: [x, z], stop, startDistance: Math.hypot(x - home.x, z - home.z),
+          talkDistance, markerDistance: Math.hypot(stop[0] - taxi.marker.position.x, stop[1] - taxi.marker.position.z),
+          walkable: game.town.walkableAt(x, z) && game.town.walkableAt(...stop),
+          route: game.zone.nav.path(x, z, ...stop, true),
+          markerWins: !!game.modes.prompt(...stop, talkDistance),
+          markerPlayable: taxi.prompt(taxi.marker.position.x, taxi.marker.position.z)?.kind === "taxi" };
+      });
+      this.row.approach = { ...path, firstFrame: start.frame };
+      assert(path.startDistance > 4.5 && path.walkable && path.route?.length > 1
+        && distance(path.route.at(-1), path.stop) < 0.01, `walkable route toward Don Rigo · ${JSON.stringify(path)}`);
+      assert(path.talkDistance < 2.9 && (path.markerDistance > 2.5 || path.talkDistance < path.markerDistance)
+        && !path.markerWins && path.markerPlayable, `the Talk prompt wins and the taxi marker remains playable · ${JSON.stringify(path)}`);
+      await this.page.evaluate(([x, z]) => {
+        window.__naturalTest.watchTownActor("vinnie");
+        window.__ew.game.walkTo(x, z, { kind: "point" });
+      }, path.stop);
       const wave = await this.wait((f) => f.actual.vinnie?.anim === "wave", "Don Rigo's approach wave",
-        4000, { from: this.approachAt ?? 0 });
+        4000, { from: this.approachAt });
       await this.elapsed(0.25, wave);
       const waving = this.frames.filter((f) => f.gameTime >= wave.gameTime && f.gameTime <= wave.gameTime + 0.38
         && f.actual.vinnie?.anim === "wave");
       const raised = waving.find((f) => f.actual.vinnie.hands.some((hand) => hand[1] >= f.actual.vinnie.headWorld[1] - 0.17));
       assert(raised, "Don Rigo raises an actual hand during the town wave");
+      live(raised, actor);
       this.mark("approach-wave", raised);
       this.require("approach-wave");
     }
-    await this.interact();
+    const before = await this.wait((f) => f.scene.nearest === actor && f.scene.prompt === "talk"
+      && !f.scene.walking && !f.scene.transition && !f.conv.phone
+      && (actor !== "vinnie" || (!f.scene.banner && !f.scene.coach)), `walk-up prompt for ${actor}`, 20_000,
+    { from: this.approachAt });
+    assertGameplayLens(before.scene.lens, this.size, `before ${id}`);
+    this.gameplay = before.scene.lens;
+    if (actor === "vinnie") this.row.approach.prompt = compact(before);
+    await this.interact(actor);
   }
 
   async start(id, actor, { walk = false, spot, begun = false, nullTree = false } = {}) {
@@ -685,8 +726,9 @@ class Route {
         await this.press(this.page.locator(".audio-recovery .link-btn").last(), "continue reading");
         warned = true;
       }
-      if (current.conv.phase === "you" || current.conv.phase === "ended") {
-        await this.pull();
+      const { phase, run, step, intro } = current.conv;
+      if (this.last.conv.run === run && this.last.conv.phase === phase && this.last.conv.step === step && !intro
+        && (phase === "ended" || (phase === "you" && await this.page.locator('.convo[data-phase="you"] .inputbar .type-toggle').isVisible()))) {
         return this.last;
       }
       await real(17);
@@ -702,10 +744,14 @@ class Route {
     const where = this.page.locator(".typebox input");
     if (!await where.isVisible()) await this.press(this.page.locator(".type-toggle"), "open typebox", { key: true });
     if (this.size.touch) await this.press(where, "focus typebox");
-    else await where.focus();
+    else {
+      await where.waitFor({ state: "visible" });
+      assert(await where.isEditable(), `ready typed input for ${turn.conv.step}`);
+      await where.focus();
+    }
     await this.page.keyboard.insertText(text);
-    const from = this.frames.length;
     const submit = await this.press(this.page.locator(".typebox button[type=submit]"), `submit ${turn.conv.step}`, { key: true });
+    const { from } = submit;
     const answer = await this.page.evaluate(() => window.__ew.store.getState().conv.transcript.findLast((row) => row.who === "you"));
     assert(answer?.understood === understood && answer.via === "typed", `accepted parse at ${turn.conv.step} · ${JSON.stringify(answer)}`);
     const result = { step: turn.conv.step, actor: turn.conv.npc, answer, submit, from };
@@ -1004,23 +1050,27 @@ async function local(route) {
     && (Math.abs(f.p.player.deltas.hipRoll) > 0.003 || Math.abs(f.p.player.deltas.headPitch) > 0.008)
     && (distance(f.actual.player.joints.head, learner.joints.head) > 0.004 || distance(f.actual.player.joints.body, learner.joints.body) > 0.003)),
   "learner keeps Doña Carmen in view and shows a mounted nod or shift");
-  await route.answer("¿Qué me recomienda?");
+  const submitted = await route.answer("¿Qué me recomienda?");
   await route.next();
-  await voiced(route, "rosa", (f) => f.request !== opening.request);
+  await voiced(route, "rosa", (f) => f.conv.run === entry.conv.run && f.conv.line > submitted.answer.id
+    && f.request !== opening.request, submitted.from);
   await route.close();
 }
 
 async function taxi(route) {
-  const entry = await route.start("s66-taxi", "vinnie", { walk: true });
+  const entry = await route.start("s66-taxi", "vinnie", {
+    walk: true, spot: { zone: "town", x: 129.7, z: -0.5, rot: -Math.PI / 2 },
+  });
   const rows = await listening(route, "vinnie", { duration: 5.15 });
   assert.notEqual(live(entry, "vinnie").anim, "sit");
   const opening = route.frames.filter((f) => f.conv.run === entry.conv.run && f.conv.lineKey === "greet");
   checkFixture(route, "vinnie", opening);
   motionPeak(route, route.frames.slice(route.entryAt), "vinnie", ["greeting"], "gesture-peak");
   await layoutEvidence(route, "vinnie");
-  await route.answer("Al hotel Mar Azul, por favor.", { step: "dest", reaction: "understood", label: "submit" });
+  const submitted = await route.answer("Al hotel Mar Azul, por favor.", { step: "dest", reaction: "understood", label: "submit" });
   await route.next();
-  await voiced(route, "vinnie", (f) => f.conv.lineKey !== "greet");
+  await voiced(route, "vinnie", (f) => f.conv.run === entry.conv.run && f.conv.line > submitted.answer.id
+    && f.conv.lineKey !== "greet", submitted.from);
   await replay(route, "vinnie");
   const { back } = await route.close();
   assert(back.scene.zone === "town" && !back.scene.pendingRide && !back.scene.ride, "dialogue returns to the walk-up with no ride queued");
@@ -1114,30 +1164,37 @@ async function restaurant(route) {
 }
 
 const ticketAnswers = {
+  howareyou: "Bien, gracias. ¿Y usted?",
   dest: "Un boleto sencillo a Tulum, por favor.", count: "Solo uno.", trip: "Sencillo, por favor.", ret: "El domingo.",
-  travel_day: "Sí, hoy.", time: "El próximo, por favor.", sold_out: "Sí, está bien.", seat: "Ventanilla, por favor.",
-  name: "Aquí tiene mi pasaporte.", other_name: "Ana Miller.", discount: "No, ninguna.", student_id: "Aquí tiene.",
+  travel_day: "Sí, hoy.", time: "El próximo, por favor.", sold_out: "Está bien, deme ese.", seat: "Ventanilla, por favor.",
+  name: "Aquí tiene mi pasaporte.", full_name: "Me llamo Mateo Miller.", other_name: "Ana Miller.",
+  discount: "No, ninguna.", student_id: "Aquí tiene.",
   pay: "Con tarjeta.", ticket: "Gracias.", info: "No, es todo, gracias.",
 };
 
 async function tickets(route, many = false) {
   const entry = await route.start("s67a-tickets", "walter");
   await listening(route, "walter", { duration: route.film ? 5.15 : 0.7 });
-  const opening = await voiced(route, "walter");
+  const opening = await voiced(route, "walter", (f) => f.conv.run === entry.conv.run);
   assert.equal(entry.scene.zone, "station");
   await layoutEvidence(route, "walter");
   const handoffKey = many ? "ticket_many" : "ticket_one";
-  let utterance, passage;
+  let utterance, submitted;
   for (let i = 0; i < 16; i++) {
     const turn = await route.next();
     const step = turn.conv.step;
     assert(turn.conv.active && turn.conv.run === entry.conv.run && turn.conv.npc === "walter" && ticketAnswers[step],
       `live ticket step ${step}`);
     const answer = many && step === "dest" ? "Dos boletos sencillos a Tulum, por favor." : step === "count" && many ? "Dos." : ticketAnswers[step];
-    const submitted = await route.answer(answer, { step, label: step === "pay" ? "submit" : undefined });
-    await route.next("ticket reply or clerk's next question");
-    passage = route.frames.slice(submitted.from);
-    utterance = passage.find((f) => f.conv.lineKey === handoffKey && f.conv.line > submitted.answer.id);
+    submitted = await route.answer(answer, { step, label: step === "pay" ? "submit" : undefined });
+    const next = await route.next("ticket reply or clerk's next question");
+    const replies = route.frames.slice(submitted.from).filter((f) => f.conv.run === entry.conv.run
+      && f.conv.npc === "walter" && f.conv.line > submitted.answer.id);
+    if (step === "howareyou") {
+      assert(next.conv.step === "dest" && replies.some((f) => f.conv.lineKey === "g_asked_back"),
+        `clerk answers the greeting and asks for the destination · ${JSON.stringify(compact(next))}`);
+    }
+    utterance = replies.find((f) => f.conv.lineKey === handoffKey);
     if (utterance) break;
   }
   assert(utterance, `reached authored ${handoffKey} via the clerk's live steps`);
@@ -1146,9 +1203,16 @@ async function tickets(route, many = false) {
   // Both singular variants are selected by the game's own RNG. Check the key of the exact line played.
   const key = audioKey("es_walter", 1, text);
   if (text === fixtures.walter.text) assert.equal(key, fixtures.walter.key);
-  const voicedHandoff = await voiced(route, "walter", (f) => f.conv.line === line && f.media.key === key, route.frames.indexOf(utterance));
+  const request = await route.page.evaluate(({ run, line }) => window.__naturalTest.requests.find((r) =>
+    r.run === run && r.line === line && r.actor === "walter" && !r.replay), { run: entry.conv.run, line });
+  assert(request?.text === text && request.lineKey === handoffKey && request.key === key,
+    `exact clerk request for ${handoffKey} · ${JSON.stringify(request)}`);
+  const voicedHandoff = await voiced(route, "walter", (f) => f.conv.run === entry.conv.run && f.conv.line === line
+    && f.conv.text === text && f.request === request.id && f.media.key === key, submitted.from);
   assert.notEqual(voicedHandoff.request, opening.request);
-  const sameLine = passage.filter((f) => f.conv.line === line && f.conv.run === entry.conv.run && f.request === voicedHandoff.request);
+  assert.equal(live(voicedHandoff, "walter").identity, request.identity);
+  const sameLine = route.frames.slice(submitted.from)
+    .filter((f) => f.conv.line === line && f.conv.run === entry.conv.run && f.request === voicedHandoff.request);
   assert(sameLine.filter(audible).length >= 3, "audible ticket handoff keeps its real playhead");
   const glance = sameLine.find((f) => f.p?.gaze?.target === "handoff" && f.p.deltas.headPitch > 0.006 && f.p.deltas.eyeY < -0.0005);
   assert(glance, "brief downward gaze to the handoff on the voiced ticket line");
@@ -1169,7 +1233,8 @@ async function tickets(route, many = false) {
     && inRect(ch.headScreen, glance.scene.canvas, 4) && !inRect(ch.headScreen, glance.scene.panel));
   assert(ch.hands.every((hand, i) => distance(hand, returned.hands[i]) < 0.08 || hand[1] >= counterY + 0.065),
     "supported hands stay clear of the counter on the reach");
-  route.row.handoff = { text, key, request: voicedHandoff.request, glance: { ...compact(glance), ch }, back: { ...compact(back), ch: returned } };
+  route.row.handoff = { text, key, line, request: voicedHandoff.request, voice: compact(voicedHandoff),
+    glance: { ...compact(glance), ch }, back: { ...compact(back), ch: returned } };
   route.mark("object-glance", glance);
   route.mark("object-return", back);
   route.require("object-glance", "object-return");
@@ -1338,9 +1403,21 @@ async function loteria(route) {
 
 async function street(route) {
   const from = route.frames.length;
-  await route.page.evaluate(() => window.__ew.game.enterZone("town", undefined, true));
-  await route.wait((f) => f.scene.zone === "town" && !f.scene.transition, "street town position");
-  assert(await route.page.evaluate(() => window.__ew.game.streetNow("i_dropped", "a")), "authored dropped-wallet moment");
+  // Use the walkable wallet setup from street.mjs and let StreetLife observe the settled walking view.
+  const spawn = { x: 28, z: -20, rot: Math.PI };
+  await route.page.evaluate((spot) => window.__ew.game.enterZone("town", spot, true), spawn);
+  const ready = await route.wait((f) => f.scene.zone === "town" && f.scene.mode === "follow" && f.scene.mountedZone
+    && !f.scene.transition && !f.scene.banner && !f.scene.coach && !f.conv.phone && !f.street && f.scene.streetEligible,
+  "street town position with a fresh eligible snapshot", 20_000, { from });
+  route.row.streetReady = compact(ready);
+  const started = await route.page.evaluate(() => {
+    const { game, store } = window.__ew;
+    const { x, z } = game.player.root.position;
+    const { hud } = store.getState();
+    return game.zone.id === "town" && game.town.walkableAt(x, z) && game.zone.nav.free(game.zone.nav.idx(x, z))
+      && !hud.zoneBanner && !hud.coach && !hud.phoneCard && game.streetNow("i_dropped", "a");
+  });
+  assert(started, `authored dropped-wallet moment · ${JSON.stringify(compact(ready))}`);
   const arrival = await route.wait((f) => f.street?.moment === "i_dropped" && f.actual.a?.live, "wallet passer-by arrives", 9000, { from });
   const person = live(arrival, "a");
   const choice = (n) => route.page.locator(`.street-card[data-step="choices"][data-exchange="${n}"] .street-choice`).first();
@@ -1360,19 +1437,20 @@ async function street(route) {
       silent(actor, "street choices");
     }
     assert.equal(turn.p.player?.actorId, "player");
-    const at = route.frames.length;
     if (exchange === 0) {
       route.row.ui = await route.page.evaluate(() => [...document.querySelectorAll(".street-card [lang]")]
         .map((el) => [el.lang, el.textContent.trim()]));
     }
     const choices = route.page.locator(`.street-card[data-step="choices"][data-exchange="${exchange}"] .street-choice`);
+    await choice(exchange).waitFor({ state: "visible" });
     assert.equal(await choices.count(), 2, "the original two authored choices");
     const picked = await route.press(choice(exchange), `choose street reply ${exchange + 1}`, { key: true });
     const [left, top, right, bottom] = picked.hit.box;
     assert(right - left >= 40 && bottom - top >= 36 && inRect([left, top], [0, 0, route.size.width, route.size.height])
       && inRect([right, bottom], [0, 0, route.size.width, route.size.height]), "street choice fits and receives trusted input");
     if (exchange === 0) assert.match(picked.hit.text, /Disculpe/i, "authored learner greeting");
-    const reply = await voiced(route, "a", (f) => f.p.scope === "street" && f.street?.step === "reply" && f.street.exchange === exchange, at);
+    const reply = await voiced(route, "a", (f) => f.p.scope === "street" && f.street?.step === "reply"
+      && f.street.exchange === exchange, picked.from);
     assert.equal(live(reply, "a").identity, person.identity);
     if (exchange === 0) {
       await voiced(route, "a", (f) => f.p.scope === "street" && f.street?.step === "reply"
