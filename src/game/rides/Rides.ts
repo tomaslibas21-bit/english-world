@@ -736,7 +736,7 @@ export class Rides {
   /** The player takes `r`: its people hop out on the curb's side with a word, and the player hops in. */
   board(r: Ride, count = true) {
     if (this.riding) return false;
-    this.water?.cancelEffects();
+    if (!this.water?.draining(r)) this.water?.cancelEffects();
     const p = this.host.player.root.position;
     this.riding = r;
     this.removeSandCollider(r);

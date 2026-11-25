@@ -669,8 +669,10 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
   const player = createCharacter(NPCS.vale.look);
   const cam = new PerspectiveCamera();
   const people = OUTDOOR_NPCS.slice();
-  const fades: string[] = [], snaps: { car: Vector3; foot: Vector3; covered: boolean }[] = [];
-  let now = 0, time = 0, left = 0, eligible = true, saved: { x: number; y: number; z: number; rot: number } | undefined;
+  const fades: string[] = [], events: string[] = [];
+  const snaps: { car: Vector3; foot: Vector3; covered: boolean; leases: number }[] = [];
+  let now = 0, time = 0, left = 0, saves = 0, eligible = true;
+  let saved: { x: number; y: number; z: number; rot: number } | undefined;
   const noop = () => {};
   const rides = new Rides({
     cam, colliders: col, nav, ambient, player, quality: "low", people: () => people,
@@ -700,9 +702,11 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
       player.swim = f.swim * 0.6;
       player.dive = 0;
     },
-    snap: () => snaps.push({ car: car.mesh.position.clone(), foot: player.root.position.clone(), covered: fades.at(-1) === "opaque" }),
+    snap: () => snaps.push({ car: car.mesh.position.clone(), foot: player.root.position.clone(),
+      covered: fades.at(-1) === "opaque", leases: ambient.waterReservations?.length ?? 0 }),
     fade: phase => fades.push(phase),
-    save: () => { const f = rides.water?.safeSave(); if (f) saved = { ...f }; },
+    save: () => { saves++; const f = rides.water?.safeSave(); if (f) saved = { ...f }; },
+    event: e => events.push(e),
   };
   const inspect = () => rides.water!.inspect();
   const present = () => {
@@ -764,8 +768,9 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
     expect(cam.position.y).toBeGreaterThanOrEqual((waterY(cam.position.x, cam.position.z, time) ?? -Infinity) + 0.35 - 1e-5);
   };
   return {
-    rides, player, cars, ambient, col, people, board, frame, stage, inspect, supported, dryPair, fades, snaps, adapter, present,
-    get car() { return car; }, get now() { return now; }, get time() { return time; }, get left() { return left; }, get saved() { return saved; },
+    rides, player, cars, ambient, col, people, board, frame, stage, inspect, supported, dryPair, fades, events, snaps, adapter, present,
+    get car() { return car; }, get now() { return now; }, get time() { return time; }, get left() { return left; },
+    get saved() { return saved; }, get saves() { return saves; },
     disable: () => { eligible = false; },
     close: () => { rides.disposeWater(); rides.disposeCrashes(); rides.disposeParkingKeys(); player.dispose?.(); fixture.restore(); },
   };
@@ -861,6 +866,117 @@ it.each([60, 20])("brakes, gets out and boards the same convertible on the dry w
 }, 20_000);
 
 describe.each([60, 20])("live paired recovery at %i Hz", hz => {
+  it.each([
+    { path: "body-depth exit", x: 84, z: -76.4, heading: Math.PI / 2, onFoot: true },
+    { path: "seated abrupt lip", x: -30, z: -90.5, heading: Math.PI, onFoot: false },
+  ])("releases on the first discontinuity from the $path", async ({ x, z, heading, onFoot }) => {
+    const drops = new Splashes(), drop = vi.spyOn(drops, "carDrop");
+    const f = occupiedTown(hz, RIDES, { drops });
+    try {
+      const car = f.rides.find("park")!, { mesh, m } = car;
+      await f.board(car);
+      const owners = car.owners.slice();
+      f.stage(x, z, heading);
+      const reverse = { ...go, throttle: -1 };
+      f.frame(onFoot ? null : reverse);
+      if (onFoot) {
+        expect(f.inspect()).toMatchObject({ band: "body-deep", phase: "driving" });
+        m.speed = 1.6;
+        for (let i = 0; i < hz / 4; i++) f.frame({ ...go, steer: 1 });
+        expect(f.rides.leave()).toBe(true);
+        expect(f.inspect().assistedOnFoot).toBe(true);
+      }
+      const trigger = f.now, { wetAge, returnDeadline, spares } = f.inspect();
+      expect(spares).toHaveLength(2);
+      expect(Math.hypot(spares[0].x - spares[1].x, spares[0].z - spares[1].z)).toBeGreaterThanOrEqual(9);
+      let jump = 0, coverAt: number | undefined;
+      for (let i = 0; i < 3.5 * hz; i++) {
+        const before = f.inspect(), { x, z } = m;
+        expect(f.ambient.waterReservations).toHaveLength(2);
+        f.frame();
+        const after = f.inspect(), span = Math.hypot(m.x - x, m.z - z);
+        if (after.phase === "fade") coverAt ??= f.now;
+        if (after.secondsLeft !== null) {
+          expect(span * hz).toBeLessThanOrEqual(8.001);
+          expect(after.returnDeadline).toBe(returnDeadline);
+        }
+        if (span > 8.001 / hz) {
+          expect(before.phase).toBe("fade");
+          const [nearest] = before.spares.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z));
+          expect(after.landingPair?.pose).toMatchObject({ x: nearest.x, z: nearest.z });
+          jump = span;
+          break;
+        }
+        expect(after.active).toBe(true);
+      }
+      expect(jump).toBeGreaterThan(5);
+      expect(f.now - coverAt!).toBeGreaterThanOrEqual(180);
+      expect(f.now - coverAt!).toBeLessThanOrEqual(180 + 1000 / hz);
+      expect(f.now - trigger).toBeLessThanOrEqual(3500);
+      expect(f.now - trigger + wetAge * 1000).toBeLessThanOrEqual(7000);
+      expect(f.fades.slice(-2)).toEqual(["cover", "opaque"]);
+      expect(f.ambient.waterReservations).toHaveLength(0);
+      const release = f.inspect(), pair = release.landingPair!;
+      expect(release).toMatchObject({ active: false, assistedOnFoot: false, availability: 0, band: "dry", landing: "spare",
+        fallbackReason: "no-corridor", secondsLeft: null, drainObject: mesh.uuid, drainAge: 0, drainEmissions: 4 });
+      expect(f.rides.riding).toBe(onFoot ? null : car);
+      expect(f.left).toBe(Number(onFoot));
+      expect(m.pace).toBe(0);
+      expect(car.mesh).toBe(mesh);
+      expect(car.owners).toEqual(owners);
+      expect(mesh.visible && f.player.root.visible).toBe(true);
+      expect(mesh.position.toArray()).toEqual([pair.pose.x, floorY(pair.pose.x, pair.pose.z), pair.pose.z]);
+      expect(f.rides.boxes[f.rides.list.indexOf(car)]).toMatchObject(pair.pose);
+      expect(waterY(m.x, m.z, f.time)).toBeNull();
+      expect(waterY(pair.foot.x, pair.foot.z, f.time)).toBeNull();
+      const dx = pair.foot.x - m.x, dz = pair.foot.z - m.z;
+      const reach = Math.hypot(Math.max(0, Math.abs(dx * m.fx + dz * m.fz) - m.spec.half),
+        Math.max(0, Math.abs(dx * m.fz - dz * m.fx) - m.spec.wide));
+      expect(reach).toBeGreaterThanOrEqual(0.35);
+      expect(reach).toBeLessThanOrEqual(1.45);
+      if (onFoot) f.dryPair();
+      else expect(f.player.root.position.distanceTo(mesh.position)).toBeLessThan(1);
+      expect(f.snaps).toEqual([{ car: mesh.position, foot: f.player.root.position, covered: true, leases: 2 }]);
+      const events = onFoot ? ["contact", "float", "exit", "drain", "handback"] : ["contact", "float", "drain", "handback"];
+      expect(f.events).toEqual(events);
+      expect(f.saves).toBe(1);
+      expect(f.saved).toBeDefined();
+      expect(f.rides.water!.safeSave()).toBeUndefined();
+
+      const landedAt = f.time, coughs: number[] = [];
+      let lifetime: number | undefined, revealedAt: number | undefined, clearAt: number | undefined;
+      for (let i = 1; i <= hz; i++) {
+        f.frame();
+        const w = f.inspect();
+        expect(w.active).toBe(false);
+        expect(m.pace).toBe(0);
+        if (i === 1) expect(f.fades.at(-1)).toBe("reveal");
+        if (f.fades.at(-1) === "reveal") revealedAt ??= f.now;
+        if (f.fades.at(-1) === "clear") clearAt ??= f.now;
+        if (w.coughEvents > coughs.length) coughs.push(f.time - landedAt);
+        if (!w.drainObject) lifetime ??= f.time - landedAt;
+        else expect(w.drainObject).toBe(mesh.uuid);
+      }
+      expect(f.fades.slice(-4)).toEqual(["cover", "opaque", "reveal", "clear"]);
+      expect(clearAt! - revealedAt!).toBeGreaterThanOrEqual(180);
+      expect(clearAt! - revealedAt!).toBeLessThanOrEqual(180 + 1000 / hz);
+      expect(coughs).toHaveLength(2);
+      for (const [i, offset] of [0.12, 0.36].entries()) {
+        expect(coughs[i]).toBeGreaterThanOrEqual(offset - 1e-7);
+        expect(coughs[i]).toBeLessThan(offset + 1 / hz);
+      }
+      expect(lifetime).toBeCloseTo(0.65, 8);
+      expect(drop).toHaveBeenCalledTimes(36);
+      const sides = drop.mock.calls.map(([x, , z]) => Math.sign((x - m.x) * m.fz - (z - m.z) * m.fx));
+      expect(sides.filter(side => side < 0)).toHaveLength(18);
+      expect(sides.filter(side => side > 0)).toHaveLength(18);
+      expect(f.inspect()).toMatchObject({ drainEmissions: 36, coughEvents: 2, drainLive: 0 });
+      expect(f.events).toEqual(events);
+      expect(f.saves).toBe(1);
+      expect(f.snaps).toHaveLength(1);
+    } finally { f.close(); }
+  }, 20_000);
+
   it("drives the uninterrupted coast with the stock fleet and tows back at a bounded pace", async () => {
     const f = occupiedTown(hz);
     try {
@@ -879,28 +995,94 @@ describe.each([60, 20])("live paired recovery at %i Hz", hz => {
       expect([...bands]).toEqual(["dry", "shallow", "body-deep", "float"]);
       expect(f.inspect()).toMatchObject({ phase: "float", reason: "depth" });
       expect(f.car.m.z).toBeLessThan(SHORE.limit);
-      const started = f.now, expected = f.inspect().spares;
+      const started = f.now, { wetAge, spares: expected } = f.inspect();
       expect(expected).toHaveLength(2);
-      let visibleTow = 0;
+      let visibleTow = 0, floatSeconds = 0;
       for (let i = 0; i <= 3.5 * hz && f.inspect().active; i++) {
         const { x, z } = f.car.m;
         f.frame({ ...go, brake: true });
         f.supported();
-        if (!f.inspect().fallback) {
-          const span = Math.hypot(f.car.m.x - x, f.car.m.z - z);
-          expect(span * hz).toBeLessThanOrEqual(8.001);
-          visibleTow += span;
-        }
+        const w = f.inspect(), span = Math.hypot(f.car.m.x - x, f.car.m.z - z);
+        expect(span * hz).toBeLessThanOrEqual(8.001);
+        if (w.phase === "float") { floatSeconds = w.age; expect(span).toBe(0); }
+        visibleTow += span;
       }
       expect(f.inspect().active).toBe(false);
       expect(f.inspect().landing).toBe("trail");
+      expect(f.fades.every(phase => phase === "clear")).toBe(true);
+      expect(f.snaps).toEqual([]);
+      expect(floatSeconds).toBeGreaterThanOrEqual(0.5 - 1 / hz - 1e-7);
       expect(visibleTow).toBeGreaterThan(5);
       expect(f.now - started).toBeLessThanOrEqual(3500);
+      expect(f.now - started + wetAge * 1000).toBeLessThanOrEqual(7000);
       expect(f.rides.riding).toBe(f.car);
       expect(f.car.m.pace).toBe(0);
       expect(f.car.mesh.uuid).toBe(original);
       expect(boatStart.every(([r, x, z]) => r.m.x === x && r.m.z === z)).toBe(true);
       expect(f.ambient.traffic.every(c => c.mesh.position.z === c.lane)).toBe(true);
+    } finally { f.close(); }
+  }, 20_000);
+
+  it("moves a blocked wet exit on the next frame and keeps its drain through same-car reboarding", async () => {
+    const f = occupiedTown(hz, RIDES, { drops: new Splashes() });
+    try {
+      const car = f.rides.find("park")!;
+      await f.board(car);
+      f.stage(84, -76.4, Math.PI / 2);
+      f.frame();
+      f.col.addBox(car.m.x, car.m.z, 1, 1, "blocked-wet-car");
+      expect(f.rides.leave()).toBe(true);
+      expect(f.rides.leave()).toBe(true);
+      expect(f.inspect()).toMatchObject({ active: true, assistedOnFoot: false, reason: "exit" });
+      expect(f.rides.riding).toBe(car);
+      expect(f.left).toBe(0);
+      expect(f.fades.at(-1)).toBe("clear");
+      f.frame();
+      f.dryPair();
+      expect(f.inspect()).toMatchObject({ active: false, assistedOnFoot: false, landing: "spare", drainEmissions: 4 });
+      expect(f.ambient.waterReservations).toHaveLength(0);
+      expect(f.fades.at(-1)).toBe("opaque");
+      expect(f.snaps).toHaveLength(1);
+      expect(f.left).toBe(1);
+      expect(f.saves).toBe(1);
+      expect(f.events).toEqual(["contact", "float", "exit", "drain", "handback"]);
+
+      expect(f.rides.board(car, false)).toBe(true);
+      f.rides.prefetchWater(car, f.adapter);
+      f.frame();
+      expect(f.fades.at(-1)).toBe("reveal");
+      expect(f.inspect().drainObject).toBe(car.mesh.uuid);
+      for (let i = 0; i < Math.ceil(0.65 * hz); i++) f.frame();
+      expect(f.inspect()).toMatchObject({ drainObject: null, drainEmissions: 36, coughEvents: 2 });
+    } finally { f.close(); }
+  }, 20_000);
+
+  it("replaces an invalidated settling trail and its blocked spare with one handback", async () => {
+    const f = occupiedTown(hz, RIDES, { drops: new Splashes() });
+    try {
+      const car = f.rides.find("park")!;
+      await f.board(car);
+      f.stage(128, -55, Math.PI);
+      for (let i = 0; i < 12 * hz && !f.rides.water!.returning; i++) f.frame(go);
+      for (let i = 0; i < 3.5 * hz && f.inspect().phase !== "settle"; i++) f.frame();
+      const settling = f.inspect();
+      expect(settling).toMatchObject({ active: true, landing: "trail", drainEmissions: 4 });
+      const { x, z } = car.m;
+      const [nearest, alternate] = settling.spares.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z));
+      f.col.addBox(x, z, 0.5, 0.5, "blocked-settle");
+      f.col.addBox(nearest.x, nearest.z, 0.5, 0.5, "blocked-settle-spare");
+      f.frame();
+      expect(f.inspect()).toMatchObject({ active: false, assistedOnFoot: false, landing: "spare", fallbackReason: "corridor-unfinished",
+        drainObject: car.mesh.uuid, drainAge: 0, drainEmissions: 8, drainLive: 4 });
+      expect(car.m).toMatchObject({ x: alternate.x, z: alternate.z, pace: 0 });
+      expect(f.ambient.waterReservations).toHaveLength(0);
+      expect(f.rides.riding).toBe(car);
+      expect(f.fades.at(-1)).toBe("opaque");
+      for (let i = 0; i < hz; i++) f.frame();
+      expect(f.inspect()).toMatchObject({ drainObject: null, drainEmissions: 40, coughEvents: 2 });
+      expect(f.snaps).toHaveLength(1);
+      expect(f.saves).toBe(1);
+      expect(f.events).toEqual(["contact", "float", "drain", "handback"]);
     } finally { f.close(); }
   }, 20_000);
 

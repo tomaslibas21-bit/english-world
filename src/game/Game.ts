@@ -1,6 +1,7 @@
 // The game: renderer, zones (town + interiors), player, NPCs, input, guidance and conversations.
 import { StreetLife } from "./street";
 import type { CarWaterAdapter, CarWaterFoot } from "./rides/carWaterRecovery";
+import { flushSync } from "react-dom";
 import { TownStreet } from "./street/world";
 import type { StreetSnapshot } from "./street/schedule";
 import * as THREE from "three";
@@ -1258,9 +1259,9 @@ export class Game implements GameApi {
     }
     // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
-    if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
+    if (k === " " && (this.rides.riding || this.rides.water?.returning)) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") {
-      if (!this.keys.has(" ") && !this.rides.water?.returning) {
+      if (!this.keys.has(" ")) {
         if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump();
       }
       e.preventDefault(); return;
@@ -1548,7 +1549,6 @@ export class Game implements GameApi {
 
   private boardCarWater(ride: Ride) {
     if (!this.rides.waterEligible(ride) || this.zone.id !== "town" || this.modes.engaged) return;
-    this.waterNeutral = false;
     this.rides.prefetchWater(ride, {
       eligible: () => !this.disposed && this.zone.id === "town" && !this.modes.engaged && !this.flight,
       drops: this.splashes,
@@ -1567,14 +1567,19 @@ export class Game implements GameApi {
       },
       foot: foot => this.carWaterFoot(foot),
       snap: () => {
+        this.vel.set(0, 0, 0);
+        this.moveVel.set(0, 0, 0);
         this.rideCourse = this.rig.yaw = this.heading = this.player.root.rotation.y;
         this.rig.target.copy(this.player.root.position);
+        this.rig.motion.speed = 0;
+        this.rig.motion.next.copy(this.rig.target);
         this.rig.snap();
       },
       fade: phase => this.carWaterFade(phase),
       save: () => {
         this.waterNeutral = this.waterInputHeld();
         this.hudT = 0;
+        this.saveT = 5;
         this.savePlace();
       },
       event: event => { if (event === "contact" || event === "float") this.savePlace(); },
@@ -1609,8 +1614,9 @@ export class Game implements GameApi {
     const style = document.querySelector<HTMLElement>(".fade")?.style;
     if (this.waterFade) style?.setProperty("--scene-fade-time", "0.18s");
     else style?.removeProperty("--scene-fade-time");
-    const fade = phase === "cover" || phase === "opaque" ? 1 : 0;
-    useStore.getState().setHud({ fade, fadeOnFrames: phase === "opaque" });
+    // Commit the full viewport cover before the car and camera change sites.
+    if (phase === "opaque") flushSync(() => useStore.getState().setHud({ fade: 1, fadeOnFrames: true }));
+    else useStore.getState().setHud({ fade: phase === "cover" ? 1 : 0 });
   }
 
   private waterInputHeld() {
@@ -3216,7 +3222,7 @@ export class Game implements GameApi {
       }
       this.rides.water?.cameraFloor(this.rig.cam.position, this.t);
       this.renderer.render(this.scene, this.rig.cam);
-      this.rides.water?.presented();
+      if (!this.wasHidden) this.rides.water?.presented();
       this.quests.capture(this.renderer.domElement);
       this.presentWorld("town");
       if (probes) {

@@ -401,7 +401,8 @@ async function installReads() {
       riding: R.riding?.id ?? null, ridePhase: R.riding ? R.phase : null, swim: g.swimming, dive: g.diveK,
       undersea: g.undersea.on, prompt: hud.prompt?.kind ?? null, nearest: g.nearest?.id ?? null, hudRide: hud.ride ?? null,
       hudPanel: hud.panel, brake: g.brake || g.keys.has(" "), stick: { x: g.joy.x, y: g.joy.y }, reservations: g.ambient.waterReservations?.length ?? 0,
-      fade: hud.fade, opaque, corridorClear, document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
+      fade: hud.fade, opaque, coveredTarget: opaque ? point(g.rig.target) : null, corridorClear,
+      document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
       nearbyWays: ways.filter(q => Math.hypot(q.x - player.x, q.z - player.z) <= q.reach + 0.42).map(q => q.id),
       nearWay: g.nearWay, west: inside(player, west), yieldAge: R.yieldT,
       kids: window.__carWaterTest.trackPool ? poolKids() : undefined,
@@ -569,14 +570,10 @@ class Run {
   }
 
   async frame(ms = quantum) {
-    const s = await this.evaluate(async ({ ms, id }) => {
+    const s = await this.evaluate(({ ms, id }) => {
       const before = window.__ew.game.renderer.info.render.frame;
       window.__step(1, ms);
-      // The React curtain commits at the end of this task. RAF stays frozen while it does.
-      const water = window.__carWater?.();
-      if (water?.landing === "spare" && !water.active && window.__ew.store.getState().hud.fadeOnFrames) {
-        await new Promise(resolve => setTimeout(resolve, 0));
-      }
+      // Sample the DOM in the presentation task, before a deferred cover could commit.
       return window.__carWaterTest.sample(id, before);
     }, { ms, id: this.id }, `step and sample ${ms.toFixed(2)} ms`);
     this.last = s;
@@ -711,6 +708,7 @@ class Run {
       if (w?.landing === "spare") {
         assert.ok(s.opaque, "the real fade covers the viewport on the relocation presentation");
         assert.ok(!w.active && !w.assistedOnFoot && s.reservations === 0, "the dry pair is handed back on that same presentation");
+        close(gap(s.coveredTarget, s.player), 0, 0.002, "the snapped camera targets the placed learner under cover");
       }
     }
     const old = a.previous, limits = { shallow: [4.2, 2.6, 0.85], "body-deep": [2.1, 1.4, 0.45] }[w?.band];
@@ -1283,7 +1281,11 @@ async function steering(run, wet) {
     // Finish this wet episode normally so the sampler includes the entire body-depth trial and handback.
     await run.act("out");
     await run.until(s => recovering(s) && s.riding === null, "exit the body-depth steering fixture");
+    await run.drive(0.6, 0.62);
     await finish(run, { onFoot: true });
+    assert.ok(run.phone ? run.last.stick.x > 0.5 : run.last.keys.includes("d"), "old steering stayed held through the covered handback");
+    await run.drive();
+    await run.until(s => s.prompt === "drive" && s.nearest === run.id, "ordinary drive prompt beside the recovered car");
   }
   return result;
 }
@@ -1498,9 +1500,13 @@ async function abruptLip(run) {
   assert.ok(first.car.z + first.car.half <= wall.minZ + 0.02, "the staged collision footprint is on the water side of the back wall");
   const reversal = await run.frames(24);
   assert.ok(reversal.every(s => s.car.pace <= 0.02 && gap(s.car, first.car) < 0.02), "reverse cannot override a real deep-water latch");
-  await run.drive();
   const land = await finish(run);
   assert.ok(land.water.fallback && land.water.fallbackReason === "no-corridor" && gap(land.car, first.car) > 5);
+  assert.ok(run.phone ? run.last.stick.y < -0.96 : run.last.keys.includes("s"), "old reverse stayed held through the covered handback");
+  await run.drive();
+  await run.drive(1);
+  await run.until(s => s.car.speed > 0.25 && !recovering(s), "fresh throttle drives the same car after release", 30);
+  await run.drive();
 }
 
 async function voluntaryReverse(run) {
