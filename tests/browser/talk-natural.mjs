@@ -2115,10 +2115,14 @@ async function run() {
     report.recordings = recordingInventory(fixture);
     browser = await launchBrowser(30_000);
     const measureStart = Date.now();
+    // WORLD_TALK_ONLY=s66-taxi,s67a-tickets and WORLD_TALK_SIZE=1280x800 narrow a local re-run; such a run never passes as a whole.
+    const only = process.env.WORLD_TALK_ONLY?.split(",");
     for (const size of sizes) {
+      if (process.env.WORLD_TALK_SIZE && process.env.WORLD_TALK_SIZE !== size.label) continue;
       const context = await contextFor(browser, size);
       try {
-        for (const [id, action] of routes) await runPage(context, fixture, size, id, action, { by: measureBy });
+        for (const [id, action] of routes) if (!only || only.includes(id)) await runPage(context, fixture, size, id, action, { by: measureBy });
+        if (only) continue;
         await runPage(context, fixture, size, directions, missingRecording, { subcase: "missing", by: measureBy });
         await runPage(context, fixture, size, "s72-cafe", interruptEntry, { subcase: "interrupted", by: measureBy });
         if (size.touch) await runPage(context, fixture, size, "s66-taxi", micExample, { subcase: "mic", by: measureBy });
