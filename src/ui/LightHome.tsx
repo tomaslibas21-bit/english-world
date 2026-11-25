@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
@@ -26,6 +26,7 @@ import { SectionHelpButton } from "./sectionHelp";
 import { Loading } from "./Loading";
 import { StreetLight } from "./street/StreetLight";
 import { usePortrait } from "./usePortrait";
+import { CavePicker } from "./CavePicker";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -151,10 +152,7 @@ function LightHome() {
           </section>
         ))}
 
-        <section className="lh-sec">
-          <h2>{LOCATIONS.gruta.lt}</h2>
-          <div className="lh-grid">{SITUATIONS.filter((s) => s.location === "gruta").map((s) => <SitCard key={s.id} s={s} />)}</div>
-        </section>
+        <CavePicker grid="lh-grid" card={(s) => <SitCard key={s.id} s={s} />} />
 
         <footer className="lh-foot">
           <button className="btn ghost" onClick={() => switchPlayMode("town")}><Icon name="map" size={19} /> Atidaryti 3D miestą</button>

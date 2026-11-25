@@ -32,6 +32,7 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
+import { CavePicker } from "./CavePicker";
 
 const WorldMapPanel = lazy(() => import("./worldMap"));
 
@@ -213,7 +214,7 @@ function Scenarios({ close }: { close: () => void }) {
   }, []);
   const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   const light = useStore((s) => s.settings.play === "light");
-  const bonus = SITUATIONS.filter((s) => s.bonus && !(light && isTownQuest(s.id)) && (s.location === "gruta" || sitProgress(progress, s.id).completions > 0));
+  const bonus = SITUATIONS.filter((s) => s.bonus && s.location !== "gruta" && !(light && isTownQuest(s.id)) && sitProgress(progress, s.id).completions > 0);
   return (
     <div className="sheet scenarios">
       <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${ROUTE.length}`} close={close} />
@@ -234,6 +235,7 @@ function Scenarios({ close }: { close: () => void }) {
         {bonus.length > 0 && <div className="chapter"><div className="scn-grid">
           {bonus.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}
         </div></div>}
+        <CavePicker grid="scn-grid" card={(s) => <ScenarioCard key={s.id} s={s} close={close} />} />
         <div className="scn-foot">
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
         </div>

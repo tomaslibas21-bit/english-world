@@ -669,17 +669,117 @@ export async function exitVia(run, id, { action = false, hold = false, timeout =
   return s;
 }
 
+export async function assertPickerIds(run, cards, expanded) {
+  const course = await run.ev(() => window.__ew.game.orderedSituations().map((s) => s.id));
+  const ids = await cards.evaluateAll((nodes) => nodes.map((card) => card.dataset.sit));
+  const bonuses = [BRAM.id, FERN.id, OAK.id];
+  assert.equal(new Set(course).size, 50);
+  assert(bonuses.every((id) => !course.includes(id)), "the cave is off the course route");
+  assert.deepEqual(new Set(ids), new Set(expanded ? [...course, ...bonuses] : course));
+  for (const id of bonuses) assert.equal(ids.filter((value) => value === id).length, expanded ? 1 : 0, id);
+}
+
+export async function toggleCavePicker(run, picker, expanded) {
+  const toggle = picker.getByRole("button", { name: /^Skalūnų įlankos ola\s+Slate Cove Cave$/ });
+  await surface(run, toggle, CAVE);
+  assert.equal(await toggle.getAttribute("aria-expanded"), String(!expanded));
+  const id = await toggle.getAttribute("aria-controls");
+  assert(id, "the disclosure names its controlled panel");
+  const panel = picker.locator(`[id="${id}"]`);
+  assert.equal(await panel.count(), 1);
+  assert.equal(await panel.isVisible(), !expanded);
+  await run.layout(() => toggle.scrollIntoViewIfNeeded());
+  assert(await toggle.evaluate((button) => {
+    const { width, height, left, top, right, bottom } = button.getBoundingClientRect();
+    return width >= 44 && height >= 44 && left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight;
+  }), "the bilingual disclosure has an in-frame touch target");
+  if (run.phone) await run.press(toggle);
+  else await toggle.press(expanded ? "Enter" : "Space");
+  assert.equal(await toggle.getAttribute("aria-expanded"), String(expanded));
+  assert.equal(await panel.isVisible(), expanded);
+  const ids = await panel.locator(".scn-card, .lh-card").evaluateAll((nodes) => nodes.map((card) => card.dataset.sit));
+  assert.deepEqual(ids, expanded ? [BRAM.id, FERN.id, OAK.id] : []);
+}
+
+export async function inspectPickerCard(run, card, labels) {
+  await run.visible(card);
+  await run.layout(() => card.scrollIntoViewIfNeeded());
+  await surface(run, card, labels);
+  const problems = await card.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const scroll = el.closest(".sheet-body, .lh");
+    const clip = scroll.getBoundingClientRect();
+    const grid = el.parentElement.getBoundingClientRect();
+    const text = el.querySelector(".txt, .lh-txt");
+    const titles = [...text.querySelectorAll("b, i, span")];
+    const marks = [...el.querySelectorAll("svg[data-sit-icon], .stars")];
+    const within = (r, bounds) => r.left >= bounds.left - 1 && r.right <= bounds.right + 1 &&
+      r.top >= bounds.top - 1 && r.bottom <= bounds.bottom + 1;
+    const overlaps = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+    const problems = [];
+    if (box.width < 44 || box.height < 44 || !within(box, clip) || !within(box, grid) ||
+      box.left < 0 || box.right > innerWidth || box.top < 0 || box.bottom > innerHeight ||
+      !el.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))) problems.push("card out of view");
+    if (scroll.scrollWidth > scroll.clientWidth + 1) problems.push("picker scrolls sideways");
+    if (text.getBoundingClientRect().width < 150) problems.push("text column is cramped");
+    const art = marks.map((mark) => mark.getBoundingClientRect());
+    if (marks.length !== 2 || art.some((r) => !r.width || !r.height || !within(r, box))) problems.push("art or stars missing or clipped");
+    for (const label of titles) {
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const rows = [...range.getClientRects()].filter((r) => r.width && r.height);
+      if (!rows.length || (label.matches("b, i") && rows.length > 3) || label.scrollWidth > label.clientWidth + 1 ||
+        rows.some((r) => !within(r, box) || art.some((mark) => overlaps(r, mark)))) problems.push(`cramped or clipped text: ${label.textContent}`);
+    }
+    return problems;
+  });
+  assert.deepEqual(problems, [], `${card}`);
+}
+
 export async function inspectPicker(run) {
+  const textSize = async (label) => {
+    await toolbar(run, "Nustatymai (Esc)");
+    const settings = run.page.locator(".sheet.narrow").filter({ has: run.page.getByRole("heading", { name: "Nustatymai", exact: true }) });
+    await run.press(settings.getByRole("button", { name: label, exact: true }));
+    await run.press(settings.getByRole("button", { name: "Uždaryti", exact: true }));
+  };
+  const scale = await run.ev(() => window.__ew.store.getState().settings.textSize);
+  if (run.phone) {
+    await textSize("A++");
+    await run.wait(() => document.documentElement.style.getPropertyValue("--scale") === "1.3", "largest text is applied");
+  }
   await toolbar(run, "Visos situacijos");
   const picker = run.page.locator(".sheet.scenarios");
+  const cards = picker.locator(".scn-card");
+  await run.visible(picker);
+  await assertPickerIds(run, cards, false);
+  await toggleCavePicker(run, picker, true);
+  await assertPickerIds(run, cards, true);
+  await run.ev(() => document.fonts.ready.then(() => undefined));
   for (const [who, pair] of [[BRAM, CAVE], [FERN, FERN.title], [OAK, OAK.title]]) {
-    const card = picker.locator(`.scn-card[data-sit="${who.id}"]`);
-    await run.visible(card);
-    await run.layout(() => card.scrollIntoViewIfNeeded());
-    await surface(run, card, pair);
+    await inspectPickerCard(run, picker.locator(`.scn-card[data-sit="${who.id}"]`), pair);
   }
   await run.mark("picker");
-  await run.press(picker.getByRole("button", { name: "Uždaryti", exact: true }));
+  await toggleCavePicker(run, picker, false);
+  await assertPickerIds(run, cards, false);
+  await toggleCavePicker(run, picker, true);
+  if (run.phone) await run.press(picker.getByRole("button", { name: "Uždaryti", exact: true }));
+  else await run.page.keyboard.press("Escape");
+  await picker.waitFor({ state: "detached" });
+  if (run.phone && scale !== 1.3) await textSize(scale === 1.15 ? "A+" : "A");
+
+  await toolbar(run, "Visos situacijos");
+  await assertPickerIds(run, cards, false);
+  await toggleCavePicker(run, picker, true);
+  const objective = await run.ev(() => window.__ew.store.getState().progress.objective);
+  await run.press(picker.locator(`.scn-card[data-sit="${BRAM.id}"]`));
+  await picker.waitFor({ state: "detached" });
+  assert.deepEqual(await run.ev(() => {
+    const { game, store } = window.__ew, st = store.getState();
+    const target = game.objectiveTarget();
+    return [game.zoneId, game.caveGuideNpc, target?.kind, target?.id, st.progress.objective, st.conv.active,
+      st.progress.play?.games?.["slate-cove-cave"] ?? 0];
+  }), ["town", BRAM.npc, "cave-entry", "cleft", objective, false, 0]);
 }
 
 export async function alternative(run, label, pair) {

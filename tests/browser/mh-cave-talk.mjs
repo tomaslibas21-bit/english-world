@@ -1,6 +1,9 @@
 // Sightlines from the six donor approach points, plus the light portraits and the actorless Oak.
 import assert from "node:assert/strict";
-import { BRAM, DEVICES, FERN, OAK, at, conversation, endTalk, fernTalk, heard, interact, prompt, suite, surface, watch } from "./fixtures/mh-cave.mjs";
+import {
+  BRAM, DEVICES, FERN, OAK, assertPickerIds, at, conversation, endTalk, fernTalk, heard,
+  inspectPickerCard, interact, prompt, suite, surface, toggleCavePicker, watch,
+} from "./fixtures/mh-cave.mjs";
 
 const iPhone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const spots = [
@@ -76,14 +79,28 @@ async function town(run) {
 }
 
 async function light(run) {
+  const picker = run.page.locator(".lh");
+  const cards = picker.locator(".lh-card");
+  await run.visible(picker);
+  if (run.width === 375) {
+    await run.wait(() => document.documentElement.style.getPropertyValue("--scale") === "1.3", "largest text is applied");
+  }
+  await run.ev(() => document.fonts.ready.then(() => undefined));
+  const objective = await run.ev(() => window.__ew.store.getState().progress.objective);
   for (const who of [BRAM, FERN, OAK]) {
-    const pickerCard = run.page.locator(`.lh-card[data-sit="${who.id}"]`);
-    await run.visible(pickerCard);
-    await run.layout(() => pickerCard.scrollIntoViewIfNeeded());
-    await surface(run, pickerCard, [...who.title, "Pasipraktikuoti kalbėtis"]);
+    await assertPickerIds(run, cards, false);
+    await toggleCavePicker(run, picker, true);
+    await assertPickerIds(run, cards, true);
+    const pickerCard = picker.locator(`.lh-card[data-sit="${who.id}"]`);
+    await inspectPickerCard(run, pickerCard, [...who.title, "Pasipraktikuoti kalbėtis"]);
     await run.mark(`light-picker-${who.id}`);
     await run.press(pickerCard);
     await conversation(run, who);
+    assert.deepEqual(await run.ev(() => {
+      const { game, store } = window.__ew, { settings, progress } = store.getState();
+      return [game.light, settings.play, !!document.querySelector(".stage canvas"), progress.objective,
+        progress.play?.games?.["slate-cove-cave"] ?? 0];
+    }), [true, "light", false, objective, 0]);
     const backdrop = run.page.locator(".lc");
     const role = who === BRAM ? "Tako sargas" : who === FERN ? "Tilto sargė" : "Kalbantis ąžuolas";
     await surface(run, backdrop, [who.name, role, "Skalūnų įlankos ola"]);
@@ -114,6 +131,8 @@ async function light(run) {
     }
     await run.mark(`light-backdrop-${who.id}`);
     await endTalk(run);
+    await toggleCavePicker(run, picker, false);
+    await assertPickerIds(run, cards, false);
   }
 }
 
@@ -125,7 +144,9 @@ await suite("mh-cave-talk", async (run) => {
     } } }, town);
     // The donor's short phone is a 3D framing variant. Its light portrait runs at 375 × 812.
     if (device[1] !== 667) {
-      await run(device, "light-fallback", { ...options, save: { settings: { play: "light", scenes: false } } }, light);
+      await run(device, "light-fallback", { ...options, save: {
+        settings: { play: "light", scenes: false, ...(device[0] === 375 && { textSize: 1.3 }) },
+      } }, light);
     }
   }
 });
