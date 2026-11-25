@@ -1,5 +1,6 @@
 // Run against the same local server and Chromium setup as taxi.mjs.
 import assert from "node:assert/strict";
+import { assertSavedSentence, cardCentre, cardsFor, checkCardList, checkManualSave } from "./fixtures/phrase-saves.mjs";
 import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -161,11 +162,19 @@ try {
     assert(frame.x > 10 && frame.x < frame.width - 10 && frame.y > 10 && frame.y < frame.panelTop - 10
       && Math.abs(frame.depth) < 1, `The friend's head is visible above the meeting card: ${JSON.stringify(frame)}`);
   };
+  const checkMeetingSaveBounds = async (text, save) => {
+    const { x, width, height } = await cardCentre(save, 44);
+    const right = await text.evaluate((el) => el.getBoundingClientRect().right);
+    assert.equal(width, 44);
+    assert.equal(height, 44);
+    assert(Math.abs(x - width / 2 - right - 6) < 0.5, "the save sits 6 px beside its own text or answer");
+  };
 
   await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads");
   await waitFor(() => page.evaluate(() => !window.__ew.store.getState().hud.zoneBanner), "place banner clears");
   const english = await page.locator("html").getAttribute("lang") === "en";
   const ui = (lt, en) => english ? en : lt;
+  const learner = ui("lt", "en");
   const friend = pc ? "Andrea" : "Lizzie";
   assert.equal(await page.evaluate(() => !!window.__ew.game.surf), pc, "WORLD_STORAGE matches the town");
   if (pc) {
@@ -292,6 +301,19 @@ try {
   assert.equal(await page.evaluate(() => window.__ew.game.rig.mode), "talk");
   await checkMeetingFrame(meeting);
   await shot("meeting", greeting);
+  if (pc) {
+    await checkMeetingSaveBounds(greeting.locator(".il"), greeting.locator(":scope > [data-phrase-save]"));
+    const glosses = greeting.locator(".u .lt");
+    assert.equal(await glosses.first().getAttribute("lang"), learner);
+    await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: false }));
+    await duringFrames(() => glosses.first().waitFor({ state: "detached" }));
+    await press(greeting.locator(".u.tap").first());
+    const word = page.locator(".wpop");
+    await duringFrames(() => word.waitFor({ state: "visible" }));
+    await page.keyboard.press("Escape");
+    await duringFrames(() => word.waitFor({ state: "hidden" }));
+    await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: true }));
+  }
   await page.evaluate((id) => {
     const { game, store } = window.__ew;
     store.getState().updateProgress((p) => { delete p.sits[id]; });
@@ -306,8 +328,46 @@ try {
   assert.equal((await state()).card, null);
   await checkMeetingFrame(meeting);
   await shot("meeting-reply", meeting);
+  let savedTickets;
+  if (pc) {
+    const saveBeside = (answer) => answer.locator("..").locator(":scope > [data-phrase-save]");
+    for (const answer of [ready, tickets]) {
+      await cardCentre(answer, 44);
+      await checkMeetingSaveBounds(answer, saveBeside(answer));
+      assert.equal(await answer.locator("button, a[href], input, [tabindex], .u.tap").count(), 0);
+      assert.equal(await answer.locator(".u .lt").first().getAttribute("lang"), learner);
+    }
+    const snapshot = () => meeting.evaluate((panel) => {
+      const { game, store } = window.__ew;
+      const { actor, dialogue } = game.modes.active;
+      return {
+        mode: game.modes.active.id, camera: game.rig.mode, invitation: store.getState().progress.phone.invitation,
+        actor: [actor.root.id, ...actor.root.position.toArray(), actor.root.rotation.y, ...actor.watch.toArray()],
+        choices: [...panel.querySelectorAll("[data-meeting-answer]")].map((el) => el.dataset.meetingAnswer),
+        options: dialogue.turn?.options.map(({ key }) => key), choosing: dialogue.turn?.choosing ?? false,
+        mic: [dialogue.micOn, !!dialogue.attempt, dialogue.retryIn], playback: dialogue.playback?.key ?? null,
+      };
+    });
+    const sentence = await page.evaluate(() =>
+      window.__ew.game.modes.active.dialogue.turn.options.find(({ key }) => key === "phone_meet_tickets").sentence);
+    assert.equal(sentence.en, "¡Hola! Aquí traigo los boletos.");
+    assert.equal(sentence.nat, ui("Labas! Bilietai pas mane.", "Hi! I've got the tickets right here."));
+    await page.evaluate(() => window.__ew.store.getState().setSettings({ sayLt: false }));
+    await duringFrames(() => tickets.locator(".u .lt").first().waitFor({ state: "detached" }));
+    assert.equal(await ready.locator(".u .lt, .nat").count(), 0);
+    savedTickets = await checkManualSave(page, saveBeside(tickets), mobile, sentence.en, invite, snapshot, "Space");
+    assertSavedSentence(savedTickets, sentence, invite);
+    assert.deepEqual(await cardsFor(page, "hola! aquí traigo los boletos"), [savedTickets]);
+    await page.evaluate(() => window.__ew.store.getState().setSettings({ sayLt: true }));
+    await duringFrames(() => tickets.locator(".u .lt").first().waitFor({ state: "visible" }));
+    await checkMeetingFrame(meeting);
+    await shot("meeting-reply-saved", meeting);
+  }
   await press(ready);
-  await waitFor(() => meeting.locator('[data-meeting-line="phone_meet_go"]').isVisible(), `${friend} replies`);
+  const closing = meeting.locator('[data-meeting-line="phone_meet_go"]');
+  await waitFor(() => closing.isVisible(), `${friend} replies`);
+  assert.equal(await meeting.locator("[data-meeting-answer]").count(), 0);
+  if (pc) await checkMeetingSaveBounds(closing.locator(".il"), closing.locator(":scope > [data-phrase-save]"));
   await waitFor(async () => !(await state()).invitation && !(await meeting.isVisible()), "meeting clears the invitation");
   assert.equal(await task.count(), 0);
   await calmThen(flood);
@@ -333,6 +393,12 @@ try {
   await page.evaluate(() => window.__ew.game.teleportTo("office"));
   await waitFor(() => conv("s34-meeting"), "arriving at the office starts the meeting");
   assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.phone.office), undefined);
+  if (savedTickets) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitFor(() => page.locator(".toolbar").isVisible(), "town toolbar returns after reload");
+    assert.deepEqual(await cardsFor(page, savedTickets.en), [savedTickets], "the unused reply keeps its full record");
+    await checkCardList(page, { learner, target: "es", cards: [savedTickets], press });
+  }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ floodIntro: "incoming and returned", officeMeeting: true, answered: invite, declined: flood, returned: true, blockedBy: ["conversation", "convertible", "taxi", "meeting", ...(pc ? ["surf"] : [])], invitation, meetingCompleted: true, screenshots }));
 } finally {

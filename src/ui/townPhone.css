@@ -156,7 +156,8 @@
 .friend-meeting header { display: flex; align-items: center; justify-content: space-between; }
 .friend-meeting header .icon-btn { width: 44px; height: 44px; }
 .friend-meeting header .listening { color: var(--accent); }
-.friend-meeting .btn { padding: 5px 10px; min-height: 44px; text-align: left; }
+.friend-meeting [data-meeting-answer] { display: block; min-width: 0; padding: 5px 10px; text-align: left; }
+.friend-meeting [data-meeting-answer] .nat { display: block; }
 
 .phone-ring.text-arrival {
   display: grid;

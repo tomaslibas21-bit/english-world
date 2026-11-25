@@ -6,6 +6,7 @@ import { useStore } from "../state/store";
 import { Icon } from "./icons";
 import { L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseSave } from "./kit/PhraseSave";
 
 const source = { situationId: "s83-invite-call" };
 
@@ -25,12 +26,16 @@ export default function FriendMeeting() {
           </button>
         )}
       </header>
-      {line && <div data-meeting-line={line.key}><GlossLine sentence={line.sentence} gloss={gloss} source={source} /></div>}
-      {choices.map(({ key, sentence }) => (
-        <button className="btn soft" key={key} data-meeting-answer={key} onClick={() => game?.modeAction("friend-meeting", "answer", key)}>
-          <GlossLine sentence={sentence} gloss={answerGloss} source={source} />
+      {line && <div className="phrase-save-row" data-meeting-line={line.key}>
+        <GlossLine sentence={line.sentence} gloss={gloss} source={source} />
+        <PhraseSave sentence={line.sentence} {...source} />
+      </div>}
+      {choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
+        <button type="button" className="btn soft" data-meeting-answer={key} onClick={() => game?.modeAction("friend-meeting", "answer", key)}>
+          <GlossLine sentence={sentence} gloss={answerGloss} interactive={false} />
         </button>
-      ))}
+        <PhraseSave sentence={sentence} {...source} />
+      </div>)}
       {mic.heard && <small lang={TL} aria-live="polite">{mic.heard}</small>}
     </section>
   );

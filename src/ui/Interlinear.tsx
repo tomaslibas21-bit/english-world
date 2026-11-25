@@ -22,9 +22,9 @@ const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".
 
 /** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
  *  wording behind an asterisk on every screen size and no separate translation row. */
-export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, partial, source, portalHost, targetLang = TL, helperLang = EDITION.helper }: {
+export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, partial, source, portalHost, interactive = true, targetLang = TL, helperLang = EDITION.helper }: {
   s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean;
-  partial?: boolean; source?: PhraseSource; portalHost?: HTMLElement; targetLang?: string; helperLang?: string;
+  partial?: boolean; source?: PhraseSource; portalHost?: HTMLElement; interactive?: boolean; targetLang?: string; helperLang?: string;
 }) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
@@ -39,9 +39,9 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, pa
   const natStar = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
   /** the line's word notes, each once */
   const notes = useMemo(() => (lt ? [...new Set(s.units.map((u) => u.flag?.trim()).filter((f): f is string => !!f))] : []), [s, lt]);
-  const star = natStar || notes.length > 0;
+  const star = interactive && (natStar || notes.length > 0);
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
-  const onClick = (e: MouseEvent<HTMLDivElement>) => {
+  const onClick = (e: MouseEvent<HTMLElement>) => {
     const el = unitOf(e.target), from = down.current;
     down.current = null;
     if (!el || (from && from !== el) || !e.currentTarget.contains(el)) return;
@@ -49,12 +49,14 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, pa
     const i = Number(el.dataset.i);
     setOpen((o) => (o && o.i === i ? null : { i, el }));
   };
+  const Text = interactive ? "div" : "span";
   return (
-    <div>
-      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={targetLang} onPointerDown={(e) => { down.current = unitOf(e.target); }} onClick={onClick}>
+    <Text>
+      <Text className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={targetLang}
+        onPointerDown={interactive ? (e) => { down.current = unitOf(e.target); } : undefined} onClick={interactive ? onClick : undefined}>
         {s.units.map((u, i) => {
           const dash = u.lt.startsWith("—");
-          const tappable = !partial || (!!u.lt && !dash);
+          const tappable = interactive && (!partial || (!!u.lt && !dash));
           const isSaved = !dash && saved.has(cardKey(u.en));
           // the asterisk right after the last word's last letter, a superscript that takes no room in the line
           // (a zero-width pin inside the English, so a wider gloss or IPA under the word doesn't push it away and
@@ -64,14 +66,14 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, pa
             <span className={"u" + (tappable ? " tap" : "") + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={tappable ? i : undefined}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
               {ipa && <span className="ipa">{ipas[i] || " "}</span>}
-              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang={helperLang}>{u.lt}</span>}
+              {lt && <span className={"lt" + (dash ? " dash" : "") + (interactive && u.flag ? " flag" : "")} title={u.flag || undefined} lang={helperLang}>{u.lt}</span>}
             </span>
           );
         })}
-      </div>
-      {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang={helperLang}>{s.nat}</div>}
-      {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} source={source} portalHost={portalHost} targetLang={targetLang} helperLang={helperLang} partial={partial} />}
-    </div>
+      </Text>
+      {lt && !compactNat && nat !== false && s.nat && <Text className="nat" lang={helperLang}>{s.nat}</Text>}
+      {interactive && open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} source={source} portalHost={portalHost} targetLang={targetLang} helperLang={helperLang} partial={partial} />}
+    </Text>
   );
 }
 
