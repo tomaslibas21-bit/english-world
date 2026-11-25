@@ -4,7 +4,7 @@ import type { GameCharacter } from "../characters";
 import type { NaturalPoseDriver, NaturalRig, TalkLineId, VoiceVisualOwner } from "./contract";
 import { blockedHands, ENTRY_SECONDS } from "./contract";
 import { captureConversationPose, type PoseEntry } from "./entry";
-import { VoiceMouth, type VoiceSource } from "./mouth";
+import { VoiceMouth, type VoiceSource } from "./binding";
 
 export { captureConversationPose } from "./entry";
 export type { TalkLineId, VoiceVisualOwner } from "./contract";

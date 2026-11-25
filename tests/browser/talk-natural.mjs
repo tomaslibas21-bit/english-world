@@ -47,7 +47,7 @@ function pickSeed(accept) {
 }
 
 // Four init rolls on the first visit to each. Café first skips the how-are-you branch.
-const cafeSeed = pickSeed((rolls) => rolls[4] >= 0.4 && rolls[5] >= 2 / 3);
+const cafeSeed = pickSeed((rolls) => rolls[4] >= 0.4 && rolls[5] >= 3 / 4);
 const taxiSeed = pickSeed((rolls) => rolls[4] < 1 / 3);
 // Exercise the no-reservation path with a predictable wait and optional seating questions.
 const restaurantSeed = pickSeed((rolls) => rolls[0] >= 0.3 && rolls[1] >= 0.4);
