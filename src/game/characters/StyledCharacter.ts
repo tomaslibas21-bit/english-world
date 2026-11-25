@@ -102,7 +102,7 @@ export class StyledCharacter {
   private pose(dt: number) {
     const pose = this.talkPose;
     pose?.advance(dt);
-    const idle = pose ? 1 - pose.weight : 1;
+    const idle = pose?.reduced ? 0 : pose ? 1 - pose.weight : 1;
     const t = this.t, b = this.bones, M = this.spec.motion;
     const body = b[BONE.body], head = b[BONE.head];
     const uL = b[BONE.uArmL], fL = b[BONE.fArmL], uR = b[BONE.uArmR], fR = b[BONE.fArmR];

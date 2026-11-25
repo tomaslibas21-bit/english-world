@@ -19,6 +19,7 @@ import { keepPhrases } from "../kit/phrases";
 import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
+import type { ActorTalk } from "../talkNatural/binding";
 import type { GameCharacter } from "../characters";
 import { Surf } from "./Surf";
 import { COMMANDS, SurfLogic, type Do, type Level, type SurfInput } from "./logic";
@@ -26,6 +27,7 @@ import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
 /** What the lesson needs of the game. */
 export interface SurfGame {
+  acting?(): ActorTalk;
   player(): GameCharacter;
   rig: CameraRig;
   /** The game's clock (s), as the sea's swell runs on it. */
@@ -67,6 +69,7 @@ const PUSH: Partial<Record<Do, [number, number]>> = { duck: [0, -1], turn: [1, 0
 export class SurfPlay {
   scene: Surf;
   private logic: SurfLogic | null = null;
+  private acting?: ActorTalk;
   private level: Level = "beginner";
   private in = { stroke: false, up: false };
   private lastChoice: unknown = null;
@@ -215,6 +218,7 @@ export class SurfPlay {
   again(level: Level = this.level) {
     if (!this.logic) return;
     audio.stop();
+    this.acting?.release();
     this.stopListening();
     this.game.fade(() => { this.finish(); this.launch(level); });
   }
@@ -241,6 +245,7 @@ export class SurfPlay {
       this.finish();
       this.stopListening();
       audio.stop();
+      this.acting?.release(0);
       this.logic = null;
       this.scene.end();
       this.game.hideNpc(this.content.npc, false);
@@ -276,7 +281,9 @@ export class SurfPlay {
     const again = !!this.speech;
     this.stopListening();
     const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
-    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then(() => { if (again && this.logic?.choice) this.listen(); });
+    const voice = npcVoice(npc), speed = npc?.speed ?? 1;
+    const visual = this.coachLine(line.cue, line.s.say, audio.clipDuration(voice, speed, line.s.say) ?? 2, true);
+    void audio.play(voice, speed, line.s.say, { slow, male: npc?.gender === "m", visual }).then(() => { if (again && this.logic?.choice) this.listen(); });
   }
 
   // --- the learner's turn to speak ----------------------------------------------------------------------------------
@@ -285,6 +292,16 @@ export class SurfPlay {
   setMic(on: boolean) {
     useSurf.getState().set({ micOn: on });
     if (!on) this.stopListening(); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+  }
+
+  private coachActor() {
+    const actor = this.scene.coach;
+    return actor && this.scene.group.visible ? { actor, id: this.content.npc, player: this.game.player() } : undefined;
+  }
+
+  private coachLine(cue: string, text: string, seconds: number, repeat = false) {
+    const target = this.coachActor();
+    if (target) return (this.acting ??= this.game.acting?.())?.speak(target, cue, text, seconds, true, repeat)?.owner;
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -342,6 +359,7 @@ export class SurfPlay {
    *  them first, in the voice the learner's examples have. */
   private answer(cue: string, spoken: boolean): number {
     this.stopListening();
+    this.acting?.react("understood");
     if (!this.answered.includes(cue)) this.answered.push(cue);
     const s = this.line(cue);
     useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" } });
@@ -378,8 +396,7 @@ export class SurfPlay {
     if (!s) return 0.8;
     const st = useStore.getState(), npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1, slow = !!st.settings.slowVoice;
     const secs = (audio.clipDuration(voice, speed, s.say) ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
-    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m" });
-    this.scene.coach?.talk(secs, () => audio.level(), () => audio.vowel());
+    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m", visual: this.coachLine(cue, s.say, secs) });
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
@@ -422,6 +439,7 @@ export class SurfPlay {
     const inp: SurfInput = { x, y, stroke: this.in.stroke && !paused, up: this.in.up && !paused };
     this.in.stroke = this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
+    this.acting?.pause(paused);
     if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
     this.scene.update(dt, t, inp, paused);
     this.sync(dt);
@@ -433,6 +451,7 @@ export class SurfPlay {
     const turn = L.choice !== this.lastChoice;
     if (turn) {
       this.lastChoice = L.choice;
+      this.acting?.listen(L.choice ? this.coachActor() : undefined, !!L.choice);
       patch.choice = L.choice ? { id: L.choice.id, options: L.choice.options.map((cue) => ({ cue, s: this.line(cue) })).filter((o): o is SurfLine => !!o.s) } : null;
     }
     // the move she asks for: shown beside her line at once, but a command of the ride the learner has heard often is

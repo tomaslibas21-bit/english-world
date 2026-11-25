@@ -5,8 +5,12 @@ import type { AudioSystem } from "../audio";
 import type { GameCharacter } from "../characters";
 import { talkCounterHeight, talkRoomAnchors } from "../world/talkNatural";
 import type { ClassifiedCue, TalkLineId, VoiceVisualOwner } from "./contract";
-import { inspectTalkNatural, inspectedRequest } from "./inspection";
+import { inspectTalkNatural, inspectedRequest, snapshotActor } from "./inspection";
+import { lineSeed } from "./seed";
 import { bindConversationPose, type GestureRequest, type TalkRole } from "./pose";
+
+export { presentExchange } from "./exchange";
+export { lineSeed } from "./seed";
 
 export interface TalkActor { id: string; ch: GameCharacter }
 type Pose = NonNullable<ReturnType<typeof bindConversationPose>>;
@@ -31,16 +35,6 @@ interface Participant {
   pose?: Pose;
   personality: ReturnType<typeof talkPersonality>;
   lastBeat?: GestureRequest;
-}
-
-export function lineSeed(actor: string, run: number, line: TalkLineId, salt = 0) {
-  const key = `${actor}:${run}:${line}:${salt}`;
-  let hash = 2166136261;
-  for (let i = 0; i < key.length; i++) hash = Math.imul(hash ^ key.charCodeAt(i), 16777619);
-  hash ^= hash >>> 16;
-  hash = Math.imul(hash, 0x7feb352d);
-  hash ^= hash >>> 15;
-  return (hash >>> 0) / 4294967296;
 }
 
 /** One presentation per live 3D situation. The game continues to own movement, turns and the camera. */
@@ -82,7 +76,7 @@ export class NaturalSession {
     this.current = this.participants.get(options.host.id);
     this.bystander = this.findBystander();
     this.nextBystander();
-    if (import.meta.env.DEV) this.uninspect = inspectTalkNatural(() => this.sample());
+    if (import.meta.env.DEV) this.uninspect = inspectTalkNatural(() => this.sample(), 1);
   }
 
   get speaker() { return this.shown && this.validPeer(this.current) ? this.current.actor.ch : undefined; }
@@ -119,7 +113,7 @@ export class NaturalSession {
 
   private bind(peer: Participant, role: TalkRole, counter = false) {
     const ch = peer.actor.ch;
-    if (ch.talkPose || !ch.root.parent || !ch.root.visible) return;
+    if (ch.talkPose && !ch.talkPose.releasing || !ch.root.parent || !ch.root.visible) return;
     const counterY = counter ? talkCounterHeight(this.anchors, ch.root.getWorldPosition(this.world)) : undefined;
     peer.pose = bindConversationPose(ch, { audio: this.options.audio, role, counterY });
   }
@@ -340,14 +334,8 @@ export class NaturalSession {
     if ((!this.shown && !this.releasing) || !this.hasPose()) return null;
     const current = this.current, voice = this.voice, audio = this.options.audio;
     const speakerId = current?.actor.id ?? null;
-    const snapshot = (peer: Participant | undefined, watch: string | null) => {
-      const a = peer?.pose?.applied;
-      return peer && a?.active ? {
-        ...a, actorId: peer.actor.id, deltas: { ...a.deltas },
-        gaze: { target: a.gazeTarget ?? (a.watching ? watch : null), yaw: a.gazeYaw, pitch: a.gazePitch, eyeX: a.gazeEyeX, eyeY: a.gazeEyeY },
-        listening: a.role === "listening" || a.role === "thinking", envelope: a.level !== null && a.level >= 0 ? a.level : null,
-      } : null;
-    };
+    const snapshot = (peer: Participant | undefined, watch: string | null) =>
+      peer ? snapshotActor(peer.pose, peer.actor.id, watch) : null;
     const reaction = this.reaction;
     const applied = snapshot(current, "learner");
     return {

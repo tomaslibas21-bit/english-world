@@ -6,6 +6,7 @@ import { createSpeechAttempt, speechSupported } from "../../convo/speech";
 import { conversationLine, learnerTurn } from "./lines";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
+import type { ActorTalk, ActingTarget } from "../talkNatural/binding";
 
 export interface KitLine { key: string; sentence: Sentence; pieces?: Sentence[] }
 export interface KitMic {
@@ -26,6 +27,7 @@ export class ModeDialogue {
   private paused = false;
   private micHeld = false;
   private generation = 0;
+  private acting?: ActorTalk;
   micOn = true;
 
   constructor(private ui: {
@@ -34,33 +36,63 @@ export class ModeDialogue {
     mic(state: KitMic): void;
     answer?(line: KitLine): void;
     animate?(seconds: number): void;
+    acting?(): ActorTalk | undefined;
+    actor?(listening: boolean): ActingTarget | undefined;
     allowBrowserVoice?: boolean;
     framePlayback?: boolean;
     speechFallback?: boolean;
   }) {}
+
+  private presentation() {
+    if (this.acting) return this.acting;
+    const acting = this.ui.acting?.();
+    if (!acting) return;
+    this.acting = acting;
+    acting.pause(this.paused);
+    const { choices, mic, answer } = this.ui;
+    this.ui = {
+      ...this.ui,
+      choices: (lines) => { this.attend(lines.length > 0); choices(lines); },
+      mic: (state) => { if (state.status === "unclear") this.feedback("puzzled"); mic(state); },
+      answer: (line) => { this.feedback("understood"); answer?.(line); },
+    };
+    return acting;
+  }
+
+  attend(waiting: boolean) {
+    const actor = waiting ? this.ui.actor?.(true) : undefined;
+    if (actor) this.presentation()?.listen(actor, true);
+    else this.acting?.listen(undefined, false);
+  }
+
+  feedback(kind: "understood" | "puzzled") { this.acting?.react(kind); }
+  releaseActor() { this.acting?.release(); }
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>, learner: boolean): KitLine | null {
     const sentence = conversationLine(situation, npcId, key, fallback, learner);
     return sentence ? { key, sentence } : null;
   }
 
-  private play(line: KitLine, voice: string, speed: number, male: boolean, learner = false, onVoiced?: (ok: boolean) => void) {
+  private play(line: KitLine, voice: string, speed: number, male: boolean, learner = false, onVoiced?: (ok: boolean) => void, replay = false) {
     const slow = !!useStore.getState().settings.slowVoice;
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
     const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
     const voiced = clip != null || !!this.ui.allowBrowserVoice || !!this.ui.speechFallback;
-    if (!learner) this.ui.animate?.(est);
+    const actor = !learner ? this.ui.actor?.(false) : undefined;
+    const acting = actor && this.presentation()?.speak(actor, line.key, text, est, voiced, replay);
+    if (!learner && !acting) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
       const left = clip == null && !this.ui.framePlayback ? estimate : estimate + 2;
       const playing = { left, clip: voiced, completed: false, finish: (ok: boolean) => {
+        if (acting) acting.finished = true;
         onVoiced?.(audible);
         finish(ok);
       } };
       let audible = false;
       this.playback = playing;
-      if (voiced) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
+      if (voiced) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback, visual: acting?.owner }).then((ok) => {
         if (!ok || this.playback !== playing) return;
         audible = useStore.getState().settings.volume > 0;
         if (this.ui.framePlayback) playing.completed = true;
@@ -87,23 +119,24 @@ export class ModeDialogue {
     if (this.paused || this.playback || this.turn?.choosing) return;
     this.stopListening();
     const turn = this.turn;
-    await this.play(line, voice, speed, male, learner);
+    await this.play(line, voice, speed, male, learner, undefined, true);
     if (turn && this.turn === turn) this.listen();
   }
 
   /** Shows one composed call while its individual recording keys play in order. */
-  async sayPieces(line: KitLine, voice: string, speed: number, male: boolean) {
+  async sayPieces(line: KitLine, voice: string, speed: number, male: boolean, replay = false) {
     if (this.turn || this.playback) return false;
     this.ui.say(line);
     let allAudible = true;
-    const played = await this.playPieces(line, voice, speed, male, false, (ok) => { allAudible &&= ok; });
+    const played = await this.playPieces(line, voice, speed, male, false, (ok) => { allAudible &&= ok; }, replay);
     return played && allAudible;
   }
 
-  private async playPieces(line: KitLine, voice: string, speed: number, male: boolean, learner: boolean, onVoiced?: (ok: boolean) => void) {
+  private async playPieces(line: KitLine, voice: string, speed: number, male: boolean, learner: boolean, onVoiced?: (ok: boolean) => void, replay = false) {
     const generation = this.generation;
     for (const sentence of line.pieces ?? [line.sentence]) {
-      if (generation !== this.generation || !await this.play({ key: line.key, sentence }, voice, speed, male, learner, onVoiced)) return false;
+      if (generation !== this.generation || !await this.play({ key: line.key, sentence }, voice, speed, male, learner, onVoiced, replay)) return false;
+      replay = false;
     }
     return true;
   }
@@ -141,6 +174,7 @@ export class ModeDialogue {
 
   private beginTurn(options: KitLine[], speech: SpeechMatcher, spokenNames?: SpokenNames) {
     if (this.turn || this.playback || !options.length) return Promise.resolve(null);
+    this.presentation();
     return new Promise<KitLine | null>((finish) => {
       this.turn = { options, speech, spokenNames, finish, retries: 0 };
       this.ui.choices(options);
@@ -252,6 +286,7 @@ export class ModeDialogue {
   update(dt: number, paused: boolean) {
     if (paused !== this.paused) {
       this.paused = paused;
+      this.acting?.pause(paused);
       if (paused) this.stopListening(); else this.listen();
     }
     if (paused) return;
@@ -265,6 +300,7 @@ export class ModeDialogue {
   }
 
   cancel() {
+    this.releaseActor();
     this.generation++;
     this.endPlayback(false);
     const turn = this.turn;

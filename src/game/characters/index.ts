@@ -55,6 +55,8 @@ export interface GameCharacter {
   busy?: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null;
   /** At a car's wheel or a boat's tiller: how far it is turned (−1…1; the original Character). */
   steer?: number;
+  /** An authored two-handed hold, such as a street actor carrying a box. */
+  handsOccupied?: boolean;
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
   swim?: number;
   dive?: number;

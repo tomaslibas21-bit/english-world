@@ -1,5 +1,5 @@
 // Type-only seams shared with the eager character and audio code.
-import type { Object3D } from "three";
+import type { Object3D, Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 
 export type TalkLineId = string | number;
@@ -44,6 +44,8 @@ export interface NaturalRig {
 /** The adapter writes the existing local base pose first, then hands its joints to the mixer. */
 export interface NaturalPoseDriver {
   readonly weight: number;
+  readonly releasing?: boolean;
+  readonly watch?: Vector3;
   readonly reduced: boolean;
   readonly mouth: number;
   readonly roundness: number;

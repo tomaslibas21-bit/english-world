@@ -89,7 +89,14 @@ class BaristaMode implements GameMode {
     say: (line) => ui({ line }),
     choices: (choices) => ui({ choices }),
     mic: (mic) => ui({ mic }),
-    animate: (seconds) => this.speaker?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.host.acting?.(),
+    actor: (listening) => {
+      const run = this.run, actor = listening && run ? run.customer.ch : this.speaker;
+      if (!actor) return;
+      const group = this.café.room();
+      return { actor, id: run && actor === run.customer.ch ? run.shift.order.npc : npc,
+        player: run ? this.host.player() : undefined, zone: group ? { id: BARISTA_CONVERSATION.location, group } : undefined };
+    },
   });
 
   constructor(private host: ModeHost, private café: RoomHost) {}
@@ -271,6 +278,7 @@ class BaristaMode implements GameMode {
     this.paint(run);
     if (!await this.sayCustomer(run, baristaPieceLine(run.cafe, piece, shift.order.gender)) || this.run !== run || run.closing) return;
     run.guidedReady = true;
+    this.playback.attend(true);
     this.paint(run);
   }
 
@@ -288,6 +296,7 @@ class BaristaMode implements GameMode {
     this.playback.clearLine();
     run.replaying = false;
     shift.step = "build";
+    this.playback.attend(true);
     this.paint(run);
   }
 
@@ -301,6 +310,7 @@ class BaristaMode implements GameMode {
     if (shift.step === "order") {
       const p = shift.currentPiece;
       if (p.row === pick.row && p.id === pick.id && matchesPick(shift.built, p)) {
+        this.playback.feedback("understood");
         if (++shift.piece < shift.order.pieces.length) { void this.guidedPiece(run); return; }
         shift.step = "build";
         this.row("size");
@@ -325,6 +335,7 @@ class BaristaMode implements GameMode {
     const { shift } = run;
     if (shift.step !== "build") return;
     const fix = shift.handover();
+    if (!fix) this.playback.attend(false);
     this.paint(run);
     if (fix) {
       const key = "bs_c_sorry";
@@ -348,12 +359,13 @@ class BaristaMode implements GameMode {
     run.slide = 0;
     if (run.serving) run.servingFrame = servingDetails(run.customer.ch.height, run.serving);
     if (!await this.delay(run, SERVE_LEAD + SERVE_SLIDE + 0.35) || run.closing) return;
-    run.customer.ch.react?.("nod");
     run.props.price(shift.order.price);
     shift.step = "price";
     ui({ price: shift.order.price });
     this.paint(run);
-    if (!await this.answer(run, shift.order.priceLine)) return;
+    const payment = this.answer(run, shift.order.priceLine);
+    this.playback.feedback("understood");
+    if (!await payment) return;
     shift.step = "thanks";
     this.paint(run);
     if (!await this.sayCustomer(run, baristaThanks(run.cafe, shift.order.gender)) || this.run !== run || run.closing) return;

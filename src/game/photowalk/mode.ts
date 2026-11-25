@@ -8,6 +8,7 @@ import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
 import { ModeDialogue } from "../kit/dialogue";
+import type { GameCharacter } from "../characters";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeInput } from "../kit/modes";
 import { takePhoto, savePhoto } from "./photos";
@@ -21,7 +22,7 @@ type World = {
   available(): boolean;
   zone(): string;
   guide(location: string): void;
-  animate(seconds: number): void;
+  actor(): GameCharacter | undefined;
 };
 
 const things = new Map(PHOTO_THINGS.map((thing) => [thing.id, thing]));
@@ -53,7 +54,13 @@ export class TownQuests implements GameMode {
   private readonly projected = new Vector3();
   private readonly dialogue = new ModeDialogue({
     say: (line) => ui({ line }), choices: (choices) => ui({ choices }), mic: (mic) => ui({ mic }),
-    animate: (seconds) => this.world.animate(seconds), allowBrowserVoice: true, framePlayback: true,
+    acting: () => this.host.acting?.(),
+    actor: () => {
+      const { screen, visit } = useTownQuests.getState();
+      const actor = (visit || screen === "finale") && this.world.actor();
+      return actor ? { actor, id: PHOTO_WALK_NPC, player: this.host.player() } : undefined;
+    },
+    allowBrowserVoice: true, framePlayback: true,
   });
   private readonly replay = new ModeDialogue({
     say() {}, choices() {}, mic() {}, allowBrowserVoice: true, framePlayback: true,

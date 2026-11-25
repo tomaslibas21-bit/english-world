@@ -305,19 +305,15 @@ export class Ambient {
   }
   get walkerRoots() { return this.walkers.map((w) => w.ch.root); }
 
-  /** A townsperson answers the player: a passer-by stops, turns and waves; someone chatting waves (and their friend
-   *  waits); someone sitting nods. */
+  /** A passer-by stops and turns toward the player. A nearby chat gives the greeting room. */
   greet(w: Walker, px: number, pz: number) {
     w.chat?.hold(4);
-    if (w.kind === "sit") { w.ch.react?.("nod"); return { female: w.female }; }
     if (w.kind === "walk") {
       w.path = null;
       w.wait = 3.5;
       w.heading = Math.atan2(px - w.ch.root.position.x, pz - w.ch.root.position.z);
       w.ch.root.rotation.y = w.heading;
     }
-    w.ch.setAnim("wave");
-    setTimeout(() => { if (w.ch.anim === "wave") w.ch.setAnim("idle"); }, 1400);
     return { female: w.female };
   }
 

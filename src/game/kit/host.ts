@@ -1,3 +1,4 @@
+import type { ActorTalk } from "../talkNatural/binding";
 import type { Box3, Object3D } from "three";
 import type { GameCharacter } from "../characters";
 import type { CameraRig } from "../camera";
@@ -6,6 +7,7 @@ import type { Controls } from "../rides/drive";
 import type { Door, StandTaxi } from "../world/town";
 
 export interface ModeHost {
+  acting?(): ActorTalk;
   player(): GameCharacter;
   rig: CameraRig;
   rides: Rides;

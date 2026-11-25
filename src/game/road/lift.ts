@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { ROAD_EDITION } from "../../content/road";
 import { NPCS } from "../../content/npcs";
-import { audio } from "../audio";
 import { createCharacter } from "../characters";
 import { CAR_SEATS } from "../rides/shapes";
 import { carGeometry } from "../world/car";
@@ -173,8 +172,6 @@ export class Lift {
     const { x, z, inward } = this.edge;
     this.host.place(x + Math.sin(inward) * 1.2, z + Math.cos(inward) * 1.2, inward);
   }
-
-  talk(seconds: number) { this.driver.talk(seconds, () => audio.level(), () => audio.vowel()); }
 
   take() {
     this.clearFrame();

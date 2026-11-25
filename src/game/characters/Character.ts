@@ -539,6 +539,7 @@ export class Character {
   height: number;
   private blinkT = 2 + Math.random() * 3;
   declare talkPose?: NaturalPoseDriver;
+  declare handsOccupied?: boolean;
 
   constructor(public look: Look) {
     const h = look.height ?? 1;
@@ -1448,7 +1449,7 @@ export class Character {
   update(dt: number) {
     const pose = this.talkPose;
     pose?.advance(dt);
-    const idle = pose ? 1 - pose.weight : 1;
+    const idle = pose?.reduced ? 0 : pose ? 1 - pose.weight : 1;
     this.t += dt;
     this.blob.visible = Character.blobShadows;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
@@ -1516,6 +1517,9 @@ export class Character {
     if (!seated) { lx -= old * 0.07; rx -= old * 0.07; lf -= old * 0.1; rf -= old * 0.1; }
     // the little things people do while they wait (see fidget)
     const m = pose ? null : this.fidget(dt, seated);
+    if (pose && this.handsOccupied && !seated) {
+      lx = rx = -0.42; lz = 0.1; rz = -0.1; lf = rf = -0.85;
+    }
     let phoneOut = false, eyesDown = this.busy === "paper" ? 1 : 0;
     if (m) {
       const k = m.w * m.w * (3 - 2 * m.w), s = m.s;
@@ -1650,18 +1654,19 @@ export class Character {
       else { sc.x = (Math.random() - 0.5) * 0.017; sc.y = (Math.random() - 0.5) * 0.007; }
     }
     let gy = 0, gp = 0, ex = sc.x * idle, ey = sc.y * idle - eyesDown * 0.008, looking = false;
-    const wp = pose?.reduced ? null : this.watch;
+    const wp = pose?.reduced ? null : pose?.watch ?? this.watch;
+    const steady = this.steady || !!pose?.watch;
     if (wp && eyesDown < 0.5) {
       const p = this.root.position, dx = wp.x - p.x, dz = wp.z - p.z, d = Math.hypot(dx, dz);
-      if (d > 0.35 && (this.steady || this.attentive || d < this.noticeWithin)) {
-        if (!this.steady) {
+      if (d > 0.35 && (steady || this.attentive || d < this.noticeWithin)) {
+        if (!steady) {
           if (this.noticeT > 0) this.noticeT -= dt;
           else if ((this.noticeWait -= dt) <= 0) {
             this.noticeT = (this.attentive ? 2 : 1.2) + Math.random() * 2.4;
             this.noticeWait = this.attentive ? 1.2 + Math.random() * 3 : 3 + Math.random() * 8;
           }
         }
-        if (this.steady || this.noticeT > 0) {
+        if (steady || this.noticeT > 0) {
           let rel = Math.atan2(dx, dz) - this.root.rotation.y;
           rel = Math.atan2(Math.sin(rel), Math.cos(rel));
           if (Math.abs(rel) < 1.9) {
