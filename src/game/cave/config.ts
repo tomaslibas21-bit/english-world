@@ -53,4 +53,10 @@ export interface CaveArt {
   path: readonly string[];
   pool: string;
   rune: readonly string[];
+  /** Optional town colours for the glowing things (the donor's tropical pinks and violets when left out). */
+  glows?: readonly string[];
+  crystals?: readonly string[];
+  flowers?: readonly string[];
+  /** The keeper's little hut by the first gate: roof, wall. */
+  hut?: readonly [string, string];
 }

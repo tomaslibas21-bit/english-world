@@ -1,4 +1,4 @@
-import type { Vector3 } from "three";
+import type { Object3D, Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 
 interface KeeperActor {
@@ -25,4 +25,7 @@ export function updateKeeper(n: KeeperActor, motion: KeeperMotion, p: Vector3, d
   n.ch.lift = arc * (n.sit ? 0.16 : 0.24);
   n.ch.tuck = n.sit ? 0 : arc * 0.42;
   n.ch.update(dt);
+  // (MH's Character leaves a seated body on its seat: the keeper's little bob on the bridge rail is added here)
+  const body = (n.ch as { body?: Object3D }).body;
+  if (n.sit && body && n.ch.lift) body.position.y += n.ch.lift;
 }

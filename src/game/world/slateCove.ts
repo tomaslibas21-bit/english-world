@@ -109,10 +109,21 @@ export function buildSlateCove() {
   for (let i = 0; i < S.treads; i++) {
     const y = (i + 1) * 0.2, z = S.foot - (i + 0.5) * dz;
     box(2 * S.half, y, dz + 0.006, S.x, y / 2 - 0.045, z, pick(rock));
-    for (const side of [-1, 1]) box(0.36, y + 0.72, dz + 0.008, S.x + side * (S.half + 0.18), (y + 0.72) / 2, z, pick(rock));
   }
   box(2 * S.half, S.rise, S.top - S.back, S.x, S.rise / 2 - 0.045, (S.top + S.back) / 2, rock[1]);
-  for (const side of [-1, 1]) box(0.36, S.rise + 0.72, S.top - S.back, S.x + side * (S.half + 0.18), (S.rise + 0.72) / 2, (S.top + S.back) / 2, rock[0]);
+  // The side walls slope with the stair like an old wall-walk's (stepped ones read as a temple's flanks).
+  const flank = new THREE.Shape([
+    new THREE.Vector2(S.foot, 0), new THREE.Vector2(S.foot, 0.72), new THREE.Vector2(S.top, S.rise + 0.72),
+    new THREE.Vector2(S.back, S.rise + 0.72), new THREE.Vector2(S.back, 0),
+  ]);
+  for (const side of [-1, 1]) {
+    const x = S.x + side * (S.half + 0.18);
+    parts.push([new THREE.ExtrudeGeometry(flank, { depth: 0.36, bevelEnabled: false }).rotateY(-Math.PI / 2).translate(x + 0.18, 0, 0), rock[0]]);
+    for (let i = 1; i < S.treads; i += 4 + Math.floor(r() * 3)) {
+      const z = S.foot - (i + 0.5) * dz, y = S.rise * (i + 0.5) / S.treads + 0.72;
+      slab(x, y + 0.02, z, 0.42, 0.08, dz * 2.2, 0, pick(moss));
+    }
+  }
   const G = RING_GABLE;
   box(G.w, S.rise + 0.72, G.d, G.x, (S.rise + 0.72) / 2, G.z, rock[0]);
   for (const side of [-1, 1]) {

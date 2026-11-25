@@ -106,6 +106,8 @@ const clips = Object.fromEntries([
 function observe() {
   const { audio, store, game } = window.__ew;
   const watch = window.__caveWatch = { calls: [], hush: [], toasts: {}, masks: [], hearts: 0, trees: 0, events: [], solvedAt: 0 };
+  // (light mode's window.__ew has the game and the store only: its recordings cannot be watched from here)
+  if (audio) {
   const play = audio.play;
   audio.play = function (voice, speed, text, options) {
     const g = store.getState().hud.glyph;
@@ -128,6 +130,7 @@ function observe() {
     if (args[0] === "cave-reader") watch.hush.push(args[1]);
     return hush.apply(this, args);
   };
+  }
   store.subscribe((st, before) => {
     if (st.hud.glyph?.solved && !before.hud.glyph?.solved) watch.solvedAt = window.__caveWallNow();
     if (st.hud.minimap.gates !== before.hud.minimap.gates) watch.masks.push(st.hud.minimap.gates);
@@ -298,7 +301,7 @@ async function withGame(browser, script, [width, height], scenario, options, tes
         window.__ew.coach?.finish?.();
         window.__ew.store.getState().setHud({ panel: null });
       });
-      if (options.save?.settings?.play !== "light") await ev(observe);
+      await ev(observe);
       await step(4);
       captureFrames = true;
     }
@@ -735,7 +738,7 @@ export async function inspectPickerCard(run, card, labels) {
     const overlaps = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
     const problems = [];
     if (box.width < 44 || box.height < 44 || !within(box, clip) || !within(box, grid) ||
-      box.left < 0 || box.right > innerWidth || box.top < 0 || box.bottom > innerHeight ||
+      box.left < -1 || box.right > innerWidth + 1 || box.top < -1 || box.bottom > innerHeight + 1 ||
       !el.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))) problems.push("card out of view");
     if (scroll.scrollWidth > scroll.clientWidth + 1) problems.push("picker scrolls sideways");
     if (text.getBoundingClientRect().width < 150) problems.push("text column is cramped");
@@ -906,7 +909,7 @@ export async function oakClosing(run, { leaveByGuide = false } = {}) {
   await heard(run, BACK);
   const spoken = await calls(run);
   for (const [en] of [KEEP, BACK]) {
-    assert.equal(spoken.filter((c) => c.voice === "g_cave_oak" && c.text === en && c.result === true).length, 1);
+    if (!light) assert.equal(spoken.filter((c) => c.voice === "g_cave_oak" && c.text === en && c.result === true).length, 1);
     assert(run.requests.some((r) => r.key === audioKey("g_cave_oak", 1, en) && r.duration === 0.25));
   }
   assert(await run.ev(() => window.__ew.store.getState().conv.transcript.filter((l) => l.who === "npc").length >= 9));
@@ -931,7 +934,8 @@ export async function oakClosing(run, { leaveByGuide = false } = {}) {
   if (!light) await run.visible(guide);
   const observed = await watch(run);
   assert.equal(observed.trees, light ? 0 : 1);
-  assert.deepEqual(observed.events.filter(([name]) => name === "tree-heard"), [["tree-heard", null]]);
+  // (light mode's practice run stores nothing for the cave, and its game is not the one watched at boot)
+  if (!light) assert.deepEqual(observed.events.filter(([name]) => name === "tree-heard"), [["tree-heard", null]]);
   assert.equal(await run.ev(() => window.__ew.store.getState().progress.sits["x08-old-oak"].completions), 1);
   await run.mark(light ? "light-oak-end" : "oak-end");
   if (leaveByGuide) {

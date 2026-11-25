@@ -37,8 +37,10 @@ async function town(run) {
     const v = await run.ev((npc) => {
       const g = window.__ew.game, r = g.rig, sp = g.wild.space, who = g.npcs.find((n) => n.id === npc), a = who.ch.root.position;
       const pos = r.cam.position, face = a.clone(), chest = a.clone();
-      face.y += (who.sit ? 0.72 : 0.9) * who.ch.height;
-      chest.y += (who.sit ? 0.45 : 0.62) * who.ch.height;
+      // (standing: the donor's head and chest above the feet. MH seats Fern on the bridge rail, 0.74 m up, so the
+      // donor's seated fractions of her height from the floor land on her shins: check her face and her seat there.)
+      face.y += who.sit ? who.ch.seatY + 0.5 * who.ch.height : 0.9 * who.ch.height;
+      chest.y += who.sit ? who.ch.seatY : 0.62 * who.ch.height;
       const trueFace = face.clone().setY(g.caveCode.wildPersonY(who, 0.9));
       const trueChest = chest.clone().setY(g.caveCode.wildPersonY(who, 0.62));
       const canvas = g.renderer.domElement.getBoundingClientRect(), panel = document.querySelector(".convo").getBoundingClientRect();
@@ -153,7 +155,8 @@ await suite("mh-cave-talk", async (run) => {
   for (const device of [...DEVICES, [375, 812], [375, 667]]) {
     const options = { boot: 180_000, ...(device[0] < 900 && { userAgent: iPhone }) };
     await run(device, "3d-sightlines", { ...options, save: { cave: {
-      passed: ["bram", "fern"], lit: ["tide-1", "tide-2", "tide-3", "root-2"], seen: true, told: 5,
+      // Fern still holds her bridge: this run plays her riddles through to the crossing.
+      passed: ["bram"], lit: ["tide-1", "tide-2", "tide-3", "root-2"], seen: true, told: 5,
     } } }, town);
     // The donor's short phone is a 3D framing variant. Its light portrait runs at 375 × 812.
     if (device[1] !== 667) {

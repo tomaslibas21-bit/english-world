@@ -69,5 +69,10 @@ export const SLATE_CAVE = {
   path: ["#a7aaa0", "#959b92"],
   pool: "#406f77",
   rune: ["#93bcb3", "#edcd83"],
+  // Cool sea-glass glows, ice-pale crystals and white wood-anemone flowers instead of the donor's tropical pinks.
+  glows: ["#58e0e6", "#7fe6b0", "#a9d8ff", "#cfe8c0", "#ffe7a6"],
+  crystals: ["#9fd8ff", "#cdeff5", "#8fe3c8", "#b9c8e6"],
+  flowers: ["#fff3c4", "#ffffff", "#e6f2d8", "#ffe7a6"],
+  hut: ["#8f8a62", "#5f6a6c"],
 } satisfies CaveQuestConfig & CaveArt & { visitStat: string; keeperLooks: Record<string, Partial<Look> | undefined>;
   hemi: [string, string, number]; sun: [string, number]; camera: { pitch: number; dist: number } };

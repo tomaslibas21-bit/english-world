@@ -188,6 +188,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
   const C = (s: string) => new THREE.Color(s);
   const pick = <T,>(a: readonly T[]) => a[Math.floor(r() * a.length)];
   const fog = new THREE.FogExp2(FOG, art.density);
+  const FLOWERS = art.flowers ?? ["#ffd7ee", "#fff3c4", "#ffffff", "#ffc2dd"];
 
   // ---- the lamps the rock's light is worked out from
   const lamp = (x: number, y: number, z: number, c: string, reach: number, power: number) => sink.lamps.push({ x, y, z, c: C(c), reach, power });
@@ -421,7 +422,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
     sink.geo(new THREE.CylinderGeometry(0.035 * s, 0.05 * s, 0.3 * s, 5).translate(x, y + 0.15 * s, z), "#e9f3e2", 0.5);
     sink.geo(new THREE.SphereGeometry(0.2 * s, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.7, 1).translate(x, y + 0.28 * s, z), colour, 1, 0.12);
   };
-  const GLOWS = ["#58f0ff", "#7dffb0", "#c79bff", "#ff9bd6", "#ffe37a"];
+  const GLOWS = art.glows ?? ["#58f0ff", "#7dffb0", "#c79bff", "#ff9bd6", "#ffe37a"];
   const pillars: [number, number][] = [[-20.5, -57.2], [-11.8, -62.8], [-17.2, -68.4], [-22.4, -70.2], [-9.4, -66.6], [-14.2, -55.6]];
   for (const [x, z] of pillars) {
     const top = P.roofY(x, z);
@@ -459,7 +460,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
       const s2 = 0.32 + r() * 0.22;
       sink.geo(new THREE.CircleGeometry(s2, 7, 0.5, Math.PI * 2 - 0.9).rotateX(-Math.PI / 2).rotateY(r() * 6.28).translate(x, -0.03, z), pick(["#3f9a62", "#4fae6a", "#2f8a58"]), 0.35);
       if (i % 2 === 0) {
-        const colour = pick(["#ffd7ee", "#fff3c4", "#ffffff", "#ffc2dd"]);
+        const colour = pick(FLOWERS);
         sink.geo(new THREE.ConeGeometry(0.11, 0.16, 6).rotateX(Math.PI).translate(x + 0.1, 0.06, z), colour, 1);
         sparks.add(2, x + 0.1, 0.12, z, colour, 0.9, 0, r);
       }
@@ -474,7 +475,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
     sink.geo(new THREE.CylinderGeometry(0.03, 0.045, len, 4).translate(x, top - len / 2, z), pick(WOOD), 0.05);
     for (let m = 0; m < 3; m++) { const y = top - len * (0.45 + m * 0.25); sink.geo(new THREE.OctahedronGeometry(0.13, 0).scale(1.5, 0.6, 1).translate(x + (r() - 0.5) * 0.2, y, z + (r() - 0.5) * 0.2), pick(MOSS), 0.25); }
     sparks.add(2, x, top - len + 0.1, z, pick(GLOWS), 1.4, 0, r);
-    sink.geo(new THREE.OctahedronGeometry(0.1, 0).translate(x, top - len, z), "#ffe9f4", 1);
+    sink.geo(new THREE.OctahedronGeometry(0.1, 0).translate(x, top - len, z), FLOWERS[1], 1);
   }
 
   // ---- the chamber of the stars: crystals, the wall of old glyphs
@@ -493,7 +494,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2 + r() * 0.2, k = i % 3 === 0 ? 0.45 + r() * 0.2 : 0.86, x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
       if (!P.walkable(x, z, 0.4) || nearPath(x, z) < 3.4) continue;
-      crystal(x, z, 0.7 + r() * 0.8, pick(["#b58cff", "#7ad7ff", "#f3a6e6", "#9affd9"]));
+      crystal(x, z, 0.7 + r() * 0.8, pick(art.crystals ?? ["#b58cff", "#7ad7ff", "#f3a6e6", "#9affd9"]));
       col.addCircle(x, z, 0.5);
     }
     for (let i = 0; i < 90; i++) {
@@ -597,8 +598,9 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
   // The keeper's lantern by the way in: a hut of leaves a child could not stand up in, its doorway lit from inside
   {
     const hx = 2.55, hz = -6.4;
-    sink.geo(new THREE.ConeGeometry(0.8, 0.95, 6).translate(hx, 1.1, hz), "#b9a15a", 0.1, 0.1);
-    sink.geo(new THREE.CylinderGeometry(0.58, 0.62, 0.66, 8).translate(hx, 0.33, hz), "#8a6a4a", 0.05, 0.1);
+    const [roof, wall] = art.hut ?? ["#b9a15a", "#8a6a4a"];
+    sink.geo(new THREE.ConeGeometry(0.8, 0.95, 6).translate(hx, 1.1, hz), roof, 0.1, 0.1);
+    sink.geo(new THREE.CylinderGeometry(0.58, 0.62, 0.66, 8).translate(hx, 0.33, hz), wall, 0.05, 0.1);
     sink.geo(new THREE.BoxGeometry(0.28, 0.42, 0.05).rotateY(-0.5).translate(hx - 0.3, 0.24, hz + 0.52), "#ffd27a", 1);
     col.addCircle(hx, hz, 0.7);
     sparks.add(2, hx - 0.4, 0.5, hz + 0.7, "#ffd27a", 2.2, 0, r);
