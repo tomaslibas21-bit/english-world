@@ -2,6 +2,7 @@
 // owners in them, a small boat at the pier. Maple Harbor's; the Spanish edition has its own file of this name for
 // Puerto Colibrí. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
 import type { Rect } from "../rides/drive";
+import type { AABB } from "./util";
 import { PARKING_LOTS } from "./layout";
 
 export interface CarSpot {
@@ -27,6 +28,8 @@ export interface CarWaterPlan {
   mainland: Pick<Rect, "x0" | "x1" | "z1">;
   /** Already inset, with enough overlap to keep the entrance continuous. */
   extraRects: readonly Rect[];
+  /** Physical bounds of the open western grounds before the driving inset. */
+  westGrounds?: AABB;
   areas: readonly CarWaterArea[];
   cenote?: { x: number; z: number };
   landingExclusions?: readonly { x: number; z: number; r: number }[];

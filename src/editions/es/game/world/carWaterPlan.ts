@@ -12,6 +12,7 @@ const inset = CAR.wide + 0.4;
 export const CAR_WATER_PLAN: CarWaterPlan = {
   mainland: { x0: WORLD.minX, x1: WORLD.maxX, z1: WORLD.maxZ },
   extraRects: west ? [{ x0: west.minX + inset, x1: west.maxX + 3, z0: west.minZ + inset, z1: west.maxZ - inset }] : [],
+  westGrounds: west ?? undefined,
   cenote: cenote ?? undefined,
   landingExclusions: [
     ...caveWays().map(({ x, z, reach }) => ({ x, z, r: reach })),

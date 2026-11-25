@@ -810,6 +810,9 @@ export class Rides {
 
   /** Where the driver steps out to: their own side first, then the other, then the ends. */
   carExit(r: Ride, dryOnly = false): THREE.Vector3 | null {
+    if (r === this.waterBoarding && r.m.x < WORLD.minX) {
+      return this.water?.westExit(r, this.now, _v) ? _v : null;
+    }
     const col = this.host.colliders;
     for (const [x, z] of [[1.8, -0.3], [-1.8, -0.3], [1.8, 0.9], [-1.8, 0.9], [1.8, -1.4], [-1.8, -1.4], [0, -3.1], [0, 3.1]]) {
       this.at(r, x, z, _v);

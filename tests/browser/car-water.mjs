@@ -131,8 +131,8 @@ function installClock([key, save]) {
 
 // Runs inside DEV, once per document. Nothing here runs from an application animation callback.
 async function installReads() {
-  const { waterY, floorY, sandY, poolAt, poolBedY, SEA_LEVEL, DECKS, FLOORS, POOLS, ROAD_EDITION, BONE,
-    controlsFrom, pointAndGo, WORLD, TRAFFIC_LANES, EDITION, CONVERTIBLE_BUMPER, THEME, caveWays, groundsBounds,
+  const { waterY, floorY, sandY, poolAt, poolBedY, SEA_LEVEL, SHORE, DECKS, FLOORS, POOLS, ROAD_EDITION, BONE,
+    CAR, controlsFrom, pointAndGo, WORLD, TRAFFIC_LANES, EDITION, CONVERTIBLE_BUMPER, THEME, caveWays, groundsBounds,
     HOTEL_POOL, POOL_KIDS } = await import("/tests/browser/car-water-observations.mjs");
   const g = window.__ew.game;
   const R = g.rides;
@@ -142,6 +142,12 @@ async function installReads() {
   const ground = p => ({ ...point(p), floor: floorY(p.x, p.z), surface: waterY(p.x, p.z, g.t) });
   const west = THEME.cenote?.open && THEME.cenote?.walk ? groundsBounds(THEME.cenote.x, THEME.cenote.z, WORLD.minX) : null;
   const inside = (p, b) => !!b && p.x > b.minX && p.x < b.maxX && p.z > b.minZ && p.z < b.maxZ;
+  const within = (x, z, b) => !!b && x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+  const inset = CAR.wide + 0.4;
+  const mainlandDrive = { minX: WORLD.minX + inset, maxX: WORLD.maxX - inset,
+    minZ: SHORE.top + CAR.wide + 0.5, maxZ: WORLD.maxZ - inset };
+  // The west driving inset meets the original rectangle across the town seam.
+  const westDrive = west && { minX: west.minX + inset, maxX: west.maxX + inset, minZ: west.minZ + inset, maxZ: west.maxZ - inset };
   const ways = caveWays();
   const pose = (r) => ({ x: r.m.x, z: r.m.z, heading: r.m.heading, half: r.m.spec.half, wide: r.m.spec.wide });
   const local = (r, across, along) => {
@@ -162,16 +168,20 @@ async function installReads() {
   };
   const box = (b) => ({ x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2,
     wide: (b.maxX - b.minX) / 2, half: (b.maxZ - b.minZ) / 2, heading: 0 });
-  const supported = (p) => {
-    const water = waterY(p.x, p.z, g.t), high = poolAt(p.x, p.z)?.y ?? SEA_LEVEL + 0.265;
-    const floor = floorY(p.x, p.z);
-    return (inside(p, WORLD) || inside(p, west)) && Number.isFinite(floor)
-      && (water === null || floor > high && sandY(p.x, p.z) > high)
-      && !DECKS.some(d => p.x > d.x0 && p.x < d.x1 && p.z > d.z0 && p.z < d.z1);
+  const supported = (x, z, height, slope = 0.32) => {
+    const bounds = x < WORLD.minX ? west : WORLD;
+    if (!within(x, z, bounds) || poolAt(x, z)) return false;
+    const floor = floorY(x, z), water = waterY(x, z, g.t);
+    return Number.isFinite(floor) && Math.abs(floor - height) <= slope
+      && (water === null || Math.min(floor, sandY(x, z)) >= Math.max(water, SEA_LEVEL + 0.265))
+      && !DECKS.some(d => x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1);
   };
   const radius = 0.42;
-  const feetSupported = (p) => supported(p) && Array.from({ length: 16 }, (_, i) => i * Math.PI / 8)
-    .every(a => supported({ x: p.x + radius * Math.cos(a), z: p.z + radius * Math.sin(a) }));
+  const feetSupported = ({ x, z }) => {
+    const height = floorY(x, z);
+    return supported(x, z, height) && Array.from({ length: 16 }, (_, i) => i * Math.PI / 8)
+      .every(a => supported(x + radius * Math.cos(a), z + radius * Math.sin(a), height));
+  };
   const colliders = g.town.colliders;
   const matrix = g.player.root.matrix.clone();
   const orientation = g.rig.cam.quaternion.clone();
@@ -187,6 +197,23 @@ async function installReads() {
   const hullOutline = (r, wide, half) => [-1, 1].flatMap(a => [-1, 1].map(f => local(r, a * wide, f * half)));
   const footprint = car => Array.from({ length: 13 }, (_, i) => 2 * i / 12 - 1)
     .flatMap(f => Array.from({ length: 9 }, (_, i) => local(car, (2 * i / 8 - 1) * car.wide, f * car.half)));
+  const body = (r, car) => r.model ? car : { ...car, wide: Math.max(car.wide, CONVERTIBLE_BUMPER.width / 2),
+    half: Math.max(car.half, CONVERTIBLE_BUMPER.offset + CONVERTIBLE_BUMPER.depth / 2) };
+  const stockGround = ({ x, z }) => R.drivable.has(x, z);
+  const dryCar = (car) => {
+    const { x, z, half, wide, heading } = car, height = floorY(x, z);
+    if ((!within(x, z, mainlandDrive) && !within(x, z, westDrive)) || !supported(x, z, height, 0.29)) return false;
+    const s = Math.sin(heading), c = Math.cos(heading), along = Math.ceil(half / 0.35), across = Math.ceil(wide / 0.35);
+    for (let i = -across; i <= across; i++) for (let j = -along; j <= along; j++) {
+      const u = i * wide / across, v = j * half / along;
+      if (!supported(x + c * u + s * v, z - s * u + c * v, height, 0.29)) return false;
+    }
+    return POOLS.every(pool => {
+      if (!("bounds" in pool)) return footprintDistance(car, pool) >= pool.r;
+      const { x0, x1, z0, z1 } = pool.bounds;
+      return !overlap(car, box({ minX: x0, maxX: x1, minZ: z0, maxZ: z1 }));
+    });
+  };
   const poolKids = () => POOL_KIDS.map(id => {
     const n = g.npcs.find(n => n.id === id);
     return n && { id, uid: n.ch.root.uuid, ...point(n.ch.root.position), heading: n.ch.root.rotation.y,
@@ -195,7 +222,7 @@ async function installReads() {
   });
 
   function clearance(id, foot, obstacleTag, candidate) {
-    const r = R.find(id), car = candidate ? { ...pose(r), ...candidate } : pose(r), p = foot ?? g.player.root.position;
+    const r = R.find(id), car = body(r, { ...pose(r), ...candidate }), p = foot ?? g.player.root.position;
     const pads = colliders.boxes.filter(b => b.tag !== "sea").map(box);
     const circles = [...colliders.circles, ...R.sea.circles];
     for (const q of [...R.list, ...R.modeCars.keys()]) {
@@ -208,14 +235,9 @@ async function installReads() {
     for (const ch of [...g.npcs.map(n => n.ch), ...g.extras, ...g.ambient.walkers.map(w => w.ch)]) {
       circles.push({ ...point(ch.root.position), r: 0.45 });
     }
-    const supportedCar = footprint(car).every(supported) && POOLS.every(pool => {
-      if (!("bounds" in pool)) return footprintDistance(car, pool) >= pool.r;
-      const { x0, x1, z0, z1 } = pool.bounds;
-      return !overlap(car, box({ minX: x0, maxX: x1, minZ: z0, maxZ: z1 }));
-    });
     const obstacle = colliders.boxes.find(b => b.tag === obstacleTag);
     return {
-      car: supportedCar && R.drivable.has(car.x, car.z),
+      car: dryCar(car),
       foot: feetSupported(p), floor: floorY(p.x, p.z), carFloor: floorY(car.x, car.z),
       carClear: pads.every(b => !overlap(car, b)) && circles.every(c => footprintDistance(car, c) >= c.r - 0.002),
       footClear: footprintDistance(car, p) >= radius - 0.002 && pads.every(b => footprintDistance(b, p) >= radius - 0.002)
@@ -339,10 +361,11 @@ async function installReads() {
     const car = r && { ...pose(r), id: r.id, object: r.mesh.uuid, reloadMarked: Object.hasOwn(r.mesh, "__carWaterReloadMarker"),
       kind: r.kind, model: r.model ?? null, speed: r.m.speed, pace: r.m.pace,
       yaw: r.m.yaw, steer: r.m.steer, top: r.m.top, floor: floorY(r.m.x, r.m.z), surface: waterY(r.m.x, r.m.z, g.t),
-      depth: depth(r.m.x, r.m.z), onRoad: R.asphalt.has(r.m.x, r.m.z), dryGround: R.drivable.has(r.m.x, r.m.z),
+      depth: depth(r.m.x, r.m.z), onRoad: R.asphalt.has(r.m.x, r.m.z), stockGround: stockGround(r.m),
       mesh: ground(r.mesh.getWorldPosition(v)), headingDrawn: r.mesh.rotation.y, pitch: r.mesh.rotation.x, roll: r.mesh.rotation.z,
       visible: visible(r.mesh) && project({ ...point(r.mesh.position), y: r.mesh.position.y + 0.55 }).visible };
     if (r && r.kind === "car") {
+      car.dryGround = dryCar(body(r, car));
       car.wheels = [[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([a, f]) => {
         const p = local(car, a * 0.88 * car.wide / 0.95, f * 1.36 * car.half / 2.15);
         const tire = ground(r.mesh.localToWorld(v.set(a * 0.88 * car.wide / 0.95, 0, f * 1.36 * car.half / 2.15)));
@@ -351,7 +374,10 @@ async function installReads() {
       car.corners = [-1, 1].flatMap(a => [-1, 1].map(f => ground(r.mesh.localToWorld(v.set(a * car.wide, 0, f * car.half)))));
       car.immersion = Math.max(0, ...car.corners.map(p => (p.surface ?? p.y) - p.y));
       car.bumpers = !r.model && hullOutline(car, CONVERTIBLE_BUMPER.width / 2, CONVERTIBLE_BUMPER.offset + CONVERTIBLE_BUMPER.depth / 2);
-      car.owners = r.owners.map(o => ({ ...point(o.ch.root.position), state: o.state, dry: supported(o.ch.root.position) }));
+      car.owners = r.owners.map(o => {
+        const p = o.ch.root.position;
+        return { ...point(p), state: o.state, dry: supported(p.x, p.z, floorY(p.x, p.z)) };
+      });
       if (w?.carDrops || w?.foamVisible) car.effects = effects(r, car, w);
     }
     const camera = ground(c.getWorldPosition(v));
@@ -375,7 +401,7 @@ async function installReads() {
       riding: R.riding?.id ?? null, ridePhase: R.riding ? R.phase : null, swim: g.swimming, dive: g.diveK,
       undersea: g.undersea.on, prompt: hud.prompt?.kind ?? null, nearest: g.nearest?.id ?? null, hudRide: hud.ride ?? null,
       hudPanel: hud.panel, brake: g.brake || g.keys.has(" "), stick: { x: g.joy.x, y: g.joy.y }, reservations: g.ambient.waterReservations?.length ?? 0,
-      opaque, corridorClear, document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
+      fade: hud.fade, opaque, corridorClear, document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
       nearbyWays: ways.filter(q => Math.hypot(q.x - player.x, q.z - player.z) <= q.reach + 0.42).map(q => q.id),
       nearWay: g.nearWay, west: inside(player, west), yieldAge: R.yieldT,
       kids: window.__carWaterTest.trackPool ? poolKids() : undefined,
@@ -404,7 +430,8 @@ async function installReads() {
     boxOverlap: (car, obstacle) => overlap(car, box(obstacle)), footprintDistance,
     support: (x, z) => {
       const pool = poolAt(x, z);
-      return { floor: floorY(x, z), depth: depth(x, z), surface: waterY(x, z, g.t), west: inside({ x, z }, west),
+      const floor = floorY(x, z);
+      return { floor, depth: depth(x, z), surface: waterY(x, z, g.t), west: inside({ x, z }, west), dry: supported(x, z, floor),
         bowl: pool && poolBedY(pool, x, z), floorOverride: FLOORS.some(f => x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1) };
     } };
 }
@@ -937,7 +964,7 @@ async function measuredDepths(run, x, depths) {
 async function roadStart(run, road) {
   await run.stage(road);
   const s = await run.frame();
-  assert.ok(s.car.onRoad && s.car.dryGround && s.car.depth === 0 && s.water.enabled && s.water.band === "dry");
+  assert.ok(s.car.onRoad && s.car.stockGround && s.car.dryGround && s.car.depth === 0 && s.water.enabled && s.water.band === "dry");
   close(s.car.x, road[0], 0.002, "start on the paved approach x");
   close(s.car.z, road[1], 0.002, "start on the paved approach z");
   await run.watch();
@@ -1004,6 +1031,7 @@ async function reboardInland(run, roofed, centre, away = { x: 0, z: 1 }) {
   assert.ok(driven.car.floor >= -0.01 && driven.car.depth === 0 && driven.car.object === placed.car.object);
   await run.drive();
   run.log({ reboarded: placed.car.id, inlandMetres: forwardProgress(placed.car, driven.car, away), away });
+  return driven;
 }
 
 function assertMoored(frame, original) {
@@ -1436,6 +1464,7 @@ async function pierDeck(run) {
     && !s.water.active && s.car.mesh.y >= 0.28 && s.car.corners.every(p => p.floor === 0.3)
     && s.car.wheels.every(w => w.depth === 0 && w.tire.floor === 0.3);
   assert.ok(onBoards(at), "the full chassis and tires have dry deck support above the bay");
+  assert.ok(!at.car.dryGround && !(await run.clearance()).car, "boards over water are outside dry mainland");
   await run.drive(1);
   const end = await run.until(s => {
     assert.ok(onBoards(s), "clear decking continues to support the entire moving car");
@@ -1681,14 +1710,29 @@ async function westGrounds(run) {
   await run.drive(1);
   const west = await run.until(s => s.car.x < -116.3 && s.car.pace > 1.5, "continuous motion across the open western boundary");
   await run.drive();
-  assert.ok(start.car.x - west.car.x > 6.8 && Math.abs(west.car.z - 6) < 0.25 && west.water.enabled && !west.water.active);
+  assert.ok(start.car.stockGround && start.car.dryGround && !west.car.stockGround && west.car.dryGround
+    && start.car.x - west.car.x > 6.8 && Math.abs(west.car.z - 6) < 0.25 && west.water.enabled && !west.water.active);
   await run.stop(true);
-  await run.until(s => s.car.pace < 0.02, "stop on the west grounds");
+  const stopped = await run.until(s => s.car.pace < 0.02, "stop on the west grounds");
   await run.stop(false);
+  run.inspectFrame = s => assert.ok(!s.fade && released(s), "western dry exit stays outside recovery and fades");
   const foot = await dryExit(run, false), clear = await run.clearance();
+  delete run.inspectFrame;
   assert.ok(foot.west && foot.player.surface === null && clear.westCar && clear.westFoot && clear.car && clear.carClear,
     "local car admission, normal door, and supported foot in the genuine grounds beyond the town boundary");
-  await reboardInland(run, false, null, { x: -1, z: 0 });
+  assert.ok(foot.car.object === stopped.car.object && gap(foot.car, stopped.car) < 0.01,
+    "the normal exit leaves the same car in place");
+  const perimeter = await run.evaluate(z => {
+    const reads = window.__carWaterTest, { west } = reads.world();
+    const point = { x: west.minX - 0.8, z: z + 4 };
+    return { clear: reads.clearance("park", point, undefined, { x: point.x, z, heading: -Math.PI / 2 }),
+      support: reads.support(point.x, point.z) };
+  }, stopped.car.z);
+  assert.ok(perimeter.support.surface === null && !perimeter.clear.car && !perimeter.clear.foot
+    && !perimeter.clear.carClear && !perimeter.clear.footClear && !perimeter.clear.walkable,
+    "the solid far perimeter rejects both the footprint and feet even on a dry floor reading");
+  const driven = await reboardInland(run, false, null, { x: -1, z: 0 });
+  assert.ok(driven.car.dryGround && !driven.car.stockGround, "the same car drives farther onto the dry western grounds");
 }
 
 async function cenoteGeometry(run) {
@@ -1704,6 +1748,7 @@ async function cenoteGeometry(run) {
   assert.equal(samples.centre.surface, 0.04);
   assert.ok(samples.deck.floorOverride && samples.deck.bowl < -0.4 && samples.deck.depth === 0 && samples.deck.surface === 0.04);
   close(samples.deck.floor, 0.86, 0.001, "east deck overrides underlying water and bowl");
+  assert.ok(!samples.deck.dry && !samples.centre.dry, "over-water boards and the cenote bowl cannot be dry mainland");
   close(samples.bench.floor, 0.86, 0.001, "east deck above the rim");
   assert.ok(samples.rock.floorOverride && samples.rock.surface === 0.04 && samples.rock.depth > 0.45
     && samples.aboveRock.floorOverride && samples.aboveRock.surface === null && samples.aboveRock.floor === 0,
@@ -1720,7 +1765,9 @@ async function cenoteTrip(run, approach = site.cenote.road) {
   await run.stage(approach);
   await run.watch();
   const start = await run.frame();
-  assert.ok(start.car.dryGround && start.car.depth === 0 && start.water.band === "dry");
+  const clearStart = await run.clearance();
+  assert.ok(!start.car.stockGround && start.car.dryGround && start.car.depth === 0 && start.water.band === "dry"
+    && clearStart.westCar && clearStart.car && clearStart.carClear, "clear full footprint at the dry cenote start");
   let previous = start;
   await run.drive(1);
   const trigger = await run.until(s => {

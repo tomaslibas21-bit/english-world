@@ -1,8 +1,8 @@
 import { Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 import type { Ambient } from "../ambient";
-import { floorY, POOLS, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
-import { TRAFFIC_LANES } from "../world/layout";
+import { DECKS, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
+import { TRAFFIC_LANES, WORLD } from "../world/layout";
 import type { CarWaterArea, CarWaterPlan } from "../world/rides";
 import type { Colliders } from "../world/util";
 import {
@@ -32,6 +32,7 @@ const FOOT_STEP = 0.22, EXIT_START = W.footRadius + 0.06;
 const PADDING = 0.04, STEP = 0.12, SEPARATION = 9;
 const DOORS: readonly Door[] = [1, -1, 2, -2];
 const HOME_OFFSETS = [0, 0.55, -0.55, 1.15, -1.15, 1.75, -1.75];
+const WEST_DOOR_OFFSETS = [0, -0.55, 0.5];
 const NO_BOXES: readonly Box[] = [];
 const emptyPose = (): Pose => ({ x: 0, z: 0, heading: 0 });
 const emptyFoot = (): CarWaterFoot => ({ x: 0, z: 0, y: 0, rot: 0, swim: 0 });
@@ -223,21 +224,28 @@ export class CarWaterClearance {
     return earliest < Infinity ? this.hit : undefined;
   }
 
-  private dryPoint(x: number, z: number) {
+  private dryPoint(x: number, z: number, westTime?: number) {
+    if (westTime !== undefined) {
+      const bounds = x < WORLD.minX ? this.plan.westGrounds : WORLD;
+      if (!bounds || x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || poolAt(x, z)) return false;
+      for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return false;
+      const height = floorY(x, z), live = waterY(x, z, westTime);
+      return Number.isFinite(height) && (live === null || Math.min(height, sandY(x, z)) >= live);
+    }
     if (!isTownCarDryMainland(this.ground, x, z, 0)) return false;
     return z >= SHORE.top + 1.5 || Math.min(floorY(x, z), sandY(x, z)) >= SEA_LEVEL + 0.265;
   }
 
-  private dryPerson(x: number, z: number, height: number) {
-    if (!this.dryPoint(x, z) || Math.abs(floorY(x, z) - height) > 0.32) return false;
+  private dryPerson(x: number, z: number, height: number, westTime?: number) {
+    if (!this.dryPoint(x, z, westTime) || Math.abs(floorY(x, z) - height) > 0.32) return false;
     for (let i = 0; i < 8; i++) {
       const a = i * Math.PI / 4, px = x + Math.cos(a) * W.footRadius, pz = z + Math.sin(a) * W.footRadius;
-      if (!this.dryPoint(px, pz) || Math.abs(floorY(px, pz) - height) > 0.32) return false;
+      if (!this.dryPoint(px, pz, westTime) || Math.abs(floorY(px, pz) - height) > 0.32) return false;
     }
     return true;
   }
 
-  private dryBody(p: Pose, half: number, wide: number, height: number) {
+  private dryBody(p: Pose, half: number, wide: number, height: number, westTime?: number) {
     // Analytic overlap rejects even a small basin lying between the outline samples.
     for (const pool of POOLS) {
       if ("bounds" in pool) {
@@ -250,9 +258,36 @@ export class CarWaterClearance {
     const nx = Math.ceil(wide / 0.35), nz = Math.ceil(half / 0.35);
     for (let i = -nx; i <= nx; i++) for (let j = -nz; j <= nz; j++) {
       const u = i * wide / nx, v = j * half / nz, x = p.x + c * u + s * v, z = p.z - s * u + c * v;
-      if (!this.dryPoint(x, z) || Math.abs(floorY(x, z) - height) > 0.29) return false;
+      if (!this.dryPoint(x, z, westTime) || Math.abs(floorY(x, z) - height) > 0.29) return false;
     }
     return true;
+  }
+
+  /** Check the occupied car and a dry walk from its door across the western grounds. */
+  westExit(r: Ride, time: number, out: Vector3) {
+    const p = r.m, west = this.plan.westGrounds;
+    if (!west || !finite(p) || p.x >= west.maxX || !this.ground.has(p.x, p.z)) return false;
+    const height = floorY(p.x, p.z), s = Math.sin(p.heading), c = Math.cos(p.heading);
+    this.body(p, r, PADDING);
+    const { hl, hw } = this.shape;
+    if (!this.clear(r, true) || !this.dryBody(p, hl, hw, height, time)) return false;
+    for (const door of DOORS) {
+      const side = Math.abs(door) === 1, sign = Math.sign(door), edge = side ? p.spec.wide : p.spec.half;
+      const count = side ? WEST_DOOR_OFFSETS.length : 1;
+      for (let j = 0; j < count; j++) {
+        const offset = WEST_DOOR_OFFSETS[j];
+        let clear = true;
+        for (let i = 0; i <= 5; i++) {
+          const step = sign * (edge + W.footOffset * i / 5);
+          const u = side ? step : offset, v = side ? offset : step;
+          const x = p.x + c * u + s * v, z = p.z - s * u + c * v;
+          if (!this.dryPerson(x, z, height, time) || !this.foot(r, x, z, 0, true)) { clear = false; break; }
+          if (i === 5) out.set(x, floorY(x, z), z);
+        }
+        if (clear) return true;
+      }
+    }
+    return false;
   }
 
   reservation(r: Ride, b: Box) {
@@ -766,6 +801,11 @@ export class CarWaterRecovery {
       if (live !== null && floorY(px, pz) < live) return true;
     }
     return false;
+  }
+
+  westExit(r: Ride, time: number, out: Vector3) {
+    return r === this.car && !this.wet && !this.returning && this.host.eligible(r) && this.host.driver(r)
+      && this.clearance.westExit(r, time, out);
   }
 
   requestExit(r: Ride, spot: Point | null, time: number) {

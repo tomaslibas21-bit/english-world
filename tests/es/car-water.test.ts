@@ -764,6 +764,79 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
   };
 }
 
+it("gets out and boards the same convertible on the dry grounds west of town", async () => {
+  const f = occupiedTown(60);
+  try {
+    const car = f.rides.find("park")!;
+    await f.board(car);
+    f.stage(-109.5, 6, -Math.PI / 2);
+    for (let i = 0; i < 180 && car.m.x > -116.3; i++) f.frame(go);
+    expect(car.m.x).toBeLessThanOrEqual(-116.3);
+    for (let i = 0; i < 60 && car.m.pace > 0.02; i++) f.frame({ ...go, throttle: 0, brake: true });
+    expect(car.m.pace).toBeLessThanOrEqual(0.02);
+    expect(car.m.z).toBeCloseTo(6, 5);
+    expect(f.rides.drivable.has(car.m.x, car.m.z)).toBe(false);
+    expect(f.inspect()).toMatchObject({ enabled: true, band: "dry", active: false });
+
+    const preferred = f.rides.carExit(car)?.clone();
+    expect(preferred?.z).toBeGreaterThan(car.m.z);
+    // The landing point is clear, but a short wall crosses the path out of this door.
+    f.col.addBox(car.m.x, car.m.z + car.m.spec.wide + 0.21, 1.5, 0.1, "door-test");
+    expect(footHits(f.col, preferred!)).toEqual([]);
+    expect(f.rides.carExit(car)?.z).toBeLessThan(car.m.z);
+    f.col.boxes.pop();
+
+    const parked = { x: car.m.x, z: car.m.z, heading: car.m.heading };
+    const mesh = car.mesh;
+    expect(f.rides.leave()).toBe(true);
+    f.frame();
+    expect(f.rides.phase).toBe("out");
+    expect(f.player.root.visible).toBe(true);
+    for (let i = 0; i < 90 && f.rides.riding; i++) f.frame();
+    expect(f.rides.riding).toBeNull();
+    expect(f.left).toBe(1);
+    expect(car.m).toMatchObject(parked);
+    expect(f.inspect()).toMatchObject({ active: false, reason: null, assistedOnFoot: false });
+    expect(f.fades.every(phase => phase === "clear")).toBe(true);
+    expect(f.snaps).toEqual([]);
+
+    const foot = f.player.root.position;
+    const reach = Math.hypot(Math.max(0, Math.abs(foot.x - parked.x) - car.m.spec.half),
+      Math.max(0, Math.abs(foot.z - parked.z) - car.m.spec.wide));
+    f.dryPair();
+    expect([foot.x, foot.y, foot.z].every(Number.isFinite)).toBe(true);
+    expect(foot.distanceTo(preferred!)).toBeLessThan(1e-8);
+    expect(reach).toBeGreaterThanOrEqual(0.35);
+    expect(reach).toBeLessThanOrEqual(1.45);
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4, x = foot.x + W.footRadius * Math.cos(a), z = foot.z + W.footRadius * Math.sin(a);
+      expect(waterY(x, z, f.time)).toBeNull();
+      expect(floorY(x, z)).toBeCloseTo(foot.y, 8);
+    }
+
+    const near = f.rides.near(foot.x, foot.z)!;
+    expect(near).toBe(car);
+    expect(f.rides.board(near, false)).toBe(true);
+    f.rides.prefetchWater(near, f.adapter);
+    for (let i = 0; i < 90 && f.rides.phase !== "on"; i++) f.frame();
+    expect(f.rides.phase).toBe("on");
+    for (let i = 0; i < 180 && parked.x - car.m.x < 2; i++) {
+      f.frame(go);
+      expect(f.inspect()).toMatchObject({ band: "dry", active: false });
+      expect(waterY(car.m.x, car.m.z, f.time)).toBeNull();
+    }
+    expect(parked.x - car.m.x).toBeGreaterThanOrEqual(2);
+    expect(f.rides.riding).toBe(car);
+    expect(car.mesh).toBe(mesh);
+
+    const west = (await RIDES.loadCarWater!()).westGrounds!;
+    f.stage(west.minX - 0.8, 6, -Math.PI / 2);
+    expect(f.rides.carExit(car)).toBeNull();
+    expect(f.rides.leave()).toBe(false);
+    expect(f.rides.riding).toBe(car);
+  } finally { f.close(); }
+}, 20_000);
+
 describe.each([60, 20])("live paired recovery at %i Hz", hz => {
   it("drives the uninterrupted coast with the stock fleet and tows back at a bounded pace", async () => {
     const f = occupiedTown(hz);
