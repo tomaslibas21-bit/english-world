@@ -13,7 +13,10 @@ describe("scene intros", () => {
 
   it("the other conversations speak to the learner in the intro", () => {
     const you = /(?<![\p{L}])(tu|tau|tave|tavęs|tavo|tavimi|tavyje)(?![\p{L}])/iu;
-    const bad = SITUATIONS.filter((s) => !questIntros.has(s.id) && (!s.intro || !you.test(s.intro))).map((s) => `${s.id}: ${s.intro?.slice(0, 60)}`);
+    const caveIntros = new Set(["x06-bram", "x07-fern", "x08-old-oak"]);
+    const formal = /(?<![\p{L}])(Jūs|Jums|Jus|Jūsų|Jumis|Jumyse)(?![\p{L}])/u;
+    const bad = SITUATIONS.filter((s) => !questIntros.has(s.id) && (!s.intro || !(caveIntros.has(s.id) ? formal : you).test(s.intro)))
+      .map((s) => `${s.id}: ${s.intro?.slice(0, 60)}`);
     expect(bad).toEqual([]);
   });
 });

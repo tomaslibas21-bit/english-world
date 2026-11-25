@@ -100,6 +100,13 @@ const QUEST_PICKS: Record<string, Role> = {
   [ASK_WAY_NPC]: { voice: "Schedar", style: "warm and unhurried", note: "a longtime resident, about seventy" },
 };
 
+// Cast these after the established roster so they never change earlier assignments.
+const CAVE_PICKS: Record<string, Role> = {
+  cave_bram: { voice: "Puck", style: "warm and amused, with clear directions and an easy pause", note: "keeper of the slate path" },
+  cave_fern: { voice: "Aoede", style: "quick and kind, leaving a beat at the end of a clue", note: "keeper of the bridge" },
+  cave_oak: { voice: "Charon", style: "low, warm and unhurried, with stillness between thoughts", note: "the Old Oak" },
+};
+
 /** How each character speaks (manner only). */
 const STYLE: Record<string, string> = {
   tina: "warm and teasing",
@@ -138,7 +145,7 @@ export const CAST: Record<string, Role> = {};
   const uses = new Map<string, number>();
   const take = (v: string) => uses.set(v, (uses.get(v) ?? 0) + 1);
   const coachOnly = new Set([COACH.f.voice, COACH.m.voice]);
-  const existing = people.filter((n) => !QUEST_PICKS[n.id]);
+  const existing = people.filter((n) => !QUEST_PICKS[n.id] && !CAVE_PICKS[n.id]);
   const style = (id: string) => STYLE[id] ?? "friendly and natural";
   const pick = (n: typeof people[number], reserved: Set<string>) => {
     const busy = new Set([...partners(n.id)].map((p) => CAST[p]?.voice).filter(Boolean));
@@ -164,6 +171,7 @@ export const CAST: Record<string, Role> = {};
     CAST[n.id] = { ...role, voice: v.name, note: PICKS[n.id]?.note ?? `${n.role.en.toLowerCase()}: ${v.trait}` };
   }
   for (const n of people) if (QUEST_PICKS[n.id]) CAST[n.id] = QUEST_PICKS[n.id];
+  for (const n of people) if (CAVE_PICKS[n.id]) CAST[n.id] = CAVE_PICKS[n.id];
 }
 
 /** The Gemini voice and style for a voice id of src/content/voices.ts (g_<npcId>, g_coach_f, g_amb_m, …). */

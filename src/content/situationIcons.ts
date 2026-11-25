@@ -79,4 +79,7 @@ export const SITUATION_ICONS: Record<string, string> = {
   "x02-photo-walk": "camera",          // Hana’s photo book
   "x03-ask-the-way": "route",          // Earl’s directions
   "x01-pool-hall": "circle-dot",         // pool at The Corner Pocket
+  "x06-bram": "flame",
+  "x07-fern": "puzzle",
+  "x08-old-oak": "tree-deciduous",
 };

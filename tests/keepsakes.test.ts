@@ -10,8 +10,11 @@ describe("conversation keepsakes", () => {
   });
 
   it("defines both Lithuanian forms and a shape for every kind", () => {
-    expect(Object.keys(KIND)).toHaveLength(20);
+    expect(Object.keys(KIND)).toHaveLength(22);
     expect(keepsakeFor("x01-pool-hall")).toBe("cue_chalk");
+    expect(keepsakeFor("x06-bram")).toBe("slate_pebble");
+    expect(keepsakeFor("x07-fern")).toBe("slate_pebble");
+    expect(keepsakeFor("x08-old-oak")).toBe("oak_leaf");
     for (const { nominative, accusative, shape } of Object.values(KIND)) {
       expect(nominative.trim()).not.toBe("");
       expect(accusative.trim()).not.toBe("");

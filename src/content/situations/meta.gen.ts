@@ -55,6 +55,9 @@ export const META: SituationMeta[] = [
   {"id":"x01-pool-hall","bonus":true,"song":"","songTitle":"","title":{"en":"Call Your Shot","lt":"Paskelbk smūgį"},"topic":{"en":"At the pool hall","lt":"Biliardo salėje"},"chapter":9,"order":8,"location":"pool-hall","npc":"tina","mode":"talk","goal":"Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„The Corner Pocket“ – nedidelė biliardo salė Ąžuolų alėjoje. Šeimininkė Tina kreiduoja lazdą prie stalo ir pamoja tau prieiti."},
   {"id":"x02-photo-walk","bonus":true,"song":"","songTitle":"","title":{"en":"Photo Walk","lt":"Fotografavimo žygis"},"topic":{"en":"A tourist's photo book","lt":"Turistės nuotraukų knyga"},"chapter":9,"order":9,"location":"visitor-center","npc":"hana","mode":"talk","goal":"Pasišnekėk su Hana ir padėk jai: nufotografuok dvylika dalykų mieste ir pasakyk, kas tai.","intro":"Hana – turistė su dideliu fotoaparatu. Ji stovi prie Lankytojų centro ir dairosi aplink, lyg ko ieškotų."},
   {"id":"x03-ask-the-way","bonus":true,"song":"","songTitle":"","title":{"en":"Ask the Way","lt":"Paklausk kelio"},"topic":{"en":"On the street","lt":"Gatvėje"},"chapter":9,"order":10,"location":"town-square","npc":"earl","mode":"talk","goal":"Paklausk Earlo, kaip nueiti į vieną vietą mieste, ir eik pagal jo nurodymus.","intro":"Earlas visą gyvenimą gyvena Maple Harbor. Jis stovi aikštės kampe ir mielai padeda praeiviams."},
+  {"id":"x06-bram","bonus":true,"song":"","songTitle":"","title":{"en":"Bram on the gray path","lt":"Bramas ant pilkojo tako"},"topic":{"en":"Ask the way to the stones","lt":"Paklausti, kur akmenys"},"chapter":9,"order":13,"location":"gruta","npc":"cave_bram","mode":"talk","goal":"Prisistatykite Bramui ir paklauskite, kur akmenys.","intro":"Ant pilkojo tako Jūsų laukia Bramas su vilnone kepure. Prisistatykite ir sužinokite, kur rasti pirmuosius tris kalbančius akmenis."},
+  {"id":"x07-fern","bonus":true,"song":"","songTitle":"","title":{"en":"Fern on the bridge","lt":"Ferna ant tilto"},"topic":{"en":"Guess the riddles","lt":"Įminti mįsles"},"chapter":9,"order":14,"location":"gruta","npc":"cave_fern","mode":"talk","goal":"Pažaiskite su Ferna, kad galėtumėte pereiti tiltą.","intro":"Ant tilto per požeminę upę sėdi Ferna. Ji Jums užmins kelias mįsles. Galite spėti, prašyti užuominos ar rinktis kitą mįslę."},
+  {"id":"x08-old-oak","bonus":true,"song":"","songTitle":"","title":{"en":"The Old Oak","lt":"Senasis ąžuolas"},"topic":{"en":"Listen to the oak","lt":"Pasiklausyti ąžuolo"},"chapter":9,"order":15,"location":"gruta","npc":"cave_oak","mode":"talk","goal":"Pasiklausykite senojo ąžuolo ir jam atsakykite.","intro":"Penki akmenys jau šviečia. Saloje sujuda senojo ąžuolo lapai. Prieikite ir pasiklausykite, ką jis Jums pasakys."},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -111,4 +114,7 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "x01-pool-hall": () => import("./x01-pool-hall").then((m) => m.default),
   "x02-photo-walk": () => import("./x02-photo-walk").then((m) => m.default),
   "x03-ask-the-way": () => import("./x03-ask-the-way").then((m) => m.default),
+  "x06-bram": () => import("./x06-bram").then((m) => m.default),
+  "x07-fern": () => import("./x07-fern").then((m) => m.default),
+  "x08-old-oak": () => import("./x08-old-oak").then((m) => m.default),
 };

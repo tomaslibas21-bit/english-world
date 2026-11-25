@@ -118,6 +118,14 @@ export const KIND = {
     shape: [box(0x74472d, 11, 7.5, 1.45), box(0x9b633e, 11.1, 2.9, 0.5, 0, 1.8, 0.75),
       box(gold, 0.95, 0.95, 0.55, 0, 0.3, 0.85)],
   },
+  slate_pebble: {
+    nominative: "Mažas skalūno akmenėlis", accusative: "mažą skalūno akmenėlį",
+    shape: [sphere(0x59656e, 2.4, 0, 0.48)],
+  },
+  oak_leaf: {
+    nominative: "Ąžuolo lapas", accusative: "ąžuolo lapą",
+    shape: [box(0x77502a, 0.45, 8, 0.2), sphere(gold, 2, 1.7, 1.15), sphere(gold, 2.4, -0.7, 0.9)],
+  },
 } satisfies Record<string, { nominative: string; accusative: string; shape: KeepsakePart[] }>;
 
 export type KeepsakeKind = keyof typeof KIND;
@@ -176,6 +184,9 @@ export const KEEPSAKES: Record<string, KeepsakeKind> = {
   "s90-running-late": "note",
   "s91a-lost-wallet": "map",
   "s91b-police": "note",
+  "x06-bram": "slate_pebble",
+  "x07-fern": "slate_pebble",
+  "x08-old-oak": "oak_leaf",
 };
 
 export function keepsakeFor(sitId: string): KeepsakeKind {
