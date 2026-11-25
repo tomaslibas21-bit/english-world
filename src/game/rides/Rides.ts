@@ -25,6 +25,7 @@ import { convertibleGeometry, motorboatGeometry, motorboatWaterMask, buoysGeomet
 import type { TownBoat } from "../world/boatRide";
 import { Skids } from "./skids";
 import { Crashes, type CrashSound, type CrashTarget } from "./crash";
+import type { CarWaterHost, CarWaterRecovery } from "./carWaterRecovery";
 
 export interface RideHost {
   cam: THREE.PerspectiveCamera;
@@ -107,6 +108,8 @@ export interface Ride {
   sus: { y: number; vy: number; p: number; vp: number; road: boolean[]; side: number[][] };
 }
 
+let carWaterModule: Promise<typeof import("./carWaterRecovery")> | undefined;
+const _waterFrom = { x: 0, z: 0, heading: 0 };
 const HOP = 0.55;
 /** How high the hop into a closed car and out of it goes: a step through its door (over a convertible's door and a
  *  boat's side it is a jump). */
@@ -167,6 +170,8 @@ export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
+  // Clearance keeps this array by reference after the first eligible boarding.
+  declare private waterFleet?: Ride[];
   private readonly convertibleTops = new WeakMap<Ride, { x: number; z: number; heading: number; pieces: Piece[] }>();
   private readonly surfaceCars = new WeakMap<Piece, Ride>();
   private readonly parkingKeys: THREE.InstancedMesh;
@@ -185,6 +190,11 @@ export class Rides {
   readonly asphalt: Drivable;
   private bumps: [number, number, number, number][];
   private shoutT = 2;
+  water?: CarWaterRecovery;
+  private waterRequest = 0;
+  private waterDisposed = false;
+  private waterDebug?: () => unknown;
+  private waterSettle = false;
   private onStreet = (x: number, z: number) => this.asphalt.has(x, z);
   private stuckT = 0;
   private stuckTold = false;
@@ -279,6 +289,64 @@ export class Rides {
     host.ambient.rideBoxes = [...this.boxes];
   }
 
+  townCar(r: Ride) {
+    return r.kind === "car" && (this.list.includes(r) || !!r.parked && this.modeCars.has(r));
+  }
+
+  prefetchWater(r: Ride, adapter: Pick<CarWaterHost, "eligible" | "foot" | "fade" | "clearFade" | "drops" | "splash" | "wash" | "save"> & {
+    arrest(): void;
+    snap(): void;
+    peopleClear: ConstructorParameters<typeof import("./carWaterRecovery").CarWaterClearance>[0]["peopleClear"];
+  }) {
+    if (this.waterDisposed) return;
+    const request = ++this.waterRequest;
+    if (this.water) { this.water.begin(r); return; }
+    const pending = carWaterModule ??= import("./carWaterRecovery");
+    void pending.then(({ CarWaterRecovery, CarWaterClearance, carWaterSurface }) => {
+      if (request !== this.waterRequest || this.waterDisposed || this.riding !== r || !adapter.eligible(r)) return;
+      const parked = this.waterFleet ??= [...this.modeCars.keys()];
+      this.water = new CarWaterRecovery(this.plan.carWater, {
+        ...adapter,
+        eligible: (ride) => (!this.riding || this.riding === ride) && adapter.eligible(ride),
+        driver: (ride) => this.riding === ride,
+        effectRoot: this.group,
+        clearance: new CarWaterClearance({
+          colliders: this.host.colliders, dry: this.drivable, ambient: this.host.ambient, rides: this.list,
+          parked, fixedHulls: this.sea.circles,
+          peopleClear: adapter.peopleClear,
+        }),
+        reserve: (boxes) => { this.host.ambient.waterReservations = boxes; },
+        arrest: (ride) => {
+          this.stopForWater(ride);
+          adapter.arrest();
+        },
+        place: (ride, handback, snap, time) => {
+          this.now = time;
+          this.placeWaterCar(ride, handback);
+          if (snap) adapter.snap();
+        },
+        detach: (ride, foot) => this.finishLeave(ride, foot.x, foot.y, foot.z, foot.rot, true),
+      });
+      this.water.begin(r);
+      if (import.meta.env.DEV) {
+        const surface = (x: number, z: number, time = this.now) => carWaterSurface(x, z, time);
+        const debug = this.waterDebug = () => ({ ...this.water?.inspect(), motorRevs: this.revs, surface });
+        Object.assign(window, { __carWater: debug });
+      }
+    }).catch(() => { if (carWaterModule === pending) carWaterModule = undefined; });
+  }
+
+  disposeWater() {
+    this.waterDisposed = true;
+    this.waterRequest++;
+    this.water?.dispose();
+    this.water = undefined;
+    this.waterFleet = undefined;
+    if (import.meta.env.DEV && (window as Window & { __carWater?: unknown }).__carWater === this.waterDebug) {
+      delete (window as Window & { __carWater?: unknown }).__carWater;
+    }
+  }
+
   /** For the round map: what one can take and where it is (the one being driven is the player's own arrow). */
   marksForMap() {
     return this.list.map((r) => ({ kind: r.kind, x: r.m.x, z: r.m.z, heading: r.m.heading, tint: r.tint, taken: r === this.riding }));
@@ -301,26 +369,36 @@ export class Rides {
     const box = { ...this.carBox(car), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
     if (parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, car);
     this.modeCars.set(car, box);
+    this.waterFleet?.push(car);
     this.host.ambient.rideBoxes.push(box);
     this.place(car, 0, 0);
+    this.water?.fleetChanged();
     return car;
   }
 
   removeModeCar(car: Ride) {
     const box = this.modeCars.get(car);
     if (!box) return;
+    if (this.water?.owns(car)) this.water.transfer();
+    else this.water?.cancelEffects(car);
     this.crashEffects.heal(car);
     this.modeCars.delete(car);
+    const fleet = this.waterFleet;
+    if (fleet) {
+      const index = fleet.indexOf(car);
+      if (index >= 0) fleet.splice(index, 1);
+    }
     const traffic = this.host.ambient.rideBoxes;
     const index = traffic.indexOf(box);
     if (index >= 0) traffic.splice(index, 1);
     car.mesh.removeFromParent();
+    this.water?.fleetChanged();
   }
 
   modeCarPieces(x: number, z: number): Piece[] {
     const pieces: Piece[] = [];
     for (const [car, box] of this.modeCars) {
-      if (car !== this.riding && Math.abs(car.m.x - x) < 5 && Math.abs(car.m.z - z) < 5) pieces.push(...box.surfaces);
+      if (car !== this.riding && !this.water?.owns(car) && Math.abs(car.m.x - x) < 5 && Math.abs(car.m.z - z) < 5) pieces.push(...box.surfaces);
     }
     return pieces;
   }
@@ -341,7 +419,7 @@ export class Rides {
   townCarPieces(x: number, z: number) {
     const pieces = this.modeCarPieces(x, z);
     for (const car of this.list) {
-      if (car.kind !== "car" || car === this.riding || Math.abs(car.m.x - x) >= 5 || Math.abs(car.m.z - z) >= 5) continue;
+      if (car.kind !== "car" || car === this.riding || this.water?.owns(car) || Math.abs(car.m.x - x) >= 5 || Math.abs(car.m.z - z) >= 5) continue;
       pieces.push(...this.convertiblePieces(car));
     }
     return pieces;
@@ -511,7 +589,7 @@ export class Rides {
   /** The ride near enough to get into from (x, z), if any: a car from the street, a boat from the pier's boards or
    *  the water beside it. */
   near(x: number, z: number): Ride | null {
-    if (this.riding) return null;
+    if (this.riding || this.water?.suppressInput) return null;
     let best: Ride | null = null, bd = Infinity;
     for (const r of this.solidVehicles()) {
       if (this.modeCars.has(r) && !r.parked) continue;
@@ -562,7 +640,7 @@ export class Rides {
 
   /** The player takes `r`: its people hop out on the curb's side with a word, and the player hops in. */
   board(r: Ride, count = true) {
-    if (this.riding) return false;
+    if (this.riding || this.water?.suppressInput) return false;
     const p = this.host.player.root.position;
     this.riding = r;
     r.parked?.();
@@ -610,6 +688,7 @@ export class Rides {
   leave(): boolean {
     const r = this.riding;
     if (!r || this.phase !== "on") return false;
+    if (r.kind === "car" && this.water?.requestExit(r, this.carExit(r), this.now)) return true;
     if (Math.abs(r.m.speed) > 1.2) { this.wantOut = true; return true; }
     const dock = r.kind === "boat" ? this.atIslandJetty(r) : null;
     const spot = dock ? _v.set(dock.x, dock.y, dock.z) : r.kind === "car" ? this.carExit(r) : this.boatExit(r);
@@ -739,6 +818,9 @@ export class Rides {
    *  are put next, and what they drove goes back to its place. */
   abandon(keep = false) {
     const r = this.riding;
+    const shore = this.water?.owns(r);
+    this.waterRequest++;
+    this.water?.transfer();
     if (!r) return;
     this.glide = null;
     this.riding = null;
@@ -748,11 +830,13 @@ export class Rides {
     ch.busy = null; ch.recline = 0; ch.steer = 0; ch.lift = 0; ch.tuck = 0;
     ch.setAnim("idle");
     this.hideRider(false);
-    if (keep || r.parked || r.townBoat) this.resetPosition(r, { x: r.m.x, z: r.m.z, rot: r.m.heading });
+    if (keep || shore || r.parked || r.townBoat) this.resetPosition(r, { x: r.m.x, z: r.m.z, rot: r.m.heading });
     else this.sendHome(r);
   }
 
   resetPosition(r: Ride, { x, z, rot }: Ride["home"]) {
+    if (this.water?.owns(r)) { this.water.transfer(); return; }
+    this.water?.cancelEffects(r);
     if (r === this.riding) {
       this.glide = null;
       this.pushAt = { x, z, h: rot };
@@ -765,6 +849,33 @@ export class Rides {
     const box = this.boxes[this.list.indexOf(r)];
     if (mode) this.syncModeBox(mode, r);
     else if (box && r.kind === "car") this.syncBox(box, r);
+    this.water?.fleetChanged();
+  }
+
+  private stopForWater(r: Ride) {
+    const m = r.m;
+    m.set(m.x, m.z, m.heading);
+    m.top = 0;
+    const sus = r.sus;
+    sus.y = sus.vy = sus.p = sus.vp = 0;
+    this.roll = this.squat = 0;
+    this.glide = null;
+    this.wantOut = false;
+    this.pushT = this.stuckT = this.yieldT = 0;
+    this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading;
+    this.skids.mark(0, 0, 0, 0, 0); this.skids.mark(1, 0, 0, 0, 0);
+  }
+
+  private placeWaterCar(r: Ride, handback: boolean) {
+    if (handback) this.stopForWater(r);
+    this.water?.pose(r, this.now, 0, 0, 0, false);
+    const mode = this.modeCars.get(r), box = mode ?? this.boxes[this.list.indexOf(r)];
+    if (mode && handback) this.syncModeBox(mode, r, true);
+    else if (box) {
+      this.syncBox(box, r);
+      if (handback) this.convertiblePieces(r);
+    }
+    if (this.riding === r && this.phase === "on") this.seatedCar(r);
   }
 
   private syncBox(box: CarBox, { m }: Ride) {
@@ -773,8 +884,8 @@ export class Rides {
     box.heading = m.heading;
   }
 
-  private syncModeBox(box: CarBox & { surfaces: Piece[] }, r: Ride) {
-    if (r.model && (r.m.x !== box.x || r.m.z !== box.z || r.m.heading !== box.heading)) {
+  private syncModeBox(box: CarBox & { surfaces: Piece[] }, r: Ride, force = false) {
+    if (r.model && (force || r.m.x !== box.x || r.m.z !== box.z || r.m.heading !== box.heading)) {
       box.surfaces = carLedges(r.model, r.m.x, r.m.z, r.m.heading);
       if (r.parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, r);
     }
@@ -790,6 +901,7 @@ export class Rides {
     this.place(r, 0, 0);
     const box = this.modeCars.get(r);
     if (box) this.syncModeBox(box, r);
+    else if (r.kind === "car") this.syncBox(this.boxes[this.list.indexOf(r)], r);
   }
 
   // ------------------------------------------------------------------------------------------------ update
@@ -797,16 +909,17 @@ export class Rides {
   get waitingForTraffic() { return this.riding !== null && !this.glide && this.yieldT > 2.2; }
 
   /** `c`: the hands (null: nobody may drive now: a panel is open, a call has started). `t`: the town's clock. */
-  update(dt: number, t: number, c: Controls | null) {
+  update(dt: number, t: number, c: Controls | null, shoreFrame = false) {
     const host = this.host, pl = host.player, pp = pl.root.position;
     this.learner.set(pp.x, pp.y + 1.5, pp.z);
-    const r = this.riding;
+    let r = this.riding;
     this.now = t;
     this.skids.update(dt);
-    if (r && this.phase === "on") {
+    if (r && this.phase === "on" && !shoreFrame && !this.water?.returning) {
       const hands: Controls = !c || this.wantOut ? { throttle: 0, steer: 0, brake: true } : c;
       if (r.kind === "car") this.driveCar(r, dt, hands); else this.driveBoat(r, dt, hands);
       if (this.wantOut && r.m.pace < 0.6) { if (!this.leave()) this.wantOut = false; }
+      r = this.riding;
     }
     // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
     // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
@@ -821,12 +934,13 @@ export class Rides {
       for (const o of q.owners) o.ch.root.visible = seen || o.state !== "in";
       this.place(q, dt, t);
       this.updateOwners(q, dt);
-      if (q !== r) this.rest(q, dt);
+      if (q !== r && !this.water?.owns(q)) this.rest(q, dt);
       if (q.kind === "car") this.syncBox(this.boxes[i], q);
     }
     for (const [car, box] of this.modeCars) {
       this.place(car, dt, t);
-      this.syncModeBox(box, car);
+      if (this.water?.owns(car)) this.syncBox(box, car);
+      else this.syncModeBox(box, car);
     }
     if (!r) return;
     this.phaseT += dt;
@@ -845,23 +959,52 @@ export class Rides {
       pl.root.rotation.y = this.fromRot + wrap(face - this.fromRot) * ease(k);
       if (k >= 1) this.placeRiderInSeat(r);
     } else if (this.phase === "on") {
-      if (r.kind === "car") this.at(r, ...CAR_SEATS.driver, pp, this.seatY(r));
-      else this.boatSeat(r, pp);
-      pl.root.rotation.set(0, r.m.heading, 0);
-      pl.steer = r.m.steer;
-      if (this.roofed(r)) this.hideRider(true);
+      if (r.kind === "car") this.seatedCar(r);
+      else {
+        this.boatSeat(r, pp);
+        pl.root.rotation.set(0, r.m.heading, 0);
+        pl.steer = r.m.steer;
+      }
     } else {
       const k = Math.min(1, this.phaseT / HOP);
       this.arc(pl, this.from, this.to, k, this.roofed(r) ? DOOR_HOP : 0.7);
       if (k >= 1) {
-        this.hideRider(false);
-        pl.lift = 0; pl.tuck = 0;
-        this.riding = null;
-        this.phase = "on";
-        r.awayT = 0;
-        this.onLeft?.(this.to.x, this.to.y, this.to.z, Math.atan2(this.to.x - this.from.x, this.to.z - this.from.z));
+        this.finishLeave(r, this.to.x, this.to.y, this.to.z, Math.atan2(this.to.x - this.from.x, this.to.z - this.from.z));
       }
     }
+  }
+
+  private finishLeave(r: Ride, x: number, y: number, z: number, rot: number, drivenByWater = false) {
+    if (this.riding !== r && !(drivenByWater && this.riding === null)) return;
+    if (r.kind === "car" && !drivenByWater) {
+      this.waterRequest++;
+      this.water?.endRide();
+    }
+    const pl = this.host.player;
+    pl.busy = null; pl.recline = 0; pl.steer = 0; pl.lift = 0; pl.tuck = 0;
+    if (pl.anim !== "idle") pl.setAnim("idle");
+    this.hideRider(false);
+    this.riding = null;
+    this.wantOut = false;
+    this.phase = "on";
+    r.awayT = 0;
+    this.onLeft?.(x, y, z, rot);
+  }
+
+  private seatedCar(r: Ride) {
+    const pl = this.host.player, p = pl.root.position, wet = !!this.water?.owns(r);
+    if (this.water?.usesChassis(r)) {
+      r.mesh.updateMatrix();
+      p.set(CAR_SEATS.driver[0], CAR_SEATS.floor, CAR_SEATS.driver[1]).applyMatrix4(r.mesh.matrix);
+      const surface = wet ? waterY(p.x, p.z, this.now) : null;
+      if (surface !== null) p.y = Math.max(p.y, surface + 0.15 - (pl.seatY ?? CAR_SEATS.seat) - pl.height * 0.45);
+      pl.root.rotation.copy(r.mesh.rotation);
+    } else {
+      this.at(r, ...CAR_SEATS.driver, p, this.seatY(r));
+      pl.root.rotation.set(0, r.m.heading, 0);
+    }
+    pl.steer = r.m.steer;
+    if (this.roofed(r)) this.hideRider(true);
   }
 
   private placeRiderInSeat(r: Ride) {
@@ -952,18 +1095,25 @@ export class Rides {
   private readonly settleCar = (p: { x: number; z: number }, rad: number, circle: BodyCircle) => {
     const host = this.host;
     let x = p.x, z = p.z;
-    settleRoadExit(this.drivable, p, rad, this.onRoadStrip);
+    settleRoadExit(this.waterSettle ? this.water!.ground : this.drivable, p, rad, this.onRoadStrip);
     this.contacts[circle].push = 0;
     this.contacts[circle].target = null;
     if (this.reportCrash) this.recordContact(circle, null, p.x, p.z, p.x - x, p.z - z);
     x = p.x; z = p.z;
-    host.colliders.resolve(_v.set(x, 0, z), rad, false, this.onRoadStrip);
+    host.colliders.resolve(_v.set(x, 0, z), rad, false, this.onRoadStrip, this.waterSettle);
     p.x = _v.x; p.z = _v.z;
     if (this.reportCrash) this.recordContact(circle, "town", p.x, p.z, p.x - x, p.z - z);
     for (const o of this.solidVehicles()) if (o !== this.settlingCar && o.kind === "car") {
       x = p.x; z = p.z;
       if (pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, o.m.spec.half, o.m.spec.wide) && this.reportCrash) {
         this.recordContact(circle, o, p.x, p.z, p.x - x, p.z - z);
+      }
+    }
+    if (this.waterSettle) {
+      for (const o of this.list) if (o.kind === "boat") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, o.m.spec.half, o.m.spec.wide);
+      for (const hull of this.sea.circles) {
+        const dx = p.x - hull.x, dz = p.z - hull.z, d = Math.hypot(dx, dz), min = rad + hull.r;
+        if (d < min) { p.x = hull.x + (d ? dx / d : 1) * min; p.z = hull.z + (d ? dz / d : 0) * min; }
       }
     }
     const traffic = host.ambient.pushOutOfCars(p, rad, this.reportCrash ? this.trafficPush : undefined);
@@ -982,7 +1132,14 @@ export class Rides {
   };
 
   private driveCar(r: Ride, dt: number, c: Controls) {
-    const m = r.m, host = this.host;
+    const m = r.m, host = this.host, water = this.water;
+    if (!this.rescuing && water?.open(r)) {
+      if (water.accepted(r, this.now, c.brake ? 0 : c.throttle, false)) return;
+      if (water.owns(r)) {
+        this.glide = null;
+        if (this.wantOut && this.leave()) return;
+      }
+    }
     // (being set free: it glides to the clear place found for it, the hands off)
     if (this.glide) {
       const g = this.glide, k = (g.t = Math.min(1, g.t + dt / 0.5)), e = k * k * (3 - 2 * k);
@@ -1023,14 +1180,29 @@ export class Rides {
     const was = m.speed, x0 = m.x, z0 = m.z, h0 = m.heading, near0 = this.peopleGap(m.spec, m.x, m.z, m.heading);
     const approach = host.openRoad?.(r, c);
     if (approach) m.limit(approach.speedLimit, 18, dt);
-    m.step(dt, c, gap, this.asphalt.has(m.x, m.z) || (!!approach && onExitAsphalt(m.x, m.z)), care);
+    const wet = !approach && !this.rescuing && water?.open(r) ? water.settings(c) : undefined;
+    m.step(dt, c, gap, this.asphalt.has(m.x, m.z) || (!!approach && onExitAsphalt(m.x, m.z)), care, wet);
     const strip = approach ?? host.openRoad?.(r, c);
     this.onRoadStrip = !!strip;
     this.settlingCar = r;
-    this.reportCrash = !this.rescuing && (host.allowsCrashes?.() ?? true) && host.outdoors();
-    const vx = this.reportCrash ? m.vx : 0, vz = this.reportCrash ? m.vz : 0;
-    m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
-    this.onRoadStrip = false;
+    const shoreWater = !strip && !this.rescuing && water?.open(r) ? water : undefined;
+    this.waterSettle = !!shoreWater;
+    this.reportCrash = !this.rescuing && !water?.owns(r) && (host.allowsCrashes?.() ?? true) && host.outdoors();
+    const vx = this.reportCrash || shoreWater ? m.vx : 0, vz = this.reportCrash || shoreWater ? m.vz : 0;
+    if (shoreWater) { _waterFrom.x = x0; _waterFrom.z = z0; _waterFrom.heading = h0; }
+    const railBeforeSettle = shoreWater?.deckRailContact(_waterFrom, r);
+    const settled = !railBeforeSettle && m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
+    // The circle corrections can also swing a previously clear corner into the rail.
+    const railHit = railBeforeSettle ?? (settled ? shoreWater?.deckRailContact(_waterFrom, r) : undefined);
+    if (railHit) {
+      railHit.into = Math.max(0, -vx * railHit.nx - vz * railHit.nz);
+      railHit.scrape = THREE.MathUtils.clamp((vx * railHit.nz - vz * railHit.nx) / 4, -1, 1);
+      m.x = x0; m.z = z0; m.heading = h0;
+      m.speed = m.slip = m.yaw = m.hold = m.charge = m.boost = 0;
+      m.drift = false;
+      m.bump = Math.max(m.bump, Math.min(1, railHit.into / 5));
+    }
+    this.onRoadStrip = this.waterSettle = false;
     if (strip) {
       const { s, x } = exitCoordinates(m.x, m.z);
       if (s >= 0) {
@@ -1049,10 +1221,20 @@ export class Rides {
         movedSafely = false;
       }
     }
+    if (shoreWater) {
+      if (m.z < SHORE.top + 4 && !shoreWater.hullsClear(r, m)) {
+        if (shoreWater.hullsClear(r, _waterFrom)) {
+          m.x = x0; m.z = z0; m.heading = h0; m.speed = m.slip = 0; m.drift = false;
+          movedSafely = false;
+        }
+      }
+      if (this.wantOut && shoreWater.requestExit(r, this.carExit(r), this.now)) return;
+      if (shoreWater.accepted(r, this.now, c.brake ? 0 : c.throttle)) return;
+    }
     const hit = this.impact;
-    if (movedSafely && this.reportCrash && (hit.nx || hit.nz)) {
+    if (!water?.owns(r) && movedSafely && this.reportCrash) {
       const { target, x, z, dx, dz, push } = this.contacts[hit.circle];
-      if (target) {
+      if (!railBeforeSettle && (hit.nx || hit.nz) && target) {
         // A second collider may have moved the same circle. Use the chosen collider's contact and relative speed.
         const length = Math.sqrt(push);
         const nx = dx / length, nz = dz / length;
@@ -1065,7 +1247,14 @@ export class Rides {
         hit.nx = nx; hit.nz = nz;
         hit.x = x - nx * m.spec.wide; hit.z = z - nz * m.spec.wide;
         this.crashEffects.impact(r, target, hit);
-      }
+      } else if (railHit) this.crashEffects.impact(r, "town", railHit);
+    }
+    if (water?.owns(r)) {
+      const s = r.sus, ease = Math.max(0, 1 - 14 * dt);
+      s.y *= ease; s.p *= ease; s.vy = s.vp = 0;
+      this.glide = null; this.pushT = this.stuckT = this.yieldT = 0;
+      this.skids.mark(0, 0, 0, 0, 0); this.skids.mark(1, 0, 0, 0, 0);
+      return;
     }
     this.ride(r, dt);
     // going by close and fast: those on foot jump aside, and now and then one of them calls after it
@@ -1091,7 +1280,7 @@ export class Rides {
     if (this.waitingForTraffic && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
-    if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
+    if (railHit || Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
     else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > m.spec.half + CAR.clear + 1 && !queued) this.pushT += dt;
     // truly wedged: after a moment it is set free gently, gliding to the nearest clear place with room to drive off
     // (nothing fades, nothing jumps); and if there is none in reach, onto the street as before
@@ -1324,6 +1513,7 @@ export class Rides {
     // (a parked car stays where it was put; a boat nobody is near enough to see rock is left as it lies)
     if (r !== this.riding && dt > 0 && (r.kind === "car" ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 && r.sus.y === 0 && r.sus.vy === 0 : d2 > 110 * 110)) return;
     if (r.kind === "car") {
+      if (this.water?.returning && this.water.owns(r)) return;
       // (left standing, its springs settle)
       if (r !== this.riding && dt > 0) this.ride(r, dt);
       // the body leans out of a bend (more in a slide) and squats under power, dips its nose when braked
@@ -1335,8 +1525,12 @@ export class Rides {
       }
       const grade = onExitAsphalt(m.x, m.z) ? exitHeight(m.x, m.z) : 0;
       const slope = grade > 0 ? Math.atan2(exitHeight(m.x + m.fx, m.z + m.fz) - exitHeight(m.x - m.fx, m.z - m.fz), 2) : 0;
-      mesh.position.set(m.x, grade + r.sus.y, m.z);
-      mesh.rotation.set(-slope + m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), m.heading, driven ? this.roll : 0);
+      const y = grade + r.sus.y, pitch = -slope + m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), roll = driven ? this.roll : 0;
+      if (this.water?.open(r) && this.phase !== "in") this.water.pose(r, t, y, pitch, roll, onExitAsphalt(m.x, m.z));
+      else {
+        mesh.position.set(m.x, y, m.z);
+        mesh.rotation.set(pitch, m.heading, roll);
+      }
     } else {
       const k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;
       const heel = driven ? THREE.MathUtils.clamp(m.steer * k * 0.12 + m.yaw * m.pace * 0.012, -0.34, 0.34) : 0;
@@ -1434,11 +1628,13 @@ export class Rides {
       return;
     }
     const step = Math.min(d, 2.3 * dt);
+    const x0 = p.x, z0 = p.z;
     p.x += (dx / d) * step; p.z += (dz / d) * step;
     // (round a lamp post or a bench on the way; never through the player)
     this.host.colliders.resolve(p, 0.28);
     const pp = this.host.player.root.position, qx = p.x - pp.x, qz = p.z - pp.z, qd = Math.hypot(qx, qz);
     if (qd < 0.7 && qd > 1e-4 && !this.riding) { p.x = pp.x + (qx / qd) * 0.7; p.z = pp.z + (qz / qd) * 0.7; }
+    if (this.host.ambient.waterReserved(p.x, p.z, 0.46)) { p.x = x0; p.z = z0; }
     ch.root.rotation.y += wrap(Math.atan2(dx, dz) - ch.root.rotation.y) * Math.min(1, dt * 8);
     ch.moveSpeed = 2.3;
     if (ch.anim !== "walk") ch.setAnim("walk");
@@ -1540,6 +1736,7 @@ export class Rides {
   /** How loud its motor is for the sound (0–1): the revs of what the player drives. */
   get revs() {
     const r = this.riding;
-    return r && this.phase === "on" ? Math.min(1.25, (r.m.pace + (r.m.drift ? 3 : 0)) / r.m.spec.max) : 0;
+    const revs = r && this.phase === "on" ? Math.min(1.25, (r.m.pace + (r.m.drift ? 3 : 0)) / r.m.spec.max) : 0;
+    return this.water?.owns(r) ? this.water.revs(revs) : revs;
   }
 }

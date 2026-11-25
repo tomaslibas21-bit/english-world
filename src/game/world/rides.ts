@@ -2,7 +2,7 @@
 // owners in them, a small boat at the pier. Maple Harbor's; the Spanish edition has its own file of this name for
 // Puerto Colibrí. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
 import type { Rect } from "../rides/drive";
-import { LIGHTHOUSE, PARKING_LOTS } from "./layout";
+import { LIGHTHOUSE, PARKING_LOTS, WORLD } from "./layout";
 import type { IslandPlan } from "./island";
 
 export interface CarSpot {
@@ -15,9 +15,21 @@ export interface CarSpot {
 }
 export interface BoatSpot { id: string; x: number; z: number; rot: number; stripe: string; hull?: string }
 
+interface CarWaterSite { x: number; z: number; rot: number }
+
+export interface CarWaterPlan {
+  /** Mainland world edges. The driving ground takes its north edge from the current bay. */
+  mainland: Pick<Rect, "x0" | "x1" | "z1">;
+  extraRects: readonly Rect[];
+  approach: CarWaterSite;
+  /** Mainland candidates for a dry car and a person beside it. Check occupancy before use. */
+  landings: readonly CarWaterSite[];
+}
+
 export interface RidesPlan {
   cars: CarSpot[];
   boats: BoatSpot[];
+  carWater: CarWaterPlan;
   /** Asphalt beside the streets themselves (layout.ts ROADS): forecourts and lots (a car goes anywhere open and dry;
    *  on asphalt it may pick up speed, and where asphalt ends is a kerb it feels). */
   lots: Rect[];
@@ -47,6 +59,13 @@ export const RIDES: RidesPlan = {
     { id: "pier", x: -17.15, z: -75, rot: Math.PI, stripe: "#2f6db5" },
     { id: "beach", x: -6.5, z: -74.3, rot: Math.PI - 0.3, stripe: "#e2483d" },
   ],
+  carWater: {
+    mainland: { x0: WORLD.minX, x1: WORLD.maxX, z1: WORLD.maxZ },
+    extraRects: [],
+    approach: { x: 24, z: -55, rot: Math.PI },
+    // The western landing leaves space for both doors beside the Harbor Surf approach.
+    landings: [{ x: 24, z: -64, rot: 0 }, { x: 76, z: -64, rot: 0 }, { x: -86, z: -64, rot: 0 }],
+  },
   // the airport's and Sproutly's forecourts, and the asphalt parking lots
   lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }, ...PARKING_LOTS],
   rocks: [],

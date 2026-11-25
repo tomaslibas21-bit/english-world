@@ -178,8 +178,12 @@ export class Splashes {
   private pos: Float32Array;
   private vel: Float32Array;
   private life: Float32Array;
+  private carKinds?: Uint8Array;
+  private carLive = 0;
+  private drainLive = 0;
   private next = 0;
   private static readonly N = 420;
+  private static readonly CAR_MAX = 96;
 
   constructor() {
     const mat = new THREE.ShaderMaterial({
@@ -200,6 +204,8 @@ export class Splashes {
         }`,
     });
     this.ring = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2).rotateX(-Math.PI / 2), mat);
+    this.ring.name = "water-ring";
+    this.ring.visible = false;
     this.ring.renderOrder = 3;
     this.ring.frustumCulled = false;
     const N = Splashes.N;
@@ -208,7 +214,10 @@ export class Splashes {
     this.life = new Float32Array(N);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(this.pos, 3));
+    g.setDrawRange(0, 0);
     this.drops = new THREE.Points(g, new THREE.PointsMaterial({ color: "#f4fbff", size: 0.11, sizeAttenuation: true, transparent: true, opacity: 0.9, depthWrite: false }));
+    this.drops.name = "water-drops";
+    this.drops.visible = false;
     this.drops.frustumCulled = false;
     this.group.add(this.ring, this.drops);
     this.group.visible = false;
@@ -228,7 +237,10 @@ export class Splashes {
   clearDrops() {
     this.life.fill(0);
     this.pos.fill(-999);
-    this.drops.visible = false;
+    this.carKinds?.fill(0);
+    this.carLive = this.drainLive = 0;
+    this.showDrops(Splashes.N, -1);
+    this.group.visible = this.ring.visible;
   }
 
   boatRing(dt: number, time: number, { x, z, heading, pace, slip }: {
@@ -247,7 +259,7 @@ export class Splashes {
   burst(x: number, y: number, z: number, dx: number, dz: number, k = 0.6) {
     const n = Math.round(4 + k * 9);
     for (let i = 0; i < n; i++) {
-      const j = this.next; this.next = (this.next + 1) % Splashes.N;
+      const j = this.slot();
       const a = Math.random() * Math.PI * 2, s = 0.5 + Math.random() * 1.1;
       this.pos[j * 3] = x + Math.cos(a) * 0.12; this.pos[j * 3 + 1] = y + 0.03; this.pos[j * 3 + 2] = z + Math.sin(a) * 0.12;
       this.vel[j * 3] = Math.cos(a) * s + dx * 1.2; this.vel[j * 3 + 1] = (1.6 + Math.random() * 1.9) * (0.6 + 0.6 * k); this.vel[j * 3 + 2] = Math.sin(a) * s + dz * 1.2;
@@ -257,10 +269,11 @@ export class Splashes {
 
   /** A sheet of spray thrown out sideways along (dx, dz) from (x, z): a boat's side in a slide, its bow slapping
    *  down (`k` 0–1: how much, how far). */
-  fan(x: number, y: number, z: number, dx: number, dz: number, k = 0.6) {
+  fan(x: number, y: number, z: number, dx: number, dz: number, k = 0.6, car = false) {
     const n = Math.round(5 + k * 9);
     for (let i = 0; i < n; i++) {
-      const j = this.next; this.next = (this.next + 1) % Splashes.N;
+      const j = this.slot(car ? 1 : 0);
+      if (j < 0) break;
       const out = (2.2 + Math.random() * 3.6) * (0.6 + 0.6 * k), along = (Math.random() - 0.5) * 1.6;
       this.pos[j * 3] = x - dz * along * 0.4; this.pos[j * 3 + 1] = y + 0.05; this.pos[j * 3 + 2] = z + dx * along * 0.4;
       this.vel[j * 3] = dx * out - dz * along; this.vel[j * 3 + 1] = (1.8 + Math.random() * 2.6) * (0.6 + 0.6 * k); this.vel[j * 3 + 2] = dz * out + dx * along;
@@ -268,19 +281,96 @@ export class Splashes {
     }
   }
 
+  carFan(x: number, y: number, z: number, dx: number, dz: number, k: number) {
+    this.fan(x, y, z, dx, dz, k, true);
+  }
+
+  /** A downward drop from a sill. It retires at the local floor or surface. */
+  carDrop(x: number, y: number, z: number, vx: number, vz: number) {
+    const j = this.slot(2);
+    if (j < 0) return 0;
+    const i = j * 3;
+    this.pos[i] = x; this.pos[i + 1] = y; this.pos[i + 2] = z;
+    this.vel[i] = vx; this.vel[i + 1] = -1.1; this.vel[i + 2] = vz;
+    this.life[j] = 1;
+    return 1;
+  }
+
+  private slot(kind = 0) {
+    const j = this.next;
+    if (kind && this.carLive >= Splashes.CAR_MAX && !this.carKinds?.[j]) return -1;
+    this.next = (j + 1) % Splashes.N;
+    if (this.carKinds?.[j]) this.releaseCarDrop(j);
+    if (kind) {
+      this.carKinds ??= new Uint8Array(Splashes.N);
+      this.carKinds[j] = kind;
+      this.carLive++;
+      if (kind === 2) this.drainLive++;
+    }
+    return j;
+  }
+
+  private releaseCarDrop(j: number) {
+    const kinds = this.carKinds!;
+    this.carLive--;
+    if (kinds[j] === 2) this.drainLive--;
+    kinds[j] = 0;
+  }
+
+  clearCarDrops() {
+    if (!this.carLive) return;
+    let first = Splashes.N, last = -1;
+    for (let j = 0; j < Splashes.N; j++) {
+      if (this.carKinds![j]) {
+        this.releaseCarDrop(j);
+        this.life[j] = 0;
+        this.pos[j * 3 + 1] = -999;
+      } else if (this.life[j] > 0) {
+        first = Math.min(first, j); last = j;
+      }
+    }
+    this.showDrops(first, last);
+    this.group.visible = this.drops.visible || this.ring.visible;
+  }
+
+  inspectCarDrops() {
+    const { start, count } = this.drops.geometry.drawRange;
+    const visible = this.group.visible && this.drops.visible && count > 0;
+    return {
+      carDrops: this.carLive, drainLive: this.drainLive,
+      pointsVisible: this.carLive > 0 && visible, pointDrawStart: start, pointDrawCount: count,
+      ringVisible: this.group.visible && this.ring.visible,
+    };
+  }
+
+  private showDrops(first: number, last: number) {
+    const alive = last >= first;
+    if (alive || this.drops.visible) (this.drops.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    this.drops.geometry.setDrawRange(alive ? first : 0, alive ? last - first + 1 : 0);
+    this.drops.visible = alive;
+  }
+
   /** `at`: where the wader's legs meet the water (null: nobody in it); `move` 0–1: how fast they wade; `size`: how
    *  wide the rings spread (1: a person's; a boat's wake is wider). */
   update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number, size = 1, opacity = 1) {
-    let alive = false;
+    let first = Splashes.N, last = -1;
     for (let j = 0; j < Splashes.N; j++) {
       if (this.life[j] <= 0) continue;
-      this.vel[j * 3 + 1] -= 9.5 * dt;
-      for (let k = 0; k < 3; k++) this.pos[j * 3 + k] += this.vel[j * 3 + k] * dt;
+      const i = j * 3, kind = this.carKinds?.[j];
+      this.vel[i + 1] -= 9.5 * dt;
+      for (let k = 0; k < 3; k++) this.pos[i + k] += this.vel[i + k] * dt;
       this.life[j] -= dt * 1.5;
-      if (this.life[j] <= 0 || (this.vel[j * 3 + 1] < 0 && this.pos[j * 3 + 1] < SEA_LEVEL - 0.25)) { this.life[j] = 0; this.pos[j * 3 + 1] = -999; } else alive = true;
+      const landing = kind === 2
+        ? Math.max(floorY(this.pos[i], this.pos[i + 2]), waterY(this.pos[i], this.pos[i + 2], t) ?? -Infinity)
+        : SEA_LEVEL - 0.25;
+      if (this.life[j] <= 0 || this.vel[i + 1] < 0 && this.pos[i + 1] < landing) {
+        if (kind) this.releaseCarDrop(j);
+        this.life[j] = 0; this.pos[i + 1] = -999;
+      } else {
+        first = Math.min(first, j); last = j;
+      }
     }
-    if (alive || this.drops.visible) (this.drops.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
-    this.drops.visible = alive;
+    this.showDrops(first, last);
     this.ring.visible = !!at && opacity > 0;
     this.ringU.uOpacity.value = opacity;
     if (at) {
@@ -290,6 +380,6 @@ export class Splashes {
       this.ringU.uT.value = t;
       this.ringU.uMove.value += (move - this.ringU.uMove.value) * Math.min(1, dt * 6);
     }
-    this.group.visible = alive || this.ring.visible;
+    this.group.visible = this.drops.visible || this.ring.visible;
   }
 }

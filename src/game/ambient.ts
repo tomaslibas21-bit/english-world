@@ -177,6 +177,39 @@ export class Ambient {
   /** The cars one can drive (src/game/rides), as they stand or roll now: the passers-by step out of their way, the
    *  traffic stops behind them. `riding`: the player is in one (their place is the car's own). */
   rideBoxes: { x: number; z: number; heading: number; hl: number; hw: number; modeCar?: boolean }[] = [];
+  /** Temporary dry landings for a shore recovery, outside the traffic lanes. */
+  waterReservations: readonly Ambient["rideBoxes"][number][] = [];
+  private dogStepClear?: (x: number, z: number) => boolean;
+
+  get carWaterDogStepClear() {
+    if (this.waterReservations.length) return this.dogStepClear ??= (x, z) => !this.waterReserved(x, z, 0.4);
+    return undefined;
+  }
+
+  carWaterPeopleClear(clear: (x: number, z: number, radius: number) => boolean, reserve: boolean) {
+    for (const w of this.walkers) {
+      const p = w.ch.root.position, dog = w.dog?.root.position;
+      if (!clear(p.x, p.z, dog && reserve ? 1.15 : 0.45) || (dog && !clear(dog.x, dog.z, 0.4))) return false;
+    }
+    return true;
+  }
+
+  carWaterTrafficClear(clear: (x: number, z: number, half: number, wide: number) => boolean) {
+    for (const c of this.cars) {
+      if (c.hidden <= 0 && c.mesh.scale.x >= 0.5 && !clear(c.x, c.lane, c.half.x, c.half.z)) return false;
+    }
+    return true;
+  }
+
+  waterReserved(x: number, z: number, r = 0.46) {
+    for (let i = 0; i < this.waterReservations.length; i++) {
+      const b = this.waterReservations[i];
+      _side.x = x; _side.z = z;
+      if (pushOutOfBox(_side, r, b.x, b.z, b.heading, b.hl, b.hw)) return true;
+    }
+    return false;
+  }
+
   riding = false;
   private colliders?: Colliders;
 
@@ -328,16 +361,19 @@ export class Ambient {
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
+    const dogStepClear = this.carWaterDogStepClear;
     for (const c of this.chats) c.update(dt);
     for (const w of this.walkers) {
       if (w.scare) w.scare = Math.max(0, w.scare - dt);
       if (w.quiet) w.quiet = Math.max(0, w.quiet - dt);
+      const p = w.ch.root.position, x = p.x, z = p.z;
       if (w.hop !== undefined) this.hopAside(w, dt);
       if (w.kind === "walk") this.updateWalker(w, dt, player);
       else w.ch.update(dt);
+      if (this.waterReservations.length && this.waterReserved(p.x, p.z, w.dog ? 1.15 : 0.46)) { p.x = x; p.z = z; }
       if (w.dog) {
-        const p = w.ch.root.position;
-        w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
+        w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk",
+          dogStepClear);
       }
     }
     for (const c of this.cars) this.updateCar(c, dt, player, feet, air, onFoot, driven);
@@ -404,7 +440,7 @@ export class Ambient {
       if (d < 0.75 && d > 1e-4) {
         const k = 0.75 - d, ux = dx / d, uz = dz / d;
         const nx = p.x + (ux * 0.7 - uz * 0.7) * k * 1.4, nz = p.z + (uz * 0.7 + ux * 0.7) * k * 1.4;
-        if (!this.colliders?.blocked(nx, nz, 0.2)) { p.x = nx; p.z = nz; }
+        if (!this.colliders?.blocked(nx, nz, 0.2) && !this.waterReserved(nx, nz)) { p.x = nx; p.z = nz; }
       }
     }
     if (w.wait > 0) {
@@ -446,7 +482,11 @@ export class Ambient {
     if (!way) { if (w.ch.anim === "walk") w.ch.setAnim("idle"); w.wait = 0.2 + this.r() * 0.4; w.ch.update(dt); return; }
     const step = Math.min(d, w.speed * dt);
     const nx = p.x + way.x * step, nz = p.z + way.z * step;
-    if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; } else { p.x += dir.x * step; p.z += dir.z * step; }
+    if (this.waterReserved(nx, nz)) {
+      // Let the normal path choice try the other direction on the next walk.
+      w.path = null; w.wait = 0.25; w.lastTarget = -1;
+    } else if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; }
+    else if (!this.waterReserved(p.x + dir.x * step, p.z + dir.z * step)) { p.x += dir.x * step; p.z += dir.z * step; }
     for (const o of this.walkers) if (o !== w) this.keepOut(p, o.ch.root.position.x, o.ch.root.position.z, 0.55);
     for (const [x, z] of this.obstacles) this.keepOut(p, x, z, 0.62);
     if (!this.riding) this.keepOut(p, player.x, player.z, 0.68);
@@ -601,7 +641,7 @@ export class Ambient {
     const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
     if (d >= min || d < 1e-4) return;
     const nx = x + (dx / d) * min, nz = z + (dz / d) * min;
-    if (!this.colliders?.blocked(nx, nz, 0.2)) { p.x = nx; p.z = nz; }
+    if (!this.colliders?.blocked(nx, nz, 0.2) && !this.waterReserved(nx, nz)) { p.x = nx; p.z = nz; }
   }
 
   /** Keep the player out of the people walking about and their dogs (the others stand or sit where colliders are;
@@ -658,7 +698,7 @@ export class Ambient {
     ch.tuck = Math.sin(Math.PI * k) * 0.45;
     if (w.dodge) {
       const step = (1.15 / 0.44) * dt, nx = p.x + w.dodge[0] * step, nz = p.z + w.dodge[1] * step;
-      if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; }
+      if (!this.colliders?.blocked(nx, nz, 0.25) && !this.waterReserved(nx, nz)) { p.x = nx; p.z = nz; }
       ch.root.rotation.y = w.heading;
     }
     if (k >= 1) { w.hop = undefined; w.dodge = undefined; ch.lift = 0; ch.tuck = 0; }

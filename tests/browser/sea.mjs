@@ -1,9 +1,9 @@
 // Use the Vite dev server for the sea debug hooks. SEA_SIZE sets the viewport and SEA_SHOTS saves the handoff and gates.
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
 import { BoardRegistration, sampleBoardRegistration } from "./board-registration.mjs";
 
-const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
 const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.env.SEA_SHOTS || process.env.WORLD_SHOTS;
@@ -23,14 +23,63 @@ const distance = (a, b) => Math.hypot(...a.map((n, i) => n - b[i]));
 const dot = (a, b) => a.reduce((n, q, i) => n + q * b[i], 0);
 const angle = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(dot(a, b)))) * 180 / Math.PI;
 const cssPoint = ([x, y]) => [(x + 1) * width / 2, (1 - y) * height / 2];
+const timeout = 20_000;
+const stallTime = 30_000;
+const waitLimit = 60_000;
+const errors = [];
+let stage, operation, condition, waitDeadline, lastLog, reportedError;
+let lastSample = null;
+let milliseconds = 50;
+
+function trace(message, details, log = console.log) {
+  lastLog = performance.now();
+  log(`[${new Date().toISOString()}] sea ${size} ${message}${details ? ` ${JSON.stringify(details)}` : ""}`);
+}
+
+function mark(name) {
+  stage = name;
+  operation = name;
+  trace(name);
+}
+
+function diagnostic() {
+  return { stage, operation, condition, milliseconds, lastSample, pageErrors: errors };
+}
+
+function reportFailure(error) {
+  if (error === reportedError) return;
+  reportedError = error;
+  trace("failure", { ...diagnostic(), error: error.message }, console.error);
+}
+
+async function run(name, action) {
+  operation = name;
+  // Evaluations and raw input have no Playwright timeout option.
+  const remaining = (waitDeadline ?? Infinity) - performance.now();
+  const limit = Math.min(remaining, stallTime);
+  const timeoutError = () => new Error(remaining <= stallTime
+    ? `Wait for "${condition}" exceeded ${waitLimit / 1000}s during ${name}`
+    : `No progress for ${stallTime / 1000}s during ${name}`);
+  if (limit <= 0) throw timeoutError();
+  let timer;
+  const stalled = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(timeoutError()), limit);
+  });
+  try {
+    const result = await Promise.race([stalled, action()]);
+    if (performance.now() - lastLog >= stallTime) trace("progress", diagnostic());
+    return result;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function slerp(a, b, mix) {
   const cosine = dot(a, b), theta = Math.acos(Math.min(1, Math.abs(cosine)));
   if (theta < 1e-8) return a;
   const from = Math.sin((1 - mix) * theta) / Math.sin(theta), to = Math.sin(mix * theta) / Math.sin(theta);
   return a.map((n, i) => from * n + Math.sign(cosine || 1) * to * b[i]);
 }
-if (shots) await mkdir(shots, { recursive: true });
-
 const finished = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
 const progress = {
   version: 1,
@@ -69,58 +118,134 @@ function installClock([key, save]) {
 }
 
 checkpoint("boot");
-const browser = await chromium.launch({
-  channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
-  headless: true,
-  args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
-});
-
+let browser, context, failure;
 try {
-  const context = await browser.newContext({
+  mark("launch browser");
+  const { chromium } = await run("import Playwright", () => import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright"));
+  if (shots) await run("create screenshot directory", () => mkdir(shots, { recursive: true }));
+  browser = await run("launch Chromium", () => chromium.launch({
+    channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
+    headless: true,
+    args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
+    timeout,
+  }));
+  context = await run("create context", () => browser.newContext({
     viewport: { width, height },
     ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
-  });
-  const page = await context.newPage();
-  const errors = [], seaRequests = [];
+  }));
+  context.setDefaultTimeout(timeout);
+  const page = await run("create page", () => context.newPage());
+  const seaRequests = [];
   page.on("pageerror", (err) => errors.push(err.message));
   page.on("request", (req) => {
     const path = new URL(req.url()).pathname;
     if (/\/src\/(?:game\/sea\/(?!entry\.ts$)|ui\/Sea\.tsx$)/.test(path)) seaRequests.push(path);
   });
-  await page.route(/\.mp3(?:\?|$)/, (request) => request.fulfill({ status: 204, body: "" }));
-  await page.addInitScript(installClock, [`${storage}-progress-v1`, JSON.stringify(progress)]);
-  await page.goto(base, { waitUntil: "domcontentloaded" });
+  await run("route audio", () => page.route(/\.mp3(?:\?|$)/, (request) => request.fulfill({ status: 204, body: "" })));
+  await run("install clock", () => page.addInitScript(installClock, [`${storage}-progress-v1`, JSON.stringify(progress)]));
+  mark("load play screen");
+  await run("navigate to town", () => page.goto(base, { waitUntil: "domcontentloaded", timeout }));
 
-  const read = () => page.evaluate(() => window.__ew?.sea?.());
+  const evaluate = (name, fn, arg) => run(name, () => page.evaluate(fn, arg));
+  const keyboard = (action, value) => run(`keyboard ${action} ${value}`, () => page.keyboard[action](value));
+  const count = locator => run(`count ${locator}`, () => locator.count());
+  const attribute = (locator, name) => run(`read ${name} from ${locator}`, () => locator.getAttribute(name));
+  const visible = locator => run(`check visibility of ${locator}`, () => locator.isVisible());
+  const read = () => run("read sea state", async () => {
+    const state = await page.evaluate(() => window.__ew?.sea?.());
+    if (state) {
+      lastSample = {
+        scene: state.presented?.scene ?? null, phase: state.phase ?? null, serial: state.presented?.serial ?? null,
+        crossingAge: state.crossingAge ?? null, returnAge: state.returnAge ?? null, blendAge: state.townBlend?.age ?? null,
+      };
+    }
+    return state;
+  });
   let registration;
-  let milliseconds = 50;
-  const rawStep = (frames = 1) => page.evaluate(([n, ms]) => window.__step(n, ms), [frames, milliseconds]);
+  const rawStep = (frames = 1) => evaluate(`step ${frames} frame(s)`, ([n, ms]) => window.__step(n, ms), [frames, milliseconds]);
   const step = async (frames) => {
     if (!registration) return rawStep(frames);
     for (let i = 0; i < frames; i++) {
       await rawStep();
-      registration.record(await sampleBoardRegistration(page, "sea"));
+      registration.record(await run("sample board registration", () => sampleBoardRegistration(page, "sea")));
     }
   };
   const waitFor = async (predicate, description, attempts = 160, frames = 5) => {
-    for (let i = 0; i < attempts; i++) {
-      await step(frames);
-      if (await predicate()) return;
+    condition = description;
+    waitDeadline = performance.now() + waitLimit;
+    try {
+      for (let i = 0; i < attempts; i++) {
+        await step(frames);
+        if (await predicate()) {
+          condition = undefined;
+          return;
+        }
+      }
+      assert.fail(`${description} after ${attempts} attempts (${attempts * frames} simulated frames)`);
+    } finally {
+      waitDeadline = undefined;
     }
-    assert.fail(`${size}: ${description}: ${JSON.stringify(await read())} errors: ${JSON.stringify(errors)}`);
   };
-  const shot = (name) => shots && page.screenshot({ path: `${shots}/${size}-sea-${name}.png` });
-  const press = (element) => phone ? element.tap() : element.click();
+  const screenshot = (name, options) => run(`screenshot ${name}`, () => page.screenshot({ ...options, timeout }));
+  const shot = name => shots && screenshot(name, { path: `${shots}/${size}-sea-${name}.png` });
+  async function saveFailure(error, name, options = {}) {
+    reportFailure(error);
+    const path = `${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-${name}.png`;
+    try {
+      await screenshot(name, { ...options, path });
+      trace(`saved ${path}`, undefined, console.error);
+    } catch (captureError) {
+      trace("failure screenshot could not be saved", { ...diagnostic(), path, error: captureError.message }, console.error);
+    }
+  }
+
+  async function press(locator, name) {
+    mark(name);
+    let previous, target;
+    const deadline = performance.now() + timeout;
+    // Check consecutive wall-clock samples while the presentation clock stays frozen.
+    do {
+      target = await run(`measure ${locator}`, () => locator.evaluateAll(nodes => {
+        if (nodes.length !== 1) return { matches: nodes.length };
+        const [node] = nodes;
+        const visible = node.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+        const enabled = !node.matches(":disabled") && !node.closest('[inert], [aria-disabled="true"]');
+        if (!visible || !enabled) return { matches: 1, visible, enabled };
+        const measure = () => {
+          const { x, y, width, height } = node.getBoundingClientRect();
+          const center = [x + width / 2, y + height / 2];
+          const clear = width > 0 && height > 0 && node.contains(document.elementFromPoint(...center));
+          return { matches: 1, visible, enabled, bounds: [x, y, width, height], center, clear };
+        };
+        const result = measure();
+        if (result.clear) return result;
+        node.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+        return measure();
+      }));
+      if (target.clear && previous?.clear && target.bounds.every((n, i) => n === previous.bounds[i])) {
+        const [x, y] = target.center;
+        return run(`${phone ? "tap" : "click"} ${locator}`, () => phone ? page.touchscreen.tap(x, y) : page.mouse.click(x, y));
+      }
+      previous = target;
+      await delay(32);
+    } while (performance.now() < deadline);
+    assert.fail(`${name}: no unique, visible, enabled, unobscured target with stable bounds for ${locator}: ${JSON.stringify(target)}`);
+  }
+
   const loading = page.locator(":is(.ew-loading, .road-loading, .sea-loading):visible");
-  const ready = () => page.waitForFunction(() => window.__ew?.sea?.().ready, undefined, { polling: 50 });
-  const hasPlayScreen = () => page.evaluate(() => window.__ew?.store.getState().screen === "play");
+  const fade = page.locator(".fade");
+  const fadeOpacity = () => run("read fade opacity", () => fade.evaluate(element => Number(getComputedStyle(element).opacity)));
+  const ready = () => run("wait for sea mode to prefetch", () => page.waitForFunction(() => window.__ew?.sea?.().ready,
+    undefined, { polling: 50, timeout }));
+  const hasPlayScreen = () => evaluate("check play screen", () => window.__ew?.store.getState().screen === "play");
   await waitFor(hasPlayScreen, "the beach loads", 500);
-  await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
+  mark("play screen ready");
+  await evaluate("clear coach and HUD panel", () => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
   const town = await read();
   assert.equal(town.phase, "town");
   assert.deepEqual(seaRequests, [], "the mode chunk stays unloaded before boarding");
   checkpoint("town rendered", town);
-  await page.evaluate(() => {
+  await evaluate("record sea audio and bump calls", () => {
     const { audio } = window.__ew;
     window.__seaAudio = [];
     window.__seaBumps = 0;
@@ -129,66 +254,86 @@ try {
     audio.play = async (_voice, _speed, text) => { window.__seaAudio.push(text); return true; };
   });
 
-  await page.keyboard.down("ArrowUp");
-  await waitFor(() => page.evaluate(() => {
+  mark("swim and board anchored-1");
+  await keyboard("down", "ArrowUp");
+  await waitFor(() => evaluate("check swim and boarding prompt", () => {
     const { game, store } = window.__ew;
     return game.swimming && store.getState().hud.prompt?.kind === "boat" && game.nearest?.id === "anchored-1";
   }), "swims from the beach within reach of the first anchored boat");
-  await page.keyboard.up("ArrowUp");
-  await page.keyboard.press("e");
+  await keyboard("up", "ArrowUp");
+  await keyboard("press", "e");
   await waitFor(async () => (await read()).town?.phase === "on", "boards with the interact key");
   const mooring = (await read()).town;
   assert.equal(mooring.id, "anchored-1");
   await ready();
   assert.ok(seaRequests.some((path) => path.endsWith("/mode.ts")), "the mode prefetches aboard");
+  mark("anchored-1 aboard and sea mode ready");
   checkpoint("boat ready", await read());
 
   const title = page.locator(".sea-crossing-title");
-  const titleState = () => page.evaluate(() => {
+  const waitForTitle = () => run("wait for crossing title", () => title.waitFor({ state: "attached", timeout }));
+  const titleState = () => evaluate("read crossing title and cue", () => {
     const node = document.querySelector(".sea-crossing-title");
     return { mounts: window.__seaTitles, clips: window.__seaAudio.length, text: node?.textContent,
       opacity: node ? Number(getComputedStyle(node).opacity) : undefined };
   });
 
-  async function assertPresentation(state, previous) {
+  const ageOf = (state, key) => key === "townBlend.age" ? state?.townBlend?.age : state?.crossingAge;
+  const ageTrace = (state, key) => `${key}=${ageOf(state, key)} (serial ${state?.presented?.serial})`;
+  const ageLimit = seconds => Math.ceil(seconds * 1000 / milliseconds) + 3;
+  const reachedAge = (state, key, seconds) => ageOf(state, key) >= seconds - 1e-8;
+
+  async function assertPresentation(state, previous, ageKey) {
     try {
+      if (ageKey) {
+        const before = ageOf(previous, ageKey), after = ageOf(state, ageKey);
+        assert.ok(Number.isFinite(before) && Number.isFinite(after) && after > before,
+          `presentation age did not advance: ${ageTrace(previous, ageKey)} → ${ageTrace(state, ageKey)}`);
+      }
       if (previous) assert.equal(state.presented.serial, previous.presented.serial + 1, "one scene per presentation");
       assert.ok(state.triangles > 0 && state.drawCalls > 0, "the presentation contains geometry");
       if (state.presented.scene === "sea") assert.ok(state.drawCalls <= 25, `sea budget at ${state.crossingAge}s: ${state.drawCalls}`);
-      assert.equal(await loading.count(), 0);
-      assert.equal(await page.locator(".fade").evaluate(element => Number(getComputedStyle(element).opacity)), 0);
+      assert.equal(await count(loading), 0);
+      assert.equal(await fadeOpacity(), 0);
     } catch (error) {
-      const path = `${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-presentation-failure.png`;
-      await page.screenshot({ path });
-      throw new Error(`${error.message} (saved ${path})`);
+      await saveFailure(error, "presentation-failure");
+      throw error;
     }
   }
 
-  async function frame(previous) {
+  async function frame(previous, ageKey) {
     await step(1);
     const state = await read();
-    await assertPresentation(state, previous);
+    await assertPresentation(state, previous, ageKey);
     return state;
   }
 
-  async function pixels(image, points) {
-    return page.evaluate(async ({ data, points }) => {
+  async function pixels(points, label) {
+    // The last sampled pixel is two CSS pixels past the centre, so the clip ends one pixel later.
+    const xs = points.map(([x]) => Math.floor(x)), ys = points.map(([, y]) => Math.floor(y));
+    const x = Math.min(...xs) - 2, y = Math.min(...ys) - 2;
+    const clip = { x, y, width: Math.max(...xs) + 3 - x, height: Math.max(...ys) + 3 - y };
+    const image = await screenshot(label, { clip, scale: "css" });
+    return evaluate(`decode ${label}`, async ({ data, points, clip }) => {
       const png = Uint8Array.from(atob(data), value => value.charCodeAt(0));
       const bitmap = await createImageBitmap(new Blob([png], { type: "image/png" }));
       const ctx = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d");
       ctx.drawImage(bitmap, 0, 0);
       bitmap.close();
+      if (ctx.canvas.width !== clip.width || ctx.canvas.height !== clip.height) {
+        throw new Error(`Expected ${clip.width}×${clip.height} CSS pixels, got ${ctx.canvas.width}×${ctx.canvas.height}`);
+      }
       return points.map(([x, y]) => {
-        const patch = ctx.getImageData(x - 2, y - 2, 5, 5).data;
+        const patch = ctx.getImageData(x - clip.x - 2, y - clip.y - 2, 5, 5).data;
         const values = [0, 1, 2].map(channel => Array.from({ length: 25 }, (_, i) => patch[4 * i + channel]));
         return { median: values.map(a => a.sort((x, y) => x - y)[12]),
           mean: values.map(a => a.reduce((x, y) => x + y, 0) / a.length) };
       });
-    }, { data: image.toString("base64"), points });
+    }, { data: image.toString("base64"), points, clip });
   }
 
   async function patches(state, label) {
-    const points = await page.evaluate((hullFrame) => {
+    const points = await evaluate(`raycast hull and water for ${label}`, (hullFrame) => {
       const { game } = window.__ew;
       const camera = game.sea.active ? game.sea.mode.view.camera : game.rig.cam;
       const boat = game.rides.riding.mesh, rider = game.player.root;
@@ -230,21 +375,18 @@ try {
       }
       return points;
     }, state.hullFrame ?? null);
-    const image = await page.screenshot({ scale: "css" });
     try {
       const age = state.returnAge ?? state.crossingAge;
       assert.ok(points.hull.length && points.water.length,
         `${label}: unobstructed hull and water patches (hull ${points.hull.length}, water ${points.water.length}, crossing age ${age ?? "n/a"})`);
-      const colors = await pixels(image, [...points.hull, ...points.water]);
+      const colors = await pixels([...points.hull, ...points.water], `${label} hull and water patches`);
       const hull = colors.slice(0, points.hull.length), water = colors.slice(points.hull.length);
       assert.ok(hull.some(a => water.some(b => a.median.some((c, i) => Math.abs(c - b.median[i]) >= 20))),
         `${label}: hull and water have different composited colours at ${state.time ?? state.townFrame.time}`);
-      return { image, point: points.water[0] };
+      return { mean: water[0].mean, point: points.water[0] };
     } catch (error) {
-      const folder = shots || process.env.TMPDIR || "/tmp";
-      const filename = `${folder}/${size}-sea-failure.png`;
-      await writeFile(filename, image);
-      throw new Error(`${error.message} (saved ${filename})`);
+      await saveFailure(error, "failure", { scale: "css" });
+      throw error;
     }
   }
 
@@ -257,18 +399,20 @@ try {
   }
 
   async function departure(first, before, label) {
-    await title.waitFor({ state: "attached" });
+    mark(`${label}: sample departure through 2.0s`);
+    await waitForTitle();
     const initial = await titleState();
     assert.equal(initial.mounts, before.mounts + 1, "one title mounts on physical departure");
     assert.equal(initial.text, locationTitle);
     assert.equal(initial.opacity, 0);
     const heading = page.getByRole("heading", { name: locationTitle, exact: true });
-    assert.equal(await heading.count(), 1);
-    assert.equal(await title.getAttribute("aria-hidden"), "true");
+    assert.equal(await count(heading), 1);
+    assert.equal(await attribute(title, "aria-hidden"), "true");
     const samples = [first];
     let peak, reveal;
-    while (samples.at(-1).crossingAge < 2 - 1e-8) {
-      const state = await frame(samples.at(-1));
+    const key = "crossingAge", endAge = 2, limit = ageLimit(endAge);
+    for (let i = 0; i < limit && !reachedAge(samples.at(-1), key, endAge); i++) {
+      const state = await frame(samples.at(-1), key);
       samples.push(state);
       assertBoatFrame(state, label);
       await patches(state, label);
@@ -276,14 +420,14 @@ try {
       if (!peak && state.crossingAge >= 0.65 - 1e-8) {
         peak = cue;
         assert.ok(cue.opacity > 0.95);
-        assert.ok(await title.evaluate(node => {
+        assert.ok(await run("check crossing title clearance", () => title.evaluate(node => {
           const box = node.getBoundingClientRect();
           return [...document.querySelectorAll(".sea-mode button, .sea-mode .joy")].every(item => {
             if (getComputedStyle(item).visibility === "hidden") return true;
             const r = item.getBoundingClientRect();
             return !r.width || r.right < box.left || r.left > box.right || r.bottom < box.top || r.top > box.bottom;
           });
-        }), "the title has clearance from buttons and boards");
+        })), "the title has clearance from buttons and boards");
       }
       if (state.crossingAge < 1.2 - 1e-8) assert.equal(cue.clips, before.clips);
       if (!reveal && state.crossingAge >= 1.2 - 1e-8) {
@@ -292,6 +436,8 @@ try {
       }
       if (state.crossingAge >= 1.25 - 1e-8) assert.equal(cue.text, undefined);
     }
+    assert.ok(reachedAge(samples.at(-1), key, endAge),
+      `${label}: departure did not reach ${endAge}s in ${limit} presentations: ${ageTrace(first, key)} → ${ageTrace(samples.at(-1), key)}`);
     assert.equal((await titleState()).mounts, before.mounts + 1);
     const reference = first.camera.position;
     const lift = state => state.camera.position.map((x, i) => x - reference[i]
@@ -309,6 +455,7 @@ try {
   }
 
   async function checkReturn(label, first) {
+    mark(`return: ${label}`);
     const mounts = (await titleState()).mounts;
     let last = first ?? await read(), patch;
     checkpoint(`return started (${label})`, last);
@@ -327,15 +474,22 @@ try {
         assert.ok(Math.abs(last.camera.fov - town.camera.fov) <= 0.10);
         assert.deepEqual(last.view, town.view);
         for (const key of ["bow", "stern", "helm"]) assert.ok(distance(cssPoint(last.landmarks[key]), cssPoint(town.landmarks[key])) <= 1, key);
-        const image = await page.screenshot({ scale: "css" });
-        const [a] = await pixels(patch.image, [patch.point]), [b] = await pixels(image, [patch.point]);
-        const change = a.mean.reduce((sum, n, i) => sum + Math.abs(n - b.mean[i]), 0) / 3;
-        if (change > 5) await writeFile(`${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-water-failure.png`, image);
-        assert.ok(change <= 5, `${label}: adjacent water changes by ${change}/255`);
-        const towns = [state];
-        while (towns.at(-1).townBlend.age < 0.6 - 1e-8) {
-          towns.push(await frame(towns.at(-1)));
+        try {
+          const [water] = await pixels([patch.point], `${label} first town water patch`);
+          const change = patch.mean.reduce((sum, n, i) => sum + Math.abs(n - water.mean[i]), 0) / 3;
+          assert.ok(change <= 5, `${label}: adjacent water changes by ${change}/255`);
+        } catch (error) {
+          await saveFailure(error, "water-failure", { scale: "css" });
+          throw error;
         }
+        mark(`return town blend: ${label}`);
+        const towns = [state];
+        const key = "townBlend.age", endAge = 0.6, limit = ageLimit(endAge);
+        for (let i = 0; i < limit && !reachedAge(towns.at(-1), key, endAge); i++) {
+          towns.push(await frame(towns.at(-1), key));
+        }
+        assert.ok(reachedAge(towns.at(-1), key, endAge),
+          `${label}: town blend did not reach ${endAge}s in ${limit} presentations: ${ageTrace(state, key)} → ${ageTrace(towns.at(-1), key)}`);
         for (const at of [0.05, 0.30, 0.60]) {
           const sample = towns.find(s => Math.abs(s.townBlend.age - at) < 0.001);
           assert.ok(sample, `town has a rendered frame at ${at}s`);
@@ -354,11 +508,12 @@ try {
     assert.fail(`${label}: town did not present after the committed return`);
   }
 
-  async function sailOut(screenshots = false, full = true) {
+  async function sailOut(label, { screenshots = false, full = true } = {}) {
+    mark(`depart: ${label}`);
     const before = await titleState();
     const { edge, town: { x } } = await read();
-    assert.equal(await page.evaluate(([x, z]) => window.__ew.seaPlaceBoat(x, z), [x, edge + 34]), true);
-    await page.keyboard.down("ArrowUp");
+    assert.equal(await evaluate("place boat for departure", ([x, z]) => window.__ew.seaPlaceBoat(x, z), [x, edge + 34]), true);
+    await keyboard("down", "ArrowUp");
     // Start just before the last half-second so every frame through the seam is checked.
     const approach = Math.ceil(0.5 * 1000 / milliseconds);
     const preceding = [];
@@ -366,7 +521,7 @@ try {
     for (let i = 0; i < 600; i++) {
       await step(1);
       const current = await read();
-      assert.equal(await loading.count(), 0);
+      assert.equal(await count(loading), 0);
       if (current.phase === "briefing") { first = current; break; }
       if (current.town.bowZ - edge < 7.5) {
         await assertPresentation(current, preceding.at(-1));
@@ -386,7 +541,7 @@ try {
     assert.equal(first.presented.scene, "sea");
     assert.equal(first.presented.serial, last.presented.serial + 1);
     assert.ok(first.triangles > 0);
-    assert.equal(await loading.count(), 0);
+    assert.equal(await count(loading), 0);
     for (const key of ["projection", "view", "hullRotation", "rider", "riderRotation"]) {
       assert.ok(Array.isArray(first[key]) ? distance(first[key], first.departureFrom[key]) < 1e-8
         : JSON.stringify(first[key]) === JSON.stringify(first.departureFrom[key]), `inherits town ${key}`);
@@ -396,20 +551,20 @@ try {
     assert.ok(Math.abs(first.hull[2] - last.town.hull[2]) < milliseconds / 1000 * 4 * 17, `hull moved ${first.hull[2] - last.town.hull[2]} m between the last town frame and the first sea frame`);
     assert.ok(Math.abs(first.camera.fov - last.town.camera.fov) < 1);
     assert.equal(first.elapsed, 0);
-    assert.equal(await page.locator(".fade").evaluate((element) => Number(getComputedStyle(element).opacity)), 0);
+    assert.equal(await fadeOpacity(), 0);
     assert.ok(first.drawCalls <= 25, `first sea frame uses ${first.drawCalls} draw calls`);
     checkpoint("border crossed", first);
-    await page.keyboard.up("ArrowUp");
-    await press(page.locator('[data-way="words"]'));
+    await keyboard("up", "ArrowUp");
+    await press(page.locator('[data-way="words"]'), `briefing: choose words for ${label}`);
     const start = await read();
     assert.equal(start.phase, "drive");
     assert.equal(start.presented.serial, first.presented.serial);
     if (screenshots) await shot("first-sea");
     assertBoatFrame(first, "first sea frame");
     await patches(first, "first sea frame");
-    if (full) await departure(start, before, "departure");
+    if (full) await departure(start, before, label);
     else {
-      await title.waitFor({ state: "attached" });
+      await waitForTitle();
       const current = await titleState();
       assert.equal(current.mounts, before.mounts + 1);
       assert.equal(current.clips, before.clips);
@@ -425,16 +580,18 @@ try {
   }
 
   async function rearm() {
-    await page.keyboard.down("ArrowUp");
+    mark("re-arm sea entry in the bay");
+    await keyboard("down", "ArrowUp");
     await waitFor(async () => (await read()).armed, "crossing 20 m back into town re-arms the sea entry");
-    await page.keyboard.up("ArrowUp");
+    await keyboard("up", "ArrowUp");
     await ready();
   }
 
   async function outsideLane(lane) {
     if (!phone) return;
-    await page.keyboard.down("ArrowUp");
-    await page.evaluate(n => window.__ew.seaSteer(n), lane);
+    mark(`gates: outside lane ${lane} at full throttle`);
+    await keyboard("down", "ArrowUp");
+    await evaluate(`steer to outside lane ${lane}`, n => window.__ew.seaSteer(n), lane);
     let count = 0, previous;
     for (let i = 0; i < 360; i++) {
       const state = await frame(previous);
@@ -446,7 +603,7 @@ try {
       assert.equal(state.lane, lane);
       assert.ok(state.speed >= 15.99, "the outside lane is tested at full throttle");
       assertBoatFrame(state, `outside lane ${lane}`);
-      const labels = await page.locator(".sea-overlay button.road-gate").evaluateAll(boards => {
+      const labels = await run(`measure outside lane ${lane} labels`, () => gates.evaluateAll(boards => {
         return boards.map(board => {
           const { left, right, width } = board.getBoundingClientRect();
           const probe = key => board.querySelector(`[data-face-probe="${key}"]`).getBoundingClientRect();
@@ -458,42 +615,48 @@ try {
             clearUi: top >= header.bottom && bottom < (joy?.top ?? innerHeight),
             visible: getComputedStyle(board).visibility === "visible" && !board.disabled };
         });
-      });
+      }));
       try {
         assert.equal(labels.length, 3);
         assert.ok(labels.every((board, i) => board.visible && board.clearUi && board.left >= 8 && board.right <= width - 8
           && board.width >= 86 && board.em >= 15 && (!i || board.left > labels[i - 1].right)),
         `lane ${lane} at ${state.gateDistance.toFixed(2)} m: ${JSON.stringify(labels)}`);
       } catch (error) {
-        await page.screenshot({ path: `${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-lane-${lane}-failure.png` });
+        await saveFailure(error, `lane-${lane}-failure`);
         throw error;
       }
     }
-    await page.keyboard.up("ArrowUp");
+    await keyboard("up", "ArrowUp");
     assert.ok(count >= Math.floor(1000 / milliseconds) - 1, "samples the entire 32–16 m decision window");
   }
 
-  await sailOut(true);
+  await sailOut("first timed run", { screenshots: true });
   const gates = page.locator(".sea-overlay button.road-gate");
-  const openWaterBumps = await page.evaluate(() => window.__seaBumps);
+  const readBumps = () => evaluate("read sea bump count", () => window.__seaBumps);
+  const readClips = () => evaluate("read sea clip count", () => window.__seaAudio.length);
+  const steerLane = lane => evaluate(`steer to lane ${lane}`, lane => window.__ew.seaSteer(lane), lane);
+  const steerWrong = () => evaluate("steer to the wrong gate", () => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  const jumpTimer = seconds => evaluate(`set sea timer to ${seconds}s`, seconds => window.__ew.seaTimer(seconds), seconds);
+  mark("gates: first approach and open-water steering");
+  const openWaterBumps = await readBumps();
   await waitFor(async () => (await read()).gateDistance <= 70, "approaches the first buoy row", 25, 1);
   registration = new BoardRegistration("sea", 50, 25);
   for (const lane of [0, 2]) {
-    await page.evaluate((lane) => window.__ew.seaSteer(lane), lane);
+    await steerLane(lane);
     await waitFor(async () => {
       const state = await read();
       assert.equal(state.totalGates, 0);
       assert.equal(state.wobble, 0);
-      assert.equal(await page.evaluate(() => window.__seaBumps), openWaterBumps);
+      assert.equal(await readBumps(), openWaterBumps);
       return state.lane === lane;
     }, `steers across open water to lane ${lane} without damage`, 35, 1);
   }
-  await page.evaluate(async () => { await document.fonts.ready; });
+  await evaluate("wait for gate fonts", async () => { await document.fonts.ready; });
   const layoutChecks = [];
   await waitFor(async () => {
     const state = await read();
     if (!(state.gateDistance >= 19 && state.gateDistance <= 32)) return false;
-    const rows = await gates.evaluateAll((boards, phone) => {
+    const rows = await run("measure first gate layout", () => gates.evaluateAll((boards, phone) => {
       const headerBottom = (document.querySelector(".sea-overlay header")?.getBoundingClientRect().bottom ?? 0);
       const stickTop = document.querySelector(".sea-mode .joy")?.getBoundingClientRect().top;
       return boards.map((board, i) => {
@@ -513,20 +676,20 @@ try {
           readableFont: font >= (phone ? 15 : 18),
         };
       });
-    }, phone);
+    }, phone));
     layoutChecks.push({ distance: +state.gateDistance.toFixed(2), rows });
     return rows.length === 3 && rows.every((row) => row.fullWords && row.inside && row.belowHeader
       && row.aboveControls && row.separated && row.readableWidth && row.readableFont);
   }, "all three labels fit at a readable size", 125, 1).catch((error) => {
-    throw new Error(`${error.message}
-Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
+    trace("gate layout at 19–32 m", layoutChecks, console.error);
+    throw error;
   });
   const firstGate = await read();
   assert.ok(firstGate.drawCalls <= 25);
   checkpoint("first gate readable", firstGate);
-  assert.equal(await page.locator(".sea-mode .drive-horn, .sea-mode .road-ghost").count(), 0);
+  assert.equal(await count(page.locator(".sea-mode .drive-horn, .sea-mode .road-ghost")), 0);
   await shot("gates");
-  await press(gates.nth((await read()).right));
+  await press(gates.nth((await read()).right), "gates: select the first correct board");
   await waitFor(async () => (await read()).rightGates === 1, "taps and sails through the correct gate");
 
   let correct = await read();
@@ -534,11 +697,12 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await step(6);
   registration.verify();
   registration = undefined;
+  mark("gates: verify a correct pass in a side lane");
   // The picker can put the first answer in the middle. Continue until a correct answer exercises a side lane.
   for (let attempt = 1; correct.lane === 1 && attempt < 8; attempt++) {
     const count = correct.rightGates;
     await waitFor(async () => (await read()).gates?.length === 3, "the next gate appears");
-    await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right));
+    await evaluate("steer to the next correct gate", () => window.__ew.seaSteer(window.__ew.sea().right));
     await waitFor(async () => (await read()).rightGates === count + 1, "sails through the next correct gate");
     correct = await read();
   }
@@ -546,45 +710,47 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.equal(correct.streak, correct.rightGates);
   assert.ok(correct.boost > 0);
   assertBoatFrame(correct, "right gate");
-  assert.equal(await page.getByText("Teisingai!", { exact: true }).count(), 1);
+  assert.equal(await count(page.getByText("Teisingai!", { exact: true })), 1);
   const feedback = page.locator(".sea-overlay .road-feedback .kit-feedback");
-  assert.equal(await feedback.getAttribute("data-feedback"), "right");
-  assert.equal(await feedback.locator('svg[width="16"]').count(), 1);
+  assert.equal(await attribute(feedback, "data-feedback"), "right");
+  assert.equal(await count(feedback.locator('svg[width="16"]')), 1);
   await shot("gate-right");
 
+  mark("gates: wrong pass and registration at 120 Hz");
   await waitFor(async () => (await read()).gates?.length === 3, "the next gate appears");
   await waitFor(async () => (await read()).gateDistance <= 70, "approaches the miss gate", 125, 1);
   milliseconds = 1000 / 120;
   registration = new BoardRegistration("sea", milliseconds, 25);
-  const clips = await page.evaluate(() => window.__seaAudio.length);
-  const bumps = await page.evaluate(() => window.__seaBumps);
+  const clips = await readClips();
+  const bumps = await readBumps();
   const wrongLane = (await read()).right === 0 ? 2 : 0;
-  await page.evaluate((lane) => window.__ew.seaSteer(lane), wrongLane);
+  await steerLane(wrongLane);
   await waitFor(async () => (await read()).totalGates === correct.totalGates + 1, "sails through the wrong gate", 180);
   const wrong = await read();
   assert.equal(wrong.lane, wrongLane);
   assert.equal(wrong.rightGates, correct.rightGates);
   assert.equal(wrong.streak, 0);
   assert.ok(wrong.wobble > 0);
-  assert.equal(await page.evaluate(() => window.__seaBumps), bumps + 1);
+  assert.equal(await readBumps(), bumps + 1);
   assertBoatFrame(wrong, "wrong gate");
   assert.ok(correct.drawCalls <= 25 && wrong.drawCalls <= 25, "both gate reactions stay within the draw-call budget");
-  assert.equal(await page.getByText("Ne visai. Teisingai:", { exact: true }).count(), 1);
-  assert.equal(await feedback.getAttribute("data-feedback"), "retry");
-  assert.equal(await feedback.locator('svg[width="16"]').count(), 1);
+  assert.equal(await count(page.getByText("Ne visai. Teisingai:", { exact: true })), 1);
+  assert.equal(await attribute(feedback, "data-feedback"), "retry");
+  assert.equal(await count(feedback.locator('svg[width="16"]')), 1);
   const correction = page.locator(".sea-overlay .road-feedback.wrong span[lang=en]");
-  assert.equal(await correction.count(), 1);
-  assert.ok((await correction.innerText()).length > 0);
-  assert.equal(await page.evaluate(() => window.__seaAudio.length), clips + 1, "plays the missed clip again");
+  assert.equal(await count(correction), 1);
+  assert.ok((await run("read gate correction", () => correction.innerText())).length > 0);
+  assert.equal(await readClips(), clips + 1, "plays the missed clip again");
   await shot("gate-wrong");
   await step(48);
   registration.verify();
   registration = undefined;
   milliseconds = 50;
 
-  await page.evaluate(() => window.__ew.seaTimer(119.8));
+  mark("score: first timed run");
+  await jumpTimer(119.8);
   const result = page.getByRole("dialog", { name: "Plaukimas baigtas" });
-  await waitFor(() => result.isVisible(), "shows the score at 120 seconds");
+  await waitFor(() => visible(result), "shows the score at 120 seconds");
   const scored = await read();
   assert.ok(scored.drawCalls <= 25);
   assert.equal(scored.elapsed, 120);
@@ -592,11 +758,11 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.equal(scored.result.total, wrong.totalGates);
   assertBoatFrame(scored, "timed score card");
   assert.equal(scored.result.missed.length, 1);
-  assert.equal(await result.getByRole("button", { name: "Nuvesk mane" }).count(), 1);
+  assert.equal(await count(result.getByRole("button", { name: "Nuvesk mane" })), 1);
   checkpoint("score checked", scored);
   await shot("result");
 
-  await press(result.getByRole("button", { name: "Atgal į krantą" }));
+  await press(result.getByRole("button", { name: "Atgal į krantą" }), "return input: first timed result");
   let returned = await checkReturn("timed result → Back to shore");
   assert.equal(returned.town.id, "anchored-1");
   assert.equal(returned.town.phase, "on");
@@ -608,93 +774,100 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await shot("town-return");
 
   await rearm();
-  await sailOut(false, false);
-  await page.evaluate(() => window.__ew.seaTimer(85));
-  await waitFor(() => result.isVisible(), "reaches a timed score beyond the bay mesh", 160, 10);
+  await sailOut("offshore timed run", { full: false });
+  mark("score: offshore timed run");
+  await jumpTimer(85);
+  await waitFor(() => visible(result), "reaches a timed score beyond the bay mesh", 160, 10);
   const deep = await read();
   assert.equal(deep.elapsed, 120);
   assert.ok(deep.z < deep.edge - 400 && deep.drawCalls <= 25);
   checkpoint("offshore score checked", deep);
-  await press(result.getByRole("button", { name: "Atgal į krantą" }));
+  await press(result.getByRole("button", { name: "Atgal į krantą" }), "return input: offshore timed result");
   await checkReturn("offshore timed result → Back to shore");
 
   await rearm();
-  await sailOut();
-  await page.keyboard.down("ArrowDown");
+  await sailOut("slow-turn run");
+  mark("return input: slow turn before any gate");
+  await keyboard("down", "ArrowDown");
   await waitFor(async () => (await read()).phase === "turn", "holding down at slow speed starts to turn");
   assert.equal((await read()).totalGates, 0);
   await checkReturn("zero-answer slow hold");
-  await page.keyboard.up("ArrowDown");
-  assert.equal(await result.count(), 0);
+  await keyboard("up", "ArrowDown");
+  assert.equal(await count(result), 0);
   assert.equal((await read()).town.id, "anchored-1");
 
   await step(18);
   await rearm();
   milliseconds = 1000 / 60;
   const clipsBeforeEarly = (await titleState()).clips;
-  await sailOut(false, false);
+  await sailOut("interrupted run at 60 Hz", { full: false });
   for (let i = 0; i < 15; i++) await frame();
-  await page.keyboard.press("Escape");
+  mark("return input: interrupt departure with Escape");
+  await keyboard("press", "Escape");
   await checkReturn("interrupted departure at 60 Hz");
   assert.equal((await titleState()).clips, clipsBeforeEarly, "exit cancels the deferred cue");
   await rearm();
 
-  await sailOut();
+  await sailOut("scored-turn run at 60 Hz");
   await outsideLane(0);
-  await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  mark("gates: answer one before the scored turn");
+  await steerWrong();
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before turning for shore");
-  await page.keyboard.down("ArrowDown");
+  mark("return input: turn after answering one gate");
+  await keyboard("down", "ArrowDown");
   await waitFor(async () => (await read()).phase === "turn", "turns toward shore after one answer");
   await step(12);
   const turning = await read();
   assert.equal(turning.phase, "turn");
   assertBoatFrame(turning, "return turn");
-  await waitFor(() => result.isVisible(), "shows the score card after turning with one gate answered");
-  await page.keyboard.up("ArrowDown");
+  await waitFor(() => visible(result), "shows the score card after turning with one gate answered");
+  await keyboard("up", "ArrowDown");
   const turned = await read();
   assert.equal(turned.result.total, 1);
   assert.equal(turned.result.right, 0);
   assert.ok(Math.cos(turned.heading) > 0.99, "the boat faces shore behind the score card");
   assertBoatFrame(turned, "score card after turning");
-  await press(result.getByRole("button", { name: "Atgal į krantą" }));
+  await press(result.getByRole("button", { name: "Atgal į krantą" }), "return input: scored turn at 60 Hz");
   await checkReturn("scored turn → Back to shore at 60 Hz");
   await rearm();
   milliseconds = 50;
-  await sailOut();
+  await sailOut("retry and guide run");
   await outsideLane(2);
-  await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  mark("gates: answer one before retrying");
+  await steerWrong();
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before retrying");
-  await page.keyboard.press("Escape");
-  await waitFor(() => result.isVisible(), "shows the score before retrying");
+  await keyboard("press", "Escape");
+  await waitFor(() => visible(result), "shows the score before retrying");
   const beforeRetry = await titleState();
-  await press(result.getByRole("button", { name: "Dar kartą" }));
+  await press(result.getByRole("button", { name: "Dar kartą" }), "retry from the score card");
   const briefing = await read();
   assert.equal(briefing.phase, "briefing");
   checkpoint("retry briefing", briefing);
-  await press(page.locator('[data-way="words"]'));
+  await press(page.locator('[data-way="words"]'), "briefing: choose words for the offshore retry");
   await waitFor(async () => (await read()).phase === "drive" && !!(await read()).gates, "retry opens a prompt offshore", 15, 1);
   const retried = await read();
   assert.equal((await titleState()).mounts, beforeRetry.mounts);
   assert.equal((await titleState()).clips, beforeRetry.clips + Number(!retried.gap));
-  assert.equal(await page.locator(".road-cue").count(), 1);
+  assert.equal(await count(page.locator(".road-cue")), 1);
   assert.equal(retried.totalGates, 0);
   checkpoint("retry prompt checked", retried);
-  await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  mark("gates: answer one on the retry before following the guide");
+  await steerWrong();
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before following the guide");
-  await page.keyboard.press("Escape");
-  await waitFor(() => result.isVisible(), "shows the score before following the guide");
-  const destination = await result.locator("[data-sit]").getAttribute("data-sit");
-  await press(result.getByRole("button", { name: "Nuvesk mane" }));
+  await keyboard("press", "Escape");
+  await waitFor(() => visible(result), "shows the score before following the guide");
+  const destination = await attribute(result.locator("[data-sit]"), "data-sit");
+  await press(result.getByRole("button", { name: "Nuvesk mane" }), "return input: follow the guide");
   await frame();
   assert.equal((await read()).presented.scene, "town");
-  assert.equal(await page.locator(".sea-overlay[data-guiding] .mode-score-card").count(), 1);
-  await waitFor(() => page.evaluate((sit) => {
+  assert.equal(await count(page.locator(".sea-overlay[data-guiding] .mode-score-card")), 1);
+  await waitFor(() => evaluate("check guide after the score dissolves", (sit) => {
     const { game, store } = window.__ew;
     const state = store.getState();
     return !state.hud.fade && !state.hud.modeScreen && !game.rides.riding
       && state.progress.objective === sit && !!game.autoTarget && game.autoPath?.length > 0;
   }, destination), "Nuvesk mane starts the guide on foot after the score dissolves");
-  const guided = await page.evaluate((id) => {
+  const guided = await evaluate("read guide start and boat mooring", (id) => {
     const { game } = window.__ew;
     const { x, y, z } = game.player.root.position, boat = game.rides.find(id).m;
     return { x, y, z, swimming: game.swimming, boat: { x: boat.x, z: boat.z, heading: boat.heading } };
@@ -704,21 +877,23 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.ok(["x", "z", "heading"].every((k) => Math.abs(guided.boat[k] - mooring[k]) < 1e-6), `the boat is back at its mooring: ${JSON.stringify({ boat: guided.boat, mooring })}`);
   await shot("guide");
 
-  await page.evaluate(() => {
+  mark("board lobster-1");
+  await evaluate("place player on the lobster boat deck", () => {
     const { game } = window.__ew;
     game.setJoystick(0.1, 0);
     game.setJoystick(0, 0);
     game.placeOnFoot(-40, -80.5, -Math.PI / 2);
   });
-  await waitFor(() => page.evaluate(() => window.__ew.game.nearest?.id === "lobster-1"), "the lobster boat is within reach of the deck");
-  await page.keyboard.press("e");
+  await waitFor(() => evaluate("check the lobster boat is in reach", () => window.__ew.game.nearest?.id === "lobster-1"), "the lobster boat is within reach of the deck");
+  await keyboard("press", "e");
   await waitFor(async () => (await read()).town?.phase === "on", "boards the lobster boat");
   assert.equal((await read()).town.id, "lobster-1");
   await ready();
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await sailOut();
+  await run("enable reduced motion", () => page.emulateMedia({ reducedMotion: "reduce" }));
+  await sailOut("reduced-motion lobster boat run");
+  mark("reload from open water");
   checkpoint("reload started", await read());
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await run("reload page", () => page.reload({ waitUntil: "domcontentloaded", timeout }));
   await waitFor(hasPlayScreen, "reloads from open water", 500);
   await waitFor(async () => (await read()).town?.phase === "on", "restores the lobster boat inside the bay");
   returned = await read();
@@ -727,9 +902,22 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.ok(returned.town.z > returned.edge + 10 && Math.cos(returned.town.heading) > 0.99);
   checkpoint("reload checked", returned);
 
+  mark("check page errors after reload");
   assert.deepEqual(errors, []);
-  await context.close();
-  console.log(`Sea passed at ${size}`);
+} catch (error) {
+  failure = error;
+  reportFailure(error);
 } finally {
-  await browser.close();
+  for (const [name, resource] of [["context", context], ["browser", browser]]) {
+    if (!resource) continue;
+    mark(`teardown: close ${name}`);
+    try {
+      await run(`close ${name}`, () => resource.close());
+    } catch (error) {
+      failure ??= error;
+      reportFailure(error);
+    }
+  }
 }
+if (failure) throw failure;
+console.log(`Sea passed at ${size}`);
