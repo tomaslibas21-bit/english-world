@@ -114,8 +114,10 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
       await page.evaluate(({ x, z, outward, van }) => {
         const { game } = window.__ew;
         const { rides } = game;
-        const ride = van ? rides.list.find((car) => car.kind === "car" && car.model === "van"
-          && Math.hypot(car.m.x - van.x, car.m.z - van.z) < 0.1) : rides.find("park");
+        const isVan = (car) => car.kind === "car" && car.model === "van"
+          && Math.hypot(car.m.x - van.x, car.m.z - van.z) < 0.1;
+        const ride = van ? rides.list.find(isVan) ?? [...rides.modeCars.keys()].find((car) => car.parked && isVan(car))
+          : rides.find("park");
         if (ride?.kind !== "car") throw new Error("Could not find the town's test car");
         const start = { x: x - Math.sin(outward) * 19, z: z - Math.cos(outward) * 19, rot: outward };
         game.rides.resetPosition(ride, start);
@@ -435,17 +437,42 @@ try {
             const range = document.createRange();
             range.selectNodeContents(line);
             const word = range.getBoundingClientRect();
-            return getComputedStyle(line).whiteSpace === "nowrap" && word.left >= r.left - 0.5 && word.right <= r.right + 0.5;
+            const box = line.getBoundingClientRect();
+            return getComputedStyle(line).whiteSpace === "nowrap"
+              && word.left >= r.left - 0.5 && word.right <= r.right + 0.5
+              && box.top >= r.top - 0.5 && box.bottom <= r.bottom + 0.5;
           });
         const separated = lane === 0 || r.left > gates[lane - 1].getBoundingClientRect().right;
         const visible = getComputedStyle(gate).visibility === "visible" && Number(getComputedStyle(gate).opacity) > 0;
-        return visible && wholeWords && separated && r.left >= 0 && r.right <= innerWidth && r.top > header.bottom
-          && r.width >= minWidth && font >= minFont && r.bottom < innerHeight
-          && controls.every((c) => r.bottom < c.top || r.right < c.left || r.left > c.right);
+        const inViewport = r.left >= 0 && r.right <= innerWidth && r.bottom < innerHeight;
+        const clearHud = r.top > header.bottom && controls.every((c) => r.bottom < c.top || r.right < c.left || r.left > c.right);
+        const readable = r.width >= minWidth && font >= minFont;
+        return { name, lines: lines.map((line) => line.textContent), wholeWords, separated, visible, inViewport, clearHud, readable,
+          fits: visible && wholeWords && separated && inViewport && clearHud && readable };
       });
     };
     const fitAtApproach = phone ? { minFont: 15, minWidth: 88 } : { minFont: 18, minWidth: 110 };
     const labels = page.locator(".road-gate");
+    const waitForOptions = (samples) => page.waitForFunction((samples) => {
+      const labels = [...document.querySelectorAll(".road-gate")];
+      return labels.length === samples.length && labels.every((node, lane) => node.getAttribute("aria-label") === samples[lane]);
+    }, samples, { polling: 20 });
+    const checkOptions = async (samples, originals) => {
+      // Compare the layouts on the same draw as the regular labels, with the simulation clock stopped.
+      try {
+        await page.evaluate(async (options) => {
+          await document.fonts.load("800 32px Nunito", options.join(" "));
+          window.__ew.road.previewOptions(options);
+        }, samples);
+        await waitForOptions(samples);
+        const rows = await page.evaluate(measureGates, { minFont: 0, minWidth: 0 });
+        assert.ok(rows.length === 3 && rows.every(({ fits }) => fits),
+          `${label}: long labels and accents fit the boards: ${JSON.stringify(rows)}`);
+      } finally {
+        await page.evaluate(() => window.__ew.road.previewOptions());
+        await waitForOptions(originals);
+      }
+    };
     await shot("departure");
     let last = await read(), first;
     let layout, lastLayout;
@@ -502,9 +529,12 @@ try {
           if (secondsToGate >= 1.85 && secondsToGate <= 2.2) {
             const rows = await page.evaluate(measureGates, fitAtApproach);
             lastLayout = { elapsed: state.elapsed, gateDistance: state.gateDistance, secondsToGate, rows };
-            if (rows.length === 3 && rows.every(Boolean)) {
-              layout = rows;
+            if (rows.length === 3 && rows.every(({ fits }) => fits)) {
+              layout = rows.map(({ fits }) => fits);
               await shot("gates");
+              if (puertoColibri) await checkOptions(helper === "en"
+                ? ["business meeting", "boarding pass", "lost luggage"]
+                : ["kelionės tikslas", "darbo reikalai", "laba diena"], rows.map(({ name }) => name));
             }
           }
         }
@@ -544,33 +574,6 @@ try {
     assert.equal(await page.locator(".road-dash .road-meters > span").count(), 2);
 
     assert.equal(await page.evaluate(() => window.__roadAudio.length), beforeReplay + 1, "replays the first prompt");
-    // Substitute a fresh prompt object so the fixed layout is typeset for the sample words.
-    const checkOptions = async (samples) => {
-      const captured = registration;
-      registration = undefined;
-      try {
-        await page.evaluate(async (options) => {
-          await document.fonts.load("800 32px Nunito", options.join(" "));
-          window.__ew.road.previewOptions(options);
-        }, samples);
-        await waitFor(async () => {
-          const rows = await page.evaluate(measureGates, { minFont: 0, minWidth: 0 });
-          return rows.length === 3 && rows.every(Boolean);
-        }, "long labels and accents fit the boards", 5, 1);
-        assert.deepEqual(await labels.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label"))), samples);
-      } finally {
-        await page.evaluate(() => window.__ew.road.previewOptions());
-        await step(1);
-        registration = captured;
-        registration?.previous.clear();
-        if (registration) registration.serial = undefined;
-      }
-    };
-
-    if (puertoColibri) await checkOptions(helper === "en"
-      ? ["business meeting", "boarding pass", "lost luggage"]
-      : ["kelionės tikslas", "darbo reikalai", "laba diena"]);
-
     const steerForGate = (number) => page.evaluate((number) => {
       const { road } = window.__ew;
       const { totalGates, right } = road.state();
@@ -687,18 +690,23 @@ try {
       await waitFor(async () => (await read()).totalGates >= gate, `passes gate ${gate}`, 120, 8);
       assert.equal((await read()).rightGates, gate - 1, `takes the correct lane on gate ${gate}`);
     }
+    let gapLabels;
     await waitFor(async () => {
       const state = await read();
-      assert.equal(state.totalGates, 7, "checks the gap prompt before scoring gate eight");
-      return state.gates?.length === 3 && state.gateDistance / state.speed < 2.15 && (await labels.count()) === 3;
-    }, "the eighth gate's gap prompt and banner labels are visible", 150, 4);
+      assert.equal(state.totalGates, 7,
+        `${label}: checks the gap prompt before scoring gate eight. Last sample: ${JSON.stringify(gapLabels)}`);
+      if (state.gates?.length !== 3 || state.gateDistance / state.speed >= 2.15) return false;
+      gapLabels = await page.evaluate(measureGates, { minFont: 0, minWidth: 0 });
+      return gapLabels.length === 3 && gapLabels.every(({ visible, separated, inViewport, clearHud }) =>
+        visible && separated && inViewport && clearHud);
+    }, "the eighth gate's gap prompt and banner labels are visible", 600, 1);
     assert.equal(await page.getByText(ui("Kurio žodžio trūksta?", "Which word is missing?"), { exact: true }).count(), 1);
     assert.match(await page.locator(".road-gap").innerText(), /____/);
     assert.equal(await page.locator(".road-gates").getAttribute("lang"), puertoColibri ? "es" : "en");
     assert.deepEqual(await labels.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label"))), (await read()).gates);
     assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gap");
-    if (puertoColibri) await checkOptions(["reunión", "mañana", "conferencia"]);
+    if (puertoColibri) await checkOptions(["reunión", "mañana", "conferencia"], gapLabels.map(({ name }) => name));
 
     await page.evaluate(() => window.__ew.road.jumpTimer(149.8));
     const result = page.getByRole("dialog", { name: ui("Važiavimas baigtas", "Drive over") });

@@ -48,8 +48,8 @@
 }
 @media (orientation: landscape) and (max-height: 520px) {
   /* Give the sentence and its glosses room beside the dashboard, above the boards. */
-  .road-overlay .road-header:has(.road-gap) .road-dash { flex: 0 1 auto; max-width: 42%; }
-  .road-overlay .road-cue:has(.road-gap) { flex: 1; min-width: 0; max-width: none; padding-block: 3px; }
+  .road-overlay .road-header:has(.road-gap) .road-dash { flex: 0 1 auto; max-width: min(42%, 280px); }
+  .road-overlay .road-cue:has(.road-gap) { flex: 1; min-width: 0; max-width: none; padding: 3px 8px; }
   .road-overlay .road-gap .il { gap: 2px 6px; line-height: 1.1; }
 }
 

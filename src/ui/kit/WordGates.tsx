@@ -12,6 +12,7 @@ import { EndDestination } from "../Conversation";
 import { Icon } from "../icons";
 import { HL, L, TL } from "../i18n";
 import { FeedbackBadge } from "./FeedbackBadge";
+import { fitGateLabel } from "./gateLabelFit";
 import { GlossLine } from "./GlossLine";
 import { ScoreCard, ScoreNumber } from "./ScoreCard";
 import "./wordGates.css";
@@ -33,48 +34,11 @@ const subscribeWidth = (change: () => void) => {
   return () => query.removeEventListener("change", change);
 };
 
-function typeset(text: string, mode: FaceMode, preferSingleLine: boolean, minSize: number, maxSize = 32, maxLines = 2) {
-  const height = faceHeight(mode);
+function typeset(text: string, mode: FaceMode, options: Parameters<typeof fitGateLabel>[3]) {
   const family = globalThis.document?.fonts?.check(`800 32px "${BOARD_FONT}"`, text) ? `"${BOARD_FONT}"` : fallbackFont;
   textMeasure ??= globalThis.document?.createElement("canvas").getContext("2d");
   if (textMeasure) textMeasure.font = `800 100px ${family}`;
-  const words = text.split(/\s+/);
-  const splits = [[text], ...words.slice(1).map((_, i) => [words.slice(0, i + 1).join(" "), words.slice(i + 1).join(" ")])];
-  if (maxLines === 3) {
-    for (let first = 1; first < words.length - 1; first++) {
-      for (let second = first + 1; second < words.length; second++) {
-        splits.push([words.slice(0, first).join(" "), words.slice(first, second).join(" "), words.slice(second).join(" ")]);
-      }
-    }
-  }
-  let best = { lines: splits[0], size: 0, scale: 1, lineHeight: 1.06 };
-  for (const lines of splits) {
-    let width = 0, halfInkHeight = 0, minLeading = 0, previousDescent = -Infinity;
-    for (const line of lines) {
-      const m = textMeasure?.measureText(line);
-      const advance = m?.width ?? line.length * 58;
-      width = Math.max(width, advance,
-        2 * ((m?.actualBoundingBoxLeft ?? 0) + advance / 2),
-        2 * ((m?.actualBoundingBoxRight ?? advance) - advance / 2));
-      const baseline = ((m?.fontBoundingBoxAscent ?? 80) - (m?.fontBoundingBoxDescent ?? 20)) / 2;
-      const ascent = m?.actualBoundingBoxAscent ?? 80, descent = m?.actualBoundingBoxDescent ?? 20;
-      halfInkHeight = Math.max(halfInkHeight, ascent - baseline, descent + baseline);
-      minLeading = Math.max(minLeading, previousDescent + ascent);
-      previousDescent = descent;
-    }
-    const fitWidth = (FACE_WIDTH - 4) * 100 / width;
-    // Use the measured ink clearance so three lines can fit without shrinking the road phrase as far.
-    const compact = mode === "road" && lines.length === 3;
-    const leading = lines.length === 3 ? Math.max(compact ? 76 : 90, minLeading + 2) : 106;
-    const minScale = compact ? 0.83 : 0.88;
-    const inkHeight = Math.max(leading, 2 * halfInkHeight) + (lines.length - 1) * leading;
-    const size = Math.min(maxSize, height * 100 / inkHeight, fitWidth / minScale);
-    if (size > best.size) best = { lines, size, scale: Math.max(minScale, Math.min(1, fitWidth / size)), lineHeight: leading / 100 };
-    if (preferSingleLine && lines.length === 1 && size >= 20) break;
-  }
-  // A portrait sea label has a fixed local face. Preserve the em height on unusually long choices.
-  const size = Math.max(minSize, best.size);
-  return { ...best, size, scale: best.scale * best.size / size, family };
+  return { ...fitGateLabel(text, mode, (line) => textMeasure?.measureText(line), options), family };
 }
 
 function GateLabel({ mode, id, lane, text, layout, steer }: {
@@ -95,9 +59,9 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane, stampedL
   mode: FaceMode; prompt: Prompt; gateId: number; steer?: (lane: number) => void; answeredLane?: number; stampedLane?: number;
 }) {
   const wide = useSyncExternalStore(subscribeWidth, wideBoard, wideBoard);
-  const layouts = useMemo(() => prompt.options.map((text) => prompt.phrase
-    ? typeset(text, mode, false, 0, text.length > 24 ? 25 : 29, 3)
-    : typeset(text, mode, mode === "sea" && wide, mode === "sea" && !wide ? 21 : 0)),
+  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, mode, prompt.phrase
+    ? { maxSize: text.length > 24 ? 25 : 29, maxLines: 3 }
+    : { preferSingleLine: mode === "sea" && wide, minSize: mode === "sea" && !wide ? 21 : 0 })),
     [prompt, mode, wide]);
   return <div className="road-gates" data-gate-id={gateId} lang={prompt.gap || prompt.phrase ? TL : HL}>
     {prompt.options.map((text, lane) => lane !== stampedLane && (answeredLane === undefined || lane === answeredLane) &&
