@@ -27,6 +27,8 @@ export class StyledCharacter {
   private gestureSide = 1;
   private gestureT = 0;
   private browY = 0;
+  private watchYaw = 0;
+  private watchPitch = 0;
   declare talkPose?: NaturalPoseDriver;
 
   constructor(public look: Look) {
@@ -94,6 +96,8 @@ export class StyledCharacter {
       mouth: b[BONE.mouth], hair: b[BONE.tail], handLength: this.spec.joints.hand, carry: this.look.carry,
     };
   }
+
+  canNoticeTalk() { return this.talking <= 0; }
 
   beginNaturalPose() { this.talking = 0; }
 
@@ -200,6 +204,23 @@ export class StyledCharacter {
       uR.rotation.set(-0.26 + uR.rotation.x * 0.17, 0, 0.18);
       fR.rotation.set(-0.79, 0, 0);
     }
+    const watch = pose?.reduced ? null : pose?.watch;
+    let watching = false;
+    if (watch) {
+      this.root.updateWorldMatrix(true, false);
+      const m = this.root.matrixWorld.elements, x = watch.x - m[12], z = watch.z - m[14];
+      const facing = Math.atan2(m[8], m[10]);
+      const delta = Math.atan2(x, z) - facing;
+      const yaw = Math.atan2(Math.sin(delta), Math.cos(delta));
+      const distance = Math.hypot(x, z);
+      watching = distance > 0.35 && Math.abs(yaw) < 1.9;
+      const pitch = Math.atan2(m[13] + head.position.y + body.position.y - watch.y, distance);
+      const k = Math.min(1, dt * (pose?.watchSpeed ?? 5.5));
+      this.watchYaw += ((watching ? THREE.MathUtils.clamp(yaw, -0.95, 0.95) * 0.85 : 0) - this.watchYaw) * k;
+      this.watchPitch += ((watching ? THREE.MathUtils.clamp(pitch, -0.4, 0.3) * 0.75 : 0) - this.watchPitch) * k;
+      turn += this.watchYaw;
+      nod += this.watchPitch;
+    } else this.watchYaw = this.watchPitch = 0;
     head.rotation.set(nod, turn, tilt);
     if (this.poolPose) applyPoolPose(this.poolPose, body, head, uL, fL, uR, fR);
     // ponytail swings
@@ -210,6 +231,6 @@ export class StyledCharacter {
     const blink = pose ? Math.max(0, 1 - Math.abs(this.blinkT - 0.1) / 0.1) : Number(this.blinkT < 0.12);
     b[BONE.eyes].scale.y = 1 - blink * 0.9;
     if (this.blinkT < 0) this.blinkT = pose ? 2.2 + Math.random() * 4 : Math.random() < 0.18 ? 0.28 : 2.5 + Math.random() * 3.5;
-    pose?.apply(walking || this.lift > 0 || !!this.poolPose, blink);
+    pose?.apply(walking || this.lift > 0 || !!this.poolPose, blink, watching);
   }
 }

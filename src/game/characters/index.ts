@@ -17,6 +17,7 @@ export interface GameCharacter {
   talkPose?: NaturalPoseDriver;
   naturalRig?(): NaturalRig | undefined;
   beginNaturalPose?(): void;
+  canNoticeTalk?(): boolean;
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;
   update(dt: number): void;

@@ -1411,6 +1411,11 @@ export class Character {
     };
   }
 
+  canNoticeTalk() {
+    const moment = this.moment?.kind;
+    return this.talking <= 0 && !this.reaction && moment !== "phone" && moment !== "sip" && moment !== "type" && moment !== "wipe";
+  }
+
   beginNaturalPose() {
     this.talking = this.gesture.w = this.avertT = 0;
     this.level = this.vowel = this.moment = this.reaction = this.moodNow = null;
@@ -1724,7 +1729,7 @@ export class Character {
     }
     let gy = 0, gp = 0, ex = sc.x * idle, ey = sc.y * idle - eyesDown * 0.008, looking = false;
     const poseWatch = pose?.watch;
-    const wp = pose?.reduced ? null : poseWatch ?? this.watch;
+    const wp = pose?.reduced ? null : poseWatch === undefined ? this.watch : poseWatch;
     const steady = this.steady || !!poseWatch;
     if (wp && eyesDown < 0.5) {
       const p = this.root.position, dx = wp.x - p.x, dz = wp.z - p.z, d = Math.hypot(dx, dz);
@@ -1758,8 +1763,9 @@ export class Character {
       this.gazeYaw = this.gazePitch = this.eyeX = this.eyeY = 0;
     } else {
       if (looking !== this.looking) { this.looking = looking; if (Math.abs(gy - this.gazeYaw) > 0.35 && this.blinkT > 0.4 && Math.random() < 0.7) this.blinkT = BLINK; }
-      this.gazeYaw += (gy - this.gazeYaw) * Math.min(1, dt * (looking ? 5.5 : 3));
-      this.gazePitch += (gp - this.gazePitch) * Math.min(1, dt * 5);
+      const snap = poseWatch && pose?.watchSpeed;
+      this.gazeYaw += (gy - this.gazeYaw) * Math.min(1, dt * (snap || (looking ? 5.5 : 3)));
+      this.gazePitch += (gp - this.gazePitch) * Math.min(1, dt * (snap || 5));
       this.eyeX += (ex - this.eyeX) * Math.min(1, dt * 24);
       this.eyeY += (ey - this.eyeY) * Math.min(1, dt * 24);
     }

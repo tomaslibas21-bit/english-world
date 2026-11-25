@@ -18,6 +18,9 @@ export interface GestureRequest {
   count?: 1 | 2 | 3;
   delay?: number;
   directional?: boolean;
+  straight?: boolean;
+  strength?: number;
+  smile?: boolean;
 }
 
 export interface PoseOptions {
@@ -25,6 +28,9 @@ export interface PoseOptions {
   role?: TalkRole;
   /** World-space top of a counter in reach of the actor. */
   counterY?: number;
+  counterContains?(point: Vector3): boolean;
+  idleWorkHands?: boolean;
+  random?(): number;
   entry?: PoseEntry;
   mouth?: VoiceMouth;
   beforeAdvance?(dt: number): boolean;
@@ -62,15 +68,20 @@ const REACH: Partial<Record<CueKind, Reach>> = {
   heart: { forward: -0.40, out: -0.08, bend: -1.51, twist: -0.20, side: -0.56 },
 };
 
+const STRAIGHT: Reach = { forward: -0.62, out: 0.06, bend: -0.65, twist: -0.20, side: 0 };
+
 interface Cue {
   kind: CueKind | null;
   age: number;
   side: -1 | 1;
   count: 1 | 2 | 3;
   directional: boolean;
+  straight: boolean;
+  strength: number;
+  smile: boolean;
 }
 
-function emptyCue(): Cue { return { kind: null, age: 0, side: 1, count: 1, directional: false }; }
+function emptyCue(): Cue { return { kind: null, age: 0, side: 1, count: 1, directional: false, straight: false, strength: 1, smile: false }; }
 
 function cueTime(kind: CueKind | null, age: number) {
   if (!kind) return 0;
@@ -80,9 +91,9 @@ function cueTime(kind: CueKind | null, age: number) {
   return oneShot(age, 0.20, kind === "count" ? 0.35 : 0.23, 0.28);
 }
 
-function blockedHands(actor: GameCharacter, rig: NaturalRig) {
+function blockedHands(actor: GameCharacter, rig: NaturalRig, idleWorkHands?: boolean) {
   const busy = actor.busy;
-  if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel" || busy === "type" || busy === "wipe") return 3;
+  if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel" || (!idleWorkHands && (busy === "type" || busy === "wipe"))) return 3;
   const left = rig.carry === "bag" || busy === "doorL";
   const right = actor.rightHand.children.length || rig.carry === "coffee" || rig.carry === "cup"
     || busy === "cup" || busy === "tiller" || busy === "doorR";
@@ -136,7 +147,8 @@ class ConversationPose implements NaturalPoseDriver {
   get releasing() { return !this.closed && this.releaseSeconds > 0; }
   weight = 0;
   reduced = false;
-  watch?: Vector3;
+  watch?: Vector3 | null;
+  get watchSpeed() { return this.role === "learner" ? 22 : undefined; }
   private role: TalkRole;
   private entryAge = 0;
   private entrySeconds = ENTRY_SECONDS;
@@ -171,7 +183,7 @@ class ConversationPose implements NaturalPoseDriver {
   private gazeEnding = false;
   private gazeHold = 0.32;
   private gazeTarget = "";
-  private nextBystander = 0;
+  private readonly random: () => number;
 
   private readonly hand = new Vector3();
   private readonly eyes = new Vector3();
@@ -202,6 +214,7 @@ class ConversationPose implements NaturalPoseDriver {
     this.lips = options.mouth ?? new VoiceMouth();
     this.role = options.role ?? "cast";
     this.counterY = options.counterY;
+    this.random = options.random ?? Math.random;
     if (handoff) this.entrySeconds = HANDOFF_SECONDS;
     this.motion?.addEventListener("change", this.motionChanged);
     this.motionChanged();
@@ -262,7 +275,7 @@ class ConversationPose implements NaturalPoseDriver {
     this.gestured.add(line);
     if (this.reduced) return false;
     this.fadeCue();
-    return this.startCue(gesture.kind, gesture.side, gesture.count, gesture.delay, gesture.directional);
+    return this.startCue(gesture.kind, gesture.side, gesture.count, gesture.delay, gesture.directional, gesture.straight, gesture.strength, gesture.smile);
   }
 
   react(kind: TalkReaction | "yes" | "headGreeting", side: -1 | 1 = 1, delay = 0) {
@@ -281,16 +294,11 @@ class ConversationPose implements NaturalPoseDriver {
     return this.startCue(kind, side, 1, delay);
   }
 
-  glanceAt(point: Vector3, delay = 0.32, hold = this.role === "bystander" ? 0.32 : 0.16, target = "") {
-    if (!this.active || this.releasing || this.reduced || this.time < this.nextBystander) return false;
-    if (this.role === "bystander") {
-      this.actor.root.getWorldPosition(this.ray);
-      if (this.ray.distanceToSquared(point) > 4.5 ** 2) return false;
-      this.nextBystander = this.time + 6 + Math.random() * 4;
-    }
+  glanceAt(point: Vector3, delay = 0.32, hold = 0.32, target = "") {
+    if (!this.active || this.releasing || this.reduced || !this.gazeAngles(point)) return false;
     this.gaze.copy(point);
     this.gazeAge = -Math.max(0, delay);
-    this.gazeHold = this.role === "bystander" ? clamp(hold, 0.22, 0.50) : clamp(hold, 0.10, 0.24);
+    this.gazeHold = clamp(hold, 0.26, 0.42);
     this.gazeFade = 1;
     this.gazeEnding = false;
     this.gazeTarget = target;
@@ -350,7 +358,8 @@ class ConversationPose implements NaturalPoseDriver {
     this.cue.kind = null;
   }
 
-  private startCue(kind: CueKind, side: -1 | 1 = 1, count: 1 | 2 | 3 = 1, delay = 0, directional = false) {
+  private startCue(kind: CueKind, side: -1 | 1 = 1, count: 1 | 2 | 3 = 1, delay = 0,
+    directional = false, straight = false, strength = 1, smile = false) {
     if (kind === "greeting" || kind === "wave" || kind === "heart" || kind === "openPalm") {
       if (!this.canWave) kind = "headGreeting";
     }
@@ -366,19 +375,21 @@ class ConversationPose implements NaturalPoseDriver {
     this.cue.side = side;
     this.cue.count = count;
     this.cue.directional = directional;
+    this.cue.straight = straight;
+    this.cue.strength = strength;
+    this.cue.smile = smile;
     return true;
   }
 
   get armOpportunity() {
-    const blocked = blockedHands(this.actor, this.rig);
-    return (blocked === 3 || this.actor.anim === "sit" || this.actor.poolPose ? 0 : blocked ? 0.66 : 1)
-      * (this.counterY !== undefined ? 0.6 : 1);
+    const blocked = blockedHands(this.actor, this.rig, this.options.idleWorkHands);
+    return (blocked === 3 || this.actor.anim === "sit" || this.actor.poolPose ? 0 : blocked ? 0.66 : 1);
   }
 
   get canWave() { return this.counterY === undefined && this.armOpportunity > 0; }
 
   private scheduleListener() {
-    this.listenAt = this.time + (this.role === "learner" ? 5 + Math.random() * 3 : 2 + Math.random() * 1.5);
+    this.listenAt = this.time + (this.role === "learner" ? 5 + this.random() * 3 : 2 + this.random() * 1.5);
   }
 
   advance(dt: number) {
@@ -410,7 +421,7 @@ class ConversationPose implements NaturalPoseDriver {
         if ((listening || learner) && this.time >= this.listenAt) {
           this.listenAge = 0;
           this.learnerHip = !this.learnerHip;
-          this.listenAt = this.time + (learner ? 5 : 4) + Math.random() * 3;
+          this.listenAt = this.time + (learner ? 5 : 4) + this.random() * 3;
         }
       }
     }
@@ -494,23 +505,35 @@ class ConversationPose implements NaturalPoseDriver {
     thighR.quaternion.premultiply(this.bodyDelta);
   }
 
+  private gazeYaw = 0;
+  private gazePitch = 0;
+
+  private gazeAngles(point: Vector3) {
+    const { head } = this.rig;
+    const root = this.actor.root;
+    head.updateWorldMatrix(true, false);
+    this.inverseWorld.copy(root.matrixWorld).invert();
+    this.hand.setFromMatrixPosition(head.matrixWorld).applyMatrix4(this.inverseWorld);
+    this.ray.copy(point).applyMatrix4(this.inverseWorld).sub(this.hand);
+    const yaw = Math.atan2(this.ray.x, this.ray.z);
+    const pitch = -Math.atan2(this.ray.y, Math.hypot(this.ray.x, this.ray.z));
+    const horizontal = 65 * Math.PI / 180, vertical = 35 * Math.PI / 180;
+    if (Math.abs(yaw) > horizontal || Math.abs(pitch) > vertical) return false;
+    this.inverseWorld.copy(head.matrixWorld).invert();
+    this.ray.copy(point).applyMatrix4(this.inverseWorld);
+    this.gazeYaw = Math.atan2(this.ray.x, this.ray.z);
+    this.gazePitch = -Math.atan2(this.ray.y, Math.hypot(this.ray.x, this.ray.z));
+    return Math.abs(this.gazeYaw) <= horizontal && Math.abs(this.gazePitch) <= vertical;
+  }
+
   private applyGaze() {
     const age = this.gazeAge, blend = ease(this.gazeFade);
     const eyesWeight = oneShot(age, 0.08, 0.13 + this.gazeHold, 0.22) * blend;
-    if (eyesWeight === 0) return false;
-    const { body, head, eye } = this.rig;
-    const root = this.actor.root;
-    root.updateWorldMatrix(true, false);
-    body.updateMatrix();
-    this.inverseWorld.copy(root.matrixWorld).invert();
-    this.hand.copy(head.position).applyMatrix4(body.matrix);
-    this.ray.copy(this.gaze).applyMatrix4(this.inverseWorld).sub(this.hand);
-    const yaw = Math.atan2(this.ray.x, this.ray.z);
-    const pitch = -Math.atan2(this.ray.y, Math.hypot(this.ray.x, this.ray.z));
-    if (Math.abs(yaw) > 65 * Math.PI / 180 || Math.abs(pitch) > 35 * Math.PI / 180) return false;
-    const x = yaw - head.rotation.y, y = pitch - head.rotation.x;
+    if (eyesWeight === 0 || !this.gazeAngles(this.gaze)) return false;
+    const { head, eye } = this.rig;
+    const x = this.gazeYaw, y = this.gazePitch;
     this.retainEyes();
-    const eyeX = (clamp(x * 0.028, -0.009, 0.009) - eye.position.x) * eyesWeight;
+    const eyeX = clamp(x * 0.028 - eye.position.x, -0.009, 0.009) * eyesWeight;
     const eyeY = clamp(-y * 0.019, -0.004, 0.004) * eyesWeight;
     eye.position.x += eyeX;
     eye.position.y += eyeY;
@@ -531,10 +554,10 @@ class ConversationPose implements NaturalPoseDriver {
     this.hand.set(0, -this.rig.handLength, 0.02).applyEuler(this.foreAngle.set(bend, twist, swing, fore.rotation.order));
     this.hand.add(fore.position).applyEuler(this.armAngle.set(forward, upper.rotation.y, out, upper.rotation.order));
     this.hand.add(upper.position).applyMatrix4(this.rig.body.matrixWorld);
-    return this.hand.y <= this.eyes.y - 0.11 && (this.counterY === undefined || this.hand.y >= this.counterY + 0.07);
+    return this.hand.y <= this.eyes.y - 0.11 && (this.counterY === undefined || this.hand.y >= this.counterY + 0.07 || this.options.counterContains?.(this.hand) === false);
   }
 
-  private mixArm(side: -1 | 1, reach: Reach, weight: number, wave: number, pulse: number) {
+  private mixArm(side: -1 | 1, reach: Reach, weight: number, range: number, wave: number, pulse: number) {
     const r = this.rig;
     const upper = side < 0 ? r.upperL : r.upperR, fore = side < 0 ? r.foreL : r.foreR;
     const forward = upper.rotation.x + reach.forward * weight;
@@ -543,10 +566,10 @@ class ConversationPose implements NaturalPoseDriver {
     const twist = fore.rotation.y + side * (reach.twist * weight + pulse);
     const swing = fore.rotation.z + side * (reach.side + wave) * weight;
     r.eye.getWorldPosition(this.eyes);
-    if (this.counterY !== undefined && !this.handFits(upper, fore, upper.rotation.x, upper.rotation.z, fore.rotation.x, fore.rotation.y, fore.rotation.z)) return false;
+    if (this.counterY !== undefined && !this.options.counterContains && !this.handFits(upper, fore, upper.rotation.x, upper.rotation.z, fore.rotation.x, fore.rotation.y, fore.rotation.z)) return false;
     // Check the stroke's destination as well as this frame so counter and face clearance hold during the ease.
-    if (!this.handFits(upper, fore, upper.rotation.x + reach.forward, upper.rotation.z + side * reach.out,
-      fore.rotation.x + reach.bend, fore.rotation.y + side * reach.twist, fore.rotation.z + side * reach.side)
+    if (!this.handFits(upper, fore, upper.rotation.x + reach.forward * range, upper.rotation.z + side * reach.out * range,
+      fore.rotation.x + reach.bend * range, fore.rotation.y + side * reach.twist * range, fore.rotation.z + side * reach.side * range)
       || !this.handFits(upper, fore, forward, out, bend, twist, swing)) return false;
     upper.rotation.x = forward;
     upper.rotation.z = out;
@@ -569,7 +592,8 @@ class ConversationPose implements NaturalPoseDriver {
       brow.position.y += 0.005 * weight;
     }
 
-    const reach = REACH[kind];
+    if (c.smile && corners && kind !== "headGreeting") corners.position.y += 0.005 * weight;
+    const reach = c.straight ? STRAIGHT : REACH[kind];
     if (!reach) return;
     if (kind === "shrug") {
       if (!supported) {
@@ -581,13 +605,14 @@ class ConversationPose implements NaturalPoseDriver {
     }
     const preferred = c.side < 0 ? 1 : 2;
     const side = !c.directional && blocked & preferred ? (c.side === -1 ? 1 : -1) : c.side;
-    const amount = weight * (supported ? 0.65 : 1);
+    const range = (supported ? 0.65 : 1) * c.strength;
+    const amount = weight * range;
     const wave = kind === "greeting" || kind === "wave" ? 0.14 * oneShot(c.age - 0.20, 0.10, 0, 0.16) : 0;
     const countAge = c.age - 0.15, beat = Math.floor(countAge / 0.19);
     const pulse = kind === "count" && beat >= 0 && beat < c.count
       ? 0.09 * oneShot(countAge - beat * 0.19, 0.07, 0, 0.07) * amount : 0;
-    let used = !(blocked & (side < 0 ? 1 : 2)) && this.mixArm(side, reach, amount, wave, pulse);
-    if (reach.both && !blocked) used = this.mixArm(side < 0 ? 1 : -1, reach, amount, 0, 0) || used;
+    let used = !(blocked & (side < 0 ? 1 : 2)) && this.mixArm(side, reach, amount, range, wave, pulse);
+    if (reach.both && !blocked) used = this.mixArm(side < 0 ? 1 : -1, reach, amount, range, 0, 0) || used;
     if (!used && c.directional) head.rotation.y += 0.055 * side * weight;
     else if (!used && kind !== "shrug") head.rotation.x += 0.033 * weight;
   }
@@ -595,7 +620,7 @@ class ConversationPose implements NaturalPoseDriver {
   apply(moving: boolean, blink: number, watching = false) {
     if (!this.active) return;
     const r = this.rig, seated = this.actor.anim === "sit";
-    const occupied = blockedHands(this.actor, r), blocked = seated ? 3 : occupied;
+    const occupied = blockedHands(this.actor, r, this.options.idleWorkHands), blocked = seated ? 3 : occupied;
     const supported = blocked !== 0 || this.counterY !== undefined;
     if (moving || seated !== this.origin.seated) this.blendOrigin = false;
     let gesture = null as CueKind | null, gestureWeight = 0, reactionWeight = 0, listen = 0;
@@ -614,7 +639,7 @@ class ConversationPose implements NaturalPoseDriver {
         const learner = this.role === "learner";
         const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * (1 - Math.max(cue, response));
         const hip = learner && this.learnerHip && !supported;
-        const headBase = r.head.rotation.x, rollBase = r.head.rotation.z;
+        const headBase = r.head.rotation.x, yawBase = r.head.rotation.y, rollBase = r.head.rotation.z;
         const browBaseL = r.browL.position.y, browBaseR = r.browR?.position.y ?? browBaseL;
         const smileBase = r.corners?.position.y ?? 0;
         listen = ease(this.listenWeight);
@@ -634,6 +659,7 @@ class ConversationPose implements NaturalPoseDriver {
         const gazing = (cue === 0 || this.cue.kind !== "no") && this.applyGaze();
         const pitchLimit = response || this.cue.kind === "yes" || this.fading.kind === "yes" ? 0.08
           : gazing ? 0.07 : supported && listen > 0 && this.role !== "speaking" ? 0.059 : 0.045;
+        if (gazing) r.head.rotation.y = yawBase + clamp(r.head.rotation.y - yawBase, -0.12, 0.12);
         r.head.rotation.x = headBase + clamp(r.head.rotation.x - headBase + (supported ? 0.024 * listen : 0), -pitchLimit, pitchLimit);
         r.head.rotation.z = rollBase + clamp(r.head.rotation.z - rollBase, response ? -0.055 : -0.025, response ? 0.055 : 0.025);
         r.browL.position.y = Math.min(r.browL.position.y, browBaseL + 0.008);

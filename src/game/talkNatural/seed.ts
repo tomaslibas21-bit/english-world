@@ -10,3 +10,11 @@ export function lineSeed(actor: string, run: number, line: TalkLineId, salt = 0)
   hash ^= hash >>> 15;
   return (hash >>> 0) / 4294967296;
 }
+
+export function talkRandom(seed: number) {
+  let state = seed * 0x100000000;
+  return () => {
+    state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}

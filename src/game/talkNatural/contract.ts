@@ -36,11 +36,29 @@ export interface NaturalRig {
 export interface NaturalPoseDriver {
   readonly releasing: boolean;
   readonly reduced: boolean;
-  readonly watch?: Vector3;
+  readonly watch?: Vector3 | null;
+  readonly watchSpeed?: number;
   readonly mouth: number;
   readonly roundness: number;
   advance(dt: number): void;
   apply(moving: boolean, blink: number, watching?: boolean): void;
   restoreBase(): void;
   interrupt(): void;
+}
+
+export type AnchorKind = "handoff" | "menu" | "machine" | "map";
+
+export interface ClassifiedCue {
+  family: "greeting" | "question" | "point" | "shrug" | "yes" | "no" | "count" | "offer" | "goodbye" | "repeat" | "rest";
+  side?: -1 | 1;
+  straight?: true;
+  quantity?: 1 | 2 | 3;
+  anchor?: AnchorKind;
+}
+
+export interface TalkPersonality {
+  armChance: number;
+  farewell: "yes" | "wave" | "heart";
+  smallGreeting?: true;
+  quickSmile?: true;
 }
