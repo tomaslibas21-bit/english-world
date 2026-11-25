@@ -16,7 +16,7 @@ export function karaokeWords(timings: Phrase["t"], time: number) {
 }
 
 type Line = {
-  phrase: Phrase; clip: FilePlayback; time: number; lastMove: number;
+  phrase: Phrase; situationId: string; clip: FilePlayback; time: number; lastMove: number;
   fallbackAt?: number; fadeAt?: number; onClear?: () => void;
 };
 
@@ -24,6 +24,7 @@ class Karaoke {
   private node?: HTMLDivElement;
   private spans: HTMLSpanElement[] = [];
   private line?: Line;
+  private listeners = new Set<() => void>();
   private frame = 0;
   private upcoming = false;
   private nextPrompt?: string;
@@ -34,6 +35,11 @@ class Karaoke {
   constructor(private mode: FaceMode) {}
 
   get visible() { return this.line !== undefined; }
+  snapshot = () => this.line;
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
 
   attach = (node: HTMLDivElement | null) => {
     this.node = node ?? undefined;
@@ -58,10 +64,11 @@ class Karaoke {
     this.node.replaceChildren(...this.spans.flatMap((span, i) => i ? [" ", span] : [span]));
   }
 
-  show(phrase: Phrase, onClear?: () => void) {
+  show(phrase: Phrase, situationId = "", onClear?: () => void) {
     this.stop();
-    const line: Line = this.line = { phrase, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now(), onClear };
+    const line: Line = this.line = { phrase, situationId, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now(), onClear };
     this.mountLine();
+    this.listeners.forEach((listener) => listener());
     const tick = (now: number) => {
       if (this.line !== line) return;
       this.update(line, now);
@@ -82,6 +89,7 @@ class Karaoke {
   }
 
   stop() {
+    const wasVisible = this.visible;
     const line = this.line;
     if (line) {
       line.clip.stop();
@@ -93,6 +101,7 @@ class Karaoke {
     this.lit = 0;
     this.current = -1;
     if (this.node) this.node.hidden = true;
+    if (wasVisible) this.listeners.forEach((listener) => listener());
     line?.onClear?.();
   }
 

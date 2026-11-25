@@ -150,7 +150,7 @@ export function Hud() {
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
-          {streetCard && portrait && <StreetCard />}
+          {streetCard && portrait && <StreetCard compactChoices={screen.h <= 720} />}
           {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && splitLead(subtitle).rest.trim() !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
@@ -162,7 +162,7 @@ export function Hud() {
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
       <RadioSetLayer />
-      {streetCard && !portrait && <StreetCard />}
+      {streetCard && !portrait && <StreetCard compactChoices={screen.sidewaysPhone} />}
       {!hud.panel && <StreetBubbles />}
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
@@ -227,7 +227,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .directions-card, .objective-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .directions-card, .objective-card, .street-bubble) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer

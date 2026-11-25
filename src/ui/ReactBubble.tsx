@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { game } from "../game/gameRef";
 import type { ReactionLine } from "../game/life/reacts";
 import { STREET_WORDS } from "../game/street/words";
+import { PhraseSave } from "./kit/PhraseSave";
 import "./reactBubble.css";
 
 const TRANSLATION = "Vertimas";
@@ -38,6 +39,7 @@ function bubblePlacement(anchor: { x: number; y: number }, w: number, h: number,
 
 export function ReactBubble({ line }: { line: ReactionLine }) {
   const [translation, showTranslation] = useState(false);
+  const sentence = useMemo(() => ({ en: line.text, nat: line.lt, say: line.text, units: [] }), [line]);
   const detail = translation ? line.lt : line.id === 1 ? STREET_WORDS.translation : null;
   const bubble = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -73,8 +75,9 @@ export function ReactBubble({ line }: { line: ReactionLine }) {
       <span lang="en">{line.text}</span>
       {detail && <small lang="lt">{detail}</small>}
     </div>
-    <button type="button" aria-label={TRANSLATION} aria-expanded={translation} onMouseDown={(e) => e.preventDefault()} onClick={() => {
+    <button type="button" className="reaction-translation" aria-label={TRANSLATION} aria-expanded={translation} onMouseDown={(e) => e.preventDefault()} onClick={() => {
       if (!translation) { showTranslation(true); game?.extendReaction?.(line.id); }
     }} />
+    <PhraseSave sentence={sentence} situationId="street" sourceLabel={STREET_WORDS.overheard} iconOnly />
   </div>;
 }

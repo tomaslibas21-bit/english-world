@@ -1,0 +1,13 @@
+.phrase-chooser { position: relative; pointer-events: auto; }
+.phrase-chooser[open] { z-index: 4; }
+.phrase-chooser > summary {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; list-style: none;
+}
+.phrase-chooser > summary::-webkit-details-marker { display: none; }
+.phrase-chooser > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.phrase-chooser-panel {
+  position: absolute; z-index: 1; inset-inline-end: 0; top: calc(100% + 4px);
+  width: min(310px, calc(100vw - 32px)); padding: 6px;
+  background: var(--panel-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 4px 16px rgb(0 20 40 / 25%);
+}

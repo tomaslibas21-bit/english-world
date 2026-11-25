@@ -1,5 +1,5 @@
 import { Box3, Plane, Raycaster, Vector2, Vector3 } from "three";
-import { BILLIARDS_LINES } from "../../content/billiards-lines";
+import { BILLIARDS_LINES, BILLIARDS_SITUATION } from "../../content/billiards-lines";
 import { NPCS } from "../../content/npcs";
 import { npcVoice } from "../../content/voices";
 import { countPlay } from "../../state/playStats";
@@ -11,7 +11,7 @@ import { updateHelp, type HelpProgress } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { rand } from "../world/util";
 import { chooseShot } from "./ai";
 import { parseCall, sayItCall, type Call } from "./calls";
@@ -21,7 +21,7 @@ import { callable, isGroup, judgeShot, otherGroup, ownerGroup, rack, remaining, 
 import { resetBilliards, useBilliards, type Phase } from "./store";
 import { FELT_Y, TABLE_X, TABLE_Z, TABLE_PROMPT, TINA_HOME, type TableView } from "./table";
 
-export const BILLIARDS_SITUATION = "x01-pool-hall";
+export { BILLIARDS_SITUATION } from "../../content/billiards-lines";
 export const BILLIARDS_PLACE = "pool-hall";
 const TINA = NPCS.tina;
 const PLAY = "Žaisti biliardą";
@@ -46,6 +46,7 @@ interface Round {
   understood: number;
   sayIt: SayItRound;
   announced: Set<Side>;
+  review: PhraseRun;
 }
 interface Shot {
   call: Call | null;
@@ -117,8 +118,16 @@ export class BilliardsMode implements GameMode {
     new Vector3(TABLE_X + 0.01, FELT_Y + 0.075, TABLE_Z + 0.01));
   private dialogue = new ModeDialogue({
     allowBrowserVoice: true, framePlayback: true,
-    say: (line) => ui({ line }),
-    choices: (choices) => ui({ choices }),
+    say: (line) => {
+      const review = this.round?.review;
+      if (line && (this.phase !== "tina" || !useBilliards.getState().call)) review?.add(line.sentence);
+      ui(this.phase === "result" ? { line, review: review?.entries() } : { line });
+    },
+    choices: (choices) => {
+      // A call's alternatives reserve space and feed recognition. Only the selected call is shown.
+      if (this.phase === "group" || this.phase === "reply") this.round?.review.lines(choices);
+      ui({ choices });
+    },
     mic: (mic) => ui({ mic }),
     animate: (seconds) => this.world.tina()?.talk(seconds, () => audio.level(), () => audio.vowel()),
   });
@@ -166,7 +175,8 @@ export class BilliardsMode implements GameMode {
     this.host.rig.stageSnap();
     countPlay("games", this.id);
     const round: Round = { balls: rack(seed), random: rand(seed + 6013), group, side: "learner",
-      shots: 0, made: 0, streak: 0, listens: 0, understood: 0, sayIt: new SayItRound(), announced: new Set() };
+      shots: 0, made: 0, streak: 0, listens: 0, understood: 0, sayIt: new SayItRound(), announced: new Set(),
+      review: new PhraseRun(BILLIARDS_SITUATION) };
     this.round = round;
     this.dialogue.cancel();
     this.dialogue.micOn = true;
@@ -192,6 +202,7 @@ export class BilliardsMode implements GameMode {
   private setPhase(phase: Phase, sayIt: SayItCue | null = null) {
     if (phase !== "listen") this.round?.sayIt.close();
     this.phase = phase;
+    if (phase === "call" || phase === "listen") this.round?.review.lines(useBilliards.getState().pockets.map(({ line }) => line));
     ui({ phase, sayIt });
   }
 
@@ -271,12 +282,16 @@ export class BilliardsMode implements GameMode {
     const target = round.balls.find(({ id }) => id === call.ball)!;
     this.angle = headingTo(round.balls[0], round.shots < 2 ? ghostBall(target, call.pocket) : target);
     this.table!.markCall(round.balls, call, false);
+    round.review.add(option.sentence);
     ui({ call: option, selection: call, aimHelp: round.shots < 1 });
     this.setPhase("aim");
   }
 
   private revealCall() {
-    ui({ reveal: !this.heardCall || this.help.level === 0 || (this.help.level === 1 && this.listened >= 2) });
+    const reveal = !this.heardCall || this.help.level === 0 || (this.help.level === 1 && this.listened >= 2);
+    const call = useBilliards.getState().call;
+    if (reveal && call) this.round?.review.add(call.sentence);
+    ui({ reveal });
   }
 
   private async tinaTurn(round: Round, announceEight: boolean) {
@@ -289,6 +304,7 @@ export class BilliardsMode implements GameMode {
     this.listened = 0;
     this.heardCall = true;
     const call = callLine(this.ai.call, false);
+    if (this.help.level === 0) round.review.add(call.sentence);
     ui({ call, selection: {}, reveal: this.help.level === 0, available: this.validBalls().map(({ id }) => id) });
     this.heardCall = await this.dialogue.sayPieces(call, npcVoice(TINA), TINA.speed ?? 1, false);
     if (round !== this.round) return;
@@ -338,7 +354,9 @@ export class BilliardsMode implements GameMode {
         this.finishListening({ ball, pocket });
         return;
       }
-      ui({ call: callLine({ ball, pocket }, true) });
+      const call = callLine({ ball, pocket }, true);
+      this.round.review.add(call.sentence);
+      ui({ call });
     }
     this.table!.markCall(this.round.balls, this.selection, true);
   }
@@ -353,6 +371,8 @@ export class BilliardsMode implements GameMode {
   private finishListening(answer: Call) {
     const round = this.round!, ai = this.ai!;
     const correct = answer.ball === ai.call.ball && answer.pocket === ai.call.pocket;
+    const call = useBilliards.getState().call;
+    if (call) round.review.add(call.sentence);
     round.listens++;
     if (correct) round.understood++;
     this.help = updateHelp(this.help, correct);
@@ -436,8 +456,9 @@ export class BilliardsMode implements GameMode {
     if (round !== this.round || !await this.sayAll(round, ["bl_thanks"])) return;
     const phrases = [...PHRASES, key].map((key) => line(key).sentence);
     keepPhrases(BILLIARDS_SITUATION, phrases);
+    for (const sentence of phrases) round.review.add(sentence);
     ui({ result: { winner, shots: round.shots, called: round.made, listens: round.listens, understood: round.understood,
-      sunk: 4 - remaining(round.balls, this.group("learner")).length, cards: phrases.length, ...round.sayIt.result } });
+      sunk: 4 - remaining(round.balls, this.group("learner")).length, cards: phrases.length, ...round.sayIt.result }, review: round.review.entries() });
     this.setPhase("result");
     const tina = this.world.tina();
     const shot = this.host.scoreShot(tina ? new Box3().setFromObject(tina.root) : undefined);

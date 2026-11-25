@@ -11,7 +11,7 @@ import { ModeDialogue, type KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun, type ResolvedPhrase } from "../kit/phrases";
 import { useStore } from "../../state/store";
 import { sitProgress } from "../../state/progress";
 import { countPlay } from "../../state/playStats";
@@ -60,6 +60,7 @@ type Run = {
   serving: THREE.Group | null;
   slide: number;
   kept: Map<string, KitLine>;
+  review: PhraseRun;
   wait?: { left: number; finish: (ok: boolean) => void };
   introStarted: boolean;
   guidedReady: boolean;
@@ -86,8 +87,15 @@ class BaristaMode implements GameMode {
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
-    say: (line) => ui({ line }),
-    choices: (choices) => ui({ choices }),
+    say: (line) => {
+      const { hiddenOrder, repair } = useBarista.getState();
+      if (line && (!hiddenOrder.length || repair)) this.run?.review.add(line.sentence);
+      ui({ line });
+    },
+    choices: (choices) => {
+      this.run?.review.lines(choices);
+      ui({ choices });
+    },
     mic: (mic) => ui({ mic }),
     animate: (seconds) => this.speaker?.talk(seconds, () => audio.level(), () => audio.vowel()),
   });
@@ -134,11 +142,12 @@ class BaristaMode implements GameMode {
   }
 
   private fadeIntoShift(cafe: SituationDef, previous?: Run) {
+    const offer = this.offered ? useBarista.getState().line : null;
     const started = this.host.fade(() => {
       this.starting = false;
       if (!this.host.owns(this.id)) return;
       if (previous) this.clearRun(previous);
-      this.launch(cafe);
+      this.launch(cafe, offer);
     });
     if (!started) return false;
     this.starting = true;
@@ -149,7 +158,7 @@ class BaristaMode implements GameMode {
     return true;
   }
 
-  private launch(cafe: SituationDef) {
+  private launch(cafe: SituationDef, offer: KitLine | null) {
     const room = this.café.room();
     const barista = this.café.mia();
     if (!room || !barista) { this.host.left(this.id); return; }
@@ -180,8 +189,10 @@ class BaristaMode implements GameMode {
     const run: Run = {
       shift, cafe, menu: baristaMenu(cafe), root, props, originalProps, mia, miaHome, customer, actors: [mia, customer],
       framing: counterDetails(customer.ch.height, barista.height),
-      serving: null, slide: 0, kept: new Map(), introStarted: false, guidedReady: false, replaying: false, closing: false,
+      serving: null, slide: 0, kept: new Map(), review: new PhraseRun(situation),
+      introStarted: false, guidedReady: false, replaying: false, closing: false,
     };
+    if (offer) run.review.add(offer.sentence);
     this.run = run;
     resetBaristaUi();
     ui({ micOn: this.playback.micOn, menu: run.menu });
@@ -208,13 +219,27 @@ class BaristaMode implements GameMode {
     const { shift } = run;
     const guided = shift.step === "order" && shift.help < 2;
     const fix = shift.correction;
+    const tray = guided || shift.step === "build" || shift.step === "correction";
+    let trayPhrases: readonly ResolvedPhrase[] | undefined;
+    if (tray) {
+      const previous = useBarista.getState();
+      const rows = trayRows(shift.built);
+      trayPhrases = previous.trayPhrases;
+      if (!trayPhrases || rows !== trayRows(previous.built)) {
+        // The numbered pages change the shortcuts, while every chip in these rows stays visible.
+        trayPhrases = rows.flatMap((row) => run.menu[row].map(({ en, lt }) => ({
+          sentence: { en, nat: lt, say: en, units: [] }, situationId: situation,
+        })));
+        run.review.lines(trayPhrases);
+      }
+    }
     ui({
       customer: shift.step === "intro" || shift.step === "closing" ? 0 : shift.index + 1,
       step: shift.step, built: { ...shift.built },
       highlight: fix?.chip ?? (guided && shift.help === 0 ? shift.currentPiece : null),
       repair: !!fix,
       correctionSelected: fix?.selected ?? null,
-      tray: guided || shift.step === "build" || shift.step === "correction",
+      tray, trayPhrases,
       ready: (guided && run.guidedReady) || (shift.step === "build" && !run.replaying),
     });
   }
@@ -279,6 +304,7 @@ class BaristaMode implements GameMode {
     const lines = shift.order.pieces.map((piece) => baristaPieceLine(run.cafe, piece, shift.order.gender));
     run.replaying = true;
     shift.step = "order";
+    if (useBarista.getState().revealed) run.review.lines(lines);
     ui({ hiddenOrder: lines });
     this.paint(run);
     for (const [i, line] of lines.entries()) {
@@ -392,8 +418,9 @@ class BaristaMode implements GameMode {
       this.playback.clearLine();
       shift.step = "score";
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
+      run.review.lines(run.kept.values());
       this.paint(run);
-      ui({ result: { served: shift.served, firstTime: shift.firstTime, cards: run.kept.size } });
+      ui({ result: { served: shift.served, firstTime: shift.firstTime, cards: run.kept.size }, review: run.review.entries() });
       countPlay("games", this.id);
       sendStat("barista", { n: shift.served, first: shift.firstTime, wrong: shift.wrong });
     }
@@ -545,7 +572,13 @@ class BaristaMode implements GameMode {
     if (name === "mic") { this.playback.setMic(value === true); ui({ micOn: this.playback.micOn }); }
     if (name === "give") void this.give(run);
     if (name === "again" && run.shift.step === "score") this.begin(run);
-    if (name === "show" && useBarista.getState().hiddenOrder.length) ui({ revealed: true });
+    if (name === "show") {
+      const { hiddenOrder, revealed } = useBarista.getState();
+      if (hiddenOrder.length && !revealed) {
+        run.review.lines(hiddenOrder);
+        ui({ revealed: true });
+      }
+    }
     if (name === "hear" && run.shift.step === "build" && run.shift.help === 2 && !run.shift.correction) void this.fullOrder(run);
     if (typeof value === "string") {
       if (name === "row" && trayRows(run.shift.built).includes(value as Row)) this.row(value as Row);

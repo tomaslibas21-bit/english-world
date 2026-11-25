@@ -1,6 +1,8 @@
 import { t } from "./dsl";
 import type { SentSrc } from "./types";
 
+export const BILLIARDS_SITUATION = "x01-pool-hall";
+
 const ballWords = [
   ["One", "Pirmas"], ["Two", "Antras"], ["Three", "Trečias"], ["Four", "Ketvirtas"],
   ["Five", "Penktas"], ["Six", "Šeštas"], ["Seven", "Septintas"], ["Eight", "Aštuntas"],

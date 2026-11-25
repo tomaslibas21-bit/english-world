@@ -168,7 +168,7 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-.direction-lines button {
+.direction-lines [data-line] {
   border: 0;
   border-radius: 8px;
   background: var(--accent-soft);
@@ -280,7 +280,7 @@
     overflow: var(--directions-overflow, visible);
     overscroll-behavior: auto;
   }
-  .direction-lines button { padding: 3px 5px; border-radius: 6px; }
+  .direction-lines [data-line] { padding: 3px 5px; border-radius: 6px; }
   .direction-lines .kit-gloss-compact {
     --kit-phrase-size: calc(16px * var(--scale));
     --kit-translation-size: calc(13px * var(--scale));

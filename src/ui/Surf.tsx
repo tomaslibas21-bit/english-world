@@ -1,4 +1,5 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from "react";
+import { memo, useEffect, useRef, type PointerEvent, type ReactNode } from "react";
+import { SURF } from "../content/surf";
 import { SURF_UI as S } from "../content/surf-ui";
 import { speechSupported } from "../convo/speech";
 import { MIC_FEEDBACK } from "../content/microphone";
@@ -10,11 +11,15 @@ import { useStore } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
+import PhraseReview from "./kit/PhraseReview";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { natMatchesGloss } from "./natTip";
 import "./surf.css";
 
 const GLYPHS: Record<SurfArrow, string> = { up: "↑", left: "←", down: "↓", right: "→" };
+const SurfSave = memo(PhraseSave);
+const situationId = SURF?.situation;
 
 function Answer({ s, lt }: { s: SurfLine["s"]; lt: boolean }) {
   return <>
@@ -189,7 +194,10 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
             <div className="surf-feedback" aria-live="polite">
               {s.mark && <FeedbackBadge correct={s.mark === "ok"} label={(s.mark === "ok" ? C.good : C.retry).lt} />}
             </div>
-            <Interlinear s={s.line.s} lt={lt} ipa={false} nat={lt && !natMatchesGloss(s.line.s)} />
+            <div className="phrase-save-row">
+              <Interlinear s={s.line.s} lt={lt} ipa={false} nat={lt && !natMatchesGloss(s.line.s)} />
+              {situationId && <SurfSave sentence={s.line.s} situationId={situationId} iconOnly />}
+            </div>
           </div>
           {s.phase === "ride" && <div className="surf-balance" role="meter" aria-label={C.balance.lt}
             aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${s.balance * 100}%` }} /></div>}
@@ -224,6 +232,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
     </>}>
       <p className="surf-best">{total(s.best.waves + score.waves, s.best.seconds + score.seconds)}</p>
       <p>{R.saved.lt}</p>
+      {!!s.review?.length && <PhraseReview entries={s.review} />}
     </ScoreCard>}
     {!touch && !s.over && <div className="help-strip surf-keys">
       <div>{C.moveHelp.lt.replace("{arrows}", "↑ ← ↓ →")}</div>

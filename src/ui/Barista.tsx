@@ -1,4 +1,4 @@
-import { BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
+import { BARISTA_CONVERSATION, BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
 import { speechSupported } from "../convo/speech";
 import { useBarista } from "../game/barista/store";
 import { matchesPick, trayRows } from "../game/barista/tray";
@@ -6,11 +6,15 @@ import { game } from "../game/gameRef";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard } from "./kit/ScoreCard";
 import "./barista.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("barista", name, value);
 const total = BARISTA_ORDERS.length;
+const { situation: situationId } = BARISTA_CONVERSATION;
+const source = { situationId };
 
 export function BaristaOffer() {
   const offered = useBarista((s) => s.offered);
@@ -18,14 +22,17 @@ export function BaristaOffer() {
   if (!offered || !line) return null;
   return (
     <section className="barista-offer barista-panel">
-      <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
+      <div className="phrase-save-row" data-line={line.key}>
+        <GlossLine sentence={line.sentence} gloss source={source} />
+        <PhraseSave sentence={line.sentence} {...source} iconOnly />
+      </div>
       <button type="button" className="btn" onClick={() => act("start")}>{words.start}</button>
     </section>
   );
 }
 
 function OrderTray({ touch }: { touch: boolean }) {
-  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line } = useBarista();
+  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line, trayPhrases } = useBarista();
   const highlight = line?.key === "bs_c_sorry" ? null : target;
   if (!menu) return null;
 
@@ -61,17 +68,20 @@ function OrderTray({ touch }: { touch: boolean }) {
           </div>
         );
       })}
-      <div className="barista-give">
-        <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
-          {words.give}{!touch && <kbd>Enter</kbd>}
-        </button>
+      <div className="barista-tray-actions">
+        {trayPhrases && <PhraseChooser entries={trayPhrases} bilingual />}
+        <div className="barista-give">
+          <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
+            {words.give}{!touch && <kbd>Enter</kbd>}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 export function BaristaOverlay({ touch }: { touch: boolean }) {
-  const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result } = useBarista();
+  const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result, review } = useBarista();
   if (result) return <div className="barista-result"><ScoreCard title={words.title}
     ratio={result.firstTime / result.served}
     rows={[
@@ -79,6 +89,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
       { label: words.firstTime, value: <FeedbackBadge correct={result.firstTime === total}>{result.firstTime}/{total}</FeedbackBadge> },
     ]}
     phrases={{ label: words.cards, count: result.cards }}
+    review={review}
     again={{ label: words.again, run: () => act("again") }}
     done={{ label: words.done, run: () => game?.modeExit() }}
   /></div>;
@@ -96,7 +107,10 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
       </header>
       {!concealed && line && (
         <div className="barista-cue" data-line={line.key} aria-live="polite">
-          <div className="barista-cue-text barista-panel"><GlossLine sentence={line.sentence} gloss /></div>
+          <div className="barista-cue-text barista-panel phrase-save-row">
+            <GlossLine sentence={line.sentence} gloss source={source} />
+            <PhraseSave sentence={line.sentence} {...source} iconOnly />
+          </div>
         </div>
       )}
       <div className="barista-bottom">
@@ -110,6 +124,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
                   <li key={key} data-line={key}>
                     <span lang="en">{sentence.en}</span>
                     <small lang="lt">{sentence.nat}</small>
+                    <PhraseSave sentence={sentence} situationId={situationId} iconOnly />
                   </li>
                 ))}
               </ul>
@@ -131,10 +146,13 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
               </div>
             </div>
             {choices.map(({ key, sentence }, i) => (
-              <button className="barista-choice" type="button" key={key} data-line={key} onClick={() => act("choose", key)}>
-                {!touch && <kbd>{i + 1}</kbd>}
-                <span lang="en">{sentence.en}</span><small lang="lt">{sentence.nat}</small>
-              </button>
+              <div className="phrase-save-row" key={key}>
+                <button className="barista-choice" type="button" data-line={key} onClick={() => act("choose", key)}>
+                  {!touch && <kbd>{i + 1}</kbd>}
+                  <span lang="en">{sentence.en}</span><small lang="lt">{sentence.nat}</small>
+                </button>
+                <PhraseSave sentence={sentence} situationId={situationId} iconOnly />
+              </div>
             ))}
           </div>
         )}

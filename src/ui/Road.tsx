@@ -1,18 +1,24 @@
-import { ROAD_UI as words } from "../content/road";
+import { ROAD_EDITION, ROAD_UI as words } from "../content/road";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { useRoad } from "../game/road/store";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseSave } from "./kit/PhraseSave";
 import { GateKaraoke, GateLabels, WordGateHeader, WordGateResult, WordGateStart } from "./kit/WordGates";
 import "./road.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("road", name, value);
 const done = () => game?.modeExit();
+const { situation: situationId } = ROAD_EDITION.driver;
+const source = { situationId };
+
 function LiftLine() {
   const line = useRoad((s) => s.line);
   if (!line) return null;
-  return <div className="road-lift-line" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>;
+  return <div className="road-lift-line phrase-save-row" data-line={line.key}>
+    <GlossLine sentence={line.sentence} gloss source={source} /><PhraseSave sentence={line.sentence} {...source} iconOnly />
+  </div>;
 }
 
 function LiftOffer({ touch }: { touch: boolean }) {
@@ -28,11 +34,14 @@ function LiftOffer({ touch }: { touch: boolean }) {
           onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={23} /></button>
         {mic.heard && <span lang="en">{mic.heard}</span>}
       </div>}
-      {choices.map(({ key, sentence }, i) => <button className="road-choice" type="button" data-line={key} key={key} onClick={() => act("choose", key)}>
-        {!touch && <kbd>{i + 1}</kbd>}
-        <span lang="en">{sentence.en}</span>
-        <small lang="lt">{sentence.nat}</small>
-      </button>)}
+      {choices.map(({ key, sentence }, i) => <div className="phrase-save-row" key={key}>
+        <button className="road-choice" type="button" data-line={key} onClick={() => act("choose", key)}>
+          {!touch && <kbd>{i + 1}</kbd>}
+          <span lang="en">{sentence.en}</span>
+          <small lang="lt">{sentence.nat}</small>
+        </button>
+        <PhraseSave sentence={sentence} situationId={situationId} iconOnly />
+      </div>)}
     </div>}
   </div>;
 }

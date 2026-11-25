@@ -6,13 +6,15 @@ import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
 import { STREET_WORDS } from "../game/street/words";
-import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
+import { useCards, unitInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
+import { PHRASE_CARD_UI } from "../content/phrase-card-ui";
 import { coachVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { SitIcon } from "./SitIcon";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
+import { PhraseSave, type PhraseSource } from "./kit/PhraseSave";
 import { ltCount } from "./lt";
 import { placeTip, type TipSpot } from "./natTip";
 import "./cards.css";
@@ -22,7 +24,6 @@ import "./cards.css";
 
 type GlyphPart = string | { d: string };
 const GLYPHS = {
-  plus: ["M12 5.75v12.5", "M5.75 12h12.5"],
   trash: [{ d: "M6.25 7.25l.85 11.9a1.75 1.75 0 0 0 1.75 1.6h6.3a1.75 1.75 0 0 0 1.75-1.6l.85-11.9z" }, "M4.5 7.25h15",
     "M9.5 7.25v-2c0-.7.55-1.25 1.25-1.25h2.5c.7 0 1.25.55 1.25 1.25v2", "M10.25 11v5.5", "M13.75 11v5.5"],
   cards: [{ d: "M3.75 9.5a2 2 0 0 1 2-2h9.25a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2z" },
@@ -30,7 +31,8 @@ const GLYPHS = {
   download: ["M12 4v11", "M7.5 10.75 12 15.25l4.5-4.5", "M5 19.75h14"],
 } satisfies Record<string, GlyphPart[]>;
 
-export function Glyph({ name, size = 18 }: { name: keyof typeof GLYPHS; size?: number | string }) {
+export function Glyph({ name, size = 18 }: { name: keyof typeof GLYPHS | "plus"; size?: number | string }) {
+  if (name === "plus") return <Icon name="plus" size={size} />;
   return (
     <svg className="ui-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}
       strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
@@ -85,17 +87,19 @@ export function inView(el: HTMLElement, rect?: DOMRect): boolean {
 /** What a tapped word offers: the word with its Lithuanian, „+ Į korteles“ and „+ Visą sakinį“
  *  (only the sentence for words glossed "—"). Closes on an outside tap, Esc, or when the word
  *  scrolls away. */
-export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index: number; anchor: HTMLElement; onClose: () => void }) {
+export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
+  s: Sentence; index: number; anchor: HTMLElement; onClose: () => void; source?: PhraseSource; portalHost?: HTMLElement;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
-  const keys = useCards((c) => c.keys);
-  const sitId = useStore((st) => st.conv.sitId);
+  const sitId = useStore((st) => source?.situationId ?? st.conv.sitId);
   const [spot, setSpot] = useState<TipSpot | null>(null);
   const [saved, setSaved] = useState(false);
   const u = s.units[index];
   const word = useMemo(() => unitInput(s, index, sitId, keepCaps), [s, index, sitId]);
-  const whole = useMemo(() => sentenceInput(s, sitId), [s, sitId]);
+  const wordKey = word && cardKey(word.en);
+  const wordIn = useCards((c) => !!wordKey && c.keys.has(wordKey));
   const dash = !u || isDashGloss(u.lt) || !word;
   const panel = anchor.closest(".convo");
 
@@ -191,9 +195,6 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   }, [anchor]);
 
   if (!u) return null;
-  const add = (x: typeof whole | null) => { if (x && useCards.getState().add(x)) setSaved(true); };
-  const wordIn = !!word && keys.has(cardKey(word.en));
-  const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
     <div ref={ref} className={"wpop" + (panel ? " in-convo" : "") + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
@@ -201,19 +202,20 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
       <div className="wpop-body">
         <div className="wpop-en" lang="en">{shown}</div>
         {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-        {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
+        {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugokite visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
         <div className="wpop-acts">
           {!dash && (wordIn
-            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>
-            : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> Į korteles</button>)}
-          {sentIn
-            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Sakinys kortelėse</span>
-            : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> Visą sakinį</button>}
+            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.inCards}</span>
+            : <button className="btn small" onClick={() => {
+              if (useCards.getState().add({ ...word, sourceLabel: source?.sourceLabel })) setSaved(true);
+            }}><Icon name="plus" size={16} />{" " + PHRASE_CARD_UI.add}</button>)}
+          <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel}
+            popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
         </div>
-        {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
+        {saved && <div className="wpop-hint">Kortelę rasite „Frazių knygelėje“.</div>}
       </div>
     </div>,
-    document.body,
+    portalHost ?? document.body,
   );
 }
 

@@ -9,9 +9,10 @@ import { floorY } from "../water";
 import { coach } from "../coach";
 import type { GameCharacter } from "../characters";
 import type { GameMode, ModeFrame, ModeInput, ModePrompt } from "../kit/modes";
+import { PhraseRun } from "../kit/phrases";
 import type { SurfGame, SurfPlay } from "./play";
 import type { Level } from "./logic";
-import { useSurf } from "./store";
+import { configureSurfReview, useSurf } from "./store";
 
 export function createSurfMode(host: SurfGame, replacePlayer: (player: GameCharacter) => void) {
   if (!SURF_SPOT || !SURF || !NPCS[SURF.npc]) return null;
@@ -37,6 +38,7 @@ export class SurfMode implements GameMode {
 
   constructor(readonly spot: SurfSpot, readonly content: SurfContent, private host: SurfGame, private replacePlayer: (player: GameCharacter) => void) {
     this.conversation = { situation: content.situation, label: "Banglenčių pamoka" };
+    configureSurfReview(() => new PhraseRun(content.situation));
     const s = spot.start;
     this.marker.add(this.ring, this.halo);
     this.marker.position.set(s.x, Math.max(0, floorY(s.x, s.z)) + 0.05, s.z);
@@ -184,6 +186,7 @@ export class SurfMode implements GameMode {
 
   dispose() {
     this.disposed = true;
+    configureSurfReview();
     this.exit(true);
     this.runtime?.dispose();
     this.marker.removeFromParent();

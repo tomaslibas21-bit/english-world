@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { TAXI_UI as words } from "../content/taxi";
+import { TAXI_CONVERSATION, TAXI_UI as words } from "../content/taxi";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { useTaxi } from "../game/taxi/store";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { Icon } from "./icons";
 import "./taxi.css";
@@ -11,10 +11,11 @@ import "./taxi.css";
 const cash = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const act = (name: string, value?: string | boolean) => game?.modeAction("taxi", name, value);
 const actionIcons = { left: "arrowLeft", right: "arrowRight", straight: "arrowUp", stop: "stop" } as const;
+const { situation: situationId } = TAXI_CONVERSATION;
+const source = { situationId };
 
 export function TaxiOverlay({ touch }: { touch: boolean }) {
-  const { line, action, gloss, choices, mic, micOn, result } = useTaxi();
-  const [revealed, setRevealed] = useState<typeof line>(null);
+  const { line, revealed, action, gloss, choices, mic, micOn, result, review } = useTaxi();
   if (result) return <ScoreCard title={words.title} ratio={result.points / result.max}
     score={<><ScoreNumber value={result.points} />/{result.max}</>}
     rows={[
@@ -26,6 +27,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
       { label: words.stop, value: result.onTarget ? words.atDoor : words.tooFar },
     ]}
     phrases={{ label: words.cards, count: result.cards }}
+    review={review}
     again={{ label: words.again, run: () => act("again") }}
     done={{ label: words.done, run: () => game?.modeExit() }}
   />;
@@ -36,8 +38,11 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
       {line && (
         <div className="taxi-cue">
           {gloss || revealed === line
-            ? <div className="taxi-line" data-line={line.key} lang="en"><GlossLine sentence={line.sentence} gloss={gloss} /></div>
-            : <button className="taxi-line taxi-reveal" data-line={line.key} onClick={() => setRevealed(line)} lang="lt">
+            ? <div className="taxi-line phrase-save-row" data-line={line.key} lang="en">
+                <GlossLine sentence={line.sentence} gloss={gloss} source={source} />
+                <PhraseSave sentence={line.sentence} {...source} iconOnly />
+              </div>
+            : <button className="taxi-line taxi-reveal" data-line={line.key} onClick={() => useTaxi.setState({ revealed: line })} lang="lt">
                 <Icon name="speaker" size={20} /><span>{words.hear}<small>{words.show}</small></span>
               </button>}
           {action && <button key={action} type="button" lang="lt" className="taxi-action" data-action={action}
@@ -65,11 +70,14 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
             </div>
           </div>
           {choices.map(({ key, sentence }, i) => (
-            <button className="taxi-choice" type="button" key={key} data-line={key} onClick={() => act("choose", key)}>
-              {!touch && <kbd>{i + 1}</kbd>}
-              <span lang="en">{sentence.en}</span>
-              <small lang="lt">{sentence.nat}</small>
-            </button>
+            <div className="phrase-save-row" key={key}>
+              <button className="taxi-choice" type="button" data-line={key} onClick={() => act("choose", key)}>
+                {!touch && <kbd>{i + 1}</kbd>}
+                <span lang="en">{sentence.en}</span>
+                <small lang="lt">{sentence.nat}</small>
+              </button>
+              <PhraseSave sentence={sentence} situationId={situationId} iconOnly />
+            </div>
           ))}
         </div>
       )}

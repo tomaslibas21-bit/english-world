@@ -1,5 +1,7 @@
 // Go Fish at Dan & Nora's (batch 4, 23 Nov 2026). Learner words by Claude; the mode is in src/game/gofish/.
 // Picture cards, not numbers: every ask teaches a word. A round is one deck of ten words, two cards each.
+import type { Sentence } from "../convo/compose";
+
 export const GOFISH_CONVERSATION = { situation: "s85-dinner", host: "dan", partner: "nora", location: "dans-house" } as const;
 
 export type GoFishWord = {
@@ -15,6 +17,8 @@ export type GoFishWord = {
   /** an emoji for the drawn placeholder card until the pictures arrive */
   icon: string;
 };
+
+export const goFishWordSentence = ({ en, lt }: GoFishWord): Sentence => ({ en, nat: lt, say: en, units: [{ en, lt }] });
 
 const w = (id: string, en: string, pl: string, lt: string, ltGen: string, icon: string): GoFishWord => ({ id, en, pl, lt, ltGen, icon });
 

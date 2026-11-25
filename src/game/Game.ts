@@ -1,4 +1,4 @@
-import { StreetLife } from "./street";
+import { StreetLife, useStreet } from "./street/StreetLife";
 import { TownStreet } from "./street/world";
 import type { StreetSnapshot } from "./street/schedule";
 import { ROUTE } from "../content/route";
@@ -96,12 +96,10 @@ import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
-import type { GameApi } from "./gameRef";
+import type { GameApi, NametagLayout, PlacedNametag, TagBox } from "./gameRef";
 import { THEME } from "./world/theme";
 export type { GameApi } from "./gameRef";
 
-/** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
-type TagBox = { x0: number; x1: number; y0: number; y1: number };
 export interface TalkActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; sit?: boolean; approach?: THREE.Vector3 }
 interface NpcActor extends TalkActor { tag: HTMLDivElement; tagSize?: [number, number]; waved: boolean }
 const isGymTrainer = (actor: TalkActor) => actor.id === GYM_ENTRY.npc;
@@ -234,6 +232,7 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
+  private nametagLayout: NametagLayout | null = null;
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
@@ -1125,6 +1124,7 @@ export class Game implements GameApi {
   }
 
   private spawnNpcs() {
+    if (this.nametagLayout) this.nametagLayout.boxes = undefined;
     for (const n of this.npcs) {
       n.ch.rightHand.getObjectByName("tina-cue")?.traverse((piece) => {
         if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
@@ -3705,6 +3705,12 @@ export class Game implements GameApi {
     for (const ch of this.extras) ch.update(dt);
   }
 
+  watchNametagLayout(layout: NametagLayout | null) {
+    if (this.nametagLayout) this.nametagLayout.boxes = this.nametagLayout.rect = undefined;
+    this.nametagLayout = layout;
+    return this.tagLayer;
+  }
+
   private updateTags() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
@@ -3733,26 +3739,40 @@ export class Game implements GameApi {
     shown.sort((a, b) => a.dist - b.dist);
     let hud = this.hudBoxes();
     const bubble = document.querySelector<HTMLElement>(".street-bubble");
+    const layout = this.nametagLayout;
+    // Share the layer measurement with the HUD and use its local CSS pixels for tag placement.
+    const rect = layout && bubble && shown.length && useStreet.getState().bubble?.anchor
+      ? this.tagLayer.getBoundingClientRect() : undefined;
+    const scaleX = rect?.width ? rect.width / (this.tagLayer.offsetWidth || 1) : 1;
+    const scaleY = rect?.height ? rect.height / (this.tagLayer.offsetHeight || 1) : 1;
     let bubbleBox: TagBox | undefined;
     if (bubble?.style.visibility === "visible") {
       // Read the bubble every frame: it moves with the speaker and grows as soon as it is translated.
       const r = bubble.getBoundingClientRect();
       if (r.width && r.height) {
-        const c = this.container.getBoundingClientRect(), tail = 6;
-        bubbleBox = { x0: r.left - c.left - tail, x1: r.right - c.left + tail,
-          y0: r.top - c.top - tail, y1: r.bottom - c.top + tail };
+        const c = rect ?? this.container.getBoundingClientRect(), tail = 6;
+        bubbleBox = { x0: (r.left - c.left) / scaleX - tail, x1: (r.right - c.left) / scaleX + tail,
+          y0: (r.top - c.top) / scaleY - tail, y1: (r.bottom - c.top) / scaleY + tail };
         hud = [...hud, bubbleBox];
       }
+    }
+    // Batch the live size reads before writing transforms. Translated text and font changes can resize a tag.
+    if (rect) for (let i = 0; i < shown.length; i++) {
+      const { n } = shown[i];
+      const size = n.tagSize ??= [0, 0];
+      size[0] = n.tag.offsetWidth;
+      size[1] = n.tag.offsetHeight;
     }
     const m = 6;
     const surfNpc = this.surf?.content.npc;
     const surfSign = this.zone.id === "town" && shown.some(({ n }) => n.id === surfNpc)
       ? this.surfSignBox(w, h, v) : undefined;
-    const placed: TagBox[] = [];
+    const placed: PlacedNametag[] = [];
     for (const s of shown) {
       const sign = s.n.id === surfNpc ? surfSign : undefined;
       const obstacles = sign ? [...hud, sign] : hud;
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
+      if (rect && (!tw || !th)) continue;
       const hits = (x: number, y: number, p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
@@ -3782,8 +3802,14 @@ export class Game implements GameApi {
         s.n.tag.style.display = "none";
         continue;
       }
-      placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
+      placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y, tag: s.n.tag });
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+    }
+    if (layout) {
+      layout.rect = rect;
+      layout.scaleX = scaleX;
+      layout.scaleY = scaleY;
+      layout.boxes = bubble ? placed : undefined;
     }
   }
 
@@ -3964,6 +3990,7 @@ export class Game implements GameApi {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.watchNametagLayout(null);
     this.firstExteriorDraw?.();
     this.firstExteriorDraw = undefined;
     clearTimeout(this.rideTimer);

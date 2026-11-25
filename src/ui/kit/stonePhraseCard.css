@@ -1,0 +1,60 @@
+.stone-phrase-veil {
+  --stone-top: calc(16px + env(safe-area-inset-top));
+  --stone-bottom: calc(16px + env(safe-area-inset-bottom));
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: var(--stone-top) calc(16px + env(safe-area-inset-right)) var(--stone-bottom) calc(16px + env(safe-area-inset-left));
+  border: 0;
+  overflow: hidden;
+  background: rgb(8 30 42 / 45%);
+  color: var(--ink);
+  pointer-events: auto;
+}
+.stone-phrase-veil[open] { display: grid; place-items: center; }
+.stone-phrase-veil::backdrop { background: transparent; }
+.stone-phrase-veil .stone-phrase-card {
+  display: grid;
+  gap: 8px;
+  width: min(440px, 100%);
+  max-height: calc(100dvh - var(--stone-top) - var(--stone-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 700px) and (pointer: fine) {
+  .stone-phrase-veil .stone-phrase-card { padding: 24px; }
+}
+.stone-phrase-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.stone-phrase-card .stone-phrase-heading { padding: 0; }
+.stone-phrase-heading h2 { margin: 0; font-size: 1.2em; line-height: 1.2; }
+.stone-phrase-card .stone-phrase-reading { display: grid; justify-items: start; gap: 8px; margin: 0; min-width: 0; }
+.stone-phrase-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.stone-phrase-card .stone-phrase-close,
+.stone-phrase-card .stone-phrase-replay {
+  display: grid;
+  place-items: center;
+  position: static;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.stone-phrase-card .stone-phrase-replay { background: var(--accent); color: var(--accent-ink); }
+.stone-phrase-card .stone-phrase-close:hover { background: var(--accent-soft-2); }
+.stone-phrase-card .stone-phrase-replay:hover { background: var(--accent-strong); }
+.stone-phrase-card .toggles { gap: 8px; }
+.stone-phrase-card .toggle { min-width: 44px; min-height: 44px; }
+.stone-phrase-card .stone-phrase-text { width: 100%; font: inherit; text-align: start; user-select: text; }
+.stone-phrase-text .il, .stone-phrase-text .u { min-width: 0; }
+.stone-phrase-text :is(.en, .ipa, .lt, .nat) { overflow-wrap: anywhere; }

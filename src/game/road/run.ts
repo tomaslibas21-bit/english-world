@@ -1,11 +1,12 @@
 import { dueCards, useCards } from "../../state/cards";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { SayItRound, sayItWords } from "../kit/sayIt";
+import { gatePhraseOptions, gateWordEntry, resolvedGateWord } from "./phraseEntries";
 import { pickPrompt, updateRecentMisses, type GateAnswer } from "./review";
 import { recentMisses, type PlayWay } from "./save";
-import { loadPool, wordPrompts, type GateWord, type Prompt, type PromptPool } from "./words";
+import { loadPool, wordPrompts, type Prompt, type PromptPool } from "./words";
 
 export const DRIVE_SECONDS = 150;
 export const FIRST_GATE = 75;
@@ -47,12 +48,17 @@ export class RunScore {
   total = 0;
   streak = 0;
   bestStreak = 0;
-  readonly missed = new Map<string, GateWord>();
+  readonly missed = new Map<string, Prompt>();
   readonly learned = new Map<string, Prompt>();
-  readonly recovered = new Map<string, GateWord>();
+  readonly recovered = new Map<string, Prompt>();
   readonly history: GateAnswer[] = [];
 
-  constructor(readonly duration = DRIVE_SECONDS) {}
+  constructor(readonly duration = DRIVE_SECONDS, private readonly title = "", readonly review = new PhraseRun("")) {}
+
+  show(prompt: Prompt) {
+    if (!prompt.phrase) return;
+    for (const { sentence, situationId, sourceLabel } of gatePhraseOptions(prompt, this.title)) this.review.add(sentence, situationId, sourceLabel);
+  }
 
   advance(dt: number) {
     this.elapsed = Math.min(this.duration, this.elapsed + dt);
@@ -61,9 +67,11 @@ export class RunScore {
     return this.elapsed >= this.duration;
   }
 
-  answer(prompt: Prompt, lane: number) {
+  answer(prompt: Prompt, lane: number, word = resolvedGateWord(prompt)) {
     const correct = lane === prompt.right;
     const id = `${prompt.word.situation}|${prompt.word.en.toLowerCase()}`;
+    const { sentence, situationId, sourceLabel } = gateWordEntry(word, this.title);
+    this.review.add(sentence, situationId, sourceLabel);
     this.history.push({ prompt, correct });
     this.total++;
     if (correct) {
@@ -72,31 +80,35 @@ export class RunScore {
       this.bestStreak = Math.max(this.bestStreak, this.streak);
       this.gatePoints += 100 + 25 * (this.streak - 1);
       this.learned.set(id, prompt);
-      if (prompt.practice === "firstRetry" || prompt.practice === "lastRetry") this.recovered.set(id, prompt.word);
+      if (prompt.practice === "firstRetry" || prompt.practice === "lastRetry") this.recovered.set(id, prompt);
     } else {
       this.streak = 0;
-      if (this.missed.size < 3) this.missed.set(id, prompt.word);
+      if (this.missed.size < 3) this.missed.set(id, prompt);
     }
     return correct;
   }
 }
 
 
-export function keepRunPhrases(score: RunScore) {
+export function keepRunPhrases(score: RunScore, title?: string) {
   const before = useCards.getState().cards.length;
   for (const prompt of score.learned.values()) {
-    const { word, gap } = prompt;
-    if (gap) keepPhrases(word.situation, [gap.full]);
-    else {
-      const say = prompt.phrase ? prompt.phrase.f : prompt.word.clip.say;
-      keepPhrases(word.situation, [{ en: word.en, nat: word.lt, say, units: [{ en: word.en, lt: word.lt }] }]);
-    }
+    const { sentence, situationId, sourceLabel } = gateWordEntry(resolvedGateWord(prompt), title);
+    keepPhrases(situationId, [sentence], sourceLabel);
   }
   return useCards.getState().cards.length - before;
 }
 
-export function practiceResult(score: RunScore, way: PlayWay) {
+export function practiceResult(score: RunScore, way: PlayWay, title?: string) {
+  const missed = [...score.missed.values()];
   const recovered = [...score.recovered.values()];
-  const phrases = way === "phrases" ? [...score.learned.values()].map(({ word }) => word) : undefined;
-  return { missed: [...score.missed.values()], recovered, phrases };
+  const phrases = way === "phrases" ? [...score.learned.values()] : undefined;
+  const practiced = phrases ?? recovered.filter(({ word }) => !missed.some((other) =>
+    word.en === other.word.en && word.situation === other.word.situation));
+  const word = (prompt: Prompt) => prompt.word;
+  const entry = (prompt: Prompt) => gateWordEntry(resolvedGateWord(prompt), title);
+  return {
+    missed: missed.map(word), recovered: recovered.map(word), phrases: phrases?.map(word), review: score.review.entries(),
+    missedReview: missed.map(entry), practicedReview: practiced.map(entry),
+  };
 }

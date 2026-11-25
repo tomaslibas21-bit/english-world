@@ -8,6 +8,7 @@ const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
 const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.env.SHOTS_DIR || "/tmp";
 const cafe = "s72-cafe";
+const otherConversation = "s65a-passport";
 const startLabel = "Pabandyti už prekystalio";
 const sizes = [
   [1280, 800],
@@ -78,6 +79,134 @@ function installControls([key, save]) {
   };
 }
 
+async function checkOfferSaves(page, row, press, phone) {
+  const index = 1;
+  const { conversation, words, word, phrase } = await page.evaluate(async ([index, cafe]) => {
+    const { useBarista } = await import("/src/game/barista/store.ts");
+    const { sentenceInput, unitInput } = await import("/src/state/cards.ts");
+    const { PHRASE_CARD_UI } = await import("/src/content/phrase-card-ui.ts");
+    const { conv } = window.__ew.store.getState();
+    const { sentence } = useBarista.getState().line;
+    return { conversation: [conv.active, conv.sitId], words: PHRASE_CARD_UI,
+      word: unitInput(sentence, index, cafe), phrase: sentenceInput(sentence, cafe) };
+  }, [index, cafe]);
+  assert.deepEqual(conversation, [false, otherConversation]);
+  assert.ok(word && word.en !== phrase.en);
+  const readCards = (en) => page.evaluate(async ([key, en]) => {
+    const { cardKey } = await import("/src/state/cards.ts");
+    const cards = JSON.parse(localStorage.getItem(key) ?? "null")?.cards ?? [];
+    return cards.filter((card) => cardKey(card.en) === cardKey(en));
+  }, [`${storage}-cards-v1`, en]);
+  const checkSaved = async (expected) => {
+    const cards = await readCards(expected.en);
+    assert.equal(cards.length, 1, `one card for ${expected.en}`);
+    const [card] = cards;
+    const { en, lt, ipa, sentence, situationId } = card;
+    assert.deepEqual({ en, lt, ipa, sentence, situationId }, expected);
+    return card;
+  };
+  assert.deepEqual(await readCards(word.en), []);
+  assert.deepEqual(await readCards(phrase.en), []);
+
+  const unit = row.locator(`.u[data-i="${index}"] .en`);
+  const standalone = row.locator("[data-phrase-save]");
+  const popover = page.locator(".wpop");
+  let first;
+  if (!phone) {
+    await standalone.press("Enter");
+    first = await checkSaved(phrase);
+  }
+  await press(unit);
+  await press(popover.getByRole("button", { name: words.add, exact: true }));
+  await checkSaved(word);
+  if (phone) {
+    await press(popover.getByRole("button", { name: words.whole, exact: true }));
+    first = await checkSaved(phrase);
+  }
+  await popover.getByText(words.wholeInCards, { exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  await popover.waitFor({ state: "detached" });
+  if (phone) await press(standalone);
+  assert.equal(await standalone.getAttribute("aria-label"), words.inCards);
+  assert.deepEqual(await readCards(phrase.en), [first], "both actions share the first saved record");
+}
+
+async function checkTraySaves(page, tray, give, press, phone) {
+  const words = await page.evaluate(async () => (await import("/src/content/phrase-card-ui.ts")).PHRASE_CARD_UI);
+  const opener = tray.locator(".phrase-chooser summary");
+  const panel = tray.locator(".phrase-chooser-panel");
+  const select = panel.getByRole("combobox", { name: words.phrases });
+  const phrase = await tray.locator('[data-row="dine"] [data-chip="here"]').evaluate((chip) => ({
+    en: chip.querySelector('[lang="en"]').textContent,
+    lt: chip.querySelector('[lang="lt"]').textContent,
+  }));
+  assert.deepEqual(phrase, { en: "For here", lt: "čia" });
+  const readCards = () => page.evaluate(async ([key, en]) => {
+    const { cardKey } = await import("/src/state/cards.ts");
+    const cards = JSON.parse(localStorage.getItem(key) ?? "null")?.cards ?? [];
+    return cards.filter((card) => cardKey(card.en) === cardKey(en));
+  }, [`${storage}-cards-v1`, phrase.en]);
+  const snapshot = () => tray.evaluate(async (element) => {
+    const { useBarista } = await import("/src/game/barista/store.ts");
+    const { row, page } = useBarista.getState();
+    return { state: window.__ew.barista.state(), row, page, chips: [...element.querySelectorAll("[data-chip]")]
+      .map((chip) => [chip.dataset.chip, chip.getAttribute("aria-pressed")]) };
+  });
+  const before = await snapshot();
+  assert.deepEqual(await readCards(), []);
+  assert.equal(await opener.getAttribute("aria-label"), words.phrases);
+  const book = await opener.boundingBox();
+  assert(book.width >= 44 && book.height >= 44, JSON.stringify(book));
+  if (phone) await press(opener);
+  else await opener.press("Enter");
+  const shown = await tray.locator("[data-chip]").evaluateAll(async (chips) => {
+    const { cardKey } = await import("/src/state/cards.ts");
+    const seen = new Set();
+    return chips.flatMap((chip) => {
+      const en = chip.querySelector('[lang="en"]').textContent;
+      const key = cardKey(en);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [en];
+    });
+  });
+  await select.waitFor();
+  assert.deepEqual(await select.locator("option").allTextContents(), shown, "chooser covers the displayed chips in tray order");
+  await select.selectOption({ label: phrase.en });
+  assert.equal(await panel.locator('small[lang="lt"]').textContent(), phrase.lt);
+  const bounds = () => panel.evaluate((panel) => {
+    const box = panel.getBoundingClientRect();
+    const give = document.querySelector(".barista-give button");
+    const button = give.getBoundingClientRect();
+    return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= button.top
+      && give.contains(document.elementFromPoint(button.left + button.width / 2, button.top + button.height / 2));
+  });
+  assert(await give.isEnabled() && await bounds(), "chooser fits above the serving button and leaves it tappable");
+  const viewport = page.viewportSize();
+  if (phone && viewport.height === 844) {
+    await page.setViewportSize({ width: 844, height: 390 });
+    assert(await bounds(), "landscape chooser fits above the serving button and leaves it tappable");
+    await page.setViewportSize(viewport);
+  }
+  const save = panel.locator("[data-phrase-save]");
+  assert.equal(await save.getAttribute("aria-label"), words.add);
+  await press(save);
+  assert.equal(await save.getAttribute("aria-label"), words.inCards);
+  const first = await readCards();
+  assert.equal(first.length, 1);
+  const [{ en, lt, sentence, situationId }] = first;
+  assert.deepEqual({ en, lt, sentence, situationId }, { ...phrase, sentence: phrase, situationId: cafe });
+  assert.deepEqual(await snapshot(), before, "saving a tray phrase leaves the order and shortcuts in place");
+  if (phone) await press(save);
+  else await save.press("Enter");
+  assert.deepEqual(await readCards(), first, "saving again keeps the original record");
+  assert.deepEqual(await snapshot(), before, "saving again leaves the order and shortcuts in place");
+  if (phone) await press(opener);
+  else await page.keyboard.press("Escape");
+  await panel.waitFor({ state: "detached" });
+  return { ...phrase, readCards, first };
+}
+
 const browser = await chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
   headless: true,
@@ -115,6 +244,8 @@ try {
     const chip = (row, id) => page.locator(`[data-row="${row}"] [data-chip="${id}"]`);
     const choice = (key) => page.locator(`.barista-choice[data-line="${key}"]`);
     const give = page.locator(".barista-give button");
+    const tray = page.locator(".barista-tray");
+    let traySave;
     // A poll must return when the tray is absent so the next iteration can advance the game clock.
     const enabledGive = give.and(page.locator(":enabled"));
     const cameraState = () => page.evaluate(() => {
@@ -139,11 +270,13 @@ try {
       p.sits[id] = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
     }), cafe);
     await wait(() => prompt.isVisible(), "counter prompt appears");
+    await page.evaluate((sitId) => window.__ew.store.getState().setConv({ sitId }), otherConversation);
     await press(prompt);
     await wait(() => offer.isVisible(), "Mia gives the offer with its gloss");
     assert.equal(await offer.locator('[data-line="bs_offer"]').count(), 1);
     assert.match(await offer.innerText(), /Norite pabandyti pabūti už prekystalio/);
     await shot("offer");
+    await checkOfferSaves(page, offer.locator('[data-line="bs_offer"]'), press, phone);
 
     if (!phone) {
       await page.evaluate(() => window.__ew.game.player.root.position.set(-2.55, 0, 0.3));
@@ -339,6 +472,7 @@ try {
           assert(x > 0 && x < width && y > 65 && y < layout.freeBottom - 12 && y < layout.tray, JSON.stringify(layout));
         }
         await shot("building");
+        traySave = await checkTraySaves(page, tray, give, press, phone);
 
         await press(chip("size", "large"));
         await press(give);
@@ -376,7 +510,15 @@ try {
         beforeHandover = await cameraState();
       }
 
-      if (i === 3) assert.equal(await page.locator('[data-row="milk"]').count(), 0);
+      if (i === 3) {
+        assert.equal(await page.locator('[data-row="milk"]').count(), 0);
+        const opener = tray.locator(".phrase-chooser summary");
+        await press(opener);
+        const list = tray.locator(".phrase-chooser-panel select");
+        await list.waitFor();
+        assert(!(await list.locator("option").allTextContents()).includes("No milk"), "the hot chocolate tray hides milk phrases");
+        await press(opener);
+      }
       await press(give);
       if (i === 0) {
         await wait(async () => (await state())?.step === "handover", "the cup slides to the customer");
@@ -410,12 +552,18 @@ try {
     assert.equal(await card.locator("h2").innerText(), "Pamaina baigta");
     assert.deepEqual((await card.locator("dd").allTextContents()).slice(0, 2), ["6/6", "5/6"]);
     assert.equal(await card.locator("dd .kit-feedback[data-feedback=retry]").innerText(), "5/6");
+    assert.equal(await card.locator("dd").nth(2).textContent(), "32");
     assert(await page.evaluate((key) => {
       const cards = JSON.parse(localStorage.getItem(key) ?? "null")?.cards ?? [];
       return ["Can I get a latte?", "Iced, please.", "You're welcome! Have a nice day!"].every((en) =>
         cards.some((card) => card.situationId === "s72-cafe" && card.sentence.en === en));
     }, `${storage}-cards-v1`), "recorded pieces and learner lines become phrase cards");
     await shot("score");
+    const review = card.getByRole("combobox");
+    await review.selectOption({ label: traySave.en });
+    assert.equal(await review.locator("option").filter({ hasText: /^For here$/ }).count(), 1);
+    assert.equal(await card.locator('.phrase-review-row small[lang="lt"]').textContent(), traySave.lt);
+    assert.deepEqual(await traySave.readCards(), traySave.first, "the shift's awards preserve the saved tray card");
     await press(card.getByRole("button", { name: "Baigti" }));
     await wait(() => page.evaluate(() => !window.__ew.game.transitioning), "exit fade finishes on stepped frames", 12);
     assert(await page.locator(".minimap").isVisible(), "closing restores the town HUD");

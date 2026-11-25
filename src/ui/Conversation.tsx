@@ -3,6 +3,7 @@ import { SceneIntro, sceneText } from "./SceneIntro";
 import { isTownQuest } from "../content/townQuests";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
+import { PhraseSave } from "./kit/PhraseSave";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { coachVoice, npcVoice } from "../content/voices";
@@ -304,6 +305,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
           game?.activeSession?.stopListening();
           void audio.play(coachVoice(progress.profile?.gender), 1, bestPhrase.say);
         }}><Icon name="speaker" size={20} /></button>
+        {bestPhrase.nat && <PhraseSave sentence={{ en: bestPhrase.en, nat: bestPhrase.nat, say: bestPhrase.say, units: [] }} situationId={sit.id} iconOnly />}
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}

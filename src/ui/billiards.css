@@ -101,6 +101,8 @@
 .bl-speech { padding: 4px 3px; }
 /* The tallest wrapped call sets the row height before a ball or pocket is picked. */
 .bl-confirm-row, .bl-confirm-sizer { display: grid; grid-template-columns: minmax(0, 1fr); }
+.bl-confirm-actions { grid-template-columns: minmax(0, 1fr) 44px; }
+.bl-pocket-options .phrase-chooser-panel { top: auto; bottom: calc(100% + 4px); }
 .bl-confirm-row { margin-top: 5px; }
 .bl-confirm-row > *, .bl-confirm-sizer > * { grid-area: 1 / 1; }
 .bl-confirm-row > button { align-self: center; }

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { KitLine, KitMic } from "../kit/dialogue";
+import type { ResolvedPhrase } from "../kit/phrases";
 import type { SayItCue } from "../kit/sayIt";
 import type { Call } from "./calls";
 import type { Pocket } from "./physics";
@@ -29,13 +30,14 @@ interface BilliardsUI {
   power: number;
   aimHelp: boolean;
   result: Result | null;
+  review?: ResolvedPhrase[];
 }
 
 const empty: BilliardsUI = {
   phase: "intro", side: "learner", line: null, choices: [],
   mic: { status: "off", heard: "" }, micOn: true,
   balls: { learner: [], tina: [] }, available: [], pockets: [], selection: {}, callOptions: [], call: null, sayIt: null,
-  reveal: false, replaying: false, correct: null, power: 0, aimHelp: false, result: null,
+  reveal: false, replaying: false, correct: null, power: 0, aimHelp: false, result: null, review: undefined,
 };
 export const useBilliards = create<BilliardsUI>(() => empty);
 export const resetBilliards = () => useBilliards.setState(empty);

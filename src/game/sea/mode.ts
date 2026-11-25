@@ -1,5 +1,5 @@
 import type { WebGLRenderer } from "three";
-import { SEA_EDITION } from "../../content/sea";
+import { SEA_EDITION, SEA_UI } from "../../content/sea";
 import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
 import { preloadSeaOverlay } from "../../ui/seaOverlay";
@@ -9,6 +9,7 @@ import type { ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
 import { readBest, saveBest } from "../road/ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "../road/karaoke";
+import { resolvedGateWord } from "../road/phraseEntries";
 import { loadPhrasePool } from "../road/phrasePool";
 import { gatesLeft } from "../road/review";
 import { gateSayItTarget, gateWord, keepRunPhrases, loadWordPrompts, practiceResult, rememberRun, runPicker, RunScore } from "../road/run";
@@ -39,7 +40,7 @@ export class SeaMode {
   private phase: "town" | "briefing" | "loading" | "drive" | "turn" | "result" | "unavailable" = "town";
   private readonly view: SeaView;
   private boat: SeaBoat;
-  private score = new RunScore(SEA_SECONDS);
+  private score = new RunScore(SEA_SECONDS, SEA_UI.title);
   private pick?: ReturnType<typeof runPicker>;
   private way: PlayWay = "words";
   private played = false;
@@ -50,7 +51,7 @@ export class SeaMode {
   private nextPromptIn = 0;
   private feedback = 0;
   private sailed = 0;
-  private reveal?: ({ clip: Clip } | { phrase: Phrase }) & { in: number };
+  private reveal?: ({ clip: Clip } | { phrase: Phrase; situationId: string }) & { in: number };
   private crossing?: CrossingTitle;
   private soundFrom: SeaSoundLevels = { surf: 0, wind: 0 };
   private soundAge = 0;
@@ -109,7 +110,7 @@ export class SeaMode {
     this.played = true;
     this.pick = pick;
     this.way = way;
-    this.score = new RunScore(SEA_SECONDS);
+    this.score = new RunScore(SEA_SECONDS, SEA_UI.title);
     this.gateAt = FIRST_GATE;
     this.nextPromptIn = this.feedback = this.sailed = 0;
     this.reveal = this.forced = undefined;
@@ -146,7 +147,10 @@ export class SeaMode {
     this.view.scene.add(this.gate.mesh);
     useSea.setState({ prompt, gateId: this.gate.id, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)) });
     void preloadBoardFont(prompt.options);
-    if (!this.crossing) this.playPrompt(prompt);
+    if (!this.crossing) {
+      this.score.show(prompt);
+      this.playPrompt(prompt);
+    }
   }
 
   private poseGate(time: number, dt = 0) {
@@ -167,7 +171,8 @@ export class SeaMode {
     const lane = import.meta.env.DEV && this.forced !== undefined
       ? (this.forced ? prompt.right : (prompt.right + 1) % 3) : this.boat.lane;
     this.forced = undefined;
-    const correct = this.score.answer(prompt, lane);
+    const word = resolvedGateWord(prompt);
+    const correct = this.score.answer(prompt, lane, word);
     if (correct) {
       this.boat.boost = 1.2;
       this.view.celebrate(this.boat, time);
@@ -180,8 +185,8 @@ export class SeaMode {
       if (!prompt.phrase) this.play(prompt.word.clip);
     }
     if (prompt.phrase) {
-      if (correct) karaoke.sea.show(prompt.phrase);
-      else { audio.stop(); this.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY }; }
+      if (correct) karaoke.sea.show(prompt.phrase, word.situation);
+      else { audio.stop(); this.reveal = { phrase: prompt.phrase, situationId: word.situation, in: WRONG_PHRASE_DELAY }; }
     }
     let correction = 0;
     if (prompt.gap) {
@@ -199,7 +204,7 @@ export class SeaMode {
     this.gateAt = nextGate(distance);
     gate.cross(lane, correct);
     this.poseGate(time);
-    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: { correct, word: prompt.word } });
+    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: { correct, word, phrase: !!prompt.phrase } });
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {
@@ -226,7 +231,7 @@ export class SeaMode {
       if ("phrase" in this.reveal) {
         this.feedback = 0;
         const feedback = useSea.getState().feedback;
-        karaoke.sea.show(this.reveal.phrase, () => useSea.setState({ feedback: undefined }));
+        karaoke.sea.show(this.reveal.phrase, this.reveal.situationId, () => useSea.setState({ feedback: undefined }));
         if (feedback) useSea.setState({ feedback: { ...feedback, correcting: true } });
       } else this.play(this.reveal.clip);
       this.reveal = undefined;
@@ -246,7 +251,10 @@ export class SeaMode {
       if (this.boat.age + 1e-8 >= TITLE_SECONDS) {
         this.clearTitle();
         const prompt = this.gate?.prompt;
-        if (prompt) this.playPrompt(prompt);
+        if (prompt) {
+          this.score.show(prompt);
+          this.playPrompt(prompt);
+        }
       } else showCrossingTitle(this.crossing, titleOpacity(this.boat.age));
     }
     if (this.feedback > 0 && (this.feedback -= dt) <= 0) useSea.setState({ feedback: undefined });
@@ -311,11 +319,11 @@ export class SeaMode {
     const best = { points: score.points, frames: [] };
     const record = saveBest(edition, best, this.best, undefined, "sea");
     if (record) this.best = best;
-    const cards = keepRunPhrases(score);
+    const cards = keepRunPhrases(score, SEA_UI.title);
     useStore.getState().setHud({ ride: null });
     useSea.setState({ phase: this.phase, feedback: undefined, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: this.sailed,
-      record, cards, ...practiceResult(score, this.way), ...score.sayIt.result,
+      record, cards, ...practiceResult(score, this.way, SEA_UI.title), ...score.sayIt.result,
     } });
   }
 

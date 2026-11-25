@@ -14,14 +14,14 @@ type Choice = { en: string; lt: string; kind?: WordKind; gapKind?: WordKind; hea
 export type Word = Choice & { situation: string; clip: Clip; saved?: boolean; inContext?: boolean; gapEn?: string };
 export type Gap = { word: Word; sentence: Sentence; full: Sentence; clip: Clip };
 export type Pool = { words: Word[]; gaps: Gap[]; borrowed?: Choice[] };
-export type GateWord = Pick<Word, "en" | "lt" | "situation">;
+export type GateWord = Pick<Word, "en" | "lt" | "situation"> & { sentence?: Sentence };
 export type Phrase = {
   id: string; f: string; p: string; topic: string; words: readonly string[];
   t: readonly (readonly [number, number])[]; fClip: string; pClip: string; src: string;
 };
 type GateOptions = { options: readonly string[]; right: number; practice?: "review" | "firstRetry" | "lastRetry" | "repeat" };
 type WordPrompt = GateOptions & { word: Word; gap?: Gap; phrase?: undefined };
-type PhrasePrompt = GateOptions & { word: GateWord; phrase: Phrase; gap?: undefined };
+type PhrasePrompt = GateOptions & { word: GateWord; phrase: Phrase; optionPhrases?: ReadonlyMap<string, Phrase>; gap?: undefined };
 export type Prompt = WordPrompt | PhrasePrompt;
 export type PromptPool = { listen: readonly Prompt[]; gaps: readonly WordPrompt[] };
 type Voice = Omit<Clip, "say">;

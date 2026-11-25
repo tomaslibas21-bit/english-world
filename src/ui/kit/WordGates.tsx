@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SITUATION_BY_ID } from "../../content/situations/catalog";
 import { boardFaces, BOARD_FONT, faceHeight, FACE_WIDTH, WIDE_BOARD_VIEW, type FaceMode } from "../../game/kit/boardFaces";
+import type { ResolvedPhrase } from "../../game/kit/phrases";
 import type { SayItCue } from "../../game/kit/sayIt";
 import { karaoke } from "../../game/road/karaoke";
+import { gatePhraseEntry, gatePhraseOptions, gateWordEntry } from "../../game/road/phraseEntries";
 import type { PlayWay } from "../../game/road/save";
 import type { GateFeedback, RoadResult } from "../../game/road/store";
 import type { GateWord, Prompt } from "../../game/road/words";
@@ -10,6 +12,9 @@ import { EndDestination } from "../Conversation";
 import { Icon } from "../icons";
 import { FeedbackBadge } from "./FeedbackBadge";
 import { GlossLine } from "./GlossLine";
+import { PhraseChooser } from "./PhraseChooser";
+import { PhraseReviewRow } from "./PhraseReview";
+import { PhraseSave } from "./PhraseSave";
 import { SayIt } from "./SayIt";
 import { ScoreCard, ScoreNumber } from "./ScoreCard";
 import "./wordGates.css";
@@ -131,16 +136,37 @@ export function WordGateStart({ way, start, done, town }: {
 export function GateKaraoke({ mode, correction }: { mode: FaceMode; correction?: string }) {
   return <div className="road-karaoke-panel">
     {correction && <FeedbackBadge correct={false}>{correction}</FeedbackBadge>}
-    <div ref={karaoke[mode].attach} lang="en" className="road-karaoke" aria-live="polite" hidden />
+    <div ref={karaoke[mode].attach} id={`${mode}-karaoke`} lang="en" className="road-karaoke" aria-live="polite" hidden />
+  </div>;
+}
+
+function KaraokeSave({ mode, title }: { mode: FaceMode; title: string }) {
+  const player = karaoke[mode];
+  const line = useSyncExternalStore(player.subscribe, player.snapshot, player.snapshot);
+  return line && <PhraseSave {...gatePhraseEntry(line.phrase, title, line.situationId)} describedBy={`${mode}-karaoke`} iconOnly />;
+}
+
+function GateFeedbackLine({ feedback, words }: { feedback: GateFeedback; words: CueWords }) {
+  const entry = gateWordEntry(feedback.word, words.title);
+  const showLine = !feedback.correct || !feedback.phrase;
+  return <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
+    <div className={showLine ? "phrase-save-row" : undefined}>
+      <div>
+        <FeedbackBadge correct={feedback.correct}>{feedback.correct ? words.right : words.wrong}</FeedbackBadge>
+        {showLine && <div><span lang="en">{entry.sentence.en}</span> · {entry.sentence.nat}</div>}
+      </div>
+      {showLine && <PhraseSave {...entry} iconOnly />}
+    </div>
   </div>;
 }
 
 export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter, questionSlot }: {
-  game: string; sayIt?: SayItCue;
+  game: FaceMode; sayIt?: SayItCue;
   words: CueWords; prompt?: Prompt; feedback?: GateFeedback;
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
   extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
+  const options = useMemo(() => prompt?.phrase ? gatePhraseOptions(prompt, words.title) : [], [prompt, words.title]);
   return <header className="road-header">
       <div className="road-dash">
         <button className="road-icon" aria-label={words.town} title={words.town} onClick={home}><Icon name="home" size={21} /></button>
@@ -151,11 +177,10 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
           {extraMeter}
         </div>
         {extraButton}
+        {!questionSlot && !feedback && sayIt && !!options.length && <PhraseChooser key={prompt?.phrase?.id} entries={options} />}
+        <KaraokeSave mode={game} title={words.title} />
       </div>
-      {questionSlot ?? (feedback?.correcting ? null : feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
-        <FeedbackBadge correct={feedback.correct}>{feedback.correct ? words.right : words.wrong}</FeedbackBadge>
-        {!feedback.correct && <span><span lang="en">{feedback.word.en}</span> · {feedback.word.lt}</span>}
-      </div> : prompt && <div className={`road-cue${prompt.phrase ? " phrase-cue" : ""}`}>
+      {questionSlot ?? (feedback?.correcting ? null : feedback ? <GateFeedbackLine feedback={feedback} words={words} /> : prompt && <div className={`road-cue${prompt.phrase ? " phrase-cue" : ""}`}>
         <div className="road-question">
           <strong>{prompt.phrase?.p ?? (prompt.gap ? words.gap : words.hear)}</strong>
           {!prompt.gap && <button className="road-icon road-replay" aria-label={words.replay} title={words.replay} onClick={replay}><Icon name="speaker" size={21} /></button>}
@@ -170,27 +195,41 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
 const sameWord = (a: GateWord, b: GateWord) => a.en === b.en && a.situation === b.situation;
 const Comeback = () => <small className="road-comeback">Šįkart pataikėte!</small>;
 
-function PracticeItems({ items, recovered, label }: { items: GateWord[]; recovered: GateWord[]; label: string }) {
+function PracticeItems({ items, entries, recovered, label, title, missed, guide }: {
+  items: GateWord[]; recovered: GateWord[]; label: string; title: string; missed?: boolean;
+  entries?: readonly ResolvedPhrase[];
+  guide?: { from: string; label: string; run(): void };
+}) {
   const [index, setIndex] = useState(0);
   const item = items[index];
-  return <section className="road-missed road-practice">
+  if (!item) return null;
+  const entry = entries?.[index] ?? gateWordEntry(item, title);
+  const sit = guide && SITUATION_BY_ID[item.situation];
+  const full = entry.sentence.en !== item.en;
+  const pair = <div className="road-pair">
+    {items.length === 1 ? <><strong lang="en">{item.en}</strong> · {item.lt}</> :
+      <select aria-label={missed ? undefined : label} aria-labelledby={missed ? "road-missed-title" : undefined}
+        value={index} onChange={(e) => setIndex(Number(e.target.value))}
+        onKeyDown={(e) => { if (e.key !== "Escape" && e.key !== "Tab") e.stopPropagation(); }}
+        onKeyUp={(e) => { if (e.key === " ") e.stopPropagation(); }}>
+        {items.map(({ en, lt, situation }, i) => <option key={`${situation}|${en}`} value={i}>{en} · {lt}</option>)}
+      </select>}
+  </div>;
+  return <section className={missed ? "road-missed" : "road-missed road-practice"}>
+    {missed && <h3 id="road-missed-title">{label}</h3>}
     <article>
-      {items.length === 1 ? <><strong lang="en">{item.en}</strong> · {item.lt}</> :
-        <select aria-label={label} value={index} onChange={(e) => setIndex(Number(e.target.value))}>
-          {items.map(({ en, lt, situation }, i) => <option key={`${situation}|${en}`} value={i}>{en} · {lt}</option>)}
-        </select>}
+      {full && pair}
+      <PhraseReviewRow entry={entry}>{!full ? pair : undefined}</PhraseReviewRow>
       {recovered.some((other) => sameWord(item, other)) && <Comeback />}
+      {guide && sit && <><small>{guide.from}</small><EndDestination sit={sit} label={guide.label} close={guide.run} /></>}
     </article>
   </section>;
 }
 
 export function WordGateResult({ result, words, actions, children }: {
-  result: RoadResult; words: ScoreWords;
+  result: RoadResult; words: ScoreWords & { title: string };
   actions: { again(): void; done(): void; guide(): void }; children?: ReactNode;
 }) {
-  const [missedIndex, setMissedIndex] = useState(0);
-  const word = result.missed[missedIndex];
-  const sit = word && SITUATION_BY_ID[word.situation];
   const practiced = result.phrases ?? result.recovered.filter((item) => !result.missed.some((other) => sameWord(item, other)));
   return <div className="road-result">
     <ScoreCard title={words.finish} ratio={result.right / result.total} said={result.said}
@@ -201,22 +240,15 @@ export function WordGateResult({ result, words, actions, children }: {
         { label: words.distance, value: `${km.format(result.distance / 1000)} km` },
       ]}
       phrases={{ label: words.cards, count: result.cards }}
+      review={result.review}
       again={{ label: words.again, run: actions.again }}
       done={{ label: words.town, run: actions.done }}>
         {result.record && <b className="road-record">{words.record}</b>}
         {children}
-        {!!practiced.length && <PracticeItems items={practiced} recovered={result.recovered} label={result.phrases ? words.cards : words.missed} />}
-        {word && <section className="road-missed">
-          <h3 id="road-missed-title">{words.missed}</h3>
-          <article>
-            {result.missed.length === 1 ? <><strong lang="en">{word.en}</strong> · {word.lt}</> :
-              <select aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
-                {result.missed.map((item, i) => <option key={`${item.situation}|${item.en}`} value={i}>{item.en} · {item.lt}</option>)}
-              </select>}
-            {result.recovered.some((item) => sameWord(item, word)) && <Comeback />}
-            {sit && <><small>{words.from}</small><EndDestination sit={sit} label={words.guide} close={actions.guide} /></>}
-          </article>
-        </section>}
+        {!!practiced.length && <PracticeItems items={practiced} recovered={result.recovered} title={words.title}
+          entries={result.practicedReview} label={result.phrases ? words.cards : words.missed} />}
+        {!!result.missed.length && <PracticeItems missed items={result.missed} recovered={result.recovered} title={words.title}
+          entries={result.missedReview} label={words.missed} guide={{ from: words.from, label: words.guide, run: actions.guide }} />}
     </ScoreCard>
   </div>;
 }

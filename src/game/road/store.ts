@@ -1,14 +1,19 @@
 import { create } from "zustand";
 import type { KitLine, KitMic } from "../kit/dialogue";
+import type { ResolvedPhrase } from "../kit/phrases";
 import type { SayItCue } from "../kit/sayIt";
 import type { PlayWay } from "./save";
 import type { GateWord, Prompt } from "./words";
 
+export type GateFeedback = { correct: boolean; word: GateWord; phrase?: boolean; correcting?: boolean };
+
 export type RoadResult = {
   points: number; right: number; total: number; streak: number; distance: number;
   record: boolean; cards: number; missed: GateWord[]; recovered: GateWord[]; phrases?: GateWord[]; said?: number;
+  review?: ResolvedPhrase[];
+  missedReview?: ResolvedPhrase[];
+  practicedReview?: ResolvedPhrase[];
 };
-export type GateFeedback = { correct: boolean; word: GateWord; correcting?: boolean };
 
 type RoadUi = {
   phase: "briefing" | "loading" | "lift" | "drive" | "result" | "unavailable";

@@ -58,7 +58,7 @@
 .street-card[data-step="answer"] .street-scene,
 .street-card[data-step="reply"] .street-scene,
 .street-card[data-step="done"] .street-scene { display: none; }
-.street-line, .street-bubble {
+.street-line, .street-bubble-text {
   display: block;
   border: 0;
   text-align: left;
@@ -74,11 +74,42 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.street-line:hover { color: var(--accent-strong); }
+.street-line:hover, .street-bubble-text:hover { color: var(--accent-strong); }
+.street-card .kit-gloss-compact, .street-light-chatter .kit-gloss-compact, .street-bubble .kit-gloss-compact {
+  overflow-wrap: anywhere;
+}
 .street-hint, .street-tr, .street-heard { display: block; margin-top: 3px; color: var(--ink-soft); font-weight: 500; font-size: 0.8em; }
 .street-choices { display: grid; gap: 5px; overflow-wrap: anywhere; }
-.street-choice.btn { justify-content: flex-start; padding: 6px 9px; text-align: left; border-radius: 10px; font-size: 0.91em; line-height: 1.17; }
+.street-choice.btn { width: 100%; justify-content: flex-start; padding: 6px 9px; text-align: left; border-radius: 10px; font-size: 0.91em; line-height: 1.17; }
 .street-choice .kit-gloss-compact small { display: block; margin-top: 2px; }
+.street-card[data-compact-choices] > .street-head { gap: 6px; }
+.street-card[data-compact-choices] > .street-head .street-face { display: none; }
+.street-save-panel[open] {
+  position: fixed;
+  display: grid;
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  inset: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  margin: auto;
+  padding: 8px 12px 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+.street-save-panel::backdrop { background: #16232b38; }
+.street-save-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.street-save-panel > .phrase-save-row { padding: 4px 0; }
+.street-save-panel .kit-gloss-compact { overflow-wrap: anywhere; }
+.street-reward {
+  padding: 5px 0 0 2px;
+  border-top: 1px solid var(--line);
+}
 .street-picture {
   overflow: hidden;
   border-radius: 10px;
@@ -117,7 +148,7 @@
   transform: translate(-50%, -100%);
   pointer-events: none;
 }
-.street-bubble {
+.street-bubble.phrase-save-row {
   position: absolute;
   z-index: 4;
   top: 0;
@@ -125,13 +156,22 @@
   visibility: hidden;
   transform: translate(-100%, -100%);
   width: max-content;
+  min-width: 112px;
   max-width: min(245px, 65%, calc(100% - 16px));
-  padding: 8px 11px;
+  padding: 0 4px 0 0;
   min-height: 44px;
   white-space: normal;
   border-radius: 13px;
   background: var(--panel-solid);
   box-shadow: 0 3px 13px #16232b38;
+  pointer-events: auto;
+}
+.street-bubble-text {
+  align-self: stretch;
+  padding: 8px 0 8px 11px;
+  background: transparent;
+  border-radius: inherit;
+  cursor: pointer;
 }
 .street-bubble::after {
   content: "";
@@ -155,6 +195,13 @@
     margin: 12px 0 0;
     max-height: min(75dvh, calc(100dvh - var(--card-top) - 224px - env(safe-area-inset-bottom)));
   }
+  .hud .objective-notes .street-card[data-compact-choices] {
+    margin-top: 8px;
+    gap: 4px;
+    padding: 5px 8px 8px;
+  }
+  .street-card[data-compact-choices] .street-choices { gap: 4px; }
+  .street-card[data-compact-choices] .street-choice.btn { padding: 4px 7px; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .hud:has(.street-card) .objective-card.collapsed { width: min(28vw, 275px); }
@@ -173,7 +220,7 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, max(115px, 40%)), 1fr));
   }
   .hud .street-card .street-choice.btn { padding-block: 3px; }
-  .hud .street-card .street-choice:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .hud .street-card .street-choices > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hud .street-card { animation: none; }

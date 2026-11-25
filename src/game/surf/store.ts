@@ -1,6 +1,7 @@
 // What the surf lesson shows on the screen (src/ui/Surf.tsx), kept by Game.ts as the lesson goes.
 import { create } from "zustand";
 import type { Sentence } from "../../convo/compose";
+import type { PhraseRun, ResolvedPhrase } from "../kit/phrases";
 import type { Do, Level, Phase, Score } from "./logic";
 import type { SurfArrow } from "./controls";
 
@@ -39,17 +40,44 @@ export interface SurfUi {
   score: Score;
   /** The lesson is over: its score card is on show. */
   over: boolean;
+  review?: ResolvedPhrase[];
   /** Before this lesson: waves ridden and seconds on them, ever. */
   best: { waves: number; seconds: number };
 }
 
 export const EMPTY_SCORE: Score = { waves: 0, seconds: 0, followed: 0, asked: 0, falls: 0 };
 export const NO_MIC: SurfUi["mic"] = { status: "off", heard: "" };
-const EMPTY: SurfUi = { active: false, picking: false, level: null, phase: null, line: null, support: 0, choice: null, todo: null, said: null, mic: NO_MIC, micOn: true, balance: 1, asked: false, keyFlash: null, pressed: 0, finishedStrokes: 0, mark: null, score: EMPTY_SCORE, over: false, best: { waves: 0, seconds: 0 } };
+const EMPTY: SurfUi = { active: false, picking: false, level: null, phase: null, line: null, support: 0, choice: null, todo: null, said: null, mic: NO_MIC, micOn: true, balance: 1, asked: false, keyFlash: null, pressed: 0, finishedStrokes: 0, mark: null, score: EMPTY_SCORE, over: false, review: undefined, best: { waves: 0, seconds: 0 } };
 
-export const useSurf = create<SurfUi & { set(p: Partial<SurfUi>): void; reset(): void }>((set) => ({
-  ...EMPTY,
-  set: (p) => set(p),
-  // (the learner's choice of answering aloud or by taps outlives a lesson)
-  reset: () => set((s) => ({ ...EMPTY, micOn: s.micOn })),
-}));
+let createReview: (() => PhraseRun) | undefined;
+
+export function configureSurfReview(createRun?: () => PhraseRun) { createReview = createRun; }
+
+export const useSurf = create<SurfUi & { set(p: Partial<SurfUi>): void; reset(): void }>((set) => {
+  let review: PhraseRun | undefined;
+  return {
+    ...EMPTY,
+    set(p) {
+      if (p.active && createReview) {
+        review = createReview();
+        p = { ...p, review: undefined };
+      }
+      if (review) {
+        // The lesson already resolves these cue and answer IDs for the current learner.
+        if (p.line) review.add(p.line.s);
+        if (p.choice) for (const option of p.choice.options) review.add(option.s);
+        if (p.said) review.add(p.said.s);
+        if (p.over) {
+          p = { ...p, review: review.entries() };
+          review = undefined;
+        }
+      }
+      set(p);
+    },
+    // (the learner's choice of answering aloud or by taps outlives a lesson)
+    reset() {
+      review = undefined;
+      set((s) => ({ ...EMPTY, micOn: s.micOn }));
+    },
+  };
+});

@@ -4,7 +4,7 @@ import { loadPhrasePool, phrasePrompt } from "../src/game/road/phrasePool";
 import { pickPrompt, promptId, updateRecentMisses, type GateAnswer, type RecentMiss } from "../src/game/road/review";
 import { gateSayItTarget, keepRunPhrases, practiceResult, rememberRun, runPicker, RunScore } from "../src/game/road/run";
 import { playWay, recentMisses, setPlayWay } from "../src/game/road/save";
-import type { Phrase, Prompt } from "../src/game/road/words";
+import { makeGap, shufflePrompt, type Phrase, type Prompt } from "../src/game/road/words";
 import { audio, type FilePlayback } from "../src/game/audio";
 import { addCards, cardKey, dueCards, STORAGE_KEY, useCards } from "../src/state/cards";
 import { emptyProgress, loadProgress, saveProgress } from "../src/state/progress";
@@ -173,6 +173,38 @@ describe("phrase gates", () => {
       other("Can I pay by card?", "money"),
     ], seeded(88))?.options;
     expect(options).toEqual(expect.arrayContaining([phrase.f, "Can I try it?", "Can I pay by card?"]));
+  });
+
+  it("reviews displayed board alternatives in first-seen order, with their own helpers across lane shuffles", async () => {
+    const { listen } = await loadPhrasePool(seeded(923));
+    const source = new Map(listen.map(({ phrase }) => [phrase!.f, phrase!.p]));
+    const prompt = listen[0];
+    const replay = shufflePrompt(prompt, seeded(12));
+    const score = new RunScore(150, "Road");
+    score.show(prompt);
+    score.show(replay);
+    score.answer(replay, replay.right);
+    const result = practiceResult(score, "phrases");
+    expect(result.review.map(({ sentence, sourceLabel }) => [sentence.en, sentence.nat, sentence.say, sourceLabel]))
+      .toEqual(prompt.options.map((target) => [target, source.get(target), target, "Road"]));
+    expect(result.phrases).toEqual([prompt.word]);
+    expect(result.missed).toEqual([]);
+  });
+
+  it("keeps the missed-word label and resolves its complete gap sentence only after the answer", () => {
+    const answer = word(5);
+    if (answer.phrase) throw new Error("Expected a word prompt");
+    const full = { en: "Find word five.", nat: "Raskite penktą žodį.", say: "Find word five.",
+      units: [{ en: "Find", lt: "Raskite" }, { en: "word five.", lt: "penktą žodį." }] };
+    const prompt = { ...answer, gap: { word: answer.word, full, sentence: makeGap(full, 1), clip: answer.word.clip } };
+    const score = new RunScore();
+    score.show(prompt);
+    expect(score.review.entries()).toEqual([]);
+    score.answer(prompt, 1);
+    const result = practiceResult(score, "words");
+    expect(result.missed).toEqual([answer.word]);
+    expect(result.missedReview[0]).toMatchObject({ sentence: full, situationId: "test" });
+    expect(result.review).toEqual(result.missedReview);
   });
 
   it("accepts the whole phrase for Say it and saves a correct gate as an unchanged English–Lithuanian pair", () => {

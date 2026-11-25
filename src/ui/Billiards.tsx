@@ -1,4 +1,5 @@
 import { memo, useRef, type CSSProperties, type PointerEvent } from "react";
+import { BILLIARDS_SITUATION as situationId } from "../content/billiards-lines";
 import { game } from "../game/gameRef";
 import { useBilliards, type RackBall } from "../game/billiards/store";
 import { ballColor } from "../game/billiards/table";
@@ -6,6 +7,8 @@ import type { KitLine } from "../game/kit/dialogue";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
 import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./billiards.css";
@@ -25,9 +28,11 @@ function BallRow({ name, balls, active }: { name: string; balls: RackBall[]; act
   </div>;
 }
 
-function Speech({ line }: { line: KitLine }) {
-  return <div className="bl-speech" data-line={line.key}><GlossLine sentence={line.sentence} gloss compact /></div>;
-}
+const Speech = memo(function Speech({ line }: { line: KitLine }) {
+  return <div className="bl-speech phrase-save-row" data-line={line.key}>
+    <GlossLine sentence={line.sentence} gloss compact /><PhraseSave sentence={line.sentence} situationId={situationId} iconOnly />
+  </div>;
+});
 
 function CallLabel({ mic }: { mic?: string }) {
   return <span className="bl-confirm-label" data-mic={mic}><Icon name="mic" size={15} />Pasakyk arba bakstelėk:</span>;
@@ -43,9 +48,12 @@ const CallReservation = memo(function CallReservation({ options }: { options: Ki
 });
 
 function Choice({ line }: { line: KitLine }) {
-  return <button className="bl-choice" data-line={line.key} onClick={() => act("choice", line.key)}>
-    <GlossLine sentence={line.sentence} gloss compact />
-  </button>;
+  return <div className="phrase-save-row">
+    <button className="bl-choice" data-line={line.key} onClick={() => act("choice", line.key)}>
+      <GlossLine sentence={line.sentence} gloss compact />
+    </button>
+    <PhraseSave sentence={line.sentence} situationId={situationId} iconOnly />
+  </div>;
 }
 
 function TablePad({ aiming, usable }: { aiming: boolean; usable: boolean }) {
@@ -158,19 +166,25 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
             disabled={state.replaying} onClick={() => act("ball", String(id))}><BallBadge id={id} down={false} /></button>)}
         </div>
         <div className="bl-chip-heading">Kišenė</div>
-        <div className="bl-pocket-chips" role="group" aria-label="Kišenė">
-          {pockets.map(({ id, line }) => <button key={id} data-pocket={id} className="bl-choice" aria-pressed={id === selection.pocket}
-            disabled={state.replaying} onClick={() => act("pocket", id)}>
-            <GlossLine sentence={{ ...line.sentence, en: line.sentence.en.replace(/\.$/, ""),
-              nat: line.sentence.nat.replace(/\.$/, "") }} gloss compact />
-          </button>)}
+        <div className="bl-pocket-options phrase-save-row">
+          <div className="bl-pocket-chips" role="group" aria-label="Kišenė">
+            {pockets.map(({ id, line }) => <button key={id} data-pocket={id} className="bl-choice" aria-pressed={id === selection.pocket}
+              disabled={state.replaying} onClick={() => act("pocket", id)}>
+              <GlossLine sentence={{ ...line.sentence, en: line.sentence.en.replace(/\.$/, ""),
+                nat: line.sentence.nat.replace(/\.$/, "") }} gloss compact />
+            </button>)}
+          </div>
+          <PhraseChooser key={phase} entries={pockets.map(({ line }) => ({ sentence: line.sentence, situationId }))} />
         </div>
-        {phase === "call" && <div className="bl-confirm-row">
-          <CallReservation options={state.callOptions} />
-          {call && <button className="bl-confirm" onClick={() => act("confirm")}>
-            <CallLabel mic={state.mic.status} />
-            <GlossLine sentence={call.sentence} gloss compact />
-          </button>}
+        {phase === "call" && <div className="bl-confirm-actions phrase-save-row">
+          <div className="bl-confirm-row">
+            <CallReservation options={state.callOptions} />
+            {call && <button className="bl-confirm" onClick={() => act("confirm")}>
+              <CallLabel mic={state.mic.status} />
+              <GlossLine sentence={call.sentence} gloss compact />
+            </button>}
+          </div>
+          {call && <PhraseSave sentence={call.sentence} situationId={situationId} iconOnly />}
         </div>}
       </>}
       {aiming && <>
@@ -195,6 +209,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       </div>}
     </section>
     {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"} said={result.said}
+      review={state.review}
       ratio={(result.called + result.understood) / Math.max(1, result.shots + result.listens)}
       rows={[
         { label: "Pataikyti paskelbti smūgiai", value: <><ScoreNumber value={result.called} />/{result.shots}</> },

@@ -40,6 +40,8 @@
   width: 100%;
   gap: 8px;
 }
+.gofish-header-actions { display: flex; gap: 6px; align-items: center; }
+.gofish-header-actions .phrase-chooser-panel { inset-inline-end: -54px; }
 .gofish-deck,
 .gofish-exit {
   display: flex;
@@ -93,7 +95,9 @@
 /* Reserve the notes button's hit area at the end of the final unit. */
 .gofish-cue .u:has(.nat-pin) { margin-inline-end: 44px; }
 .gofish-cue .nat, .gofish-offer .nat { margin-top: 2px; }
-.gofish-replay { display: grid; justify-items: end; gap: 3px; }
+.gofish-replay { display: grid; grid-template-columns: repeat(2, 44px); justify-items: end; gap: 3px; }
+.gofish-replay button[data-phrase-save] { grid-area: 1 / 2; }
+.gofish-replay button:nth-child(2):not([data-phrase-save]) { grid-column: 1 / -1; }
 .gofish-replay button {
   min-width: 44px;
   min-height: 44px;
@@ -236,6 +240,8 @@
   width: 100%;
 }
 .gofish-actions .mic { flex: 0 0 44px; width: 44px; height: 44px; align-self: center; }
+.gofish-actions .phrase-save-row { align-items: stretch; }
+.gofish-actions .phrase-save-row > [data-phrase-save] { align-self: center; }
 .gofish-choice, .gofish-fish {
   display: flex;
   flex-wrap: wrap;

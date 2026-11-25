@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { KitLine, KitMic } from "../kit/dialogue";
+import type { ResolvedPhrase } from "../kit/phrases";
 import type { SayItCue } from "../kit/sayIt";
 import type { Npc, Player, Round, Word } from "./logic";
 
@@ -25,11 +26,12 @@ interface GoFishUi {
   drawn: Word | null;
   drawSayIt: SayItCue | null;
   result: Result | null;
+  review?: ResolvedPhrase[];
 }
 
 const empty: GoFishUi = {
   offered: false, round: null, step: "intro", line: null, choices: [], mic: { status: "off", heard: "" }, micOn: true,
-  target: null, picked: null, hintCard: null, hintReply: null, tip: null, gloss: true, busy: false, drawn: null, drawSayIt: null, result: null,
+  target: null, picked: null, hintCard: null, hintReply: null, tip: null, gloss: true, busy: false, drawn: null, drawSayIt: null, result: null, review: undefined,
 };
 
 export const useGoFish = create<GoFishUi>(() => empty);
