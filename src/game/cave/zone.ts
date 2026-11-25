@@ -25,6 +25,8 @@ export const drawCaveMap = createCaveMap(SLATE_CAVE, SLATE_CAVE);
 const exitLabel = CAVE_COPY.door.dryExit.en;
 const exit = P.EXITS.find((way) => way.id === PREFERRED_COVE_DOOR)!;
 const exitTarget = { kind: "exit", id: exit.id, x: exit.x, z: exit.z, label: exitLabel } as const;
+const keeperPrompts = new Map(SLATE_CAVE.keepers.map(({ npc, gate }) =>
+  [npc, { kind: "talk", label: CAVE_COPY.action[gate].lt }] as const));
 
 const noProps = new Colliders();
 let permanentCells: Uint8Array | undefined;
@@ -87,7 +89,7 @@ export function buildCaveZone(initial: CaveSave | undefined, persist = saveCaveP
   const nearOak = (at: { x: number; z: number }) => quest.treeNear(at);
   const prompt = createCavePrompts(quest, P.EXITS, exitLabel, CAVE_COPY.action.exit.lt, CAVE_COPY.action.stone, CAVE_COPY.action.oak.lt);
   return { id: CAVE_ZONE, oak: P.TREES[1], nearOak, group, interior, colliders, nav, view, quest,
-    exitTarget, prompt, safeSpawn, resolveStep, dispose, restoreProgress };
+    exitTarget, prompt, keeperPrompts, safeSpawn, resolveStep, dispose, restoreProgress };
 }
 
 export type CaveZone = ReturnType<typeof buildCaveZone>;

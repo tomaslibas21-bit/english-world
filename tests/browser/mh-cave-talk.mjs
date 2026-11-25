@@ -1,8 +1,8 @@
 // Sightlines from the six donor approach points, plus the light portraits and the actorless Oak.
 import assert from "node:assert/strict";
 import {
-  BRAM, DEVICES, FERN, OAK, assertPickerIds, at, conversation, endTalk, fernTalk, heard,
-  inspectPickerCard, interact, prompt, suite, surface, toggleCavePicker, watch,
+  BRAM, DEVICES, FERN, OAK, answer, assertPickerIds, at, conversation, endTalk, fernTalk, heard,
+  inspectPickerCard, interact, oakClosing, prompt, suite, surface, toggleCavePicker, watch,
 } from "./fixtures/mh-cave.mjs";
 
 const iPhone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
@@ -18,7 +18,7 @@ const spots = [
 async function town(run) {
   for (const [i, [name, who, x, z]] of spots.entries()) {
     await at(run, x, z, 0);
-    await prompt(run, "talk", who.npc, [`Kalbėtis: ${who.name}`], 15_000);
+    await prompt(run, "talk", who.npc, [who === BRAM ? "Pasikalbėti su Bramu" : "Pasikalbėti su Ferna"], 15_000);
     const narrow = run.height === 667 && i === 2;
     if (narrow) await run.ev(() => {
       const ch = window.__ew.game.npcs.find((n) => n.id === "cave_bram").ch;
@@ -92,7 +92,7 @@ async function light(run) {
     await toggleCavePicker(run, picker, true);
     await assertPickerIds(run, cards, true);
     const pickerCard = picker.locator(`.lh-card[data-sit="${who.id}"]`);
-    await inspectPickerCard(run, pickerCard, [...who.title, "Pasipraktikuoti kalbėtis"]);
+    await inspectPickerCard(run, pickerCard, [...who.title, "Pasitreniruoti kalbėti"]);
     await run.mark(`light-picker-${who.id}`);
     await run.press(pickerCard);
     await conversation(run, who);
@@ -130,7 +130,20 @@ async function light(run) {
         ["Two riddles, then you can cross. Ready?", "Dvi mįslės, ir galėsite pereiti. Pradėsim?"]);
     }
     await run.mark(`light-backdrop-${who.id}`);
+    if (who === OAK) {
+      await answer(run, "Goodbye!");
+      const early = run.page.locator(".ended-box");
+      await run.visible(early);
+      assert.equal(await early.locator(".ended-title").innerText(), "Pokalbis baigtas");
+      assert.equal(await early.locator(".cave-ending, .ended-keepsake").count(), 0);
+    }
     await endTalk(run);
+    if (who === OAK) {
+      assert.equal(await run.ev(() => window.__ew.store.getState().progress.sits["x08-old-oak"].completions), 0);
+      await run.press(pickerCard);
+      await conversation(run, OAK);
+      await oakClosing(run);
+    }
     await toggleCavePicker(run, picker, false);
     await assertPickerIds(run, cards, false);
   }

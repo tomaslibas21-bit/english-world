@@ -90,7 +90,7 @@ async function ordinary(run) {
   await crossIn(run, "cleft");
   await run.mark("tide-hall");
   await walk(run, 0.3, -2.5);
-  await prompt(run, "talk", "cave_bram", ["Kalbėtis: Bram"]);
+  await prompt(run, "talk", "cave_bram", ["Pasikalbėti su Bramu"]);
   await interact(run);
   await bramTalk(run);
   assert.equal((await run.state()).mask, 1);
@@ -128,7 +128,7 @@ async function ordinary(run) {
   await run.mark("root-garden");
   await walk(run, -6.3, -99.5);
   assert(distance(await run.state(), [-4.62, -100.3]) < 2.9);
-  await prompt(run, "talk", "cave_fern", ["Kalbėtis: Fern"]);
+  await prompt(run, "talk", "cave_fern", ["Pasikalbėti su Ferna"]);
   await interact(run);
   await fernTalk(run);
   assert.equal((await run.state()).mask, 15);
@@ -199,6 +199,7 @@ async function lastOfRound(run) {
   const after = await replayState(run);
   assert.deepEqual(after.heard, []);
   assert.equal(after.rounds, 3);
+  assert.equal(after.card.count, "4 ratas");
   assert.equal(after.saved.length, 15);
   assert.deepEqual(after.book, ["x08-old-oak:tide_01"]);
   assert.equal((await watch(run)).toasts["Išgirdote visas 215 frazių!"].length, 1);

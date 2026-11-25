@@ -1,4 +1,5 @@
-import { caveHints } from "../cave-dialogue";
+import { lazy } from "react";
+import { caveConversationCopy, caveHints } from "../cave-dialogue";
 import { oakLines, oakModels } from "../cave-oak-lines";
 import { CAVE_STONE_HINTS, CAVE_STONE_PATTERNS } from "../cave-stones";
 import type { Ctx, SituationDef } from "../types";
@@ -38,6 +39,7 @@ const hints = {
 
 const sit: SituationDef = {
   id: "x08-old-oak", bonus: true, optionalVoice: true, song: "", songTitle: "",
+  conversationCopy: { ...caveConversationCopy, Ending: lazy(() => import("../../ui/CaveEnding")) },
   title: { en: "The Old Oak", lt: "Senasis ąžuolas" },
   topic: { en: "Listen to the oak", lt: "Pasiklausyti ąžuolo" },
   chapter: 9, order: 15, location: "gruta", npc: "cave_oak", mode: "talk",
@@ -117,6 +119,8 @@ const sit: SituationDef = {
     "long ago": { reason: "lexical_expression", split: "Both words locate an event in the distant past, seniai.", minimal: "All 2 words carry the expression." },
     "holds up": { reason: "lexical_expression", split: "The tree supports the sky, laiko.", minimal: "All 2 words carry the expression." },
     "takes its time": { reason: "lexical_expression", split: "The drop is in no hurry, neskuba.", minimal: "All 3 words carry the expression." },
+    "green thing": { reason: "lexical_expression", split: "In the garden this refers to a plant, augalas.", minimal: "Both words identify the living thing." },
+    "time to spare": { reason: "lexical_expression", split: "The phrase means having plenty of time, laiko į valias.", minimal: "All 3 words carry the expression." },
     "the dark": { reason: "grammatical_fusion", split: "Dark as a noun means darkness; tamsoje carries place.", minimal: "All 2 words carry the expression." },
     "take a breath": { reason: "lexical_expression", split: "One act of breathing in, įkvėpkite.", minimal: "All 3 words carry the expression." },
     "look up": { reason: "lexical_expression", split: "Up gives the direction; the instruction is pažvelkite aukštyn or pakelkite akis.", minimal: "All 2 words carry the expression." },

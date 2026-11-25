@@ -1,7 +1,7 @@
 // Map selection, walking guide, keeper poses, phone HUD and course egress. The Oak has a separate story ending.
 import assert from "node:assert/strict";
 import {
-  BRAM, CAVE, DEVICES, TIDE, at, closeRune, conversation, distance, endTalk, heard, lines, oakTalk,
+  BRAM, CAVE, DEVICES, RING, TIDE, at, closeRune, conversation, distance, endTalk, heard, lines, oakTalk,
   openMap, openRune, settled, solve, suite, surface, walk,
 } from "./fixtures/mh-cave.mjs";
 
@@ -61,7 +61,16 @@ async function firstGuide(run) {
   const bigMap = await openMap(run);
   await run.visible(bigMap.locator('canvas[data-map="slate-cove"]'));
   await surface(run, bigMap, ["Maple Harbor", "Slate Cove Cave", "Old Stone Ring"]);
-  const mapPin = await bigMap.locator(".map-me").evaluate((d) => [parseFloat(d.style.left), parseFloat(d.style.top)]);
+  const player = bigMap.locator(".map-me");
+  assert.equal(await player.getAttribute("title"), "Jūs esate čia");
+  for (const [name, place] of [["Rodyti įėjimą į olą žemėlapyje", CAVE], ["Rodyti Senąjį akmenų ratą žemėlapyje", RING]]) {
+    const pin = bigMap.getByRole("button", { name, exact: true });
+    assert.equal(await pin.locator("[lang=en]").innerText(), place[0]);
+    assert.equal(await pin.locator("[lang=lt]").innerText(), `· ${place[1]}`);
+  }
+  assert.equal(await bigMap.locator(".info-box").innerText().then((s) => s.replace(/\s+/gu, " ").trim()),
+    "Pasirinkite vietą žemėlapyje. Geltonas taškas rodo Jūsų užduotį, raudonas – kur esate. Kai kurios užduotys atliekamos telefonu (P).");
+  const mapPin = await player.evaluate((d) => [parseFloat(d.style.left), parseFloat(d.style.top)]);
   assert(mapPin.every((v) => v > 0 && v < 100), JSON.stringify(mapPin));
   await run.mark("cove-local-map");
   await run.press(bigMap.getByRole("button", { name: "Uždaryti", exact: true }));
@@ -84,6 +93,7 @@ async function firstGuide(run) {
   const caveMap = await openMap(run);
   await run.visible(caveMap.locator('canvas[data-map="gruta"][data-gates="0"]'));
   await surface(run, caveMap, [...CAVE, "Kelias oloje", "Nuvesk mane"]);
+  assert.equal(await caveMap.locator(".map-me").getAttribute("title"), "Jūs esate čia");
   const cavePin = await caveMap.locator(".map-me").evaluate((d) => [parseFloat(d.style.left), parseFloat(d.style.top)]);
   assert(cavePin.every((v) => v > 0 && v < 100));
   await run.mark("cave-map-closed-gates");
@@ -202,7 +212,7 @@ await suite("mh-grotto-ends", async (run) => {
     } }, async (view) => {
       await at(view, 6, -171.5, Math.PI);
       await view.ev(() => window.__ew.game.walkTo(6, -177.2, { kind: "point" }));
-      await oakTalk(view);
+      await oakTalk(view, { leaveByGuide: true });
       const after = await view.state();
       assert(after.cave.tree && after.cave.lit.length === 5 && distance(after, [6, -180]) < 3.6 && !after.talk);
       await surface(view, view.page.locator(".town-toasts .toast.tip").filter({ hasText: "Akmenys vėl prabilo" }),

@@ -1,7 +1,12 @@
 import { fernLines, fernModels } from "../cave-fern-lines";
-import { caveHints, cavePass } from "../cave-dialogue";
+import { caveConversationCopy, caveHints, cavePass } from "../cave-dialogue";
 import { ent } from "../dsl";
 import type { Ctx, EntityDef, SituationDef } from "../types";
+
+export const FERN_INTRO = {
+  en: "Fern sits on the bridge over the underground river. She has some riddles for you. Take a guess, ask for a clue, or try another riddle.",
+  lt: "Ant tilto per požeminę upę sėdi Ferna. Ji Jums užmins kelias mįsles. Galite spėti, prašyti užuominos ar rinktis kitą mįslę.",
+};
 
 export const FERN_RIDDLES = [
   { answer: "acorn", options: ["nut", "acorn", "stone", "shell"] },
@@ -117,10 +122,11 @@ function close(c: Ctx) { c.say("bye"); c.end(); }
 
 const sit: SituationDef = {
   id: "x07-fern", bonus: true, optionalVoice: true, song: "", songTitle: "",
+  conversationCopy: caveConversationCopy,
   title: { en: "Fern on the bridge", lt: "Ferna ant tilto" },
-  topic: { en: "Guess the riddles", lt: "Įminti mįsles" },
+  topic: { en: "Solve the riddles", lt: "Įminti mįsles" },
   chapter: 9, order: 14, location: "gruta", npc: "cave_fern", mode: "talk",
-  intro: "Ant tilto per požeminę upę sėdi Ferna. Ji Jums užmins kelias mįsles. Galite spėti, prašyti užuominos ar rinktis kitą mįslę.",
+  intro: FERN_INTRO.lt,
   goal: "Pažaiskite su Ferna, kad galėtumėte pereiti tiltą.",
   lines: fernLines, hints: { ...hints, ...guessHints }, entities: { thing: things },
   intents: {
@@ -214,6 +220,7 @@ const sit: SituationDef = {
     "goes down": { reason: "lexical_expression", split: "Of the sun, goes down means nusileidžia.", minimal: "All 2 words carry the expression." },
     "gives back": { reason: "lexical_expression", split: "The echo returns the voice, grąžina.", minimal: "All 2 words carry the expression." },
     "let's try": { reason: "grammatical_fusion", split: "Pamėginkime carries both the invitation and the action.", minimal: "All 2 words carry the expression." },
+    "different one": { reason: "grammatical_fusion", split: "Kitą covers the contrast and the implied riddle.", minimal: "Both words carry the choice." },
     "go ahead": { reason: "lexical_expression", split: "The bridge is clear to cross, pirmyn.", minimal: "All 2 words carry the expression." },
     "i've got": { reason: "grammatical_fusion", split: "I've got is present possession, turiu.", minimal: "All 2 words carry the expression." },
     "watch your step": { reason: "lexical_expression", split: "A short warning to take care on the bridge, atsargiai.", minimal: "All 3 words carry the expression." },

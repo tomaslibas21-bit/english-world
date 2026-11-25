@@ -8,7 +8,7 @@ import type { SituationMeta } from "../content/types";
 import { game } from "../game/gameRef";
 import { LIGHTHOUSE_ISLAND } from "../game/world/island";
 import { AIRPORT_EXIT, OUTDOOR_NPCS, SEA_Z, WORLD } from "../game/world/layout";
-import { COVE_DOORS, RING_TARGET } from "../game/world/slateCovePlan";
+import { COVE_DOORS, RING_TARGET, inSlateCove } from "../game/world/slateCovePlan";
 import { sitProgress } from "../state/progress";
 import { useStore } from "../state/store";
 import { Icon, InlineIcon, type IconName } from "./icons";
@@ -48,6 +48,7 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
   const progress = useStore((s) => s.progress);
   const mm = useStore((s) => s.hud.minimap);
   const cave = !town && game?.caveMapBounds;
+  const caveArea = mm.zone === "gruta" || (mm.zone === "town" && inSlateCove(mm.px, mm.pz));
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
   const bounds = cave || {
     ...WORLD, minX: game?.townMapWest ?? WORLD.minX, minZ: island ? WORLD.minZ : SEA_Z - 2,
@@ -94,7 +95,7 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
         <div>
           <div className={"map-canvas" + (cave ? " cave-atlas" : "")} style={{ aspectRatio: W / D }}>
             <canvas ref={ref} data-map={region} data-gates={gates} />
-            {(cave || mm.zone === "town") && <div className="map-me" style={pct(mm.px, mm.pz)} title="Tu esi čia" />}
+            {(cave || mm.zone === "town") && <div className="map-me" style={pct(mm.px, mm.pz)} title={caveArea ? CAVE_COPY.map.player.lt : "Tu esi čia"} />}
             {cave && mm.questX != null && mm.questZ != null && <div className="map-waypoint" style={pct(mm.questX, mm.questZ)} title={CAVE_COPY.guide.cave.lt} />}
             {cave && mm.exitX != null && mm.exitZ != null && <div className="map-waypoint town" style={pct(mm.exitX, mm.exitZ)} title={CAVE_COPY.guide.town.lt} />}
             {!cave && island && <button className={"map-pin map-place-label" + (sel === "lighthouse" ? " sel" : "")}
@@ -115,8 +116,8 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
           </div>
           {!cave && game?.guideToPlace && <div className="cave-landmarks">
             {landmarks.map((id) => <button key={id} type="button" className="btn ghost small" aria-pressed={sel === id}
-              aria-label={(id === "gruta" ? CAVE_COPY.map.entrancePin : CAVE_COPY.map.ringPin).en}
-              onClick={() => setSel(id)}><span lang="en">{LOCATIONS[id].name}</span></button>)}
+              aria-label={(id === "gruta" ? CAVE_COPY.map.entrancePin : CAVE_COPY.map.ringPin).lt}
+              onClick={() => setSel(id)}><span lang="en">{LOCATIONS[id].name}</span>{" "}<span lang="lt">· {LOCATIONS[id].lt}</span></button>)}
           </div>}
         </div>
         <div>
@@ -124,7 +125,7 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
             <button type="button" className="btn soft small" data-guide="cave" onClick={() => guide("gruta")}>{CAVE_COPY.guide.cave.lt}</button>
             <button type="button" className="btn soft small" data-guide="objective" onClick={() => { close(); game?.autoWalkToObjective("objective"); }}>{walkLabel()}</button>
           </div> : <>
-            {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
+            {!sel && <div className="info-box">{caveArea ? CAVE_COPY.map.legend.lt : "Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu."}<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && <div>
               <h3 className="place-title">{island.name}</h3>
               <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>

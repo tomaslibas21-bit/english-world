@@ -1,7 +1,12 @@
 import { bramLines, bramModels } from "../cave-bram-lines";
-import { caveHints, cavePass } from "../cave-dialogue";
+import { caveConversationCopy, caveHints, cavePass } from "../cave-dialogue";
 import { ent } from "../dsl";
 import type { Ctx, Handler, SituationDef } from "../types";
+
+export const BRAM_INTRO = {
+  en: "Bram, in his wool cap, waits for you on the gray path. Introduce yourself and find out where the first three speaking stones are.",
+  lt: "Ant pilkojo tako Jūsų laukia Bramas su vilnone kepure. Prisistatykite ir sužinokite, kur rasti pirmuosius tris kalbančius akmenis.",
+};
 
 const countries = [
   ent("lithuania", "Lithuania", "Lietuva/Lietuvos/Lietuvai/Lietuvą/Lietuva/Lietuvoje", "f",
@@ -67,10 +72,11 @@ function allSet(c: Ctx) {
 
 const sit: SituationDef = {
   id: "x06-bram", bonus: true, optionalVoice: true, song: "", songTitle: "",
+  conversationCopy: caveConversationCopy,
   title: { en: "Bram on the gray path", lt: "Bramas ant pilkojo tako" },
   topic: { en: "Ask the way to the stones", lt: "Paklausti, kur akmenys" },
   chapter: 9, order: 13, location: "gruta", npc: "cave_bram", mode: "talk",
-  intro: "Ant pilkojo tako Jūsų laukia Bramas su vilnone kepure. Prisistatykite ir sužinokite, kur rasti pirmuosius tris kalbančius akmenis.",
+  intro: BRAM_INTRO.lt,
   goal: "Prisistatykite Bramui ir paklauskite, kur akmenys.",
   lines: bramLines,
   entities: { country: countries },

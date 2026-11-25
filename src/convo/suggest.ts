@@ -41,11 +41,11 @@ const OWN_NOTE = {
   en: { name: "Say your own name.", surname: "Say your own last name.", both: "Say your own first and last name.", letters: "Spell your own last name." },
 };
 /** The note for a line that has the learner's name in it ("Pasakyk savo vardą."), in the learner's own language. */
-export function ownNameNote(src: string): string | undefined {
+export function ownNameNote(src: string, ownName = OWN_NOTE.lt.name): string | undefined {
   const n = /\{\$name\b/.test(src), sn = /\{\$surname\b/.test(src), l = /\{\$letters\b/.test(src);
   if (!n && !sn && !l) return undefined;
   const t = OWN_NOTE["lt"];
-  return l ? t.letters : n && sn ? t.both : n ? t.name : t.surname;
+  return l ? t.letters : n && sn ? t.both : n ? ownName : t.surname;
 }
 
 /** The learner's name for model answers ("My name is Tomas."). */

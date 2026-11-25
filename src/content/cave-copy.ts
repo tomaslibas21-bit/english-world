@@ -1,5 +1,6 @@
 // Load with the cave or its map/picker adapter. The situation catalog carries its own small metadata.
 import type { CaveStoneGroup } from "./cave-stones";
+import { CAVE_PRACTICE } from "./cave-picker-copy";
 
 export type CaveLabel = Readonly<{ en: string; lt: string }>;
 const label = (en: string, lt: string): CaveLabel => ({ en, lt });
@@ -41,7 +42,7 @@ export const CAVE_COPY = {
     fern: label("Talk to Fern", "Pasikalbėti su Ferna"),
     oak: label("Listen to the Old Oak", "Pasiklausyti senojo ąžuolo"),
     stone: label("Listen to the stone", "Pasiklausyti akmens"),
-    gate: label("Check the gate", "Prieiti prie vartų"),
+    gate: label("Walk up to the gate", "Prieiti prie vartų"),
   },
   map: {
     exterior: label("Slate Cove trail map", "Skalūnų įlankos takų žemėlapis"),
@@ -49,15 +50,18 @@ export const CAVE_COPY = {
     entrancePin: label("Show the cave entrance on the map", "Rodyti įėjimą į olą žemėlapyje"),
     ringPin: label("Show the Old Stone Ring on the map", "Rodyti Senąjį akmenų ratą žemėlapyje"),
     select: label("Show the way", "Rodyti kelią"),
-    exitRoute: label("The trail to your town stop starts at the dry exit.", "Į miestelį grįšite pro išėjimą į sausą taką."),
+    exitRoute: label("The trail to your town stop starts at the dry exit.", "Pro išėjimą į sausą taką grįšite prie kelio į savo užduoties vietą."),
+    player: label("You are here", "Jūs esate čia"),
+    legend: label("Choose a place on the map. Yellow marks your task, red marks you.",
+      "Pasirinkite vietą žemėlapyje. Geltonas taškas rodo Jūsų užduotį, raudonas – kur esate."),
   },
   picker: {
     blurb: label("Follow the gray path. Listen for the stones.", "Eikite pilkuoju taku ir pasiklausykite akmenų."),
     fernLocked: label("Light the Tide Hall stones and follow the path to Fern.", "Įžiebkite Potvynių menės akmenis ir eikite taku iki Fernos."),
     oakLocked: label("Light five stones and cross Fern's bridge.", "Įžiebkite penkis akmenis ir pereikite Fernos tiltą."),
-    practice: label("Practice the conversation", "Pasipraktikuoti kalbėtis"),
+    practice: CAVE_PRACTICE,
     practiceFern: label("Practice riddles with Fern here.", "Čia galite pamėginti įminti Fernos mįsles."),
-    practiceOak: label("Practice the conversation with the Old Oak here.", "Čia galite pasipraktikuoti kalbėtis su senuoju ąžuolu."),
+    practiceOak: label("Practice the conversation with the Old Oak here.", "Čia galite pasitreniruoti kalbėti su senuoju ąžuolu."),
     completed: label("Visit the cave again", "Sugrįžti į olą"),
   },
   banner: {
@@ -74,7 +78,7 @@ export const CAVE_COPY = {
     litCount: (lit: number) => label(`${lit} of ${CAVE_GOALS.firstRoom} stones lit here`, `Čia šviečia ${lit} iš ${CAVE_GOALS.firstRoom} akmenų`),
     oakCount: (lit: number) => label(`${lit} of ${CAVE_GOALS.oak} stones for the Oak`, `Ąžuolui įžiebta ${lit} iš ${CAVE_GOALS.oak} akmenų`),
     replayCount: (heard: number) => label(`${heard} of ${CAVE_GOALS.replay} lines heard`, `Išgirsta ${heard} iš ${CAVE_GOALS.replay} frazių`),
-    round: (round: number) => label(`Round ${round}`, `Ratas nr. ${round}`),
+    round: (round: number) => label(`Round ${round}`, `${round} ratas`),
     oakSleeping: label("The Old Oak is asleep.", "Senasis ąžuolas dar miega."),
     oakAwake: label("The Old Oak is awake.", "Senasis ąžuolas pabudo."),
     completed: label("You heard the Old Oak.", "Pasiklausėte senojo ąžuolo."),
@@ -84,7 +88,7 @@ export const CAVE_COPY = {
     cave: label("Cave guide", "Kelias oloje"),
     town: label("Town guide", "Kelias į miestelį"),
     bram: label("Talk to Bram", "Pasikalbėkite su Bramu"),
-    fern: label("Ask Fern to cross", "Paprašykite Fernos leisti pereiti tiltą"),
+    fern: label("Ask Fern to let you cross", "Paprašykite Fernos leisti pereiti tiltą"),
     oak: label("Go to the Old Oak", "Prieikite prie senojo ąžuolo"),
     stone: label("Find the next stone", "Raskite kitą akmenį"),
     tideLeft: (left: number) => left === 1
@@ -111,7 +115,7 @@ export const CAVE_COPY = {
     heard: (line: string) => label(`“${line}”`, `„${line}“`),
     missed: label("Try again, or choose a meaning.", "Pakartokite arba pasirinkite reikšmę."),
     unrecorded: label("Read the words and choose what they mean.", "Perskaitykite žodžius ir pasirinkite jų reikšmę."),
-    replayUnavailable: label("Read the line again here.", "Dar kartą perskaitykite frazę čia."),
+    replayUnavailable: label("Read the line again here.", "Čia galite dar kartą perskaityti frazę."),
     option: (index: number, meaning: string) => label(`Choice ${index}. ${meaning}`, `${index} pasirinkimas. ${meaning}`),
   },
   toast: {

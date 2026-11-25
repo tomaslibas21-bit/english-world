@@ -2,7 +2,7 @@ import { t } from "./dsl";
 import type { SentSrc } from "./types";
 
 export const oakLines = {
-  greet: [t("I | heard | you | coming.", "Aš | girdėjau | Jus | ateinant.", "Girdėjau, kaip atėjote.")],
+  greet: [t("I | heard | you | coming.", "Aš | girdėjau | Jus | ateinant.", "Girdėjau, kaip artėjote.")],
   stones_lit: [t("Five | stones | have | carried | your | voice | to | me.", "Penki | akmenys | — | atnešė | Jūsų | balsą | — | man.", "Penki akmenys man atnešė Jūsų balsą.")],
   again: [t("Ah, | those | footsteps | again. | Welcome back.", "Ak, | tie | žingsniai | vėl. | Sveiki sugrįžę.", "Ak, ir vėl tie žingsniai. Gera Jus vėl girdėti.")],
   ask_who: [t("Do | you | know | who | is | speaking?", "Ar | Jūs | žinote, | kas | — | kalba?", "Ar žinote, kas kalba?")],

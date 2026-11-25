@@ -122,14 +122,14 @@ async function main(run) {
   await surface(run, run.page.locator(".town-toasts .toast.tip").first(), ["Radote Skalūnų įlankos olą!", "Pasikalbėkite su Bramu ant pilkojo tako."]);
 
   await forward(run, async () => {
-    await prompt(run, "talk", "cave_bram", ["Kalbėtis: Bram"]);
+    await prompt(run, "talk", "cave_bram", ["Pasikalbėti su Bramu"]);
     await run.step(50);
     const held = await run.state();
     assert(held.z > -7.6 && held.z < -6.7 && held.mask === 0 && held.path === 0, JSON.stringify(held));
   });
   await run.mark("bram-gate-held");
   await at(run, 0.3, -2.5, Math.PI);
-  await prompt(run, "talk", "cave_bram", ["Kalbėtis: Bram"], 15_000);
+  await prompt(run, "talk", "cave_bram", ["Pasikalbėti su Bramu"], 15_000);
   await interact(run);
   await bramTalk(run);
   const passed = await run.state();
@@ -236,7 +236,7 @@ async function missingMedia(run, listed) {
     assert.deepEqual([played[0].text, played[0].voice, played[0].result], [TIDE_LINE[0], "g_coach_m", false]);
   }
   await solve(run, q, TIDE_LINE);
-  await surface(run, run.page.locator(".glyph-card"), ["Dar kartą perskaitykite frazę čia.", TIDE_LINE[1]]);
+  await surface(run, run.page.locator(".glyph-card"), ["Čia galite dar kartą perskaityti frazę.", TIDE_LINE[1]]);
   const attempts = (await calls(run)).length;
   await run.press(run.page.locator(".glyph-play"));
   assert.equal((await calls(run)).length, attempts);

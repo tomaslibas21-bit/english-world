@@ -3852,13 +3852,14 @@ export class Game implements GameApi {
     if (changed) {
       if (best) audio.sfx("tick");
       const names = RIDE_NAMES;
+      const keeperPrompt = best?.kind === "npc" ? this.caveZone?.keeperPrompts.get(best.id) : undefined;
       st.setHud({ prompt: !best ? null
         : best.kind === "ride" ? (best.label === ROAD_UI.drive ? { label: ROAD_UI.drive, kind: "drive" } : best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: "Išlipti", kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
-        : best.prompt ? best.prompt
-        : best.kind === "staff" ? { label: best.label, kind: "talk" }
-        : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
+        : best.prompt ?? keeperPrompt ?? (
+          best.kind === "staff" ? { label: best.label, kind: "talk" }
+          : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" }) });
     }
     // what the player does instead of walking, for the buttons and the hints
     const ride = riding ? riding.kind : this.swimming ? (this.diveK > 0.5 ? "dive" : "swim") : null;

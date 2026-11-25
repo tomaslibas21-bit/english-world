@@ -567,8 +567,9 @@ export async function ended(run, who, gift) {
   assert(phrase?.en && phrase.nat);
   assert.equal(await end.locator(".ended-phrase [lang=en]").innerText(), phrase.en);
   assert.equal(await end.locator(".ended-phrase [lang=lt]").innerText(), phrase.nat);
+  assert.equal(await end.locator(".ended-phrase-label").innerText(), "Jūsų frazė");
   assert.equal(await end.locator(".ended-keepsake").innerText(), gift);
-  await surface(run, end, [phrase.en, phrase.nat, gift, "Tavo frazė"]);
+  await surface(run, end, [phrase.en, phrase.nat, gift, "Jūsų frazė"]);
   return end;
 }
 
@@ -815,7 +816,7 @@ export async function bramTalk(run, { first = true } = {}) {
     }
   }
   await run.wait(() => window.__ew.store.getState().progress.cave?.passed?.includes("bram"), "Bram's release is saved", 30_000);
-  await ended(run, BRAM, "Gavai mažą skalūno akmenėlį");
+  await ended(run, BRAM, "Gavote mažą skalūno akmenėlį");
   await run.mark("bram-end");
   await endTalk(run);
 }
@@ -843,14 +844,14 @@ export async function fernTalk(run, { clues = true } = {}) {
   await turn(run);
   await heard(run, ["The bridge is yours. Go ahead.", "Tiltas Jūsų. Pereikite."]);
   await answer(run, "Thanks!");
-  await ended(run, FERN, "Gavai mažą skalūno akmenėlį");
+  await ended(run, FERN, "Gavote mažą skalūno akmenėlį");
   assert.equal(await run.ev(() => window.__ew.store.getState().progress.sits["x07-fern"].completions), 1);
   await run.mark("fern-end");
   await endTalk(run);
 }
 
-export async function oakTalk(run, timeout = 40_000) {
-  const dialog = await conversation(run, OAK, timeout);
+export async function oakTalk(run, { leaveByGuide = false } = {}) {
+  const dialog = await conversation(run, OAK, 40_000);
   await surface(run, dialog, ["The Old Oak", "Tavo eilė"]);
   await heard(run, ["Do you know who is speaking?", "Ar žinote, kas kalba?"]);
   await run.step(24);
@@ -871,13 +872,19 @@ export async function oakTalk(run, timeout = 40_000) {
   assert(v.mode === "talk" && !v.inRock && v.clear >= 0.6 && v.z < 1 && v.px[0] >= v.free[0] &&
     v.px[0] <= v.free[2] && v.px[1] >= v.free[1] && v.px[1] <= v.free[3], JSON.stringify(v));
   await run.mark("oak-projection");
+  await oakClosing(run, { leaveByGuide });
+  assert.equal(await run.ev(() => window.__ew.game.keepsakeKind()), "oak_leaf");
+}
+
+export async function oakClosing(run, { leaveByGuide = false } = {}) {
+  const light = await run.ev(() => window.__ew.game.light);
   await answer(run, "Who are you?", 90_000);
   await answer(run, "I feel at home here.", 90_000);
   await turn(run, 90_000);
   await heard(run, ["Will you keep learning?", "Ar mokysitės ir toliau?"]);
   await run.mark("oak-promise");
   await answer(run, "Yes, I'll keep learning.", 90_000);
-  await run.wait(() => window.__ew.store.getState().progress.cave?.tree, "the Oak story event is saved", 90_000);
+  if (!light) await run.wait(() => window.__ew.store.getState().progress.cave?.tree, "the Oak story event is saved", 90_000);
   await turn(run, 90_000);
   await heard(run, KEEP);
   await heard(run, BACK);
@@ -889,7 +896,7 @@ export async function oakTalk(run, timeout = 40_000) {
   assert(await run.ev(() => window.__ew.store.getState().conv.transcript.filter((l) => l.who === "npc").length >= 9));
   await run.mark("oak-closing-words");
   await answer(run, "Goodbye!", 90_000);
-  const end = await ended(run, OAK, "Gavai ąžuolo lapą");
+  const end = await ended(run, OAK, "Gavote ąžuolo lapą");
   const expected = {
     "Who are you?": "Kas Jūs?",
     "I feel at home here.": "Čia jaučiuosi kaip namie.",
@@ -899,11 +906,24 @@ export async function oakTalk(run, timeout = 40_000) {
   const chosen = await end.locator(".ended-phrase [lang=en]").innerText();
   assert(expected[chosen], chosen);
   assert.equal(await end.locator(".ended-phrase [lang=lt]").innerText(), expected[chosen]);
+  const ending = end.locator(".cave-ending");
+  await run.visible(ending);
+  assert.equal(await ending.locator("[lang=en]").innerText(), "Follow the lights to the dry exit.");
+  assert.equal(await ending.locator("[lang=lt]").innerText(), "Sekite žiburėlius iki išėjimo į sausą taką.");
+  const guide = ending.getByRole("button", { name: "Nuvesk mane", exact: true });
+  assert.equal(await guide.count(), light ? 0 : 1);
+  if (!light) await run.visible(guide);
   const observed = await watch(run);
-  assert.equal(observed.trees, 1);
+  assert.equal(observed.trees, light ? 0 : 1);
   assert.deepEqual(observed.events.filter(([name]) => name === "tree-heard"), [["tree-heard", null]]);
   assert.equal(await run.ev(() => window.__ew.store.getState().progress.sits["x08-old-oak"].completions), 1);
-  await run.mark("oak-end");
-  await endTalk(run);
-  assert.equal(await run.ev(() => window.__ew.game.keepsakeKind()), "oak_leaf");
+  await run.mark(light ? "light-oak-end" : "oak-end");
+  if (leaveByGuide) {
+    await run.press(guide);
+    await run.wait(() => {
+      const { game, store } = window.__ew;
+      return !store.getState().conv.active && game.zoneId === "gruta" && game.autoPath?.length > 0 &&
+        game.autoTarget?.kind === "cave-exit" && game.autoTarget.id === "cleft";
+    }, "the Oak invitation starts the existing exit route", 5000, undefined, 0);
+  } else await endTalk(run);
 }

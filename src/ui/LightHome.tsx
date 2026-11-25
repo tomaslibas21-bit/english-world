@@ -27,6 +27,7 @@ import { Loading } from "./Loading";
 import { StreetLight } from "./street/StreetLight";
 import { usePortrait } from "./usePortrait";
 import { CavePicker } from "./CavePicker";
+import { CAVE_PRACTICE } from "../content/cave-picker-copy";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -174,7 +175,7 @@ function SitCard({ s }: { s: SituationMeta }) {
       <span className="lh-txt">
         <b lang="lt">{s.title.lt}</b>
         <i lang="en">{s.title.en}</i>
-        <span>{n?.name} · {s.location === "gruta" ? "Pasipraktikuoti kalbėtis" : isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
+        <span>{n?.name} · {s.location === "gruta" ? CAVE_PRACTICE.lt : isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
       </span>
       <Stars n={st} />
     </button>

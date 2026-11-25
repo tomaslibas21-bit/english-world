@@ -1,4 +1,4 @@
-import { CAVE_COPY, CAVE_GOALS, CAVE_ROOMS } from "../../content/cave-copy";
+import { CAVE_COPY, CAVE_GOALS, CAVE_ROOMS, type CaveGate } from "../../content/cave-copy";
 import type { Look } from "../../content/npcs";
 import { NPCS } from "../../content/npcs";
 import { LOCATIONS } from "../../content/locations";
@@ -24,7 +24,7 @@ export const GATES: Gate[] = [
   { id: "g5", label: CAVE_COPY.door.oak, x: 10.5, z: -155, rot: 0.34, w: 5.4, stones: CAVE_GOALS.oak, pass: FERN_GATE, locked: notice.oakLocked, to: 4 },
 ];
 
-export const KEEPERS: CaveKeeper[] = [
+export const KEEPERS: (CaveKeeper & { gate: CaveGate })[] = [
   { npc: "cave_bram", gate: BRAM_GATE, sitId: "x06-bram", requires: 0, passed: notice.bramPassed, guide: CAVE_COPY.guide.bram,
     x: 1.9, z: -4.3, rot: -0.5, ax: 0.3, az: -2.5 },
   { npc: "cave_fern", gate: FERN_GATE, sitId: "x07-fern", requires: 0b000111, passed: notice.fernPassed, guide: CAVE_COPY.guide.fern,
