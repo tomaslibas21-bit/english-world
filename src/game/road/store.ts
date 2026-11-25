@@ -20,14 +20,14 @@ type RoadUi = {
   way: PlayWay;
   line: KitLine | null; choices: KitLine[]; mic: KitMic; micOn: boolean;
   prompt?: Prompt; gateId?: number; sayIt?: SayItCue; ghost: boolean;
-  remaining: number; streak: number; wind: boolean;
+  remaining: number; streak: number;
   feedback?: GateFeedback;
   result?: RoadResult;
 };
 
 const initial: RoadUi = {
   phase: "loading", way: "words", line: null, choices: [], mic: { status: "off", heard: "" }, micOn: true,
-  ghost: false, remaining: 150, streak: 0, wind: false,
+  ghost: false, remaining: 150, streak: 0,
 };
 
 export const useRoad = create<RoadUi>(() => initial);

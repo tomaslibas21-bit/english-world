@@ -147,7 +147,6 @@ export function Hud() {
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
-          {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {streetCard && portrait && <StreetCard compactChoices={screen.h <= 720} />}

@@ -1,42 +1,68 @@
-import { MathUtils, PerspectiveCamera, Vector3 } from "three";
+import { MathUtils, PerspectiveCamera, Quaternion, Vector3 } from "three";
 import { point } from "./track";
 
 const { clamp, lerp, smoothstep, degToRad } = MathUtils;
 
 type GateFrame = { distance: number; frame: readonly Vector3[] };
-type ProjectedCar = ReturnType<typeof projectedCar>;
+type ProjectedCar = { roof: Vector3; width: number; horizonY: number };
 
-export function projectedCar(camera: PerspectiveCamera, roof: Vector3, corners: readonly Vector3[]) {
-  const p = new Vector3();
+const OPENING_CAR_WIDTH = 0.285;
+const OPENING_VERGE_FULL = 28;
+const OPENING_VERGE_END = 43;
+
+export function projectedCar(camera: PerspectiveCamera, roof: Vector3, corners: readonly Vector3[],
+  result: ProjectedCar = { roof: new Vector3(), width: 0, horizonY: 0 }) {
+  const p = result.roof;
   let left = Infinity, right = -Infinity;
   for (const corner of corners) {
     p.copy(corner).project(camera);
     left = Math.min(left, p.x);
     right = Math.max(right, p.x);
   }
-  const horizon = camera.getWorldDirection(p).setY(0).applyQuaternion(camera.quaternion.clone().invert());
+  const horizon = camera.getWorldDirection(p).setY(0).transformDirection(camera.matrixWorldInverse);
   const projection = camera.projectionMatrix.elements;
-  const horizonY = -projection[5] * horizon.y / horizon.z - projection[9];
-  return { roof: roof.clone().project(camera), width: right - left, horizonY };
+  result.horizonY = -projection[5] * horizon.y / horizon.z - projection[9];
+  result.width = right - left;
+  result.roof.copy(roof).project(camera);
+  return result;
 }
 
 export class RoadChase {
   private yaw = 0;
   private pan = 0;
   private back = 0;
+  private speedBack = 0;
   private widen = 0;
   private lens = 1;
   private focus = new Vector3();
   private target = new Vector3();
+  openingRoadRoom = false;
+  private readonly localCorners = Array.from({ length: 8 }, () => new Vector3());
+  private readonly inverse = new Quaternion();
+  private readonly live: ProjectedCar = { roof: new Vector3(), width: 0, horizonY: 0 };
+
+  speedFovDelta = 0;
+  shakeAmplitude = 0;
+  shakeY = 0;
 
   settle(camera: PerspectiveCamera, start: PerspectiveCamera, inherited: ProjectedCar, roof: Vector3,
-    corners: readonly Vector3[], mix: number, width: number, height: number) {
-    const live = projectedCar(camera, roof, corners);
-    const target = inherited.roof.clone().lerp(live.roof, mix);
-    const targetWidth = lerp(inherited.width, live.width, mix);
-    const horizonY = lerp(inherited.horizonY, live.horizonY, mix);
+    corners: readonly Vector3[], mix: number, width: number, height: number, startFov: number) {
+    const live = projectedCar(camera, roof, corners, this.live);
+    // Scale the inherited registration around its principal point when reducing its speed lens.
+    const scale = startFov === start.fov ? 1 : Math.tan(degToRad(start.fov / 2)) / Math.tan(degToRad(startFov / 2));
+    const startProjection = start.projectionMatrix.elements;
+    const shiftX = startProjection[8], shiftY = startProjection[9];
+    const targetX = lerp((inherited.roof.x + shiftX) * scale - shiftX, live.roof.x, mix);
+    const targetY = lerp((inherited.roof.y + shiftY) * scale - shiftY, live.roof.y, mix);
+    const portrait = height > width * 1.15;
+    // A turning car can look narrower before the chase lines up with the first gate.
+    // Carry the inherited size further in portrait, where that swing takes up more of the picture.
+    // The wider opening shot for a tall body has a stable width, so it can ease out sooner.
+    const widthMix = portrait && this.openingRoadRoom ? 1 - (1 - mix) ** 14 : mix ** (portrait ? 16 : 6);
+    const targetWidth = lerp(inherited.width * scale, live.width, widthMix);
+    const horizonY = lerp((inherited.horizonY + shiftY) * scale - shiftY, live.horizonY, mix);
     camera.quaternion.slerp(start.quaternion, 1 - mix);
-    camera.fov = lerp(start.fov, camera.fov, mix);
+    camera.fov = lerp(startFov, camera.fov, mix);
     camera.near = lerp(start.near, camera.near, mix);
     camera.far = lerp(start.far, camera.far, mix);
     if (start.view?.enabled) {
@@ -46,36 +72,90 @@ export class RoadChase {
 
     const projection = camera.projectionMatrix.elements;
     const screenRight = projection[0], screenUp = projection[5];
-    const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const horizontal = forward.setY(0).applyQuaternion(camera.quaternion.clone().invert());
+    const horizontal = this.target.set(0, 0, -1).applyQuaternion(camera.quaternion)
+      .setY(0).applyQuaternion(this.inverse.copy(camera.quaternion).invert());
     camera.rotateX(Math.atan2(horizontal.y, -horizontal.z) - Math.atan((horizonY + projection[9]) / screenUp));
-    const inverse = camera.quaternion.clone().invert();
-    const local = corners.map((corner) => corner.clone().sub(roof).applyQuaternion(inverse));
-    const roofX = target.x + projection[8], roofY = target.y + projection[9];
+    const inverse = this.inverse.copy(camera.quaternion).invert();
+    const roofX = targetX + projection[8], roofY = targetY + projection[9];
 
     // At depth d, the roof's screen position fixes its x and y in camera space.
     // Only depth is left to solve, using all eight corners for the chassis width.
-    let near = Math.max(...local.map((corner) => corner.z)) + camera.near;
-    let far = camera.far * 0.5;
-    for (let i = 0; i < 22; i++) {
-      const depth = (near + far) / 2;
-      let left = Infinity, right = -Infinity;
-      for (const corner of local) {
-        const x = (roofX * depth + corner.x * screenRight) / (depth - corner.z);
-        left = Math.min(left, x);
-        right = Math.max(right, x);
-      }
-      if (right - left > targetWidth) near = depth;
-      else far = depth;
+    let near = 0;
+    for (let i = 0; i < corners.length; i++) {
+      const local = this.localCorners[i].copy(corners[i]).sub(roof).applyQuaternion(inverse);
+      near = Math.max(near, local.z);
+      // Express each projected corner relative to the screen position of the roof.
+      local.x = local.x * screenRight + roofX * local.z;
     }
-    const depth = (near + far) / 2;
+    const depth = this.fitDepth(corners.length, near + camera.near, camera.far * 0.5, targetWidth);
     this.target.set(roofX * depth / screenRight, roofY * depth / screenUp, -depth).applyQuaternion(camera.quaternion);
     camera.position.copy(roof).sub(this.target);
     camera.updateMatrixWorld(true);
   }
 
-  update(cam: PerspectiveCamera, car: Vector3, distance: number, lift: number, pace: number, time: number,
-    dt: number, width: number, height: number, carCorners: readonly Vector3[], gate?: GateFrame) {
+  private fitDepth(count: number, near: number, far: number, span: number) {
+    for (let step = 0; step < 22; step++) {
+      const depth = (near + far) / 2;
+      let left = Infinity, right = -Infinity;
+      for (let i = 0; i < count; i++) {
+        const corner = this.localCorners[i];
+        const x = corner.x / (depth - corner.z);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+      if (right - left > span) near = depth;
+      else far = depth;
+    }
+    return far;
+  }
+
+  private fitCorners(corners: readonly Vector3[], back: number, eyeY: number, dx: number, dz: number,
+    vertical: number, aspect: number, clampX: number, upper: number, lower: number) {
+    const pitch = Math.atan(vertical * 0.20), sin = Math.sin(pitch), cos = Math.cos(pitch);
+    const horizontal = vertical * aspect;
+    for (const corner of corners) {
+      const x = corner.x - this.focus.x, z = corner.z - this.focus.z;
+      const side = Math.abs(-dz * x + dx * z), ahead = dx * x + dz * z;
+      const y = corner.y - eyeY;
+      back = Math.max(back,
+        (side / (clampX * horizontal) + sin * y) / cos - ahead,
+        y * (cos + upper * vertical * sin) / (upper * vertical * cos - sin) - ahead,
+        y * (lower * vertical * sin - cos) / (sin + lower * vertical * cos) - ahead);
+    }
+    return back;
+  }
+
+  private fitShot(corners: readonly Vector3[], back: number, eyeY: number, dx: number, dz: number,
+    vertical: number, aspect: number, upper: number, gateBlend: number, gate?: GateFrame) {
+    const carFit = this.fitCorners(corners, back, eyeY, dx, dz, vertical, aspect, 0.92, 0.88, 0.89);
+    // Ease out as the car reaches the arches. Their banners stay between the HUD and the driving controls.
+    if (!gate || gateBlend <= 0) return carFit;
+    const gateFit = this.fitCorners(gate.frame, carFit, eyeY, dx, dz, vertical, aspect, 0.93, upper, 0.44);
+    return lerp(carFit, gateFit, gateBlend);
+  }
+
+  private fitOpeningWidth(corners: readonly Vector3[], back: number, eyeY: number, dx: number, dz: number,
+    sin: number, cos: number, horizontal: number) {
+    // Solve for the full projected width. A fit against either edge alone would
+    // change the size as the car steers within the frame.
+    const span = OPENING_CAR_WIDTH * 2 * horizontal;
+    let minSide = Infinity, maxSide = -Infinity, minDepth = Infinity;
+    for (let i = 0; i < corners.length; i++) {
+      const corner = corners[i];
+      const x = corner.x - this.focus.x, z = corner.z - this.focus.z;
+      const side = -dz * x + dx * z;
+      const depth = cos * (dx * x + dz * z) - sin * (corner.y - eyeY);
+      this.localCorners[i].set(side, 0, -depth);
+      minSide = Math.min(minSide, side);
+      maxSide = Math.max(maxSide, side);
+      minDepth = Math.min(minDepth, depth);
+    }
+    const near = back * cos, far = (maxSide - minSide) / span - minDepth;
+    return far > near ? this.fitDepth(corners.length, near, far, span) / cos : back;
+  }
+
+  update(cam: PerspectiveCamera, car: Vector3, distance: number, lift: number, visualPace: number, time: number,
+    dt: number, width: number, height: number, carCorners: readonly Vector3[], gate?: GateFrame, amplitude = 0) {
     const portrait = height > width * 1.15;
     // A phone on its side has little height, so the lens reaches further to keep the word boards readable.
     const short = !portrait && height < 520;
@@ -94,44 +174,47 @@ export class RoadChase {
     this.yaw = lerp(this.yaw, angle, ease);
     const dx = Math.sin(this.yaw), dz = -Math.cos(this.yaw);
 
-    const baseFov = (portrait ? 40 : 27) + pace * (portrait ? 4.5 : 4);
+    const wideFov = (portrait ? 40 : 27) + this.widen * (portrait ? 19 : 12);
     // A longer lens brings the gate row forward while a matching dolly preserves the car's size.
     // Release it progressively on the last stretch so the player still feels the pass overhead.
     const approaching = gate ? smoothstep(remaining, 9, 53) * (1 - smoothstep(remaining, 85, 135)) : 0;
     const zoom = portrait ? clamp(3.25 * aspect, 1, 2.15) : short ? 2.4 : 1.25;
     const targetLens = 1 + zoom * approaching;
     this.lens = lerp(this.lens, targetLens, ease);
-    const vertical = Math.tan(degToRad((baseFov + this.widen * (portrait ? 19 : 12)) / 2)) / this.lens;
-    const fov = MathUtils.radToDeg(2 * Math.atan(vertical));
+    const baseVertical = Math.tan(degToRad(wideFov / 2)) / this.lens;
+    const baseFov = MathUtils.radToDeg(2 * Math.atan(baseVertical));
+    const speedVertical = visualPace ? Math.tan(degToRad((wideFov + 3.5 * visualPace) / 2)) / this.lens : baseVertical;
+    const speedFov = MathUtils.radToDeg(2 * Math.atan(speedVertical));
+    this.speedFovDelta = Math.min(3.5, speedFov - baseFov);
+    const fov = baseFov + this.speedFovDelta;
+    const vertical = fov === speedFov ? speedVertical : Math.tan(degToRad(fov / 2));
     const pitch = Math.atan(vertical * 0.20);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
-    const horizontal = vertical * aspect;
     const gateBlend = 1 - smoothstep(remaining, 85, 100);
-    const shake = Math.max(0, pace - 0.86) * 0.13 * (1 - gateBlend);
-    const eyeY = car.y + (portrait ? 3.55 : 2.68) - lift * 0.32 + pace * 0.36 + Math.cos(time * 33) * shake;
-    const baseBack = ((portrait ? 12.0 : 8.7) + pace * 1.10) * this.lens;
-    let fitBack = baseBack;
-    const fit = (corners: readonly Vector3[], clampX: number, upper: number, lower: number) => {
-      for (const corner of corners) {
-        const x = corner.x - this.focus.x, z = corner.z - this.focus.z;
-        const side = Math.abs(-dz * x + dx * z) + shake;
-        const ahead = dx * x + dz * z;
-        const y = corner.y - eyeY;
-        fitBack = Math.max(fitBack,
-          (side / (clampX * horizontal) + sin * y) / cos - ahead,
-          y * (cos + upper * vertical * sin) / (upper * vertical * cos - sin) - ahead,
-          y * (lower * vertical * sin - cos) / (sin + lower * vertical * cos) - ahead);
-      }
-    };
-    fit(carCorners, 0.92, 0.88, 0.89);
-    // Ease out as the car reaches the arches. Their banners stay between the HUD and the driving controls.
-    const carFit = fitBack;
-    if (gate && gateBlend > 0) fit(gate.frame, 0.93, portrait ? 0.43 : short ? 0.62 : 0.48, 0.44);
-    fitBack = lerp(carFit, fitBack, gateBlend);
-    this.back = Math.max(fitBack, lerp(this.back, fitBack, ease));
+    this.shakeAmplitude = amplitude * (1 - gateBlend);
+    this.shakeY = this.shakeAmplitude * Math.sin(2 * Math.PI * 7 * time);
+    const baseEyeY = car.y + (portrait ? 3.55 : 2.68) - lift * 0.32;
+    const eyeY = baseEyeY + visualPace * 0.36;
+    const baseBack = (portrait ? 12.0 : 8.7) * this.lens;
+    const upper = portrait ? 0.43 : short ? 0.62 : 0.48;
+    const baseFit = this.fitShot(carCorners, baseBack, baseEyeY, dx, dz, baseVertical, aspect, upper, gateBlend, gate);
+    const fit = visualPace ? this.fitShot(carCorners, baseBack + visualPace * 1.10 * this.lens,
+      eyeY, dx, dz, vertical, aspect, upper, gateBlend, gate) : baseFit;
+    // Keep the gate's back easing independent of the speed contribution.
+    this.back = Math.max(baseFit, lerp(this.back, baseFit, ease));
+    // The speed shot eases towards its own fit in the same way. Each fit follows whichever corner limits it, and the
+    // two fits change corners at different moments, so carrying their raw difference would jolt the camera.
+    this.speedBack = visualPace ? Math.max(fit, lerp(this.speedBack, fit, ease)) : this.back;
+    let back = this.speedBack;
+    // Give the tall silhouette breathing room through the shared road opening.
+    // Return to the ordinary chase as the gate fills the shot.
+    if (portrait && this.openingRoadRoom && distance < OPENING_VERGE_END) {
+      const openingBack = this.fitOpeningWidth(carCorners, back, eyeY, dx, dz, sin, cos, vertical * aspect);
+      back = lerp(openingBack, back, smoothstep(distance, OPENING_VERGE_FULL, OPENING_VERGE_END));
+    }
     cam.aspect = aspect;
     cam.fov = fov;
-    cam.position.set(this.focus.x - dx * this.back + Math.sin(time * 39) * shake, eyeY, this.focus.z - dz * this.back);
+    cam.position.set(this.focus.x - dx * back, eyeY, this.focus.z - dz * back);
     cam.lookAt(this.target.set(cam.position.x + dx * cos, eyeY - sin, cam.position.z + dz * cos));
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();

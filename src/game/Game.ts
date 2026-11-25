@@ -25,10 +25,11 @@ import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import type { CarWaterFade } from "./rides/carWaterRecovery";
+import type { SpeedFeel } from "./rides/speedFeel";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
-import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
+import { CAR, CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
@@ -103,6 +104,7 @@ export type { GameApi } from "./gameRef";
 export interface TalkActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; sit?: boolean; approach?: THREE.Vector3 }
 interface NpcActor extends TalkActor { tag: HTMLDivElement; tagSize?: [number, number]; waved: boolean }
 const isGymTrainer = (actor: TalkActor) => actor.id === GYM_ENTRY.npc;
+let speedFeelModule: Promise<typeof import("./rides/speedFeel") | null> | undefined;
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -344,13 +346,15 @@ export class Game implements GameApi {
   private rideCourse = 0;
   private rideBack = 0;
   private rideFov = 0;
+  private speedFeel?: SpeedFeel;
+  private speedFeelBoard?: object;
+  private carMotionQuery?: MediaQueryList;
   private road?: RoadEntry;
   private sea?: SeaEntry;
   private seaMooring?: Ride["home"];
   private fpsAverage = 0;
   private lastRender = 0;
   private lastRenderWasRoad = false;
-  private speedShake = 0;
   private hornAt = -Infinity;
   private trafficReplyAt?: number;
   private kicked = false;
@@ -523,6 +527,7 @@ export class Game implements GameApi {
         const hud = useStore.getState();
         hud.setHud({ fade: 1 });
         setTimeout(() => {
+          if (this.rides.riding === ride) this.speedFeel?.release();
           put();
           const car = this.rides.riding;
           if (car) { this.rig.yaw = car.m.heading; this.rig.target.set(car.m.x, 0, car.m.z); this.rig.snap(); }
@@ -585,6 +590,7 @@ export class Game implements GameApi {
         this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
       },
       snapTaxi: ({ m, mesh }, dimensions) => {
+        this.speedFeel?.release();
         this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
@@ -656,9 +662,14 @@ export class Game implements GameApi {
           if (!!state.hud.roadApproach !== roadApproach) state.setHud({ roadApproach });
         },
         clearTownHud: () => {
+          this.releaseSpeedFeel();
           this.nearest = null;
           this.tagLayer.style.visibility = "hidden";
           useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
+        },
+        speedFeel: (accept) => {
+          if (accept) this.loadSpeedFeel(accept);
+          return this.speedFeel;
         },
         left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
         deferLift: () => this.road?.deferLift(),
@@ -1330,8 +1341,8 @@ export class Game implements GameApi {
     this.keys.clear();
     this.joy.x = this.joy.y = 0;
     this.brake = false;
+    this.releaseSpeedFeel();
     this.rideFov = 0;
-    this.speedShake = 0;
     this.rig.dist /= 1 + this.rideBack;
     this.rideBack = 0;
     if (onFoot && this.rides.riding === car) this.endRide(true);
@@ -1340,7 +1351,7 @@ export class Game implements GameApi {
     if (this.rides.riding !== car) {
       this.placeOnFoot(step?.x ?? position.x, step?.z ?? position.z + 2, position.rot);
       if (!onFoot) this.boardRide(car);
-    }
+    } else if (!onFoot) this.loadTownSpeedFeel(car);
     if (!onFoot && this.rides.riding === car) {
       this.rides.update(0, this.t, null);
       this.rideCourse = this.rig.yaw = position.rot;
@@ -1658,6 +1669,8 @@ export class Game implements GameApi {
       this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5);
       this.savePlace();
     } else {
+      this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
+      this.loadTownSpeedFeel(r);
       this.road?.prefetch(r);
       const eligible = (car: Ride) => !this.disposed && this.zone.id === "town" && !this.modes.engaged
         && !this.road?.inStrip && this.rides.townCar(car);
@@ -1726,7 +1739,7 @@ export class Game implements GameApi {
     this.waterNeutral = true;
     this.rideGoal = null; this.autoPath = null; this.autoTarget = null;
     this.braked = this.kicked = false;
-    this.dustT = this.speedShake = 0;
+    this.dustT = 0;
     this.trafficReplyAt = undefined;
     this.dust.clear();
     this.surface(true);
@@ -1787,6 +1800,34 @@ export class Game implements GameApi {
     }
   }
 
+  private loadTownSpeedFeel(ride: Ride) {
+    if (this.speedFeel) return;
+    const board = this.speedFeelBoard = {}, zone = this.zone;
+    this.loadSpeedFeel(() => this.speedFeelBoard === board && this.zone === zone
+      && this.rides.riding === ride && this.rides.phase !== "out" && !this.modes.owns("road"));
+  }
+
+  private loadSpeedFeel(accept: () => boolean) {
+    if (this.speedFeel) return;
+    speedFeelModule ??= import("./rides/speedFeel").catch(() => null);
+    void speedFeelModule.then((module) => {
+      if (!module || this.speedFeel || this.disposed || !accept()) return;
+      const st = useStore.getState();
+      if (st.screen !== "play" || st.settings.play !== "town") return;
+      this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
+      this.speedFeel = new module.SpeedFeel(this.container, this.rig.cam, CAR.max, this.carMotionQuery);
+    }).catch(() => {});
+  }
+
+  private releaseSpeedFeel() {
+    this.speedFeelBoard = undefined;
+    this.dust.clearRolling();
+    if (!this.speedFeel?.release()) {
+      audio.motor(null);
+      audio.rush("wind", 0);
+    }
+  }
+
   /** On foot again (Rides.onLeft): where the player stands now, facing away from what they got out of. */
   private leftRide(x: number, y: number, z: number, rot: number) {
     const p = this.player.root.position;
@@ -1828,10 +1869,10 @@ export class Game implements GameApi {
     this.helmSteer.reset();
     this.ambient.riding = false;
     this.nearest = null;
-    audio.motor(null);
-    audio.rush("squeal", 0); audio.rush("wind", 0);
+    this.releaseSpeedFeel();
+    audio.rush("squeal", 0);
     // (the camera comes back to where the player had it)
-    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0; this.speedShake = 0;
+    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0;
     this.rig.portraitHelm = false;
     useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
   }
@@ -2835,6 +2876,7 @@ export class Game implements GameApi {
   private syncSize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (w <= 0 || h <= 0 || (w === this.screenW && h === this.screenH)) return;
+    this.speedFeel?.clearPose();
     this.renderer.setSize(w, h);
     this.rig.resize(w, h, w > h && h <= 520);
     this.screenW = w;
@@ -2951,7 +2993,11 @@ export class Game implements GameApi {
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
-    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
+    const motor = riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null;
+    if (motor === "car" && !st.hud.panel && this.speedFeel) this.speedFeel.sound();
+    else if (!this.speedFeel?.release() || motor === "boat") {
+      audio.motor(st.hud.panel && motor === "car" ? null : motor, motor === "boat" ? this.rides.revs : 0);
+    }
     this.updateNpcs(dt, talking, mode);
     this.updateIsland(dt, blocked || !!mode);
     if (!this.zone.interior) {
@@ -3003,10 +3049,6 @@ export class Game implements GameApi {
     const awaitingShot = actorTalk && !this.rig.talk;
     if (!awaitingShot) this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     this.frameKeeper(dt, blocked || !!mode);
-    if (this.speedShake > 0 && riding?.kind === "car") {
-      this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
-      this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;
-    }
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
       const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
@@ -3014,13 +3056,17 @@ export class Game implements GameApi {
       if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
       this.underWater(this.undersea.on);
     }
-    // Walking eases the lens. A conversation uses the lens its shot was fitted with.
+    // Walking eases the lens. A conversation uses the lens its shot was fitted with. At a car's wheel the speed feel
+    // (rides/speedFeel.ts) presents the eased lens.
     if (!awaitingShot) {
-      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
-      const d = fov - this.rig.cam.fov;
-      if (d !== 0) {
-        this.rig.cam.fov = this.rig.mode === "talk" || Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * 3);
-        this.rig.cam.updateProjectionMatrix();
+      const { cam } = this.rig, follow = this.rig.mode === "follow", car = riding?.kind === "car";
+      const fov = this.rig.fovFor(w, h, follow && !car && this.vel.lengthSq() > 30) + (follow && !car ? this.rideFov : 0);
+      const base = this.speedFeel?.baseFov ?? cam.fov, d = fov - base;
+      const lens = this.rig.mode === "talk" || Math.abs(d) < 0.05 ? fov : base + d * Math.min(1, dt * 3);
+      const presented = this.speedFeel?.present(lens, dt, this.t, car && follow && !blocked && !this.modes.engaged) ?? lens;
+      if (presented !== cam.fov) {
+        cam.fov = presented;
+        cam.updateProjectionMatrix();
       }
     }
     this.quests.observe(this.rig.cam);
@@ -3244,54 +3290,57 @@ export class Game implements GameApi {
       const d = Math.atan2(Math.sin(want - this.rideCourse), Math.cos(want - this.rideCourse));
       this.rideCourse += d * Math.min(1, dt * (portraitHelm ? 4 : Math.abs(d) > 2 ? 30 : 7));
     }
-    // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
-    {
+    // At the helm the camera drops back a little and the lens widens, more for the kick.
+    if (!car) {
       const k = on && !wet ? Math.max(0, Math.min(1.2, (pace - m.spec.town * 0.8) / (m.spec.max - m.spec.town * 0.8))) : 0, kick = on && !wet && m.boost > 0 ? 1 : 0;
-      const back = k * (car ? 0.13 : 0.1) + kick * 0.05;
+      const back = k * 0.1 + kick * 0.05;
       // (the wheel's own zoom stays the player's: only what was added is taken off again)
       const base = this.rig.dist / (1 + this.rideBack);
       this.rideBack += (back - this.rideBack) * Math.min(1, dt * 2.2);
       this.rig.dist = base * (1 + this.rideBack);
-      this.rideFov += (k * (car ? 9 : 6) + kick * 5 - this.rideFov) * Math.min(1, dt * 3);
+      this.rideFov += (k * 6 + kick * 5 - this.rideFov) * Math.min(1, dt * 3);
     }
     // the sounds of it: the tires in a slide (or the hull's rush), the air at speed, a rush at the kick
     {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
       audio.rush("squeal", car && !wet && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
-      audio.rush("wind", on && !wet ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
+      if (!car) audio.rush("wind", on && !wet ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * 0.8 + slide * 0.5 : 0, Math.min(1, pace / 16));
       if (on && !wet && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || wet || m.boost <= 0) this.kicked = false;
     }
     {
       const fast = on && !wet && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
       const hud = useStore.getState();
-      const speedLines = car && !wet && !this.modes.active && pace > m.spec.max * 0.7;
-      this.speedShake = car && !wet ? Math.max(0, pace / m.spec.max - 0.85) * 0.23 : 0;
-      if (hud.hud.fast !== fast || !!hud.hud.speedLines !== speedLines) hud.setHud({ fast, speedLines });
+      // (in the water the speed feel winds down: no streaks, wind or lens for a car that is wading)
+      if (car && on && !hud.hud.panel) this.speedFeel?.stepTown(dt, wet ? 0 : pace);
+      if (hud.hud.fast !== fast || hud.hud.speedLines) hud.setHud({ fast, speedLines: false });
     }
     this.player.moveSpeed = 0;
     this.player.update(dt);
     this.bumpT -= dt;
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
-    // a boat's wake: the water's rings round its hull, wider and brighter the faster it goes; a car's dust at its back
-    // wheels when it goes fast or over open ground, a short skid when it is braked hard
+    // A boat's wake at the hull, and dust behind a car's wheels on loose ground or in a skid.
     if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
+    const reduced = car && !!this.carMotionQuery?.matches;
     if (wet) this.braked = false;
     else if (car && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < 0) && v > 0;
       if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
       this.braked = braking;
       this.dustT -= dt;
-      // (smoke off the back wheels in a slide, thick and fast; dust at speed, over open ground, braked hard)
-      const sliding = m.sliding && pace > 3;
-      if (this.dustT <= 0 && (sliding || useStore.getState().settings.quality === "high") && (sliding || pace > 9 || (pace > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && pace > 5))) {
+      const sliding = m.sliding && pace > 3, rolling = !sliding && !(braking && pace > 5);
+      const high = useStore.getState().settings.quality === "high";
+      if (this.dustT <= 0 && (sliding || high && (!rolling || !reduced && pace > 3 && !this.rides.asphalt.has(m.x, m.z)))) {
         this.dustT = sliding ? 0.05 : 0.11;
         const s = Math.sign(v) || 1, cx = pace > 0.5 ? -m.vx / pace : -m.fx * s, cz = pace > 0.5 ? -m.vz / pace : -m.fz * s;
-        for (const side of sliding && useStore.getState().settings.quality !== "high" ? [Math.random() < 0.5 ? -0.8 : 0.8] : [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + pace / 15);
+        for (let i = 0; i < (high ? 2 : 1); i++) {
+          const side = i === 0 && (high || Math.random() < 0.5) ? -0.8 : 0.8;
+          this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + pace / 15, rolling);
+        }
       }
     }
-    this.dust.update(dt);
+    this.dust.update(dt, reduced);
     // (the pigeons on the square take off before a car as before anyone running)
     if (r.kind === "car" && !this.zone.interior) this.pigeons.update(dt, this.player.root.position, Math.abs(v));
     coach.stroll(dt, true);
@@ -4007,6 +4056,7 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.rides?.disposeWater();
     this.stopTalkLayout();
+    this.speedFeel?.dispose();
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();

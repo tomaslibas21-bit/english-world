@@ -54,10 +54,8 @@ function DriveOverlay({ touch }: { touch: boolean }) {
   const remaining = useRoad((s) => s.remaining);
   const streak = useRoad((s) => s.streak);
   const ghost = useRoad((s) => s.ghost);
-  const wind = useRoad((s) => s.wind);
   const way = useRoad((s) => s.way);
   return <>
-    {wind && <div className="drive-wind" aria-hidden />}
     <WordGateHeader game="road" words={words} {...{ prompt, sayIt, feedback, remaining, streak }} showHint={remaining >= 147}
       home={done} replay={() => act("replay")}
       extraMeter={ghost && <span className="road-ghost">{words.ghost}</span>}
