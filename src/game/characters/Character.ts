@@ -1884,7 +1884,7 @@ export class Character {
     this.eyes.scale.y = shut ? 1e-4 : (0.12 + 0.88 * eye) * (pose ? friendly.eye + (f.eye - friendly.eye) * idle : f.eye);
     vis(this.lids, shut);
     if (this.blinkT < 0) this.blinkT = Math.random() < 0.15 ? 0.36 : (2.2 + Math.random() * 4) * (speaking ? 0.75 : 1);
-    pose?.apply(dt, walking || this.hopShown || sw > 0 || prone > 0 || stand > 0 || sf.straddle > 0, shut ? 1 : 1 - eye);
+    pose?.apply(dt, walking || this.hopShown || sw > 0 || prone > 0 || stand > 0 || sf.straddle > 0, shut ? 1 : 1 - eye, looking);
   }
 
   /** A phrase starts: perhaps a gesture for it (the lively gesture more; fewer while sitting or with busy hands), and

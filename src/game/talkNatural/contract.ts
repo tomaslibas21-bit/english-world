@@ -3,11 +3,24 @@ import type { Object3D } from "three";
 import type { GameCharacter } from "../characters";
 
 export type TalkLineId = string | number;
+export type AnchorKind = "map" | "menu" | "handoff" | "machine";
+export interface ClassifiedCue {
+  family: "goodbye" | "repeat" | "offer" | "point" | "shrug" | "yes" | "no" | "count" | "greeting" | "question" | "rest";
+  /** A direction in the learner's frame. */
+  side?: -1 | 1;
+  quantity?: 1 | 2 | 3;
+  anchor?: AnchorKind;
+}
+export interface TalkPersonality {
+  armChance: number;
+  farewell: "yes" | "heart" | "wave";
+}
 
 /** Pass the same object to the pose and to audio.play. Create a fresh object for every playback, including replays. */
 export interface VoiceVisualOwner {
   readonly actor: GameCharacter;
   readonly line: TalkLineId;
+  readonly replay?: "turn" | "transcript";
 }
 
 export interface NaturalRig {
@@ -35,7 +48,7 @@ export interface NaturalPoseDriver {
   readonly mouth: number;
   readonly roundness: number;
   advance(dt: number): void;
-  apply(dt: number, moving: boolean, blink: number): void;
+  apply(dt: number, moving: boolean, blink: number, watching?: boolean): void;
   restoreBody(): void;
   interrupt(): void;
 }

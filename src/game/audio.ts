@@ -25,6 +25,7 @@ interface PlaybackRequest {
   optional?: boolean;
   visual?: VoiceVisualOwner;
   browserVoiceStarted?: boolean;
+  visualStartedAt?: number;
   fail(state: "blocked" | "unavailable"): void;
   cleanup: () => void;
   finish(completed: boolean, playedToEnd?: true): void;
@@ -92,6 +93,14 @@ export class AudioSystem {
   private listeners = new Set<() => void>();
   getState = () => this.state;
   get visualOwner(): VoiceVisualOwner | undefined { return this.request?.visual; }
+  /** Elapsed audible seconds for the current request, including its playback rate. */
+  visualElapsed(owner: VoiceVisualOwner): number {
+    if (this.request?.visual !== owner) return 0;
+    const clip = this.clip;
+    const start = this.request.visualStartedAt;
+    return clip?.position?.() ?? (clip?.el ? clip.el.currentTime / clip.el.playbackRate
+      : start === undefined ? 0 : (performance.now() - start) / 1000);
+  }
   visualState(owner: VoiceVisualOwner): VisualPlaybackState {
     if (this.request?.visual !== owner) return this.visualEnds?.has(owner) ? "ended" : "interrupt";
     if (this.state !== "playing") return this.state;
@@ -816,13 +825,13 @@ export class AudioSystem {
       u.onend = () => { ended = true; request.finish(true, true); };
       if (request.visual) {
         request.browserVoiceStarted = false;
-        u.onstart = () => { request.browserVoiceStarted = true; };
+        u.onstart = () => { request.browserVoiceStarted = true; request.visualStartedAt = performance.now(); };
       }
       u.onerror = waiting;
       const releaseRoute = holdPlaybackRoute();
       request.cleanup = () => {
         playAttempt++; clearTimeout(timer); u.onend = u.onerror = null;
-        if (request.visual) { u.onstart = null; request.browserVoiceStarted = false; }
+        if (request.visual) { u.onstart = null; request.browserVoiceStarted = false; request.visualStartedAt = undefined; }
         if (!ended || !request.optional) speechSynthesis.cancel();
         releaseRoute();
       };

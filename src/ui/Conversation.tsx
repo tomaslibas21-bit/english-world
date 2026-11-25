@@ -400,12 +400,21 @@ function groupLines(lines: TranscriptLine[]): TranscriptLine[][] {
   return out;
 }
 
+async function replayNpc(lines: readonly TranscriptLine[], slow: boolean) {
+  const session = game?.activeSession;
+  session?.stopListening();
+  for (const l of lines) {
+    if (game?.activeSession !== session || (session && !session.active)) return;
+    const npc = NPCS[l.npc!];
+    const visual = session?.replayVoice(l.npc!, l.id);
+    if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say,
+      { slow, male: npc?.gender === "m", ...(visual ? { visual } : {}) })) return;
+  }
+}
+
 function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
   const npc = NPCS[lines[0].npc!];
-  const replay = async (slow: boolean) => {
-    game?.activeSession?.stopListening();
-    for (const l of lines) if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
-  };
+  const replay = (slow: boolean) => { void replayNpc(lines, slow); };
   return (
     <div className={"msg npc" + (speaking ? " speaking" : "")}>
       <div className="meta">
@@ -644,7 +653,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
-    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
+    const replay = (slow: boolean) => { void replayNpc([l], slow); };
     return (
       <div className={"msg npc" + (speaking ? " speaking" : "")}>
         <div className="meta">

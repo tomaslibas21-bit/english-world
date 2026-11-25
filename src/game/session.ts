@@ -14,6 +14,7 @@ import type { SituationDef } from "../content/types";
 import { useStore, type ConvUI, type TranscriptLine } from "../state/store";
 import { sitProgress, stars } from "../state/progress";
 import { audio } from "./audio";
+import type { VoiceVisualOwner } from "./talkNatural/contract";
 import { displayUtterance } from "../convo/normalize";
 import { compose } from "../convo/compose";
 import { setKnownNames } from "../convo/slots";
@@ -25,9 +26,10 @@ let lineId = 1;
 
 export interface SessionHooks {
   /** (`text`: what they say, for the face.) */
-  npcTalk(npcId: string, seconds: number, text?: string): void;
+  npcTalk(npcId: string, seconds: number, text: string, line: number, replay?: VoiceVisualOwner["replay"]): VoiceVisualOwner | void;
   /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
-  npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap"): void;
+  npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap", repeat?: boolean): void;
+  npcVoice?(npcId: string, line: number, replay?: VoiceVisualOwner["replay"]): VoiceVisualOwner | undefined;
   onEvent(name: string, data: any): void;
   onEnd(sit: SituationDef, completed: boolean): void;
 }
@@ -130,7 +132,7 @@ export class Session {
     return { step: step < 0 ? previous?.step ?? 1 : step + 1, of: steps.length };
   }
 
-  private async play(out: TurnOut) {
+  private async play(out: TurnOut, repeat = false) {
     if (!this.alive) return;
     const st = useStore.getState();
     // the question the person is about to ask (the phase picture changes as they start speaking);
@@ -158,9 +160,9 @@ export class Session {
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
-      this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
+      const visual = this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say, id, repeat ? "turn" : undefined);
       const played = await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say,
-        { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true } : {}) });
+        { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true } : {}), ...(visual ? { visual } : {}) });
       // Tina's transcript is usable even when a device interrupts or cannot synthesize a line.
       if (!optionalVoice) {
         if (!played) return;
@@ -306,7 +308,8 @@ export class Session {
     this.pushLine({ who: "you", text: en, understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
     // the one who answers (else the last to speak) shows at once whether they got it
     const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
-    this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled");
+    const repeat = out.understood && out.parse?.segments.some(({ intent }) => intent === "g_repeat" || intent === "g_slower" || intent === "g_dont_understand");
+    this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled", repeat);
     if (out.understood && out.checkNo) {
       // "No" to "Sorry, did you say a latte?": the person didn't get it, so it counts as a miss (the help comes)
       audio.sfx("soft");
@@ -324,9 +327,9 @@ export class Session {
       st.setConv({ failures: out.failures || this.conv.failures, misses, prefix: !!out.prefix, guess: this.didYouMean(clean, alts, misses >= 2) });
     }
     this.busy = false;
-    if (out.lines.length) await this.play(out);
+    if (out.lines.length) await this.play(out, repeat);
     else if (!out.understood) {
-      // first miss: no NPC reaction, just let the learner try again (or type)
+      // First miss: no new NPC line, so let the learner try again (or type).
       useStore.getState().setConv({ phase: "you" });
       if (speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
     } else this.yourTurn();
@@ -536,7 +539,12 @@ export class Session {
     if (!this.alive || useStore.getState().conv.phase !== "you") return;
     this.stopListening();
     const out = this.conv.repeat(slow);
-    this.play(out);
+    if (out.lines[0]) this.hooks.npcReact?.(out.lines[0].npc, "nod", true);
+    this.play(out, true);
+  }
+
+  replayVoice(npcId: string, line: number) {
+    return this.alive ? this.hooks.npcVoice?.(npcId, line, "transcript") : undefined;
   }
 
   get active() { return this.alive; }
