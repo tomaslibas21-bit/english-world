@@ -63,16 +63,43 @@ try {
       const checkThreadViewport = async (...selectors) => {
         const checks = await thread.locator(".text-thread-body").evaluate((body, selectors) => {
           const area = body.getBoundingClientRect();
+          const right = area.left + body.clientWidth;
           const bottom = area.top + body.clientHeight;
           return selectors.map((selector) => {
             const elements = [...body.querySelectorAll(selector)];
             return elements.length > 0 && elements.every((el) => {
               const rect = el.getBoundingClientRect();
-              return rect.height > 0 && rect.top >= area.top - 1 && rect.bottom <= bottom + 1;
+              return rect.width > 0 && rect.height > 0 && rect.left >= area.left - 1 && rect.right <= right + 1 &&
+                rect.top >= area.top - 1 && rect.bottom <= bottom + 1;
             });
           });
         }, selectors);
         assert(checks.every(Boolean), `inside the thread's scroll area at ${width}×${height}: ${selectors.filter((_, i) => !checks[i]).join(", ")}`);
+      };
+      const scrollToReply = async (index) => {
+        const selector = `.text-replies > button:nth-of-type(${index + 1})`;
+        const choice = thread.locator(selector);
+        await choice.evaluate((button) => button.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" }));
+        await checkThreadViewport(selector);
+        return choice;
+      };
+      const sendReply = async (index) => {
+        const reply = dinner.replies[index];
+        await tap(await scrollToReply(index));
+        assert.equal((await state()).got[dinner.id].reply, index);
+        assert.equal(await thread.locator(".mine .text-bubble").innerText(), lineText(reply));
+        assert.equal(await thread.locator(".text-sent").innerText(), learnerLabel("Išsiųsta", "Sent"));
+        assert.equal(await thread.locator(".text-typing i").count(), 3);
+        await checkThreadViewport(".text-message.mine .text-bubble", ".text-typing");
+        await waitFor(async () => await thread.locator(".text-bubble").count() === dinner.lines.length + 1 + reply.answer.length, "answer arrives after typing");
+        assert.equal(await thread.locator(".text-bubble").last().innerText(), lineText(reply.answer.at(-1)));
+        await checkThreadViewport(".text-message:last-child .text-bubble", ".text-message.mine .text-bubble", ".text-sent");
+      };
+      const greeting = ".text-message:first-of-type .text-bubble";
+      const checkFreshThread = async () => {
+        assert.equal(await thread.getAttribute("data-thread"), dinner.id);
+        await checkThreadViewport(".text-hint", greeting);
+        assert.equal(await thread.locator(`${greeting} span[lang="${targetLang}"]`).innerText(), lineText(dinner.lines[0]));
       };
       const newest = ".text-message:nth-last-child(2) .text-bubble";
       await ready();
@@ -120,36 +147,30 @@ try {
       await tap(phone);
       const inboxText = panel.locator(`.text-contact[data-thread="${dinner.id}"]`);
       assert(await inboxText.locator(".text-unread").isVisible());
+      await waitFor(() => panel.evaluate((node) => getComputedStyle(node.parentElement).opacity === "1"), "the phone finishes opening");
       await capture("text-2-inbox");
       await tap(inboxText);
-      assert.equal(await thread.getAttribute("data-thread"), dinner.id);
-      const greeting = ".text-message:first-of-type .text-bubble";
-      await checkThreadViewport(".text-hint", greeting);
-      await checkThreadViewport(newest, ".text-replies button");
+      await checkFreshThread();
+      await checkThreadViewport(newest);
       const choices = thread.locator(".text-replies button");
       assert.deepEqual(await choices.locator(`span[lang="${targetLang}"]`).allTextContents(), dinner.replies.map(lineText));
       assert.deepEqual(await choices.locator(`small[lang="${helperLang}"]`).allTextContents(), dinner.replies.map((reply) => reply.lt));
+      for (const index of dinner.replies.keys()) await scrollToReply(index);
       assert.equal((await state()).unread, 0);
       assert.equal(await phone.locator(".due-badge").count(), 0);
-      const first = thread.locator(".text-bubble").first();
+      const first = thread.locator(greeting);
       await tap(first);
       assert.equal(await first.locator(`small[lang="${helperLang}"]`).innerText(), dinner.lines[0].lt);
       await tap(first);
       assert.equal(await first.locator("small").count(), 0);
       await tap(first);
       assert.equal(await thread.locator(".text-hint").count(), 0);
-      await checkThreadViewport(`${greeting} small`, ".text-replies button");
+      await checkThreadViewport(`${greeting} small`);
       await capture("text-3-translation");
+      for (const index of dinner.replies.keys()) await scrollToReply(index);
 
       const reply = dinner.replies[0];
-      await tap(choices.first());
-      assert.equal(await thread.locator(".mine .text-bubble").innerText(), lineText(reply));
-      assert.equal(await thread.locator(".text-sent").innerText(), learnerLabel("Išsiųsta", "Sent"));
-      assert.equal(await thread.locator(".text-typing i").count(), 3);
-      await checkThreadViewport(".text-message.mine .text-bubble", ".text-typing");
-      await waitFor(async () => await thread.locator(".text-bubble").count() === dinner.lines.length + 1 + reply.answer.length, "answer arrives after typing");
-      assert.equal(await thread.locator(".text-bubble").last().innerText(), lineText(reply.answer.at(-1)));
-      await checkThreadViewport(".text-message:last-child .text-bubble", ".text-message.mine .text-bubble", ".text-sent");
+      await sendReply(0);
       await capture("text-4-replied");
       await tap(panel.locator(".phone-status button"));
       assert.equal(await menu.locator(".menu-unread").count(), 0);
@@ -225,6 +246,16 @@ try {
           }
           await tap(thread.locator(".text-thread-head button"));
         }
+      }
+      for (let index = 1; index < dinner.replies.length; index++) {
+        await page.evaluate((id) => window.__ew.store.getState().updateProgress((p) => {
+          p.texts.got[id] = { at: Date.now(), read: false };
+          delete p.texts.translated;
+        }), dinner.id);
+        await tap(inboxText);
+        await checkFreshThread();
+        await sendReply(index);
+        await tap(thread.locator(".text-thread-head button"));
       }
       assert.deepEqual(errors, []);
       console.log(`ok ${profileName} texts ${width}×${height}`);
