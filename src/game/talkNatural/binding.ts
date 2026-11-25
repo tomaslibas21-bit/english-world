@@ -1,6 +1,6 @@
 import type { Object3D, Vector3 } from "three";
 import type { GameCharacter } from "../characters";
-import { audio, type AudioSystem, type VisualPlaybackState } from "../audio";
+import { audio, VOICE_ENVELOPE_GATE, type AudioSystem, type VisualPlaybackState, type VisualVoiceSample } from "../audio";
 import type { NaturalPoseDriver, TalkLineId, VoiceVisualOwner } from "./contract";
 import { blockedHands, ENTRY_SECONDS } from "./contract";
 import { PoseEntry } from "./entry";
@@ -146,7 +146,7 @@ export class ActorTalk {
 }
 
 // The pending speaker needs this sampler while the pose mixer is still loading.
-export type VoiceSource = Pick<AudioSystem, "visualState" | "level" | "vowel">;
+export type VoiceSource = Pick<AudioSystem, "readVisualEnvelope">;
 
 export class VoiceMouth {
   mouth = 0;
@@ -157,31 +157,38 @@ export class VoiceMouth {
   private openness = 0;
   private age = 0;
   private owner?: VoiceVisualOwner;
+  private readonly envelope: VisualVoiceSample = { time: null, level: null, vowel: null, quiet: 0 };
 
   read(dt: number, audio?: VoiceSource, owner?: VoiceVisualOwner, paused = false) {
     if (this.owner !== owner) this.reset();
     this.owner = owner;
-    const state = paused ? "blocked" : owner && audio ? audio.visualState(owner) : "text-only";
-    if (state !== "playing" || !audio) {
+    const sample = this.envelope;
+    const state = paused ? "blocked" : owner && audio ? audio.readVisualEnvelope(owner, sample) : "text-only";
+    if (state !== "playing" || sample.time === null) {
       this.reset();
-      this.sample = state;
-      this.level = state === "ended" ? -1 : 0;
+      this.sample = state === "playing" ? "unknown" : state;
+      this.level = state === "playing" ? null : state === "ended" ? -1 : 0;
       return;
     }
 
-    const level = this.level = audio.level(false);
+    const level = this.level = sample.level;
     let target = 0, round = 0.3;
     if (level === null) {
       this.age += dt;
       target = 0.23 + 0.13 * Math.sin(this.age * 12);
-    } else if (level > 0.05) {
+    } else if (level > VOICE_ENVELOPE_GATE) {
       target = Math.min(1, level);
-      round = audio.vowel() ?? round;
+      round = sample.vowel ?? round;
     }
-    this.sample = level === null ? "unknown" : level < 0 ? "ended" : target ? "voiced" : "quiet";
+    this.sample = level === null ? "unknown" : target ? "voiced" : "quiet";
     this.silence = target === 0 ? this.silence + dt : 0;
     this.openness += (target - this.openness) * (1 - Math.exp(-dt / (target > this.openness ? 0.045 : 0.080)));
-    if (level === -1 || this.silence >= 0.24 - dt * 0.5) this.openness = 0;
+    if (sample.quiet > 0) {
+      // Ease the tail to rest during measured silence. Short syllable gaps keep
+      // the ordinary release and the next attack starts from the visible opening.
+      const tail = Math.max(0, 1 - sample.quiet / 0.14);
+      this.openness = Math.min(this.openness, tail * tail * (3 - 2 * tail));
+    }
     this.mouth = this.openness >= (this.mouth > 0 ? 0.04 : 0.08) ? this.openness : 0;
     this.roundness += (round - this.roundness) * (1 - Math.exp(-dt / 0.045));
   }

@@ -37,13 +37,16 @@ it("opens the live picker actor at the shop, pump and startup board on repeat vi
   Object.assign(root, { querySelector: () => panel, querySelectorAll: () => [], appendChild() {}, matches: () => false });
   const canvas = { closest: () => root, getBoundingClientRect: () => wide ? rect(844, 390) : rect(390, 844) };
   vi.stubGlobal("HTMLCanvasElement", Canvas);
-  vi.stubGlobal("document", {
+  const doc = Object.assign(new EventTarget(), {
     createElement: (tag: string) => tag === "canvas" ? new Canvas() : {
       remove() {}, style: {}, matches: () => false, getBoundingClientRect: () => rect(),
     },
-    addEventListener() {}, removeEventListener() {},
   });
-  vi.stubGlobal("window", {});
+  const page = new EventTarget();
+  vi.stubGlobal("document", doc);
+  vi.stubGlobal("window", page);
+  const listen = vi.spyOn(page, "addEventListener");
+  const unlisten = vi.spyOn(page, "removeEventListener");
   vi.stubGlobal("innerWidth", 390);
   vi.stubGlobal("innerHeight", 844);
   vi.stubGlobal("getComputedStyle", () => ({ display: "block", visibility: "visible", opacity: "1", transform: "none", filter: "none" }));
@@ -142,6 +145,12 @@ it("opens the live picker actor at the shop, pump and startup board on repeat vi
     expect(await paco()).toBeGreaterThan(firstShop);
   } finally {
     game.closeConversation();
+    // The final close may leave its short release on the game loop.
+    page.dispatchEvent(new Event("pagehide"));
     useStore.setState(initial);
   }
+  const subscriptions = listen.mock.calls.filter(([event]) => event === "pagehide" || event === "pageshow");
+  expect(subscriptions.length).toBeGreaterThanOrEqual(2);
+  expect(unlisten.mock.calls).toEqual(expect.arrayContaining(subscriptions));
+  expect(unlisten.mock.calls).toHaveLength(subscriptions.length);
 });

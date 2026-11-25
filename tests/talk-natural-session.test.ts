@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Group, Vector3 } from "three";
 import { NPCS } from "../src/content/npcs";
 import { classifyTalk } from "../src/content/talkNatural";
-import type { VisualPlaybackState } from "../src/game/audio";
+import type { VisualPlaybackState, VisualVoiceSample } from "../src/game/audio";
 import { Character } from "../src/game/characters/Character";
 import type { VoiceVisualOwner } from "../src/game/talkNatural/contract";
 import { NaturalSession, type NaturalOptions } from "../src/game/talkNatural/session";
@@ -41,8 +41,10 @@ function scene(run = 17, room = "dans-house", npc = "dan") {
     elapsed: 0,
     visualState(owner: VoiceVisualOwner) { return owner === this.visualOwner ? this.state : "interrupt" as const; },
     visualElapsed() { return this.elapsed; },
-    level: () => 0.7,
-    vowel: () => 0.5,
+    readVisualEnvelope(owner: VoiceVisualOwner, sample: VisualVoiceSample) {
+      Object.assign(sample, { time: this.elapsed, level: 0.7, vowel: 0.5, quiet: 0 });
+      return this.visualState(owner);
+    },
   };
   const options: NaturalOptions = {
     run, zone: { id: room, group }, host, cast: [host, other], people: [host, other],
@@ -295,6 +297,11 @@ describe("shared 3D presentation", () => {
 describe("visibility before the lazy import resolves", () => {
   it("waits for intro and readiness, discards imports on picture, panels, tab hide and handoff, and binds on fresh return", async () => {
     const s = scene();
+    const page = window, motion = Object.assign(new EventTarget(), { matches: false });
+    Object.assign(page, { matchMedia: () => motion });
+    const listeners = [page, s.doc, motion].map((target) => ({
+      add: vi.spyOn(target, "addEventListener"), remove: vi.spyOn(target, "removeEventListener"),
+    }));
     const { settings, conv, hud } = useStore.getState();
     fixtures.push(() => useStore.setState({ settings, conv, hud }));
     useStore.setState({ settings: { ...DEFAULT_SETTINGS, scenes: false }, conv: { ...s.conv, introOpen: true }, hud: { ...hud, panel: null } });
@@ -335,6 +342,10 @@ describe("visibility before the lazy import resolves", () => {
     expect(sample()?.run).toBe(17);
     useStore.getState().setConv({ run: 18, active: false });
     expect(s.host.ch.talkPose).toBeUndefined();
+    expect(view.stop()).toBe(false);
+    view.aim(s.host.id);
+    expect(loads).toHaveLength(5);
+    for (const { add, remove } of listeners) expect(remove.mock.calls).toEqual(add.mock.calls);
   });
 
   it("invalidates imports on pagehide, close and immediate reentry", async () => {
@@ -365,6 +376,15 @@ describe("visibility before the lazy import resolves", () => {
     await Promise.resolve();
     expect(s.host.ch.talkPose).toBe(binding);
     expect(sample()?.run).toBe(18);
+    expect(next.stop(true)).toBe(true);
+    expect(next.stop(true)).toBe(true);
+    expect(binding?.releasing).toBe(true);
+    window.dispatchEvent(new Event("pagehide"));
+    expect(s.host.ch.talkPose).toBeUndefined();
+    expect(s.player.talkPose).toBeUndefined();
+    expect(next.update(useStore.getState().conv, 0)).toBe(false);
+    window.dispatchEvent(new Event("pageshow"));
+    expect(loads).toHaveLength(3);
   });
 
   it("leaves an absent actor unbound", () => {

@@ -451,10 +451,6 @@ class ConversationPose implements NaturalPoseDriver {
         this.lastPhrase = this.time;
       }
     }
-    if (import.meta.env.DEV) {
-      this.values.sample = sample;
-      this.values.level = level;
-    }
   }
 
   private retainThighs() {
@@ -714,6 +710,7 @@ class ConversationPose implements NaturalPoseDriver {
     if (import.meta.env.DEV) {
       const a = this.values;
       a.role = this.role; a.reduced = this.reduced; a.weight = this.weight;
+      a.sample = this.lips.sample; a.level = this.lips.level;
       a.mouth = this.mouth; a.mouthScaleY = r.mouth.scale.y; a.blink = blink;
       a.gesture = gesture; a.gestureWeight = gestureWeight; a.reactionWeight = reactionWeight;
       a.listeningWeight = listen * this.weight; a.watching = watching && !this.reduced;

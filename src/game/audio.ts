@@ -25,6 +25,12 @@ export interface DiagnosticPlaybackState {
 
 export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
 export type VisualPlaybackState = PlaybackState | "ended" | "interrupt" | "muted";
+export interface VisualVoiceSample {
+  time: number | null;
+  level: number | null;
+  vowel: number | null;
+  quiet: number;
+}
 interface PlaybackRequest {
   done: boolean;
   optional?: boolean;
@@ -50,6 +56,7 @@ const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYA
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
+export const VOICE_ENVELOPE_GATE = 0.05;
 /** How long the clip list's download may stand still (no answer yet, or no more bytes) before it is given up (ms). */
 const MANIFEST_STALL_MS = 8000;
 
@@ -123,6 +130,35 @@ export class AudioSystem {
     if (this.visualOwner !== owner || start === undefined) return 0;
     const clip = this.clip;
     return clip?.position?.() ?? (clip?.el ? clip.el.currentTime / clip.el.playbackRate : (performance.now() - start) / 1000);
+  }
+  /** Samples one native playhead for the mouth, using the existing decoded envelope. */
+  readVisualEnvelope(owner: VoiceVisualOwner, sample: VisualVoiceSample): VisualPlaybackState {
+    const state = this.visualState(owner);
+    sample.time = sample.level = sample.vowel = null;
+    sample.quiet = 0;
+    if (state !== "playing") return state;
+    const clip = this.clip;
+    const time = clip ? (clip.position?.() ?? clip.el?.currentTime) : this.visualElapsed(owner);
+    if (time === undefined || !Number.isFinite(time) || time < 0) return state;
+    sample.time = time;
+    if (!clip) return state;
+    const key = clip.envelopeKey ?? clip.key;
+    const env = this.envelopes.get(key);
+    if (!env?.length) {
+      if (env === null && time < 0.05) sample.level = 0;
+      return state;
+    }
+    const bin = Math.min(env.length - 1, Math.floor(time * ENVELOPE_RATE));
+    sample.level = env[bin];
+    if (sample.level > VOICE_ENVELOPE_GATE) {
+      sample.vowel = this.vowels.get(key)?.[bin] ?? null;
+    } else {
+      // Five preceding bins cover the release. A single quiet frame can skip over bins.
+      let first = bin;
+      while (first > 0 && bin - first < 5 && env[first - 1] <= VOICE_ENVELOPE_GATE) first--;
+      sample.quiet = time - first / ENVELOPE_RATE;
+    }
+    return state;
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private setState(state: PlaybackState) {

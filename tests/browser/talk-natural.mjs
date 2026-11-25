@@ -131,6 +131,16 @@ function observe({ hash, shorten }) {
   const wall = window.__naturalWall;
   const actors = new Map(), roles = new WeakMap(), poses = new WeakMap(), panels = new WeakMap();
   const requests = [], frames = [], owners = new WeakMap(), pins = new Map(), clears = [];
+  const readings = new WeakMap();
+  const readVisualEnvelope = audio.readVisualEnvelope.bind(audio);
+  audio.readVisualEnvelope = (owner, sample) => {
+    const state = readVisualEnvelope(owner, sample);
+    if (state === "playing" && audio.clip && Number.isFinite(sample.time)) {
+      readings.set(owner, { clip: audio.clip, driver: owner.actor.talkPose, time: sample.time, level: sample.level,
+        frame: game.renderer.info.render.frame, gameTime: game.t });
+    } else readings.delete(owner);
+    return state;
+  };
   function observers() {
     const { root } = game.talkNpc?.ch ?? {};
     if (!root) return [];
@@ -170,7 +180,12 @@ function observe({ hash, shorten }) {
     for (let node = o; node; node = node.parent) if (!node.visible) return false;
     return true;
   };
-  function pose(actor) {
+  function poseId(controller) {
+    if (!controller) return;
+    if (!poses.has(controller)) poses.set(controller, ++poseSerial);
+    return poses.get(controller);
+  }
+  function pose(actor, face) {
     const rig = actor.naturalRig?.();
     const head = actor.headJoint;
     const root = actor.root, controller = actor.talkPose;
@@ -182,16 +197,16 @@ function observe({ hash, shorten }) {
       return [canvas.left + (p.x + 1) * canvas.width / 2, canvas.top + (1 - p.y) * canvas.height / 2, p.z];
     };
     const left = rig?.foreL && rig.foreL.localToWorld(actor.rightHand.position.clone().setX(-actor.rightHand.position.x)).toArray();
-    if (controller && !poses.has(controller)) poses.set(controller, ++poseSerial);
-    const mouth = rig?.mouth;
+    const mouth = face ? face.mouth : rig?.mouth;
+    const smile = face ? face.smile : actor.smile;
     return { identity: root.uuid, live: bodyWithin(root, game.scene), visible: visible(root),
-      skinned: !!mouth?.isBone && bodyWithin(mouth, root), anim: actor.anim, seat: actor.seatY,
+      skinned: face ? face.skinned : !!mouth?.isBone && bodyWithin(mouth, root), anim: actor.anim, seat: actor.seatY,
       root: world(root), facing: root.getWorldDirection(root.position.clone()).toArray(), headWorld: world(head),
       headScreen: head && screen(head), mouthScreen: mouth && screen(mouth), pelvis: world(rig?.thighL),
       hands: [left, world(actor.rightHand)], elbows: [world(rig?.foreL), world(rig?.foreR)],
       gazeAim: controller?.watch && (root.parent?.localToWorld(controller.watch.clone()) ?? controller.watch).toArray(),
-      weight: controller?.weight ?? 0, poseId: controller && poses.get(controller),
-      mouth: mouth?.scale.toArray(), closed: actor.smile?.scale.toArray(), eyeScale: actor.eyes?.scale.y,
+      weight: controller?.weight ?? 0, poseId: poseId(controller),
+      mouthId: mouth?.uuid, mouth: mouth?.scale.toArray(), closed: smile?.scale.toArray(), eyeScale: actor.eyes?.scale.y,
       joints: rig && { body: joint(rig.body), head: joint(rig.head), upperL: joint(rig.upperL), upperR: joint(rig.upperR),
         foreL: joint(rig.foreL), foreR: joint(rig.foreR), iris: joint(rig.eye), smile: joint(rig.corners) } };
   }
@@ -250,22 +265,43 @@ function observe({ hash, shorten }) {
     });
     return value;
   };
+  function pinSample(pin) {
+    return { actor: pose(pin.actor, pin.face), poseId: poseId(pin.controller),
+      weight: pin.controller?.weight ?? 0, mouth: pin.controller?.mouth, active: pin.actor.talkPose === pin.controller && !!pin.controller,
+      request: owners.get(pin.owner)?.id ?? null, line: pin.owner?.line ?? null,
+      owned: !!pin.owner && audio.visualOwner === pin.owner, voice: pin.owner ? audio.visualState(pin.owner) : null };
+  }
   function sample(rendered) {
     const { conv, hud, settings, progress } = store.getState();
     const probe = window.__talkNatural?.sample() ?? null;
     findActors(probe);
     const line = conv.transcript.find((row) => row.id === conv.speaking);
     const owner = audio.visualOwner;
-    const request = owners.get(owner) ?? lastRequest;
+    const ownedRequest = owners.get(owner);
+    const request = ownedRequest ?? lastRequest;
     const clip = audio.clip;
-    const media = clip && request && clip.key === request.key && {
-      key: clip.key, owner: request.id, state: owner ? audio.visualState(owner) : audio.getState(),
-      time: clip.position?.() ?? clip.el?.currentTime, rate: clip.el?.playbackRate ?? (request.slow ? 0.82 : 1),
-      pipeline: clip.el ? "html" : clip.position ? "buffer" : null,
-      native: clip.el ? (clip.el.ended ? "ended" : clip.el.paused ? "paused" : "playing") : audio.ctx?.state,
-      duration: clip.el?.duration ?? audio.buffers.get(audio.cacheKey(request.key) + (request.slow ? "#slow" : ""))?.duration,
-      envelope: audio.level(false),
-    };
+    const frame = game.renderer.info.render.frame;
+    const read = readings.get(owner);
+    const submitted = rendered && ownedRequest && read && clip === read.clip && read.driver && owner.actor.talkPose === read.driver
+      && read.frame + 1 === frame && read.gameTime === game.t;
+    let media;
+    if (clip && request && clip.key === request.key) {
+      const time = submitted ? read.time : clip.position?.() ?? clip.el?.currentTime;
+      // Look up the expected bin directly in the cache at the submitted playhead.
+      const env = audio.envelopes.get(clip.envelopeKey ?? clip.key);
+      const bin = env?.length && Number.isFinite(time) ? Math.min(env.length - 1, Math.floor(time * 30)) : null;
+      media = {
+        key: clip.key, owner: request.id, state: owner ? audio.visualState(owner) : audio.getState(),
+        time, rate: clip.el?.playbackRate ?? (request.slow ? 0.82 : 1),
+        pipeline: clip.el ? "html" : clip.position ? "buffer" : null,
+        native: clip.el ? (clip.el.ended ? "ended" : clip.el.paused ? "paused" : "playing") : audio.ctx?.state,
+        duration: clip.el?.duration ?? audio.buffers.get(audio.cacheKey(request.key) + (request.slow ? "#slow" : ""))?.duration,
+        envelope: clip.done || clip.el?.ended ? -1 : bin === null ? (env === null && time < 0.05 ? 0 : null) : env[bin],
+        bin,
+        submitted: submitted ? { frame, request: request.id, line: owner.line, identity: owner.actor.root.uuid,
+          poseId: poseId(read.driver), level: read.level } : null,
+      };
+    }
     const panel = document.querySelector(".convo");
     if (panel && !panels.has(panel)) panels.set(panel, ++panelSerial);
     const panelAnimating = panel?.getAnimations().some((animation) => animation.playState === "running"
@@ -273,13 +309,12 @@ function observe({ hash, shorten }) {
     if (game.nearest?.ch) put(game.nearest.id, game.nearest.ch);
     const street = game.streetLife?.active;
     const table = window.__ew.loteria?.state();
-    return { wall: wall(), gameTime: game.t, clock: performance.now(), frame: game.renderer.info.render.frame,
+    return { wall: wall(), gameTime: game.t, clock: performance.now(), frame,
       rendered, calls: game.renderer.info.render.calls, p: probe, media, request: request?.id ?? null,
       voiceOwner: owner ? owners.get(owner)?.id ?? null : null, audioState: audio.getState(),
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
       actual: Object.fromEntries([...actors].map(([id, actor]) => [id, pose(actor)])),
-      pinned: Object.fromEntries([...pins].map(([id, pin]) => [id, { actor: pose(pin.actor), weight: pin.controller?.weight ?? 0,
-        voice: pin.owner ? audio.visualState(pin.owner) : null }])),
+      pinned: Object.fromEntries([...pins].map(([id, pin]) => [id, pinSample(pin)])),
       conv: { id: conv.sitId, active: conv.active, run: conv.run, host: conv.hostId, npc: conv.npcId, phase: conv.phase,
         intro: conv.introOpen, step: conv.stepId, line: conv.speaking, lineKey: conv.lineKey, text: line?.sentence?.say,
         mic: conv.mic.status, typing: conv.typing, slow: conv.slowMode, complete: conv.completed,
@@ -316,7 +351,11 @@ function observe({ hash, shorten }) {
     pin(label, actor) {
       const ch = actors.get(actor);
       if (!ch) throw new Error(`Cannot pin absent actor ${actor}`);
-      pins.set(label, { actor: ch, controller: ch.talkPose, owner: audio.visualOwner?.actor === ch ? audio.visualOwner : null });
+      const mouth = ch.naturalRig?.()?.mouth, smile = ch.smile;
+      const pin = { actor: ch, controller: ch.talkPose, owner: audio.visualOwner?.actor === ch ? audio.visualOwner : null,
+        face: { mouth, smile, skinned: !!mouth?.isBone && bodyWithin(mouth, ch.root) } };
+      pins.set(label, pin);
+      return pinSample(pin);
     },
   };
 }
@@ -367,7 +406,7 @@ async function serveRecording(route, bytes, cors) {
 const mediaPlaying = (f) => f.rendered && f.media?.state === "playing" && f.media.time > 0;
 const audible = (f) => mediaPlaying(f) && f.media.envelope > 0.05;
 const mouth = (ch) => ch?.mouth?.[1] ?? 0;
-const isSilent = (ch) => ch?.skinned && ch.mouth.every((v) => v <= 0.00002) && ch.closed?.[1] > 0.5;
+const isSilent = (ch) => ch?.skinned && ch.mouth?.length === 3 && ch.mouth.every((v) => Math.abs(v) <= 0.00002) && ch.closed?.[1] > 0.5;
 const silent = (ch, label) => assert(isSilent(ch), `${label} · ${JSON.stringify(ch?.mouth)} ${JSON.stringify(ch?.closed)}`);
 const live = (f, id) => {
   const ch = f.actual[id];
@@ -773,15 +812,21 @@ class Route {
   }
 
   async pin(label, actor) {
-    await this.page.evaluate(([label, actor]) => window.__naturalTest.pin(label, actor), [label, actor]);
+    return this.page.evaluate(([label, actor]) => window.__naturalTest.pin(label, actor), [label, actor]);
   }
 
   async close({ reopen = false } = {}) {
     const old = this.last;
     const who = old.p?.speakerId ?? old.conv.npc;
     const pin = `close-${old.conv.run}`;
-    await this.pin(pin, who);
+    const pinned = await this.pin(pin, who);
     await this.pin(`${pin}-player`, "player");
+    if (reopen) {
+      assert(pinned.active && pinned.owned && pinned.voice === "playing" && pinned.actor.live && pinned.actor.skinned,
+        "captured the outgoing mounted driver and playing token before close");
+      assert.equal(pinned.request, old.voiceOwner);
+      assert.equal(pinned.line, old.p.speakingLineId);
+    }
     const from = this.frames.length;
     const press = await this.press(this.page.locator(".convo-head .head-actions .close-x").last(), "close conversation", { key: true });
     if (reopen) await this.page.evaluate((id) => window.__ew.game.startScenario(id), old.conv.id);
@@ -809,13 +854,57 @@ class Route {
     const released = this.frames.slice(from).find((f) => f.gameTime >= back.gameTime + 0.22);
     const rest = this.frames.slice(from).find((f) => f.gameTime >= back.gameTime + 0.30);
     assert(released && rest && !["playing", "loading"].includes(released.pinned[pin]?.voice), "outgoing voice owner released");
-    if (reopen) assert.equal(released.pinned[pin].voice, "interrupt", "close interrupted a live recording");
-    silent(released.pinned[pin].actor, "outgoing mouth after close");
+    const release = released.pinned[pin], settled = rest.pinned[pin];
+    silent(release.actor, "outgoing mouth after close");
     assert(rest.pinned[pin].weight <= 0.001 && rest.pinned[`${pin}-player`].weight <= 0.001);
+    if (reopen) {
+      silent(settled.actor, "outgoing mouth at rest");
+      const lastDrawn = this.frames.findLast((f) => {
+        const body = f.actual[who];
+        return f.rendered && body?.live && body.visible && body.identity === pinned.actor.identity;
+      });
+      assert(lastDrawn, "last submitted frame of the outgoing actor");
+      const lastActor = live(lastDrawn, who);
+      assert.equal(lastActor.mouthId, pinned.actor.mouthId);
+      const lastSpoken = this.frames.findLast((f) => f.frame <= lastDrawn.frame && f.voiceOwner === pinned.request
+        && f.actual[who]?.poseId === pinned.poseId && f.media?.submitted && audible(f) && f.p?.mouth > 0.12 && mouth(f.actual[who]) > 0.04);
+      assert(lastSpoken, "outgoing driver and voice opened the captured mouth on a submitted frame");
+      checkVoiceSample(lastSpoken, live(lastSpoken, who));
+      if (lastDrawn.conv.active) {
+        assert.equal(lastDrawn.conv.run, old.conv.run);
+        assert.equal(lastActor.poseId, pinned.poseId);
+        checkVoiceSample(lastDrawn, lastActor);
+        if (lastDrawn.p.mouth > 0) assert(mouth(lastActor) > 0.04 && lastActor.closed[1] <= 0.00002);
+        else silent(lastActor, "last drawn outgoing mouth in the recording's quiet");
+      } else silent(lastActor, "last drawn outgoing mouth after close");
+      for (const state of [release, settled]) {
+        assert.equal(state.voice, "interrupt", "close interrupted the captured recording");
+        assert.deepEqual([state.request, state.line, state.poseId, state.actor.identity, state.actor.mouthId],
+          [pinned.request, pinned.line, pinned.poseId, pinned.actor.identity, pinned.actor.mouthId]);
+        assert(!state.owned && !state.active && !state.actor.live && state.mouth === 0 && state.weight === 0,
+          "the outgoing actor and driver were released on immediate reopen");
+      }
+      for (const [label, f] of [["outgoing-voiced", lastSpoken], ["outgoing-last-drawn", lastDrawn],
+        ["outgoing-release", released], ["outgoing-rest", rest]]) this.mark(label, f);
+      this.row.interruption = { before: pinned, lastSpoken: { ...compact(lastSpoken), actorJoints: lastSpoken.actual[who] },
+        lastDrawn: { ...compact(lastDrawn), actorJoints: lastActor }, released: release, rest: settled };
+    }
     assert(reopen || this.current.scene.panel === null, "exit unmounted panel");
     this.checkpoints("close", press, [1, 4, 9, 15]);
-    return { old, back, press };
+    return { old, back, press, pinned };
   }
+}
+
+function checkVoiceSample(f, ch) {
+  const { media, p } = f;
+  const read = media.submitted;
+  assert(read && media.bin !== null && Number.isFinite(media.time), "native bin sampled for this submitted frame");
+  assert(p?.requestOwned && p.requestId != null && p.playback === "playing", "applied pose still owns this playing request");
+  assert.deepEqual([read.frame, read.request, read.line, read.identity, read.poseId],
+    [f.frame, f.voiceOwner, p.speakingLineId, ch.identity, ch.poseId], "one request, line and rig on the submitted frame");
+  assert.equal(read.level, p.envelope, "applied pose used this frame's voice sample");
+  assert.equal(p.speaker.mouthScaleY, mouth(ch), "applied mouth matches the rendered mouth bone");
+  assert(Number.isFinite(p.envelope) && Math.abs(p.envelope - media.envelope) < 0.35, "pose and native gain envelope agree");
 }
 
 function checkVoice(route, f, actor) {
@@ -826,7 +915,7 @@ function checkVoice(route, f, actor) {
   assert.equal(media.owner, f.voiceOwner);
   assert.equal(media.pipeline, route.size.touch ? "buffer" : "html");
   assert.equal(media.native, route.size.touch ? "running" : "playing");
-  assert(Math.abs(p.envelope - media.envelope) < 0.35, "pose and native gain envelope agree");
+  checkVoiceSample(f, ch);
   assert(Number.isFinite(media.duration) && media.duration > media.time, "native decoder reports a finite playhead and duration");
   if (p.scope === "session") {
     assert.equal(f.scene.talkSpeaker, actor);
@@ -839,35 +928,51 @@ function checkVoice(route, f, actor) {
 }
 
 async function voiced(route, actor, test = () => true, from = route.entryAt) {
-  const f = await route.wait((f) => audible(f) && f.p?.speakerId === actor && f.p?.requestOwned
+  const f = await route.wait((f) => audible(f) && f.media.submitted && f.p?.speakerId === actor && f.p?.requestOwned
     && f.p.mouth > 0.12 && mouth(f.actual[actor]) > 0.04 && test(f), `${actor} native audio and rendered mouth`, 15_000, { from });
   return checkVoice(route, f, actor);
 }
 
 function checkFixture(route, actor, frames) {
   const fixture = fixtures[actor];
-  const first = frames.find((f) => f.conv.text === fixture.text && f.media?.key === fixture.key && audible(f) && f.p?.mouth > 0.12);
+  const first = frames.find((f) => f.conv.text === fixture.text && f.media?.key === fixture.key && f.media.submitted
+    && audible(f) && f.p?.mouth > 0.12);
   assert(first, `${actor} selected the authored speed-1 recording ${fixture.key}`);
   assert(Math.abs(first.media.duration - fixture.duration) < 0.15, "verified Spanish take duration");
   checkVoice(route, first, actor);
-  const samples = frames.filter((f) => f.media?.owner === first.request && mediaPlaying(f));
+  const samples = frames.filter((f) => f.media?.owner === first.request && mediaPlaying(f) && f.media.submitted);
   const [from, to] = fixture.gap;
   const before = samples.filter((f) => f.media.time < from && audible(f));
-  const quiet = samples.filter((f) => f.media.time >= from && f.media.time <= to && f.media.envelope <= 0.05);
+  const quiet = samples.filter((f) => f.media.time >= from && f.media.time <= to
+    && Number.isFinite(f.media.envelope) && f.media.envelope <= 0.05);
   const after = samples.filter((f) => f.media.time > to && audible(f));
   const high = (rows) => rows.find((f) => f.p?.mouth > 0.22 && mouth(f.actual[actor]) > 0.1);
+  const pre = high(before), post = high(after);
   const closed = quiet.find((f) => f.p?.mouth === 0 && isSilent(f.actual[actor]));
-  assert(before.length >= 3 && quiet.length >= 3 && after.length >= 3 && high(before) && high(after) && closed,
+  assert(before.length >= 3 && quiet.length >= 3 && after.length >= 3 && pre && post && closed,
     `open–closed–open within one Spanish playhead at ${from}–${to}s · ${JSON.stringify(samples.map((f) => [f.media.time, f.media.envelope, f.p?.mouth]))}`);
+  assert(to - closed.media.time >= 1 / 30, "closed mouth has one frame of headroom within the real pause");
+  const closedHold = samples.filter((f) => f.frame >= closed.frame && f.media.time <= to);
+  for (const f of [pre, ...closedHold, post]) {
+    const ch = live(f, actor);
+    assert.equal(ch.identity, first.actual[actor].identity);
+    checkVoiceSample(f, ch);
+    assert.equal(f.p.requestId, first.p.requestId);
+  }
+  assert(closedHold.every((f) => f.p.mouth === 0 && isSilent(f.actual[actor])), "painted mouth stays closed through the gap");
   assert(span(samples.map((f) => f.p?.mouth ?? 0)) >= 0.18, "mouth has a distinct voiced range");
   assert(frames.some((f) => f.request === first.request && f.p?.playback === "ended")
     || frames.at(-1)?.media?.state === "ended" || frames.at(-1)?.media?.time >= fixture.duration - 0.1,
     "native clock reached the recording end");
-  for (const [label, frame] of [["voiced-open", high(before)], ["voiced-closed", closed], ["voiced-reopen", high(after)]]) {
+  const lastClosed = closedHold.at(-1);
+  const closedImage = closedHold[Math.floor(closedHold.length / 2)];
+  for (const [label, frame] of [["voiced-open", pre], ["voiced-closed", closedImage], ["voiced-reopen", post]]) {
     route.mark(label, frame);
     route.require(label);
   }
-  route.row.gap = { actor, ...fixture, request: first.request, before: compact(high(before)), closed: compact(closed), after: compact(high(after)) };
+  route.labels["voiced-closed"].frameWindow = [closed.wall, lastClosed.wall];
+  route.row.gap = { actor, ...fixture, request: first.request, counts: [before.length, quiet.length, after.length],
+    before: compact(pre), closed: compact(closed), lastClosed: compact(lastClosed), after: compact(post) };
 }
 
 async function layoutEvidence(route, actor) {
@@ -1502,6 +1607,13 @@ async function interrupted(route) {
   const fresh = await voiced(route, "mia");
   assert(next.conv.run > first.conv.run && fresh.p.requestId !== old.p.requestId && fresh.request !== old.request, "same speaker reopens through a fresh request");
   assert.equal(fresh.media.key, old.media.key);
+  const actor = live(fresh, "mia"), prior = exit.pinned;
+  assert.notEqual(actor.identity, prior.actor.identity, "reopen mounted a new actor");
+  assert.notEqual(actor.mouthId, prior.actor.mouthId, "reopen mounted a new mouth bone");
+  assert.notEqual(actor.poseId, prior.poseId, "reopen attached a new pose driver");
+  assert.notEqual(fresh.voiceOwner, prior.request, "new rig has its own playback token");
+  route.row.interruption.reopened = { ...compact(fresh), actorJoints: actor };
+  route.mark("reopened-voiced", fresh);
   await route.next();
   await route.close();
 }

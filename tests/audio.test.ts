@@ -507,6 +507,58 @@ describe("owned HTML and browser voice playback", () => {
     return { root } as GameCharacter;
   }
 
+  it.each([30, 60])("closes through Mariana's 205 ms pause on a misaligned %i Hz update", async (hz) => {
+    const owner = { actor: mounted(), line: 1 }, mouth = new VoiceMouth();
+    const envelope = new Float32Array(55).fill(1);
+    // Observed 30 Hz bins around the 0.791–0.996 s pause in 342ff2b33d8d.
+    envelope.set([0.961, 0.735, 0.293, 0.0302, 0, 0, 0, 0, 0, 0], 20);
+    audio["envelopes"].set(key, envelope);
+    const done = audio.play(voice, 1, line, { visual: owner, recordingOnly: true });
+    await flush();
+    const player = players[0], dt = 1 / hz;
+    player.emitPlaying();
+    const frames = [];
+    for (let time = 0.007; time < 1.14; time += dt) {
+      player.currentTime = time;
+      mouth.read(dt, audio, owner);
+      frames.push({ time, mouth: mouth.mouth, level: mouth.level });
+    }
+    expect(frames.filter((f) => f.time < 0.791 && f.mouth > 0.22).length).toBeGreaterThan(3);
+    const gap = frames.filter((f) => f.time >= 0.791 && f.time <= 0.996);
+    expect(gap.every((f) => f.level! <= 0.05)).toBe(true);
+    expect(gap[0].mouth).toBeGreaterThan(0.25);
+    expect(gap.slice(1).every((f, i) => f.mouth <= gap[i].mouth)).toBe(true);
+    const firstClosed = gap.findIndex((f) => f.mouth === 0);
+    expect(gap[firstClosed].time - 23 / 30).toBeGreaterThanOrEqual(0.12);
+    expect(gap[firstClosed].time - 23 / 30).toBeLessThanOrEqual(0.155);
+    expect(0.996 - gap[firstClosed].time).toBeGreaterThanOrEqual(1 / 30);
+    expect(gap.slice(firstClosed).every((f) => f.mouth === 0)).toBe(true);
+    expect(frames.find((f) => f.time > 1 && f.level === 1)?.mouth).toBeCloseTo(1 - Math.exp(-dt / 0.045));
+    player.emitEnded();
+    expect(await done).toBe(true);
+  });
+
+  it("reads gain and vowel from one finite native clock even across a bin boundary", async () => {
+    const owner = { actor: mounted(), line: 1 }, mouth = new VoiceMouth();
+    audio["envelopes"].set(key, Float32Array.from([0, 0.8, 0.2]));
+    audio["vowels"].set(key, Float32Array.from([0, 0.25, 0.9]));
+    const done = audio.play(voice, 1, line, { visual: owner });
+    await flush();
+    const player = players[0];
+    player.emitPlaying();
+    const now = vi.fn(() => 0.067).mockReturnValueOnce(0.066);
+    Object.defineProperty(player, "currentTime", { get: now });
+    mouth.read(0.045, audio, owner);
+    expect(now).toHaveBeenCalledOnce();
+    expect(mouth.level).toBeCloseTo(0.8);
+    expect(mouth.roundness).toBeCloseTo(0.3 + (0.25 - 0.3) * (1 - Math.exp(-1)));
+    now.mockReturnValue(NaN);
+    mouth.read(0.045, audio, owner);
+    expect(mouth).toMatchObject({ sample: "unknown", level: null, mouth: 0 });
+    player.emitEnded();
+    expect(await done).toBe(true);
+  });
+
   it.each([30, 60])("reads the slow clip's cached 30 Hz samples and drops a replaced request at %i Hz", async (hz) => {
     const actor = mounted(), owner = { actor, line: 4 }, replay = { actor, line: 4 };
     const mouth = new VoiceMouth();

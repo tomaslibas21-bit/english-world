@@ -12,14 +12,15 @@ interface Visibility {
 
 /** Listen for presentation edges and hydrate only while the staged view is usable. */
 export function bindNaturalTalk(options: NaturalOptions, visibility: Visibility, load = loadSession) {
-  const motion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  const page = window, doc = document;
+  const motion = page.matchMedia?.("(prefers-reduced-motion: reduce)");
   let natural: NaturalSession | undefined;
-  let shown = false, pageHidden = false, suppressCurrent = false, generation = 0;
+  let shown = false, pageHidden = false, suppressCurrent = false, generation = 0, disposed = false;
   let pending: { id: string; kind: SessionReaction; at: number } | undefined;
 
   function covered(state: ReturnType<typeof useStore.getState>) {
     const { conv, hud, settings } = state;
-    return pageHidden || document.hidden || conv.introOpen || !!hud.panel || !!hud.glyph || !!hud.fade ||
+    return pageHidden || doc.hidden || conv.introOpen || !!hud.panel || !!hud.glyph || !!hud.fade ||
       !!hud.modeScreen || settings.play === "light" || (visibility.hasArt && picturesOn(settings));
   }
 
@@ -60,7 +61,7 @@ export function bindNaturalTalk(options: NaturalOptions, visibility: Visibility,
   }
 
   function pageVisibility() {
-    if (natural?.releasing && (pageHidden || document.hidden)) stop();
+    if (natural?.releasing && (pageHidden || doc.hidden)) stop();
     else sync();
   }
 
@@ -68,18 +69,22 @@ export function bindNaturalTalk(options: NaturalOptions, visibility: Visibility,
   function showPage() { pageHidden = false; pageVisibility(); }
 
   function stop(release = false) {
-    unsubscribe?.();
-    unsubscribe = undefined;
-    pending = undefined;
-    generation++;
-    motion?.removeEventListener("change", motionChanged);
-    if (release && natural && shown && !pageHidden && !document.hidden && !visibility.blocked()) {
-      natural.close();
-      return true;
+    if (disposed) return false;
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = undefined;
+      pending = undefined;
+      generation++;
+      motion?.removeEventListener("change", motionChanged);
+      if (release && natural && shown && !pageHidden && !doc.hidden && !visibility.blocked()) natural.close();
+      shown = false;
     }
-    document.removeEventListener("visibilitychange", pageVisibility);
-    window.removeEventListener("pagehide", hidePage);
-    window.removeEventListener("pageshow", showPage);
+    // Page visibility can still interrupt the release until its last pose is gone.
+    if (release && natural?.releasing) return true;
+    disposed = true;
+    doc.removeEventListener("visibilitychange", pageVisibility);
+    page.removeEventListener("pagehide", hidePage);
+    page.removeEventListener("pageshow", showPage);
     natural?.dispose();
     natural = undefined;
     return false;
@@ -93,13 +98,14 @@ export function bindNaturalTalk(options: NaturalOptions, visibility: Visibility,
       picturesOn(next.settings) !== picturesOn(prev.settings)) sync(next);
   });
   motion?.addEventListener("change", motionChanged);
-  document.addEventListener("visibilitychange", pageVisibility);
-  window.addEventListener("pagehide", hidePage);
-  window.addEventListener("pageshow", showPage);
+  doc.addEventListener("visibilitychange", pageVisibility);
+  page.addEventListener("pagehide", hidePage);
+  page.addEventListener("pageshow", showPage);
   sync();
 
   return {
     update(conv: ConvUI, dt: number) {
+      if (disposed) return false;
       // The presenter and transition can reach readiness on the existing game loop.
       if (unsubscribe) sync();
       else if (visibility.blocked() || covered(useStore.getState())) return stop();
@@ -107,6 +113,7 @@ export function bindNaturalTalk(options: NaturalOptions, visibility: Visibility,
       return !!unsubscribe || !!natural;
     },
     aim(id: string) {
+      if (!unsubscribe) return;
       natural?.aim(id);
       if (shown && !natural) {
         pending = pending?.id === id ? pending : undefined;

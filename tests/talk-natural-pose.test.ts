@@ -3,7 +3,7 @@ import { Group, Mesh, SkinnedMesh, Vector3, type Object3D } from "three";
 import { NPCS } from "../src/editions/es/content/npcs";
 import { Character } from "../src/game/characters/Character";
 import { bindConversationPose, captureConversationPose, type VoiceVisualOwner } from "../src/game/talkNatural/pose";
-import type { VisualPlaybackState } from "../src/game/audio";
+import type { VisualPlaybackState, VisualVoiceSample } from "../src/game/audio";
 
 function blocks(id: string) {
   const { look, gender } = NPCS[id];
@@ -24,17 +24,26 @@ class MotionPreference extends EventTarget {
   }
 }
 
-function voiceSource() {
+function voiceSource(dt: number) {
   let current: VoiceVisualOwner | undefined;
   let state: VisualPlaybackState = "loading";
   let level: number | null = 0;
+  let time = 0, quiet = 0;
+  const measure = vi.fn(() => level);
   const audio = {
-    visualState: (owner: VoiceVisualOwner) => owner === current ? state : "interrupt" as const,
-    level: vi.fn(() => level),
-    vowel: vi.fn(() => 0.65),
+    readVisualEnvelope(owner: VoiceVisualOwner, sample: VisualVoiceSample) {
+      if (owner !== current) return "interrupt" as const;
+      if (state === "playing") {
+        sample.time = time += dt;
+        sample.level = measure();
+        sample.vowel = 0.65;
+        sample.quiet = level !== null && level <= 0.05 ? quiet += dt : 0;
+      }
+      return state;
+    },
   };
-  return { audio, follow(owner: VoiceVisualOwner) { current = owner; }, state(value: VisualPlaybackState) { state = value; },
-    level(value: number | null) { level = value; } };
+  return { audio, measure, follow(owner: VoiceVisualOwner) { current = owner; }, state(value: VisualPlaybackState) { state = value; },
+    level(value: number | null) { level = value; if (value === null || value > 0.05) quiet = 0; } };
 }
 
 function budget(actor: { root: Group }) {
@@ -188,14 +197,14 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
   });
 
   it("closes on separate gaps and invalidates a same-speaker replay with the same line", () => {
-    const actor = blocks("mia"), source = voiceSource();
+    const actor = blocks("mia"), source = voiceSource(dt);
     const owner = { actor, line: 7 }, replay = { actor, line: 7, replay: "turn" as const };
     const pose = bindConversationPose(actor, { audio: source.audio })!;
     const listener = blocks("walter"), other = bindConversationPose(listener, { audio: source.audio })!;
     other.speak(7, owner);
     pose.speak(7, owner); source.follow(owner);
     step(actor, 0.3, hz); step(listener, 0.3, hz);
-    expect(source.audio.level).not.toHaveBeenCalled();
+    expect(source.measure).not.toHaveBeenCalled();
     source.state("playing"); source.level(1);
     step(actor, 0.3, hz); step(listener, 0.3, hz);
     expect(pose.applied.mouth).toBeGreaterThan(0.98);
@@ -230,11 +239,44 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     actor.dispose(); listener.dispose();
   });
 
+  it("closes the outgoing mouth bones before disposal and binds a fresh voice to the replacement", () => {
+    const actor = blocks("mia"), source = voiceSource(dt), owner = { actor, line: 7 };
+    const pose = bindConversationPose(actor, { audio: source.audio })!;
+    const mouth = actor.naturalRig()!.mouth, smile = actor["smile"];
+    source.follow(owner); source.state("playing"); source.level(1);
+    pose.speak(7, owner);
+    step(actor, 0.3, hz);
+    expect(mouth.scale.y).toBeGreaterThan(0.5);
+    expect(smile.scale.y).toBeLessThan(0.001);
+
+    pose.release();
+    actor.dispose();
+    actor.root.removeFromParent();
+    expect(actor.naturalRig()).toBeUndefined();
+    expect(actor.talkPose).toBeUndefined();
+    expect(pose).toMatchObject({ active: false, weight: 0, mouth: 0 });
+    expect(mouth.scale.toArray()).toEqual([0.00001, 0.00001, 0.00001]);
+    expect(smile.scale.y).toBe(1);
+
+    const next = blocks("mia"), replay = { actor: next, line: 7 };
+    const reopened = bindConversationPose(next, { audio: source.audio })!;
+    source.follow(replay);
+    reopened.speak(7, owner);
+    next.update(dt);
+    expect(reopened.mouth).toBe(0);
+    reopened.speak(7, replay);
+    next.update(dt);
+    expect(reopened.mouth).toBeCloseTo(1 - Math.exp(-dt / 0.045));
+    expect(next.naturalRig()!.mouth).not.toBe(mouth);
+    expect(mouth.scale.y).toBe(0.00001);
+    next.dispose();
+  });
+
   it("keeps hidden and visible corners at neutral during live reduced speech, quiet, and release", () => {
     const query = new MotionPreference();
     vi.stubGlobal("matchMedia", () => query);
     vi.spyOn(Math, "random").mockReturnValue(0.5);
-    const actor = blocks("mia"), source = voiceSource(), owner = { actor, line: 1 };
+    const actor = blocks("mia"), source = voiceSource(dt), owner = { actor, line: 1 };
     const pose = bindConversationPose(actor, { audio: source.audio })!;
     const r = actor.naturalRig()!, corners = r.corners!;
     const skin = actor["skin"]!, { bones } = skin.skeleton;
@@ -265,6 +307,20 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     expect(r.mouth.scale.y).toBeCloseTo(height, 5);
     expect(corners.position.y).toBeCloseTo(base, 10);
     const neutral = channels();
+
+    source.level(0.03);
+    step(actor, 0.1, hz);
+    expect(r.mouth.scale.y).toBeGreaterThan(0.04);
+    step(actor, 0.05, hz);
+    expect(r.mouth.scale.y).toBe(0.00001);
+    expect(visible.scale.y).toBe(1);
+    step(actor, 0.05, hz);
+    expect(r.mouth.scale.y).toBe(0.00001);
+    source.level(0.85);
+    actor.update(dt);
+    expect(r.mouth.scale.y).toBeGreaterThan(0.04);
+    expect(visible.scale.y).toBe(0.00001);
+
     let maxDrift = 0, blink = false, hidden = false, closed = false;
     for (let i = 0; i < 7 * hz; i++) {
       source.level(i < hz || i >= 4 * hz ? 0.6 : 0);

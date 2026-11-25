@@ -12,7 +12,7 @@ import { lineSeed, talkRandom } from "./seed";
 
 export interface TalkActor { id: string; ch: GameCharacter }
 type Pose = NonNullable<ReturnType<typeof bindConversationPose>>;
-type Voice = Pick<AudioSystem, "visualOwner" | "visualState" | "visualElapsed" | "level" | "vowel">;
+type Voice = Pick<AudioSystem, "visualOwner" | "visualState" | "visualElapsed" | "readVisualEnvelope">;
 
 export interface NaturalOptions {
   run: number;

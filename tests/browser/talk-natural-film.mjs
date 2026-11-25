@@ -64,8 +64,21 @@ export class ActingFilm {
     const mirror = this.shots && path.join(this.shots, path.basename(this.out), this.id);
     if (mirror) await mkdir(mirror, { recursive: true });
     for (const [label, sample] of Object.entries(labels)) {
-      const index = nearest(sample.wall), frame = frames[index];
-      const offsetMs = frame ? frame.wall - sample.wall : null;
+      const hold = sample.frameWindow;
+      let index = nearest(sample.wall);
+      if (hold) {
+        // The nearest still can show the syllable on either side of a short pause.
+        index = frames.reduce((best, frame, i) => {
+          if (frame.wall < hold[0] || frame.wall > hold[1]) return best;
+          return best < 0 || Math.abs(frame.wall - sample.wall) < Math.abs(frames[best].wall - sample.wall) ? i : best;
+        }, -1);
+      }
+      const frame = frames[index], offsetMs = frame ? frame.wall - sample.wall : null;
+      if (hold && !frame) {
+        this.errors.push(`${label} has no matched compositor frame within the submitted mouth hold`);
+        events[label] = { ...sample, index: null, offsetMs };
+        continue;
+      }
       events[label] = { ...sample, index: frame ? index : null, file: frame?.file, offsetMs };
       if (!frame || Math.abs(offsetMs) > 180) {
         this.errors.push(`${label} has no compositor frame within 180 ms`);

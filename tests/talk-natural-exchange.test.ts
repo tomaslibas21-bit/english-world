@@ -1,7 +1,7 @@
 import { Group } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import { NPCS } from "../src/content/npcs";
-import type { AudioSystem } from "../src/game/audio";
+import type { AudioSystem, VisualVoiceSample } from "../src/game/audio";
 import { createCharacter } from "../src/game/characters";
 import { ActorTalk } from "../src/game/talkNatural/binding";
 import type { VoiceVisualOwner } from "../src/game/talkNatural/contract";
@@ -13,7 +13,11 @@ function voice() {
     disownVisual(owner: VoiceVisualOwner) { if (this.visualOwner === owner) this.visualOwner = undefined; },
     visualElapsed: () => 0,
     level: vi.fn(() => 0.8),
-    vowel: () => null,
+    quiet: 0,
+    readVisualEnvelope(owner: VoiceVisualOwner, sample: VisualVoiceSample) {
+      Object.assign(sample, { time: 0, level: this.level(), vowel: null, quiet: this.quiet });
+      return this.visualState(owner);
+    },
   };
 }
 
@@ -40,12 +44,16 @@ it("keeps the envelope through deferred hydration, then disowns on pause and set
   actor.update(0.045);
   expect(pending.mouth).toBeCloseTo(0.8 * (1 - Math.exp(-1)));
   audio.level.mockReturnValue(0);
+  audio.quiet = 0.08;
   actor.update(0.08);
   const quiet = pending.mouth;
   await vi.dynamicImportSettled();
   expect(actor.talkPose).not.toBe(pending);
   expect(actor.talkPose?.mouth).toBeCloseTo(quiet);
-  for (let i = 0; i < 12; i++) actor.update(0.02);
+  for (let i = 0; i < 12; i++) {
+    audio.quiet += 0.02;
+    actor.update(0.02);
+  }
   expect(actor.talkPose?.mouth).toBe(0);
 
   talk.pause(true);
@@ -57,6 +65,7 @@ it("keeps the envelope through deferred hydration, then disowns on pause and set
   expect(replay.owner).toMatchObject({ actor, line: "first", replay: "turn" });
   audio.visualOwner = replay.owner;
   audio.level.mockReturnValue(0.8);
+  audio.quiet = 0;
   actor.update(0.055);
   expect(actor.talkPose?.mouth).toBeGreaterThan(0.4);
 
