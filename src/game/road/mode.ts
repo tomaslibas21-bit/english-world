@@ -149,10 +149,12 @@ export class RoadMode {
     this.pool = Promise.resolve(prepared.pool);
     resetRoadUi();
     this.host.entered("road");
-    this.host.clearTownHud();
     const setup = prepared.take();
-    this.brief();
-    if (!setup) return;
+    if (!setup) {
+      this.host.clearTownHud();
+      this.brief();
+      return;
+    }
     const { view, track, gate } = setup, car = new RoadCar(), { m, mesh } = prepared.source;
     car.x = exitCoordinates(m.x, m.z).x;
     car.speed = Math.max(0, m.speed);
@@ -161,6 +163,9 @@ export class RoadMode {
     car.slide = -m.slip * Math.cos(heading) - m.speed * Math.sin(heading);
     const dimensions = this.host.viewport();
     view.depart(mesh, this.host.player().root, this.host.rig.cam, dimensions.width, dimensions.height);
+    // The seam has copied the presented town camera. Release the town cues now.
+    this.host.clearTownHud();
+    this.brief();
     const run = this.newRun(track, view, car);
     run.gate = gate;
     this.crest = prepared.pool;
