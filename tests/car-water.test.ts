@@ -854,7 +854,7 @@ describe("occupied town car rescue", () => {
       rides: { get riding() { return f.riding; }, phase: "on", water: f.water, leave: f.exit },
       player: { root: f.player }, modes: { active: null, engaged: false }, ambient: { riding: true },
       hop: new Hop(), gait: new Gait(), steer: new Steer(), helmSteer: new Steer(),
-      rig: { clearTaxiShot: noOp, dist: 5 }, rideBack: 0, dust: { clear: noOp }, wading: { depth: 0 },
+      rig: { clearTaxiShot: noOp, dist: 5 }, rideBack: 0, dust: { clear: noOp, clearRolling: noOp }, wading: { depth: 0 },
       keys: new Set([" "]), joy: { x: 0.5, y: 0 }, brake: true, vel: new Vector3(), moveVel: new Vector3(),
     });
     const { hud } = useStore.getState();
