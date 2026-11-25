@@ -130,11 +130,11 @@ function installClock([key, save]) {
   Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
 }
 
-// Runs inside DEV, once per document. Nothing here runs from an application animation callback.
+// Runs inside DEV, once per document. The pool cases opt into sampling at the NPC update.
 async function installReads() {
   const { waterY, floorY, sandY, poolAt, poolBedY, SEA_LEVEL, SHORE, DECKS, FLOORS, POOLS, ROAD_EDITION, BONE,
     CAR, controlsFrom, pointAndGo, WORLD, TRAFFIC_LANES, EDITION, CONVERTIBLE_BUMPER, THEME, caveWays, groundsBounds,
-    HOTEL_POOL, POOL_KIDS } = await import("/tests/browser/car-water-observations.mjs");
+    HOTEL_POOL, POOL_KIDS, predictPoolHeading } = await import("/tests/browser/car-water-observations.mjs");
   const g = window.__ew.game;
   const R = g.rides;
   const v = g.player.root.position.clone();
@@ -291,6 +291,45 @@ async function installReads() {
       visible: n.ch.root.visible, approach: n.approach && { ...n.approach }, home: { ...n.home }, companion: g.poolCompanion?.(id),
       talking: !!(g.session?.active && g.talkNpc === n) };
   });
+
+  let readPoolFrame;
+  function watchPoolKids(walls, yieldCarId) {
+    const original = poolKids();
+    let previous = original, poolPose, poolYield;
+    if (yieldCarId) {
+      const motion = R.find(yieldCarId).m, step = motion.step;
+      motion.step = function (dt, controls, gap, ...settings) {
+        const { x, z, fx, fz, spec } = this;
+        poolYield = { before: g.renderer.info.render.frame, dt, x, z, fx, fz, gap, curve: this.curve(1),
+          stopAt: spec.half + CAR.clear, throttle: controls.throttle, brake: controls.brake };
+        return step.call(this, dt, controls, gap, ...settings);
+      };
+    }
+    const updateNpcs = g.updateNpcs;
+    // The idle ball advances in modes.tick, after updateNpcs. Sample its transform and
+    // visibility here, since either can differ when the rendered frame is read back.
+    g.updateNpcs = function (dt, talking, mode) {
+      const ball = g.scene.getObjectByName("hotel-pool-ball");
+      const target = ball && { ...point(ball.getWorldPosition(v)), visible: ball.visible };
+      const pool = g.pool;
+      poolPose = {
+        before: g.renderer.info.render.frame, time: g.t, dt, ball: target ?? null,
+        registered: !!pool, poolActive: pool?.active ?? null, mode: mode?.id ?? null,
+        outside: !g.zone.interior, talking,
+        headings: previous.map(({ id, heading }) =>
+          predictPoolHeading(id, g.npcs.find(n => n.id === id).ch.root.position, heading, target, dt)),
+      };
+      return updateNpcs.call(this, dt, talking, mode);
+    };
+    readPoolFrame = (r, car) => {
+      const kids = poolKids(), hull = body(r, car);
+      const poolClearance = { clearWalls: walls.every(w => !overlap(hull, box(w))),
+        kids: kids.map(k => ({ id: k.id, gap: footprintDistance(hull, k) })) };
+      previous = kids;
+      return { kids, poolPose, poolClearance, poolYield };
+    };
+    return { kids: original, time: g.t, now: performance.now() };
+  }
 
   function clearance(id, foot, obstacleTag, candidate) {
     const r = R.find(id), car = body(r, { ...pose(r), ...candidate }), p = foot ?? g.player.root.position;
@@ -477,7 +516,7 @@ async function installReads() {
       document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
       nearbyWays: ways.filter(q => Math.hypot(q.x - player.x, q.z - player.z) <= q.reach + 0.42).map(q => q.id),
       nearWay: g.nearWay, west: inside(player, west), yieldAge: R.yieldT,
-      kids: window.__carWaterTest.trackPool ? poolKids() : undefined,
+      ...(before !== undefined ? readPoolFrame?.(r, car) : undefined),
       keys: [...g.keys],
       nearSame: !!r && R.near(p.root.position.x, p.root.position.z) === r,
       reach: r ? R.reach(r, p.root.position.x, p.root.position.z) : null,
@@ -516,8 +555,11 @@ async function installReads() {
     world: () => ({ decks: DECKS.length, floors: FLOORS.length, pools: POOLS.length, west, ways: ways.map(w => w.id),
       pier: floorY(-30, -77), hotel: poolAt(HOTEL_POOL.x, HOTEL_POOL.z)?.y ?? null,
       cenote: THEME.cenote && depth(THEME.cenote.x, THEME.cenote.z), fleet: g.carVisuals.stats(), parkedRides: R.modeCars.size }),
-    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids, footSupports, deckSweep, pierRailSweep,
-    footprint: id => footprint(pose(R.find(id))).map(p => ({ ...p, depth: depth(p.x, p.z) })),
+    depth, sample, clearance, controlsFrom, pointAndGo, ways, watchPoolKids, footSupports, deckSweep, pierRailSweep,
+    footprint: id => {
+      const r = R.find(id);
+      return footprint(body(r, pose(r))).map(p => ({ ...p, depth: depth(p.x, p.z) }));
+    },
     boxOverlap: (car, obstacle) => overlap(car, box(obstacle)), footprintDistance,
     support: (x, z) => {
       const pool = poolAt(x, z);
@@ -2075,35 +2117,62 @@ async function hotelGeometry(run) {
   return walls;
 }
 
-async function observePoolKids(run, walls) {
-  const original = await run.evaluate(() => {
-    const reads = window.__carWaterTest;
-    reads.trackPool = true;
-    return reads.poolKids();
-  });
+async function observePoolKids(run, walls, yieldCarId) {
+  const { kids: original, time, now } = await run.evaluate(({ walls, yieldCarId }) =>
+    window.__carWaterTest.watchPoolKids(walls, yieldCarId), { walls, yieldCarId });
   assert.deepEqual(original.map(kid => kid?.id), ["vale", "diego", "santi"]);
+  assert.equal(new Set(original.map(kid => kid.uid)).size, 3, "three distinct pool roots");
   assert.ok(original.every(kid => kid.visible && !kid.talking && kid.home.x === kid.x && kid.home.z === kid.z));
   assert.ok(original[0].approach && !original[0].companion && original.slice(1).every(kid => kid.companion),
     "Vale has her own conversation approach and the other two keep their companion roles");
+  const yawTolerance = 0.001;
+  const checkHeading = (kid, heading, serial) =>
+    close(turn(kid.heading, heading.expected), 0, yawTolerance,
+      `${kid.id} ordinary pool-facing yaw at presentation ${serial} (${JSON.stringify({ ...heading, actual: kid.heading })})`);
+  const progression = [{ now, time, yaw: original.map(k => k.heading) }];
+  let previousTime = time, previousNow = now;
+  let steps = 0, ballTargets = 0, centreTargets = 0, maxYawError = 0, minChildGap = Infinity, negativeControl;
   run.inspectFrame = s => {
+    const { poolPose: pose, poolClearance: clearance } = s;
+    assert.ok(pose && pose.before === s.before && pose.time === s.time, "sampled the NPC update for this presentation");
+    assert.ok(pose.registered && pose.ball && pose.poolActive === false && pose.mode === null && pose.outside && !pose.talking,
+      `the registered pool scene uses its ordinary outdoor pose branch ${JSON.stringify(pose)}`);
+    close(pose.dt, s.time - previousTime, 1e-9, "NPC pose uses the simulation delta");
+    close(pose.dt, Math.min(0.05, (s.now - previousNow) / 1000), 1e-9, "simulation delta follows the stepped clock");
+    previousTime = s.time;
+    previousNow = s.now;
     assert.deepEqual(s.kids.map(k => [k.id, k.uid, k.visible, k.home, k.approach, k.companion, k.talking]),
       original.map(k => [k.id, k.uid, k.visible, k.home, k.approach, k.companion, false]), "same active pool actors and conversation roles");
     for (const [i, kid] of s.kids.entries()) {
       close(gap(kid, original[i]), 0, 0.015, `${kid.id} stayed at the real pool spot`);
       close(kid.y, original[i].y, 0.025, `${kid.id} kept the existing seat or footing`);
-      close(turn(kid.heading, original[i].heading), 0, 0.025, `${kid.id} kept the pool-facing pose`);
+      const heading = pose.headings[i];
+      checkHeading(kid, heading, s.serial);
+      maxYawError = Math.max(maxYawError, Math.abs(turn(kid.heading, heading.expected)));
+      if (heading.target === "ball") ballTargets++;
+      else centreTargets++;
+      if (!negativeControl && heading.target === "ball" && Math.abs(turn(heading.expected, heading.previous)) > 2 * yawTolerance) {
+        // Inject faults into copies of this real moving-ball observation.
+        const injected = { fixed: heading.previous, wrongFacing: kid.heading + Math.PI, extraRotated: kid.heading + 0.03 };
+        for (const yaw of Object.values(injected)) {
+          assert.throws(() => checkHeading({ ...kid, heading: yaw }, heading, s.serial), /ordinary pool-facing yaw/);
+        }
+        negativeControl = { serial: s.serial, id: kid.id, ...heading, actual: kid.heading, rejected: injected };
+      }
     }
     assert.ok(!s.poolMode && !s.swim && s.zone === "town", "the pool mini-game and ordinary swim retain their own activation");
-  };
-  return async s => {
-    const clearance = await run.evaluate(({ car, walls, kids }) => {
-      const reads = window.__carWaterTest;
-      return { clearWalls: walls.every(w => !reads.boxOverlap(car, w)),
-        kids: kids.map(k => ({ id: k.id, gap: reads.footprintDistance(car, k) })) };
-    }, { car: s.car, walls, kids: s.kids });
     assert.ok(clearance.clearWalls && clearance.kids.every(k => k.gap >= 0.4 - 0.002),
-      `the full car stays clear of the pool walls and each child's actual position ${JSON.stringify(clearance)}`);
-    return clearance;
+      `the full car stays clear of pool walls and children at presentation ${s.serial} ${JSON.stringify(clearance)}`);
+    minChildGap = Math.min(minChildGap, ...clearance.kids.map(k => k.gap));
+    if (++steps <= 7) {
+      progression.push({ serial: s.serial, now: s.now, time: pose.time, dt: pose.dt, ball: pose.ball,
+        target: pose.headings.map(h => h.target), expected: pose.headings.map(h => h.expected), yaw: s.kids.map(k => k.heading) });
+      if (steps === 7) run.log({ poolKidOrder: original.map(k => k.id), poolYawProgression: progression, negativeControl });
+    }
+  };
+  return () => {
+    assert.ok(negativeControl, "the pose reference rejected injected faults during a real ball-tracking turn");
+    run.log({ poolPoseSteps: steps, ballTargets, centreTargets, maxYawError, yawTolerance, minChildGap, negativeControl });
   };
 }
 
@@ -2112,31 +2181,37 @@ async function hotelApproach(run) {
   await run.board(convertible);
   await run.stage(site.hotel.road);
   await run.watch();
-  const clearPool = await observePoolKids(run, walls);
+  const reportPoolPose = await observePoolKids(run, walls, run.id);
   const start = await run.frame();
   await run.drive(1);
-  const samples = [];
+  let fastest = 0, yieldSeconds = 0;
   const stopped = await run.until(s => {
-    samples.push(s);
-    return recovering(s) || s.yieldAge >= 0.3 && s.car.pace < 0.3 && s.car.z < -24;
-  }, "real forward drive through the south access to a Vale yield or actual deep-water latch", 255);
+    fastest = Math.max(fastest, s.car.pace);
+    if (recovering(s)) return true;
+    const probe = s.poolYield, vale = s.kids[0];
+    assert.equal(probe?.before, s.before, "sampled the car's driving input for this presentation");
+    const dx = vale.x - probe.x, dz = vale.z - probe.z;
+    const along = dx * probe.fx + dz * probe.fz;
+    const across = dx * probe.fz - dz * probe.fx;
+    // The ride-hint timer clears as soon as the front tires touch water. Check the
+    // actual braking gap and held input through the same continuous yield interval.
+    const yielding = probe.throttle > 0.5 && !probe.brake && Math.abs(probe.curve) < 0.015 && s.car.pace < 0.3
+      && along > 0 && along <= probe.stopAt && Math.abs(across) < 1.35 && Math.abs(probe.gap - along) < 0.002;
+    yieldSeconds = yielding ? yieldSeconds + probe.dt : 0;
+    return yieldSeconds >= 0.3 && s.car.z < -24;
+  }, "real forward drive through the south access to Vale's yield", 255);
   await run.drive();
-  for (const sample of samples) await clearPool(sample);
   assert.ok(start.car.z - stopped.car.z > 4 && Math.abs(stopped.car.x - site.hotel.road[0]) < 0.25);
-  assert.ok(samples.some(s => s.car.pace > 2), "car actually accelerated before the pool");
-  if (recovering(stopped)) {
-    assert.equal(stopped.water.reason, "depth");
-    await finish(run);
-  } else {
-    const vale = stopped.kids.find(k => k.id === "vale");
-    assert.ok(stopped.water.reason === null && stopped.yieldAge >= 0.3 && vale.z < stopped.car.z
-      && Math.abs(vale.x - stopped.car.x) < 1.35 && stopped.car.z - vale.z < 5.2,
-      "the stalled approach is a real people yield with Vale within the braking corridor");
-    assert.ok(stopped.car.z > -28, "the car and children never mix in the basin on the straight approach");
-  }
-  run.log({ poolApproachEnd: [stopped.car.x, stopped.car.z], pace: stopped.car.pace, yieldSeconds: stopped.yieldAge,
-    clearance: await clearPool(stopped) });
+  assert.ok(fastest > 2, "car actually accelerated before the pool");
+  const vale = stopped.kids.find(k => k.id === "vale");
+  assert.ok(!recovering(stopped) && stopped.water.reason === null && yieldSeconds >= 0.3 && vale.z < stopped.car.z
+    && Math.abs(vale.x - stopped.car.x) < 1.35 && stopped.car.z - vale.z < 5.2,
+    "the stalled approach is a real people yield with Vale within the braking corridor");
+  assert.ok(stopped.car.z > -28, "the car and children never mix in the basin on the straight approach");
+  run.log({ poolApproachEnd: [stopped.car.x, stopped.car.z], pace: stopped.car.pace, yieldSeconds,
+    brakingGap: stopped.poolYield.gap, rideHintSeconds: stopped.yieldAge, clearance: stopped.poolClearance });
   assert.deepEqual(await hotelGeometry(run), walls, "the access, coping and basin walls are intact after the approach");
+  reportPoolPose();
 }
 
 async function hotelDeep(run) {
@@ -2144,19 +2219,18 @@ async function hotelDeep(run) {
   await run.board(convertible);
   await run.watch();
   await run.stage(site.hotel.deep);
-  const clearPool = await observePoolKids(run, walls);
+  const reportPoolPose = await observePoolKids(run, walls);
   const first = await run.frame();
-  await clearPool(first);
   const footprint = await run.evaluate(id => window.__carWaterTest.footprint(id), run.id);
   assert.ok(footprint.every(p => p.x > -109 && p.x < -103 && p.z > -37 && p.z < -27 && p.depth >= 0.85),
     "adversarial initial conditions put the entire car in independently measured deep water, within the rim and clear of kids");
   assert.ok(first.water.phase === "float" && first.water.reason === "depth" && first.water.region === "hotel" && first.water.age === 0,
     "the first deep-pool presentation latches with no throttle");
+  run.log({ poolFloatSerial: first.serial, footprintMinDepth: Math.min(...footprint.map(p => p.depth)) });
   await run.act("out");
   const exterior = await run.frame();
   assert.ok(exterior.riding === null && exterior.player.shown && exterior.water.assistedOnFoot, "real exit from the pool hazard");
   const landed = await finish(run, { onFoot: true });
-  await clearPool(landed);
   const outside = p => p.x <= -109 || p.x >= -103 || p.z <= -37 || p.z >= -27;
   assert.ok(outside(landed.player) && outside(landed.car) && landed.player.surface === null && landed.car.object === first.car.object,
     "the accessible car and player returned to dry ground outside the basin");
@@ -2171,6 +2245,8 @@ async function hotelDeep(run) {
     "Vale still offers her conversation to the learner on foot", 660);
   assert.ok(!vale.poolMode && vale.kids.every(k => !k.talking));
   run.log({ poolPrompt: vale.prompt, npc: vale.nearest, foot: [vale.player.x, vale.player.z] });
+  assert.deepEqual(await hotelGeometry(run), walls, "the access, coping and basin walls are intact after the rescue");
+  reportPoolPose();
 }
 
 const cases = [
