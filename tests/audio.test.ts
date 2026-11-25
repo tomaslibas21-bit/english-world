@@ -494,3 +494,61 @@ describe("mobile media ownership", () => {
     expect(settled).toBe(true);
   });
 });
+
+describe("visual voice ownership", () => {
+  it("exposes only the active request and distinguishes a natural end from replacement and stop", async () => {
+    const actor = {} as import("../src/game/talkNatural/contract").VoiceVisualOwner["actor"];
+    const first = { actor, line: 1 }, repeat = { actor, line: 1 }, next = { actor, line: 2 };
+    const result = audio.play(voice, 1, line, { visual: first, slow: true });
+    expect(audio.visualOwner).toBe(first);
+    expect(audio.visualState(first)).toBe("loading");
+    await flush();
+    const player = players[0];
+    expect(player.playbackRate).toBe(0.82);
+    const tracks = audio as unknown as { envelopes: Map<string, Float32Array>; vowels: Map<string, Float32Array> };
+    tracks.envelopes.set(key, new Float32Array([0, 0, 0, 0.75]));
+    tracks.vowels.set(key, new Float32Array([0, 0, 0, 0.25]));
+    player.emitPlaying();
+    expect(audio.visualState(first)).toBe("playing");
+    player.currentTime = 0.095;
+    expect(audio.level(false)).toBe(0);
+    player.currentTime = 0.11;
+    expect(audio.level(false)).toBe(0.75);
+    expect(audio.vowel()).toBe(0.25);
+    player.emitPause();
+    expect(audio.visualState(first)).toBe("blocked");
+
+    const replay = audio.play(voice, 1, line, { visual: repeat });
+    await expect(result).resolves.toBe(false);
+    expect(audio.visualState(first)).toBe("interrupt");
+    expect(audio.visualOwner).toBe(repeat);
+    await flush();
+    player.emitPlaying();
+    player.emitEnded();
+    await expect(replay).resolves.toBe(true);
+    expect(audio.visualOwner).toBeUndefined();
+    expect(audio.visualState(repeat)).toBe("ended");
+
+    const last = audio.play(voice, 1, line, { visual: next });
+    audio.stop();
+    await expect(last).resolves.toBe(false);
+    expect(audio.visualOwner).toBeUndefined();
+    expect(audio.visualState(next)).toBe("interrupt");
+  });
+
+  it("waits for the browser voice's output event before allowing an unknown envelope", async () => {
+    const actor = {} as import("../src/game/talkNatural/contract").VoiceVisualOwner["actor"];
+    const visual = { actor, line: 1 };
+    synth.speak.mockImplementation(() => {});
+    const done = audio.play(voice, 1, "A line absent from the manifest.", { visual });
+    await flush();
+    const u = synth.speak.mock.calls[0][0];
+    expect(audio.visualState(visual)).toBe("loading");
+    u.onstart();
+    expect(audio.visualState(visual)).toBe("playing");
+    expect(audio.level(false)).toBeNull();
+    u.onend();
+    await expect(done).resolves.toBe(true);
+    expect(audio.visualState(visual)).toBe("ended");
+  });
+});

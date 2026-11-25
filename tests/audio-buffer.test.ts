@@ -161,6 +161,34 @@ describe("iOS recorded Web Audio", () => {
     ctx.finish(); expect(await done).toBe(true);
   });
 
+  it("uses the stretched source clock and reports physical interruption to the visual owner", async () => {
+    const actor = {} as import("../src/game/talkNatural/contract").VoiceVisualOwner["actor"];
+    const visual = { actor, line: 1 };
+    const pcm = new PCM();
+    pcm.channels[0].fill(0, 0, 22050);
+    decode.mockResolvedValueOnce(pcm);
+    const done = audio.play(voice, 1, lines[0], { slow: true, visual });
+    expect(audio.visualState(visual)).toBe("loading");
+    await tick();
+    const ctx = contexts[0];
+    expect(audio.visualState(visual)).toBe("playing");
+    ctx.currentTime = 0.54;
+    expect(audio.level(false)).toBe(0);
+    ctx.currentTime = 0.8;
+    expect(audio.level(false)).toBeGreaterThan(0.9);
+    expect(audio.vowel()).not.toBeNull();
+    ctx.change("interrupted");
+    expect(audio.visualState(visual)).toBe("blocked");
+    audio.retry();
+    await tick();
+    expect(ctx.sources[1].start).toHaveBeenCalledWith(0, 0.8);
+    expect(audio.level(false)).toBeGreaterThan(0.9);
+    ctx.finish();
+    expect(await done).toBe(true);
+    expect(audio.visualOwner).toBeUndefined();
+    expect(audio.visualState(visual)).toBe("ended");
+  });
+
   it("decode failure remains visible and never silently switches playback backend or voice", async () => {
     decode.mockRejectedValue(new DOMException("bad MP3", "EncodingError"));
     const done = audio.play(voice, 1, lines[0]); await tick();

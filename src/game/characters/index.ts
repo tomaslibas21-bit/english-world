@@ -4,6 +4,7 @@ import type { Look } from "../../content/npcs";
 import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import { STYLED } from "../style";
+import type { NaturalPoseDriver, NaturalRig } from "../talkNatural/contract";
 
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
 export interface GameCharacter {
@@ -12,6 +13,8 @@ export interface GameCharacter {
   readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;
+  talkPose?: NaturalPoseDriver;
+  naturalRig?(): NaturalRig;
   setAnim(a: Anim): void;
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
