@@ -470,9 +470,8 @@ export function outerGeometry() {
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
 
-/** The sea's fragment shader in this edition's colors (theme.ts `sea`): the same waves, chop, glints and fog as Maple
- *  Harbor's, over bands of color from the shore out (the sand showing through at the edge, a turquoise shallow, aqua,
- *  then deep blue), light rippling over the shallows' floor, and a whiter, wider line of foam. */
+/** The sea's fragment shader in this edition's colors (theme.ts `sea`): turquoise over the submerged sand shelf,
+ *  grading into deeper blue, with light on the crests and foam at the waterline. */
 function seaColors(s: NonNullable<typeof THEME.sea>) {
   const v = (hex: string) => `vec3(${[1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(",")})`;
   const f = (n: number) => n.toFixed(1);
@@ -481,8 +480,10 @@ function seaColors(s: NonNullable<typeof THEME.sea>) {
       void main(){
         float d = ${f(SEA_Z + 1)} - vW.z;
         vec3 c = mix(${v(s.shore)}, ${v(s.shallow)}, smoothstep(0.0, 6.0, d));
-        c = mix(c, ${v(s.mid)}, smoothstep(${f(s.shallowTo * 0.55)}, ${f(s.shallowTo)}, d));
-        c = mix(c, ${v(s.deep)}, smoothstep(${f(s.midTo * 0.6)}, ${f(s.midTo)}, d));
+        float tongue = 1.0 - smoothstep(0.0, 42.0, abs(vW.x - 12.0));
+        float colourDepth = d - 9.0 * tongue * smoothstep(5.0, 18.0, d);
+        c = mix(c, ${v(s.mid)}, smoothstep(${f(s.shallowTo * 0.55)}, ${f(s.shallowTo)}, colourDepth));
+        c = mix(c, ${v(s.deep)}, smoothstep(${f(s.midTo * 0.6)}, ${f(s.midTo)}, colourDepth));
         float shallows = 1.0 - smoothstep(${f(s.shallowTo * 0.5)}, ${f(s.midTo)}, d);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
         c += vec3(0.08) * smoothstep(0.5, 1.0, w);
@@ -490,12 +491,13 @@ function seaColors(s: NonNullable<typeof THEME.sea>) {
         float chop = sin(vW.x*1.1 - uTime*1.7 + sin(vW.z*0.9)) * sin(vW.z*1.3 + uTime*1.4);
         c += vec3(0.035) * chop;
         float caustic = sin(vW.x*1.6 + sin(vW.z*1.2 + uTime*0.9)*1.5) * sin(vW.z*1.8 + sin(vW.x*1.1 - uTime*0.7)*1.5);
-        c += vec3(0.07, 0.09, 0.08) * smoothstep(0.55, 1.0, caustic) * shallows;
-        float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
-        c += vec3(0.55) * glint * (0.4 + 0.6 * smoothstep(0.0, 15.0, d));
+        float causticWeight = 1.0 - smoothstep(${f(s.shallowTo * 0.5)}, ${f(s.midTo)}, colourDepth);
+        c += vec3(0.055, 0.075, 0.06) * smoothstep(0.55, 1.0, caustic) * causticWeight;
+        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
+        float crest = smoothstep(0.53, 0.93, w) * smoothstep(0.22, 0.82, chop);
+        c += vec3(0.13, 0.17, 0.15) * crest * (1.0 - smoothstep(40.0, 140.0, dist));
         // the sand under the shallows and the foam along the waterline, as it washes up and down the beach (water.ts)
         ${SHORE_GLSL("vec3(0.99,0.99,0.98)", "vec3(0.87, 0.81, 0.67)")}
-        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`;
 }
@@ -718,6 +720,8 @@ function addMarkings(group: THREE.Group) {
 
 function drawGround(): HTMLCanvasElement {
   const P = STYLED ? groundPalette() : GROUND_BLOCKS; // trial styles repaint the same map
+  const limestoneStreets = !STYLED && THEME.mexican;
+  const asphalt = limestoneStreets ? "#646367" : P.road;
   const c = document.createElement("canvas");
   c.width = Math.round(GW * PPM); c.height = Math.round(GD * PPM);
   const x = c.getContext("2d")!;
@@ -731,8 +735,9 @@ function drawGround(): HTMLCanvasElement {
   }
   // beach
   const [, bz0] = toC(0, SEA_Z - 2), [, bz1] = toC(0, BEACH_Z + 1.5);
+  const beach = THEME.sea && !STYLED ? ["#dfd3b5", "#f8edd6", "#e9dec7"] : P.beach;
   const grad = x.createLinearGradient(0, bz0, 0, bz1);
-  grad.addColorStop(0, P.beach[0]); grad.addColorStop(0.75, P.beach[1]); grad.addColorStop(1, P.beach[2]);
+  grad.addColorStop(0, beach[0]); grad.addColorStop(0.75, beach[1]); grad.addColorStop(1, beach[2]);
   x.fillStyle = grad; x.fillRect(0, bz0, c.width, bz1 - bz0);
   // the malecón's paving, from the sidewalk to the sea side of its wall (theme.ts; the tiles' joints: addMarkings)
   if (THEME.malecon) rectW(x, MX.MALECON.x0, MX.MALECON.z - 0.25, MX.MALECON.x1 + 2, -62.7, "#e8dfca");
@@ -760,12 +765,28 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, 126, -30, 134, 14, P.lot);
   rectW(x, GAS_FORECOURT.x0, GAS_FORECOURT.z0, GAS_FORECOURT.x1, GAS_FORECOURT.z1, P.gasLot);
   rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
-  for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, P.road);
+  for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, asphalt);
   // sidewalks
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
+  const sidewalkEdge = limestoneStreets ? "#d2c5ae" : P.sidewalk;
+  let sidewalkInner: string | CanvasPattern = P.sidewalkInner;
+  if (limestoneStreets) {
+    const swatch = document.createElement("canvas");
+    swatch.width = 36; swatch.height = 24;
+    const stone = swatch.getContext("2d")!;
+    const stoneBase = "#dfcfb5";
+    stone.fillStyle = "#c7baa4"; stone.fillRect(0, 0, 36, 24);
+    // Two courses of 3 × 2 m slabs with 1 px joints, staggered by half a slab.
+    stone.fillStyle = stoneBase; stone.fillRect(0, 0, 17, 11);
+    stone.fillStyle = "#e9dcc4"; stone.fillRect(18, 0, 17, 11);
+    stone.fillStyle = "#e3d5bb"; stone.fillRect(9, 12, 17, 11);
+    stone.fillStyle = "#e7d8c1"; stone.fillRect(27, 12, 9, 11); stone.fillRect(0, 12, 8, 11);
+    // With the ground context untransformed, the repeat starts at the map origin for every street.
+    sidewalkInner = x.createPattern(swatch, "repeat") ?? stoneBase;
+  }
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, sidewalkEdge);
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, sidewalkInner);
   // roads
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, P.road);
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, asphalt);
   // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
   for (const rd of STYLED ? ROADS : []) {
     const horiz = rd.z1 === rd.z2;
@@ -784,7 +805,7 @@ function drawGround(): HTMLCanvasElement {
   const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
   for (const v of vs) for (const h of hs) {
     if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
-    rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, P.road);
+    rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, asphalt);
     if (!STYLED) continue;
     x.fillStyle = P.crosswalk;
     for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) {
@@ -816,14 +837,14 @@ function drawGround(): HTMLCanvasElement {
   }
   return c;
 
-  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string) {
+  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string | CanvasPattern) {
     const [x0, z0] = toC(Math.min(ax, bx), Math.min(az, bz)), [x1, z1] = toC(Math.max(ax, bx), Math.max(az, bz));
     x.fillStyle = col; x.fillRect(x0, z0, x1 - x0, z1 - z0);
   }
   function rectFill(x: CanvasRenderingContext2D, cx: number, cz: number, w: number, d: number) {
     const [x0, z0] = toC(cx, cz); x.fillRect(x0, z0, w * PPM, d * PPM);
   }
-  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string) {
+  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string | CanvasPattern) {
     rectW(x, Math.min(rd.x1, rd.x2) - (rd.x1 === rd.x2 ? half : 0), Math.min(rd.z1, rd.z2) - (rd.z1 === rd.z2 ? half : 0),
       Math.max(rd.x1, rd.x2) + (rd.x1 === rd.x2 ? half : 0), Math.max(rd.z1, rd.z2) + (rd.z1 === rd.z2 ? half : 0), col);
   }
@@ -926,11 +947,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       M.add("chimney-cap", mat("#5b5550"), boxGeo(0.86, 0.12, 0.86, cx, b.h + ch - 0.14, cz), false);
     }
   } else {
-    // Mexican roofs (theme.ts) are painted red (one material for all of them), and all but the airport's and the
-    // office tower's get a parapet and tinacos
+    // Mexican flat roofs have painted slabs, and all but the airport's and the office tower's get a parapet and tinacos.
     const mxRoof = !!THEME.mexican && b.style !== "terminal" && b.style !== "office";
+    const roofColor = (!STYLED ? THEME.mexican?.roofByBuilding?.[b.id] : undefined) ?? THEME.mexican?.roof ?? "#8f8c86";
     // (a Mexican roof's paint shows: above the cornice's top, which covers Maple Harbor's slab)
-    M.add("roof-flat", mat(THEME.mexican?.roof ?? "#8f8c86"), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + (THEME.mexican ? 0.23 : 0.02), b.z), false);
+    M.add("roof-flat", mat(roofColor), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + (THEME.mexican ? 0.23 : 0.02), b.z), false);
     // a box on most low roofs, from the town's own random numbers (only on roofs that layout.ts has flat, so the
     // draws stay the same whatever roofs an edition gives the houses); a Mexican roof has a tinaco there instead
     let roofBox: [number, number] | null = null;

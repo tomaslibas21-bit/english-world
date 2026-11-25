@@ -1,15 +1,18 @@
 import { readFileSync } from "node:fs";
-import { Group, PerspectiveCamera } from "three";
+import { Color, Group, Material, Mesh, PerspectiveCamera } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { audioKey } from "../../src/audio-key";
 import { SEA_EDITION, SEA_UI } from "../../src/content/sea";
 import { audioDir } from "../../src/content/voices";
 import { audio } from "../../src/game/audio";
-import { pickPrompt } from "../../src/game/road/review";
+import { OpenSea } from "../../src/game/kit/openSea";
 import { Rides, type RideHost } from "../../src/game/rides/Rides";
+import { pickPrompt } from "../../src/game/road/review";
+import { SEA_VIEW } from "../../src/game/sea/look";
 import { prepareSea } from "../../src/game/sea/mode";
 import { SHORE } from "../../src/game/water";
 import { RIDES } from "../../src/game/world/rides";
+import { THEME } from "../../src/game/world/theme";
 import { makeLanchas } from "../../src/game/world/town";
 import { Colliders } from "../../src/game/world/util";
 import { emptyProgress, sitProgress } from "../../src/state/progress";
@@ -18,6 +21,29 @@ import { L } from "../../src/ui/i18n";
 
 describe("Puerto Colibrí open water", () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it("blends the bay colours across increasing positive distances", () => {
+    const { shallowTo, midTo } = THEME.sea!;
+    expect(Number.isFinite(shallowTo) && Number.isFinite(midTo)).toBe(true);
+    expect(shallowTo).toBeGreaterThan(0);
+    expect(midTo).toBeGreaterThan(shallowTo);
+  });
+
+  it("renders the course water on one indexed disc with the Puerto Colibrí palette", () => {
+    const sea = new OpenSea(SEA_VIEW.water, 0, 1500);
+    try {
+      const { mesh } = sea;
+      const { index, attributes } = mesh.geometry;
+      expect(mesh).toBeInstanceOf(Mesh);
+      expect(mesh.children).toHaveLength(0);
+      expect(mesh.material).toBeInstanceOf(Material);
+      expect(index).not.toBeNull();
+      expect((index?.count ?? attributes.position.count) / 3).toBe(5096);
+      expect(mesh.material.uniforms.deep.value).toEqual(new Color("#07677e"));
+    } finally {
+      sea.dispose();
+    }
+  });
 
   it("uses its own edition key and the road's Spanish recordings and English glosses", async () => {
     expect(SEA_EDITION).toEqual({ id: "puerto-colibri", enabled: true });

@@ -229,7 +229,17 @@ export const THEME: TownTheme = {
     afloat: [[-86, -78.5, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
     beached: [[16, -70, 1.9, "#1f6fd1"], [23.5, -70.4, 1.2, "#e4007c"], [64, -70.2, 2.0, "#00a6a6"]],
   },
-  mexican: { roof: "#b5533c" },
+  mexican: {
+    roof: "#b5533c",
+    roofByBuilding: {
+      hotel: "#d9c9ab",
+      museum: "#9d5047",
+      market: "#cb8c66",
+      cafe: "#c78175",
+      bank: "#d1b992",
+      apartments: "#ac6654",
+    },
+  },
   bougainvillea: ["sophie", "dan", "house3", "house4", "house5", "cafe", "trattoria", "visitor", "salon"],
   // s81, s82: "Hay una tiendita en la esquina": in the ground floor of Departamentos Las Palmas, at the corner
   tiendita: { building: "apartments", u: 7.8, w: 4.4, sign: "Abarrotes Las Palmas", side: "Refrescos · Botanas · Recargas" },
@@ -322,7 +332,7 @@ export const THEME: TownTheme = {
 
   // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms
   // that look Mexican. The sea from the shore out: the sand showing through, turquoise, aqua, then deep blue
-  sea: { shore: "#9be6d8", shallow: "#3fd0c6", mid: "#1aa8c2", deep: "#1663a3", shallowTo: 26, midTo: 62 },
+  sea: { shore: "#b8eade", shallow: "#52d5be", mid: "#179eac", deep: "#165b83", shallowTo: 29, midTo: 70 },
   // s91a: the tianguis on the zócalo on Saturday mornings, Doña Mari's flowers among its stalls. The square's four
   // stalls (layout.ts STALLS: flowers, fruit, veg, bread) and five more along the north and west sides, under lonas in
   // the market's colors (one per stall, in that order), clear of everyone's spot, the talk spots, the pigeons' ring

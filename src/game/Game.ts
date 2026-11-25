@@ -1111,7 +1111,8 @@ export class Game implements GameApi {
       this.sky.visible = !indoor;
       this.ambient.group.visible = !indoor;
       this.scene.fog = wild ? wild.fog : indoor ? null : new THREE.Fog("#cfe8f5", 110, 420);
-      this.scene.background = wild ? new THREE.Color(wild.background) : indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
+      this.scene.background = wild ? new THREE.Color(wild.background)
+        : indoor ? new THREE.Color(z.interior?.background ?? (z.interior?.warm ? "#2b2320" : "#23282e")) : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
       // (a place like the grotto has its own light on the people there)
       this.hemi.intensity = wild ? wild.hemi[2] : id === BILLIARDS_PLACE ? 1.23 : indoor ? 1.9 : 1.4;

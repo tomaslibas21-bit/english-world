@@ -31,6 +31,7 @@ export interface Interior {
   /** optional named spots for scripted moves */
   spots?: Record<string, { x: number; z: number }>;
   warm?: boolean;
+  background?: string;
   /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
   update?(t: number, dt: number): void;
   /** A place of its own that is no room (Puerto Colibrí's grotto, src/game/cave): walked and run through with the
@@ -65,17 +66,37 @@ const HALLS4 = ["airport", "museum", "hotel", "the-pier", "dans-house", "apartme
 
 /** What lies in front of a room's open front wall, where the camera looks past the floor: a doorstep, a pavement with
  *  its kerb, and a strip of street with a dashed line (one mesh). */
-function outside(w: number, d: number) {
-  const z0 = d / 2 + 0.3, W = w + 24;
+function outside(w: number, d: number, cafeDaylight: boolean) {
+  const z0 = d / 2 + 0.3, W = w + 24, streetLevel = -0.12;
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [
     [new THREE.BoxGeometry(2.6, 0.08, 0.9).translate(0, 0.0, z0 + 0.45), "#a59f95"], // the doorstep
     [new THREE.PlaneGeometry(W, 4.2).rotateX(-Math.PI / 2).translate(0, -0.04, z0 + 2.1), "#d6d0c3"], // pavement
     [new THREE.BoxGeometry(W, 0.16, 0.3).translate(0, -0.04, z0 + 4.3), "#bdb6a8"], // kerb
-    [new THREE.PlaneGeometry(W, 14).rotateX(-Math.PI / 2).translate(0, -0.12, z0 + 11.4), "#5b6067"], // street
+    [new THREE.PlaneGeometry(W, 14).rotateX(-Math.PI / 2).translate(0, streetLevel, z0 + 11.4), "#5b6067"], // street
   ];
   for (let x = -W / 2 + 1; x < W / 2; x += 4.5) parts.push([new THREE.PlaneGeometry(2.5, 0.16).rotateX(-Math.PI / 2).translate(x + 1.25, -0.1, z0 + 9), "#f2c84b"]);
   // the pavement's slabs
-  for (let x = -W / 2; x <= W / 2; x += 1.6) parts.push([new THREE.PlaneGeometry(0.04, 4.2).rotateX(-Math.PI / 2).translate(x, -0.035, z0 + 2.1), "#c5bfb2"]);
+  const jointSpacing = cafeDaylight ? 3.2 : 1.6;
+  for (let x = -W / 2; x <= W / 2; x += jointSpacing) parts.push([new THREE.PlaneGeometry(0.04, 4.2).rotateX(-Math.PI / 2).translate(x, -0.035, z0 + 2.1), "#c5bfb2"]);
+  if (cafeDaylight) {
+    // The wider pavement slabs free up triangles for the fronts across the street.
+    const frontZ = z0 + 18.35;
+    const face = (left: number, right: number, bottom: number, top: number, color: string, z = frontZ) => {
+      parts.push([new THREE.PlaneGeometry(right - left, top - bottom).rotateY(Math.PI)
+        .translate((left + right) / 2, (bottom + top) / 2, z), color]);
+    };
+    for (const [left, right, h, color] of [
+      [-W / 2, -6, 3.1, "#dcab93"],
+      [-6, 7, 2.6, "#e3c995"],
+      [7, W / 2, 3.3, "#a4c2b7"],
+    ] as const) {
+      const top = streetLevel + h;
+      face(left, right, streetLevel, top - 0.18, color);
+      face(left, right, top - 0.18, top, "#eee0bf");
+    }
+    const shutterHalfW = 0.85 / 2, shutterBase = 0.85;
+    for (const x of [-12, -4, 1, 16]) face(x - shutterHalfW, x + shutterHalfW, shutterBase, shutterBase + 1.05, "#718e8b", frontZ - 0.025);
+  }
   const m = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
   m.receiveShadow = true;
   m.name = "outside";
@@ -136,6 +157,7 @@ class RoomMerger extends Merger {
 }
 
 function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: FloorKind; accent?: string; warm?: boolean; openEntry?: boolean } = {}): Interior {
+  const cafeDaylight = id === "sunny-cup" && !!THEME.roomExtras.cafeMx && !STYLED;
   // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
   const look = THEME.roomLooks[id];
   if (look) {
@@ -215,7 +237,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   col.addBox(0, d / 2 + 1.4, gap + 2, 0.6, "edge"); // beyond the exit mat
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
-  g.add(outside(w, d));
+  g.add(outside(w, d, cafeDaylight));
   g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
   // (theme.ts panelAtlas: the room's signs and posters gathered while it is built, then drawn as one mesh)
@@ -240,7 +262,8 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   if (moved) npcs = npcs.map((n) => moved[n.npc] ? { ...n, ...moved[n.npc] } : n);
   const beside: [number, number][] = npcs.flatMap(({ x, z, ax, az }) => ax !== undefined && az !== undefined ? [[x, z], [ax, az]] : [[x, z]]);
   const ledges = Ledges.build(g, col, { beside, maxTop: Hop.PEAK });
-  return { id, group: g, colliders: col, ledges, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
+  return { id, group: g, colliders: col, ledges, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI },
+    npcs, warm: opts.warm, background: cafeDaylight ? "#bad4d2" : undefined, update };
 }
 
 // ---------------------------------------------------------------------------
@@ -289,6 +312,32 @@ function counter(c: Ctx, x: number, z: number, w: number, d: number, color: stri
   c.M.add("counter-top-" + top, mat(top), boxGeo(w + 0.12, 0.08, d + 0.12, x, 1.04, z));
   c.col.addBox(x, z, w, d, "counter");
 }
+
+function cafeCounter(c: Ctx) {
+  const x = -2, z = -3.2, w = 7, d = 1.1;
+  const slabW = w + 0.12, slabD = d + 0.12;
+  const claywood = mat("#945e45"), ivory = mat("#e9d3b0");
+  const sides = (width: number, depth: number, h: number, y: number, material: THREE.Material) => {
+    for (const side of [-1, 1]) {
+      c.M.add("counter", material, new THREE.PlaneGeometry(width, h)
+        .rotateY(side < 0 ? Math.PI : 0).translate(x, y, z + side * depth / 2));
+      c.M.add("counter", material, new THREE.PlaneGeometry(depth, h)
+        .rotateY(side * Math.PI / 2).translate(x + side * width / 2, y, z));
+    }
+  };
+  sides(w, d, 1, 0.5, claywood);
+  sides(slabW, slabD, 0.08, 1.04, ivory);
+  c.M.add("counter", ivory, new THREE.PlaneGeometry(slabW, slabD).rotateX(Math.PI / 2).translate(x, 1, z));
+  let edge = z - slabD / 2;
+  const cobaltDepth = 0.10, ivoryDepth = 0.045;
+  for (const [depth, color] of [[cobaltDepth, "#486c87"], [ivoryDepth, "#f0ddba"], [slabD - cobaltDepth - ivoryDepth, "#d8b693"]] as const) {
+    c.M.add("counter", mat(color), new THREE.PlaneGeometry(slabW, depth)
+      .rotateX(-Math.PI / 2).translate(x, 1.08, edge + depth / 2));
+    edge += depth;
+  }
+  c.col.addBox(x, z, w, d, "counter");
+}
+
 function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string, goods: string[], rot = 0, depth = 0.5) {
   c.M.add("shelf-" + color, mat(color), boxGeo(w, h, depth, 0, h / 2, 0, 0).rotateY(rot).translate(x, 0, z));
   const rows = Math.max(1, Math.floor(h / 0.55));
@@ -935,7 +984,8 @@ const B: Record<string, () => Interior> = {
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: BILLIARDS_NPC, ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {
-    counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
+    if (THEME.roomExtras.cafeMx && !STYLED) cafeCounter(c);
+    else counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
     const props = new THREE.Group();
     props.name = "sunny-cup-counter-props";
     const M = new Merger();

@@ -1,6 +1,7 @@
 // Puerto Colibrí's conversations have their places (docs/es/TOWN.md "Every conversation's spot"): the checks that need
 // no browser. The rooms themselves are drawn on a canvas, so the tour (tools/es-tour.mjs) walks to every spot in Chromium.
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
+import { InstancedMesh, Material, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
@@ -17,14 +18,16 @@ const trafficHalfWidth = Math.max(...TRAFFIC_CARS.map(({ model }) => carModelEnt
 
 it("keeps the model footprints clear of the generated town props", () => {
   const noop = () => {};
+  const createPattern = vi.fn(() => ({}));
   const context = new Proxy({
     measureText: (s: string) => ({ width: s.length * 10 }),
     createLinearGradient: () => ({ addColorStop: noop }),
     createRadialGradient: () => ({ addColorStop: noop }),
+    createPattern,
   }, { get: (target, key) => Reflect.get(target, key) ?? noop });
   vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
   try {
-    const { colliders, parkedCars } = buildTown();
+    const { colliders, parkedCars, group, groundCanvas, sea } = buildTown();
     const boxes = colliders.boxes.filter((box) => !(box.tag === "car" && box.split));
     for (const spot of parkedCars.placements) {
       const { minX, maxX, minZ, maxZ } = carFootprint(spot);
@@ -34,6 +37,33 @@ it("keeps the model footprints clear of the generated town props", () => {
         Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minZ - z, 0, z - maxZ)) < r);
       expect(circles, label).toEqual([]);
     }
+
+    expect([groundCanvas.width, groundCanvas.height]).toEqual([1764, 1020]);
+    expect(createPattern).toHaveBeenCalledTimes(1);
+    expect(createPattern).toHaveBeenCalledWith(expect.objectContaining({ width: 36, height: 24 }), "repeat");
+
+    const meshes: Mesh[] = [];
+    group.traverse((object) => { if (object instanceof Mesh) meshes.push(object); });
+    const triangles = (mesh: Mesh) => {
+      const { index, attributes } = mesh.geometry;
+      return (index?.count ?? attributes.position.count) / 3 * (mesh instanceof InstancedMesh ? mesh.count : 1);
+    };
+    expect(sea).toBeInstanceOf(Mesh);
+    expect(sea.children).toHaveLength(0);
+    expect(sea.material).toBeInstanceOf(Material);
+    expect(triangles(sea)).toBe(5760);
+    for (const [name, count] of Object.entries({
+      ground: 2792,
+      "markings-center": 444,
+      "markings-white": 790,
+      "markings-plaza": 390,
+      "markings-curb": 624,
+    })) {
+      expect(meshes.filter((mesh) => mesh.name === name).map(triangles), name).toEqual([count]);
+    }
+    expect(meshes.filter(({ name }) => /^town-(cast|still|thin|thinCast)-/.test(name))).toHaveLength(77);
+    expect(meshes).toHaveLength(274);
+    expect(meshes.reduce((sum, mesh) => sum + triangles(mesh), 0)).toBe(268702);
   } finally {
     vi.unstubAllGlobals();
   }
