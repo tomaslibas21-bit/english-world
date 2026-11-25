@@ -41,7 +41,7 @@ try {
         const top = box.y - (below ? 7 : 0), edge = box.y + box.height + (below ? 0 : 7);
         assert(box.x >= 11.9 && top >= 11.9 && box.x + box.width <= width - 11.9 && edge <= height - 11.9,
           `bubble and tail stay within ${width}×${height}: ${JSON.stringify(box)}`);
-        const cards = await page.locator(".hud .objective-card, .hud .minimap, .hud .ride-menu")
+        const cards = await page.locator(".hud .objective-card, .hud .minimap, .hud .ride-menu, .hud .prompt:not(.touch)")
           .evaluateAll((nodes) => nodes.map((node) => ({ name: node.className, rect: node.getBoundingClientRect().toJSON() })));
         assert(cards.some(({ name }) => name.includes("objective-card")), "the task card is present");
         for (const { name, rect } of cards) {
@@ -273,6 +273,28 @@ try {
         if (["carJump", "crash", "boat", "swim"].includes(kind)) {
           await waitFor(() => bubble.isVisible(), `the ${kind} bubble is visible`);
           assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
+        }
+        if (targetLang === "es" && kind === "boat" && width === 1280 && height === 800) {
+          await page.evaluate(() => {
+            const { game } = window.__ew;
+            const boat = game.rides.riding;
+            game.endRide();
+            game.rides.resetPosition(boat, boat.home);
+            game.placeOnFoot(64, -68, Math.PI);
+          });
+          const prompt = page.locator(".hud .prompt").filter({ hasText: "Lancha" });
+          await waitFor(() => prompt.isVisible(), "the Lancha prompt returns while the vendor is still speaking");
+          const original = await page.evaluateHandle(() => window.__ew.game.reactPosition);
+          await page.evaluate((original) => {
+            window.__ew.game.reactPosition = (id) => {
+              const p = original.call(window.__ew.game, id);
+              return p && { ...p, x: innerWidth / 2, y: innerHeight };
+            };
+          }, original);
+          await step(1, 0);
+          await checkPlacement();
+          await page.evaluate((original) => { window.__ew.game.reactPosition = original; }, original);
+          await original.dispose();
         }
       }
       if (targetLang === "es") {

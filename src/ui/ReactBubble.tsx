@@ -15,7 +15,7 @@ function visibleRects(hud: Element | null, selector: string) {
   return hud ? Array.from(hud.querySelectorAll(selector), (el) => el.getBoundingClientRect()).filter((rect) => rect.width && rect.height) : [];
 }
 
-function bubblePlacement(anchor: { x: number; y: number }, w: number, h: number, width: number, bottom: number, hud: DOMRect[]) {
+function bubblePlacement(anchor: { x: number; y: number }, w: number, h: number, width: number, bottom: number, hud: DOMRect[], prompt?: DOMRect) {
   const clampX = (left: number) => Math.max(INSET, Math.min(width - w - INSET, left));
   const preferred = clampX(anchor.x - w / 2);
   // Try the speaker's column first. If it is full, try beside the cards and controls.
@@ -23,11 +23,12 @@ function bubblePlacement(anchor: { x: number; y: number }, w: number, h: number,
   lanes.sort((a, b) => Math.abs(a - preferred) - Math.abs(b - preferred));
   const over = anchor.y - h - TAIL_HEIGHT - 1;
   const under = anchor.y + TAIL_HEIGHT + 1;
-  const maxY = bottom - h - INSET - TAIL_HEIGHT;
   let fallback: { x: number; y: number; below: boolean } | undefined;
   for (const x of lanes) {
     let top = INSET;
     for (const rect of hud) if (x < rect.right && x + w > rect.left) top = Math.max(top, rect.bottom + INSET);
+    const lowerEdge = prompt && x < prompt.right && x + w > prompt.left ? Math.min(bottom, prompt.top) : bottom;
+    const maxY = lowerEdge - h - INSET - TAIL_HEIGHT;
     if (top > maxY) continue;
     if (over >= top) return { x, y: Math.min(over, maxY), below: false };
     const y = Math.max(top + TAIL_HEIGHT, under);
@@ -49,11 +50,13 @@ export function ReactBubble({ line }: { line: ReactionLine }) {
       if (p && p.opacity > 0) {
         const { clientWidth: width, clientHeight: height } = document.documentElement;
         let bottom = height;
-        if (hud?.classList.contains("has-touch")) {
+        const touch = hud?.classList.contains("has-touch");
+        if (touch) {
           for (const rect of visibleRects(hud, TOUCH_CONTROLS)) bottom = Math.min(bottom, rect.top);
         }
+        const prompt = touch ? undefined : hud?.querySelector(".prompt")?.getBoundingClientRect();
         const { width: w, height: h } = el.getBoundingClientRect();
-        const placement = bubblePlacement(p, w, h, width, bottom, visibleRects(hud, TOP_HUD));
+        const placement = bubblePlacement(p, w, h, width, bottom, visibleRects(hud, TOP_HUD), prompt);
         if (placement) {
           const { x, y, below } = placement;
           el.style.transform = `translate(${x}px, ${y}px)`;

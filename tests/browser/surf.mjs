@@ -177,11 +177,20 @@ try {
           const { width, height } = el.getBoundingClientRect();
           return Math.min(width, height);
         }));
+        const overflow = el.scrollHeight - el.clientHeight;
+        let lastAnswerReachable = overflow <= 1;
+        if (!lastAnswerReachable && matchMedia("(orientation: landscape)").matches) {
+          const start = el.scrollTop;
+          el.scrollTop = el.scrollHeight;
+          const last = el.querySelector(".surf-choice:last-child").getBoundingClientRect();
+          lastAnswerReachable = last.top >= answers.top && last.bottom <= answers.top + el.clientHeight + 1;
+          el.scrollTop = start;
+        }
         return { inView: [answers, cue, pad].every(visible), clear: apart(answers, cue) && apart(answers, pad) && apart(cue, pad),
-          cueGap: answers.top - cue.bottom, padGap: pad.top - answers.bottom, overflow: el.scrollHeight - el.clientHeight, minKey };
+          cueGap: answers.top - cue.bottom, padGap: pad.top - answers.bottom, overflow, lastAnswerReachable, minKey };
       });
       const portrait = name === label;
-      check(`${name}: the ${choice} turn fits between the cue and touch controls`, layout.inView && layout.clear && layout.overflow <= 1
+      check(`${name}: the ${choice} turn fits between the cue and touch controls`, layout.inView && layout.clear && layout.lastAnswerReachable
         && (!portrait || (layout.cueGap >= 0 && layout.padGap > 0)) && layout.minKey >= (name === "phone" ? 60 : 52), layout);
     };
 
@@ -360,7 +369,7 @@ try {
             if (phone) {
               assert.deepEqual(m.asked, keys, `${label}: highlighted arrows for ${t.do}`);
               assert.equal(m.still, t.do === "steady");
-              assert(!m.button && m.boardClear > 0 && m.padGap > 0, `${label}: board between the move label and pad for ${t.do} (${m.boardClear}px, ${m.padGap}px)`);
+              assert(!m.button && m.boardClear >= 6 && m.padGap > 0, `${label}: board clears the move label by at least 6 px and stays above the pad for ${t.do} (${m.boardClear}px, ${m.padGap}px)`);
             }
             moves.set(t.do, { n: o.n + 1, ok: o.ok && right, replayFits: o.replayFits && m.replayFits, text: m.text, keys: m.keys, button: m.button, font: m.font, h: m.h, w: m.w, gapMax: Math.max(o.gapMax, m.gap), clearMin: Math.min(o.clearMin, m.clear), inView: o.inView && m.inView, over: o.over || m.over, dots: m.dots, time: m.time });
             if (!shown.has("move:" + t.do)) { shown.add("move:" + t.do); await real(300); await shot("move-" + t.do); }
