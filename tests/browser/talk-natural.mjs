@@ -419,7 +419,7 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
         picture: !!document.querySelector(".scene-backdrop"), panel: panel && [panel.left, panel.top, panel.right, panel.bottom],
         panelId: panelIds.get(node), layout, lens: lens() },
       street: street && { id: street.draw.moment.id, cast: street.draw.cast.id, script: street.draw.scriptName,
-        step: street.view.step, line: street.view.line?.key, person },
+        step: street.view.step, exchange: street.view.exchange, line: street.view.line?.key, person },
       table: { gf: window.__ew.gofish?.state()?.step, lot: window.__ew.loteria?.state()?.phase },
     };
   }
@@ -531,6 +531,64 @@ function assertGameplayLens(lens, { width, height }, label, baseline) {
       `${label} original numeric offset`);
     if (lens.running === baseline.running) assert(near(targetFov, baseline.targetFov), `${label} original gameplay FOV target`);
   }
+}
+
+function inspectControl(el, { scroll, edges, details = true }) {
+  const describe = (node) => node && [node.localName, node.id && "#" + node.id,
+    ...Array.from(node.classList, (name) => "." + name)].join("");
+  if (scroll) el.scrollIntoView({ block: "nearest", inline: "nearest" });
+  const { left, top, width, height } = el.getBoundingClientRect();
+  const candidates = [[0.5, 0.5]];
+  if (edges) candidates.push([0.25, 0.5], [0.75, 0.5], [0.5, 0.25], [0.5, 0.75],
+    [0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]);
+  let center, point = null, hit;
+  for (const [dx, dy] of candidates) {
+    const x = left + width * dx, y = top + height * dy;
+    const target = document.elementFromPoint(x, y);
+    center ??= { x, y, target };
+    if (el.contains(target)) {
+      point = { x, y };
+      hit = target;
+      break;
+    }
+  }
+  if (el.closest(".scene-intro, .intro-card")) {
+    for (let node = el; node; node = node.parentElement) {
+      if (Number(getComputedStyle(node).opacity) === 0) point = null;
+    }
+  }
+  if (!details) return { point };
+  const covering = [];
+  if (!el.contains(center.target)) {
+    for (let node = center.target; node && covering.length < 5; node = node.parentElement) covering.push(describe(node));
+  }
+  let scrollParent = el.parentElement;
+  while (scrollParent) {
+    const { overflowX, overflowY } = getComputedStyle(scrollParent);
+    if (/auto|scroll|hidden/.test(overflowX + " " + overflowY)) break;
+    scrollParent = scrollParent.parentElement;
+  }
+  const { scrollTop, scrollLeft } = scrollParent ?? document.scrollingElement;
+  return { control: describe(el), rect: { left, top, width, height }, point,
+    hit: describe(hit ?? center.target), center: { x: center.x, y: center.y, hit: describe(center.target) },
+    covering, listCoachCoversCenter: !el.contains(center.target) && !!center.target?.closest(".coach"),
+    scrollParent: { element: describe(scrollParent ?? document.scrollingElement), scrollTop, scrollLeft },
+    activeElement: describe(document.activeElement), focused: document.activeElement === el, focusVisible: el.matches(":focus-visible") };
+}
+
+// Retain the native events until propagation and their default actions have finished.
+function watchControl(el) {
+  const listeners = new AbortController();
+  let keydown, click;
+  el.addEventListener("keydown", (event) => { keydown = event; }, { signal: listeners.signal });
+  el.addEventListener("click", (event) => { click = event; }, { signal: listeners.signal });
+  return () => {
+    listeners.abort();
+    return {
+      keydown: keydown && { key: keydown.key, trusted: keydown.isTrusted, prevented: keydown.defaultPrevented },
+      click: click && { trusted: click.isTrusted, detail: click.detail },
+    };
+  };
 }
 
 class Route {
@@ -757,26 +815,56 @@ class Route {
     if (this.capture) this.capture.mark(entry, image);
   }
 
-  async press(locator, label) {
+  async press(locator, label, { action, count, mouse = false, edges = false, key = "Enter" } = {}) {
     const button = locator.first();
+    const trace = action && { action, label, input: this.size.touch ? "tap" : mouse ? "mouse" : key };
+    if (trace) (this.row.actions ??= []).push(trace);
+    const hitOptions = { scroll: true, edges: edges && !this.size.touch, details: !!trace };
     const hit = await this.until(async () => {
-      await this.tick();
+      const frame = await this.tick();
+      if (trace) {
+        const controls = await locator.all();
+        const visible = await Promise.all(controls.map((control) => control.isVisible()));
+        Object.assign(trace, { count: controls.length, expectedCount: count, visible,
+          before: { table: frame.table.gf, mode: frame.scene.modeId, camera: frame.scene.mode, street: frame.street } });
+        trace.hit = controls.length ? await button.evaluate(inspectControl, { ...hitOptions, scroll: visible[0] }) : null;
+        trace.enabled = !!controls.length && await button.isEnabled();
+        return controls.length === count && visible.every(Boolean) && trace.enabled ? trace.hit?.point : null;
+      }
       if (!(await button.isVisible()) || !(await button.isEnabled())) return null;
-      return button.evaluate((el) => {
-        el.scrollIntoView({ block: "nearest", inline: "nearest" });
-        const r = el.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
-        if (el.closest(".scene-intro, .intro-card")) {
-          for (let node = el; node; node = node.parentElement) if (Number(getComputedStyle(node).opacity) === 0) return null;
-        }
-        if (!el.contains(document.elementFromPoint(x, y))) return null;
-        return { x, y };
-      });
+      return (await button.evaluate(inspectControl, hitOptions)).point;
     }, label, 4500);
-    if (this.size.touch) await this.page.touchscreen.tap(hit.x, hit.y);
-    else {
-      await button.focus();
-      await button.press("Enter");
+    if (!trace) {
+      if (this.size.touch) await this.page.touchscreen.tap(hit.x, hit.y);
+      else {
+        await button.focus();
+        await button.press("Enter");
+      }
+      return;
     }
+    const keyboard = !this.size.touch && !mouse;
+    if (keyboard) {
+      await button.focus();
+      trace.focusedHit = await button.evaluate(inspectControl, { ...hitOptions, scroll: false });
+      assert(trace.focusedHit.focused && trace.focusedHit.focusVisible && trace.focusedHit.point,
+        `${label}: visible keyboard focus and an uncovered hit region`);
+    }
+    const read = await button.evaluateHandle(watchControl);
+    try {
+      if (keyboard) await this.page.keyboard.press(key);
+      else if (this.size.touch) await this.page.touchscreen.tap(hit.x, hit.y);
+      else await this.page.mouse.click(hit.x, hit.y);
+    } finally {
+      try { trace.events = await read.evaluate((result) => result()); }
+      finally { await read.dispose(); }
+    }
+    if (keyboard) {
+      assert.deepEqual(trace.events.keydown, { key: key === "Space" ? " " : key, trusted: true, prevented: false },
+        `${label}: native key default reaches the focused button`);
+    }
+    assert(trace.events.click?.trusted && (!keyboard || trace.events.click.detail === 0),
+      `${label}: trusted native button activation`);
+    return trace;
   }
 
   async walkUp(actor) {
@@ -1547,7 +1635,13 @@ async function tableGame(route) {
     }), "Go Fish interaction at the saved dining table");
     await route.interact();
     await route.page.evaluate(() => window.__ew.gofish.seed(124));
-    await route.press(route.page.locator(".gofish-offer button.btn").first(), "accept Dan's Go Fish offer");
+    const start = route.page.locator(".gofish-offer .gofish-offer-actions")
+      .getByRole("button", { name: "Pažaisti „Go Fish“", exact: true });
+    const acceptance = await route.press(start, "accept Dan's Go Fish offer", { action: "gofish-start", count: 1 });
+    assert.equal(acceptance.before.table, "offer");
+    const started = await route.wait((f) => f.table.gf === "starting" || f.scene.modeId === "gofish",
+      "the offer advances to the real Go Fish table", 4500);
+    acceptance.after = { table: started.table.gf, mode: started.scene.modeId, camera: started.scene.mode };
   }
   const id = pc ? "loteria" : "gofish";
   const caller = pc ? "beto" : "nora", companion = pc ? "tona" : "dan";
@@ -1576,18 +1670,26 @@ async function tableGame(route) {
     assert(uncalled, "there is a legal uncalled card for the teacher cue");
     await route.press(route.page.locator(`.loteria-cell[data-card="${uncalled}"]`), "tap an uncalled lotería card");
   } else {
-    await route.press(route.page.locator('.gofish-card[data-word="hot_dog"]:enabled'), "select the seeded hot dog card");
-    await route.press(route.page.locator('.gofish-choice[data-line="gf_ask_hot_dog"]:enabled'), "ask Dan for a hot dog");
+    const card = route.page.locator('.gofish-card[data-word="hot_dog"]:enabled');
+    await route.press(card, "select the seeded hot dog card", { action: "gofish-select-card", count: 1 });
+    assert.equal(await card.getAttribute("aria-pressed"), "true", "the hot dog card is selected");
+    // Space activates the chip itself. Go Fish uses Enter to submit the selected card as a mode shortcut.
+    await route.press(route.page.locator('.gofish-choice[data-line="gf_ask_hot_dog"]:enabled'), "ask Dan for a hot dog",
+      { action: "gofish-ask-dan", count: 1, key: "Space" });
   }
   await voiced(route, (f) => f.p.scope === "mode" && f.p.speakerId === companion);
-  await route.press(route.page.locator(pc ? ".loteria-exit" : ".gofish-exit"), "leave through the table game's exit");
+  await route.press(route.page.locator(pc ? ".loteria-exit" : ".gofish-exit"), "leave through the table game's exit",
+    pc ? undefined : { action: "gofish-exit", count: 1, key: "Space" });
   const left = await route.wait((f) => !f.scene.modeId && !f.scene.transition && f.actual.player.visible && f.actual.player.anim === "idle", "leave table and restore learner");
   assert.equal(left.actual.player.weight, 0);
 }
 
 async function street(route) {
+  const choices = (exchange) => route.page.locator(
+    `section.street-card[data-moment="i_dropped"][data-step="choices"][data-exchange="${exchange}"][data-cast="a"][data-script="first"] .street-choice`);
   assert(await route.page.evaluate(() => window.__ew.game.streetNow("i_dropped", "a")), "placed the authored world street encounter");
-  const first = await route.wait((f) => f.street?.step === "choices" && f.p?.scope === "street" && f.p.listening, "real passer-by waits for a choice");
+  const first = await route.wait((f) => f.street?.step === "choices" && f.street.exchange === 0 && f.p?.scope === "street" && f.p.listening,
+    "real passer-by waits for a choice");
   assert.deepEqual([first.street.id, first.street.cast, first.street.script], ["i_dropped", "a", "first"]);
   assert(first.street.person && !first.conv.active && first.scene.zone === "town");
   const person = actorIs(first, "a");
@@ -1599,13 +1701,34 @@ async function street(route) {
   }
   assert(waiting.some((f) => f.p?.listeningWeight > 0.15 && f.p.deltas.torsoPitch > 0.004), "passer-by leans into the choice");
   await route.mark("listen");
-  await route.press(route.page.locator(".street-choice"), "choose an authored street reply");
-  const voicedReply = await voiced(route, (f) => f.p?.scope === "street" && f.street.step === "reply");
+  const firstChoices = choices(0);
+  if (!route.size.touch && await firstChoices.first().isVisible()
+    && await route.page.evaluate(() => window.__ew.store.getState().hud.coach?.step === "list")) {
+    const hit = await firstChoices.first().evaluate(inspectControl, { scroll: false, edges: false });
+    if (hit.listCoachCoversCenter) {
+      route.row.streetListCoach = hit;
+      const next = route.page.locator(".hud .coach .coach-next");
+      await route.press(next, "dismiss the returning learner's list hint", { action: "street-list-coach", count: 1, mouse: true });
+      assert.equal(await route.page.evaluate(() => window.__ew.store.getState().hud.coach), null);
+      await route.page.keyboard.press("Tab");
+    }
+  }
+  const firstChoice = await route.press(firstChoices, "choose an authored street reply",
+    { action: "street-choice-0", count: 2, edges: true });
+  const voicedReply = await voiced(route, (f) => f.p?.scope === "street" && f.street?.step === "reply" && f.street.exchange === 0);
+  firstChoice.after = voicedReply.street;
   assert.equal(voicedReply.actual.a.identity, person.identity);
-  const replies = await through(route, (f) => f.street?.step === "choices" && f.p?.listening, "street reply ends and the second choice appears");
-  assert(replies.some((f) => f.p?.lineId !== voicedReply.p.lineId && f.street?.step === "reply" && isVoice(f)));
-  await route.press(route.page.locator(".street-choice"), "close the exchange with the next authored answer");
-  await through(route, (f) => !f.street && !f.p, "the street actor walks away and releases");
+  const replies = await through(route, (f) => f.street?.step === "choices" && f.street.exchange === 1 && f.p?.listening,
+    "street reply ends and the second choice appears");
+  assert(replies.some((f) => f.p?.lineId !== voicedReply.p.lineId && f.street?.step === "reply" && f.street.exchange === 0
+    && f.actual.a?.identity === person.identity && isVoice(f)));
+  assert.equal(actorIs(replies.at(-1), "a").identity, person.identity);
+  const secondChoice = await route.press(choices(1), "close the exchange with the next authored answer",
+    { action: "street-choice-1", count: 2, edges: true });
+  const closing = await through(route, (f) => !f.street && !f.p, "the street actor walks away and releases");
+  const finalReply = closing.find((f) => f.street?.step === "reply" && f.street.exchange === 1);
+  assert.equal(finalReply?.actual.a?.identity, person.identity, "the same passer-by replies to the second choice");
+  secondChoice.after = finalReply.street;
 }
 
 async function missingRecording(route) {
@@ -1910,6 +2033,17 @@ async function runPage(context, fixture, size, id, action, options = {}) {
             && (request.voice === fixture.voices[request.npc] || request.voice === `g_${request.npc}` || pc)),
           "matching film recordings belong to the requested actor and voice");
         } catch (error) { row.errors.push(error.stack ?? error.message); }
+      }
+      const failedAction = row.errors.length && row.actions?.at(-1);
+      if (failedAction) {
+        if (shotDir) {
+          const file = `${label.replaceAll("/", "-")}-${failedAction.action}-failed.png`;
+          try {
+            await page.screenshot({ path: path.join(out, file), timeout: 2500 });
+            failedAction.image = file;
+          } catch (error) { failedAction.screenshotError = error.message; }
+        }
+        console.log(`ACTION ${label} · ${JSON.stringify(failedAction)}`);
       }
     }
     try { await page?.close(); } catch (error) { row.errors.push(error.message); }
