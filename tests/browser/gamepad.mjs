@@ -1539,21 +1539,22 @@ async function townHudChoices(h) {
     });
   });
   assert(pairs.length > 0, "real Ambient pairs are available");
-  let inView = false;
+  // (a pose where the pair is in view and chatter really starts: a pair can be busy, so the next pose is tried)
+  let inView = false, started = false;
   for (const pair of pairs) {
-    for (let turn = 0; turn < 2 * Math.PI && !inView; turn += Math.PI / 4) {
+    for (let turn = 0; turn < 2 * Math.PI && !started; turn += Math.PI / 4) {
       await page.evaluate(({ x, z, turn }) =>
         window.__ew.game.placeOnFoot(x + 3.5 * Math.sin(turn), z + 3.5 * Math.cos(turn), turn + Math.PI), { ...pair, turn });
       await step(30);
       // (and a camera with room behind the player, so the avatar is not the whole screen)
       inView = await page.evaluate(() => window.__ew.game.streetLife.world.pairs(5).length > 0 && window.__ew.game.rig.armL >= 5);
+      if (inView) started = await page.evaluate(() => !!(window.__ew.game.streetChatterNow("c_calor") || window.__ew.game.streetChatterNow()));
     }
-    if (inView) break;
+    if (started) break;
   }
   assert(inView, "a real pair qualifies for natural chatter");
+  check("the real pair begins chatter", started);
   await bannerGone(h);
-  check("the real pair begins chatter", await page.evaluate(() =>
-    window.__ew.game.streetChatterNow("c_calor") || window.__ew.game.streetChatterNow()));
   await until("the camera chip and untranslated speech bubble are visible", async () =>
     await page.locator(chip).isVisible() && await page.locator(bubble).isVisible());
   await attach();
