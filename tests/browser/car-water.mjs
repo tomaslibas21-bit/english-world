@@ -53,7 +53,8 @@ const fixtures = {
     depths: [[-72, 0], [-73, 0.152], [-75, 0.335], [-77.4, 0.389], [-79, 0.766]],
     gateDepths: [[-72, 0.164], [-73, 0.314], [-75, 0.359], [-77.4, 0.413], [-79, 0.789]],
     dryTurn: [84, -63, Math.PI / 2], wetTurn: [84, -76.4, Math.PI / 2], reverse: [84, -72.8, Math.PI],
-    deck: [-30, -70, 0.42], lip: [-30, -90.5, Math.PI], offshore: [-96, -81, Math.PI],
+    deck: [-30, -70, 0.42], deckAisle: [-40.025, -77, Math.PI], deckEndZ: -80.1,
+    lip: [-30, -90.5, Math.PI], offshore: [-96, -81, Math.PI],
     warehouse: [125, -51.4, Math.PI / 2 + 0.45], crashCar: "parked-0",
     beach: [-11.5, -71.2, Math.PI - 0.25], boat: "muelle", boatPose: [-11.5, -74.3, Math.PI - 0.25],
     boatIds: ["muelle", "playa", ...["afloat", "beached"].flatMap(kind => [1, 2, 3].map(i => `lancha-${kind}-${i}`))],
@@ -199,6 +200,76 @@ async function installReads() {
     .flatMap(f => Array.from({ length: 9 }, (_, i) => local(car, (2 * i / 8 - 1) * car.wide, f * car.half)));
   const body = (r, car) => r.model ? car : { ...car, wide: Math.max(car.wide, CONVERTIBLE_BUMPER.width / 2),
     half: Math.max(car.half, CONVERTIBLE_BUMPER.offset + CONVERTIBLE_BUMPER.depth / 2) };
+  function pierClearance(r, car) {
+    let tightest = null, firstBlocker = null;
+    const record = (kind, obstacle, gap) => {
+      if (!tightest || gap < tightest.gap) tightest = { kind, obstacle, gap };
+      if (gap <= 0 && !firstBlocker) firstBlocker = { kind, obstacle, gap };
+      return true;
+    };
+    const disc = (kind, x, z, radius) =>
+      record(kind, { x, z, radius }, footprintDistance(car, { x, z }) - radius);
+    for (const b of colliders.boxes) if (b.tag !== "sea") {
+      record(b.deckRail ? "rail" : b.tag ?? "box", b, separationOnAxes(car, box(b)));
+    }
+    for (const c of colliders.circles) disc("circle", c.x, c.z, c.r);
+    for (const c of R.sea.circles) disc("fixed hull", c.x, c.z, c.r);
+    for (const q of [...R.list, ...R.modeCars.keys()]) {
+      if (q !== r) {
+        const pad = q.kind === "car" ? body(q, pose(q)) : pose(q);
+        record(q.kind, { id: q.id, ...pad }, separationOnAxes(car, pad));
+      }
+      for (const o of q.owners) if (o.state !== "in") {
+        disc("ride owner", o.ch.root.position.x, o.ch.root.position.z, 0.45);
+      }
+    }
+    g.ambient.carWaterTrafficClear((x, z, half, wide) =>
+      record("traffic", { x, z, half, wide }, separationOnAxes(car, { x, z, half, wide, heading: Math.PI / 2 })));
+    const person = (x, z, r) => disc("person", x, z, r);
+    g.carWaterPeopleClear(person, false);
+    g.ambient.carWaterPeopleClear(person, false);
+    for (const p of R.host.people()) person(p.x, p.z, 0.4);
+    return { tightest, firstBlocker };
+  }
+
+  function deckSweep(id, [x, z, heading], endZ) {
+    const r = R.find(id), start = body(r, { ...pose(r), x, z, heading });
+    // The fixed-heading, straight northbound sweep is exactly one rectangle.
+    const swept = { ...start, z: (z + endZ) / 2, half: start.half + (z - endZ) / 2 };
+    const bounds = { minX: x - start.wide, maxX: x + start.wide, minZ: endZ - start.half, maxZ: z + start.half };
+    const deck = DECKS.find(d => d.x0 < bounds.minX && d.x1 > bounds.maxX && d.z0 < bounds.minZ && d.z1 > bounds.maxZ);
+    const deckGrid = footprint(swept).map(p => ({ floor: floorY(p.x, p.z), surface: waterY(p.x, p.z, g.t), depth: depth(p.x, p.z) }));
+    const motion = { radius: r.m.spec.wide, offset: r.m.spec.half - r.m.spec.wide };
+    const old = { ...swept, x: -30 };
+    const restaurant = colliders.boxes.find(b => b.tag === "building"
+      && old.x > b.minX && old.x < b.maxX && z > b.minZ && z < b.maxZ);
+    return { bounds, body: { half: start.half, wide: start.wide }, motion, deck, restaurant,
+      oldOverlap: !!restaurant && overlap(old, box(restaurant)), ...pierClearance(r, swept),
+      allSupported: deckGrid.every(p => p.floor === 0.3 && p.depth === 0 && p.surface !== null && p.surface < p.floor),
+      waterRange: [Math.min(...deckGrid.map(p => p.surface)), Math.max(...deckGrid.map(p => p.surface))] };
+  }
+
+  function pierRailSweep(id, path) {
+    const r = R.find(id), rails = colliders.boxes.filter(b => b.deckRail);
+    let tightest = null;
+    for (const [i, to] of path.entries()) {
+      const from = path[i - 1] ?? to, delta = to.heading - from.heading;
+      const angle = Math.atan2(Math.sin(delta), Math.cos(delta));
+      const car = body(r, to);
+      const steps = Math.max(1, Math.ceil((Math.hypot(to.x - from.x, to.z - from.z)
+        + Math.abs(angle) * Math.hypot(car.half, car.wide)) / 0.005));
+      for (let j = 0; j <= steps; j++) {
+        const t = j / steps;
+        const p = { ...car, x: from.x + t * (to.x - from.x), z: from.z + t * (to.z - from.z), heading: from.heading + t * angle };
+        for (const rail of rails) {
+          const clearance = separationOnAxes(p, box(rail));
+          if (!tightest || clearance < tightest.clearance) tightest = { clearance, rail, serial: to.serial, at: t };
+        }
+      }
+    }
+    return tightest;
+  }
+
   const stockGround = ({ x, z }) => R.drivable.has(x, z);
   const dryCar = (car) => {
     const { x, z, half, wide, heading } = car, height = floorY(x, z);
@@ -378,6 +449,7 @@ async function installReads() {
         const p = o.ch.root.position;
         return { ...point(p), state: o.state, dry: supported(p.x, p.z, floorY(p.x, p.z)) };
       });
+      if (window.__carWaterTest.trackPierDeck) car.pierClearance = pierClearance(r, body(r, pose(r)));
       if (w?.carDrops || w?.foamVisible) car.effects = effects(r, car, w);
     }
     const camera = ground(c.getWorldPosition(v));
@@ -444,7 +516,7 @@ async function installReads() {
     world: () => ({ decks: DECKS.length, floors: FLOORS.length, pools: POOLS.length, west, ways: ways.map(w => w.id),
       pier: floorY(-30, -77), hotel: poolAt(HOTEL_POOL.x, HOTEL_POOL.z)?.y ?? null,
       cenote: THEME.cenote && depth(THEME.cenote.x, THEME.cenote.z), fleet: g.carVisuals.stats(), parkedRides: R.modeCars.size }),
-    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids, footSupports,
+    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids, footSupports, deckSweep, pierRailSweep,
     footprint: id => footprint(pose(R.find(id))).map(p => ({ ...p, depth: depth(p.x, p.z) })),
     boxOverlap: (car, obstacle) => overlap(car, box(obstacle)), footprintDistance,
     support: (x, z) => {
@@ -1500,32 +1572,95 @@ async function pierRail(run) {
     "rail stops travel through its edge under sustained physical throttle");
   const sustained = await run.frames(60);
   await run.drive();
-  assert.ok(sustained.every(behindRail) && gap(sustained.at(-1).car, frames.at(-1).car) < 0.06, "no slow creep around a caught bumper corner");
-  await run.drive(-1, -0.25);
-  const backed = await run.frames(35);
+  const held = sustained.at(-1), sustainedDrift = gap(held.car, frames.at(-1).car);
+  assert.ok(sustained.every(behindRail) && sustainedDrift < 0.06, "no slow creep around a caught bumper corner");
+  const backed = [], segments = [];
+  if (pc && !run.phone) {
+    for (const [steer, count] of [[0, 20], [-1, 8], [0, 7]]) {
+      // S stays down while A is pressed and released on the frozen clock.
+      await run.drive(-1, steer);
+      const leg = await run.frames(count);
+      assert.ok(leg.every(s => s.keys.includes("s") && s.keys.includes("a") === !!steer
+        && !s.keys.includes("w") && !s.keys.includes("d")), "actual keyboard state for every reverse frame");
+      backed.push(...leg);
+      const { serial, car: { x, z, heading, speed } } = leg.at(-1);
+      segments.push({ keys: steer ? "S+A" : "S", count, serial, x, z, heading, speed });
+    }
+  } else {
+    await run.drive(-1, -0.25);
+    backed.push(...await run.frames(35));
+  }
   await run.drive();
-  assert.ok(backed.every(s => !s.water.active) && backed.at(-1).car.x < sustained.at(-1).car.x - 0.15
-    && Math.abs(turn(backed.at(-1).car.heading, sustained.at(-1).car.heading)) > 0.05, "physical reverse and steering pull the bumper clear");
-  run.log({ deck: support, maxPierX: Math.max(...frames.map(s => s.car.x)), rail: rail.minX });
+  const end = backed.at(-1);
+  const retreat = held.car.x - end.car.x, yaw = turn(end.car.heading, held.car.heading);
+  let approachClearance, reverseClearance;
+  if (pc) {
+    const path = samples => samples.map(({ serial, car: { x, z, heading } }) => ({ serial, x, z, heading }));
+    [approachClearance, reverseClearance] = await run.evaluate(({ id, approach, reverse }) => {
+      const { pierRailSweep } = window.__carWaterTest;
+      return [pierRailSweep(id, approach), pierRailSweep(id, reverse)];
+    }, { id: run.id, approach: path([at, ...frames, ...sustained]), reverse: path([held, ...backed]) }, "sweep accepted poses against the live pier rails");
+  }
+  run.log({ deck: support, maxPierX: Math.max(...frames.map(s => s.car.x)), rail: rail.minX, sustainedDrift,
+    reverse: { segments, retreat, yaw, endSpeed: end.car.speed, approachClearance, reverseClearance } });
+  assert.ok(backed.every(s => !s.water.active), "reverse stays out of a wet episode");
+  if (pc) {
+    assert.ok(approachClearance.clearance >= -1e-8 && reverseClearance.clearance >= -1e-8,
+      "the full accepted bumper sweep stays clear of every live pier rail");
+    assert.ok(backed.every(s => behindRail(s) && s.car.depth === 0 && s.car.corners.every(p => p.floor === 0.3)),
+      "reverse stays on the dry boards with all chassis corners supported and tires clear");
+    if (!run.phone) assert.ok(backed.every((s, i) => {
+      const step = gap(s.car, (backed[i - 1] ?? held).car);
+      return s.car.speed < 0 && step > 0 && step <= s.car.pace * quantum / 1000 + 0.002;
+    }), "continuous physical reverse at the measured pace");
+  }
+  assert.ok(retreat > 0.15, `physical reverse retreats from the rail by more than 0.15 m, got ${retreat}`);
+  assert.ok(Math.abs(yaw) > 0.05, `physical steering changes heading by more than 0.05 rad, got ${yaw}`);
 }
 
 async function pierDeck(run) {
   await run.board(convertible);
-  await run.stage([-30, -77, Math.PI]);
+  await run.stage(site.deckAisle);
   await run.watch();
+  await run.evaluate(() => { window.__carWaterTest.trackPierDeck = true; });
   const at = await run.frame();
+  const sweep = await run.evaluate(({ id, route, endZ }) => window.__carWaterTest.deckSweep(id, route, endZ),
+    { id: run.id, route: site.deckAisle, endZ: site.deckEndZ }, "survey the full main-deck sweep");
+  run.log({ sweep, endZ: site.deckEndZ });
+  assert.ok(sweep.oldOverlap, "the old route overlaps the live El Muelle building");
+  assert.ok(sweep.deck?.x0 < -40 && sweep.deck.y === 0.3 && sweep.allSupported,
+    "the entire sweep lies on the same main deck over water");
+  assert.ok(sweep.motion.radius <= sweep.body.wide && sweep.motion.radius + sweep.motion.offset <= sweep.body.half,
+    "the full sweep also encloses the three motion circles");
+  assert.equal(sweep.firstBlocker, null, `blocked main deck sweep ${JSON.stringify(sweep)}`);
+  assert.equal(at.car.pierClearance.firstBlocker, null, "the accepted start is clear before throttle");
   const onBoards = s => s.car.surface !== null && s.car.floor === 0.3 && s.car.depth === 0 && s.water.band === "dry"
     && !s.water.active && s.car.mesh.y >= 0.28 && s.car.corners.every(p => p.floor === 0.3)
     && s.car.wheels.every(w => w.depth === 0 && w.tire.floor === 0.3);
   assert.ok(onBoards(at), "the full chassis and tires have dry deck support above the bay");
   assert.ok(!at.car.dryGround && !(await run.clearance()).car, "boards over water are outside dry mainland");
   await run.drive(1);
+  let previous = at, maxStep = 0, tightest = at.car.pierClearance.tightest;
   const end = await run.until(s => {
-    assert.ok(onBoards(s), "clear decking continues to support the entire moving car");
+    const step = gap(s.car, previous.car);
+    const detail = `serial ${s.serial}, (${s.car.x}, ${s.car.z}), heading ${s.car.heading}, pace ${s.car.pace}, step ${step}`;
+    assert.ok(onBoards(s), `clear decking supports the entire moving car at ${detail}`);
+    assert.equal(s.car.pierClearance.firstBlocker, null, `${detail}: ${JSON.stringify(s.car.pierClearance.firstBlocker)}`);
+    assert.ok(run.phone ? s.stick.y > 0.95 : s.keys.includes("w"), "physical forward control stays held");
+    assert.ok(s.car.z < previous.car.z && s.car.speed > 0 && step <= s.car.pace * (s.now - previous.now) / 1000 + 0.002,
+      `continuous physical travel under forward throttle, ${detail}`);
+    assert.ok(s.car.z >= site.deckEndZ && s.car.bumpers.every(p =>
+      p.x >= sweep.bounds.minX - 0.001 && p.x <= sweep.bounds.maxX + 0.001
+      && p.z >= sweep.bounds.minZ - 0.001 && p.z <= sweep.bounds.maxZ + 0.001),
+      `the accepted pose stays in the surveyed aisle, ${detail}`);
+    previous = s;
+    maxStep = Math.max(maxStep, step);
+    if (s.car.pierClearance.tightest.gap < tightest.gap) tightest = s.car.pierClearance.tightest;
     return at.car.z - s.car.z >= 3 && s.car.pace > 1.5;
-  }, "drive three metres along the clear deck");
+  }, "drive three metres along the clear deck", 120);
   await run.drive();
-  run.log({ boardHeight: end.car.floor, deckMetres: at.car.z - end.car.z });
+  run.log({ boardHeight: end.car.floor, deckMetres: at.car.z - end.car.z, maxStep, tightest,
+    end: { serial: end.serial, x: end.car.x, z: end.car.z, heading: end.car.heading, pace: end.car.pace } });
 }
 
 async function abruptLip(run) {

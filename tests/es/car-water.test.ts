@@ -1362,18 +1362,184 @@ it("uses only the first valid boarding to index the fleet and guards an inland b
   } finally { short.close(); }
 }, 20_000);
 
-it("keeps the PC pier rails solid through bumper yaw and lands after an unsupported back-lip trial", async () => {
+const pierBumper = { half: CONVERTIBLE_BUMPER.offset + CONVERTIBLE_BUMPER.depth / 2, wide: CONVERTIBLE_BUMPER.width / 2 };
+
+function pierPose(f: ReturnType<typeof occupiedTown>) {
+  const { x, z, heading, speed, pace } = f.car.m;
+  return { x, z, heading, speed, pace };
+}
+
+function checkDryPier(f: ReturnType<typeof occupiedTown>) {
+  const { x, z, heading, spec } = f.car.m;
+  const p = read(x, z, heading, f.time, spec);
+  expect(f.inspect()).toMatchObject({ active: false, band: "dry" });
+  expect(f.car.mesh.position.y).toBeGreaterThanOrEqual(0.3);
+  expect([p.centre, ...tires(p)].every(p => p.floor === 0.3 && p.depth === 0 && p.liveDepth === 0)).toBe(true);
+  expect(p.centre.liveSurface).not.toBeNull();
+  for (const side of [-pierBumper.wide, pierBumper.wide]) for (const end of [-pierBumper.half, pierBumper.half]) {
+    const corner = at({ x, z, rot: heading }, side, end);
+    expect(floorY(corner.x, corner.z)).toBe(0.3);
+  }
+  f.supported(true);
+}
+
+it("drives the stock convertible along the full western aisle on El Muelle's main deck", async () => {
+  const f = occupiedTown(60);
+  try {
+    await f.board(f.rides.find("park"));
+    const route = { x: -40.025, z: -77, rot: Math.PI }, endZ = -80.1;
+    f.stage(route.x, route.z, route.rot);
+    f.frame();
+    const { half, wide } = f.car.m.spec;
+    const swept = { ...route, z: (route.z + endZ) / 2 };
+    const size = { ...pierBumper, half: pierBumper.half + (route.z - endZ) / 2 };
+    const bounds = { minX: route.x - size.wide, maxX: route.x + size.wide, minZ: endZ - pierBumper.half, maxZ: route.z + pierBumper.half };
+    const deck = DECKS.find(d => d.x0 < bounds.minX && d.x1 > bounds.maxX && d.z0 < bounds.minZ && d.z1 > bounds.maxZ);
+    const restaurant = f.col.boxes.find(b => b.tag === "building" && b.minX < -30 && b.maxX > -30 && b.minZ < route.z && b.maxZ > route.z);
+    const rail = f.col.boxes.find(b => b.deckRail && b.maxX < route.x && b.minZ < bounds.minZ && b.maxZ > bounds.maxZ);
+    expect(restaurant).toMatchObject({ minX: -39, maxX: -21, minZ: -86, maxZ: -74 });
+    expect(carFootprintOverlapsBox(-30, swept.z, route.rot, size.half, size.wide, restaurant!)).toBe(true);
+    expect(deck).toMatchObject({ x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
+    expect(rail).toBeDefined();
+    expect(half).toBeLessThanOrEqual(pierBumper.half);
+    expect(wide).toBeLessThanOrEqual(pierBumper.wide);
+    let minWater = Infinity, maxWater = -Infinity;
+    for (let i = -4; i <= 4; i++) for (let j = -6; j <= 6; j++) {
+      const p = at(swept, size.wide * i / 4, size.half * j / 6), water = waterY(p.x, p.z, f.time);
+      expect(floorY(p.x, p.z)).toBe(0.3);
+      expect(water).not.toBeNull();
+      expect(water!).toBeLessThan(0.3);
+      minWater = Math.min(minWater, water!);
+      maxWater = Math.max(maxWater, water!);
+    }
+    const checkClear = (p: CarWaterSite, body: Size) => {
+      const hits: unknown[] = solidHits(f.col, p, body);
+      // The fixed heading of this aisle makes the swept car an axis-aligned box for other rides' OBBs.
+      const b = { minX: p.x - body.wide, maxX: p.x + body.wide, minZ: p.z - body.half, maxZ: p.z + body.half };
+      const disc = (x: number, z: number, r: number) => {
+        if (bodyHitsCircle(p, body, { x, z, r })) hits.push({ x, z, r });
+        return true;
+      };
+      for (const c of f.rides.sea.circles) disc(c.x, c.z, c.r);
+      for (const q of [...f.rides.list, ...f.cars]) {
+        if (q !== f.car) {
+          const { x, z, heading, spec } = q.m;
+          if (carFootprintOverlapsBox(x, z, heading, spec.half, spec.wide, b)) hits.push({ ride: q.id, x, z, heading });
+        }
+        for (const o of q.owners) if (o.state !== "in") disc(o.ch.root.position.x, o.ch.root.position.z, 0.45);
+      }
+      f.adapter.peopleClear(disc, false);
+      f.ambient.carWaterPeopleClear(disc, false);
+      f.ambient.carWaterTrafficClear((x, z, half, wide) => {
+        const b = { minX: x - half, maxX: x + half, minZ: z - wide, maxZ: z + wide };
+        if (carFootprintOverlapsBox(p.x, p.z, p.rot, body.half, body.wide, b)) hits.push({ traffic: b });
+        return true;
+      });
+      expect(hits[0], JSON.stringify({ route, endZ, pose: p, bounds, firstBlocker: hits[0] })).toBeUndefined();
+    };
+    checkClear(swept, size);
+    const start = pierPose(f);
+    checkDryPier(f);
+    let end = start, frames = 0, maxStep = 0;
+    while (frames < 120 && (start.z - end.z < 3 || end.pace <= 1.5)) {
+      const before = end;
+      f.frame(go);
+      frames++;
+      end = pierPose(f);
+      expect(end.heading).toBeCloseTo(route.rot, 8);
+      expect(end.x).toBeCloseTo(route.x, 8);
+      expect(end.z).toBeLessThan(before.z);
+      expect(end.z).toBeGreaterThanOrEqual(endZ);
+      expect(end.speed).toBeGreaterThan(0);
+      const step = Math.hypot(end.x - before.x, end.z - before.z);
+      expect(step).toBeLessThanOrEqual(end.pace / 60 + 0.002);
+      maxStep = Math.max(maxStep, step);
+      checkDryPier(f);
+      checkClear({ x: end.x, z: end.z, rot: end.heading }, pierBumper);
+    }
+    expect(start.z - end.z).toBeGreaterThanOrEqual(3);
+    expect(end.pace).toBeGreaterThan(1.5);
+    console.log("PC deck", JSON.stringify({ route, endZ, bounds, deck, restaurant, rail, body: pierBumper,
+      motion: { radius: wide, offset: half - wide }, water: [minWater, maxWater],
+      gaps: [bounds.minX - rail!.maxX, restaurant!.minX - bounds.maxX], frames, end, maxStep }));
+  } finally { f.close(); }
+}, 20_000);
+
+it.each(["keyboard", "touch"] as const)("pulls off the real PC pier rail with continuous %s reverse", async input => {
+  const f = occupiedTown(60);
+  try {
+    await f.board(f.rides.find("park"));
+    const game = Object.assign(Object.create(Game.prototype), {
+      rides: f.rides, keys: new Set<string>(), joy: { x: 0, y: 0 }, rig: { manualTurn: 0 }, rideGoal: null,
+    });
+    const dt = 1 / 60;
+    f.stage(-30, -70, 0.42);
+    f.frame();
+    const start = pierPose(f);
+    const rails = f.col.boxes.filter(b => b.deckRail);
+    const east = rails.find(b => b.minX > start.x && b.minX < start.x + 3 && b.minZ < start.z && b.maxZ > start.z)!;
+    expect(east).toBeDefined();
+    let previous = start, tightest = Infinity;
+    const frame = () => {
+      f.frame(game.townRideControls(dt, false));
+      const pose = pierPose(f);
+      checkDryPier(f);
+      expect(solidHits(f.col, { ...pose, rot: pose.heading }, pierBumper), JSON.stringify(pose)).toEqual([]);
+      for (const rail of rails) {
+        expect(sweepCarFootprintBox(previous, pose, pierBumper.half, pierBumper.wide, rail), JSON.stringify({ previous, pose, rail })).toBeNull();
+      }
+      const eastmost = pose.x + pierBumper.half * Math.abs(Math.sin(pose.heading)) + pierBumper.wide * Math.abs(Math.cos(pose.heading));
+      tightest = Math.min(tightest, east.minX - eastmost);
+      const step = Math.hypot(pose.x - previous.x, pose.z - previous.z);
+      previous = pose;
+      return { ...pose, step };
+    };
+    game.keys.add("w");
+    const approach = Array.from({ length: 52 }, frame), hit = approach.at(-1)!;
+    expect(hit.x - start.x).toBeGreaterThan(0.15);
+    expect(approach.slice(-10).some(p => p.pace < 0.6) || Math.abs(hit.x - approach.at(-10)!.x) < 0.06).toBe(true);
+    const sustained = Array.from({ length: 60 }, frame), held = sustained.at(-1)!;
+    const sustainedDrift = Math.hypot(held.x - hit.x, held.z - hit.z);
+    expect(sustainedDrift).toBeLessThan(0.06);
+    game.keys.delete("w");
+    const approachClearance = tightest;
+    tightest = Infinity;
+    const reverseFrame = () => {
+      const pose = frame();
+      if (input === "keyboard") {
+        expect(pose.speed).toBeLessThan(0);
+        expect(pose.step).toBeGreaterThan(0);
+        expect(pose.step).toBeLessThanOrEqual(pose.pace * dt + 0.002);
+      }
+      return pose;
+    };
+    const legs = [];
+    if (input === "keyboard") {
+      game.keys.add("s");
+      for (const [key, frames] of [["S", 20], ["S+A", 8], ["S", 7]] as const) {
+        if (key === "S+A") game.keys.add("a");
+        else game.keys.delete("a");
+        legs.push({ key, frames, end: Array.from({ length: frames }, reverseFrame).at(-1)! });
+      }
+    } else {
+      const radius = Math.hypot(1, 0.25);
+      game.joy = { x: -0.25 / radius, y: -1 / radius };
+      legs.push({ stick: game.joy, frames: 35, end: Array.from({ length: 35 }, reverseFrame).at(-1)! });
+    }
+    const end = legs.at(-1)!.end, retreat = held.x - end.x;
+    const yaw = Math.atan2(Math.sin(end.heading - held.heading), Math.cos(end.heading - held.heading));
+    console.log("PC reverse", JSON.stringify({ input, start, held, sustainedDrift, legs, retreat, yaw, approachClearance, reverseClearance: tightest,
+      finalClearance: east.minX - (end.x + pierBumper.half * Math.abs(Math.sin(end.heading)) + pierBumper.wide * Math.abs(Math.cos(end.heading))) }));
+    expect(retreat).toBeGreaterThan(0.15);
+    expect(Math.abs(yaw)).toBeGreaterThan(0.05);
+    if (input === "keyboard") expect(yaw).toBeLessThan(0);
+  } finally { f.close(); }
+}, 20_000);
+
+it("lands after an unsupported PC pier back-lip trial", async () => {
   const f = occupiedTown(60);
   try {
     await f.board(f.rides.find("east"));
-    f.stage(-30, -70, 0.42);
-    for (let i = 0; i < 52; i++) {
-      f.frame(go);
-      expect(f.inspect().band).toBe("dry");
-      expect(f.car.mesh.position.y).toBeGreaterThanOrEqual(0.3);
-      expect(solidHits(f.col, { x: f.car.m.x, z: f.car.m.z, rot: f.car.m.heading }, { half: 2.26, wide: 0.99 })).toEqual([]);
-    }
-    expect(f.car.m.x).toBeLessThan(-29.5);
     f.stage(-30, -90.5, Math.PI);
     f.frame();
     expect(f.inspect().phase).toBe("float");
