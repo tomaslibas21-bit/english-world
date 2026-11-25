@@ -97,7 +97,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .nametag b { display: block; font-size: 16px; font-weight: 800; color: var(--ink); line-height: 1.15; }
 .nametag span { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 700; }
-.nametag i { display: block; font-style: normal; font-size: 11.5px; line-height: 1.25; color: var(--ink-faint); font-weight: 700; }
+.nametag i { display: block; font-style: normal; font-size: 13px; line-height: 1.2; color: var(--ink-soft); font-weight: 700; }
 .nametag.objective { background: #fff4d6; outline: 3px solid var(--gold); }
 .nametag.objective::before {
   content: "!"; position: absolute; top: -26px; left: 50%; transform: translateX(-50%);
@@ -132,36 +132,57 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   display: grid; place-items: center; transition: background-color 0.15s, color 0.15s;
 }
 .objective-card .collapse-btn:hover { background: rgba(31, 42, 51, 0.06); color: var(--ink-soft); }
+.objective-card .collapse-btn:focus-visible { outline-offset: -3px; }
+.hud.has-touch .objective-card .collapse-btn:not(.objective-summary) {
+  width: 44px; height: 44px; margin-block: -9px -15px;
+}
 .objective-head { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 8px; margin-bottom: 4px; }
 .objective-head .kicker { grid-column: 1 / -1; }
 .objective-ico { padding: 5px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
 .objective-card h3 { align-self: center; margin: 0; font-size: 1.12em; line-height: 1.22; overflow-wrap: anywhere; hyphens: auto; }
-.objective-card.collapsed .objective-head { gap: 0 7px; margin: 0; }
-.objective-card.collapsed { padding-block: 6px; }
-.objective-card.collapsed .objective-ico { grid-column: 1; grid-row: 1 / 3; margin-top: 5px; }
-.objective-card.collapsed .kicker { grid-column: 2; }
-.objective-card.collapsed h3 { font-size: 1em; line-height: 1.15; }
 .objective-card h3 .en-title { font-family: var(--en); font-weight: 500; color: var(--ink-soft); font-size: 0.85em; }
 .objective-card p { margin: 0; color: var(--ink-soft); font-size: 0.86em; line-height: 1.4; }
-.objective-card .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.objective-card .row { display: flex; gap: 6px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.hud.has-touch .objective-card .row .btn.small { min-width: 44px; min-height: 44px; }
+.objective-meta { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.objective-destination { color: var(--ink-soft); font-weight: 800; overflow-wrap: anywhere; }
 .objective-card .dist { font-weight: 800; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; font-size: 0.9em; }
+.objective-meta .dist { flex: none; white-space: nowrap; }
 .arrow { display: inline-block; width: 22px; height: 22px; transition: transform 0.2s; }
-.objective-card.collapsed { padding: 0; height: 48px; }
+.objective-card.collapsed { padding: 0; border-width: 0; height: 48px; }
 .hud.has-touch .objective-card.collapsed { height: 44px; }
 .objective-card .objective-summary {
-  display: flex; align-items: center; gap: 6px; width: 100%; height: 100%; margin: 0; padding: 0 10px;
-  border-radius: inherit; color: var(--accent); white-space: nowrap; text-align: left;
+  display: flex; align-items: center; gap: 6px;
+  inline-size: 100%; min-inline-size: 0; height: 100%; min-height: 44px; margin: 0; padding: 0 8px;
+  border: 1px solid; border-color: inherit; border-radius: inherit; color: var(--accent); text-align: left;
 }
 .objective-card .objective-summary::before { content: none; }
-.objective-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 900; color: var(--ink); }
-.objective-summary .dist { flex: none; gap: 3px; }
-.objective-summary .arrow { width: 17px; height: 17px; }
-.objective-summary .objective-ico { flex: none; padding: 4px; border-radius: 8px; }
+.objective-summary .objective-title, .objective-summary .objective-destination {
+  min-inline-size: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.objective-summary .objective-title { flex: 1; font-size: calc(15px * var(--scale)); line-height: 1.1; font-weight: 900; color: var(--ink); }
+.objective-summary .objective-meta { min-inline-size: 0; max-inline-size: 46%; font-size: calc(13px * var(--scale)); line-height: 1.1; }
+.objective-summary .dist { gap: 3px; font-size: inherit; }
+.objective-summary .arrow { width: 14px; height: 14px; }
+.objective-summary .objective-ico { padding: 2px; border-radius: 6px; }
+@media (max-width: 600px) and (orientation: portrait) {
+  .objective-card .objective-summary {
+    display: grid; grid-template-columns: 18px minmax(0, 1fr) 16px;
+    grid-template-areas: "icon title toggle" ". details toggle";
+    align-content: center; gap: 0 6px;
+  }
+  .objective-summary > svg:first-child { grid-area: icon; }
+  .objective-summary > svg:last-child { grid-area: toggle; }
+  .objective-summary :is(.objective-title, .objective-meta) { justify-self: stretch; }
+  .objective-summary .objective-title { grid-area: title; }
+  .objective-summary .objective-meta { grid-area: details; max-inline-size: none; }
+}
 
 /* The little map: round outdoors; indoors it folds into a small card with the place's name (Hud.tsx Minimap). The
    frame glides between the two: indoors its size is the card's, set on the element. */
 .minimap {
   --mm: 170px; --mm-edge: 5px;
+  padding: 0; font: inherit; box-sizing: border-box; min-width: 44px; min-height: 44px;
   position: absolute; top: var(--card-top); right: var(--card-left); width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2); pointer-events: auto;
   overflow: hidden; box-shadow: var(--shadow); border: var(--mm-edge) solid var(--panel-solid); background: #8fc66a; cursor: pointer;
 }
@@ -211,6 +232,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toolbar.folds :is(.toolbar-tools, .toolbar-actions, .toolbar-shortcuts, .drawer-tool) { display: contents; }
 .toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
 .toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
+.hud.has-touch .toolbar .key { display: none; }
+.hud.has-touch .phone-menu .phrasebook-tool { background: var(--accent-soft); }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -769,18 +792,18 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .head-stars { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .head-stars .ui-icon { color: var(--gold); }
 .sheet-body { overflow-y: auto; padding: 16px 18px 22px; }
-.map-wrap { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
-.map-canvas { position: relative; border-radius: 18px; overflow: hidden; background: #8fc66a; aspect-ratio: 1.47; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); }
-.map-canvas canvas { width: 100%; height: 100%; display: block; }
-.map-pin {
-  position: absolute; transform: translate(-50%, -50%); border: 0; background: #fff; border-radius: 10px; width: 30px; height: 30px; padding: 0;
-  display: grid; place-items: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); transition: transform 0.12s ease, box-shadow 0.12s ease;
+.map-wrap { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+.map-sheet .sheet-body { scrollbar-gutter: stable; }
+.map-sheet .map-wrap .btn.small { min-height: 44px; min-width: 44px; }
+.map-canvas { position: sticky; top: 0; align-self: start; width: 100%; isolation: isolate; border-radius: 18px; overflow: hidden; background: #8fc66a; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); }
+.map-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+@media (max-width: 700px) {
+  .map-wrap { grid-template-columns: minmax(0, 1fr); }
+  .map-canvas { position: relative; }
 }
-.map-pin:hover { transform: translate(-50%, -50%) scale(1.12); z-index: 2; }
-.map-pin.map-place-label { width: auto; height: auto; padding: 1px 7px; font-size: 0.75rem; white-space: nowrap; }
-.map-pin.sel { box-shadow: 0 0 0 3px var(--gold), 0 4px 12px rgba(0, 0, 0, 0.32); z-index: 3; }
-.map-pin .pin-done { position: absolute; top: -7px; right: -7px; width: 17px; height: 17px; border-radius: 50%; background: var(--good); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
-.map-me { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e63946; border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(230,57,70,0.3); }
+@media (min-width: 701px) and (max-height: 510px) {
+  .map-wrap { grid-template-columns: minmax(0, min(54%, calc((100dvh - 150px) * 1.47))) minmax(0, 1fr); }
+}
 .place-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
 .place-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
 .sit-list { display: flex; flex-direction: column; gap: 8px; }
@@ -822,9 +845,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .scn-card .txt { grid-area: txt; align-self: start; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .scn-card .txt b { font-size: 1.02em; line-height: 1.2; }
 .scn-card .txt i { font-family: var(--en); font-size: 1.08em; line-height: 1.2; color: var(--ink-soft); }
-.scn-card .txt span { font-size: 0.8em; line-height: 1.35; color: var(--ink-faint); }
-.scn-card .txt :is(b, i, span), .lh-txt :is(b, i, span) { min-width: 0; overflow-wrap: anywhere; hyphens: auto; hyphenate-limit-chars: 12 4 4; }
-.scn-card .txt :is(b, i, span), .lh-txt :is(b, i, span) { text-wrap: balance; }
+.scn-card .txt span { font-size: max(0.8em, calc(14px * var(--scale))); line-height: 1.3; color: var(--ink-soft); }
+.scn-card .txt > *, .lh-txt > * { min-width: 0; overflow-wrap: anywhere; }
+.scn-card .txt :is(b, i), .lh-txt :is(b, i) { hyphens: auto; hyphenate-limit-chars: 12 4 4; text-wrap: balance; }
 .howto { background: #fffaf0; border: 1px solid #efe3cb; border-radius: 14px; margin: 12px 0 4px; }
 .howto summary { cursor: pointer; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; padding: 10px 14px; list-style: none; border-radius: 14px; }
 .howto summary::-webkit-details-marker { display: none; }
@@ -853,18 +876,18 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .phone-close:hover { background: rgba(255, 255, 255, 0.1); }
 .overlay > .phone h2 { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0 14px; font-size: 1.2em; }
 .contact {
-  display: flex; align-items: center; gap: 12px; width: 100%; background: #2a3238; border: 0; color: #fff; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; text-align: left;
+  display: flex; align-items: center; gap: 12px; width: 100%; background: var(--panel-solid); border: 0; color: var(--ink); border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; text-align: left;
   transition: background-color 0.15s;
 }
-.contact:hover { background: #323c43; }
-.contact .avatar { position: relative; width: 44px; height: 44px; font-size: 18px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+.contact:hover { background: #f5efe5; }
+.contact .avatar { position: relative; width: 44px; height: 44px; font-size: 18px; background: var(--accent); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
 .contact-badge {
   position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; display: grid; place-items: center;
   border: 1px solid #aab7c2; border-radius: 50%; background: #232a30;
 }
-.contact .txt { min-width: 0; }
+.contact .txt { min-width: 0; overflow-wrap: anywhere; }
 .contact .txt b { display: block; }
-.contact .txt span { display: block; font-size: 0.8em; color: #aab7c2; }
+.phone .contact .txt > span { display: block; font-size: max(0.8em, calc(14px * var(--scale))); line-height: 1.3; color: var(--ink-soft); white-space: normal; }
 .contact .txt .stars { vertical-align: -2px; }
 .contact .call {
   margin-left: auto; flex: none; background: linear-gradient(160deg, #3fd483, #27b263); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
@@ -970,7 +993,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .convo .call-strip { max-height: 64px; overflow-y: auto; padding: 4px 10px; }
   .call-strip .tile { flex-direction: row; min-width: auto; padding: 2px; }
   .call-strip .tile .face { display: none; }
-  .map-wrap { grid-template-columns: 1fr; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { --mm: 88px; --mm-edge: 3px; }
   .minimap .label { display: none; }
@@ -1044,7 +1066,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .convo .transcript { scroll-behavior: auto; }
   .nat-star { transition: none; }
   .minimap.live, .minimap.live canvas, .minimap.live .label, .minimap.live .mm-card, .minimap.live.inside canvas, .minimap.live.inside .label, .minimap.live.inside .mm-card { transition: none; }
-  .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover { transition: none; transform: none; }
+  .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover,
+  .mic, .convo .mic, .convo .mic:is(:hover, :active):not(:disabled) { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
 }
@@ -1096,8 +1119,8 @@ body.scene-on .tag-layer { display: none; }
 /* a phone held upright, a tablet: the bottom right corner of the picture above the panel */
 @media (max-width: 900px) {
   .view-chip { right: max(10px, env(safe-area-inset-right)); bottom: auto; top: calc(var(--conversation-image-height) - 54px); gap: 8px; }
-  .view-chip button { width: 62px; height: 46px; border-radius: 13px; }
-  .view-chip .vc-label { padding: 10px 3px 3px; font-size: 10px; }
+  .view-chip button { width: max(62px, calc(22px + 40px * var(--scale))); height: 46px; border-radius: 13px; opacity: 1; }
+  .view-chip .vc-label { padding: 2px 3px; font-size: calc(12px * var(--scale)); line-height: 1.15; letter-spacing: normal; background: #183d43; text-shadow: none; }
 }
 /* a sideways phone: the bottom right corner of the picture on the left, its words above it */
 @media (max-height: 520px) and (orientation: landscape) {
@@ -1258,6 +1281,7 @@ body.scene-on .tag-layer { display: none; }
 .coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
+.hud.has-touch .coach-next { min-height: 44px; }
 /* On an upright phone the task and note share a column. Leave room for the toolbar on the right
    and for the touch controls at the bottom. The card can scroll if large text would push the note too low. */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -1278,11 +1302,12 @@ body.scene-on .tag-layer { display: none; }
   /* With a folded card the toast and guide start alongside the map, which can be 100 px wide indoors. */
   .objective-notes.task-folded :is(.town-toasts, .coach) { max-width: calc(100vw - 2 * var(--card-left) - 108px); }
   .objective-notes .town-toasts .toast { min-height: 0; overflow: auto; animation-name: note-in; }
-  .objective-notes .zone-banner { text-align: left; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
-  .objective-notes .zone-banner h2 { line-height: 1.08; }
+  .objective-notes .zone-banner { text-align: left; padding-block: 5px; line-height: 1.15; animation-name: note-in; }
+  .objective-notes .zone-banner h2 { font-size: calc(20px * var(--scale)); }
+  .objective-notes .zone-banner p { font-size: calc(14px * var(--scale)); }
   /* Keep the folded card's banner at its usual height and centre it as far as the toolbar allows. */
   .objective-notes.task-folded .zone-banner {
-    position: fixed; top: max(18%, calc(var(--card-top) + 44px + 12px)); left: 50%;
+    position: fixed; top: max(18dvh, calc(var(--card-top) + 44px + 12px)); left: 50%;
     width: max-content; max-width: var(--note-width); margin: 0; text-align: center;
     transform: translateX(clamp(calc(var(--card-left) - 50vw), -50%, calc(50vw - var(--note-right) - 100%)));
   }
@@ -1292,6 +1317,22 @@ body.scene-on .tag-layer { display: none; }
   .coach-row { margin-top: 2px; gap: 6px; }
   .coach-skip { padding: 0 6px; }
   .coach-next { min-width: 76px; }
+  .objective-notes .coach-compact { gap: 6px; padding: 8px; align-items: center; font-size: calc(14px * var(--scale)); }
+  .coach-toggle {
+    display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 44px; min-height: 44px; max-width: 100%;
+    border: 0; border-radius: 10px; padding: 0; background: none; text-align: left; line-height: 1.15;
+  }
+  .coach-toggle .coach-icon { display: grid; width: 30px; height: 30px; border-radius: 10px; }
+  .coach-toggle .coach-icon svg { width: 20px; height: 20px; }
+  .coach-toggle b { font-size: calc(16px * var(--scale)); }
+  .coach-body { flex: 0 0 100%; margin: 0; color: var(--ink-soft); line-height: 1.35; }
+  .coach-compact .coach-row { flex: 0 1 auto; flex-wrap: wrap; margin: 0 0 0 auto; }
+  .coach-compact .coach-skip { width: min-content; padding: 0 4px; line-height: 1.15; }
+  .coach-compact :is(.coach-skip, .coach-next) { min-width: 44px; min-height: 44px; font-size: inherit; }
+  .coach-compact .coach-next { padding: 0 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    .objective-notes :is(.zone-banner, .coach-compact) { animation: none; }
+  }
 }
 @media (max-width: 480px) {
   .objective-notes .town-toasts:not(:empty) { margin-top: 6px; }

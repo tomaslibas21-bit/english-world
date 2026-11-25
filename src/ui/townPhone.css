@@ -136,7 +136,6 @@
 .phone-ring-actions .btn { min-height: 44px; }
 .missed-calls .missed-call { align-items: center; }
 .missed-call .btn { flex: none; margin-left: auto; min-height: 44px; }
-.objective-card.collapsed[data-target-location] .objective-title { font-size: 0.86em; }
 .lizzie-meeting {
   position: absolute;
   inset: auto 0 max(16px, env(safe-area-inset-bottom));

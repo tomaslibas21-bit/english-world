@@ -191,7 +191,7 @@ export function DirectionsCard() {
     <DirectionLines key={place.id} place={place} />
     <footer>
       <button type="button" className="btn ghost small" disabled={replaying} onClick={() => action("replay")}><Icon name="speaker" size={15} />{directions.replay}</button>
-      <button type="button" className="btn soft small" onClick={() => action("guide")}><Icon name="walk" size={15} />{directions.guide}</button>
+      <button type="button" className="btn small" onClick={() => action("guide")}><Icon name="walk" size={15} />{directions.guide}</button>
     </footer>
   </section>;
 }

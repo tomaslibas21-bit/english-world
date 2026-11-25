@@ -1,10 +1,35 @@
 // The way to the objective, marked on the ground (src/game/guidance.ts): small arrowheads that lie still, fewer than
 // the discs there were, fading in before the player and out with distance, a brightening travelling along them.
 import { describe, expect, it } from "vitest";
-import { wayMarks, WAY } from "../src/game/guidance";
+import { guideVisualTarget, wayMarks, WAY } from "../src/game/guidance";
+import { ASK_WAY_PLACES } from "../src/content/ask-way-lines";
 
 /** A way of 60 m: 30 m east, then 30 m north (towards -z). */
 const way = (from = 0): [number, number][] => [[from, 0], [30, 0], [30, -30]];
+
+describe("markers for a requested route", () => {
+  const [post, cafe] = ASK_WAY_PLACES;
+  const guide = { id: post.location, directions: post };
+  const target = { ...guide, kind: "point" };
+
+  it("marks the exit approach indoors and the requested door outside", () => {
+    expect(guideVisualTarget([[4, 2]], { ...guide, kind: "exit" }, post)).toEqual({ kind: "exit", x: 4, z: 2 });
+    expect(guideVisualTarget(way(), target, post)).toEqual({ kind: "point", x: 30, z: -30 });
+    expect(guideVisualTarget(way(), { kind: "point", id: post.location }, null)).toEqual({ kind: "point", x: 30, z: -30 });
+  });
+
+  it("falls back to the saved objective after manual cancellation or arrival", () => {
+    const saved = { kind: "npc", x: 0, z: 8 };
+    expect(guideVisualTarget(null, null, post) ?? saved).toBe(saved);
+    expect(guideVisualTarget([], target, post) ?? saved).toBe(saved);
+  });
+
+  it("ignores unrelated walks and directions that were closed or replaced", () => {
+    expect(guideVisualTarget(way(), { kind: "point" }, post)).toBeNull();
+    expect(guideVisualTarget(way(), target, null)).toBeNull();
+    expect(guideVisualTarget(way(), target, cafe)).toBeNull();
+  });
+});
 
 describe("the way's marks", () => {
   it("lie along the way, a mark every 2.2 m, each pointing on, the last one short of the destination", () => {

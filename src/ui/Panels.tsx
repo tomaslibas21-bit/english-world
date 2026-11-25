@@ -3,7 +3,8 @@ import { clearPhotos } from "../game/photowalk/photos";
 import { PhotoBookContact } from "./PhotoWalk";
 import { ROUTE } from "../content/route";
 import { useKeyboardHints } from "./keyboardHints";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
@@ -297,6 +298,8 @@ function Journal({ close }: { close: () => void }) {
   );
 }
 
+const MapPlaces = lazy(() => import("./MapPlaces"));
+
 function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
   const d = game?.doors.find((dd) => dd.loc === loc);
@@ -308,12 +311,33 @@ function locationPoint(loc: string): { x: number; z: number } | null {
 
 function MapPanel({ close }: { close: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<string | null>(null);
   const progress = useStore((s) => s.progress);
-  const mm = useStore((s) => s.hud.minimap);
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
   const north = island ? WORLD.minZ : SEA_Z - 2;
   const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
+  useLayoutEffect(() => {
+    const map = sheet.current!;
+    const opener = document.activeElement as HTMLElement | null;
+    map.querySelector<HTMLButtonElement>(".close-x")?.focus();
+    const keepTabInMap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const controls = [...map.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]')].filter((el) => el.getClientRects().length);
+      const edge = e.shiftKey ? controls[0] : controls.at(-1);
+      if (document.activeElement !== edge) return;
+      e.preventDefault();
+      (e.shiftKey ? controls.at(-1) : controls[0])?.focus();
+    };
+    map.addEventListener("keydown", keepTabInMap);
+    return () => {
+      map.removeEventListener("keydown", keepTabInMap);
+      if (useStore.getState().hud.panel) return;
+      const target = opener !== document.body && opener?.isConnected && !opener.closest("[inert]")
+        ? opener : document.querySelector<HTMLButtonElement>(".minimap");
+      target?.focus();
+    };
+  }, []);
   useEffect(() => {
     const g = game?.groundCanvas, c = ref.current;
     if (!g || !c) return;
@@ -325,47 +349,34 @@ function MapPanel({ close }: { close: () => void }) {
     ctx.drawImage(g, 0, sea);
     if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
   }, [W, island, north]);
-  const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
   return (
-    <div className="sheet">
+    <div className="sheet map-sheet" ref={sheet} role="dialog" aria-modal="true" aria-label="Maple Harbor">
       <SheetHead icon="map" title="Maple Harbor" close={close} />
       <div className="sheet-body">
         <div className="town-lt" lang="lt">{TOWN_LT}</div>
         <div className="map-wrap">
-          <div className="map-canvas" style={island ? { aspectRatio: W / D } : undefined}>
+          <div className="map-canvas" style={{ aspectRatio: W / D }}>
             <canvas ref={ref} />
-            {mm.zone === "town" && <div className="map-me" style={pct(mm.px, mm.pz)} title="Tu esi čia" />}
-            {island && <button className={"map-pin map-place-label" + (sel === "lighthouse" ? " sel" : "")}
-              style={pct(island.center.x, island.center.z)} aria-pressed={sel === "lighthouse"} onClick={() => setSel("lighthouse")}>
-              <span>{island.name} <span lang="lt">· {island.lt}</span></span>
-            </button>}
-            {locs.map((l) => {
-              const p = locationPoint(l.id);
-              if (!p) return null;
-              const sits = SITUATIONS.filter((s) => s.location === l.id && !isTownQuest(s.id));
-              const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
-              return (
-                <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
-                  <Icon name={locIcon(l.id)} size={18} />
-                  {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label="įveikta" /></span>}
-                </button>
-              );
-            })}
           </div>
           <div>
+            <Suspense fallback={null}>
+              {/* Pass the existing UI and content through so opening the map is their only new chunk boundary. */}
+              <MapPlaces canvas={ref} island={island} north={north} positionFor={locationPoint} progress={progress}
+                selected={sel} onSelect={setSel} route={ROUTE} situations={SITUATIONS} doors={game?.doors}
+                Icon={Icon} iconFor={locIcon} portal={createPortal} />
+            </Suspense>
             {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && (
               <div>
-                <h3 className="place-title">{island.name}</h3>
+                <h3 className="place-title" tabIndex={0}>{island.name}</h3>
                 <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
                 <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
               </div>
             )}
             {sel && LOCATIONS[sel] && (
               <div>
-                <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
+                <h3 className="place-title" tabIndex={0}><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 <div className="sit-list">
