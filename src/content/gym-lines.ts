@@ -5,10 +5,10 @@ import type { SentSrc } from "./types";
 export type GyLineId = `gy_${GyMoveId}` | "gy_intro" | "gy_right_a" | "gy_right_b" | "gy_retry" | "gy_end";
 
 export const GYM_LINES = {
-  gy_jacks: [t("Jumping jacks!", "Šuoliukai skėčiant kojas!", "Pašokite, praskėskite kojas ir pakelkite rankas!")],
+  gy_jacks: [t("Jumping jacks!", "Šuoliukai išskečiant kojas!", "Pašokite, išskėskite kojas ir pakelkite rankas!")],
   gy_toes: [t("Touch | your | toes!", "Palieskite | savo | kojų pirštus!", "Pasilenkite ir palieskite kojų pirštus!")],
   gy_squats: [t("Do | a | squat!", "Padarykite | — | pritūpimą!", "Pritūpkite!")],
-  gy_circles: [t("Make | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!")],
+  gy_circles: [t("Do | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!")],
   gy_run: [t("Run | in place!", "Bėkite | vietoje!", "Bėkite vietoje!")],
   gy_reach: [t("Reach | up!", "Tieskitės | aukštyn!", "Ištieskite rankas virš galvos!")],
   gy_lunges: [t("Do | a | lunge!", "Padarykite | — | įtūpstą!", "Ženkite pirmyn ir padarykite įtūpstą!")],

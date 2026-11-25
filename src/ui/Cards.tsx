@@ -143,7 +143,7 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang={TL}>{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugokite visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
+      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugok visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
@@ -152,7 +152,7 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Sakinys kortelėse")}</span>
           : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> {L("Visą sakinį")}</button>}
       </div>
-      {saved && <div className="wpop-hint">{L("Kortelę rasite „Frazių knygelėje“.")}</div>}
+      {saved && <div className="wpop-hint">{L("Kortelę rasi „Frazių knygelėje“.")}</div>}
     </div>,
     document.body,
   );

@@ -46,10 +46,10 @@ const jacks = pc ? "¡Haga saltos de tijera!" : "Jumping jacks!";
 const toes = pc ? "¡Tóquese los pies!" : "Touch your toes!";
 const firstHelp = pc
   ? EDITION.helper === "lt" ? "Šokinėkite, skėskite kojas ir kelkite rankas!" : "Do jumping jacks!"
-  : "Pašokite, praskėskite kojas ir pakelkite rankas!";
+  : "Pašokite, išskėskite kojas ir pakelkite rankas!";
 const firstGloss = pc
-  ? EDITION.helper === "lt" ? ["Darykite", "šuoliukus skėčiant kojas!"] : ["Do", "jumping jacks!"]
-  : ["Šuoliukai skėčiant kojas!"];
+  ? EDITION.helper === "lt" ? ["Darykite", "šuoliukus išskečiant kojas!"] : ["Do", "jumping jacks!"]
+  : ["Šuoliukai išskečiant kojas!"];
 
 function setup(constructorPhase?: number) {
   let room = new Group();
