@@ -373,6 +373,7 @@ export class Game implements GameApi {
   /** At a wheel: the way the camera looks along (the car's course: in a slide it is seen side on), how far it has
    *  pulled back for the speed, the lens's widening, whether the kick out of a slide has been heard. */
   private rideCourse = 0;
+  private crestAim = 0;
   private rideBack = 0;
   private rideFov = 0;
   private speedFeelLoader?: SpeedFeelLoader;
@@ -3036,8 +3037,11 @@ export class Game implements GameApi {
     }
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);
-    // (at a wheel the camera stays behind the car, backing up too)
-    this.rig.motion.dir = riding ? this.rideCourse : mode ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
+    // (at a wheel the camera stays behind the car, backing up too; on an upright phone heading out over the desert
+    // road's crest it swings a little toward the bend beyond, so the crest frame has sand on both sides: road/entry.ts)
+    const crestAim = riding && !mode && h > w * 1.15 ? this.road?.crestAim ?? 0 : 0;
+    this.crestAim = riding ? this.crestAim + (crestAim - this.crestAim) * Math.min(1, dt * 6) : 0;
+    this.rig.motion.dir = riding ? this.rideCourse + this.crestAim : mode ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
