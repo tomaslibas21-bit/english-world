@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { activatePhraseControl, assertSavedSentence, cardCentre, cardsFor, checkCardList, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8311";
@@ -70,7 +71,11 @@ try {
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(base, { waitUntil: "domcontentloaded" });
 
-      const step = (n = 1) => page.evaluate((count) => window.__stepLoteria(count), n);
+      let frame = 0;
+      const step = async (n = 1) => {
+        await page.evaluate((count) => window.__stepLoteria(count), n);
+        frame += n;
+      };
       const state = () => page.evaluate(() => window.__ew?.loteria?.state());
       const wait = async (predicate, description, frames = 1, attempts = 700) => {
         for (let i = 0; i < attempts; i++) {
@@ -85,7 +90,12 @@ try {
         });
         assert.fail(`${label}: ${description}: mode=${JSON.stringify(await state())} chat=${JSON.stringify(chat)}. ${errors.join(", ")}`);
       };
-      const shot = (name) => page.screenshot({ path: join(dir, `loteria-${name}.png`) });
+      const shot = async (name) => {
+        await page.screenshot({ path: join(dir, `loteria-${name}.png`) });
+        if (name.startsWith("phrase-")) await page.screenshot({
+          path: join(dir, `PC-${lt ? "lt" : "en"}-${width}x${height}-loteria-${name}-F${frame}.png`),
+        });
+      };
       const shown = (selector) => page.locator(selector).first().isVisible();
       const cell = (id) => page.locator(`.loteria-cell[data-card="${id}"]`);
       const press = (target) => phone ? target.tap() : target.click();
@@ -200,6 +210,7 @@ try {
       }
 
       await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", 2);
+      assert.equal(await page.locator("html").getAttribute("lang"), lt ? "lt" : "en");
       assert(await page.evaluate(() => window.__ew.loteria.stage(2, 6)), "stage a seeded game at the zócalo");
       const before = await daylight();
       const talk = async () => {
@@ -248,9 +259,44 @@ try {
       assert(await calledName.locator(".lt").first().isVisible());
       await shot("first-glow");
       let s = await state();
+      const saveState = async () => ({
+        round: await state(),
+        input: await page.evaluate(async () => {
+          const { useLoteria } = await import("/src/game/loteria/store.ts");
+          const { mic, read, result } = useLoteria.getState();
+          const { game, store } = window.__ew;
+          const { round, wrongShout, shout } = game.modes.get("loteria").run;
+          return { byEar: [...round.byEar], mic, read, play: store.getState().progress.play,
+            wrongShout, shout, winner: round.winner, result };
+        }),
+        shown: await page.locator(".loteria-caller[data-card-name]").count(),
+        glows: await page.locator('.loteria-cell[data-glow="true"]').count(),
+        readChips: await page.locator(".loteria-read-chip").count(),
+        focusCell: await page.locator(".loteria-cell:focus").count(),
+      });
+      const shoutLine = await fixtureSentence(page, sit, "lt_a_loteria", true);
+      const shoutSave = page.locator(".loteria-footer > .loteria-shout-save[data-phrase-save]");
+      const saveBounds = await cardCentre(shoutSave, 44);
+      assert.deepEqual([saveBounds.width, saveBounds.height], [44, 44]);
+      assert(await shout.isEnabled());
+      assert.equal(await shoutSave.evaluate((button) => button.nextElementSibling?.matches("button.loteria-shout")), true);
+      const claimBounds = await cardCentre(shout);
+      assert(saveBounds.x + saveBounds.width / 2 <= claimBounds.x - claimBounds.width / 2, "separate save and claim hit areas");
+      const { input: { wrongShout, shout: queuedShout, winner, result } } = await saveState();
+      assert.deepEqual([wrongShout, queuedShout, winner, result], [false, false, null, null]);
+      const shoutCard = await checkManualSave(page, shoutSave, phone, shoutLine.en, sit, saveState);
+      assertSavedSentence(shoutCard, shoutLine, sit);
+      await shot("phrase-shout-kept");
+      const nameRow = page.locator(".loteria-caller[data-card-name]");
+      const nameKey = await nameRow.getAttribute("data-line");
+      assert.match(nameKey, /^lt_c_/);
+      const nameLine = await fixtureSentence(page, sit, nameKey);
+      const revealedNameCard = await checkManualSave(page, nameRow.locator("[data-phrase-save]"), phone, nameLine.en, sit, saveState);
+      assertSavedSentence(revealedNameCard, nameLine, sit);
+      await shot("phrase-revealed-name");
       assert.equal(await cell(s.current).getAttribute("data-glow"), "true");
       if (phone) await press(cell(s.current));
-      else await page.keyboard.press("Space");
+      else await cell(s.current).press("Space");
       assert.equal(await cell(s.current).getAttribute("aria-pressed"), "true");
       const beanRatio = await cell(s.current).evaluate((tile) =>
         tile.querySelector(".loteria-bean").offsetWidth / tile.clientWidth);
@@ -263,6 +309,31 @@ try {
       await shot("listen-first");
       s = await state();
       assert.equal(s.current, "gorrito");
+      const book = page.locator(".loteria-stage-actions .phrase-chooser");
+      const opener = book.locator("summary");
+      const boardNames = await page.locator(".loteria-cell strong").allTextContents();
+      const historyNames = await page.locator(".loteria-history-strip [title]").evaluateAll((nodes) => nodes.map((node) => node.title));
+      await activatePhraseControl(page, opener, phone);
+      const names = book.getByRole("combobox");
+      await names.waitFor({ state: "attached" });
+      assert.deepEqual(await names.locator("option").allTextContents(), [...new Set([...boardNames, ...historyNames])],
+        "the list uses printed board and revealed history order with no extra answer");
+      assert.equal(await names.locator("option:checked").textContent(), boardNames[0]);
+      const alternative = boardNames[s.board.findIndex((id) => id !== s.current && !s.calls.includes(id))];
+      assert.ok(alternative, "a printed name that has not been called");
+      await names.selectOption({ label: alternative });
+      const nameCard = await checkManualSave(page, book.locator("[data-phrase-save]"), phone, alternative, sit, state);
+      await activatePhraseControl(page, opener, phone);
+      assert.equal(await page.locator(".loteria-caller[data-card-name]").count(), 0);
+      const verseRow = page.locator(".loteria-verse");
+      const verseKey = await verseRow.getAttribute("data-line");
+      assert.match(verseKey, /^lt_v_/);
+      const verse = await fixtureSentence(page, sit, verseKey);
+      const verseCard = await checkManualSave(page, verseRow.locator("[data-phrase-save]"), phone, verse.en, sit, saveState, "Space");
+      assert.equal(verseCard.lt, verse.nat);
+      assertSavedSentence(verseCard, verse, sit);
+      assert.equal(await page.locator(".loteria-caller[data-card-name]").count(), 0);
+      await shot("phrase-face-down-verse");
       await press(cell(s.current));
       await wait(async () => (await state())?.phase === "waiting" && !(await state()).faceDown, "the name finishes and the card turns over");
 
@@ -308,9 +379,35 @@ try {
       assert.equal(await page.locator(".mode-score-line").innerText(), lt ? "Laimėjai!" : "You won!");
       const scoreRows = page.locator(".mode-score-card dd");
       assert.equal((await scoreRows.nth(2).innerText()).trim(), "1", "covered a card before it turned over");
+      assert.equal((await scoreRows.last().innerText()).trim(), "8", "the original five phrases and three winning names determine the award");
+      const review = page.locator(".mode-score-card .phrase-review-row");
+      const scoreList = review.getByRole("combobox");
+      await scoreList.waitFor({ state: "attached" });
+      const listed = await scoreList.locator("option").allTextContents();
+      assert.deepEqual(listed.slice(0, 16), boardNames);
+      assert(listed.includes(verse.en));
+      assert.equal(listed.filter((target) => target === shoutLine.en).length, 1);
+      assert.deepEqual(await cardsFor(page, alternative), [nameCard]);
+      assert.deepEqual(await cardsFor(page, verse.en), [verseCard]);
+      for (const saved of [revealedNameCard, verseCard]) {
+        assert(listed.includes(saved.en));
+        await scoreList.selectOption({ label: saved.en });
+        assert.equal(await review.locator(`small[lang="${lt ? "lt" : "en"}"]`).textContent(), saved.lt);
+        assert.equal(await review.locator("[data-phrase-save]").getAttribute("aria-pressed"), "true");
+        assert.deepEqual(await cardsFor(page, saved.en), [saved]);
+      }
       await step(18);
       await fits(true);
       await shot("score");
+      await scoreList.selectOption({ label: shoutLine.en });
+      assert.equal(await review.locator(`small[lang="${lt ? "lt" : "en"}"]`).textContent(), shoutLine.nat);
+      const reviewSave = review.locator("[data-phrase-save]");
+      assert.equal(await reviewSave.getAttribute("aria-pressed"), "true");
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard], "the automatic award keeps the manual card");
+      await activatePhraseControl(page, reviewSave, phone);
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard]);
+      await fits(true);
+      await shot("phrase-shout-review");
 
       await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
       await wait(async () => (await state())?.kind === "esquinas", "Again starts four corners");
@@ -327,6 +424,13 @@ try {
         await press(playable.first());
       }
       await wait(() => shown(".mode-score-card"), "corners score", 2);
+      const currentBoard = await state().then(({ board }) => board);
+      const newNames = await Promise.all(currentBoard.map((id) => fixtureSentence(page, sit, `lt_c_${id}`)));
+      await scoreList.waitFor({ state: "attached" });
+      assert.deepEqual((await scoreList.locator("option").allTextContents()).slice(0, 16), newNames.map(({ en }) => en),
+        "the rematch starts its review in the new board order");
+      assert.deepEqual(await cardsFor(page, revealedNameCard.en), [revealedNameCard]);
+      assert.deepEqual(await cardsFor(page, verseCard.en), [verseCard]);
       await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
       await wait(async () => (await state())?.kind === "llena", "Again starts a full board");
       await noPattern();
@@ -351,6 +455,15 @@ try {
       await wait(() => shown(".loteria-cta"), "x10 end card offers another board");
       await press(page.locator(".loteria-cta"));
       await wait(async () => (await state())?.phase === "waiting", "returns to a playable round");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      frame = 0;
+      await wait(() => page.evaluate(() => {
+        const { game, store } = window.__ew ?? {};
+        return game && store.getState().screen === "play" && !store.getState().hud.zoneBanner;
+      }), "town reloads", 2);
+      await checkCardList(page, { learner: lt ? "lt" : "en", target: "es", cards: [shoutCard], press });
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard], "the original shout card survives reload");
+      await shot("phrase-shout-reloaded");
       assert.deepEqual(errors, []);
       console.log(`${label}: chat, line, score, four corners and replay passed.`);
     } finally {

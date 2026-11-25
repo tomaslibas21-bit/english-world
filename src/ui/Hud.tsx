@@ -7,12 +7,7 @@ import { useSurf } from "../game/surf/store";
 import { useBarista } from "../game/barista/store";
 import { useTownQuests } from "../game/photowalk/store";
 import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
-import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
-import { TaxiOverlay } from "./Taxi";
-import { PoolOverlay } from "./Pool";
-import { LoteriaOverlay } from "./Loteria";
-import { SurfOverlay, SurfPicker } from "./Surf";
-import { BaristaOffer, BaristaOverlay } from "./Barista";
+import { PhotoChip, QuestArrival } from "./PhotoWalkHud";
 import { game } from "../game/gameRef";
 import type { Game } from "../game/Game";
 import { coach } from "../game/coach";
@@ -37,7 +32,6 @@ import { Guide } from "./Guide";
 import { useTownToast } from "./Toasts";
 import { useStreet } from "../game/street/StreetLife";
 import { StreetCard } from "./street/StreetCard";
-import { StreetBubbles } from "./street/StreetBubbles";
 import { PhoneRing } from "./PhoneRing";
 import { TextArrival } from "./TextArrival";
 import { ReactBubble } from "./ReactBubble";
@@ -84,7 +78,26 @@ function cenoteTourOverlay() {
     return { default: () => null };
   }));
 }
+const TaxiOverlay = lazy(() => import("./Taxi").then(({ TaxiOverlay }) => ({ default: TaxiOverlay })));
+const PoolOverlay = lazy(() => import("./Pool").then(({ PoolOverlay }) => ({ default: PoolOverlay })));
+const LoteriaOverlay = lazy(() => import("./Loteria").then(({ LoteriaOverlay }) => ({ default: LoteriaOverlay })));
+const SurfOverlay = lazy(() => import("./Surf").then(({ SurfOverlay }) => ({ default: SurfOverlay })));
+const SurfPicker = lazy(() => import("./Surf").then(({ SurfPicker }) => ({ default: SurfPicker })));
+const BaristaOverlay = lazy(() => import("./Barista").then(({ BaristaOverlay }) => ({ default: BaristaOverlay })));
+const BaristaOffer = lazy(() => import("./Barista").then(({ BaristaOffer }) => ({ default: BaristaOffer })));
+const PhotoWalkOverlay = lazy(() => import("./PhotoWalk").then(({ PhotoWalkOverlay }) => ({ default: PhotoWalkOverlay })));
+const DirectionsCard = lazy(() => import("./PhotoWalk").then(({ DirectionsCard }) => ({ default: DirectionsCard })));
+const StreetBubbles = lazy(() => import("./street/StreetBubbles"));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay(), gym: GymOverlay };
+
+function StreetBubbleLayer() {
+  const marker = useStreet((s) => s.marker);
+  const speaking = useStreet((s) => s.bubble !== null);
+  return <>
+    {marker && <span aria-hidden="true" className="street-marker" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />}
+    {speaking && <Suspense><StreetBubbles /></Suspense>}
+  </>;
+}
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -93,6 +106,7 @@ export function Hud() {
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
   const surfing = useSurf((s) => s.active);
   const picking = useSurf((s) => s.picking);
+  const baristaOffered = useBarista((s) => s.offered);
   const notesVisible = useStore(usesTownNotes);
   const note = notesVisible ? townNote(hud) : null;
   const ride = townRide(hud.ride);
@@ -120,7 +134,7 @@ export function Hud() {
   // The surf lesson keeps her line, the answers, the score, and its own arrows.
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <SurfOverlay toolbar={<Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} surf />} />
+      <Suspense><SurfOverlay toolbar={<Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} surf />} /></Suspense>
       <RadioSetLayer />
       <Fade />
     </div>
@@ -172,20 +186,20 @@ export function Hud() {
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
-          {streetCard && portrait && <StreetCard />}
+          {streetCard && portrait && <StreetCard compact={screen.h <= 720} />}
           {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && subtitle !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} compact={compactGuide} />
           {hud.panel !== "phone" && <QuestArrival toast={toast} />}
-          {directions && <DirectionsCard />}
+          {directions && <Suspense><DirectionsCard /></Suspense>}
         </div>
         <Minimap {...screen} />
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} hornReady={rideControls} />
       <RadioSetLayer />
-      {streetCard && !portrait && <StreetCard />}
-      {!hud.panel && <StreetBubbles />}
+      {streetCard && !portrait && <StreetCard compact={screen.sidewaysPhone} />}
+      {!hud.panel && <StreetBubbleLayer />}
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
@@ -199,9 +213,9 @@ export function Hud() {
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
       {hud.showTouch && <TouchControls rideControls={rideControls} />}
-      {!hud.panel && <BaristaOffer />}
+      {!hud.panel && baristaOffered && <Suspense><BaristaOffer /></Suspense>}
       {questHud && <PhotoChip />}
-      <SurfPicker />
+      {picking && <Suspense><SurfPicker /></Suspense>}
       <Fade />
     </div>
   );
@@ -250,7 +264,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer

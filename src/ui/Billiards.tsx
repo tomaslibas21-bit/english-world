@@ -1,18 +1,22 @@
-import { memo, useRef, type CSSProperties, type PointerEvent } from "react";
+import { memo, useMemo, useRef, type CSSProperties, type PointerEvent } from "react";
 import { game } from "../game/gameRef";
 import { useBilliards, type RackBall } from "../game/billiards/store";
 import { ballColor } from "../game/billiards/table";
 import type { KitLine } from "../game/kit/dialogue";
-import { BILLIARDS_NPC } from "../content/billiards-lines";
+import { BILLIARDS_NPC, BILLIARDS_SITUATION } from "../content/billiards-lines";
 import { HL, L } from "./i18n";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
+import { phraseEntries } from "../game/kit/phrases";
 import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./billiards.css";
 
 const mapleHarbor = BILLIARDS_NPC === "tina";
+const source = { situationId: BILLIARDS_SITUATION };
 const opponentLabels = mapleHarbor ? {
   name: "Tina",
   won: "Laimėjo Tina", // i18n-ok: Maple Harbor only.
@@ -44,7 +48,10 @@ function BallRow({ name, balls, active }: { name: string; balls: RackBall[]; act
 }
 
 function Speech({ line }: { line: KitLine }) {
-  return <div className="bl-speech" data-line={line.key}><GlossLine sentence={line.sentence} gloss compact /></div>;
+  return <div className="bl-speech phrase-save-row" data-line={line.key}>
+    <GlossLine sentence={line.sentence} gloss compact />
+    <PhraseSave sentence={line.sentence} {...source} />
+  </div>;
 }
 
 function CallLabel({ mic }: { mic?: string }) {
@@ -140,6 +147,10 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const picking = phase === "call" || phase === "listen";
   const waitingForTina = side === "tina" && phase === "tina";
   const showCall = !!call && (phase === "feedback" || (phase === "listen" || waitingForTina) && reveal);
+  const entries = useMemo(() => picking
+    ? phraseEntries(source.situationId, [...pockets.map(({ line }) => line), ...(phase === "call" && call ? [call] : [])])
+    : phase === "group" || phase === "reply" ? phraseEntries(source.situationId, choices) : [],
+  [picking, phase, pockets, phase === "call" ? call : null, choices]);
   const shotOk = phase === "feedback" && correct;
   const scoreTitle = result?.winner === "learner" ? L("Laimėjai!") : result?.winner === "tina" ? opponentLabels.won : L("Lygiosios");
   return <div className="billiards" data-phase={phase} lang={HL}>
@@ -159,7 +170,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
     </div>
     <section className="bl-panel" aria-live={picking ? "off" : "polite"}>
       {phase === "group" && <>
-        <h2>{L("Vienspalviai ar dryžuoti?")}</h2>
+        <div className="bl-instruction"><h2>{L("Vienspalviai ar dryžuoti?")}</h2><PhraseChooser entries={entries} targetOnly={false} /></div>
         <div className="bl-choices">{choices.map((choice) => <Choice key={choice.key} line={choice} />)}</div>
       </>}
       {picking && <>
@@ -167,7 +178,8 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
           <h2>{phase === "listen" ? opponentLabels.listen : L("Paskelbk smūgį: pasirink kamuolį ir kišenę.")}</h2>
           {phase === "listen" && <div className="bl-listen-actions"><button className="bl-replay" disabled={state.replaying} onClick={() => act("replay")}>
             <Icon name="speaker" size={15} />{L("Klausyti dar kartą")}
-          </button><SayIt game="billiards" cue={state.replaying ? null : sayIt} /></div>}
+          </button><SayIt game="billiards" cue={state.replaying ? null : sayIt} /><PhraseChooser entries={entries} targetOnly={false} /></div>}
+          {phase === "call" && <PhraseChooser entries={entries} targetOnly={false} />}
         </div>
         {showCall && <Speech line={call} />}
         <div className="bl-chip-heading">{L("Kamuolys")}</div>
@@ -210,9 +222,10 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       {phase === "reply" && <div className="bl-choices">
         {choices.map((choice) => <Choice key={choice.key} line={choice} />)}
         <button className="bl-replay" onClick={() => act("skip")}>{L("Baigti")}</button>
+        <PhraseChooser entries={entries} targetOnly={false} />
       </div>}
     </section>
-    {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"} said={result.said}
+    {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"} said={result.said} review={result.review}
       ratio={(result.called + result.understood) / Math.max(1, result.shots + result.listens)}
       rows={[
         { label: L("Pataikyti paskelbti smūgiai"), value: <><ScoreNumber value={result.called} />/{result.shots}</> },

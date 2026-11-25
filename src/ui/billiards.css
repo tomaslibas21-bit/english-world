@@ -86,6 +86,12 @@
 .bl-choice { border-radius: 8px; min-height: 36px; padding: 3px 6px; }
 .bl-choice:disabled, .bl-ball-option:disabled, .bl-replay:disabled { opacity: 0.68; }
 .bl-speech { padding: 4px 3px; }
+.bl-panel .phrase-chooser-panel {
+  position: fixed;
+  inset: auto max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) auto;
+  --kit-gloss-color: var(--lt);
+}
+.bl-panel .phrase-chooser > summary { gap: 0; }
 /* All candidate calls share a grid cell. Its tallest wrapped call sets the row height at this width. */
 .bl-confirm-row, .bl-confirm-sizer { display: grid; }
 .bl-confirm-row { margin-top: 5px; }

@@ -146,6 +146,22 @@ describe("adding and removing", () => {
   it("skips empty cards", () => {
     expect(addCards([], [input("  !! "), input("word", " ")], T0).added).toHaveLength(0);
   });
+  it("keeps the reviewed source record when a legacy card or automatic reward is saved again", () => {
+    const automatic = addCards([], [{ ...sentenceInput(PRICE, ""), sourceLabel: "Desert Road" }], T0).added[0];
+    const reviewed = answerCard(automatic, true, T0);
+    const legacy = parseCards([{ ...reviewed, id: "price-legacy", situationId: "s68-hotel", sourceLabel: undefined }])[0];
+    const duplicate = { ...sentenceInput({ ...PRICE, en: "  THAT’S   $30?!  ", nat: "Kaina – 30 dolerių." }, "street"), sourceLabel: "Overheard" };
+
+    for (const first of [reviewed, legacy]) {
+      const cards = [first];
+      expect(cardKey(duplicate.en)).toBe(cardKey(first.en));
+      const result = addCards(cards, [duplicate, duplicate], day(29));
+      expect(result.added).toEqual([]);
+      expect(result.cards).toBe(cards);
+      expect(result.cards[0]).toBe(first);
+      expect(first).toMatchObject({ box: 2, due: reviewed.due, createdAt: T0, sentence: { say: PRICE.say } });
+    }
+  });
   it("removes by id", () => {
     const { cards } = addCards([], [input("a"), input("b")], T0);
     expect(removeCard(cards, cards[0].id).map((c) => c.en)).toEqual(["b"]);

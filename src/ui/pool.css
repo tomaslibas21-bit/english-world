@@ -22,6 +22,7 @@
 
 .pool-cues { display: grid; justify-items: center; gap: 6px; max-width: min(90vw, 440px); }
 .pool-cue, .pool-aside { padding: 6px 11px; }
+.pool-cues :is(.u.tap, .nat-star) { pointer-events: auto; }
 .pool-aside { font-size: 0.86em; }
 
 @media (max-width: 600px) and (orientation: portrait) {

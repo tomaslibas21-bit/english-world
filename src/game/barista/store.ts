@@ -3,6 +3,7 @@ import type { Pick, Row } from "../../content/barista";
 import type { KitLine, KitMic } from "../kit/dialogue";
 import type { Step } from "./shift";
 import type { Build } from "./tray";
+import type { PhraseReviewEntry } from "../../ui/kit/phraseLine";
 
 interface BaristaUi {
   offered: boolean;
@@ -20,11 +21,12 @@ interface BaristaUi {
   correctionSelected: boolean | null;
   menu: Record<Row, { id: string; en: string; lt: string }[]> | null;
   tray: boolean;
+  trayReview?: readonly PhraseReviewEntry[];
   ready: boolean;
   row: Row;
   page: number;
   price: number | null;
-  result: { served: number; firstTime: number; cards: number } | null;
+  result: { served: number; firstTime: number; cards: number; review: readonly PhraseReviewEntry[] } | null;
 }
 
 const empty: BaristaUi = {
@@ -34,4 +36,4 @@ const empty: BaristaUi = {
 };
 
 export const useBarista = create<BaristaUi>(() => empty);
-export function resetBaristaUi() { useBarista.setState(empty); }
+export function resetBaristaUi() { useBarista.setState(empty, true); }

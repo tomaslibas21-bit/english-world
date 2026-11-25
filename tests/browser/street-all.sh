@@ -12,3 +12,7 @@ WORLD_STORAGE=puerto-colibri WORLD_LEARNER=en WORLD_SHOTS="$WORLD_SHOTS/en" \
   node "$script_dir/street.mjs"
 WORLD_STORAGE=puerto-colibri WORLD_LEARNER=lt WORLD_TEST_URL="$WORLD_TEST_URL_LT" WORLD_SHOTS="$WORLD_SHOTS/lt" \
   node "$script_dir/street.mjs"
+WORLD_STORAGE=puerto-colibri WORLD_LEARNER=en WORLD_SHOTS="$WORLD_SHOTS/en" \
+  node "$script_dir/speech-toasts.mjs"
+WORLD_STORAGE=puerto-colibri WORLD_LEARNER=lt WORLD_TEST_URL="$WORLD_TEST_URL_LT" WORLD_SHOTS="$WORLD_SHOTS/lt" \
+  node "$script_dir/speech-toasts.mjs"

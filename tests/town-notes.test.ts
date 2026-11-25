@@ -132,6 +132,31 @@ describe("town toasts", () => {
     expect(shown()).toBe("second");
   });
 
+  it("carries spoken pairs and their original durations through the town queue and the stack", () => {
+    const owner = { en: "¡Que le vaya bien!", lt: "Have a good day!" };
+    const walker = { en: "¡Buenas!", lt: "Hi!" };
+    state().setHud({ zoneBanner: banner });
+    state().toast({ kind: "info", title: `“${owner.en}”`, body: owner.lt, phrase: owner, ms: 3200 });
+    state().toast({ kind: "info", title: `“${walker.en}”`, body: walker.lt, phrase: walker });
+    state().toast({ kind: "success", title: "notice" });
+    expect(state().townToasts.map(({ toast, remaining }) => [toast.phrase, remaining]))
+      .toEqual([[owner, 3200], [walker, 4500], [undefined, 4500]]);
+    state().setHud({ zoneBanner: null });
+    vi.advanceTimersByTime(1000);
+    state().setHud({ panel: "map" });
+    expect(state().toasts[0].phrase).toBe(owner);
+    vi.advanceTimersByTime(2199);
+    expect(state().toasts[0].phrase).toBe(owner);
+    vi.advanceTimersByTime(1);
+    expect(state().toasts).toEqual([]);
+    state().setHud({ panel: null });
+    expect(state().townToasts[0].toast.phrase).toBe(walker);
+    vi.advanceTimersByTime(4499);
+    expect(shown()).toBe(`“${walker.en}”`);
+    vi.advanceTimersByTime(1);
+    expect(shown()).toBe("notice");
+  });
+
   it("dismisses only matching ride hints across the toast stack and town queue", () => {
     state().toast({ kind: "tip", title: "active waiting hint", rideHint: "waiting" });
     state().toast({ kind: "tip", title: "queued waiting hint", rideHint: "waiting" });

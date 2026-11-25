@@ -4,10 +4,12 @@ import { speechSupported } from "../../convo/speech";
 import { useStreet } from "../../game/street/StreetLife";
 import type { StreetProp } from "../../game/street/types";
 import { STREET_WORDS as words } from "../../game/street/words";
+import { cardKey } from "../../state/cards";
 import { picturesOn, useStore } from "../../state/store";
 import { Icon, type IconName } from "../icons";
 import { HL, L, TL } from "../i18n";
 import { GlossLine } from "../kit/GlossLine";
+import { PhraseSave } from "../kit/PhraseSave";
 import { sceneUrl } from "../scenes";
 import "./street.css";
 
@@ -52,39 +54,51 @@ function StreetPicture({ id, cast, prop }: { id: string; cast: string; prop?: St
   );
 }
 
-export function StreetCard({ light = false }: { light?: boolean }) {
+export function StreetCard({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
   const view = useStreet((s) => s.moment);
   const illustrated = useStore((s) => picturesOn(s.settings));
   const sayLt = useStore((s) => s.settings.sayLt);
   if (!view) return null;
   const { cast, moment, scriptName } = view.draw;
+  const { line, reward, role, choices } = view;
+  const sameReward = !!reward && !!line && cardKey(reward.en) === cardKey(line.sentence.en);
   const listening = view.mic.status === "listening" || view.mic.status === "starting";
+  const mic = choices.length > 0 && speechSupported() && <button type="button" className={`street-icon-btn${listening ? " listening" : ""}`}
+    aria-label={listening ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")} aria-pressed={listening} onClick={view.toggleMic}>
+    <Icon name="mic" size={21} />
+  </button>;
   return (
     <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-moment={moment.id}
       data-cast={cast.id} data-script={scriptName} data-step={view.step} data-exchange={view.exchange} data-kind={moment.kind}
       aria-label={light ? words.light : view.role}>
       {light && <h2>{words.light}</h2>}
-      {(light || illustrated) && <StreetPicture id={moment.id} cast={cast.id} prop={cast.prop} />}
+      {(light || (illustrated && !reward)) && <StreetPicture id={moment.id} cast={cast.id} prop={cast.prop} />}
       <header className="street-head">
         <span className="street-face" aria-hidden="true"><Icon name="walk" size={23} /></span>
         <strong lang={HL}>{view.named && cast.name ? <><span lang={TL}>{cast.name}</span> · {view.role}</> : view.role}</strong>
         <StreetIconButton icon="close" label={words.dismiss} onClick={view.dismiss} />
+        {compact && mic}
       </header>
-      {view.scene && <p className="street-scene" lang={HL}>{view.scene}</p>}
-      {view.line && <div className="street-current" aria-live="polite">
-        <StreetTextButton key={view.line.key} sentence={view.line.sentence} hint={view.hint} />
+      {view.scene && !reward && <p className="street-scene" lang={HL}>{view.scene}</p>}
+      {line && <div className="street-current" aria-live="polite" data-street-reward={sameReward ? "" : undefined}>
+        <StreetTextButton key={line.key} sentence={line.sentence} hint={view.hint} />
         <StreetIconButton icon="speaker" label={words.replay} onClick={view.replay} />
+        <PhraseSave sentence={sameReward ? reward : line.sentence} situationId="street" sourceLabel={role} />
       </div>}
-      {!!view.choices.length && <div className="street-turn">
+      {reward && !sameReward && <div className="street-reward phrase-save-row" data-street-reward="">
+        <GlossLine sentence={reward} gloss compact />
+        <PhraseSave sentence={reward} situationId="street" sourceLabel={role} />
+      </div>}
+      {!!choices.length && <div className="street-turn">
         <div className="street-choices" role="group" aria-label={words.answer}>
-          {view.choices.map(({ key, sentence }) => <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} key={key} onClick={() => view.choose(key)}>
-            <GlossLine sentence={sentence} gloss={sayLt} compact />
-          </button>)}
+          {choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
+            <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} onClick={() => view.choose(key)}>
+              <GlossLine sentence={sentence} gloss={sayLt} compact />
+            </button>
+            <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} />
+          </div>)}
         </div>
-        {speechSupported() && <button type="button" className={`street-icon-btn${listening ? " listening" : ""}`}
-          aria-label={listening ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")} aria-pressed={listening} onClick={view.toggleMic}>
-          <Icon name="mic" size={21} />
-        </button>}
+        {!compact && mic}
       </div>}
       {view.mic.heard && <small className="street-heard" lang={TL} aria-live="polite">{view.mic.heard}</small>}
     </section>

@@ -6,6 +6,14 @@
   visibility: hidden;
   pointer-events: none;
   max-width: min(260px, 70vw);
+  display: grid;
+  grid-template-columns: minmax(44px, 1fr) 44px;
+  gap: 6px;
+  padding: 3px 5px 3px 0;
+  background: var(--panel-solid);
+  border: 1px solid rgba(31, 42, 51, 0.07);
+  border-radius: 5px 14px 14px 14px;
+  box-shadow: 0 3px 12px #17232b29;
 }
 .reaction-bubble::after {
   content: "";
@@ -14,26 +22,33 @@
   left: var(--tail, 50%);
   transform: translateX(-50%);
   border: 7px solid transparent;
-  border-top-color: #fff;
+  border-top-color: var(--panel-solid);
   border-bottom: 0;
 }
 .reaction-bubble[data-below]::after {
   top: auto;
   bottom: 100%;
   border-top: 0;
-  border-bottom: 7px solid #fff;
+  border-bottom: 7px solid var(--panel-solid);
 }
 .reaction-copy {
-  background: #fff;
-  border: 1px solid rgba(31, 42, 51, 0.07);
-  border-radius: 5px 14px 14px 14px;
-  box-shadow: 0 3px 12px #17232b29;
+  grid-area: 1 / 1;
+  align-self: center;
   color: var(--ink);
   font: inherit;
-  padding: 7px 11px;
+  padding: 4px 5px 4px 11px;
   text-align: left;
   overflow-wrap: anywhere;
 }
-.reaction-bubble button { position: absolute; inset: 0; background: transparent; border: 0; border-radius: inherit; pointer-events: auto; touch-action: manipulation; }
-.reaction-bubble span { display: block; font: 1.05em/1.2 var(--en); }
-.reaction-bubble small { display: block; margin-top: 4px; color: var(--ink-soft); font-size: .82em; }
+.reaction-translation {
+  grid-area: 1 / 1;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.reaction-bubble > [data-phrase-save] { grid-area: 1 / 2; align-self: center; }
+.reaction-copy > span { display: block; font: 1.05em/1.2 var(--en); }
+.reaction-copy > small { display: block; margin-top: 4px; color: var(--ink-soft); font-size: .82em; }

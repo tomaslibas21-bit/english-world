@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tsImport } from "tsx/esm/api";
+import { activatePhraseControl, cardsFor, checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -14,7 +15,7 @@ const variety = process.env.WORLD_VARIETY || "default";
 const learner = process.env.WORLD_LEARNER || (spanish ? "en" : "lt");
 const targetLang = spanish ? "es" : "en";
 const dropped = "i_dropped";
-const { STREET_MOMENTS: moments } = await tsImport(spanish ? "../../src/editions/es/content/street.ts"
+const { STREET_MOMENTS: moments, STREET_CHATTER: chatters } = await tsImport(spanish ? "../../src/editions/es/content/street.ts"
   : "../../src/content/street.ts", import.meta.url);
 const musician = moments.find(({ kind, cast }) => kind === "regular" && cast.some(({ prop }) => prop === "guitar"));
 assert(musician, "the edition has a regular with a guitar");
@@ -110,10 +111,10 @@ async function withGame([width, height], settings, check, { params = "", spanish
       try { await (mobile ? locator.tap({ timeout: 4000 }) : locator.click({ timeout: 4000 })); }
       finally { done = true; await frames; }
     };
-    const dismiss = () => press(card.locator(".street-head .street-icon-btn"));
+    const dismiss = () => press(card.locator(".street-head .street-icon-btn").first());
     const shot = async (name) => {
       await real(250);
-      await page.screenshot({ path: join(shots, `street-${name}-${width}x${height}.png`) });
+      await page.screenshot({ path: join(shots, `${spanish ? "pc" : "mh"}-${learner}-${width}x${height}-street-${name}.png`) });
     };
     assert.equal(await page.locator("html").getAttribute("lang"), learner, "WORLD_LEARNER matches the server");
     await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "game is ready");
@@ -150,14 +151,15 @@ const resolveGender = (text, learnerGender, castGender) => text?.replace(/\{(m|n
   (_match, who, male, female) => (who === "m" ? learnerGender : castGender) === "m" ? male : female);
 
 async function authoredMoment(page) {
-  const { script, cast, learnerGender } = await page.evaluate(() => {
+  const { script, cast, learnerGender, selectedVariety } = await page.evaluate((storage) => {
     const { script, cast } = window.__ew.game.streetLife.active.draw;
-    return { script, cast, learnerGender: window.__ew.store.getState().progress.profile.gender };
-  });
+    return { script, cast, learnerGender: window.__ew.store.getState().progress.profile.gender,
+      selectedVariety: localStorage.getItem(`${storage}-variety`) };
+  }, storage);
   const resolve = (text) => resolveGender(text, learnerGender, cast.gender);
   const words = (line) => ({
-    en: resolve(spanish && variety === "spain" ? line.spain ?? line.neutral ?? line.en
-      : spanish && variety === "neutral" ? line.neutral ?? line.en : line.en),
+    en: resolve(spanish && selectedVariety === "spain" ? line.spain ?? line.neutral ?? line.en
+      : spanish && selectedVariety === "neutral" ? line.neutral ?? line.en : line.en),
     lt: resolve(line.lt),
   });
   return {
@@ -166,12 +168,213 @@ async function authoredMoment(page) {
     choices: script.choices.map(({ say }) => words(byCast(say, cast.id))),
     followUpChoices: script.then?.choices.map(({ say }) => words(byCast(say, cast.id))),
     reply: byCast(script.choices[0].reply ?? script.reply, cast.id)?.map(words),
+    closing: script.then && byCast(script.then.choices[0].reply ?? script.then.reply, cast.id)?.map(words).at(-1),
     card: script.card && words(byCast(script.card, cast.id)),
   };
 }
 
 const lineText = (line) => line.locator(".kit-gloss-compact > span");
 const replyButton = (page) => page.locator('.street-card[data-step="reply"] .street-line');
+const overheard = learner === "lt" ? "Išgirsta gatvėje" : "Overheard";
+
+function streetSnapshot(page) {
+  return page.evaluate(() => {
+    const { game, store } = window.__ew;
+    const { hud, conv, progress } = store.getState();
+    const chatter = game.streetLife?.overheard;
+    return { street: game.streetState(), panel: hud.panel, talking: conv.active, memory: progress.street,
+      chatter: chatter && [chatter.id, chatter.extended, game.streetLife.bubbleLeft, document.querySelector(".street-bubble")?.style.transform],
+      player: game.player?.root.position.toArray(), pointer: game.pointer, air: game.hop?.air, keys: game.keys && [...game.keys] };
+  });
+}
+
+async function checkStreetSave(page, button, touch, { en, lt }, role) {
+  const box = async () => button.evaluate((el) => {
+    const rect = el.getBoundingClientRect(), parent = el.parentElement.getBoundingClientRect();
+    return [rect.left - parent.left, rect.top - parent.top, rect.width, rect.height];
+  });
+  const before = await box();
+  const card = await checkManualSave(page, button, touch, en, "street", () => streetSnapshot(page));
+  assert.deepEqual([card.lt, card.sentence, card.sourceLabel], [lt, { en, lt }, role]);
+  assert.deepEqual(await box(), before, "the checked street save keeps its original box");
+  return card;
+}
+
+async function assertSaveSiblings(container, actionSelector) {
+  const geometry = await container.evaluate((row, selector) => {
+    const action = row.querySelector(selector);
+    const save = row.querySelector("[data-phrase-save]");
+    const box = (el) => el.getBoundingClientRect();
+    const a = box(action), b = box(save), neighbor = box(save.previousElementSibling);
+    const hit = (el, r) => el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+    return { gap: b.left - neighbor.right, width: b.width, height: b.height,
+      actionWidth: a.width, actionHeight: a.height, hit: hit(action, a) && hit(save, b) };
+  }, actionSelector);
+  assert(geometry.hit && geometry.gap >= 4 && geometry.gap <= 8 &&
+    [geometry.width, geometry.height, geometry.actionWidth, geometry.actionHeight].every((size) => size >= 44),
+  `distinct 44 px control centres and a 4–8 px gutter: ${JSON.stringify(geometry)}`);
+}
+
+async function checkMovingChatter(page, bubble, viewport) {
+  const point = await page.evaluate(() => {
+    const canvas = document.querySelector(".stage canvas");
+    for (const y of [0.7, 0.5, 0.6, 0.4].map((n) => innerHeight * n)) {
+      for (const x of [0.5, 0.3, 0.65].map((n) => innerWidth * n)) {
+        if (document.elementFromPoint(x, y) === canvas) return { x, y };
+      }
+    }
+    return null;
+  });
+  assert(point, "the canvas has a clear point for the camera drag");
+  const cdp = Math.min(...viewport) <= 520 ? await page.context().newCDPSession(page) : null;
+  const finger = (type, at) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: at ? [at] : [] });
+  const camera = () => page.evaluate(() => window.__ew.game.rig.cam.position.toArray());
+  const start = await camera();
+  if (cdp) await finger("touchStart", point);
+  else {
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+  }
+  let taggedFrames = 0;
+  try {
+    for (let i = 1; i <= 6; i++) {
+      const at = { x: point.x + 4 * i, y: point.y };
+      if (cdp) await finger("touchMove", at);
+      else await page.mouse.move(at.x, at.y);
+      const sample = await bubble.evaluate((el, refreshTownHud) => {
+        const { game } = window.__ew;
+        const layer = document.querySelector(".tag-layer");
+        const hud = el.parentElement;
+        const controls = hud.querySelectorAll(".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, " +
+          ".minimap, .toolbar, .toolbar .radio-tool, .joy, .jump-btn, .act-btn, .prompt, .toolbar-drawer, .toolbar-tools");
+        const stableBlockers = new Set([...controls].filter((control) => control.checkVisibility({ visibilityProperty: true })));
+        const alreadyPlaced = new Set(game.nametagLayout.boxes.map(({ tag }) => tag));
+        const nativeRect = Element.prototype.getBoundingClientRect;
+        const updateTags = game.updateTags;
+        const hudBoxes = game.hudBoxes;
+        const offsets = ["offsetWidth", "offsetHeight"].map((key) =>
+          [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]);
+        let inTags = false, inTownHud = false;
+        let reads = 0, layerRects = 0, groupRects = 0, uiRects = 0, blockerRects = 0, townBlockerRects = 0;
+        let frameSizes = 0, tagSizes = 0;
+        game.updateTags = function () {
+          inTags = true;
+          try { return updateTags.call(this); }
+          finally { inTags = false; }
+        };
+        game.hudBoxes = function () {
+          inTownHud = true;
+          try { return hudBoxes.call(this); }
+          finally { inTownHud = false; }
+        };
+        Element.prototype.getBoundingClientRect = function () {
+          if (this.classList.contains("nametag")) reads++;
+          if (this === layer) layerRects++;
+          if (this === el || this === hud) {
+            if (inTags) groupRects++;
+            else uiRects++;
+          }
+          if (stableBlockers.has(this)) {
+            if (inTownHud) townBlockerRects++;
+            else if (inTags) blockerRects++;
+          }
+          return nativeRect.call(this);
+        };
+        for (const [key, descriptor] of offsets) Object.defineProperty(HTMLElement.prototype, key, {
+          ...descriptor,
+          get() {
+            if (this === layer || this === el || this === hud) frameSizes++;
+            if (alreadyPlaced.has(this)) tagSizes++;
+            return descriptor.get.call(this);
+          },
+        });
+        try {
+          // One actual periodic refresh proves the same elements are counted separately.
+          if (refreshTownHud) game.hudCheck = 1;
+          window.__stepStreet(1, 16);
+        }
+        finally {
+          delete game.updateTags;
+          delete game.hudBoxes;
+          Element.prototype.getBoundingClientRect = nativeRect;
+          for (const [key, descriptor] of offsets) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        }
+        // The test's own clearance reads happen after restoring the native accessors.
+        const r = el.getBoundingClientRect();
+        const tags = [...document.querySelectorAll(".nametag")].filter((tag) => tag.checkVisibility({ visibilityProperty: true }));
+        const clears = (control) => {
+          const b = control.getBoundingClientRect();
+          return !b.width || !b.height || r.left >= b.right || r.right <= b.left || r.top >= b.bottom || r.bottom <= b.top;
+        };
+        return { reads, layerRects, groupRects, uiRects, frameSizes, tagSizes, blockerRects, townBlockerRects,
+          tags: tags.length, clear: tags.every(clears), clearHud: [...stableBlockers].every(clears),
+          landmarks: [".objective-card", ".minimap", ".toolbar"].every((selector) => stableBlockers.has(hud.querySelector(selector))),
+          visible: getComputedStyle(el).visibility === "visible" };
+      }, i === 1);
+      assert.equal(sample.reads, 0, "live chatter placement reads no nametag DOMRects");
+      assert.deepEqual([sample.layerRects, sample.groupRects, sample.frameSizes, sample.tagSizes], [0, 0, 0, 0],
+        "steady chatter reuses the layer transform, group size and already placed tag sizes");
+      assert.equal(sample.uiRects, 0, "the former UI loop's group and HUD reads do not recur outside tag placement");
+      assert(sample.landmarks, "each sample counts the visible task card, map and toolbar");
+      if (i === 1) assert(sample.townBlockerRects > 0, "the town's periodic HUD reads reached the sampled blockers");
+      assert.equal(sample.blockerRects, 0, "steady chatter reuses the cached blocker bounds during tag placement");
+      assert(sample.visible && sample.clear, "the moving bubble stays visible and clears the tags");
+      assert(sample.clearHud, "the moving bubble clears the stable HUD controls");
+      await assertSaveSiblings(bubble, ".street-bubble-text");
+      if (sample.tags) taggedFrames++;
+    }
+  } finally {
+    if (cdp) { await finger("touchEnd"); await cdp.detach(); }
+    else await page.mouse.up();
+  }
+  assert(Math.hypot(...(await camera()).map((n, i) => n - start[i])) > 0.01, "the camera moves during the cost sample");
+  assert(taggedFrames > 1, "multiple frames exercise visible nametags");
+}
+
+async function checkResizedTag(bubble, viewport) {
+  const sample = await bubble.evaluate(async (el) => {
+    const { nametagLayout: layout } = window.__ew.game;
+    const tag = layout.boxes.find(({ tag }) => tag.checkVisibility({ visibilityProperty: true }))?.tag;
+    if (!tag) return null;
+    const role = tag.querySelector("i, span");
+    const layer = tag.parentElement;
+    const { transform, transformOrigin, right, bottom } = layer.style;
+    const { fontSize } = role.style;
+    const oldHeight = tag.offsetHeight;
+    const oldWidth = layer.offsetWidth, oldLayerHeight = layer.offsetHeight;
+    const pool = layout.boxes;
+    const oldBox = pool.find((box) => box.tag === tag);
+    try {
+      role.style.fontSize = "18px";
+      layer.style.right = "8px";
+      layer.style.bottom = "6px";
+      layer.style.transformOrigin = "top left";
+      layer.style.transform = "translate(5px, 3px) scale(0.98, 0.97)";
+      // The stepped frame replaces native rAF. Give DOM mutations the same microtask checkpoint.
+      await Promise.resolve();
+      window.__stepStreet(1, 0);
+      const r = tag.getBoundingClientRect(), a = el.getBoundingClientRect();
+      const box = layout.boxes.find((box) => box.tag === tag);
+      if (!box || !layout.rect) return null;
+      const { rect, scaleX, scaleY } = layout;
+      return { reused: pool === layout.boxes && oldBox === box, grew: tag.offsetHeight > oldHeight,
+        resized: layer.offsetWidth < oldWidth && layer.offsetHeight < oldLayerHeight,
+        clears: a.left >= r.right || a.right <= r.left || a.top >= r.bottom || a.bottom <= r.top,
+        error: Math.max(Math.abs(rect.left + scaleX * box.x0 - r.left), Math.abs(rect.left + scaleX * box.x1 - r.right),
+          Math.abs(rect.top + scaleY * box.y0 - r.top), Math.abs(rect.top + scaleY * box.y1 - r.bottom)) };
+    } finally {
+      role.style.fontSize = fontSize;
+      layer.style.right = right;
+      layer.style.bottom = bottom;
+      layer.style.transform = transform;
+      layer.style.transformOrigin = transformOrigin;
+      await Promise.resolve();
+      window.__stepStreet(1, 0);
+    }
+  });
+  assert(sample?.reused && sample.grew && sample.resized && sample.clears && sample.error <= 0.51,
+    `${viewport.join("x")}: the pooled box tracks the resized tag in its offset, scaled layer (${JSON.stringify(sample)})`);
+}
 
 async function assertTranslation(line, press, expected) {
   if (await line.getAttribute("aria-expanded") === "false") await press(line);
@@ -280,7 +483,7 @@ try {
       const assertCardFits = async () => {
         const fit = await card.evaluate((element) => {
           const a = element.getBoundingClientRect();
-          const controls = document.querySelectorAll(".joy, .act-btn, .jump-btn, .toolbar button");
+          const controls = document.querySelectorAll(".joy, .act-btn, .jump-btn, .toolbar button, .minimap, .nametag");
           const overlap = [...controls].some((control) => {
             const b = control.getBoundingClientRect();
             return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
@@ -304,13 +507,14 @@ try {
         for (const [name, point] of [["person", active.person], ["wallet", active.prop]]) {
           assert(point?.onScreen && point.x >= 0 && point.x <= 1 && point.y >= 1 / 3 && point.y <= 1,
             `${name} is in the lower two thirds of the view: ${JSON.stringify(point)}`);
-          if (Math.min(...viewport) <= 520) assert(point.y > bottom, `${name} clears the phone card: ${JSON.stringify({ point, bottom })}`);
+          if (Math.min(...viewport) <= 520 || viewport[0] >= 901) assert(point.y > bottom, `${name} clears the card: ${JSON.stringify({ point, bottom })}`);
         }
       };
       await assertFramed();
       await step(12);
       await assertFramed();
       await assertChoices(card, authored.choices);
+      for (const row of await card.locator(".street-choices > .phrase-save-row").all()) await assertSaveSiblings(row, ".street-choice");
 
       const line = card.locator(".street-line");
       const replyLine = replyButton(page);
@@ -337,6 +541,7 @@ try {
       assert.deepEqual({ en, lt }, authored.card);
       const toast = page.locator(".town-toasts .toast.success").filter({ hasText: en });
       await wait(() => toast.isVisible(), "the new-card toast is visible");
+      assert.equal(await toast.locator("[data-phrase-save]").count(), 0, "the automatic award's notice has only its existing action");
       await shot("toast");
       await dismiss();
       await closed();
@@ -404,12 +609,14 @@ try {
       });
       assert(pairs.length > 0, "real Ambient pairs are available");
       let inView = false;
+      const checkMoving = viewport[1] === 844 || viewport[0] === 1280;
       for (const pair of pairs) {
         for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 4) {
           await page.evaluate(({ x, z, angle }) =>
             window.__ew.game.placeOnFoot(x + 3.5 * Math.sin(angle), z + 3.5 * Math.cos(angle), angle + Math.PI), { ...pair, angle });
           await step(6);
-          inView = await page.evaluate(() => window.__ew.game.streetLife.world.pairs(5).length > 0);
+          inView = await page.evaluate((tagsRequired) => window.__ew.game.streetLife.world.pairs(5).length > 0 &&
+            (!tagsRequired || [...document.querySelectorAll(".nametag")].some((tag) => tag.checkVisibility({ visibilityProperty: true }))), checkMoving);
           if (inView) break;
         }
         if (inView) break;
@@ -420,29 +627,33 @@ try {
       const toggleTask = page.locator(".objective-card .collapse-btn");
       const taskFolded = async () => await toggleTask.getAttribute("aria-expanded") === "false";
       const initiallyFolded = await taskFolded();
+      const assertChatterClear = async (context) => {
+        const { onScreen, overlaps } = await bubble.evaluate((el) => {
+          const a = el.getBoundingClientRect();
+          const onScreen = getComputedStyle(el).visibility === "visible" &&
+            a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth && a.top >= 0 && a.bottom <= innerHeight;
+          const overlaps = [...document.querySelectorAll(".objective-card, .minimap, .toolbar-drawer, .toolbar button, .joy, .jump-btn, .act-btn, .nametag")]
+            .filter((control) => {
+              const b = control.getBoundingClientRect();
+              return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
+                a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+            }).map((control) => control.className);
+          return { onScreen, overlaps };
+        });
+        assert(onScreen, `${context}: bubble fits on screen`);
+        assert.deepEqual(overlaps, [], `${context}: bubble clears the task card, minimap and menu`);
+        await assertSaveSiblings(bubble, ".street-bubble-text");
+      };
       const checkSpeaker = async (speaker) => {
         for (const translated of [false, true]) {
-          if (translated) await assertTranslation(bubble, press);
+          if (translated) await assertTranslation(bubble.locator(".street-bubble-text"), press);
           for (const folded of [false, true]) {
             if (await taskFolded() !== folded) await press(toggleTask);
             await step(2, 0);
             const context = `${viewport.join("x")} ${speaker} speaker, ${translated ? "translated" : "original"} line, ${folded ? "folded" : "open"} task`;
             assert.equal(await toggleTask.getAttribute("aria-expanded"), String(!folded));
             assert.equal(await bubble.getAttribute("aria-expanded"), String(translated));
-            const { onScreen, overlaps } = await bubble.evaluate((el) => {
-              const a = el.getBoundingClientRect();
-              const onScreen = getComputedStyle(el).visibility === "visible" &&
-                a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth && a.top >= 0 && a.bottom <= innerHeight;
-              const overlaps = [...el.parentElement.querySelectorAll(".objective-card, .minimap, .toolbar button")]
-                .filter((control) => {
-                  const b = control.getBoundingClientRect();
-                  return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
-                    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-                }).map((control) => control.className);
-              return { onScreen, overlaps };
-            });
-            assert(onScreen, `${context}: bubble fits on screen`);
-            assert.deepEqual(overlaps, [], `${context}: bubble clears the task card, minimap and menu`);
+            await assertChatterClear(context);
             if (speaker === "first" && translated && folded === initiallyFolded) await shot("chatter");
           }
         }
@@ -451,11 +662,35 @@ try {
       const first = await lineText(bubble).textContent();
       const id = await bubble.getAttribute("data-chatter");
       await checkSpeaker("first");
+      const saveChatter = async (i) => {
+        const source = chatters.find((item) => item.id === id).lines[i];
+        const en = await lineText(bubble).textContent();
+        const lt = await bubble.locator(".street-tr").textContent();
+        if (spanish) assert.equal(lt, lithuanian?.[source.lt] ?? source.lt);
+        await checkStreetSave(page, bubble.locator("[data-phrase-save]"), Math.min(...viewport) <= 520, { en, lt }, overheard);
+      };
+      await saveChatter(0);
+      if (checkMoving) {
+        await checkResizedTag(bubble, viewport);
+        await checkMovingChatter(page, bubble, viewport);
+      }
+      const menu = page.locator(".toolbar .ride-menu");
+      if (await menu.isVisible()) {
+        const drawer = page.locator(".toolbar-drawer");
+        for (const open of [true, false]) {
+          if (await menu.getAttribute("aria-expanded") !== String(open)) await press(menu);
+          await step(1, 0);
+          assert.equal(await menu.getAttribute("aria-expanded"), String(open));
+          assert.equal(await drawer.isVisible(), open);
+          await assertChatterClear(`${viewport.join("x")} chatter with menu ${open ? "open" : "closed"}`);
+        }
+      }
       await wait(async () => await bubble.isVisible() && await bubble.getAttribute("aria-expanded") === "false"
         && await lineText(bubble).textContent() !== first,
         "the second speaker's bubble appears");
       assert.equal(await bubble.getAttribute("data-chatter"), id);
       await checkSpeaker("second");
+      await saveChatter(1);
       await wait(async () => !(await bubble.count()), "the snippet ends");
       if (await taskFolded() !== initiallyFolded) await press(toggleTask);
 
@@ -467,6 +702,9 @@ try {
       assert(await force(dropped, "b"));
       await turn();
       if (sharedRole) assert.equal(await role.textContent(), sharedRole[2], "the same role resolves for the female cast member");
+      const keys = await authoredMoment(page);
+      const keptBeforeLeaving = await checkStreetSave(page, card.locator(".street-choices > div").nth(1).locator("[data-phrase-save]"),
+        Math.min(...viewport) <= 520, keys.choices[1], keys.role);
       await page.evaluate(() => {
         const { game } = window.__ew;
         const p = game.player.root.position;
@@ -475,6 +713,8 @@ try {
         game.placeOnFoot(p.x + Math.sin(a) * 15, p.z + Math.cos(a) * 15, a);
       });
       await closed();
+      assert.deepEqual(await cardsFor(page, keys.card.en), [], "an aborted moment awards no reward");
+      assert.deepEqual(await cardsFor(page, keptBeforeLeaving.en), [keptBeforeLeaving], "a deliberate choice save survives walking away");
       assert.equal((await saved())[dropped].seen, 3);
       assert.equal((await saved())[dropped].helped, 2, "walking away added no help");
 
@@ -499,6 +739,17 @@ try {
       await shot("light");
       await turn(1);
       await press(card.locator(".street-choice").first());
+      if (spanish) {
+        const current = card.locator(".street-current");
+        const reward = card.locator("[data-street-reward]");
+        await wait(async () => await card.getAttribute("data-step") === "reply" &&
+          await lineText(current).textContent() === authored.closing.en, "the Light closing reply and reward are available before award");
+        const touch = Math.min(...viewport) <= 520;
+        await reward.scrollIntoViewIfNeeded();
+        await checkStreetSave(page, reward.locator("[data-phrase-save]"), touch, authored.card, authored.role);
+        await current.scrollIntoViewIfNeeded();
+        await checkStreetSave(page, current.locator("[data-phrase-save]"), touch, authored.closing, authored.role);
+      }
       await closed();
 
       const { clock, due } = await state();
@@ -515,7 +766,82 @@ try {
       await press(controls.first());
       await press(controls.nth(1));
       await wait(async () => !(await chatter.count()), "the light chatter card closes");
+      if (spanish) {
+        assert(await page.evaluate(() => window.__ew.game.streetChatterNow("c_calor")));
+        await wait(() => chatter.isVisible(), "the authored hot-day snippet appears");
+        await assertTranslation(chatter.locator(".street-line").first(), press);
+        const { lines } = chatters.find((item) => item.id === "c_calor");
+        for (const [i, row] of (await chatter.locator(".phrase-save-row").all()).entries()) {
+          await row.scrollIntoViewIfNeeded();
+          await assertSaveSiblings(row, ".street-line");
+          const source = lines[i];
+          const en = variety === "spain" ? source.spain ?? source.neutral ?? source.en
+            : variety === "neutral" ? source.neutral ?? source.en : source.en;
+          const lt = lithuanian?.[source.lt] ?? source.lt;
+          await checkStreetSave(page, row.locator("[data-phrase-save]"), Math.min(...viewport) <= 520, { en, lt }, overheard);
+          assert.equal(await row.locator(".street-line").getAttribute("aria-expanded"), String(i === 0));
+        }
+        await press(controls.nth(1));
+      }
     });
+  }
+  if (spanish) for (const viewport of size.filter(([w, h]) => size.length === 1 || h === 844 || w === 1280)) {
+    await withGame(viewport, {}, async ({ page, force, turn, step, state, card, wait, press, closed, shot }) => {
+      const touch = Math.min(...viewport) <= 520;
+      assert(await force(dropped, "a"));
+      await turn();
+      const { card: reward, closing, choices, role } = await authoredMoment(page);
+      assert.deepEqual(reward, { en: "¡Se le cayó la cartera!", lt: learner === "lt" ? "Jums iškrito piniginė!" : "You dropped your wallet!" });
+      assert.deepEqual(closing, { en: "¡Igualmente! ¡Gracias otra vez!", lt: learner === "lt" ? "Ir Jums! Dar kartą ačiū!" : "You too! Thanks again!" });
+      const choiceSave = card.locator(".street-choices > div").nth(1).locator("[data-phrase-save]");
+      await checkStreetSave(page, choiceSave, touch, choices[1], role);
+      if (!touch) {
+        const before = (await streetSnapshot(page)).player;
+        await choiceSave.focus();
+        await page.keyboard.down("w");
+        try { await step(6); } finally { await page.keyboard.up("w"); }
+        const after = (await streetSnapshot(page)).player;
+        assert(Math.hypot(after[0] - before[0], after[2] - before[2]) > 0.02, "a focused save keeps walking input live");
+      }
+      await press(card.locator(".street-choice").first());
+      await turn(1);
+      await press(card.locator(".street-choice").first());
+      const current = card.locator(".street-current");
+      const rewardRow = card.locator("[data-street-reward]");
+      await wait(async () => await card.getAttribute("data-step") === "reply" &&
+        await lineText(current).textContent() === closing.en, "the distinct closing reply and reward are available before departure");
+      assert.equal(await lineText(rewardRow).textContent(), reward.en);
+      assert.equal(await rewardRow.locator(`small[lang="${learner}"]`).textContent(), reward.lt);
+      assert.equal((await state()).memory[dropped].helped, 0);
+      await assertSaveSiblings(current, ".street-line");
+      await shot("wallet-before-award");
+      const keptReward = await checkStreetSave(page, rewardRow.locator("[data-phrase-save]"), touch, reward, role);
+      await assertTranslation(current.locator(".street-line"), press, closing.lt);
+      const keptReply = await checkStreetSave(page, current.locator("[data-phrase-save]"), touch, closing, role);
+      await page.evaluate(() => {
+        const { game } = window.__ew, actor = game.streetLife.active.actor.person.root;
+        window.__walletDeparture = { actor, position: actor.position.clone() };
+      });
+      await wait(() => card.getAttribute("data-step").then((step) => step === "done"), "the same closing reply stays through done");
+      assert.equal(await lineText(current).textContent(), closing.en);
+      assert.equal(await current.locator(".street-line").getAttribute("aria-expanded"), "true");
+      assert.equal(await current.locator("[data-phrase-save]").getAttribute("aria-pressed"), "true");
+      await assertSaveSiblings(current, ".street-line");
+      await activatePhraseControl(page, current.locator("[data-phrase-save]"), touch);
+      assert.deepEqual(await cardsFor(page, closing.en), [keptReply], "the last reply is still actionable at done");
+      assert(!(await page.locator(".town-toasts .toast.success").filter({ hasText: reward.en }).count()), "the manual reward save suppresses the duplicate notice");
+      await shot("wallet-done");
+      await closed();
+      assert.deepEqual([(await state()).memory[dropped].seen, (await state()).memory[dropped].helped], [1, 1]);
+      assert(await page.evaluate(() => {
+        const { actor, position } = window.__walletDeparture;
+        return !actor.parent || actor.position.distanceTo(position) > 0.1;
+      }), "the completed wallet owner actually walks away");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "the town returns after reload");
+      assert.deepEqual(await cardsFor(page, reward.en), [keptReward]);
+      assert.deepEqual(await cardsFor(page, closing.en), [keptReply]);
+    }, { spanishVariety: "default" });
   }
   console.log(`Street-life browser checks passed. Screenshots in ${shots}`);
 } finally {

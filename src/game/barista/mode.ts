@@ -11,14 +11,14 @@ import { ModeDialogue, type KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { useStore } from "../../state/store";
 import { sitProgress } from "../../state/progress";
 import { countPlay } from "../../state/playStats";
 import { sendStat } from "../../state/stats";
 import { L } from "../../ui/i18n";
 import { BaristaShift } from "./shift";
-import { matchesPick, trayRows } from "./tray";
+import { matchesPick, trayPhrases, trayRows } from "./tray";
 import { CounterProps, CUP_AT, CUP_SERVED, disposeBaristaProps, makeServing } from "./props";
 import { baristaMenu, baristaPieceLine, baristaThanks } from "./menu";
 import { resetBaristaUi, useBarista } from "./store";
@@ -62,6 +62,7 @@ type Run = {
   serving: THREE.Group | null;
   slide: number;
   kept: Map<string, KitLine>;
+  review: PhraseRun;
   wait?: { left: number; finish: (ok: boolean) => void };
   introStarted: boolean;
   guidedReady: boolean;
@@ -88,8 +89,15 @@ class BaristaMode implements GameMode {
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
-    say: (line) => ui({ line }),
-    choices: (choices) => ui({ choices }),
+    say: (line) => {
+      const { hiddenOrder, repair } = useBarista.getState();
+      if (line && (!hiddenOrder.length || repair)) this.run?.review.add(line.sentence);
+      ui({ line });
+    },
+    choices: (choices) => {
+      this.run?.review.lines(choices);
+      ui({ choices });
+    },
     mic: (mic) => ui({ mic }),
     animate: (seconds) => this.speaker?.talk(seconds, () => audio.level(), () => audio.vowel()),
   });
@@ -141,11 +149,12 @@ class BaristaMode implements GameMode {
   }
 
   private fadeIntoShift(cafe: SituationDef, previous?: Run) {
+    const offer = this.offered ? useBarista.getState().line : null;
     const started = this.host.fade(() => {
       this.starting = false;
-      if (!this.host.owns(this.id)) return;
+      if (!this.host.owns(this.id) || (previous && previous !== this.run)) return;
       if (previous) this.clearRun(previous);
-      this.launch(cafe);
+      this.launch(cafe, offer);
     });
     if (!started) return false;
     this.starting = true;
@@ -156,7 +165,7 @@ class BaristaMode implements GameMode {
     return true;
   }
 
-  private launch(cafe: SituationDef) {
+  private launch(cafe: SituationDef, offer: KitLine | null) {
     const room = this.café.room();
     const barista = this.café.mia();
     if (!room || !barista) { this.host.left(this.id); return; }
@@ -187,8 +196,10 @@ class BaristaMode implements GameMode {
     const run: Run = {
       shift, cafe, menu: baristaMenu(cafe), root, props, originalProps, mia, miaHome, customer, actors: [mia, customer],
       framing: counterDetails(customer.ch.height, barista.height),
-      serving: null, slide: 0, kept: new Map(), introStarted: false, guidedReady: false, replaying: false, closing: false,
+      serving: null, slide: 0, kept: new Map(), review: new PhraseRun(situation),
+      introStarted: false, guidedReady: false, replaying: false, closing: false,
     };
+    if (offer) run.review.add(offer.sentence);
     this.run = run;
     resetBaristaUi();
     ui({ micOn: this.playback.micOn, menu: run.menu });
@@ -215,13 +226,19 @@ class BaristaMode implements GameMode {
     const { shift } = run;
     const guided = shift.step === "order" && shift.help < 2;
     const fix = shift.correction;
+    const tray = guided || shift.step === "build" || shift.step === "correction";
+    const previous = useBarista.getState();
+    const trayReview = tray
+      ? previous.tray && previous.built.drink === shift.built.drink ? previous.trayReview : trayPhrases(run.menu, shift.built)
+      : undefined;
+    if (trayReview && trayReview !== previous.trayReview) run.review.entries(trayReview);
     ui({
       customer: shift.step === "intro" || shift.step === "closing" ? 0 : shift.index + 1,
       step: shift.step, built: { ...shift.built },
       highlight: fix?.chip ?? (guided && shift.help === 0 ? shift.currentPiece : null),
       repair: !!fix,
       correctionSelected: fix?.selected ?? null,
-      tray: guided || shift.step === "build" || shift.step === "correction",
+      tray, trayReview,
       ready: (guided && run.guidedReady) || (shift.step === "build" && !run.replaying),
     });
   }
@@ -405,7 +422,7 @@ class BaristaMode implements GameMode {
       shift.step = "score";
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
       this.paint(run);
-      ui({ result: { served: shift.served, firstTime: shift.firstTime, cards: run.kept.size } });
+      ui({ result: { served: shift.served, firstTime: shift.firstTime, cards: run.kept.size, review: run.review.finish() } });
       countPlay("games", this.id);
       sendStat("barista", { n: shift.served, first: shift.firstTime, wrong: shift.wrong });
     }
@@ -557,7 +574,13 @@ class BaristaMode implements GameMode {
     if (name === "mic") { this.playback.setMic(value === true); ui({ micOn: this.playback.micOn }); }
     if (name === "give") void this.give(run);
     if (name === "again" && run.shift.step === "score") this.begin(run);
-    if (name === "show" && useBarista.getState().hiddenOrder.length) ui({ revealed: true });
+    if (name === "show") {
+      const { hiddenOrder, revealed, repair } = useBarista.getState();
+      if (hiddenOrder.length && !revealed && !repair) {
+        run.review.lines(hiddenOrder);
+        ui({ revealed: true });
+      }
+    }
     if (name === "hear" && run.shift.step === "build" && run.shift.help === 2 && !run.shift.correction) void this.fullOrder(run);
     if (typeof value === "string") {
       if (name === "row" && trayRows(run.shift.built).includes(value as Row)) this.row(value as Row);
@@ -613,7 +636,8 @@ class BaristaMode implements GameMode {
     this.loading = null;
     this.playback.cancel();
     const close = () => {
-      if (run && this.run === run) {
+      if (run && this.run !== run) return;
+      if (run) {
         this.clearRun(run);
         this.café.place(BARISTA_PROMPT.x, BARISTA_PROMPT.z, BARISTA_PROMPT.rot);
         this.café.savePlace();

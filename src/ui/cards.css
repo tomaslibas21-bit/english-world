@@ -63,9 +63,6 @@
 .pb-bar .all-in { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 0.88em; color: var(--accent); }
 .hint-row:has(> .pb-acts) > .ex { overflow-wrap: anywhere; }
 .hint-row .pb-acts { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 6px; align-items: flex-start; }
-.hint-row .play.add { background: #fff; color: var(--accent); box-shadow: inset 0 0 0 1.5px #cfe4e1; }
-.hint-row .play.add:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
-.pb-in { width: 42px; height: 42px; display: grid; place-items: center; color: var(--good); flex: none; }
 
 @media (pointer: coarse) {
   .pb-tab, .pb-bar .btn.small, .hint-row .pb-acts :is(.play, .pb-in), .rv-play, .rv-top .btn.small {

@@ -5,8 +5,9 @@ import { SURF_SPOT } from "../world/surf";
 import { coach } from "../coach";
 import type { ModeHost } from "../kit/host";
 import type { GameMode } from "../kit/modes";
+import { PhraseRun } from "../kit/phrases";
 import { SurfPlay, type SurfGame } from "./play";
-import { useSurf } from "./store";
+import { trackSurfPhrases, useSurf } from "./store";
 
 export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlayer"]): (GameMode & { play: SurfPlay }) | null {
   if (!SURF_SPOT || !SURF || !NPCS[SURF.npc]) return null;
@@ -19,6 +20,17 @@ export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlaye
     left: (x, z, rot) => { host.place(x, z, rot); host.left(id); },
   });
   host.add(play.group, play.marker);
+  let review: PhraseRun | undefined;
+  const untrack = trackSurfPhrases((patch, current) => {
+    if (patch.active !== undefined) review = patch.active ? new PhraseRun(play.situation) : undefined;
+    if (!review) return;
+    if (patch.over) return review.finish();
+    if (patch.line) review.add(patch.line.s);
+    if (patch.choice) for (const option of patch.choice.options) review.add(option.s);
+    const choice = patch.choice === undefined ? current.choice : patch.choice;
+    const said = patch.said === undefined ? current.said : patch.said;
+    if (!choice && said) review.add(said.s);
+  });
   return {
     id, play, cleanScreen: "overlay", camera: "stage",
     conversation: { situation: play.situation, label: L("Banglenčių pamoka") },
@@ -56,6 +68,8 @@ export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlaye
     },
     exit: (immediate) => play.stop(immediate),
     dispose() {
+      if (untrack()) useSurf.getState().reset();
+      review = undefined;
       play.stopListening();
       play.group.removeFromParent();
       play.marker.removeFromParent();

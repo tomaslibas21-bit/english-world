@@ -1,8 +1,10 @@
 import { game } from "../game/gameRef";
 import { usePool } from "../game/pool/store";
+import { POOL_SITUATION } from "../game/world/pool";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./pool.css";
 
@@ -12,11 +14,12 @@ const helpText = {
   timing: L("Atmušk, kai kamuolys leidžiasi pas tave."),
   wrong: L("Šitas buvo kitam vaikui."),
 } as const;
+const source = { situationId: POOL_SITUATION };
 
 export function PoolOverlay({ touch }: { touch: boolean }) {
   const { cue, aside, help, notice, canHit, streak, result } = usePool();
   if (result) return (
-    <ScoreCard title={L("Kamuolys ore")}
+    <ScoreCard title={L("Kamuolys ore")} review={result.review}
       ratio={result.learnerHits / Math.max(1, result.learnerHits + result.drops)}
       rows={[
         { label: L("Geriausia serija"), value: <><ScoreNumber value={result.best} /> {L("Iš eilės").toLocaleLowerCase(HL)}</> },
@@ -38,8 +41,8 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
       <div className="pool-top">
         <div className="pool-counter" lang={HL}>{L("Kamuolys ore")} <b>{streak}</b></div>
         <div className="pool-cues">
-          {cue && <div className="pool-cue" data-line={cue.key} lang={TL}><GlossLine sentence={cue.sentence} gloss /></div>}
-          {aside && <div className="pool-aside" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss /></div>}
+          {cue && <div className="pool-cue phrase-save-row" data-line={cue.key} lang={TL}><GlossLine sentence={cue.sentence} gloss source={source} /><PhraseSave sentence={cue.sentence} {...source} /></div>}
+          {aside && <div className="pool-aside phrase-save-row" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss source={source} /><PhraseSave sentence={aside.sentence} {...source} /></div>}
         </div>
       </div>
       <div className={`pool-help-stack${touch ? " pool-help-touch" : ""}`} lang={HL}>

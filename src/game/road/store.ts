@@ -3,10 +3,19 @@ import type { KitLine, KitMic } from "../kit/dialogue";
 import type { SayItCue } from "../kit/sayIt";
 import type { GateWord, Prompt } from "./words";
 import type { PlayWay } from "./save";
+import type { PhraseReviewEntry } from "../../ui/kit/phraseLine";
 
 export type RoadResult = {
   points: number; right: number; total: number; streak: number; distance: number;
   record: boolean; cards: number; missed: GateWord[]; recovered: GateWord[]; phrases?: GateWord[]; said?: number;
+  review?: readonly PhraseReviewEntry[];
+  missedEntries?: readonly PhraseReviewEntry[];
+  practiceEntries?: readonly PhraseReviewEntry[];
+};
+
+export type GateFeedback = {
+  correct: boolean; entry: PhraseReviewEntry; saveWord: boolean;
+  options?: readonly PhraseReviewEntry[]; gapEntry?: PhraseReviewEntry;
 };
 
 type RoadUi = {
@@ -15,7 +24,7 @@ type RoadUi = {
   line: KitLine | null; choices: KitLine[]; mic: KitMic; micOn: boolean;
   prompt?: Prompt; gateId?: number; stampedLane?: number; sayIt?: SayItCue; ghost: boolean;
   remaining: number; streak: number; wind: boolean;
-  feedback?: { correct: boolean; word: GateWord };
+  feedback?: GateFeedback;
   result?: RoadResult;
 };
 

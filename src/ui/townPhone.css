@@ -155,7 +155,8 @@
 .friend-meeting header { display: flex; align-items: center; justify-content: space-between; }
 .friend-meeting header .icon-btn { width: 44px; height: 44px; }
 .friend-meeting header .listening { color: var(--accent); }
-.friend-meeting .btn { padding: 5px 10px; min-height: 44px; text-align: left; }
+.friend-meeting [data-meeting-answer] { display: block; min-width: 0; padding: 5px 10px; text-align: left; }
+.friend-meeting [data-meeting-answer] .nat { display: block; }
 
 .phone-ring.text-arrival {
   display: grid;
@@ -245,11 +246,14 @@
 .text-hint { margin: 0 0 12px; color: #c1d0db; font-size: .86em; }
 .text-message { display: flex; align-items: flex-start; flex-direction: column; margin-bottom: 8px; }
 .text-message.mine { align-items: flex-end; }
-.text-bubble, .text-replies button {
-  max-width: 90%;
+.text-bubble-row { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.text-message.mine .text-bubble-row { flex-direction: row-reverse; }
+.text-bubble, .text-reply {
+  min-width: 0;
+  min-height: 44px;
   border: 0;
   border-radius: 14px 14px 14px 4px;
-  background: white;
+  background: var(--panel-solid);
   color: #222b32;
   text-align: left;
   padding: 8px 11px;
@@ -258,14 +262,17 @@
   overflow-wrap: anywhere;
 }
 .text-message.mine .text-bubble { background: var(--accent-soft); border-radius: 14px 14px 4px 14px; }
-.text-bubble small, .text-replies small { display: block; margin-top: 4px; font-family: var(--ui); color: #48545c; }
+.text-bubble small, .text-reply small { display: block; margin-top: 4px; font-family: var(--ui); color: #48545c; }
 .text-sent { margin-top: 3px; color: #b9c7d1; }
 .text-replies { display: grid; gap: 6px; padding-top: 5px; }
-.text-replies button { max-width: 100%; min-height: 44px; border-radius: 12px; background: #f4edd9; }
+.text-reply { border-radius: 12px; background: #f4edd9; }
 @media (max-height: 520px) and (orientation: landscape) {
-  .overlay > .phone.thread-open { width: min(560px, 100%); padding-block: 8px 12px; }
+  .overlay > .phone.thread-open { width: min(660px, 100%); padding-block: 8px 12px; }
   .text-thread-head { padding-block: 2px 6px; }
-  .text-replies:has(button + button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .text-thread-body { padding-top: 6px; }
+  .text-message { margin-bottom: 5px; }
+  .text-bubble, .text-reply { padding-block: 5px; }
+  .text-replies:has(.phrase-save-row + .phrase-save-row) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .text-replies > strong { grid-column: 1 / -1; }
 }
 .text-typing { display: inline-flex; gap: 4px; padding: 11px; background: #fff; border-radius: 14px 14px 14px 4px; }

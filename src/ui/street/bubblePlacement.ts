@@ -1,60 +1,81 @@
-type Bounds = Pick<DOMRect, "left" | "right" | "top" | "bottom">;
-type Point = { x: number; y: number };
-
 const EDGE = 8;
 const GAP = 9;
 const NEAR = 44;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-export function placeBubble(head: Point, width: number, height: number, screenWidth: number, screenHeight: number,
-  hud: Bounds[], minHeight = height) {
-  const maxX = screenWidth - width - EDGE, screenBottom = screenHeight - EDGE;
-  if (maxX < EDGE || screenBottom - EDGE < minHeight) return;
+export function createBubblePlacement(capacity: number) {
+  // The extra slot keeps the bubble and its tail clear of the speaker.
+  const blockers = Array.from({ length: capacity + 1 }, () => ({ left: 0, right: 0, top: 0, bottom: 0 }));
+  const xs = new Float64Array(3 + blockers.length * 2);
+  const ys = new Float64Array(xs.length);
+  const result = { x: 0, y: 0, tail: { x: 0, y: 0, angle: 0 } };
 
-  // Expand the obstacles by the pointer clearance and the width of the bubble on their left.
-  const blocked = [...hud, { left: head.x, right: head.x, top: head.y, bottom: head.y }].map((rect) => ({
-    left: rect.left - width - GAP, right: rect.right + GAP,
-    top: rect.top - GAP, bottom: rect.bottom + GAP,
-  })).sort((a, b) => a.top - b.top);
-  const xs = [EDGE, maxX, clamp(head.x - width / 2, EDGE, maxX)];
-  for (const box of blocked) {
-    if (box.left > EDGE && box.left < maxX) xs.push(box.left);
-    if (box.right > EDGE && box.right < maxX) xs.push(box.right);
-  }
+  function place(headX: number, headY: number, width: number, height: number, screenWidth: number, screenHeight: number, count: number) {
+    const maxX = screenWidth - width - EDGE, maxY = screenHeight - height - EDGE;
+    if (maxX < EDGE || maxY < EDGE) return;
+    const head = blockers[count++];
+    head.left = head.right = headX;
+    head.top = head.bottom = headY;
 
-  let best: { x: number; y: number; height: number; dx: number; dy: number; vertical: boolean; priority: number; distance: number; alignment: number } | undefined;
-  const considerGap = (x: number, top: number, bottom: number) => {
-    const fittedHeight = Math.min(height, bottom - top);
-    if (fittedHeight < minHeight || (best && fittedHeight < best.height)) return;
-    const maxY = bottom - fittedHeight;
-    for (const y of [top, maxY, clamp(head.y - fittedHeight / 2, top, maxY)]) {
-      const dx = head.x - clamp(head.x, x, x + width), dy = head.y - clamp(head.y, y, y + fittedHeight);
-      const distance = Math.hypot(dx, dy);
-      const vertical = Math.abs(dy) >= Math.abs(dx);
-      // Keep as much text visible as possible, then prefer above, beside or below a nearby speaker.
-      const priority = distance > NEAR ? 3 : !vertical ? 1 : dy > 0 ? 0 : 2;
-      const alignment = vertical ? Math.abs(head.x - x - width / 2) : Math.abs(head.y - y - fittedHeight / 2);
-      if (!best || fittedHeight > best.height || priority < best.priority || (priority === best.priority &&
-        (distance < best.distance || (distance === best.distance && alignment < best.alignment)))) {
-        best = { x, y, height: fittedHeight, dx, dy, vertical, priority, distance, alignment };
+    // The nearest free position aligns with the speaker or with a screen or blocker edge.
+    xs[0] = ys[0] = EDGE;
+    xs[1] = maxX;
+    ys[1] = maxY;
+    xs[2] = clamp(headX - width / 2, EDGE, maxX);
+    ys[2] = clamp(headY - height / 2, EDGE, maxY);
+    let nx = 3, ny = 3;
+    for (let i = 0; i < count; i++) {
+      // Express each obstacle in the coordinates of the bubble's top-left corner.
+      const box = blockers[i];
+      box.left -= width + GAP;
+      box.top -= height + GAP;
+      box.right += GAP;
+      box.bottom += GAP;
+      if (box.left > EDGE && box.left < maxX) xs[nx++] = box.left;
+      if (box.right > EDGE && box.right < maxX) xs[nx++] = box.right;
+      if (box.top > EDGE && box.top < maxY) ys[ny++] = box.top;
+      if (box.bottom > EDGE && box.bottom < maxY) ys[ny++] = box.bottom;
+    }
+
+    let bestPriority = Infinity, bestDistance = Infinity, bestAlignment = Infinity;
+    let bestDx = 0, bestDy = 0;
+    for (let i = 0; i < nx; i++) {
+      const x = xs[i];
+      candidate: for (let j = 0; j < ny; j++) {
+        const y = ys[j];
+        for (let k = 0; k < count; k++) {
+          const box = blockers[k];
+          if (x > box.left && x < box.right && y > box.top && y < box.bottom) continue candidate;
+        }
+        const dx = headX - clamp(headX, x, x + width), dy = headY - clamp(headY, y, y + height);
+        const distance = Math.hypot(dx, dy);
+        const vertical = Math.abs(dy) >= Math.abs(dx);
+        const priority = distance > NEAR ? 3 : !vertical ? 1 : dy > 0 ? 0 : 2;
+        const alignment = vertical ? Math.abs(headX - x - width / 2) : Math.abs(headY - y - height / 2);
+        if (priority < bestPriority || (priority === bestPriority &&
+          (distance < bestDistance || (distance === bestDistance && alignment < bestAlignment)))) {
+          bestPriority = priority;
+          bestDistance = distance;
+          bestAlignment = alignment;
+          bestDx = dx;
+          bestDy = dy;
+          result.x = x;
+          result.y = y;
+        }
       }
     }
-  };
-  for (const x of xs) {
-    let top = EDGE;
-    for (const box of blocked) {
-      if (x <= box.left || x >= box.right) continue;
-      considerGap(x, top, Math.min(box.top, screenBottom));
-      top = Math.max(top, box.bottom);
+    if (bestPriority === Infinity) return;
+    if (Math.abs(bestDy) >= Math.abs(bestDx)) {
+      result.tail.x = clamp(headX - result.x, 13, width - 13);
+      result.tail.y = bestDy > 0 ? height : 0;
+      result.tail.angle = bestDy > 0 ? 0 : 180;
+    } else {
+      result.tail.x = bestDx > 0 ? width : 0;
+      result.tail.y = clamp(headY - result.y, 13, height - 13);
+      result.tail.angle = bestDx > 0 ? -90 : 90;
     }
-    considerGap(x, top, screenBottom);
+    return result;
   }
-  if (!best) return;
 
-  const { x, y, height: fittedHeight, dx, dy, vertical } = best;
-  const tail = vertical
-    ? { x: clamp(head.x - x, 13, width - 13), y: dy > 0 ? fittedHeight : 0 }
-    : { x: dx > 0 ? width : 0, y: clamp(head.y - y, 13, fittedHeight - 13) };
-  const angle = Math.atan2(x + tail.x - head.x, head.y - y - tail.y) * 180 / Math.PI;
-  return { x, y, height: fittedHeight, tail: { ...tail, angle } };
+  return { blockers, place };
 }

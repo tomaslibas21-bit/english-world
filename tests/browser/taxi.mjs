@@ -6,9 +6,9 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { tsImport } from "tsx/esm/api";
+import { assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const { TAXI_ACCEPT, TAXI_LINES } = await tsImport("../../src/editions/es/content/taxi-lines.ts", import.meta.url);
-const { STRINGS } = await tsImport("../../src/editions/es/ui/strings.ts", import.meta.url);
 const variety = process.env.WORLD_VARIETY || "default";
 assert(["default", "neutral", "spain"].includes(variety), "unknown Spanish variety");
 function lineText(key) {
@@ -293,6 +293,8 @@ try {
     };
     await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", { attempts: 500 });
     const lithuanian = await page.evaluate(() => document.documentElement.lang === "lt");
+    assert.equal(lithuanian, process.env.WORLD_LEARNER === "lt");
+    const STRINGS = lithuanian ? {} : await page.evaluate(async () => (await import("/src/ui/strings.ts")).STRINGS);
     const uiText = (key) => lithuanian ? key : STRINGS[key];
     const standPrompt = page.locator(".prompt").getByText(uiText("Vairuoti taksi"));
     await waitFor(() => standPrompt.isVisible(), "taxi prompt appears");
@@ -385,6 +387,23 @@ try {
     await page.evaluate(installSteering, { wrong: true });
     await waitFor(() => page.locator('.taxi-action[data-action="left"]').count(), "first turn chip", { steer: true, attempts: 240 });
     checkGuidance(await page.evaluate(measureGuidance), phone, "←");
+    const directions = page.locator('.taxi-cue [data-line="tx_r1_c1"]');
+    const reveal = directions.and(page.locator(".taxi-reveal"));
+    if (await reveal.isVisible()) {
+      assert.equal(await directions.locator("[data-phrase-save]").count(), 0);
+      await press(reveal);
+    }
+    const snapshot = () => page.evaluate(async () => {
+      const { useTaxi } = await import("/src/game/taxi/store.ts");
+      const { game, store } = window.__ew;
+      const { run, car } = game.modes.get("taxi");
+      const { line, action, choices, mic } = useTaxi.getState();
+      return { phase: run.phase, index: run.index, crashes: run.crashes, position: [car.m.x, car.m.z, car.m.heading],
+        kept: [...run.kept.keys()], line: line?.key, action, choices, mic, plays: store.getState().progress.play };
+    });
+    const cueLine = await fixtureSentence(page, "s66-taxi", "tx_r1_c1");
+    const keptCue = await checkManualSave(page, directions.locator("[data-phrase-save]"), phone, cueLine.en, "s66-taxi", snapshot, "Space");
+    assertSavedSentence(keptCue, cueLine, "s66-taxi");
     await shot("cue");
     await waitFor(() => heard("tx_wrong"), "Don Rigo catches the wrong turn", { steer: true, attempts: 150 });
     await shot("wrong-turn");
@@ -443,6 +462,11 @@ try {
       [uiText("Sustojote"), uiText("prie durų")],
       [uiText("Frazių kortelės"), "10"],
     ], `score card rows: ${JSON.stringify(rows)}`);
+    const review = card.locator(".phrase-review-row");
+    await review.getByRole("combobox").selectOption({ label: keptCue.en });
+    assert.equal(await review.locator(`small[lang="${lithuanian ? "lt" : "en"}"]`).textContent(), keptCue.lt);
+    assert.equal(await review.locator("[data-phrase-save]").getAttribute("aria-pressed"), "true");
+    assert.deepEqual(await cardsFor(page, keptCue.en), [keptCue]);
     const scoreLayout = await card.evaluate((el) => ({
       card: el.getBoundingClientRect().toJSON(), width: innerWidth, height: innerHeight,
     }));
@@ -493,6 +517,8 @@ try {
     await real(480);
     await waitFor(() => choice("tx_a_where").count(), "s66 end card starts a taxi mode");
     assert(await page.evaluate(atTaxiStand, "r2"), "the second route boards the same taxi at the stand");
+    assert.equal(await review.count(), 0);
+    assert.deepEqual(await cardsFor(page, keptCue.en), [keptCue]);
     checkSightlines(await page.evaluate(taxiSightlines), "second pickup");
     if (shots && !phone) {
       await page.keyboard.press("1");

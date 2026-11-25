@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { answer, checkGlossStack, checkHud, closeChat, openQuestTown, questBrowser, questSizes, talkTo } from "./quests-harness.mjs";
 import { shot } from "./screen-harness.mjs";
+import { activatePhraseControl, cardsFor, checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const browser = await questBrowser();
 try {
@@ -39,6 +40,15 @@ try {
       await press(card.getByRole("button", { name: words.replay, exact: true }));
       await page.waitForFunction((count) => window.__replayedDirections?.length >= count, lines.length);
       assert.deepEqual(await page.evaluate(() => window.__replayedDirections), lines.map(({ say }) => say));
+      const first = card.locator(`[data-line="${lines[0].key}"]`);
+      const save = first.locator("..").locator("[data-phrase-save]");
+      const expanded = () => card.locator(".direction-lines [aria-expanded]").evaluateAll((rows) =>
+        rows.map((row) => [row.getAttribute("aria-expanded"), row.querySelector("small")?.textContent ?? null]));
+      assert.deepEqual(await expanded(), lines.map(() => ["false", null]));
+      const touch = width < 500 || height < 500;
+      const saved = await checkManualSave(page, save, touch, lines[0].en, situation, expanded);
+      assert.equal(saved.lt, lines[0].nat);
+      assert.equal(saved.sentence.say ?? saved.sentence.en, lines[0].say);
       for (const sentence of lines) {
         const line = card.locator(`[data-line="${sentence.key}"]`);
         await line.getByText(sentence.en, { exact: true }).waitFor();
@@ -46,6 +56,11 @@ try {
         await press(line);
         await checkGlossStack(line, sentence, languages);
       }
+      const disclosed = await expanded();
+      await save.scrollIntoViewIfNeeded();
+      await activatePhraseControl(page, save, touch);
+      assert.deepEqual(await expanded(), disclosed);
+      assert.deepEqual(await cardsFor(page, lines[0].en), [saved]);
       await checkHud(page, ".directions-card");
       if (height <= 520) assert((await card.boundingBox()).width <= 256);
       await shot(page, `${label}-card`);

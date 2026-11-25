@@ -144,6 +144,8 @@
 .photo-quiz-mic { display: flex; gap: 8px; align-items: center; font-size: 0.9em; }
 .photo-quiz-mic:empty { display: none; }
 .photo-quiz-mic .mic { width: 44px; height: 44px; padding: 0; }
+.photo-quiz-mic .phrase-chooser { margin-inline-start: auto; }
+.photo-quiz-mic .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
 .photo-flash { position: fixed; inset: 0; z-index: 1; background: white; pointer-events: none; animation: photo-flash 0.22s ease-out both; }
 @keyframes photo-flash { from { opacity: 0.85; } to { opacity: 0; } }
 .quest-arrival { display: contents; }
@@ -177,7 +179,7 @@
   padding: 2px;
   overflow-y: var(--directions-overflow, visible);
 }
-.direction-lines button {
+.direction-lines button[data-line] {
   border: 0;
   border-radius: 8px;
   background: var(--accent-soft);
@@ -275,7 +277,7 @@
   .directions-card header > .ui-icon { width: 15px; height: 15px; }
   .directions-card header p { margin: 0; line-height: 1.1; }
   .directions-card .direction-lines { gap: 3px; padding: 0; }
-  .direction-lines button { padding: 3px 5px; border-radius: 6px; }
+  .direction-lines button[data-line] { padding: 3px 5px; border-radius: 6px; }
   .direction-lines .kit-gloss-compact {
     --kit-phrase-size: calc(16px * var(--scale));
     --kit-translation-size: calc(13px * var(--scale));

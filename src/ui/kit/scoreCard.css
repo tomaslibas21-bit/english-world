@@ -59,6 +59,15 @@
 }
 .mode-score-card dd { flex: none; margin: 0; font-weight: 800; }
 .mode-score-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.mode-score-card[data-review] { scroll-padding-block-end: 96px; }
+.mode-score-card[data-review] .mode-score-actions .btn { min-height: 44px; }
+.mode-score-card[data-review] .mode-score-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-block: 6px;
+  background: var(--panel-solid);
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .mode-score-card { animation: score-arrive 150ms cubic-bezier(.2,.85,.35,1.12); }

@@ -1,16 +1,31 @@
 // The town's radio set opens over the town from the dial plate, or from the radio button in a phone's menu.
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
 import { notedLineAt } from "../radio/extras";
 import { LYRIC_SIZES, type Station } from "../radio/playlist";
 import { bindRadio, radio, useRadio } from "../radio";
-import { lineAt, shortGloss, unitAt } from "../radio/lyrics";
+import { lineAt, shortGloss, unitAt, type Timeline } from "../radio/lyrics";
 import { spotLineAt, type ReadySpot } from "../radio/spots";
 import { Icon } from "./icons";
 import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
+import { PHRASE_CARD_UI } from "../content/phrase-card-ui";
 import "./radio.css";
+
+const RadioPhrases = lazy(() => import("./RadioPhrases"));
+export type RadioPhrase = { targetText: string; helperText: string };
+let recentPhrases: readonly RadioPhrase[] = [];
+
+// Sample the committed caption once per line, independently of the word sweep.
+function rememberPhrase(target: unknown, helper: unknown) {
+  const targetText = typeof target === "string" ? target.trim() : "";
+  const helperText = typeof helper === "string" ? helper.trim() : "";
+  const [last] = recentPhrases;
+  if (!targetText || !helperText || (last?.targetText === targetText && last.helperText === helperText)) return;
+  const phrase = { targetText, helperText };
+  recentPhrases = last ? [phrase, last] : [phrase];
+}
 
 const SKIN = `radio-skin-${RADIO_SKIN}`;
 const SPOT_AD = L("Reklama");
@@ -152,6 +167,15 @@ function RadioSet() {
   const s = useRadio((x) => x);
   const ref = useRef<HTMLDivElement>(null);
   const elapsed = useElapsed();
+  const [openingPhrase] = useState(() => recentPhrases[0]);
+  const [phrases, setPhrases] = useState<readonly RadioPhrase[] | null>(null);
+  const togglePhrases = () => {
+    if (phrases) { setPhrases(null); return; }
+    const [latest, previous] = recentPhrases;
+    // Keep the line that led here available while the song and the lazy load continue.
+    const earlier = openingPhrase?.targetText !== latest?.targetText ? openingPhrase ?? previous : previous;
+    if (latest) setPhrases(earlier ? [latest, earlier] : [latest]);
+  };
   // what the heart just did, said for a few seconds
   const [hearted, setHearted] = useState<"added" | "removed" | null>(null);
   const [beat, setBeat] = useState(0);
@@ -192,7 +216,12 @@ function RadioSet() {
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
         <b className="rs-name" lang={TL}>{RADIO_NAME}</b>
+        {recentPhrases.length > 0 && <button type="button" className="rs-phrases btn soft" onClick={togglePhrases}
+          aria-label={PHRASE_CARD_UI.phrases} title={PHRASE_CARD_UI.phrases} aria-expanded={!!phrases} aria-controls={phrases ? "radio-phrases" : undefined}>
+          <Icon name="bookOpen" size={19} />
+        </button>}
         <button className="rs-x" onClick={() => radio.setOpen(false)} aria-label={L("Uždaryti")} title={L("Uždaryti")}><Icon name="close" size={17} strokeWidth={2.25} /></button>
+        {phrases && <Suspense fallback={null}><RadioPhrases phrases={phrases} /></Suspense>}
       </div>
       <div className="rs-main">
         <div className="rs-dial" aria-hidden>
@@ -297,6 +326,7 @@ function SpotStrip({ recording }: { recording: ReadySpot }) {
     return () => cancelAnimationFrame(frame);
   }, [spot]);
   const line = spot.lines[index];
+  useLayoutEffect(() => { if (line) rememberPhrase(line.en, line.lt); }, [line]);
   if (!line) return null;
   const label = spot.kind === "ad" ? SPOT_AD : STATIONS.find((s) => s.id === station)?.name ?? RADIO_NAME;
   return <div className={"radio-strip " + SKIN} data-spot={spot.id} style={{ "--rl": LYRIC_SIZES[size] ?? 1 } as React.CSSProperties} aria-hidden>
@@ -317,8 +347,15 @@ function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: bool
   const lineNotes = useRadio((s) => (s.notes ? s.lineNotes : null));
   const pictures = useRadio((s) => (s.pictures ? s.linePictures : null));
   const glosses = useStore((s) => s.settings.lt);
-  const [at, setAt] = useState<{ line: number; unit: number; notes: number }>({ line: -1, unit: -1, notes: -1 });
+  const [at, setAt] = useState<{ timeline: Timeline | null; line: number; unit: number; notes: number }>({ timeline: null, line: -1, unit: -1, notes: -1 });
+  const line = show && at.timeline === timeline ? timeline?.lines[at.line] : undefined;
   const row = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!line) return;
+    // The helper-only singing is inserted directly before its source row.
+    const source = line.part === "translation" ? timeline?.lines[at.line + 1] : line;
+    if (source && !source.part && source.i === line.i) rememberPhrase(source.src, source.lt);
+  }, [line, timeline, at.line]);
   // Between the thumbs there is room for one row. Follow the singing when a long line runs past its edge.
   useLayoutEffect(() => {
     const el = row.current;
@@ -329,7 +366,7 @@ function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: bool
     if (left < el.scrollLeft || right > el.scrollLeft + el.clientWidth) el.scrollLeft = left;
   }, [sidewaysPhone, at.line, at.unit, size, glosses, pictures]);
   useEffect(() => {
-    if (!show || !timeline) { setAt({ line: -1, unit: -1, notes: -1 }); return; }
+    if (!show || !timeline) { setAt({ timeline: null, line: -1, unit: -1, notes: -1 }); return; }
     let frame = 0;
     const tick = () => {
       const t = radio.position();
@@ -337,14 +374,13 @@ function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: bool
       const unit = line < 0 ? -1 : unitAt(timeline.lines[line], t);
       // the line whose notes show: this one, or an earlier one whose notes are still being read
       const notes = lineNotes && line >= 0 ? notedLineAt(lineNotes, timeline.lines, line, t) : -1;
-      setAt((was) => (was.line === line && was.unit === unit && was.notes === notes ? was : { line, unit, notes }));
+      setAt((was) => (was.timeline === timeline && was.line === line && was.unit === unit && was.notes === notes ? was : { timeline, line, unit, notes }));
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [show, timeline, lineNotes]);
-  if (!show || !timeline || at.line < 0) return null;
-  const line = timeline.lines[at.line];
+  if (!line) return null;
   const translation = line.part === "translation";
   const picture = pictures && line.i !== undefined ? pictures[line.i] ?? null : null;
   const notes = lineNotes && at.notes >= 0 ? lineNotes.get(at.notes) ?? null : null;

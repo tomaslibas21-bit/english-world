@@ -15,13 +15,17 @@ import { useCards, cardKey } from "../state/cards";
 import { WordPopover, trackPopover } from "./Cards";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
+import type { PhraseSource } from "./kit/phraseLine";
 
 /** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
 const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".nat-star") ? t.closest<HTMLElement>(".u[data-i]") : null);
 
 /** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
  *  wording behind an asterisk on every screen size and no separate translation row. */
-export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, interactive = true }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean; interactive?: boolean }) {
+export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, partial, source, portalHost, interactive = true, targetLang = TL, helperLang = EDITION.helper }: {
+  s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean;
+  partial?: boolean; source?: PhraseSource; portalHost?: HTMLElement; interactive?: boolean; targetLang?: string; helperLang?: string;
+}) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
   const [open, setOpen] = useState<{ i: number; el: HTMLElement } | null>(null);
@@ -37,7 +41,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, in
   const notes = useMemo(() => (lt ? [...new Set(s.units.map((u) => u.flag?.trim()).filter((f): f is string => !!f))] : []), [s, lt]);
   const star = interactive && (natStar || notes.length > 0);
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
-  const onClick = (e: MouseEvent<HTMLDivElement>) => {
+  const onClick = (e: MouseEvent<HTMLElement>) => {
     const el = unitOf(e.target), from = down.current;
     down.current = null;
     if (!el || (from && from !== el) || !e.currentTarget.contains(el)) return;
@@ -45,28 +49,31 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, in
     const i = Number(el.dataset.i);
     setOpen((o) => (o && o.i === i ? null : { i, el }));
   };
+  const Text = interactive ? "div" : "span";
   return (
-    <div>
-      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={TL} onPointerDown={interactive ? (e) => { down.current = unitOf(e.target); } : undefined} onClick={interactive ? onClick : undefined}>
+    <Text>
+      <Text className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={targetLang}
+        onPointerDown={interactive ? (e) => { down.current = unitOf(e.target); } : undefined} onClick={interactive ? onClick : undefined}>
         {s.units.map((u, i) => {
           const dash = u.lt.startsWith("—");
+          const tappable = interactive && (!partial || (!!u.lt && !dash));
           const isSaved = !dash && saved.has(cardKey(u.en));
           // the asterisk right after the last word's last letter, a superscript that takes no room in the line
           // (a zero-width pin inside the English, so a wider gloss or IPA under the word doesn't push it away and
           // it never wraps the word); a tap on it is not a tap on the word (unitOf)
-          const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span>;
+          const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} portalHost={portalHost} helperLang={helperLang} /></span>;
           return (
-            <span className={(interactive ? "u tap" : "u") + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
+            <span className={"u" + (tappable ? " tap" : "") + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={tappable ? i : undefined}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
               {ipa && <span className="ipa">{ipas[i] || " "}</span>}
-              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang={EDITION.helper}>{u.lt}</span>}
+              {lt && <span className={"lt" + (dash ? " dash" : "") + (interactive && u.flag ? " flag" : "")} title={u.flag || undefined} lang={helperLang}>{u.lt}</span>}
             </span>
           );
         })}
-      </div>
-      {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang={EDITION.helper}>{s.nat}</div>}
-      {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} />}
-    </div>
+      </Text>
+      {lt && !compactNat && nat !== false && s.nat && <Text className="nat" lang={helperLang}>{s.nat}</Text>}
+      {interactive && open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} source={source} portalHost={portalHost} targetLang={targetLang} helperLang={helperLang} partial={partial} />}
+    </Text>
   );
 }
 
@@ -80,7 +87,7 @@ function keyboardFocus(el: Element): boolean {
  *  the conversation panel, so opening it never moves the sentence. Like the word popover it lives at the end of
  *  the page: the transcript doesn't clip it, and screen readers don't announce it as a new transcript line (they
  *  read it as the asterisk's description). */
-function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
+function NatTip({ text, notes = [], portalHost, helperLang }: { text: string; notes?: string[]; portalHost?: HTMLElement; helperLang: string }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -112,7 +119,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
       if (starRef.current?.contains(t) || boxRef.current?.contains(t)) return; // the asterisk itself toggles
       close();
     };
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
+    const key = (e: KeyboardEvent) => { if (!e.defaultPrevented && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
     document.addEventListener("pointerdown", down, true);
     window.addEventListener("keydown", key, true);
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
@@ -125,7 +132,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
     </>
   );
   const tip = (
-    <span ref={boxRef} id={id} role="tooltip" lang={EDITION.helper} className="nat-tipbox" hidden={!open}
+    <span ref={boxRef} id={id} role="tooltip" lang={helperLang} className="nat-tipbox" hidden={!open}
       onPointerEnter={enter} onPointerLeave={leave} style={{ left: 0, top: 0, visibility: "hidden" }}>
       {typeof document === "undefined" ? contents : <span className="nat-tipbody">{contents}</span>}
     </span>
@@ -142,7 +149,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
           if (to && !boxRef.current?.contains(to)) setTapped(false);
         }}>*</button>
       {/* the tests' server renderer has no page to put it in: there it stays in place */}
-      {typeof document === "undefined" ? tip : createPortal(tip, document.body)}
+      {typeof document === "undefined" ? tip : createPortal(tip, portalHost ?? document.body)}
     </>
   );
 }

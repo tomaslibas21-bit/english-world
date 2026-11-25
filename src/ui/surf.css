@@ -25,6 +25,7 @@
 .surf-card.no { border-color: var(--warm, #e7a13a); }
 .surf-words { flex: 1 1 auto; min-width: 0; }
 .surf-cue-line { display: flow-root; }
+.surf-cue-line > [data-phrase-save] { float: inline-start; margin-inline-end: 6px; }
 .surf-cue-footer { display: flex; align-items: center; gap: 6px; }
 .surf-cue-details { flex: 1; min-width: 0; }
 .surf-feedback:not(:empty) { float: inline-start; width: 28px; height: 24px; }
@@ -82,6 +83,8 @@ button.surf-move { cursor: pointer; }
 .surf-turn .surf-mic { width: 50px; height: 50px; flex: none; }
 .surf-turn .surf-mic.muted { background: #9aa7b1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); }
 .surf-turn .mic-status b { font-size: 1.05em; }
+.surf-turn .phrase-chooser { margin-inline-start: auto; flex: none; }
+.surf-turn .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
 .surf-said { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px); background: var(--good, #37a26b); color: #fff; border-radius: 999px; padding: 9px 18px 9px 14px; font-family: var(--en); font-size: 1.25em; font-weight: 600; box-shadow: 0 4px 14px rgba(10, 60, 40, 0.3); animation: surf-move-in 0.2s ease-out; pointer-events: none; }
 .surf.touch .surf-said { bottom: var(--above-pad); }
 
@@ -161,6 +164,7 @@ button.surf-move { cursor: pointer; }
   .surf-turn, .surf-choice:only-of-type { grid-column: 1 / -1; }
   .surf-turn { padding-block: 4px; }
   .surf-turn .surf-mic { width: 44px; height: 44px; }
+  .surf-turn .phrase-chooser-panel { inset: 52px 12px auto auto; position: fixed; }
   .surf-choice { min-height: 46px; align-content: center; padding: 5px 7px; overflow-wrap: anywhere; }
   .surf-choice .surf-il { font-size: 1.1em; line-height: 1.12; }
   .surf-choice .surf-il .lt { font-size: max(12px, 0.65em); margin-top: 1px; }

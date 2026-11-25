@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { activatePhraseControl, assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -291,6 +292,7 @@ try {
       await checkBallPicker();
       const beforePicks = await pocketCenters();
       const row = page.locator(".bl-confirm-row");
+      let keptCall;
       const reserved = await row.boundingBox();
       assert(reserved.height > 0 && await row.getByRole("button").count() === 0, "space is reserved before the first pick");
       await press(ballChip(own));
@@ -315,6 +317,24 @@ try {
         assert.equal(await pocketChip("ls").locator('[lang="es"]').innerText(),
           variety === "spain" ? "a la del medio, a la izquierda" : "a la de en medio, a la izquierda");
         assert.equal(await pocketChip("ls").locator(`small[lang="${ltLayer ? "lt" : "en"}"]`).count(), 1);
+        const composed = await page.evaluate(async () => {
+          const { useBilliards } = await import("/src/game/billiards/store.ts");
+          return useBilliards.getState().call.sentence;
+        });
+        const pieces = await Promise.all([`bl_b${own}`, "bl_p_ls"].map((key) => fixtureSentence(page, situation, key, true)));
+        const expected = Object.fromEntries(["en", "nat", "say"].map((key) => [key, pieces.map((piece) => piece[key]).join(" ")]));
+        assert.deepEqual([composed.en, composed.nat, composed.say], [expected.en, expected.nat, expected.say]);
+        const book = page.locator(".bl-instruction .phrase-chooser");
+        const opener = book.locator("summary");
+        await activatePhraseControl(page, opener, phone);
+        await book.getByRole("combobox").selectOption({ label: composed.en });
+        const saved = await checkManualSave(page, book.locator("[data-phrase-save]"), phone, composed.en, "x11-billar", state);
+        assert.equal(saved.lt, composed.nat);
+        assert.equal(saved.sentence.say ?? saved.sentence.en, composed.say);
+        assertSavedSentence(saved, expected, situation);
+        keptCall = saved;
+        await activatePhraseControl(page, opener, phone);
+        assert.equal(await row.getByRole("button").count(), 1);
       }
       const clippedChoices = await page.locator(".bl-pocket-chips .kit-gloss-compact > *").evaluateAll((labels) => labels.filter((label) => {
         const style = getComputedStyle(label);
@@ -404,6 +424,13 @@ try {
       assert.equal(result.sunk, 4);
       assert(result.understood > 0 && result.understood < result.listens);
       assert.equal(result.cards, 9);
+      if (keptCall) {
+        const review = page.locator(".mode-score-card .phrase-review-row");
+        await review.getByRole("combobox").selectOption({ label: keptCall.en });
+        assert.equal(await review.locator(`small[lang="${ltLayer ? "lt" : "en"}"]`).textContent(), keptCall.lt);
+        assert.equal(await review.locator("[data-phrase-save]").getAttribute("aria-pressed"), "true");
+        assert.deepEqual(await cardsFor(page, keptCall.en), [keptCall]);
+      }
       await step(16);
       // The game frames are stepped, while the score's CSS animations use the browser clock.
       await page.locator(".mode-score-card").evaluate(async (card) => {
@@ -416,6 +443,10 @@ try {
       await phase("break");
       assert.equal((await state()).group, "solids");
       assert.notDeepEqual((await state()).layout.map(({ id }) => id), rack);
+      if (keptCall) {
+        assert.equal(await page.locator(".mode-score-card .phrase-review-row").count(), 0);
+        assert.deepEqual(await cardsFor(page, keptCall.en), [keptCall]);
+      }
       await press(page.getByRole("button", { name: ui.end, exact: true }));
       await wait(async () => (await state()) === null, "returns to walking");
       await openPhoneMenu(page);

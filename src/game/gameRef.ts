@@ -8,6 +8,22 @@ import { watchSituations } from "./prefetch";
 
 export type WalkPlace = "pool-hall" | "gym";
 
+export type TagBox = { x0: number; x1: number; y0: number; y1: number };
+export type PlacedNametag = TagBox & { tag: HTMLElement };
+export type NametagSize = [width: number, height: number];
+
+/** Placed bounds in the tag layer's CSS pixels, valid until the next layout. */
+export interface NametagLayout {
+  boxes?: readonly PlacedNametag[];
+  rect?: DOMRectReadOnly;
+  scaleX: number;
+  scaleY: number;
+  size(tag: HTMLElement, previous?: NametagSize): NametagSize;
+  blocker(): TagBox | undefined;
+  position(boxes: readonly PlacedNametag[]): void;
+  dispose(): void;
+}
+
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
 export interface GameApi {
@@ -24,6 +40,7 @@ export interface GameApi {
   handlePhoneCard?(id: string, answer: boolean): void;
   reactPosition?(id: number): { x: number; y: number; opacity: number } | null;
   extendReaction?(id: number): void;
+  watchNametagLayout?(create: (layer: HTMLElement) => NametagLayout): () => void;
   closeConversation(): void;
   orderedSituations(): SituationMeta[];
   currentObjective(): SituationMeta | null;

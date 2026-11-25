@@ -11,7 +11,8 @@ import { gapLabel, RoadWordForms } from "./wordForms";
 import { entityKinds, hearKind, kindOf, wordKey as key, type WordKind } from "./wordKinds";
 
 export type Clip = { say: string; voice: string; speed: number; male: boolean };
-type Choice = { en: string; lt: string; kind?: WordKind; gapKind?: WordKind; hearLt?: string | null; gapEn?: string };
+type Choice = { en: string; lt: string; kind?: WordKind; gapKind?: WordKind; hearLt?: string | null; gapEn?: string;
+  situation?: string; sentence?: Sentence; clip?: Clip };
 export type Word = Choice & { situation: string; clip: Clip; saved?: boolean; inContext?: boolean };
 export type Gap = { word: Word; sentence: Sentence; full: Sentence; clip: Clip };
 export type Pool = { words: Word[]; gaps: Gap[]; borrowed?: Choice[]; gapChoices?: Choice[] };
@@ -20,7 +21,8 @@ export type Phrase = {
   id: string; f: string; p: string; topic: string; words: readonly string[];
   t: readonly (readonly [number, number])[]; fClip: string; pClip: string; src: string;
 };
-type GateOptions = { options: readonly string[]; right: number; practice?: "review" | "firstRetry" | "lastRetry" | "repeat" };
+type GateOptions = { options: readonly string[]; right: number; practice?: "review" | "firstRetry" | "lastRetry" | "repeat";
+  optionWords?: ReadonlyMap<string, Choice> };
 type WordPrompt = GateOptions & { word: Word; gap?: Gap; phrase?: undefined };
 type PhrasePrompt = GateOptions & { word: GateWord; phrase: Phrase; gap?: undefined };
 export type Prompt = WordPrompt | PhrasePrompt;
@@ -46,7 +48,7 @@ const coach = (gender: "f" | "m"): Voice => ({ voice: coachVoice(gender), speed:
 
 export function makeGap(full: Sentence, index: number): Sentence {
   const units = full.units.map((unit, i) => i === index
-    ? { en: `____${unit.en.match(/[^\p{L}\p{N}]+$/u)?.[0] ?? ""}`, lt: unit.lt }
+    ? { en: `____${unit.en.match(/[^\p{L}\p{N}]+$/u)?.[0] ?? ""}`, lt: spanish ? "" : unit.lt }
     : { en: unit.en, lt: unit.lt });
   return { units, en: units.map(({ en }) => en).join(" "), say: "", nat: "" };
 }
@@ -68,10 +70,10 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
     const kind = hearKind(en, lt, kindOf(en, false, kinds));
     return { en, lt, kind, hearLt: forms.hear(en, lt, kind, inContext) };
   };
-  const addBorrowed = (text: string, gloss: string, kinds?: Map<string, WordKind>, inContext = false) => {
+  const addBorrowed = (text: string, gloss: string, situation: string, kinds?: Map<string, WordKind>, inContext = false, sentence?: Sentence) => {
     const en = bare(text), lt = bare(gloss);
     if (!short(en, lt)) return;
-    const choice = choiceFor(en, lt, kinds, inContext);
+    const choice = { ...choiceFor(en, lt, kinds, inContext), situation, sentence };
     if (choice.kind && choice.hearLt) borrowed.set(`${key(en)}|${key(lt)}`, choice);
   };
   const coaches = [coach(gender), coach(gender === "f" ? "m" : "f")];
@@ -106,7 +108,7 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
     });
     const allVoices = [...voices, ...coaches];
     const kinds = entityKinds(def);
-    const add = (text: string, gloss: string, saved = false, exact?: Clip, inContext = false, context?: { previous?: string; next?: string }) => {
+    const add = (text: string, gloss: string, saved = false, exact?: Clip, inContext = false, context?: { previous?: string; next?: string }, sentence?: Sentence) => {
       const en = bare(text), lt = bare(gloss);
       if (!short(en, lt)) return;
       const clip = exact ?? standalone(en, allVoices);
@@ -115,9 +117,10 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
       const previous = words.get(id);
       if (!previous || saved || (previous.inContext && !inContext)) {
         const gapKind = kindOf(en, true, kinds, context);
-        words.set(id, { ...choiceFor(en, lt, kinds, inContext), situation, clip, saved, inContext, gapKind, gapEn: forms.gap(en, gapKind) });
+        words.set(id, { ...choiceFor(en, lt, kinds, inContext), situation, clip, saved, inContext, gapKind, gapEn: forms.gap(en, gapKind), sentence: sentence ?? previous?.sentence });
       }
       const word = words.get(id)!;
+      if (sentence && !word.sentence) word.sentence = sentence;
       if (context && !word.gapKind) word.gapKind = kindOf(en, true, kinds, context);
       return word;
     };
@@ -130,14 +133,14 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
       if (!sentence.say || /[{}]/.test(sentence.en) || sentence.units.some(({ en }) => !en)) return;
       const gloss = sentence.nat || sentence.units.map(({ lt }) => lt).join(" ");
       if (choicesOnly) {
-        addBorrowed(sentence.en, gloss, kinds);
+        addBorrowed(sentence.en, gloss, situation, kinds, false, sentence);
         for (const unit of sentence.units) {
-          if (!functionWords.has(key(unit.en))) addBorrowed(unit.en, unit.lt, kinds, true);
+          if (!functionWords.has(key(unit.en))) addBorrowed(unit.en, unit.lt, situation, kinds, true);
         }
         return;
       }
       const clip = rec(sentence.say, cast);
-      if (clip) add(sentence.en, gloss, false, clip);
+      if (clip) add(sentence.en, gloss, false, clip, false, undefined, sentence);
       for (const [i, unit] of sentence.units.entries()) {
         if (functionWords.has(key(unit.en))) continue;
         const context = {
@@ -148,7 +151,7 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
           const en = bare(unit.en), lt = bare(unit.lt);
           const gapKind = kindOf(en, true, kinds, context);
           if (gapKind && lt && /^[\p{L}]+$/u.test(en)) {
-            const choice = { en, lt, gapKind, gapEn: forms.gap(en, gapKind) };
+            const choice = { en, lt, gapKind, gapEn: forms.gap(en, gapKind), situation };
             gapChoices.set(`${key(en)}|${key(lt)}`, choice);
             if (clip) word = { ...choice, situation, clip: word?.clip ?? clip };
           }
@@ -192,8 +195,8 @@ function collectWords(defs: SituationDef[], progress: Progress, cards: readonly 
   }
   if (choicesOnly) {
     const kinds = new Map(defs.map((def) => [def.id, entityKinds(def)]));
-    for (const card of cards) addBorrowed(card.en, card.lt, kinds.get(card.situationId));
-    for (const phrase of Object.values(progress.phrases)) addBorrowed(phrase.en, phrase.lt, kinds.get(phrase.sitId));
+    for (const card of cards) addBorrowed(card.en, card.lt, card.situationId, kinds.get(card.situationId));
+    for (const phrase of Object.values(progress.phrases)) addBorrowed(phrase.en, phrase.lt, phrase.sitId, kinds.get(phrase.sitId));
   }
   return { words: [...words.values()], gaps: [...gaps.values()], borrowed: [...borrowed.values()], gapChoices: [...gapChoices.values()] };
 }
@@ -288,7 +291,11 @@ export function wordPrompts(pool: Pool) {
     const choices = distractors(word, allHear, false, hearMeanings, owned).slice(0, 2);
     if (choices.length < 2) return [];
     const lt = listenGloss(word)!;
-    return [{ word: { ...word, lt }, options: [lt, ...choices.map((w) => listenGloss(w)!)], right: 0 }];
+    const optionWords = new Map([word, ...choices].map((w) => {
+      const lt = listenGloss(w)!;
+      return [lt, { ...w, lt }] as const;
+    }));
+    return [{ word: { ...word, lt }, options: [lt, ...choices.map((w) => listenGloss(w)!)], optionWords, right: 0 }];
   });
   const standalone = listen(pool.words.filter((word) => !word.inContext));
   const gaps: WordPrompt[] = pool.gaps.flatMap((gap) => {
@@ -298,7 +305,8 @@ export function wordPrompts(pool: Pool) {
     const choices = distractors(word, gapWords.filter((w) => !context.has(key(w.en))), true, gapMeanings).slice(0, 2);
     if (choices.length < 2) return [];
     const label = (w: Choice) => w.gapEn ?? gapLabel(w.en);
-    return [{ word, gap, options: [word, ...choices].map(label), right: 0 }];
+    const options = [word, ...choices].map(label);
+    return [{ word, gap, options, optionWords: new Map([word, ...choices].map((w) => [label(w), w])), right: 0 }];
   });
   return { listen: standalone.length ? standalone : listen(pool.words), gaps };
 }

@@ -174,6 +174,7 @@ try {
     await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.solved, null, { timeout: 10000 });
     check(`${label}: lit, the card shows the line word by word`, await page.locator(".glyph-line .il-unit, .glyph-line [class*=unit], .glyph-line .w").count() > 0 || await page.locator(".glyph-line").count() === 1);
     await snap("6-a-stone-again");
+    if (phone) await page.locator(".glyph-x").tap(); else await page.keyboard.press("Escape");
     await page.waitForFunction(() => !window.__ew.store.getState().hud.glyph, null, { timeout: 15000 });
     await page.waitForTimeout(600);
     q = await page.evaluate(() => { const st = window.__ew.store.getState(), c = window.__ew.game.cave; return { heard: st.progress.cave.heard, book: Object.keys(st.progress.phrases).filter((k) => /corazon_|agua_|raices_|rio_|estrellas_/.test(k)), card: st.hud.cave.next, relit: [...c.relit], saved: st.progress.cave.lit.length }; });

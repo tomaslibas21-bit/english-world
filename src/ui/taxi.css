@@ -85,6 +85,8 @@
 }
 /* The joystick is 140 px tall with an 18 px bottom inset. */
 .has-touch .taxi-choices { bottom: calc(170px + env(safe-area-inset-bottom)); }
+.taxi-turn .phrase-chooser { margin-inline-start: auto; flex: none; }
+.taxi-turn .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
 .taxi-turn { display: flex; align-items: center; gap: 8px; }
 .taxi-choice {
   display: flex;

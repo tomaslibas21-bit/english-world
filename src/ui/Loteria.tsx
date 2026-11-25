@@ -1,19 +1,23 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
-import { LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { LOTERIA_SITUATION, LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import type { KitLine } from "../game/kit/dialogue";
+import { phraseEntries } from "../game/kit/phrases";
 import { BOARD_SIZE, CORNERS } from "../game/loteria/logic";
-import { useLoteria, type CardLabel } from "../game/loteria/store";
+import { loteriaNames, useLoteria, type CardLabel } from "../game/loteria/store";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
 import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { STRINGS } from "./strings";
 import "./loteria.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("loteria", name, value);
+const source = { situationId: LOTERIA_SITUATION };
 const palette = ["#f2d3ac", "#e2bbbd", "#c8dcbd", "#c3d8df", "#e5ccdd", "#ecdba0"];
 const isCorner = (index: number) => CORNERS.some((corner) => corner === index);
 const picture = (card: LoteriaCard) => `${import.meta.env.BASE_URL}loteria/${card.id}.webp`;
@@ -48,7 +52,10 @@ function Line({ line, kind }: { line: KitLine | null; kind: "caller" | "verse" |
   return line && <div className={`loteria-line loteria-${kind}`} data-line={line.key}
     data-card-name={kind === "caller" && line.key.startsWith("lt_c_") || undefined}>
     {kind === "neighbor" && <b className="loteria-speaker">{TONA_LT.nom}</b>}
-    <GlossLine sentence={line.sentence} gloss />
+    <div className="phrase-save-row">
+      <GlossLine sentence={line.sentence} gloss source={source} />
+      <PhraseSave sentence={line.sentence} {...source} />
+    </div>
   </div>;
 }
 
@@ -59,8 +66,9 @@ function Shortcut({ children, touch }: { children: ReactNode; touch: boolean }) 
 export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const {
     phase, kind, next, labels, board, covered, current, called, faceDown, caller, verse, neighbor,
-    focus, glow, bounce, tip, ready, winningCells, replay, sayIt, choices, read, mic, micOn, result,
+    focus, glow, bounce, tip, ready, shoutSentence, winningCells, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
+  const names = useMemo(() => phraseEntries(source.situationId, loteriaNames([...board, ...called], labels)), [board, called, labels]);
 
   if (result) return (
     <div className="loteria-score" lang={HL}>
@@ -71,7 +79,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
           { label: L(words.marked), value: L("{n} iš {of}", { n: result.covered, of: BOARD_SIZE }) },
           { label: L(words.heard), value: <ScoreNumber value={result.heard} /> },
         ]}
-        phrases={{ label: L(words.cards), count: result.phrases }}
+        phrases={{ label: L(words.cards), count: result.phrases }} review={result.review}
         again={{ label: STRINGS[`loteria:${words.again}`] ?? words.again, run: () => act("again") }}
         done={{ label: L(words.done), run: () => act("exit") }}>
         <p className="loteria-next">{L(words.next, { round: L(words.round[next]).toLowerCase() })}</p>
@@ -89,9 +97,12 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
     <main className="loteria-play" data-phase={phase} lang={HL}>
       <div className="loteria-stage">
         <div className="loteria-scene" aria-hidden="true" />
-        <button type="button" className="loteria-exit" onClick={() => act("exit")}>
-          <Icon name="walk" size={17} /> {L(words.exit)} <Shortcut touch={touch}>Esc</Shortcut>
-        </button>
+        <div className="loteria-stage-actions">
+          <button type="button" className="loteria-exit" onClick={() => act("exit")}>
+            <Icon name="walk" size={17} /> {L(words.exit)} <Shortcut touch={touch}>Esc</Shortcut>
+          </button>
+          <PhraseChooser entries={names} targetOnly={false} />
+        </div>
       </div>
       <section className="loteria-draw" aria-live="polite">
         {showCard && <div className="loteria-current" data-face-down={faceDown}>
@@ -159,6 +170,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
               data-listening={mic.status === "listening" || mic.status === "starting"} onClick={() => act("mic", !micOn)}>
               <Icon name="mic" size={19} />
             </button>}
+          {shoutSentence && <PhraseSave sentence={shoutSentence} {...source} className="loteria-shout-save" />}
           <button type="button" className="loteria-shout" data-ready={ready} disabled={!playable}
             onClick={() => act("shout")}>{L(words.shout)} <Shortcut touch={touch}>L</Shortcut></button>
         </footer>

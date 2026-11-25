@@ -169,7 +169,7 @@ export const SURF_LINES: Record<string, SentSrc[]> = {
     { spain: t("¡Más | velocidad! | Peso | hacia | delante.", "More | speed! | Weight | toward | the front.", "More speed! Weight forward.") })],
   sg_up_face: [t("¡Sube | a | la | cresta!", "Go up | to | the | crest!", "Climb to the top of the wave!", { flags: { 3: F_CRESTA } })],
   sg_down_face: [t("¡Baja, | baja!", "Go down, | go down!", "Down, down!")],
-  sg_turn_left: [t("¡Gira | a la izquierda!", "Turn | to the left!", "Turn left!")],
+  sg_turn_left: [t("¡Gire | a la izquierda!", "Turn | to the left!", "Turn left!")],
   sg_turn_right: [t("¡Gira | a la derecha!", "Turn | to the right!", "Turn right!")],
   sg_trick: [t("¡Ahora, | un | truco! | ¡Salta!", "Now, | a | trick! | Jump!", "Now, a trick! Jump!")],
   sg_hold: [t("¡Así, | así! | ¡Aguanta!", "Like that, | like that! | Hold on!", "That's it, that's it! Hold it!")],

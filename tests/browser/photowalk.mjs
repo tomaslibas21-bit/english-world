@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { answer, approachAndTalk, checkGlossStack, checkHud, closeChat, openPhone, openQuestTown, questBrowser, questSizes, talkTo } from "./quests-harness.mjs";
 import { shot } from "./screen-harness.mjs";
+import { assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const browser = await questBrowser();
 try {
@@ -61,6 +62,15 @@ try {
         assert.equal(await book.locator("header p").textContent(), words.found);
         const foundPage = book.locator('.photo-page[data-thing="mailbox"][data-found="true"]');
         await checkGlossStack(foundPage, name, languages);
+        const photoState = () => page.evaluate(async () => {
+          const { useTownQuests } = await import("/src/game/photowalk/store.ts");
+          const { screen, quiz, mic, directions } = useTownQuests.getState();
+          const { photoWalk } = window.__ew.store.getState().progress;
+          return { screen, quiz, mic, directions, photoWalk };
+        });
+        const keptName = await checkManualSave(page, foundPage.locator("[data-phrase-save]"), Math.min(width, height) === 390,
+          name.en, situation, photoState);
+        assertSavedSentence(keptName, name, situation);
         const picture = foundPage.locator("img");
         const photo = await picture.evaluate(async (img) => {
           await img.decode();
@@ -88,6 +98,12 @@ try {
         const clue = book.locator('[data-thing="lighthouse"]');
         await press(clue.getByRole("button", { name: words.where }));
         await clue.locator(".il").waitFor();
+        const note = await fixtureSentence(page, situation, "pw_w_lighthouse");
+        const keptNote = await checkManualSave(page, clue.locator("[data-phrase-save]"), Math.min(width, height) === 390,
+          note.en, situation, photoState, "Space");
+        assertSavedSentence(keptNote, note, situation);
+        assert.equal(await clue.getByRole("button", { name: words.where }).getAttribute("aria-expanded"), "true");
+        await shot(page, `${label}-saved-photo-lines`);
         await press(book.getByRole("button", { name: words.pause }));
         await chip.waitFor({ state: "detached" });
         await openPhone(page, press);
@@ -97,6 +113,8 @@ try {
         await press(book.getByRole("button", { name: words.resume }));
         await book.waitFor({ state: "detached" });
         await chip.waitFor();
+        assert.deepEqual(await cardsFor(page, name.en), [keptName]);
+        assert.deepEqual(await cardsFor(page, note.en), [keptNote]);
         await page.evaluate(() => {
           const { game } = window.__ew;
           game.enterZone("town", { x: 10, z: 80, rot: 0 }, true);

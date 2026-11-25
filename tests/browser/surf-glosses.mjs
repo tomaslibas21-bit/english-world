@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { activatePhraseControl, assertSavedSentence, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8460";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
@@ -67,10 +68,39 @@ try {
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
     const lang = await page.evaluate(() => document.documentElement.lang);
     const lt = lang === "lt";
+    assert.equal(lang, process.env.WORLD_LEARNER || "en");
     check(`${label}: the town has a surf school (learner language: ${lang})`, await page.evaluate(() => !!window.__ew.game.surf));
     await page.evaluate(() => window.__ew.game.surfStart("beginner"));
     await real(700); await step(30);
     check(`${label}: a lesson is on`, await page.evaluate(() => window.__ew.surf.getState().active));
+
+    for (let i = 0; i < 120 && !await page.locator(".surf-choice").count(); i++) await step(4);
+    const snapshot = () => page.evaluate(() => {
+      const { line, choice, said, todo, phase, score, mic } = window.__ew.surf.getState();
+      const { play, surf } = window.__ew.store.getState().progress;
+      return { line: line?.cue, choice: choice?.options.map(({ cue, s }) => ({ cue, text: s.en })), said: said?.cue, todo, phase, score, mic, play, surf };
+    });
+    const turn = await snapshot();
+    assert(turn.line && turn.choice?.length >= 2, "the active instructor cue leads to the original learner turn");
+    const live = page.locator(".surf-card [data-phrase-save]");
+    const target = await page.evaluate(() => window.__ew.surf.getState().line.s.en);
+    const sit = "x01-surf";
+    const cue = await fixtureSentence(page, sit, `sg_${turn.line}`);
+    assert.equal(target, cue.en);
+    const savedCue = await checkManualSave(page, live, size.phone, target, sit, snapshot, "Space");
+    assertSavedSentence(savedCue, cue, sit);
+    const book = page.locator(".surf-turn .phrase-chooser");
+    await activatePhraseControl(page, book.locator("summary"), size.phone);
+    const answers = book.getByRole("combobox");
+    await answers.waitFor({ state: "attached" });
+    assert.deepEqual(await answers.locator("option").allTextContents(), turn.choice.map(({ text }) => text));
+    const unused = turn.choice[1].text;
+    await answers.selectOption({ label: unused });
+    const learnerLine = await fixtureSentence(page, sit, `sg_${turn.choice[1].cue}`, true);
+    assert.equal(unused, learnerLine.en);
+    const savedChoice = await checkManualSave(page, book.locator("[data-phrase-save]"), size.phone, unused, sit, snapshot);
+    assertSavedSentence(savedChoice, learnerLine, sit);
+    await activatePhraseControl(page, book.locator("summary"), size.phone);
 
     /** Put a line on the screen as hers (heard `n` times before: the support the game would give it), as the only
      *  answer, and as what the learner has just said; read what each shows. */

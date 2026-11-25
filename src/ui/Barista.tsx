@@ -1,12 +1,16 @@
-import { BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
+import { useMemo } from "react";
+import { BARISTA_CONVERSATION, BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
 import { speechSupported } from "../convo/speech";
 import { useBarista } from "../game/barista/store";
 import { matchesPick, trayRows } from "../game/barista/tray";
 import { game } from "../game/gameRef";
+import { phraseEntries } from "../game/kit/phrases";
 import { HL, L, TL } from "./i18n";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard } from "./kit/ScoreCard";
 import { STRINGS } from "./strings";
 import "./barista.css";
@@ -14,6 +18,7 @@ import "./barista.css";
 const act = (name: string, value?: string | boolean) => game?.modeAction("barista", name, value);
 const total = BARISTA_ORDERS.length;
 const priceLabel = STRINGS[`barista:${words.price}`] ?? words.price;
+const source = { situationId: BARISTA_CONVERSATION.situation };
 
 export function BaristaOffer() {
   const offered = useBarista((s) => s.offered);
@@ -21,14 +26,14 @@ export function BaristaOffer() {
   if (!offered || !line) return null;
   return (
     <section className="barista-offer barista-panel" lang={HL}>
-      <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
+      <div className="phrase-save-row" data-line={line.key}><GlossLine sentence={line.sentence} gloss source={source} /><PhraseSave sentence={line.sentence} {...source} /></div>
       <button type="button" className="btn" onClick={() => act("start")}>{L(words.start)}</button>
     </section>
   );
 }
 
 function OrderTray({ touch }: { touch: boolean }) {
-  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line } = useBarista();
+  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line, trayReview } = useBarista();
   const highlight = line?.key === "bs_c_sorry" ? null : target;
   if (!menu) return null;
 
@@ -63,10 +68,13 @@ function OrderTray({ touch }: { touch: boolean }) {
           </div>
         );
       })}
-      <div className="barista-give">
-        <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
-          {L(words.give)}{!touch && <kbd>Enter</kbd>}
-        </button>
+      <div className="barista-tray-actions">
+        {trayReview && <PhraseChooser entries={trayReview} targetOnly={false} />}
+        <div className="barista-give">
+          <button type="button" className="btn" disabled={step !== "build" || !ready} onClick={() => act("give")}>
+            {L(words.give)}{!touch && <kbd>Enter</kbd>}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -74,9 +82,11 @@ function OrderTray({ touch }: { touch: boolean }) {
 
 export function BaristaOverlay({ touch }: { touch: boolean }) {
   const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result } = useBarista();
+  const replies = useMemo(() => phraseEntries(source.situationId, choices), [choices]);
+  const orderEntries = useMemo(() => revealed ? phraseEntries(source.situationId, hiddenOrder) : [], [revealed, hiddenOrder]);
   if (result) return (
     <div className="barista-result" lang={HL}>
-      <ScoreCard title={L(words.title)} ratio={result.firstTime / result.served}
+      <ScoreCard title={L(words.title)} ratio={result.firstTime / result.served} review={result.review}
         rows={[
           { label: L(words.orders), value: `${result.served}/${total}` },
           { label: L(words.firstTime), value: <FeedbackBadge correct={result.firstTime === total}
@@ -102,7 +112,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
       </header>
       {!concealed && line && (
         <div className="barista-cue" data-line={line.key} aria-live="polite">
-          <div className="barista-cue-text barista-panel"><GlossLine sentence={line.sentence} gloss /></div>
+          <div className="barista-cue-text barista-panel phrase-save-row"><GlossLine sentence={line.sentence} gloss source={source} /><PhraseSave sentence={line.sentence} {...source} /></div>
         </div>
       )}
       <div className="barista-bottom">
@@ -123,6 +133,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
             <div className="barista-listen-actions">
               <button type="button" disabled={step !== "build" || !ready} onClick={() => act("hear")}><Icon name="speaker" size={18} /> {L(words.hear)}</button>
               {!revealed && <button type="button" onClick={() => act("show")}>{L(words.show)}</button>}
+              {revealed && <PhraseChooser entries={orderEntries} targetOnly={false} />}
             </div>
           </div>
         )}
@@ -135,6 +146,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
                 <b>{L(mic.status === "unclear" ? words.retry : words.turn)}</b>
         <small>{mic.heard ? <span lang={TL}>„{mic.heard}“</span> : L(listening ? words.listen : words.answer)}{/* i18n-ok: quotes around recognized speech */}</small>
               </div>
+              <PhraseChooser entries={replies} targetOnly={false} />
             </div>
             {choices.map(({ key, sentence }, i) => (
               <button className="barista-choice" type="button" key={key} data-line={key} onClick={() => act("choose", key)}>

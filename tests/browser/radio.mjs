@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { openPhoneMenu } from "./screen-harness.mjs";
-import { silence } from "./radio-fixtures.mjs";
+import { keepRadioLocal, silence } from "./radio-fixtures.mjs";
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -122,6 +122,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const context = await browser.newContext(phone ? { userAgent: iphone, isMobile: true, hasTouch: true, viewport: { width: 390, height: 844 } } : { viewport: { width: 1280, height: 800 } });
       await context.addInitScript(init, [TOKEN, `${storage}-progress-v1`]);
       const page = await context.newPage(), errors = [], asked = [];
+      await keepRadioLocal(page, base);
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
       // the course's files folder: only with the token; V01 is a free example, which the folder doesn't have
@@ -494,6 +495,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 1000, isMobile: width < 1000 });
       await context.addInitScript(init, [TOKEN, `${storage}-progress-v1`]);
       const page = await context.newPage();
+      await keepRadioLocal(page, base);
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
       await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill(recording(route.request().url())) : route.fulfill({ json: { L: longLines } }));
       await page.goto(base, { waitUntil: "domcontentloaded" });

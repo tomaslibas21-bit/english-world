@@ -12,7 +12,7 @@ import { ModeDialogue, type KitLine } from "../kit/dialogue";
 import { actionHelp, updateHelp, type HelpLevel } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { controlsFrom } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
 import type { Door, StandTaxi } from "../world/town";
@@ -28,6 +28,7 @@ type Run = {
   route: TaxiRoute; door: Door; phase: Phase; index: number; first: number; missed: boolean; stopMiss: boolean; hardStop: boolean;
   crashes: number; collision: boolean; nearTime: number; spoken: boolean; pending: boolean;
   passTime: number; help: HelpLevel; kept: Map<string, KitLine>; cue: KitLine | null;
+  review: PhraseRun;
 };
 
 const { situation, npc } = TAXI_CONVERSATION;
@@ -61,8 +62,14 @@ class TaxiMode implements GameMode {
   private stopBay?: ReturnType<typeof createStopBay>;
   private markerTime = 0;
   private dialogue = new ModeDialogue({
-    say: (line) => useTaxi.setState({ line }),
-    choices: (choices) => useTaxi.setState({ choices }),
+    say: (line) => {
+      if (line && useTaxi.getState().gloss) this.run?.review.add(line.sentence);
+      useTaxi.setState({ line, revealed: null });
+    },
+    choices: (choices) => {
+      this.run?.review.lines(choices);
+      useTaxi.setState({ choices });
+    },
     mic: (mic) => useTaxi.setState({ mic }),
     animate: (seconds) => this.passenger?.talk(seconds, () => audio.level(), () => audio.vowel()),
   });
@@ -150,7 +157,7 @@ class TaxiMode implements GameMode {
     useTaxi.setState({ micOn: this.dialogue.micOn, gloss: help === 0 });
     const run: Run = {
       route, door, phase: "opening", index: 0, first: 0, missed: false, stopMiss: false, hardStop: false, crashes: 0, collision: false,
-      nearTime: 0, spoken: false, pending: false, passTime: 0, help, kept: new Map(), cue: null,
+      nearTime: 0, spoken: false, pending: false, passTime: 0, help, kept: new Map(), cue: null, review: new PhraseRun(situation),
     };
     this.run = run;
     this.greetingBlend = 1;
@@ -247,7 +254,7 @@ class TaxiMode implements GameMode {
       run.phase = "result";
       this.dialogue.clearLine();
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
-      useTaxi.setState({ result: { ...score, fare: route.fare, tip: route.tips[score.tier], onTarget: !run.stopMiss, cards: run.kept.size } });
+      useTaxi.setState({ result: { ...score, fare: route.fare, tip: route.tips[score.tier], onTarget: !run.stopMiss, cards: run.kept.size, review: run.review.finish() } });
       countPlay("games", this.id);
       sendStat("taxi", { section: route.id, n: score.points });
     });
@@ -354,6 +361,7 @@ class TaxiMode implements GameMode {
     const step = run.route.decisions[run.index];
     const action = near && help.action ? step.action : null;
     const ui = useTaxi.getState();
+    if (help.gloss && !ui.gloss && ui.line) run.review.add(ui.line.sentence);
     if (ui.action !== action || ui.gloss !== help.gloss) useTaxi.setState({ action, gloss: help.gloss });
     const stop = action === "stop";
     if (this.stopBay) {
@@ -386,12 +394,20 @@ class TaxiMode implements GameMode {
 
   action(name: string, value?: string | boolean) {
     if (name === "choose") this.dialogue.choose(String(value));
+    else if (name === "reveal" && this.run && this.run.phase !== "result") {
+      const { line } = useTaxi.getState();
+      if (line && line.key === value) {
+        this.run.review.add(line.sentence);
+        useTaxi.setState({ revealed: line });
+      }
+    }
     else if (name === "mic") {
       this.dialogue.setMic(!!value);
       useTaxi.setState({ micOn: this.dialogue.micOn });
     } else if (name === "assist") this.assist = !!value;
     else if (name === "again" && this.run?.phase === "result") {
-      this.host.fade(() => { if (this.active) { this.dialogue.cancel(); this.launch(); } });
+      const run = this.run;
+      this.host.fade(() => { if (this.run === run) { this.dialogue.cancel(); this.launch(); } });
     }
   }
 
@@ -419,6 +435,7 @@ class TaxiMode implements GameMode {
   }
 
   dispose() {
+    this.exit(true);
     this.host.rides.removeModeCar(this.car);
     if (this.stand.fallback?.parent) this.stand.fallback.geometry.dispose();
     this.marker.removeFromParent();
