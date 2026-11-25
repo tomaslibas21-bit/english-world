@@ -194,5 +194,10 @@ export function watchTalkLayout(canvas: HTMLCanvasElement, valid: () => boolean,
     unsubscribe();
   }
   dirty();
-  return { dirty, refit: () => { refresh = true; dirty(); }, dispose };
+  const flush = () => {
+    if (frame === null) return;
+    cancelAnimationFrame(frame);
+    read();
+  };
+  return { dirty, flush, refit: () => { refresh = true; dirty(); }, dispose };
 }

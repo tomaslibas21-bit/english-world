@@ -753,6 +753,9 @@ export class TalkPresentation {
   }
 
   update(dt: number) {
+    // Resize and speaker events can arrive after the game has queued its next
+    // frame. Fit the dirty layout before that frame uses the old shot.
+    this.watch.flush();
     if (this.elapsed >= MOVE_SECONDS || !this.valid(this.speaker)) return;
     this.elapsed = this.reducedMotion ? MOVE_SECONDS : Math.min(MOVE_SECONDS, this.elapsed + dt);
     const t = this.elapsed / MOVE_SECONDS;

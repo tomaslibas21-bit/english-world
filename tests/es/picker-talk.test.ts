@@ -30,11 +30,12 @@ it("opens the live picker actor at the shop, pump and startup board on repeat vi
     height = 0;
     getContext() { return context; }
   }
-  const rect = (width = 0, height = 0, top = 0) => ({ left: 0, top, width, height, right: width, bottom: top + height });
-  const panel = { getBoundingClientRect: () => rect(390, 633, 211), getAnimations: () => [], matches: () => true };
+  const rect = (width = 0, height = 0, top = 0, left = 0) => ({ left, top, width, height, right: left + width, bottom: top + height });
+  let wide = false;
+  const panel = { getBoundingClientRect: () => wide ? rect(627, 378, 6, 211) : rect(390, 633, 211), getAnimations: () => [], matches: () => true };
   const root = new EventTarget();
   Object.assign(root, { querySelector: () => panel, querySelectorAll: () => [], appendChild() {}, matches: () => false });
-  const canvas = { closest: () => root, getBoundingClientRect: () => rect(390, 844) };
+  const canvas = { closest: () => root, getBoundingClientRect: () => wide ? rect(844, 390) : rect(390, 844) };
   vi.stubGlobal("HTMLCanvasElement", Canvas);
   vi.stubGlobal("document", {
     createElement: (tag: string) => tag === "canvas" ? new Canvas() : {
@@ -110,9 +111,22 @@ it("opens the live picker actor at the shop, pump and startup board on repeat vi
 
   const paco = () => check("x05-tienda", "gas-station", "tienda", [-3, -1.7], [-3, -3.8]);
   const tono = () => check("p18-startup", "sproutly", "tyler", [2.2, -3.75 + 2.3], [2.2, -3.75]);
+  function rotate(landscape: boolean, width: number, height: number) {
+    wide = landscape;
+    vi.stubGlobal("innerWidth", width);
+    vi.stubGlobal("innerHeight", height);
+    game.rig.resize(width, height, landscape);
+    game.talkCamera.resize();
+    // Game draws after update, even if the observer's queued RAF has yet to run.
+    game.talkCamera.update(1 / 60);
+    expect(game.talkCamera.layout).toMatchObject({ width, height });
+    expect(game.rig.cam.view).toMatchObject({ enabled: true, fullWidth: width, fullHeight: height });
+  }
   try {
     game.startScenario("x05-tienda");
     const firstShop = await paco();
+    rotate(true, 844, 390);
+    rotate(false, 390, 844);
     game.restartScenario();
     expect(await paco()).toBeGreaterThan(firstShop);
     game.closeConversation();
