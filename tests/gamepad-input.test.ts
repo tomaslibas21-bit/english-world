@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GamepadInput, PadButton, PadDirection, type PadHost, type PadScope } from "../src/game/gamepad";
 import { attachPad, effectiveStick } from "../src/game/padLink";
+import { audio } from "../src/game/audio";
+import { RoadEntry, type RoadHost } from "../src/game/road/entry";
+import { RoadMode } from "../src/game/road/mode";
 
 function controller(index = 0, mapping: GamepadMappingType = "standard") {
   return {
@@ -260,6 +263,62 @@ describe("standard controller sampling", () => {
     b.event("gamepaddisconnected", pad);
     expect(cancel).toHaveBeenCalledTimes(4);
     expect(up).toHaveBeenCalledOnce();
+  });
+
+  it("honks once per physical press, preserving town X and the road phase and cooldown", async () => {
+    const pad = controller();
+    const b = browser([pad]);
+    let time = 0;
+    const host = { time: () => time } as RoadHost;
+    const road = new RoadEntry(host);
+    const mode = Object.assign(new RoadMode(host), { phase: "drive" });
+    Object.assign(road, { mode });
+    const townHorn = vi.fn(), interact = vi.fn();
+    let scope: "car" | PadScope | null = "car";
+    const link = b.attach({ scope: () => scope, interact, horn: () => { if (scope === "car") townHorn(); } });
+    const sfx = vi.spyOn(audio, "sfx").mockImplementation(() => {});
+    const sample = (index: number, pressed: boolean) => {
+      pad.buttons[index].pressed = pressed;
+      link.tick(0.05);
+    };
+    try {
+      await Promise.resolve();
+      link.tick(0.05);
+      expect(townHorn).not.toHaveBeenCalled();
+      expect(sfx).not.toHaveBeenCalled();
+      sample(5, true);
+      sample(5, true);
+      expect(townHorn).toHaveBeenCalledOnce();
+      sample(2, true);
+      expect(interact).toHaveBeenCalledOnce();
+
+      scope = road;
+      link.tick(0.05);
+      expect(sfx).not.toHaveBeenCalled();
+      sample(5, false);
+      sample(2, false);
+      sample(2, true);
+      expect(sfx).toHaveBeenCalledExactlyOnceWith("horn");
+      time = 1;
+      sample(2, true);
+      expect(sfx).toHaveBeenCalledOnce();
+      sample(2, false);
+      sample(2, true);
+      expect(sfx).toHaveBeenCalledTimes(2);
+      time = 1.1;
+      sample(2, false);
+      sample(2, true);
+      expect(sfx).toHaveBeenCalledTimes(2);
+
+      time = 2;
+      Object.assign(mode, { phase: "depart" });
+      sample(2, false);
+      sample(2, true);
+      expect(sfx).toHaveBeenCalledTimes(2);
+      expect(interact).toHaveBeenCalledOnce();
+    } finally {
+      sfx.mockRestore();
+    }
   });
 });
 

@@ -418,7 +418,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const situation = o && !o.followUp ? o.sitId : null;
   if (collapsed) {
     return (
-      <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
+      <div className="objective-card collapsed" data-pad-aux data-target-location={o?.targetLoc}>
         <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
           {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
           <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
@@ -432,14 +432,14 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const className = "objective-card" + (fresh ? " fresh" : "");
   if (!o) {
     return (
-      <div className={className}>
+      <div className={className} data-pad-aux>
         <div className="kicker">Visos užduotys atliktos <InlineIcon name="party" />{fold}</div>
         <p>Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.</p>
       </div>
     );
   }
   if (o.followUp) return (
-    <div className={className} data-target-location={o.targetLoc}>
+    <div className={className} data-pad-aux data-target-location={o.targetLoc}>
       <div className="kicker">
         <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
         {fold}
@@ -456,7 +456,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const { title, where } = sit ? objectiveLabels(sit) : o;
   const st = stars(sitProgress(progress, o.sitId));
   return (
-    <div className={className}>
+    <div className={className} data-pad-aux>
       <div className="objective-head">
         <div className="kicker">
           <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
@@ -585,7 +585,7 @@ function Minimap({ w, h }: Screen) {
 }
 
 function HornButton({ touch }: { touch?: boolean }) {
-  return <button className={touch ? "drive-horn" : "icon-btn"} type="button" aria-label={ROAD_UI.horn}
+  return <button className={touch ? "drive-horn" : "icon-btn"} data-pad-aux={touch || undefined} type="button" aria-label={ROAD_UI.horn}
     title={ROAD_UI.horn} onClick={() => game?.horn?.()}><Icon name="horn" size={23} /></button>;
 }
 

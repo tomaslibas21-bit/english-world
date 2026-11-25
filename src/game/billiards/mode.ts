@@ -551,7 +551,7 @@ export class BilliardsMode implements GameMode {
         return true;
       }
       if (key === "arrowleft" || key === "arrowright") {
-        this.nudge((key === "arrowleft" ? -1 : 1) * (input.shift ? 0.1 : 0.5));
+        this.aimStep(key === "arrowleft", !!input.shift);
         return true;
       }
     }
@@ -577,15 +577,19 @@ export class BilliardsMode implements GameMode {
     return true;
   }
 
-  padTick(_input: unknown, pressed: number, released: number, _dt: number, direction: number) {
+  padTick(_input: unknown, pressed: number, released: number, _dt: number, direction: number, held = 0) {
     const nudge = direction === PadButton.Left || direction === PadButton.Right;
-    if (nudge) this.nudge(direction === PadButton.Left ? -0.5 : 0.5);
+    if (nudge) this.aimStep(direction === PadButton.Left, !!(held & PadButton.LB));
     if (pressed & PadButton.A) this.startCharge("pad");
     if ((released & PadButton.A) && this.release(" ", false, "pad")) return "confirm" as const;
     if (nudge) return "interact" as const;
   }
 
   padCancel() { this.release(" ", true, "pad"); }
+
+  private aimStep(left: boolean, fine: boolean) {
+    this.nudge((left ? -1 : 1) * (fine ? 0.1 : 0.5));
+  }
 
   private nudge(degrees: number) {
     if (this.aiming && Number.isFinite(degrees)) this.angle -= degrees * Math.PI / 180;

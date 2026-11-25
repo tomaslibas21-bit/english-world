@@ -23,6 +23,7 @@ export function createSurfMode(host: ModeHost): (GameMode & { play: SurfPlay }) 
     conversation: { situation: play.situation, label: "Banglenčių pamoka" },
     get active() { return play.active; },
     get modal() { return useSurf.getState().picking; },
+    get padMenu() { return play.active; },
     get padAction() {
       const { active, choice, over, phase, todo } = useSurf.getState();
       return active && !choice && !over && (!!todo || phase === "out" || phase === "catch" || phase === "ride");

@@ -1068,7 +1068,7 @@ export class Game implements GameApi {
         if (st.conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
             st.hud.panel || useStreet.getState().moment || st.hud.phoneCard || radio.store.getState().open) return null;
         const mode = this.modes.active;
-        if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : null;
+        if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : mode?.padMenu ? "menu" : null;
         if (useSurf.getState().picking) return null;
         const ride = this.rides.riding;
         return ride ? (this.rides.phase === "on" ? ride.kind : null) : "foot";
@@ -1083,6 +1083,7 @@ export class Game implements GameApi {
         if (!this.nearest && !this.rides.riding) return false;
         this.interact();
       },
+      horn: () => { if (!this.modes.owns("road")) this.horn(); },
       back: () => this.modes.exit(),
       manual: (brake) => {
         if (brake) this.rideGoal = null;

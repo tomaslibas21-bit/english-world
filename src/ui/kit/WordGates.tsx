@@ -120,9 +120,9 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
   extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
-  return <header className="road-header">
+  return <header className="road-header" data-pad-aux>
       <div className="road-dash">
-        <button className="road-icon" aria-label={words.town} title={words.town} onClick={home}><Icon name="home" size={21} /></button>
+        <button className="road-icon" data-pad-back aria-label={words.town} title={words.town} onClick={home}><Icon name="home" size={21} /></button>
         <h1>{words.title}</h1>
         <div className="road-meters">
           <span>{words.time} <b>{clockText(remaining)}</b></span>

@@ -2,6 +2,7 @@ import { ROAD_EDITION } from "../../content/road";
 import type { Object3D, WebGLRenderer } from "three";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import type { Controls } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
 import { WORLD } from "../world/layout";
@@ -182,6 +183,9 @@ export class RoadEntry implements GameMode {
   }
 
   input(input: ModeInput) { return this.mode?.input(input) ?? false; }
+  padTick(_input: unknown, pressed: number) {
+    if (this.padDriving && (pressed & PadButton.X)) this.action("horn");
+  }
   action(name: string, value?: string | boolean) { this.mode?.action(name, value); }
   update(frame: ModeFrame) { this.mode?.update(frame); }
   render(renderer: WebGLRenderer, w: number, h: number) { return this.mode?.render(renderer, w, h) ?? false; }

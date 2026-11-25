@@ -42,6 +42,27 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+it("uses the Shift-arrow aim increment while LB is held", async () => {
+  const { mode, debug, clockUntil } = game();
+  const angle = () => debug.state()!.angle;
+  const degrees = (from: number) => (angle() - from) * 180 / Math.PI;
+  try {
+    mode.start("solids");
+    await clockUntil("break");
+    const start = angle();
+    mode.padTick(null, PadButton.LB, 0, 0, 0, PadButton.LB);
+    expect(angle()).toBe(start);
+    mode.padTick(null, 0, 0, 0, PadButton.Right, PadButton.LB);
+    expect(degrees(start)).toBeCloseTo(-0.1);
+    mode.input({ kind: "key", key: "arrowleft", repeat: false, keys: new Set(), shift: true });
+    expect(angle()).toBeCloseTo(start);
+    mode.padTick(null, 0, PadButton.LB, 0, PadButton.Left, 0);
+    expect(degrees(start)).toBeCloseTo(0.5);
+  } finally {
+    mode.exit();
+  }
+});
+
 it("releases a shot from its own input and cancels only the pad charge on pad loss", async () => {
   const { mode, clockUntil } = game();
   const space = () => mode.input({ kind: "key", key: " ", repeat: false, keys: new Set() });

@@ -765,6 +765,96 @@ async function boatContract(h) {
   check("a release-separated A pair dives and surfaces in water", (await state()).swimming, await state());
 }
 
+async function taxiContract(h) {
+  const { page, step, sample, press, tap, until, focused, focusWith, check, shot } = h;
+  h.mark("taxi cue focus");
+  await place(h, { x: 121, z: -2.4, rot: Math.PI });
+  await page.evaluate(() => {
+    const { game, store } = window.__ew;
+    store.getState().updateProgress((p) => {
+      p.miniGameHelp = { ...p.miniGameHelp, taxi: { level: 1, streak: 0 } };
+    });
+    game.modeStart("taxi");
+  });
+  const choice = '.taxi-choice[data-line="tx_a_where"]';
+  const reveal = ".taxi-cue .taxi-reveal";
+  await until("the Taxi opening offers the question and a hidden cue", async () =>
+    await page.locator(choice).isVisible() && await page.locator(reveal).isVisible(), { timeout: 25000 });
+  await focusWith(choice);
+  await tap("Menu");
+  check("Menu focuses the Taxi reveal beside the spoken choice", await focused(reveal), await h.state());
+  const cue = await page.locator(reveal).getAttribute("data-line");
+  await tap("A");
+  await until("A reveals the words for the same Taxi cue", async () =>
+    await page.locator('.taxi-cue .taxi-line[lang="en"]').getAttribute("data-line").catch(() => null) === cue);
+  await press("B");
+  await step(16);
+  check("held B leaves only the Taxi auxiliary focus and restores the question", await focused(choice), await h.state());
+  await sample();
+  await step(2);
+  await tap("A");
+  const taxi = () => page.evaluate(() => {
+    const { game } = window.__ew;
+    const { car, run } = game.modes.get("taxi");
+    const { x, z, heading, steer, pace } = car.m;
+    return { phase: run?.phase, seated: game.rides.phase === "on" && game.rides.riding === car, x, z, heading, steer, pace };
+  });
+  await until("the real Taxi enters its driving phase", async () => {
+    const { phase, seated } = await taxi();
+    return phase === "drive" && seated;
+  }, { timeout: 25000 });
+  await page.evaluate(() => {
+    // Start the measurement at the same approach distance as the Taxi's retry pose.
+    const { game } = window.__ew;
+    const { car, route } = game.modes.get("taxi");
+    const { at, via } = route.decisions[0];
+    const from = via.at(-1) ?? route.start;
+    const rot = Math.atan2(at.x - from.x, at.z - from.z);
+    game.rides.resetPosition(car, { x: at.x - 14 * Math.sin(rot), z: at.z - 14 * Math.cos(rot), rot });
+  });
+  const assist = '.taxi-action[data-action="left"]';
+  await until("the Taxi's first left-turn assist cue is visible", () => page.locator(assist).isVisible(), { timeout: 25000 });
+
+  h.mark("taxi steering and held assist");
+  const ready = await taxi();
+  await tap("Menu");
+  const scenarios = `:is(${toolbar}) ${scenariosTool}`;
+  await until("the Taxi tools restore their scenarios default", () => focused(scenarios));
+  await sample([0.55, 0, 0, 0], { [button.RT]: 0.85, [button.B]: 1 });
+  await step(16);
+  const held = await taxi();
+  check("B leaves the tools and held steering and throttle wait for neutral",
+    held.phase === "drive" && held.pace < 0.1 && Math.abs(held.steer) < 0.1 &&
+    !(await page.locator('.ride-menu[aria-expanded="true"]').count()), { ready, held });
+  await sample();
+  await step(2);
+  await sample([0.55, 0, 0, 0], { [button.RT]: 0.85 });
+  await step(24);
+  const steered = await taxi();
+  check("the idle Taxi cue leaves the real stick and throttle usable",
+    await page.locator(assist).isVisible() && steered.steer > 0.2 && steered.pace > 0.5 &&
+      angle(ready.heading, steered.heading) < -0.02, { ready, steered });
+  await sample();
+  await step(2);
+  const before = await taxi();
+  await press("A");
+  await step(24);
+  const assisted = await taxi();
+  check("holding A drives and turns the Taxi left through the assist action",
+    assisted.phase === "drive" && assisted.steer < -0.6 && assisted.pace > 0.5 &&
+      angle(before.heading, assisted.heading) > 0.02 &&
+      Math.hypot(assisted.x - before.x, assisted.z - before.z) > 0.15, { before, assisted });
+  await shot("taxi-assist");
+  await sample();
+  await step(18);
+  const released = await taxi();
+  check("releasing A stops applying the Taxi assist while the cue stays visible",
+    await page.locator(assist).isVisible() && Math.abs(released.steer) < Math.abs(assisted.steer) / 2,
+    { assisted, released });
+  await tap("B");
+  await until("B returns from Taxi drive to town", async () => !(await taxi()).phase && !(await h.state()).transition);
+}
+
 async function startScene(h, sit) {
   const { page, until, step, tap, check } = h;
   await until(`${sit} intro opens`, () => page.evaluate((selector) => !!document.querySelector(selector), intro));
@@ -1159,6 +1249,7 @@ async function townContract(h) {
   await walkLookJump(h);
   await carContract(h);
   await boatContract(h);
+  if (storage !== "puerto-colibri") await taxiContract(h);
   await townUi(h);
   await kitContract(h);
   if (storage !== "puerto-colibri") await meetingContract(h);

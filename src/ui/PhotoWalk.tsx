@@ -182,7 +182,7 @@ export function DirectionsCard() {
   const replaying = useTownQuests((s) => s.replaying);
   if (!place) return null;
   const action = (name: string) => game?.modeAction("directions", name);
-  return <section className="directions-card" aria-label={directions.card} data-destination={place.id}>
+  return <section className="directions-card" data-pad-aux aria-label={directions.card} data-destination={place.id}>
     <header>
       <Icon name="pin" size={19} />
       <div><h2>{directions.card}</h2><p>{directions.to(LOCATIONS[place.location].lt)}</p></div>

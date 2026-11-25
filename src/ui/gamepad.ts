@@ -9,6 +9,7 @@ const BLOCKED = "[inert], [hidden], [aria-hidden=true]";
 const UNAVAILABLE = ":disabled, [aria-disabled=true], [data-pad-skip], .bl-power-track, .taxi-action";
 const BACK = "[data-pad-back]";
 const DEFAULT = "[data-pad-default]";
+const AUXILIARY = "button[data-pad-aux], [data-pad-aux] button";
 const NOTES = ".objective-notes";
 const GRIDS = ".scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
 const ANSWERS = "[data-pad-answer], .dym-opt";
@@ -52,6 +53,7 @@ const surfaces: Record<string, Surface> = {
   street: { priority: 50, first: ".street-choice", back: ".street-head button" },
   drawer: { priority: 20, first: "[data-pad-tool=scenarios]" },
   toolbar: { priority: 20, first: "[data-pad-tool=scenarios]" },
+  auxiliary: { priority: 20 },
   home: { priority: 10, first: ".lh-card[data-sit]", slot: ".lh-in" },
 };
 const EXTRA_SCOPES = ".radio-set, .phone-ring, .street-card";
@@ -177,6 +179,7 @@ export class GamepadView {
   private active: HTMLElement | null = null;
   private activePhase: string | undefined;
   private desktop: HTMLElement | null = null;
+  private auxiliary?: { root: HTMLElement; under: HTMLElement | null; phase?: string };
   private focused?: HTMLElement;
   private composing = false;
   private openingDrawer = false;
@@ -207,7 +210,7 @@ export class GamepadView {
     this.observer = new MutationObserver(this.changed);
     this.observer.observe(app, {
       subtree: true, childList: true, attributes: true,
-      attributeFilter: ["data-pad-scope", "data-pad-phase", "disabled", "aria-disabled"],
+      attributeFilter: ["data-pad-scope", "data-pad-phase", "disabled", "aria-disabled", "inert"],
     });
     for (const node of document.body.children) {
       if (node instanceof HTMLElement && padPopovers.has(node)) this.watchPopover(node);
@@ -247,6 +250,7 @@ export class GamepadView {
     this.lastControl = new WeakMap();
     this.returnTo = new WeakMap();
     this.active = this.desktop = null;
+    this.auxiliary = undefined;
     this.activePhase = undefined;
     this.launcher = this.restore = undefined;
     this.composing = this.openingDrawer = this.focusOnReturn = false;
@@ -302,15 +306,17 @@ export class GamepadView {
           if (target === document.activeElement) this.syncFocus();
           continue;
         }
+        if (record.attributeName === "inert") { update = true; continue; }
         if (target.matches(ROOTS)) {
           this.roots.add(target);
-          update ||= record.attributeName === "data-pad-scope" || target === this.active;
+          update ||= record.attributeName === "data-pad-scope" || target === this.active || target === this.auxiliary?.under;
         } else update = this.roots.delete(target) || update;
         continue;
       }
       for (const node of record.addedNodes) update = this.collect(node) || update;
       for (const node of record.removedNodes) {
         if (!(node instanceof HTMLElement)) continue;
+        if (this.auxiliary && !this.auxiliary.root.isConnected) update = true;
         if (this.desktop && !this.desktop.isConnected && node.contains(this.desktop)) {
           this.desktop = null;
           update = true;
@@ -326,6 +332,7 @@ export class GamepadView {
   };
 
   private kind(root: HTMLElement) {
+    if (root === this.auxiliary?.root) return "auxiliary";
     return root.dataset.padScope ?? (root === this.desktop ? "toolbar" :
       root.matches(".radio-set") ? "radio" : root.matches(".phone-ring") ? "phone-ring" : "street");
   }
@@ -333,7 +340,7 @@ export class GamepadView {
   private refresh() {
     this.popoversChanged = false;
     const previous = this.active;
-    let active = this.desktop?.isConnected ? this.desktop : null;
+    let active = this.desktop?.isConnected && !this.desktop.closest(BLOCKED) ? this.desktop : null;
     let rank = active ? surfaces.toolbar.priority : 0;
     for (const node of this.roots) {
       if (!node.isConnected || node.closest(BLOCKED)) continue;
@@ -353,6 +360,12 @@ export class GamepadView {
         active = node;
         rank = surfaces[this.kind(node)].priority;
       }
+    }
+    const auxiliary = this.auxiliary;
+    if (auxiliary) {
+      if (auxiliary.root.isConnected && !auxiliary.root.closest(BLOCKED) &&
+          auxiliary.under === active && auxiliary.phase === active?.dataset.padPhase) active = auxiliary.root;
+      else this.auxiliary = undefined;
     }
     const phase = active?.dataset.padPhase;
     if (previous !== active || phase !== this.activePhase) {
@@ -390,11 +403,11 @@ export class GamepadView {
       if (!target?.isConnected && target?.dataset.thread) {
         target = active?.querySelector<HTMLElement>(`button[data-thread="${CSS.escape(target.dataset.thread)}"]`) ?? undefined;
       }
-      if (target && control(target) && visible(target)) this.focus(target);
-      else if (target?.closest(".toolbar-drawer[inert]") && !active) {
+      if (!active && (target?.closest(".toolbar-drawer[inert]") || target?.matches(AUXILIARY))) {
         this.restore = target;
         if (!this.openDrawer()) this.restore = undefined;
       }
+      if (!this.openingDrawer && target && control(target) && visible(target)) this.focus(target);
     }
     this.syncFocus();
     this.placeNotice();
@@ -410,7 +423,11 @@ export class GamepadView {
     this.clearRing();
     this.launcher = undefined;
     this.overlayReturn = undefined;
-    if (event.type === "pointerdown" && this.desktop && !this.desktop.contains(event.target as Node) && this.active === this.desktop) {
+    if (event.type !== "pointerdown" || !(event.target instanceof Element) || !this.active) return;
+    if (this.active === this.auxiliary?.root && !this.controlRoot(this.active, event.target.closest(CONTROL))) {
+      this.leaveAuxiliary();
+    } else if (this.active === this.desktop && !this.desktop.contains(event.target) &&
+               !this.controlRoot(this.desktop, event.target.closest(CONTROL))) {
       this.desktop = null;
       this.refresh();
     }
@@ -418,7 +435,7 @@ export class GamepadView {
   private rememberClick = (event: Event) => {
     if (!event.isTrusted || !this.active || !(event.target instanceof Element)) return;
     const target = event.target.closest(CONTROL);
-    if (control(target) && this.active.contains(target) && !target.matches(BACK)) {
+    if (control(target) && this.controlRoot(this.active, target) && !target.matches(BACK)) {
       this.launcher = { target, from: this.active, at: performance.now() };
     }
   };
@@ -431,22 +448,41 @@ export class GamepadView {
   private syncFocus = () => {
     const target = document.activeElement;
     const root = this.active;
-    if (root?.contains(target) && control(target) && visible(target)) {
+    const owner = root && this.controlRoot(root, target);
+    if (root && owner && control(target) && visible(target)) {
       this.lastControl.set(root, target);
-      this.debug.focusTarget = focusKey(root, target);
+      this.debug.focusTarget = focusKey(owner, target);
     } else this.debug.focusTarget = null;
   };
+
+  private hudTools(root: HTMLElement) {
+    return root === this.desktop || root.dataset.padScope === "drawer";
+  }
+
+  private controlRoot(root: HTMLElement, target: Element | null) {
+    if (!target) return null;
+    if (root.contains(target)) return root === this.auxiliary?.root && !target.matches(AUXILIARY) ? null : root;
+    const hud = this.hudTools(root) && root.closest<HTMLElement>(".hud");
+    return hud && hud.contains(target) && target.matches(AUXILIARY) ? hud : null;
+  }
+
+  private auxiliaryControls(hud: HTMLElement) {
+    return Array.from(hud.querySelectorAll<HTMLElement>(AUXILIARY)).filter((target) => control(target) && visible(target));
+  }
 
   private candidates() {
     const root = this.active!;
     const kind = this.kind(root);
     const first = kind === "home" || kind === "meeting" ? undefined : surfaces[kind].first;
     const priority: HTMLElement[] = [], rest: HTMLElement[] = [], back: HTMLElement[] = [];
-    for (const target of root.querySelectorAll(kind === "popover" ? "button" : CONTROL)) {
+    const selector = kind === "popover" ? "button" : kind === "auxiliary" ? AUXILIARY : CONTROL;
+    for (const target of root.querySelectorAll(selector)) {
       if (!control(target) || !visible(target)) continue;
       (first && target.matches(first) ? priority : target.matches(BACK) ? back : rest).push(target);
     }
-    return priority.concat(rest, back);
+    const hud = this.hudTools(root) && root.closest<HTMLElement>(".hud");
+    const extra = hud ? this.auxiliaryControls(hud).filter((target) => !root.contains(target)) : [];
+    return priority.concat(rest, back, extra);
   }
 
   private focus(target: HTMLElement, restoring = false) {
@@ -460,9 +496,13 @@ export class GamepadView {
     this.clearRing();
     this.focused = target;
     target.setAttribute("data-pad-focus", "");
-    if (this.active?.contains(target)) scrollNear(target, this.active);
-    if (previous !== target && this.active?.dataset.padScope === "drawer") {
-      target.dispatchEvent(new Event("padfocus", { bubbles: true }));
+    const root = this.active;
+    const owner = root && this.controlRoot(root, target);
+    if (root && owner) {
+      scrollNear(target, owner);
+      if (previous !== target && root.dataset.padScope === "drawer") {
+        (owner === root ? target : root).dispatchEvent(new Event("padfocus", { bubbles: true }));
+      }
     }
     this.syncFocus();
     return true;
@@ -508,12 +548,12 @@ export class GamepadView {
     if (!root || this.composing || textEntry(document.activeElement)) return;
     const current = document.activeElement;
     const kind = this.kind(root);
-    const target = root.contains(current) && control(current) && (kind !== "popover" || current.matches("button")) ? current :
+    const target = this.controlRoot(root, current) && control(current) && (kind !== "popover" || current.matches("button")) ? current :
       kind === "intro" ? root.querySelector<HTMLElement>(DEFAULT) : kind === "popover" ? this.candidates()[0] :
       kind === "meeting" ? this.candidates().find((item) => item.matches(MEETING_ANSWERS)) : null;
     if (!target || !control(target) || !visible(target) || !this.focus(target)) return;
     this.sync();
-    if (this.active !== root || !control(target) || !visible(target)) return;
+    if (this.active !== root || !this.controlRoot(root, target) || !control(target) || !visible(target)) return;
     if (!target.matches(BACK)) this.launcher = { target, from: root, at: performance.now() };
     this.debug.lastAction = "confirm";
     target.click();
@@ -525,6 +565,11 @@ export class GamepadView {
     if (!root || this.composing) return;
     if (this.closePopover(root)) return;
     const kind = this.kind(root);
+    if (kind === "auxiliary") {
+      this.debug.lastAction = "back";
+      this.leaveAuxiliary(true);
+      return;
+    }
     if (kind !== "info" && textEntry(document.activeElement)) {
       // Keep the draft and the existing typing state when recognition gave the field focus.
       const field = document.activeElement;
@@ -538,11 +583,14 @@ export class GamepadView {
     const target = kind === "drawer" ? this.menuButton() :
       root.querySelector(BACK) ?? (surfaces[kind].back ? this.app?.querySelector(surfaces[kind].back!) : null);
     if (kind === "toolbar") {
+      if (this.controlRoot(root, document.activeElement)) (document.activeElement as HTMLElement).blur();
       this.desktop = null;
-      if (root.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
       this.debug.lastAction = "back";
       this.refresh();
     } else if (control(target ?? null) && visible(target as HTMLElement)) {
+      const current = document.activeElement;
+      if (kind === "drawer" && current instanceof HTMLElement && !root.contains(current) &&
+          this.controlRoot(root, current)) current.blur();
       const infoLauncher = kind === "info" && root.parentElement?.querySelector<HTMLElement>(FOCUS_OPENS);
       if (infoLauncher) this.overlayReturn = { root, anchor: infoLauncher };
       this.restore = kind === "drawer" ? target as HTMLElement : infoLauncher ? undefined : this.returnTo.get(root)?.target;
@@ -580,11 +628,36 @@ export class GamepadView {
     return true;
   }
 
+  private openAuxiliary() {
+    const root = this.app?.querySelector<HTMLElement>(".hud");
+    if (!root || !this.auxiliaryControls(root).length) return false;
+    const under = this.active;
+    this.auxiliary = { root, under, phase: under?.dataset.padPhase };
+    this.refresh();
+    const target = this.candidates()[0];
+    if (target && this.focus(target)) this.debug.lastAction = "focus";
+    return true;
+  }
+
+  leaveAuxiliary(restore = false) {
+    const auxiliary = this.auxiliary;
+    if (!auxiliary) return;
+    if (this.controlRoot(auxiliary.root, document.activeElement)) (document.activeElement as HTMLElement).blur();
+    this.auxiliary = undefined;
+    this.refresh();
+    if (restore && this.active && this.active === auxiliary.under) {
+      const target = this.lastControl.get(this.active);
+      if (target && control(target) && visible(target)) this.focus(target);
+    }
+  }
+
   menu() {
     if (!this.app || this.composing || textEntry(document.activeElement)) return false;
     if (this.active) {
-      if (this.kind(this.active) === "drawer" || this.active === this.desktop) { this.back(); return true; }
-      if (this.kind(this.active) === "home") {
+      const kind = this.kind(this.active);
+      if (kind === "drawer" || kind === "toolbar" || kind === "auxiliary") { this.back(); return true; }
+      if (kind === "surf-choices" || kind === "taxi") return this.openAuxiliary();
+      if (kind === "home") {
         const target = this.candidates().find((item) => item.closest(".lh-tools"));
         if (target && this.focus(target)) this.debug.lastAction = "focus";
         return true;
@@ -593,7 +666,7 @@ export class GamepadView {
     }
     if (this.openDrawer()) { this.debug.lastAction = "focus"; return true; }
     const toolbar = this.app.querySelector<HTMLElement>("[data-pad-toolbar]");
-    if (!toolbar || !visible(toolbar)) return false;
+    if (!toolbar || !visible(toolbar)) return this.openAuxiliary();
     this.desktop = toolbar;
     this.refresh();
     const target = this.candidates()[0];
@@ -681,14 +754,14 @@ export class GamepadView {
       } else if (kind === "panel") {
         const sheet = active.querySelector<HTMLElement>(surfaces.panel.slot!);
         if (!desktop || !sheet || sheet.getBoundingClientRect().left < 292) slot = sheet;
-      } else if (!desktop && !["drawer", "toolbar", "popover", "tooltip", "meeting"].includes(kind)) {
+      } else if (!desktop && !["drawer", "toolbar", "auxiliary", "popover", "tooltip", "meeting"].includes(kind)) {
         const selector = surfaces[kind].slot;
         slot = selector ? active.matches(selector) ? active : app.querySelector<HTMLElement>(selector) : active;
       }
     }
     let anchor: Element | null = null;
     if (!slot && notes) anchor = notes.querySelector(".objective-card");
-    if (!slot && !anchor && !active) {
+    if (!slot && !anchor && (!active || kind === "auxiliary")) {
       anchor = app.querySelector(".surf-top, .road-header, .taxi-cue, .bl-header");
     }
     if (anchor !== this.resizeAnchor) {

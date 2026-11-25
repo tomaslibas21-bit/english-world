@@ -3,7 +3,7 @@ import { PadButton } from "./padButtons";
 
 export { PadButton } from "./padButtons";
 
-const BUTTONS = PadButton.A | PadButton.B | PadButton.X | PadButton.LT | PadButton.RT | PadButton.Menu
+const BUTTONS = PadButton.A | PadButton.B | PadButton.X | PadButton.LB | PadButton.RB | PadButton.LT | PadButton.RT | PadButton.Menu
   | PadButton.Up | PadButton.Down | PadButton.Left | PadButton.Right;
 
 export interface PadDebug {
@@ -25,20 +25,23 @@ export interface PadScalars {
 export interface PadScope {
   readonly padDriving?: boolean;
   readonly padAction?: boolean;
+  /** Lets Menu reach the mode HUD during physical play. */
+  readonly padMenu?: boolean;
   readonly padNavigate?: boolean;
-  padTick?(input: Readonly<PadScalars>, pressed: number, released: number, dt: number, direction: number): PadDebug["lastAction"] | void;
+  padTick?(input: Readonly<PadScalars>, pressed: number, released: number, dt: number, direction: number, held: number): PadDebug["lastAction"] | void;
   padCancel?(held: number): void;
 }
 
 export interface PadHost {
-  /** False pauses the whole controller. Null lets the view own input while gameplay is blocked. */
-  scope?(): "foot" | "car" | "boat" | PadScope | null | false;
+  /** False pauses the controller, null leaves input to the view, and "menu" also allows Menu and Back. */
+  scope?(): "foot" | "car" | "boat" | "menu" | PadScope | null | false;
   canLook?(): boolean;
   orbit?(dx: number, dy: number): void;
   manual?(brake: boolean): void;
   jump?(): void;
   /** False means there was no world interaction, so the camera shortcut may take the press. */
   interact?(): void | boolean;
+  horn?(): void;
   back?: () => void;
   connection?(connected: boolean | null): void;
 }
@@ -140,12 +143,15 @@ export class GamepadInput implements PadScalars {
     this.nav.reset();
     this.debug.focusTarget = null;
     if (clearFocus) this.ui.clearFocus();
-    if (scope && typeof scope === "object" && held) scope.padCancel?.(held);
+    if (scope && typeof scope === "object") scope.padCancel?.(held);
   }
 
   private readScope(): Scope {
     const base = this.host?.scope?.();
-    if (base === false) return null;
+    if (base === false) {
+      this.ui.leaveAuxiliary();
+      return null;
+    }
     if (this.ui.scope) return "ui";
     return textEntry(document.activeElement) ? null : base ?? null;
   }
@@ -176,7 +182,8 @@ export class GamepadInput implements PadScalars {
     const revision = this.revision;
     const custom = typeof scope === "object" ? scope : null;
     const driving = scope === "car" || scope === "boat" || !!custom?.padDriving;
-    const canLook = scope !== "ui" && (!custom || driving) && !!this.host?.canLook?.();
+    const physical = scope !== "ui" && scope !== "menu";
+    const canLook = physical && (!custom || driving) && !!this.host?.canLook?.();
     const wasMoving = this.x || this.y || this.throttle;
     const wasLooking = this.rx || this.ry;
     const wasThrottle = this.throttle;
@@ -184,8 +191,8 @@ export class GamepadInput implements PadScalars {
 
     const x = axis(pad, 0), y = axis(pad, 1), leftScale = scale(x, y, 0.18);
     this.leftReady ||= leftScale === 0;
-    this.x = scope !== "ui" && this.leftReady && leftScale ? x * leftScale : 0;
-    this.y = scope !== "ui" && this.leftReady && leftScale ? -y * leftScale : 0;
+    this.x = physical && this.leftReady && leftScale ? x * leftScale : 0;
+    this.y = physical && this.leftReady && leftScale ? -y * leftScale : 0;
 
     const rx = axis(pad, 2), ry = axis(pad, 3), rightScale = scale(rx, ry, 0.20);
     this.rightReady = canLook && (this.rightReady || rightScale === 0);
@@ -221,14 +228,14 @@ export class GamepadInput implements PadScalars {
         direction === PadButton.Left ? "left" : "right");
       return;
     }
-    if ((pressed & PadButton.Menu) && (typeof scope !== "object" || driving)) {
+    if ((pressed & PadButton.Menu) && (!custom || driving || custom.padMenu)) {
       if (!this.stillIn(scope, revision)) return;
       if (this.ui.menu()) {
         if (revision === this.revision) this.cancel(false);
         return;
       }
     }
-    if (custom && (pressed & PadButton.B) && this.host?.back) {
+    if ((custom || scope === "menu") && (pressed & PadButton.B) && this.host?.back) {
       if (!this.stillIn(scope, revision)) return;
       this.debug.lastAction = "back";
       this.host.back();
@@ -241,15 +248,19 @@ export class GamepadInput implements PadScalars {
       if ((!wasMoving && moving) || (!wasThrottle && this.throttle)) this.debug.lastAction = driving ? "throttle" : "walk";
       if (!wasBrake && this.brake) this.debug.lastAction = "brake";
     }
+    if (driving && (pressed & PadButton.RB) && this.host?.horn) {
+      if (!this.stillIn(scope, revision)) return;
+      this.host.horn();
+    }
     if (custom) {
       if (custom.padTick) {
         const direction = custom.padNavigate ? this.nav.step(x, y, buttons, this.held, performance.now()) : 0;
         if ((pressed || released || direction) && !this.stillIn(scope, revision)) return;
-        const action = custom.padTick(this, pressed, released, dt, direction);
+        const action = custom.padTick(this, pressed, released, dt, direction, this.held);
         if (action) this.debug.lastAction = action;
         if ((pressed || released || direction) && !this.stillIn(scope, revision)) return;
       }
-    } else {
+    } else if (physical) {
       if ((pressed & PadButton.X) && this.host?.interact) {
         if (!this.stillIn(scope, revision)) return;
         this.debug.lastAction = "interact";

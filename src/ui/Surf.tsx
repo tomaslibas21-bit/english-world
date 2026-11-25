@@ -149,7 +149,7 @@ export function SurfOverlay() {
   return (
     <div className={"surf" + (touch ? " touch" : "")}>
       <div className="surf-top">
-        <button className="surf-x" onClick={() => game?.modeExit()} aria-label="Baigti pamoką" title="Baigti pamoką"><Icon name="close" size={20} strokeWidth={2.4} /></button>
+        <button className="surf-x" data-pad-aux data-pad-back onClick={() => game?.modeExit()} aria-label="Baigti pamoką" title="Baigti pamoką"><Icon name="close" size={20} strokeWidth={2.4} /></button>
         <button className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow} onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>Lėčiau</button>
         <div className="surf-score" aria-label="Rezultatas">
           <span title="Bangos"><i aria-hidden>🌊</i>{sc.waves}</span>
@@ -163,11 +163,11 @@ export function SurfOverlay() {
             {pic && <Picture src={pic} />}
             <div className="surf-words">
               {hidden
-                ? <button className="surf-listen" onClick={() => setShown(true)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
+                ? <button className="surf-listen" data-pad-aux onClick={() => setShown(true)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
                 : <GlossLine sentence={s.line.s} gloss={s.support === 0} />}
               {riding && <div className="surf-balance" role="meter" aria-label="Pusiausvyra" aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>
-            <button className="surf-again" onClick={() => game?.modeAction("surf", "repeat")} title="Pakartoti" aria-label="Pakartoti" lang="lt"><Icon name="speaker" size={19} /></button>
+            <button className="surf-again" data-pad-aux onClick={() => game?.modeAction("surf", "repeat")} title="Pakartoti" aria-label="Pakartoti" lang="lt"><Icon name="speaker" size={19} /></button>
           </div>
           {/* her line asks for a move: the move and its key, large, right under it */}
           {s.todo?.show && <Move todo={s.todo} touch={touch} />}
