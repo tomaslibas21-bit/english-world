@@ -4,8 +4,14 @@
 import * as THREE from "three";
 import type { Look } from "../../content/npcs";
 import type { Anim } from "./Character";
+import type { CharacterJoint } from "./index";
 import { OUTLINE_LAYER, outlineMaterial, addOutlineNormals, vertexColorMaterial } from "../style";
 import { buildCharacter, BONE, BONE_COUNT, type CharSpec } from "./builders";
+
+const JOINT = {
+  body: BONE.body, head: BONE.head, armL: BONE.uArmL, armR: BONE.uArmR, foreL: BONE.fArmL, foreR: BONE.fArmR,
+  legL: BONE.thighL, legR: BONE.thighR, shinL: BONE.shinL, shinR: BONE.shinR,
+} satisfies Record<CharacterJoint, number>;
 
 export class StyledCharacter {
   root = new THREE.Group();
@@ -77,6 +83,8 @@ export class StyledCharacter {
 
   /** Where the name tag goes (Game adds 0.45 above standing heads, −0.1 for seated ones). */
   get height() { return this.anim === "sit" ? this.spec.height - this.spec.sitDrop + 0.55 : this.spec.height; }
+
+  joint(name: CharacterJoint): THREE.Object3D { return this.bones[JOINT[name]]; }
 
   setAnim(a: Anim) { this.anim = a; }
   talk(seconds: number) { this.talking = Math.max(this.talking, seconds); }

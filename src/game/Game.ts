@@ -61,6 +61,8 @@ import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
+import { GYM_ENTRY } from "../content/gym-entry";
+import { createGymMode } from "./gym/entry";
 import type { OcclusionField } from "./occlusion";
 import { STYLED } from "./style";
 import { initTownCollision } from "./townCollisionCache";
@@ -100,6 +102,7 @@ export type { GameApi } from "./gameRef";
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
 interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
+const isGymTrainer = (actor: NpcActor) => actor.id === GYM_ENTRY.npc;
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -204,6 +207,7 @@ export class Game implements GameApi {
   /** Trial world styles (Settings → "Pasaulio stilius"); null for the original "blocks" look. */
   private fx: StyleFx | null = null;
   private keys = new Set<string>();
+  private gymHeldKeys = new Set<string>();
   private joy = { x: 0, y: 0 };
   private vel = new THREE.Vector3();
   private lastHeading = 0;
@@ -693,6 +697,14 @@ export class Game implements GameApi {
       });
       this.modes.register(this.sea);
     }
+    this.modes.register(createGymMode(stageHost, {
+      room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
+      trainer: () => this.npcs.find(isGymTrainer)?.ch,
+      heading: () => this.heading,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      savePlace: () => this.savePlace(),
+      viewport: () => ({ width: this.screenW, height: this.screenH }),
+    }));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
@@ -1274,13 +1286,16 @@ export class Game implements GameApi {
     if (this.flight) { if (!e.metaKey && !e.ctrlKey && !e.altKey) { this.endFlight(); e.preventDefault(); } return; }
     const st = useStore.getState();
     const k = e.key.toLowerCase();
+    const gym = this.modes.owns("gym");
+    if (gym) this.gymHeldKeys.add(k);
+    else if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if ((!this.transitioning || (k === "escape" && this.modes.owns("surf")))
+      if ((!this.transitioning || (k === "escape" && (gym || this.modes.owns("surf"))))
         && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
@@ -1313,11 +1328,13 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     this.keys.delete(key);
+    this.gymHeldKeys.delete(key);
     if (this.modes.owns("surf")) this.modeAction("surf", "key-up", key);
     if (this.billiards.release(key)) e.preventDefault();
   };
   private onBlur = () => {
     this.keys.clear();
+    this.gymHeldKeys.clear();
     this.billiards.release(" ", true);
     if (this.modes.owns("surf")) this.modeAction("surf", "clear");
   };
@@ -3443,6 +3460,8 @@ export class Game implements GameApi {
 
   private prepareMode() {
     if (this.modes.owns("surf")) this.setJoystick(0, 0);
+    // A key the workout takes over must be released before its repeats can move the player again.
+    if (this.modes.owns("gym")) for (const key of this.keys) this.gymHeldKeys.add(key);
     this.keepsake.clear();
     useStore.getState().dismissRideToasts();
     this.endRide();

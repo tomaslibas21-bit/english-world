@@ -5,6 +5,7 @@
 // the phone (prefetchSituations: src/game/prefetch.ts). A conversation that is open is always loaded: getSituation.
 // Tools and tests import ./index (every conversation, at once), as before.
 import type { SituationDef, SituationMeta } from "../types";
+import { GYM_ENTRY } from "../gym-entry";
 import { META, LOAD } from "./meta.gen";
 
 export const SITUATIONS: readonly SituationMeta[] = META;
@@ -38,5 +39,8 @@ export function loadSituation(id: string): Promise<SituationDef | null> {
 
 /** Starts loading these conversations' files in the background (the ones not loaded or loading yet). */
 export function prefetchSituations(ids: Iterable<string>) {
-  for (const id of ids) if (!loaded.has(id) && !pending.has(id) && LOAD[id]) loadSituation(id).catch(() => { /* again when it opens */ });
+  // The gym lines share the conversation chunk. Fetch it on explicit conversation or workout entry.
+  for (const id of ids) if (id !== GYM_ENTRY.situation && !loaded.has(id) && !pending.has(id) && LOAD[id]) {
+    loadSituation(id).catch(() => { /* again when it opens */ });
+  }
 }

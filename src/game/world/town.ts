@@ -1672,7 +1672,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: Ad
     new THREE.IcosahedronGeometry(0.9, 0).translate(-0.85, 3.7, 0.55),
     // (a maple's crown is broad: one more bough low on the other side)
     new THREE.IcosahedronGeometry(0.95, 0).translate(1.0, 3.25, 0.5),
-  ].map((g) => g.toNonIndexed()), false)!;
+  ], false)!;
   const trunks = new THREE.InstancedMesh(trunkGeo, mat("#7a5236"), n);
   const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true })), n);
   // maples in their fall colours (one in eight has not turned yet)

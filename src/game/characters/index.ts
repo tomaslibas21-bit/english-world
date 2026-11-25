@@ -5,12 +5,15 @@ import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import { STYLED } from "../style";
 
+export type CharacterJoint = "body" | "head" | "armL" | "armR" | "foreL" | "foreR" | "legL" | "legR" | "shinL" | "shinR";
+
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
 export interface GameCharacter {
   root: THREE.Group;
   readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;
+  joint(name: CharacterJoint): THREE.Object3D;
   setAnim(a: Anim): void;
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
