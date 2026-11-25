@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { progress as returnedPlayer } from "./life-harness.mjs";
+import { contentUrl, progress as returnedPlayer } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = new URL(process.env.WORLD_TEST_URL || "http://127.0.0.1:5188");
@@ -183,13 +183,11 @@ function rideTravel(a, b) {
 }
 
 async function run(width, height, mobile, mode, contract) {
-  const context = await browser.newContext({
-    viewport: { width, height }, isMobile: mobile, hasTouch: mobile,
-    deviceScaleFactor: mobile ? 2 : 1, serviceWorkers: "block",
-  });
   const label = `${width}x${height}-${mode}`;
   const errors = [];
+  let context;
   let page;
+  let failure;
   let phase = "startup";
   const check = (name, value, detail) => {
     assert(value, `${label} · ${name}: ${JSON.stringify(detail)}`);
@@ -197,6 +195,10 @@ async function run(width, height, mobile, mode, contract) {
   };
   const shot = (name) => shots ? page.screenshot({ path: join(shots, `gamepad-${label}-${name}.png`), timeout: 5000 }) : undefined;
   try {
+    context = await browser.newContext({
+      viewport: { width, height }, isMobile: mobile, hasTouch: mobile,
+      deviceScaleFactor: mobile ? 2 : 1, serviceWorkers: "block",
+    });
     const cors = { "access-control-allow-origin": "*" };
     await context.route("**/*", (route) => {
       const url = new URL(route.request().url());
@@ -296,9 +298,13 @@ async function run(width, height, mobile, mode, contract) {
   } catch (error) {
     const snapshot = page ? await page.evaluate(readState).catch(() => null) : null;
     if (page && shots) await shot("failure").catch(() => {});
-    throw new Error(`${label} · ${phase}\n${JSON.stringify({ snapshot, errors })}`, { cause: error });
+    failure = new Error(`${label} · ${phase}\n${JSON.stringify({ snapshot, errors })}`, { cause: error });
+    throw failure;
   } finally {
-    await context.close();
+    await context?.close().catch((error) => {
+      if (!failure) throw new Error(`${label} · closing context`, { cause: error });
+      console.error(`${label} · closing context`, error);
+    });
   }
 }
 
@@ -451,8 +457,53 @@ async function place(h, spawn = clearGround) {
   await h.step(20);
 }
 
+async function watchNeutralDraws(page) {
+  return page.evaluateHandle(() => {
+    const { game: g } = window.__ew;
+    const { pad, renderer, scene } = g;
+    const { cam } = g.rig;
+    const tick = pad.tick;
+    const restore = () => { pad.tick = tick; };
+    let measurement;
+    function render() {
+      renderer.render(scene, cam);
+      return {
+        calls: renderer.info.render.calls,
+        connected: window.__pad.connected,
+        frame: {
+          time: g.t, clock: performance.now(), zone: g.zone.id, scene: g.scene.uuid, camera: g.rig.cam.uuid,
+          view: cam.matrixWorldInverse.toArray(), projection: cam.projectionMatrix.toArray(),
+          player: g.player.root.position.toArray(),
+          buffer: [renderer.domElement.width, renderer.domElement.height, renderer.getPixelRatio()],
+          target: renderer.getRenderTarget()?.texture.uuid ?? null,
+          shadows: renderer.shadowMap.enabled, toneMapping: renderer.toneMapping,
+        },
+      };
+    }
+    const without = render();
+    // After the lazy load, the scheduled tick connects on a zero-time frame. Sample before the town update
+    // so the renderer sees the same world as it did before the device was attached.
+    pad.tick = function (dt) {
+      tick.call(this, dt);
+      if (!window.__pad.connected) return;
+      const withPad = render();
+      const { x, y, rx, ry, throttle, brake } = pad.input;
+      measurement = { without, withPad, inputs: [x, y, rx, ry, throttle, Number(brake)], delta: withPad.calls - without.calls };
+      restore();
+    };
+    return {
+      restore,
+      connect() {
+        if (!pad.input) return false;
+        window.__step(1, 0);
+        return measurement;
+      },
+    };
+  });
+}
+
 async function idleAndAttach(h, real) {
-  const { page, step, state, check, attach, detach, when, duplicate, sample, shot } = h;
+  const { page, step, state, check, attach, detach, until, duplicate, sample, shot } = h;
   h.mark("town baseline");
   await place(h);
   const before = await state();
@@ -482,8 +533,20 @@ async function idleAndAttach(h, real) {
 
   h.mark("neutral attach");
   const neutral = await state();
-  await attach();
-  await when("first Standard pad sample after lazy readiness", (s) => s.pad?.connected, { frames: 1 });
+  const drawProbe = await watchNeutralDraws(page);
+  let draws;
+  try {
+    await attach();
+    draws = await until("first Standard pad sample after lazy readiness",
+      () => drawProbe.evaluate((probe) => probe.connect()), { frames: 0 });
+  } finally {
+    await drawProbe.evaluate((probe) => probe.restore());
+    await drawProbe.dispose();
+  }
+  check("a neutral pad adds zero draws at the same town checkpoint", draws && !draws.without.connected && draws.withPad.connected &&
+    draws.inputs.every((value) => value === 0) && draws.without.frame.zone === "town" && Number.isFinite(draws.without.frame.time) &&
+    JSON.stringify(draws.without.frame) === JSON.stringify(draws.withPad.frame) &&
+    draws.without.calls > 0 && draws.withPad.calls > 0 && draws.delta === 0, draws);
   await duplicate("gamepadconnected");
   await step(5);
   const connected = await state();
@@ -765,35 +828,66 @@ async function boatContract(h) {
   await step(2);
   await tap("X");
   await when("X leaves the boat onto a legal surface or into the water", (s) => !s.ride && s.visible);
+  await shot("boat-leave");
 
   h.mark("beach and swimming");
-  const beach = await page.evaluate(() => {
+  const waterModule = contentUrl(base.href, "game/water");
+  const route = await page.evaluate(async (url) => {
+    const { BAY, DECKS, FLOORS, SEA_LEVEL, SHORE, SWIM, floorY, seaBedY, waterY } = await import(url);
     const g = window.__ew.game;
-    const b = g.rides.list.find((r) => r.kind === "boat");
-    const nav = g.zone.nav;
-    // Both towns have SEA_Z=-72 and SHORE.limit=SEA_Z-5.4 (water.ts), as in rides.mjs.
-    const limit = -77.4;
-    const hulls = g.rides.list.filter((q) => q.kind === "boat").map(({ m }) =>
-      ({ x: m.x, z: m.z, r: Math.hypot(m.spec.half, m.spec.wide) }));
-    const hazards = [...g.rides.sea.circles, ...hulls];
-    // The clear beach search from moves.mjs, with room to reach diving depth in the same channel.
-    for (const dx of [8, 12, 4, 16, -8, -12]) {
-      const x = b.home.x + dx;
-      if (hazards.some((c) => Math.abs(c.x - x) < c.r + 0.6 && c.z < limit + 14 && c.z > limit - 25)) continue;
-      if (g.rides.sea.boxes.some((box) => x > box.minX - 0.6 && x < box.maxX + 0.6 && box.maxZ > limit - 20)) continue;
-      for (const dz of [9, 8, 7, 6, 5, 4]) {
-        const z = b.home.z + dz;
-        let clear = true;
-        for (let zz = z; zz >= b.home.z + 3.5; zz -= 0.5) {
-          if (!nav.free(nav.idx(x, zz))) { clear = false; break; }
-        }
-        if (clear) return { x, z, rot: Math.PI, limit };
+    const boats = g.rides.list.filter((r) => r.kind === "boat");
+    const radius = 0.38; // Game.updatePlayer
+    const z = SHORE.top + 3;
+    const deep = SHORE.limit - 10;
+    const end = deep - 1; // Include the remaining stroke and drift after the endpoint check.
+    const samples = Math.ceil((z - end) / 0.5);
+    const minSurface = SEA_LEVEL - (0.12 + 0.1 + 0.045); // water.ts swell amplitudes
+    const diveDepth = SWIM.dive + 0.9;
+    const surfaces = [...DECKS, ...FLOORS];
+    const attempted = [];
+    const detail = { z, deep, end, diveDepth, bay: BAY, attempted };
+
+    function reject(x) {
+      if (x - radius <= BAY.x0 || x + radius >= BAY.x1 || end <= BAY.z0 + 4) return { reason: "bay edge" };
+      if (!g.town.walkableAt(x, z) || waterY(x, z, g.t) !== null || floorY(x, z) !== 0) {
+        return { reason: "start is not dry walkable sand" };
+      }
+      const deck = surfaces.find((d) => x > d.x0 - radius && x < d.x1 + radius && z > d.z0 - radius && end < d.z1 + radius);
+      if (deck) return { reason: "deck or raised floor crosses the lane", deck: [deck.x0, deck.x1, deck.z0, deck.z1] };
+      const rock = g.rides.sea.circles.find((c) =>
+        Math.hypot(x - c.x, Math.max(end - c.z, 0, c.z - z)) < c.r + radius);
+      if (rock) return { reason: "rock or anchored boat crosses the lane", rock };
+      for (let i = 0; i <= samples; i++) {
+        const zz = z + (end - z) * i / samples;
+        // The sea-tagged blocker stops passers-by. The player wades through it.
+        if (g.town.colliders.blocked(x, zz, radius, true)) return { reason: "town collider", z: zz };
+        const hull = boats.find((b) => g.rides.reach(b, x, zz) < radius);
+        if (hull) return { reason: "live hull", id: hull.id, z: zz };
+        if (zz < SHORE.limit && floorY(x, zz) !== seaBedY(x, zz)) return { reason: "coast or pool interrupts open water", z: zz };
+      }
+      for (const zz of [deep, deep - 0.5, end]) {
+        const depth = minSurface - floorY(x, zz);
+        if (depth < diveDepth) return { reason: "too shallow to dive at low swell", z: zz, depth };
+      }
+      return null;
+    }
+
+    for (const b of boats) {
+      for (let distance = 1; distance <= 40; distance++) for (const side of [1, -1]) {
+        const x = b.home.x + side * distance;
+        const rejected = reject(x);
+        if (!rejected) return { beach: { x, z, rot: Math.PI, limit: SHORE.limit }, mooring: b.id, ...detail };
+        attempted.push({ mooring: b.id, x, ...rejected });
       }
     }
-    return null;
-  });
-  check("the town hull identifies an unobstructed beach-to-water line", beach);
+    return { beach: null, ...detail };
+  }, waterModule);
+  const { beach } = route;
+  check("the town hull identifies an unobstructed beach-to-water line", beach, route);
   await place(h, beach);
+  const dry = await state();
+  check("the learner starts on dry sand and on foot", !dry.ride && !dry.swimming && dry.visible && !dry.hop.air &&
+    Math.abs(dry.pos[1]) < 0.05, dry);
   await sample([0, -0.9, 0, 0]);
   await when("walk and wade into swimming depth", (s) => s.swimming && s.water === "swim", { timeout: 30000, frames: 6 });
   const water = await state();
@@ -805,6 +899,14 @@ async function boatContract(h) {
   await when("swimmer reaches deep water", (s) => s.swimming && s.pos[2] < beach.limit - 10, { timeout: 30000, frames: 6 });
   await sample();
   await step(18);
+  const dive = await page.evaluate(async (url) => {
+    const { SWIM, floorY, waterY } = await import(url);
+    const { game: g } = window.__ew;
+    const { x, z } = g.player.root.position;
+    const surface = waterY(x, z, g.t);
+    return { x, z, depth: surface === null ? null : surface - floorY(x, z), required: SWIM.dive + 0.9 };
+  }, waterModule);
+  check("the released swimmer is deep enough to dive", dive.depth !== null && dive.depth >= dive.required, dive);
   await tap("A");
   await when("A dives below the surface", (s) => s.water === "dive" && s.cameraY < -0.4);
   await shot("swimmer-dive");
@@ -1394,11 +1496,23 @@ async function lightContract(h) {
 }
 
 try {
+  let failed = 0;
   for (const [width, height, mobile] of [[390, 844, true], [1280, 800, false]]) {
-    await run(width, height, mobile, "town", townContract);
-    await run(width, height, mobile, "light", lightContract);
+    for (const [mode, contract] of [["town", townContract], ["light", lightContract]]) {
+      try {
+        await run(width, height, mobile, mode, contract);
+      } catch (error) {
+        failed++;
+        console.error(error);
+      }
+    }
   }
-  console.log("gamepad: all checks passed");
+  if (failed) {
+    console.error(`gamepad: ${failed} of 4 cases failed`);
+    process.exitCode = 1;
+  } else {
+    console.log("gamepad: all checks passed");
+  }
 } finally {
   await browser.close();
 }
