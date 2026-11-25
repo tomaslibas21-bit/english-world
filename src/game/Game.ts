@@ -23,7 +23,7 @@ import { SpeedFeelLoader } from "./rides/speedFeelLoader";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
-import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
+import { CAR, CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
 import { RoadEntry, walkEdge } from "./road/entry";
@@ -3302,7 +3302,7 @@ export class Game implements GameApi {
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
-    if (car && on && townDriver && controls) this.speedFeel?.stepTown(dt, pace);
+    if (car && on && townDriver && controls) this.speedFeel?.stepTown(dt, pace, CAR.max);
     const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
     this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;

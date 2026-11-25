@@ -1,6 +1,5 @@
 import type { PerspectiveCamera } from "three";
 import { audio } from "../audio";
-import { CAR } from "./drive";
 import "./speedFeel.css";
 
 const RESUME_SECONDS = 0.35;
@@ -93,7 +92,8 @@ export class SpeedFeel {
   get visualPace() { return this.envelope * this.visualStrength; }
   get visualAmplitude() { return 0.0025 * this.envelope * this.envelope * this.visualStrength; }
 
-  stepTown(dt: number, pace: number) { this.step(dt, pace, CAR.max); }
+  /** `max`: the town car's top speed (CAR.max, passed in so this lazy chunk does not pull rides/drive.ts out of Game). */
+  stepTown(dt: number, pace: number, max: number) { this.step(dt, pace, max); }
   stepRoad(dt: number, speed: number) { this.step(dt, speed, 28); }
 
   private step(dt: number, pace: number, max: number) {
