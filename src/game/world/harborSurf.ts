@@ -10,6 +10,16 @@ import type { MapleCtx } from "./maple";
 const CEDAR = "#a67552", CREAM = "#f6ecd9", GABLE = "#315b62", TEAL = "#287c79";
 const ORANGE = "#e8833a", DARK = "#2b3338";
 
+const { shack } = HARBOR_SURF;
+const signWidth = 1.42, signDepth = 0.10;
+// The plate on the shack's west post. Also used to keep Maren's tag clear of it.
+export const HARBOR_SURF_PLATE = {
+  w: signWidth, h: 0.4, d: signDepth,
+  x: shack.x - (shack.w - signWidth) / 2,
+  y: sandY(shack.x, shack.z) + shack.eave - 0.28,
+  front: shack.z - shack.d / 2 - signDepth,
+};
+
 /** The permanent school and walk-on rental display. The lesson brings its own boards to the waterline. */
 export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.BufferGeometry, color: string) => void) {
   const parts: Part[] = [];
@@ -40,10 +50,8 @@ export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.Buffer
 
   wall(counter.w, counter.top - 0.06, counter.d, x, y + (counter.top - 0.06) / 2, counter.z, TEAL);
   box(counter.w, 0.06, counter.d, x, y + counter.top - 0.03, counter.z, CREAM);
-  // Drop the plate on the west post so its ink clears Maren's tag even at the west edge of the arrival tolerance.
-  const signW = 1.42, signH = 0.4, signD = 0.10;
-  const signX = x - (w - signW) / 2, signY = y + eave - 0.28;
-  box(signW, signH, signD, signX, signY, front - signD / 2, GABLE);
+  const plate = HARBOR_SURF_PLATE;
+  box(plate.w, plate.h, plate.d, plate.x, plate.y, plate.front + plate.d / 2, GABLE);
   const chalkX = x + 1.32, chalkZ = back - 0.17, chalkY = y + 1.53;
   box(1.48, 1.08, 0.045, chalkX, chalkY, chalkZ, GABLE);
   const sign = textTexture(SURF_SCHOOL_SIGN.en, { bg: CREAM, fg: GABLE, w: 512, h: 80 });
@@ -67,7 +75,7 @@ export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.Buffer
     for (let i = 0; i < uv.count; i++) uv.setY(i, THREE.MathUtils.lerp(v0 / 512, v1 / 512, uv.getY(i)));
     M.add("harbor-surf-sign", lettering, g, false);
   };
-  signFace(signW - 0.05, signH - 0.005, signX, signY, front - signD - 0.002, 432, 512);
+  signFace(plate.w - 0.05, plate.h - 0.005, plate.x, plate.y, plate.front - 0.002, 432, 512);
   signFace(1.4, 1.0, chalkX, chalkY, chalkZ - 0.025, 0, 428);
 
   const board = (len: number, width: number, deck: string, stripe: string, thick: number, place: (g: THREE.BufferGeometry) => THREE.BufferGeometry) => {

@@ -14,6 +14,7 @@ import { startupTask } from "./startupTask";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
+import { HARBOR_SURF_PLATE } from "./world/harborSurf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -3744,17 +3745,21 @@ export class Game implements GameApi {
       }
     }
     const m = 6;
+    const surfNpc = this.surf?.content.npc;
+    const surfSign = this.zone.id === "town" && shown.some(({ n }) => n.id === surfNpc)
+      ? this.surfSignBox(w, h, v) : undefined;
     const placed: TagBox[] = [];
     for (const s of shown) {
+      const obstacles = surfSign && s.n.id === surfNpc ? [...hud, surfSign] : hud;
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
       const hits = (x: number, y: number, p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
-      for (const p of hud) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
+      for (const p of obstacles) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
       let best: [number, number] | null = null, bestD = Infinity;
       for (const [sx, sy, extra] of spots) {
         const x = Math.min(w - m - tw / 2, Math.max(m + tw / 2, sx)), y = Math.min(h - m, Math.max(m + th, sy));
-        if (hud.some((p) => hits(x, y, p)) || placed.some((p) => hits(x, y, p))) continue;
+        if (obstacles.some((p) => hits(x, y, p)) || placed.some((p) => hits(x, y, p))) continue;
         const d = Math.hypot(x - s.x, y - s.y) + extra;
         if (d < bestD) { bestD = d; best = [x, y]; }
       }
@@ -3766,6 +3771,25 @@ export class Game implements GameApi {
       placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
     }
+  }
+
+  /** Project the plate into the same screen coordinates used by the name tags. */
+  private surfSignBox(w: number, h: number, v: THREE.Vector3): TagBox | undefined {
+    const cam = this.rig.cam, plate = HARBOR_SURF_PLATE;
+    if (cam.position.z >= plate.front) return;
+    const box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+    for (const dx of [-plate.w / 2, plate.w / 2]) {
+      for (const dy of [-plate.h / 2, plate.h / 2]) {
+        v.set(plate.x + dx, plate.y + dy, plate.front).project(cam);
+        if (v.z < -1 || v.z > 1) return;
+        const x = (v.x + 1) * w / 2, y = (1 - v.y) * h / 2;
+        box.x0 = Math.min(box.x0, x);
+        box.x1 = Math.max(box.x1, x);
+        box.y0 = Math.min(box.y0, y);
+        box.y1 = Math.max(box.y1, y);
+      }
+    }
+    if (box.x0 < w && box.x1 > 0 && box.y0 < h && box.y1 > 0) return box;
   }
 
   /** Where the task card, the little map and the buttons are in the picture (the tags keep clear of them), read about
