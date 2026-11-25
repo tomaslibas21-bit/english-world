@@ -1,5 +1,6 @@
 // See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
+import { checkManualSave } from "./fixtures/phrase-saves.mjs";
 import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, lineText, manualFrames, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -9,6 +10,7 @@ const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANN
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
   for (const [width, height] of viewports) {
+    const touch = Math.min(width, height) < 600;
     const context = await browser.newContext(contextOptions(width, height));
     try {
       await context.addInitScript(installTown, { key, progress, manual: true, variety });
@@ -28,6 +30,34 @@ try {
       const force = (kind) => page.evaluate((kind) => window.__ew.game.react(kind, { force: true }), kind);
       const effectCount = () => page.evaluate(() => window.__lifeEffects.filter((name) => name === "horn" || name === "doubleHonk").length);
       const bubble = page.locator(".reaction-bubble");
+      const translate = bubble.getByRole("button", { name: learnerLabel("Vertimas", "Translation"), exact: true });
+      const save = bubble.locator("[data-phrase-save]");
+      const press = (button) => during(() => touch ? button.tap() : button.click());
+      const snapshot = () => page.evaluate(() => {
+        const { game, store } = window.__ew;
+        const { hud, conv } = store.getState();
+        const { id, start, end } = game.reactions.active;
+        return { id, start, end, schedule: game.reactState(), panel: hud.panel, talking: conv.active,
+          position: game.player.root.position.toArray(), air: game.hop.air, pointer: game.pointer.down, keys: [...game.keys] };
+      });
+      const saveGeometry = () => save.evaluate((el) => {
+        const r = el.getBoundingClientRect(), text = el.previousElementSibling, b = text.getBoundingClientRect();
+        const hit = (node, box) => node.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+        return { width: r.width, height: r.height, left: el.offsetLeft, top: el.offsetTop, gap: r.left - b.right,
+          separate: hit(el, r) && hit(text, b) && b.width >= 44 && b.height >= 44 };
+      });
+      const saveTwice = async (line, expanded) => {
+        const start = await saveGeometry();
+        assert(start.width === 44 && start.height === 44 && start.gap >= 4 && start.gap <= 8 && start.separate,
+          `the translation and save have independent hit areas at ${width}x${height} (${JSON.stringify(start)})`);
+        const card = await checkManualSave(page, save, touch, line.text, "street", snapshot);
+        assert.deepEqual([card.lt, card.sentence, card.sourceLabel],
+          [line.lt, { en: line.text, lt: line.lt }, learnerLabel("Išgirsta gatvėje", "Overheard")]);
+        assert.deepEqual(await saveGeometry(), start, "the checked action keeps its hit box");
+        assert.equal(await translate.getAttribute("aria-expanded"), String(expanded), "saving preserves disclosure");
+        assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
+        if (!expanded) assert.equal(await bubble.locator("small").count(), 0);
+      };
       const reactionStart = async () => ((await state()).blockedUntil - 20) * 1000;
       const stepTo = (ms) => page.evaluate((ms) => window.__lifeStep(1, Math.max(0, ms - performance.now())), ms);
       const opacityIs = async (expected) => {
@@ -112,18 +142,21 @@ try {
       await waitFor(() => bubble.isVisible(), "the honk bubble appears", 0);
       assert.equal(await bubble.locator(`[lang="${targetLang}"]`).innerText(), honk.text);
       await opacityIs(0.5);
+      assert((await saveGeometry()).separate, "both controls have clean hit centres on the fade-in");
       await stepTo(honkStart + 150);
       await opacityIs(1);
       const helperLine = bubble.locator(`small[lang="${helperLang}"]`);
       assert.equal(await helperLine.innerText(), learnerLabel("Paliesk – pamatysi vertimą", "Tap to see the translation"));
       assert(await helperLine.isVisible(), "the first reaction shows how to reveal its meaning");
       await checkPlacement();
-      const translate = bubble.getByRole("button");
-      await during(() => Math.min(width, height) < 600 ? translate.tap() : translate.click());
+      const beforeTranslate = await snapshot();
+      await press(translate);
+      assert.deepEqual(await snapshot(), { ...beforeTranslate, end: beforeTranslate.end + 3 }, "translation alone extends the reading time");
       assert.equal(await helperLine.innerText(), honk.lt);
       assert.equal(await bubble.locator(`[lang="${targetLang}"]`).innerText(), honk.text);
       await step(1, 0);
       await checkPlacement();
+      await saveTwice(honk, true);
       await during(() => screenshot(page, "react-translation", width, height));
       await stepTo(honkStart + durationMs(honk.text) + 100);
       await opacityIs(1);
@@ -175,6 +208,7 @@ try {
       const bump = await assertLine("bump");
       await waitFor(() => bubble.isVisible(), "the bump shows a bubble");
       assert.equal(await helperLine.count(), 0, "subsequent reactions omit the hint");
+      await saveTwice(bump, false);
       const bumpEnd = await reactionStart() + durationMs(bump.text);
       await stepTo(bumpEnd - 125);
       await opacityIs(0.5);

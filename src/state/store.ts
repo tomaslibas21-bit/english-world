@@ -155,6 +155,8 @@ export interface Toast {
   source?: string;
   ms?: number;
   rideHint?: "waiting" | "other";
+  /** The resolved spoken pair, before the title gets its display punctuation. */
+  phrase?: { en: string; lt: string };
 }
 
 export interface HudState {

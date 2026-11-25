@@ -89,7 +89,7 @@ import { givenItem } from "./given";
 import { L, TL } from "../ui/i18n";
 import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
-import type { GameApi } from "./gameRef";
+import type { GameApi, NametagLayout, PlacedNametag, TagBox } from "./gameRef";
 import { THEME } from "./world/theme";
 import { caveLure } from "./cave";
 import { CAVE_ZONE, caveWays, groundsBounds, preferredCaveEntry } from "./cave/groundsPlan";
@@ -102,14 +102,11 @@ export type { GameApi } from "./gameRef";
 
 const CAVE_TREE_AT = TREES[1];
 
-/** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
-type TagBox = { x0: number; x1: number; y0: number; y1: number };
-
 type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: "pool-hall" };
 type GuideTarget = WalkTarget & { x: number; z: number; person?: { x: number; z: number } };
 type GuideMode = "objective" | "cave";
 
-interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3; alux?: { next: number; hop: number } }
+interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagBounds: PlacedNametag; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3; alux?: { next: number; hop: number } }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior; cave?: { view: CaveView; syncGates: ReturnType<typeof caveGateGrid> } }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -260,6 +257,9 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
+  private nametagLayout: NametagLayout | null = null;
+  private placedNametags: PlacedNametag[] = [];
+  private chatterBox: TagBox = { x0: 0, x1: 0, y0: 0, y1: 0 };
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
@@ -1095,6 +1095,8 @@ export class Game implements GameApi {
   }
 
   private spawnNpcs() {
+    this.placedNametags.length = 0;
+    if (this.nametagLayout) this.nametagLayout.boxes = this.nametagLayout.rect = undefined;
     for (const n of this.npcs) {
       n.ch.rightHand.getObjectByName("billiards-owner-cue")?.traverse((piece) => {
         if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
@@ -1130,6 +1132,7 @@ export class Game implements GameApi {
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({
         id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
+        tagBounds: { tag, x0: 0, x1: 0, y0: 0, y1: 0 },
         approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined,
         alux: this.zone.cave ? { next: 6 + Math.random() * 6, hop: 0 } : undefined,
       });
@@ -1474,7 +1477,7 @@ export class Game implements GameApi {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
     speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
-    useStore.getState().toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, ms: 3200 });
+    useStore.getState().toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, ms: 3200, phrase: line });
   }
 
   /** A member of the room's staff with no conversation here says their one line (roomPeople.ts `says`), turned to the
@@ -1646,7 +1649,7 @@ export class Game implements GameApi {
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
-        st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt });
+        st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, phrase: line });
         return;
       }
     }
@@ -3850,6 +3853,12 @@ export class Game implements GameApi {
     for (const ch of this.extras) ch.update(dt);
   }
 
+  watchNametagLayout(layout: NametagLayout | null) {
+    if (this.nametagLayout) this.nametagLayout.boxes = this.nametagLayout.rect = undefined;
+    this.nametagLayout = layout;
+    return this.tagLayer;
+  }
+
   private updateTags() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
@@ -3880,9 +3889,35 @@ export class Game implements GameApi {
     // the task card, the little map and the buttons, which would cover it. Always inside the picture.
     shown.sort((a, b) => a.dist - b.dist);
     const hud = this.hudBoxes(), m = 6;
-    const placed: TagBox[] = [];
+    const placed = this.placedNametags;
+    placed.length = 0;
+    const layout = this.nametagLayout;
+    const rect = layout && shown.length && this.tagLayer.offsetWidth && this.tagLayer.style.visibility !== "hidden"
+      ? this.tagLayer.getBoundingClientRect() : undefined;
+    const scaleX = rect?.width ? rect.width / this.tagLayer.offsetWidth : 1;
+    const scaleY = rect?.height ? rect.height / this.tagLayer.offsetHeight : 1;
+    let avoidChatter = false;
+    if (rect && layout?.bubble.style.visibility === "visible") {
+      const r = layout.bubble.getBoundingClientRect(), tail = 6;
+      if (r.width && r.height) {
+        const box = this.chatterBox;
+        box.x0 = (r.left - rect.left) / scaleX - tail;
+        box.x1 = (r.right - rect.left) / scaleX + tail;
+        box.y0 = (r.top - rect.top) / scaleY - tail;
+        box.y1 = (r.bottom - rect.top) / scaleY + tail;
+        hud.push(box);
+        avoidChatter = true;
+      }
+    }
+    // Text and fonts can change while a bubble is on screen. Read sizes before writing transforms.
+    if (rect) for (const { n } of shown) {
+      const size = n.tagSize ??= [0, 0];
+      size[0] = n.tag.offsetWidth;
+      size[1] = n.tag.offsetHeight;
+    }
     for (const s of shown) {
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
+      if (rect && (!tw || !th)) continue;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
       for (const p of hud) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
@@ -3895,8 +3930,20 @@ export class Game implements GameApi {
         if (d < bestD) { bestD = d; best = [x, y]; }
       }
       const [x, y] = best ?? [Math.min(w - m - tw / 2, Math.max(m + tw / 2, s.x)), Math.min(h - m, Math.max(m + th, s.y))];
-      placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
+      const bounds = s.n.tagBounds;
+      bounds.x0 = x - tw / 2;
+      bounds.x1 = x + tw / 2;
+      bounds.y0 = y - th;
+      bounds.y1 = y;
+      placed.push(bounds);
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+    }
+    if (avoidChatter) hud.pop();
+    if (layout) {
+      layout.boxes = placed;
+      layout.rect = rect;
+      layout.scaleX = scaleX;
+      layout.scaleY = scaleY;
     }
   }
 
@@ -3909,7 +3956,7 @@ export class Game implements GameApi {
     this.hudBoxCache = [];
     const selectors = [
       ".objective-card", ".cave-card", ".phone-ring", ".directions-card", ".photo-chip",
-      ".street-card", ".street-bubble", ".minimap", ".toolbar",
+      ".street-card", ".minimap", ".toolbar",
       ".toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools",
       ".portrait-toolbar.menu-open .toolbar-drawer",
       ".portrait-toolbar.in-ride:not(.menu-open) .radio-tool",
@@ -4086,6 +4133,8 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    this.watchNametagLayout(null);
+    this.placedNametags.length = 0;
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);

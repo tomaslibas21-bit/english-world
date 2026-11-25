@@ -6,6 +6,18 @@ import type { Door } from "./world/town";
 import type { Do, SurfArrow } from "./surf/logic";
 import { watchSituations } from "./prefetch";
 
+export type TagBox = { x0: number; x1: number; y0: number; y1: number };
+export type PlacedNametag = TagBox & { tag: HTMLElement };
+
+/** Placed bounds in the tag layer's CSS pixels, valid until the next layout. */
+export interface NametagLayout {
+  bubble: HTMLElement;
+  boxes?: readonly PlacedNametag[];
+  rect?: DOMRectReadOnly;
+  scaleX: number;
+  scaleY: number;
+}
+
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
 export interface GameApi {
@@ -22,6 +34,7 @@ export interface GameApi {
   handlePhoneCard?(id: string, answer: boolean): void;
   reactPosition?(id: number): { x: number; y: number; opacity: number } | null;
   extendReaction?(id: number): void;
+  watchNametagLayout?(layout: NametagLayout | null): HTMLElement;
   closeConversation(): void;
   orderedSituations(): SituationMeta[];
   currentObjective(): SituationMeta | null;

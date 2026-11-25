@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { STREET_CHATTER, STREET_MOMENTS } from "../../content/street";
 import { coachVoice } from "../../content/voices";
+import type { Sentence } from "../../convo/compose";
 import { cardKey, useCards } from "../../state/cards";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
@@ -67,6 +68,7 @@ interface MomentView {
   named: boolean;
   role: string;
   scene?: string;
+  reward?: Sentence;
   line: DisplayLine | null;
   hint: boolean;
   choices: KitLine[];
@@ -111,6 +113,7 @@ interface Active {
   actor?: StreetActor;
   namedKey: string;
   hintKey?: string;
+  lastReply?: DisplayLine;
   answerAge: number;
   age: number;
 }
@@ -154,8 +157,14 @@ export class StreetLife {
       const answer = line as DisplayLine;
       const active = this.active;
       if (!active) return;
+      const { script, cast } = active.draw;
+      let reward: Sentence | undefined;
+      if (active.view.exchange === (script.then ? 1 : 0)) {
+        const phrase = byCast(script.card, cast.id);
+        reward = phrase ? this.displayLine(phrase, cast.gender, "card").sentence : answer.sentence;
+      }
       this.showHint(active, answer);
-      this.patchMoment({ step: "answer", line: answer, hint: active.hintKey === answer.key });
+      this.patchMoment({ step: "answer", line: answer, hint: active.hintKey === answer.key, reward });
       active.actor?.person.react?.("nod");
     },
     animate: (seconds) => this.speaking?.talk(seconds, () => audio.level(), () => audio.vowel()),
@@ -317,7 +326,6 @@ export class StreetLife {
       this.patchMoment({ step: "scene" });
       if (!await this.wait(1.25) || this.active !== active || active.view.step === "away") return;
     }
-    let last: DisplayLine | undefined;
     let helped = true;
     for (const [exchange, part] of [script, script.then].entries()) {
       if (!part) continue;
@@ -332,28 +340,27 @@ export class StreetLife {
       this.patchMoment({ exchange, step: "choices" });
       const answer = await this.dialogue.expectLines(choices, learnerTurn(choices, accept)) as DisplayLine | null;
       if (!answer || this.active !== active || active.view.step === "away") return;
-      last = answer;
       const picked = part.choices[choices.indexOf(answer)];
       if (exchange === 0) active.actor?.answer(picked.helped !== false);
       helped &&= picked.helped !== false;
       const reply = byCast(picked.reply ?? part.reply, cast.id);
       if (reply?.length && !await this.sayMomentLines(active, reply, "reply", exchange)) return;
     }
-    if (!last || this.active !== active) return;
+    const { reward, role } = active.view;
+    if (!reward || this.active !== active || active.view.step === "away") return;
     if (script.named) this.revealName(active);
     const { moment } = active.draw;
     const store = useStore.getState();
     if (helped) store.updateProgress((p) => recordHelp(p.street ??= emptyStreet(), moment.id, cast.id, today()));
-    const phrase = byCast(script.card, cast.id);
-    const sentence = phrase ? this.displayLine(phrase, cast.gender, "card").sentence : last.sentence;
-    const key = cardKey(sentence.en);
+    const key = cardKey(reward.en);
     const known = useCards.getState().keys.has(key);
-    keepPhrases(STREET_CARD, [sentence], active.view.role);
+    keepPhrases(STREET_CARD, [reward], role);
     if (!known && useCards.getState().keys.has(key)) {
-      store.toast({ kind: "success", source: STREET_CARD, title: `${STREET_WORDS.newCard}: ${sentence.en}`, ms: 2600 });
+      store.toast({ kind: "success", source: STREET_CARD, title: `${STREET_WORDS.newCard}: ${reward.en}`, ms: 2600 });
     }
     active.actor?.leave();
-    this.patchMoment({ step: "done" });
+    const line = active.lastReply ?? active.view.line;
+    this.patchMoment({ step: "done", line, hint: !!line && active.hintKey === line.key });
     if (await this.wait(2) && this.active === active) this.finishMoment(false);
   }
 
@@ -371,7 +378,8 @@ export class StreetLife {
       this.showHint(active, line);
       this.patchMoment({ step, exchange, line, hint: active.hintKey === line.key });
       const said = await this.dialogue.sayLine(line, line.voice, 1, line.gender === "m");
-      if (!said || this.active !== active) return false;
+      if (!said || this.active !== active || active.view.step !== step) return false;
+      if (step === "reply") active.lastReply = line;
     }
     return true;
   }
@@ -404,7 +412,7 @@ export class StreetLife {
     const away = byCast(script.away, cast.id);
     if (!away) { this.finishMoment(false); return; }
     this.cancelDialogue();
-    this.patchMoment({ step: "away" });
+    this.patchMoment({ step: "away", reward: undefined });
     void this.sayMomentLines(active, [away], "away", active.view.exchange).then(async (said) => {
       if (said && await this.wait(0.65) && this.active === active) this.finishMoment(false);
     });

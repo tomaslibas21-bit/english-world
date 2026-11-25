@@ -29,7 +29,6 @@ import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { useStreet } from "../game/street/StreetLife";
 import { StreetCard } from "./street/StreetCard";
-import { StreetBubbles } from "./street/StreetBubbles";
 import { PhoneRing } from "./PhoneRing";
 import { TextArrival } from "./TextArrival";
 import { ReactBubble } from "./ReactBubble";
@@ -76,7 +75,17 @@ const BaristaOverlay = lazy(() => import("./Barista").then(({ BaristaOverlay }) 
 const BaristaOffer = lazy(() => import("./Barista").then(({ BaristaOffer }) => ({ default: BaristaOffer })));
 const PhotoWalkOverlay = lazy(() => import("./PhotoWalk").then(({ PhotoWalkOverlay }) => ({ default: PhotoWalkOverlay })));
 const DirectionsCard = lazy(() => import("./PhotoWalk").then(({ DirectionsCard }) => ({ default: DirectionsCard })));
+const StreetBubbles = lazy(() => import("./street/StreetBubbles"));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
+
+function StreetBubbleLayer() {
+  const marker = useStreet((s) => s.marker);
+  const speaking = useStreet((s) => s.bubble !== null);
+  return <>
+    {marker && <span aria-hidden="true" className="street-marker" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />}
+    {speaking && <Suspense><StreetBubbles /></Suspense>}
+  </>;
+}
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -141,7 +150,7 @@ export function Hud() {
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
-          {streetCard && portrait && <StreetCard />}
+          {streetCard && portrait && <StreetCard compact={screen.h <= 720} />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
@@ -153,8 +162,8 @@ export function Hud() {
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} />
       <RadioSetLayer />
-      {streetCard && !portrait && <StreetCard />}
-      {!hud.panel && <StreetBubbles />}
+      {streetCard && !portrait && <StreetCard compact={screen.sidewaysPhone} />}
+      {!hud.panel && <StreetBubbleLayer />}
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
@@ -215,7 +224,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer

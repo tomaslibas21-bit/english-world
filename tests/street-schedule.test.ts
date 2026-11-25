@@ -296,7 +296,10 @@ describe("street exchanges", () => {
         scene: { byCast: { a: "{nm:Jis|nf:Ji} pamatė, kad tu {m:pasirengęs|f:pasirengusi}." } },
         choices: [{ say: greet }, { say: greet, helped: false }],
         reply: [{ en: "My wallet!", lt: "Mano piniginė!" }],
-        then: { choices: [{ say: greet }, { say: greet, helped: false }] },
+        then: {
+          choices: [{ say: greet }, { say: greet, helped: false }],
+          reply: [{ en: "Thanks again!", lt: "Dar kartą ačiū!" }],
+        },
         card: { en: "You dropped your wallet!", lt: "Jums iškrito piniginė!" },
       },
     };
@@ -325,6 +328,16 @@ describe("street exchanges", () => {
       await until(() => useStreet.getState().moment?.exchange === 1 && useStreet.getState().moment?.choices.length === 2);
       const second = useStreet.getState().moment!;
       second.choose(second.choices[0].key);
+      const reward = useStreet.getState().moment?.reward;
+      expect(reward).toMatchObject({ en: "You dropped your wallet!", nat: "Jums iškrito piniginė!" });
+      expect(useCards.getState().cards.some(({ en }) => en === reward?.en)).toBe(false);
+      await until(() => useStreet.getState().moment?.step === "reply");
+      const closing = useStreet.getState().moment?.line;
+      expect(closing?.sentence.en).toBe("Thanks again!");
+      expect(useStreet.getState().moment?.reward).toBe(reward);
+      await until(() => useStreet.getState().moment?.step === "done");
+      expect(useStreet.getState().moment?.line).toBe(closing);
+      expect(useStreet.getState().moment?.reward).toBe(reward);
       await until(() => !life.streetState()?.active);
       expect(useStore.getState().progress.street?.moments[fixture.id]).toMatchObject({ seen: 1, helped: 1, helpedCast: "a" });
       const restored = parseCards(JSON.parse(JSON.stringify({ v: 1, cards: useCards.getState().cards })));
@@ -339,9 +352,17 @@ describe("street exchanges", () => {
       await until(() => !!useStreet.getState().moment);
       expect(useStore.getState().toasts.some((toast) => toast.source === "street")).toBe(false);
       expect(useStore.getState().toasts.some((toast) => toast.title === "Unrelated toast")).toBe(true);
+      await until(() => useStreet.getState().moment?.choices.length === 1);
+      const callback = useStreet.getState().moment!;
+      const accepted = callback.choices[0];
+      callback.choose(accepted.key);
+      expect(useStreet.getState().moment?.reward).toBe(accepted.sentence);
+      await until(() => useStreet.getState().moment?.step === "reply");
+      const beforeAbort = useCards.getState().cards;
       life.observe({ ...light, conversation: true });
       expect(life.streetState()?.active).toBeNull();
       expect(useStore.getState().progress.street?.moments[fixture.id]).toMatchObject({ seen: 2, helped: 1 });
+      expect(useCards.getState().cards).toBe(beforeAbort);
     } finally {
       STREET_MOMENTS.pop();
       for (const { id } of useStore.getState().toasts) {
