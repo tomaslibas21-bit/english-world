@@ -8,7 +8,7 @@ import { GlyphCard } from "./Cave";
 import { Hud } from "./Hud";
 import { Conversation } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
-import { ViewSwitch } from "./ViewSwitch";
+import type { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
@@ -44,11 +44,12 @@ export function App() {
 function Play() {
   const stage = useRef<HTMLDivElement>(null);
   const tags = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
+  const [TownViewSwitch, setTownViewSwitch] = useState<typeof ViewSwitch | null>(null);
   useEffect(() => {
     // three.js and the town are a separate download, fetched only in town mode
     let g: Game | null = null, gone = false;
-    import("../game/Game").then(({ Game }) => {
+    // The camera/picture switch is also town-only and is ready with the engine.
+    Promise.all([import("../game/Game"), import("./ViewSwitch")]).then(([{ Game }, { ViewSwitch }]) => {
       if (gone) return;
       g = new Game(stage.current!, tags.current!);
       setGame(g);
@@ -56,7 +57,7 @@ function Play() {
         // (the 3D game opens with the town itself: from the air on a first visit, Game.beginFlight; where the learner
         // left off on later ones. The list of situations opens from its button; owner, 18 Nov 2026. The pictures-only
         // mode's home is the list, LightHome.tsx.)
-        setReady(true); useStore.getState().setScreen("play");
+        setTownViewSwitch(() => ViewSwitch); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
         if (debugBilliardsLink) g!.debugBilliards()?.start();
         else if (debugBaristaLink) g!.debugBarista()?.start();
@@ -89,9 +90,9 @@ function Play() {
     <>
       <div className="stage" ref={stage} />
       <div className="tag-layer" ref={tags} />
-      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
+      {TownViewSwitch && game && <><Hud /><SceneBackdrop /><TownViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
       <Toasts />
-      {!ready && <Loading />}
+      {!TownViewSwitch && <Loading />}
     </>
   );
 }

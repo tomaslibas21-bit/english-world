@@ -12,7 +12,7 @@ export default function FriendMeeting() {
   const gloss = useStore((s) => s.settings.lt);
   const answerGloss = useStore((s) => s.settings.sayLt);
   return (
-    <section className="friend-meeting" aria-label={NPCS.lizzie.name}>
+    <section className="friend-meeting" data-pad-scope="meeting" aria-label={NPCS.lizzie.name}>
       <header>
         <b>{NPCS.lizzie.name}</b>
         {choices.length > 0 && speechSupported() && (
@@ -25,7 +25,7 @@ export default function FriendMeeting() {
       </header>
       {line && <div data-meeting-line={line.key}><GlossLine sentence={line.sentence} gloss={gloss} /></div>}
       {choices.map(({ key, sentence }) => (
-        <button className="btn soft" key={key} data-meeting-answer={key} onClick={() => game?.modeAction("friend-meeting", "answer", key)}>
+        <button className="btn soft" key={key} data-meeting-answer={key} data-pad-answer={key} onClick={() => game?.modeAction("friend-meeting", "answer", key)}>
           <GlossLine sentence={sentence} gloss={answerGloss} />
         </button>
       ))}

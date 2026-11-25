@@ -96,15 +96,15 @@ export function WordGateStart({ way, start, done, town }: {
 }) {
   const ways: PlayWay[] = [way, way === "words" ? "phrases" : "words"];
   return <div className="word-gate-start">
-    <section role="dialog" aria-labelledby="word-gate-start-title">
+    <section data-pad-scope="word-setup" role="dialog" aria-labelledby="word-gate-start-title">
       <h2 id="word-gate-start-title">{L(WORD_GATE_UI.heading)}</h2>
       <div className="word-gate-ways">
         {ways.map((id) => <button key={id} type="button" data-way={id}
-          aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
+          data-pad-default={id === way || undefined} aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
           <strong>{L(WORD_GATE_UI[id].title)}</strong><small>{L(WORD_GATE_UI[id].line)}</small>
         </button>)}
       </div>
-      <button className="btn soft" onClick={done}>{L(town)}</button>
+      <button className="btn soft" data-pad-back onClick={done}>{L(town)}</button>
     </section>
   </div>;
 }
@@ -154,7 +154,7 @@ function PracticeItems({ items, recovered, label }: { items: GateWord[]; recover
   return <section className="road-missed road-practice">
     <article>
       {items.length === 1 ? <><strong lang={TL}>{item.en}</strong> · {item.lt}</> :
-        <select aria-label={label} value={index} onChange={(e) => setIndex(Number(e.target.value))}>
+        <select data-pad-adjust aria-label={label} value={index} onChange={(e) => setIndex(Number(e.target.value))}>
           {items.map(({ en, lt, situation }, i) => <option key={`${situation}|${en}`} value={i}>{en} · {lt}</option>)}
         </select>}
       {recovered.some((other) => sameWord(item, other)) && <Comeback />}
@@ -188,7 +188,7 @@ export function WordGateResult({ result, words, actions, children }: {
           <h3 id="road-missed-title">{L(words.missed)}</h3>
           <article>
             {result.missed.length === 1 ? <><strong lang={TL}>{word.en}</strong> <span>· {word.lt}</span></> :
-              <select aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
+              <select data-pad-adjust aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
                 {result.missed.map((item, i) => <option key={`${item.situation}|${item.en}`} value={i} lang={TL}>{item.en} · {item.lt}</option>)}
               </select>}
             {result.recovered.some((item) => sameWord(item, word)) && <Comeback />}

@@ -55,6 +55,11 @@ function keepCaps(word: string): boolean {
   return NAMES.has(w) || (!!p && (w === p.name.trim().toLowerCase() || w === p.surname.trim().toLowerCase()));
 }
 
+export interface PopoverElement extends HTMLElement {
+  popoverAnchor?: HTMLElement;
+  popoverClose?: () => void;
+}
+
 interface Spot { left: number; top: number; below: boolean; arrow: number }
 
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
@@ -89,7 +94,7 @@ export function inView(el: HTMLElement): boolean {
  *  (only the sentence for words glossed "—"). Closes on an outside tap, Esc, or when the word
  *  scrolls away. */
 export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index: number; anchor: HTMLElement; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement & PopoverElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
@@ -100,6 +105,13 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const word = useMemo(() => unitInput(s, index, sitId, keepCaps), [s, index, sitId]);
   const whole = useMemo(() => sentenceInput(s, sitId), [s, sitId]);
   const dash = !u || isDashGloss(u.lt) || !word;
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.popoverAnchor = anchor;
+    el.popoverClose = onClose;
+  }, [anchor, onClose]);
 
   // follow the word (scrolling, new lines, the LT/IPA toggles), close when it's gone
   useLayoutEffect(() => {
@@ -139,7 +151,7 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })}
+    <div ref={ref} data-pad-scope="popover" data-pad-placed={!!spot || undefined} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang={TL}>{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}

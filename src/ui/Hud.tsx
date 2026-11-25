@@ -51,7 +51,7 @@ export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
   const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
+    <button className="icon-btn" data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
       <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -285,13 +285,16 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
       else closeMenu();
     };
     const escape = (e: globalThis.KeyboardEvent) => { if (e.key === "Escape") closeMenu(); };
+    const bar = toolbar.current;
+    bar?.addEventListener("padnavigate", keepOpen);
     document.addEventListener("pointerdown", outside, true);
     window.addEventListener("keydown", escape, true);
     return () => {
+      bar?.removeEventListener("padnavigate", keepOpen);
       document.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("keydown", escape, true);
     };
-  }, [open, closeMenu]);
+  }, [open, closeMenu, keepOpen]);
   useEffect(() => {
     if (open) keepOpen();
     return () => clearTimeout(timer.current);
@@ -317,7 +320,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
   ];
   const lightMode = (
-    <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title={L("Lengvas režimas")} aria-label={L("Lengvas režimas")}>
+    <button className="icon-btn light-mode-btn" data-pad-tool="light" onClick={() => switchPlayMode("light")} title={L("Lengvas režimas")} aria-label={L("Lengvas režimas")}>
       <span aria-hidden>{L("LR")}</span>
       <span className="toolbar-tooltip" aria-hidden>{L("Lengvas režimas")}</span>
     </button>
@@ -327,7 +330,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   const menuLabel = surf ? "Meniu" : L("Meniu");
   const menuUnread = !open && unread > 0;
   if (!folds) return (
-    <div className={className} onKeyDown={activateHudButton}>
+    <div className={className} data-pad-toolbar onKeyDown={activateHudButton}>
       <div className="toolbar-tools">{course}{actions}</div>
       <div className="toolbar-extra"><RadioTool />{lightMode}</div>
     </div>
@@ -353,7 +356,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>
       <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
-      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
+      <div className="toolbar-drawer" id="town-tools" data-pad-scope="drawer" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
         <div className="toolbar-tools">
           <div className="toolbar-actions">{actions.map(slot)}</div>
           {radioInDrawer && slot(<RadioTool phone={phone} shortcut={!surf} />, actions.length)}

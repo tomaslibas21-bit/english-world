@@ -1210,6 +1210,25 @@ export class Game implements GameApi {
       },
       canLook: () => this.rig.mode === "follow" && !this.pointer.down && !this.road?.active && !this.sea?.active,
       orbit: (dx, dy) => this.rig.drag(dx, dy),
+      avatarBounds: () => {
+        if (!this.player?.root.visible || this.flight) return;
+        const q = this.tmpV.copy(this.player.root.position);
+        const width = window.innerWidth, height = window.innerHeight;
+        q.project(this.rig.cam);
+        const foot = (1 - q.y) * height / 2;
+        q.copy(this.player.root.position);
+        q.y += this.player.height;
+        q.project(this.rig.cam);
+        if (q.z < -1 || q.z > 1) return;
+        const x = (1 + q.x) * width / 2, head = (1 - q.y) * height / 2;
+        const half = Math.max(16, Math.abs(foot - head) * 0.4);
+        return new DOMRect(x - half, Math.min(head, foot) - 12, half * 2, Math.abs(foot - head) + 24);
+      },
+      back: (surface) => {
+        if (surface !== "meeting" || this.modes.active?.id !== "friend-meeting") return false;
+        this.modeExit();
+        return true;
+      },
       jump: () => this.jump(),
       interact: () => {
         if (!this.nearest || !useStore.getState().hud.prompt) return false;

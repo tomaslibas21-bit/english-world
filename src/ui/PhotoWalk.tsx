@@ -27,7 +27,7 @@ export function PhotoChip() {
   const near = useTownQuests((s) => s.near);
   const { found } = useWalk();
   if (!camera) return null;
-  return <button type="button" className="photo-chip" data-near={near ?? undefined} aria-label={near ? L(words.shoot) : L(words.open)}
+  return <button type="button" className="photo-chip" data-pad-tool="photo-chip" data-near={near ?? undefined} aria-label={near ? L(words.shoot) : L(words.open)}
     title={near ? L(words.shoot) : L(words.open)} onClick={() => game?.modeStart?.("photowalk", "camera")}>
     <span><Icon name="camera" size={18} />{found.length}/{PHOTO_THINGS.length}</span>
     {near && <small>{L(words.shoot)}</small>}
@@ -75,15 +75,15 @@ function PhotoBook() {
     <ol className="photo-pages">
       {PHOTO_THINGS.map((thing) => <PhotoPage key={thing.id} thing={thing} found={found.includes(thing.id)} />)}
     </ol>
-    <footer>
+    <footer data-pad-scope={confirm ? "photo-confirm" : undefined}>
       {confirm ? <>
         <div className="photo-confirm">{L(words.quitAsk)}</div>
-        <button className="btn small" type="button" onClick={() => act("quit")}>{stopLabel}</button>
-        <button className="btn soft small" type="button" onClick={() => setConfirm(false)}>{L(words.quitNo)}</button>
+        <button className="btn small" type="button" data-pad-no-default onClick={() => act("quit")}>{stopLabel}</button>
+        <button className="btn soft small" type="button" data-pad-back onClick={() => setConfirm(false)}>{L(words.quitNo)}</button>
       </> : <>
         {status === "on" && <button className="btn soft small" type="button" onClick={() => act("pause")}>{L(words.pause)}</button>}
         {status === "paused" && <button className="btn small" type="button" onClick={() => act("resume")}>{L(words.resume)}</button>}
-        {status !== "done" && <button className="btn ghost small" type="button" onClick={() => setConfirm(true)}>{stopLabel}</button>}
+        {status !== "done" && <button className="btn ghost small" type="button" data-pad-tool="photo-stop" onClick={() => setConfirm(true)}>{stopLabel}</button>}
         <button className="btn ghost small" type="button" onClick={() => game?.modeExit()}>{L(words.close)}</button>
       </>}
     </footer>

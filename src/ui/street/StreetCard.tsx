@@ -60,7 +60,7 @@ export function StreetCard({ light = false }: { light?: boolean }) {
   const { cast, moment, scriptName } = view.draw;
   const listening = view.mic.status === "listening" || view.mic.status === "starting";
   return (
-    <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-moment={moment.id}
+    <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-pad-scope="street" data-moment={moment.id}
       data-cast={cast.id} data-script={scriptName} data-step={view.step} data-exchange={view.exchange} data-kind={moment.kind}
       aria-label={light ? words.light : view.role}>
       {light && <h2>{words.light}</h2>}
@@ -77,7 +77,7 @@ export function StreetCard({ light = false }: { light?: boolean }) {
       </div>}
       {!!view.choices.length && <div className="street-turn">
         <div className="street-choices" role="group" aria-label={words.answer}>
-          {view.choices.map(({ key, sentence }) => <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} key={key} onClick={() => view.choose(key)}>
+          {view.choices.map(({ key, sentence }) => <button type="button" className="btn soft street-choice" data-line={key} data-pad-answer data-translated={sayLt || undefined} key={key} onClick={() => view.choose(key)}>
             <GlossLine sentence={sentence} gloss={sayLt} compact />
           </button>)}
         </div>

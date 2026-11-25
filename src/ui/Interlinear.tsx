@@ -12,7 +12,7 @@ import type { Sentence } from "../convo/compose";
 import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
-import { WordPopover, inView } from "./Cards";
+import { WordPopover, inView, type PopoverElement } from "./Cards";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
 
@@ -83,7 +83,7 @@ function keyboardFocus(el: Element): boolean {
 function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
-  const boxRef = useRef<HTMLSpanElement>(null);
+  const boxRef = useRef<HTMLSpanElement & PopoverElement>(null);
   const [tapped, setTapped] = useState(false); // opened with a tap or a click: stays until closed
   const [hover, setHover] = useState(false); // a mouse over the asterisk or the tooltip
   const [focused, setFocused] = useState(false); // keyboard focus on the asterisk
@@ -91,6 +91,13 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   const leaving = useRef(0);
   const open = tapped || hover || focused;
   const close = useCallback(() => { setTapped(false); setHover(false); setFocused(false); }, []);
+
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el || !starRef.current) return;
+    el.popoverAnchor = starRef.current;
+    el.popoverClose = close;
+  }, [close]);
 
   // a mouse may cross the small gap between the asterisk and the tooltip without it closing (touch has no hover)
   const enter = (e: PointerEvent) => { if (e.pointerType !== "mouse") return; clearTimeout(leaving.current); setHover(true); };
@@ -136,7 +143,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   }, [open, close]);
 
   const tip = (
-    <span ref={boxRef} id={id} role="tooltip" lang={EDITION.helper} className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
+    <span ref={boxRef} data-pad-scope="tooltip" data-pad-placed={open && !!spot || undefined} id={id} role="tooltip" lang={EDITION.helper} className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
       onPointerEnter={enter} onPointerLeave={leave}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       {text}
@@ -145,7 +152,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   );
   return (
     <>
-      <button ref={starRef} type="button" className="nat-star" aria-label={text ? L("Natūralus vertimas") : L("Pastabos")} aria-expanded={open} aria-describedby={id}
+      <button ref={starRef} type="button" className="nat-star" data-pad-focus-opens aria-label={text ? L("Natūralus vertimas") : L("Pastabos")} aria-expanded={open} aria-describedby={id}
         onClick={() => setTapped((v) => !v)} onPointerEnter={enter} onPointerLeave={leave}
         onFocus={(e) => setFocused(keyboardFocus(e.currentTarget))}
         onBlur={(e) => {

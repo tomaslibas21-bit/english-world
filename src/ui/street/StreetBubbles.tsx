@@ -54,7 +54,7 @@ export function StreetBubbles() {
 
   return <>
     {marker && <span aria-hidden="true" className="street-marker" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />}
-    {line && <button ref={bubbleRef} type="button" key={key} className="street-bubble" data-chatter={id}
+    {line && <button ref={bubbleRef} type="button" key={key} className="street-bubble" data-pad-tool="street-bubble" data-chatter={id}
       aria-expanded={translated} onClick={translate}>
       <GlossLine sentence={line.sentence} gloss={false} compact />
       {translated && <small className="street-tr" lang={HL}>{line.sentence.nat}</small>}

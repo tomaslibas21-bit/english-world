@@ -101,9 +101,9 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
     speakTownLine(undefined, mine ? coachVoice(gender) : npcVoice(npc), (mine ? gender : npc.gender) === "f", text, 0, controller.signal);
   };
 
-  return <section className="text-thread" data-thread={thread.id}>
+  return <section className="text-thread" data-pad-scope="thread" data-thread={thread.id}>
     <header className="text-thread-head">
-      <button className="phone-close" aria-label={LABELS.back} onClick={() => useStore.getState().setHud({ textThread: null })}><Icon name="arrowLeft" size={20} /></button>
+      <button className="phone-close" data-pad-back aria-label={LABELS.back} onClick={() => useStore.getState().setHud({ textThread: null })}><Icon name="arrowLeft" size={20} /></button>
       <TextFace npc={npc.id} name={npc.name} /><div><strong>{npc.name}</strong><small lang={HL}>{npc.role.lt}</small></div>
     </header>
     <div className="text-thread-body" ref={body}>
@@ -115,7 +115,7 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
           : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} onTranslation={read} />)}
       </> : <div className="text-replies">
         <strong>{LABELS.reply}</strong>
-        {thread.replies.map((choice, i) => <button type="button" key={i} onClick={() => send(i)}><span lang={TL}>{townLineText(choice)}</span><small lang={HL}>{choice.lt}</small></button>)}
+        {thread.replies.map((choice, i) => <button type="button" key={i} data-pad-answer={i} onClick={() => send(i)}><span lang={TL}>{townLineText(choice)}</span><small lang={HL}>{choice.lt}</small></button>)}
       </div>}
     </div>
   </section>;

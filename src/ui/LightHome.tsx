@@ -106,17 +106,17 @@ function LightHome() {
   const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
   const due = useDueCards();
   return (
-    <div className="lh" inert={covered} aria-hidden={covered || undefined}>
+    <div className="lh" data-pad-scope="home" inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">{EDITION.brand}</span><span className="lh-town">{EDITION.town === EDITION.brand ? L("Maple Harbor · JAV") : EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
           <nav className="lh-tools" aria-label={L("Įrankiai")}>
-            <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
+            <button className="lh-tool lh-3d" data-pad-tool="town" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
             <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title={L("Grįžti į kursą")}><Icon name="home" size={24} /><span>{L("Kursas")}</span></a>}
-            <button className="lh-tool" onClick={() => open("phrasebook")} title={L("Frazių knygelė")} aria-label={due ? L("Frazių knygelė ({n})", { n: due }) : L("Frazių knygelė")}><Icon name="bookOpen" size={24} /><span>{L("Frazės")}</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
-            <button className="lh-tool" onClick={() => open("journal")} title={L("Užduotys")} aria-label={L("Užduotys")}><Icon name="journal" size={24} /><span>{L("Užduotys")}</span></button>
-            <button className="lh-tool" onClick={() => open("settings")} title={L("Nustatymai")} aria-label={L("Nustatymai")}><Icon name="settings" size={24} /><span>{L("Nustatymai")}</span></button>
+            <button className="lh-tool" data-pad-tool="phrasebook" onClick={() => open("phrasebook")} title={L("Frazių knygelė")} aria-label={due ? L("Frazių knygelė ({n})", { n: due }) : L("Frazių knygelė")}><Icon name="bookOpen" size={24} /><span>{L("Frazės")}</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
+            <button className="lh-tool" data-pad-tool="journal" onClick={() => open("journal")} title={L("Užduotys")} aria-label={L("Užduotys")}><Icon name="journal" size={24} /><span>{L("Užduotys")}</span></button>
+            <button className="lh-tool" data-pad-tool="settings" onClick={() => open("settings")} title={L("Nustatymai")} aria-label={L("Nustatymai")}><Icon name="settings" size={24} /><span>{L("Nustatymai")}</span></button>
           </nav>
         </header>
 

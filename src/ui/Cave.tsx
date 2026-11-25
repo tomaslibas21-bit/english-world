@@ -92,7 +92,7 @@ export function GlyphCard() {
   const listening = g.mic === "listening";
   return (
     <div className="glyph-veil" onClick={(e) => { if (e.target === e.currentTarget) cave.close(); }}>
-      <div className={"glyph-card" + (g.solved ? " solved" : "")} role="dialog" aria-label={L("Kalbantis akmuo")}>
+      <div className={"glyph-card" + (g.solved ? " solved" : "")} data-pad-scope="glyph" role="dialog" aria-label={L("Kalbantis akmuo")}>
         <button className="glyph-x" onClick={() => cave.close()} title={L("Uždaryti")} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
         <div className="glyph-head">
           <span className="glyph-rune" aria-hidden><i /><i /><i /></span>
