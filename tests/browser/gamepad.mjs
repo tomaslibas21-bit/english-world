@@ -2338,7 +2338,13 @@ async function photoContract(h) {
       if (!subject.visible || Math.max(...subject.ndc.slice(0, 2).map(Math.abs)) > 0.85 || Math.abs(subject.ndc[2]) >= 1) continue;
       // Restrict this fixture to one remaining album subject, which isolates the
       // competition between the shutter and the real drive prompt.
-      store.getState().updateProgress((p) => { p.photoWalk = { status: "on", found: PHOTO_THINGS.filter((t) => t.id !== spot.id).map((t) => t.id) }; });
+      // A second subject far from here stays unfound too: with only this one left, its photo would complete the album
+      // and start Renata's finale instead of returning to the street.
+      const far = PHOTO_THINGS.find((t) => t.id !== spot.id && g.town.photoSpots.filter((q) => q.id === t.id)
+        .every((q) => Math.hypot(q.x - side.x, q.z - side.z) > (things.get(t.id)?.near ?? 0) + 10));
+      store.getState().updateProgress((p) => {
+        p.photoWalk = { status: "on", found: PHOTO_THINGS.filter((t) => t.id !== spot.id && t.id !== far?.id).map((t) => t.id) };
+      });
       return { car, subject, projections, tested, npc: PHOTO_WALK_NPC, sit: PHOTO_WALK_SITUATION };
     }
     return { tested };
@@ -2382,6 +2388,9 @@ async function photoContract(h) {
   await tap("A");
   await until("the correct quiz answer saves the same photo", () => page.evaluate((id) =>
     JSON.parse(localStorage.getItem("puerto-colibri-progress-v1")).photoWalk?.found.includes(id), id));
+  // (a found photo's quiz stays open on its name and the album button until the player closes it: B, as in MH)
+  await step(3);
+  await tap("B");
   await until("closing the real quiz restores the drive control", async () => await page.locator(quiz).count() === 0 &&
     (await state()).prompt === "drive");
   if ((await state()).pad.focusTarget) await tap("B");
@@ -2538,9 +2547,14 @@ async function loteriaContract(h) {
   check("the board records only the chosen cell and draws its bean", after.covered.length === called.covered.length + 1 &&
     after.covered.includes(target) && await page.locator(`${selected} .loteria-bean:not(.loteria-bounce)`).isVisible(), { called, after });
   await h.shot("loteria-mark");
-  // (the shout is enabled while the board waits for the player, not while the next card is being called)
-  await until("the board is waiting again with its shout enabled", () => page.locator(".loteria-shout:enabled").isVisible(), { timeout: 25000, frames: 1 });
-  await h.focusWith(".loteria-shout:enabled", "Down", 16);
+  // (the shout is enabled while the board waits for the player, and disabled again while the next card is called:
+  // the D-pad walks down to it in a waiting moment, and tries again in the next one if a call came in between)
+  const shout = ".loteria-shout:enabled";
+  for (let attempt = 0; attempt < 4 && !await h.focused(shout); attempt++) {
+    await until("the board is waiting with its shout enabled", () => page.locator(shout).isVisible(), { timeout: 25000, frames: 1 });
+    for (let i = 0; i < 8 && !await h.focused(shout) && await page.locator(shout).isVisible(); i++) await tap("Down");
+  }
+  check("focus reaches the Lotería shout", await h.focused(shout), await h.state());
   assert.equal(await page.locator(".loteria-shout").getAttribute("data-ready"), "false");
   await tap("B");
   await until("B leaves Lotería and brings back the world controls", async () => !(await read()) && await page.locator(".toolbar").isVisible());
@@ -2741,7 +2755,7 @@ async function surfContract(h) {
       }
     }
     return false;
-  }, { timeout: 28000, frames: 1 });
+  }, { timeout: 45000, frames: 6 }); // (the coach's lines run on game time: 6 frames a look, not 1)
   const first = await reach("the real beginner lesson asks for its first stroke", (s) => s.todo?.do === "paddle").catch(async (error) => {
     const surf = await page.evaluate(() => { const u = window.__ew.surf?.getState(); return u && { choice: u.choice?.id, options: u.choice?.options?.map((o) => o.cue), phase: u.phase, todo: u.todo }; });
     throw new Error(`${error.message}\nsurf logic ${JSON.stringify(await read())}\nsurf ui ${JSON.stringify(surf)}`);
