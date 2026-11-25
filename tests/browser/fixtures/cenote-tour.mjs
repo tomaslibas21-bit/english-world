@@ -73,7 +73,7 @@ export const outing = {
   title: { es: "Cenote Ka'an", en: "At Cenote Ka'an", lt: "Prie cenotės Ka'an" },
   intro: {
     en: "You meet Inés by the hut at Cenote Ka'an. She has a snorkel mask for you and knows the path to the bay.",
-    lt: "Prie cenotės Ka'an stovi trobelė. Ten sutinkate Inés. Ji turi Jums nardymo kaukę ir žino taką iki įlankos.",
+    lt: "Prie cenotės Ka'an stovi trobelė. Ten sutinki Inés. Ji atnešė tau nardymo kaukę ir žino taką iki įlankos.",
   },
   paths: {
     phone: { interest: "want_fish", plan: "fish_plan", fish: "see_yes", fishReply: "ct_together", turtle: "see_two", turtleReply: "ct_pair", speech: "SÍ, LAS DOS" },

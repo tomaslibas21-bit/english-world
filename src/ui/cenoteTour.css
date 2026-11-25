@@ -35,7 +35,8 @@
 .cenote-tour-choices button:hover { background: #e6f3ec; }
 .cenote-tour-answer { padding: 4px 8px; border-inline-start: 2px solid #117e79; }
 .cenote-tour-card :is(.nat, .kit-gloss-compact small) { color: #385650; }
-.cenote-tour-card:has(> [role="status"]) {
+.cenote-tour-card:has(> [role="status"]),
+.cenote-tour-card:has(> .cenote-tour-answer) {
   max-height: 46dvh;
   grid-auto-rows: max-content;
   overflow-anchor: none;
