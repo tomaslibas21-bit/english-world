@@ -137,7 +137,7 @@
   .bl-speech { padding-block: 3px; }
   .bl-chip-heading { margin-block: 4px 2px; }
   .bl-pocket-chips { gap: 3px; }
-  .bl-pocket-chips .bl-choice { --kit-phrase-size: 13px; min-height: 32px; padding: 2px 4px; }
+  .bl-pocket-chips .bl-choice { --kit-phrase-size: 13px; padding: 2px 4px; }
 }
 /* A screen wider than tall (a computer, a phone held sideways): three columns, so the table gets the whole height:
    the score and the exit on the left, the table in the middle, the panel on the right. (Below each other, the table
@@ -194,4 +194,10 @@
   .bl-ball-chips { margin-block: 4px; }
   .bl-choice { min-height: 32px; padding: 2px 5px; }
   .bl-confirm-row { margin-top: 4px; }
+}
+@media (max-width: 600px), (max-height: 520px) {
+  .bl-replay, .bl-nudge, .bl-pocket-chips .bl-choice { min-width: 44px; min-height: 44px; }
+}
+@media (380px <= width <= 520px) and (orientation: portrait) {
+  .bl-pocket-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

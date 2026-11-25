@@ -1113,8 +1113,17 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     const mailboxX = dx - t[0] * 7 + n[0] * 2;
     const mailboxZ = dz - t[1] * 7 + n[1] * 2;
     photo("mailbox", mailboxX, 1.15, mailboxZ);
-    M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, mailboxX, 0.8, mailboxZ));
-    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.35, 0.35, 0.8, 0, 0, 0, 12).rotateZ(Math.PI / 2).translate(mailboxX, 1.4, mailboxZ));
+    const atMailbox = (geo: THREE.BufferGeometry) => geo.rotateY(rotY).translate(mailboxX, 0, mailboxZ);
+    const profile = new THREE.Shape().moveTo(0.4, 0.24).lineTo(0.4, 1.34)
+      .absarc(0, 1.34, 0.4, 0, Math.PI, false).lineTo(-0.4, 0.24).closePath();
+    const body = new THREE.ExtrudeGeometry(profile, { depth: 0.7, bevelEnabled: false, curveSegments: 6 });
+    const blue = mat("#1f4e9c");
+    M.add("mailbox-blue", blue, atMailbox(body.translate(0, 0, -0.35)));
+    for (const side of [-1, 1]) {
+      M.add("mailbox-blue", blue, atMailbox(boxGeo(0.13, 0.27, 0.68, side * 0.29, 0.135, 0)));
+    }
+    M.add("mailbox-slot", mat("#102238"), atMailbox(boxGeo(0.56, 0.1, 0.035, 0, 1.34, 0.36)));
+    M.add("mailbox-lip", mat("#6496ce"), atMailbox(boxGeo(0.62, 0.055, 0.1, 0, 1.42, 0.37)));
     col.addBox(mailboxX, mailboxZ, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);

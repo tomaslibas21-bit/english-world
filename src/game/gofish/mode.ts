@@ -103,7 +103,7 @@ class GoFishMode implements GameMode {
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
-    say: (line) => ui({ line: line ? { ...line, speaker: this.speaker } : null }),
+    say: (line) => ui({ line: line ? { ...line, speaker: this.speaker } : null, busy: !!line && this.active }),
     choices: (choices) => ui({ choices }),
     mic: (mic) => ui({ mic }),
     answer: (line) => {
@@ -205,7 +205,6 @@ class GoFishMode implements GameMode {
     if (!this.live(run)) return false;
     this.speaker = speaker;
     run.actors[speaker].ch.watch = to === "learner" ? run.playerFace : run.actors[to].face;
-    ui({ busy: true });
     const line = await this.playback.say(situation, speaker, key, GOFISH_LINES);
     if (!this.live(run)) return false;
     ui({ busy: false });

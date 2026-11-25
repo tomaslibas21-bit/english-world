@@ -46,13 +46,28 @@ export function TextList({ got }: { got: TextProgress["got"] | undefined }) {
 
 function Bubble({ line, mine = false }: { line: TextLine; mine?: boolean }) {
   const [translated, show] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (!translated) return;
+    const bubble = button.current;
+    const scroller = bubble?.closest(".text-thread-body");
+    if (!bubble || !scroller) return;
+    const bounds = bubble.getBoundingClientRect();
+    const top = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const offset = bounds.top < top || bounds.height > scroller.clientHeight
+      ? bounds.top - top : Math.max(0, bounds.bottom - top - scroller.clientHeight);
+    if (offset) {
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      scroller.scrollBy({ top: offset, behavior: reducedMotion ? "instant" : "smooth" });
+    }
+  }, [translated]);
   const toggle = () => {
     show(!translated);
     const st = useStore.getState();
     if (!st.progress.texts?.translated) st.updateProgress((p) => { if (p.texts) p.texts.translated = true; });
   };
   return <div className={"text-message" + (mine ? " mine" : "")}>
-    <button type="button" className="text-bubble" onClick={toggle} aria-expanded={translated}>
+    <button ref={button} type="button" className="text-bubble" onClick={toggle} aria-expanded={translated}>
       <span lang="en">{line.en}</span>
       {translated && <small lang="lt">{line.lt}</small>}
     </button>
