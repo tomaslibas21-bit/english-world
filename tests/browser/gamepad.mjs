@@ -2372,6 +2372,7 @@ async function photoContract(h) {
   await h.sample();
   await step(2);
   const answer = `${quiz} [data-choice="${id}"]`;
+  await autoContinue(h);
   await h.focusWith(answer);
   assert.equal(await page.locator(answer).getAttribute("lang"), "es");
   await tap("A");
@@ -2533,6 +2534,8 @@ async function loteriaContract(h) {
   check("the board records only the chosen cell and draws its bean", after.covered.length === called.covered.length + 1 &&
     after.covered.includes(target) && await page.locator(`${selected} .loteria-bean:not(.loteria-bounce)`).isVisible(), { called, after });
   await h.shot("loteria-mark");
+  // (the shout is enabled while the board waits for the player, not while the next card is being called)
+  await until("the board is waiting again with its shout enabled", () => page.locator(".loteria-shout:enabled").isVisible(), { timeout: 25000, frames: 1 });
   await h.focusWith(".loteria-shout:enabled", "Down", 16);
   assert.equal(await page.locator(".loteria-shout").getAttribute("data-ready"), "false");
   await tap("B");
@@ -2692,7 +2695,24 @@ async function billiardsContract(h, interruption) {
   await assertCount(h, counts, "games", "billiards");
 }
 
+/** As MH's town harness and end-card.mjs: each line the game plays is finished at once through Continue reading
+ *  (this harness serves no recordings, so a narrated step would otherwise wait on its line). */
+function autoContinue(h) {
+  return h.page.evaluate(() => {
+    const { audio } = window.__ew;
+    if (audio.__autoContinue) return;
+    audio.__autoContinue = true;
+    const play = audio.play.bind(audio);
+    audio.play = (...args) => {
+      const result = play(...args);
+      void audio.init().then(() => audio.continueReading());
+      return result;
+    };
+  });
+}
+
 async function surfContract(h) {
+  await autoContinue(h);
   const { page, tap, step, until, check } = h;
   const counts = await playCounts(h);
   await connect(h);
