@@ -1,6 +1,6 @@
 import { PAD_LINES } from "../content/gamepad";
 import type { PadDebug } from "../game/gamepad";
-import { padPopovers } from "./padPopover";
+import type { PopoverElement } from "./Cards";
 import "./gamepad.css";
 
 const SCOPE = "[data-pad-scope]";
@@ -15,6 +15,8 @@ const GRIDS = ".scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gof
 const ANSWERS = "[data-pad-answer], .dym-opt";
 const MEETING_ANSWERS = "[data-meeting-answer]";
 const FOCUS_OPENS = "[data-pad-focus-opens]";
+const PORTAL = ".wpop, .nat-tipbox";
+const OPEN_PORTAL = ".wpop[data-pad-placed], .nat-tipbox[data-pad-scope=tooltip]:not([hidden])";
 
 interface Surface {
   priority: number;
@@ -76,6 +78,18 @@ function control(el: Element | null): el is HTMLElement {
 
 function visible(el: HTMLElement) {
   return el.getClientRects().length > 0 && getComputedStyle(el).visibility === "visible";
+}
+
+function topPopover(under: HTMLElement | null, portals: Iterable<PopoverElement>) {
+  let top: HTMLElement | undefined;
+  for (const node of portals) {
+    const anchor = node.popoverAnchor;
+    if (node.parentElement !== document.body || !node.matches(OPEN_PORTAL) ||
+        !anchor?.isConnected || anchor.closest(BLOCKED) || (under && !under.contains(anchor))) continue;
+    // Body portals share a stacking level. The later sibling is painted on top.
+    if (!top || (top.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) top = node;
+  }
+  return top;
 }
 
 function onScreen(el: HTMLElement, viewport: DOMRect, whole = false) {
@@ -195,9 +209,10 @@ function focusKey(root: HTMLElement, target: HTMLElement) {
 export class GamepadView {
   private app?: HTMLElement;
   private observer?: MutationObserver;
+  private portalObserver?: MutationObserver;
+  private popoverContents?: MutationObserver;
   private readonly roots = new Set<HTMLElement>();
-  private readonly popovers = new Set<HTMLElement>();
-  private popoversChanged = false;
+  private readonly popovers = new Set<PopoverElement>();
   private overlayReturn?: OverlayReturn;
   private lastControl = new WeakMap<HTMLElement, HTMLElement>();
   private active: HTMLElement | null = null;
@@ -240,11 +255,9 @@ export class GamepadView {
       subtree: true, childList: true, attributes: true,
       attributeFilter: ["data-pad-scope", "data-pad-phase", "disabled", "aria-disabled", "inert"],
     });
-    for (const node of document.body.children) {
-      if (node instanceof HTMLElement && padPopovers.has(node)) this.watchPopover(node);
-    }
+    this.portalObserver = new MutationObserver(this.popoverChanged);
+    this.watchPopovers(this.portalObserver);
     document.addEventListener("pointerdown", this.otherInput, true);
-    document.addEventListener("padpopover", this.popoverChanged);
     document.addEventListener("keydown", this.otherInput, true);
     document.addEventListener("click", this.rememberClick, true);
     document.addEventListener("focusin", this.syncFocus);
@@ -270,9 +283,12 @@ export class GamepadView {
   private stopWatching() {
     this.observer?.disconnect();
     this.observer = undefined;
+    this.portalObserver?.disconnect();
+    this.portalObserver = undefined;
+    this.popoverContents?.disconnect();
+    this.popoverContents = undefined;
     this.roots.clear();
     this.popovers.clear();
-    this.popoversChanged = false;
     this.overlayReturn = undefined;
     this.lastControl = new WeakMap();
     this.returnTo = new WeakMap();
@@ -284,7 +300,6 @@ export class GamepadView {
     this.clearRing();
     this.debug.focusTarget = null;
     document.removeEventListener("pointerdown", this.otherInput, true);
-    document.removeEventListener("padpopover", this.popoverChanged);
     document.removeEventListener("keydown", this.otherInput, true);
     document.removeEventListener("click", this.rememberClick, true);
     document.removeEventListener("focusin", this.syncFocus);
@@ -297,23 +312,45 @@ export class GamepadView {
   sync = () => {
     const changes = this.observer?.takeRecords();
     if (changes?.length) this.changed(changes);
-    if (this.popoversChanged) this.refresh();
+    const portals = this.portalObserver?.takeRecords();
+    if (portals?.length) this.popoverChanged(portals, this.portalObserver!);
+    if (this.popoverContents?.takeRecords().length) this.popoverContentChanged();
   };
 
-  private watchPopover(node: HTMLElement) {
-    this.popovers.add(node);
-    if (this.kind(node) === "popover") this.observer?.observe(node, {
-      subtree: true, childList: true, attributes: true, attributeFilter: ["disabled", "aria-disabled"],
-    });
+  private watchPopovers(observer: MutationObserver) {
+    observer.disconnect();
+    observer.observe(document.body, { childList: true });
+    this.popovers.clear();
+    for (const node of document.body.children) {
+      if (!(node instanceof HTMLElement) || !node.matches(PORTAL)) continue;
+      observer.observe(node, { attributeFilter: ["data-pad-placed", "data-pad-scope", "hidden"] });
+      if (node.matches(OPEN_PORTAL)) this.popovers.add(node);
+    }
   }
 
-  private popoverChanged = (event: Event) => {
-    const node = (event as CustomEvent<HTMLElement>).detail;
-    if (padPopovers.has(node)) this.watchPopover(node);
-    else this.popovers.delete(node);
-    if (this.popoversChanged) return;
-    this.popoversChanged = true;
-    queueMicrotask(this.sync);
+  private popoverChanged = (records: MutationRecord[], observer: MutationObserver) => {
+    let update = false;
+    for (const record of records) {
+      if (record.type === "attributes") {
+        const node = record.target as PopoverElement;
+        if (node.matches(OPEN_PORTAL)) {
+          update ||= !this.popovers.has(node);
+          this.popovers.add(node);
+        } else update = this.popovers.delete(node) || update;
+      } else if ([...record.addedNodes, ...record.removedNodes].some((node) =>
+        node instanceof HTMLElement && node.matches(PORTAL))) {
+        this.watchPopovers(observer);
+        update = true;
+        break;
+      }
+    }
+    if (update) this.refresh();
+  };
+
+  private popoverContentChanged = () => {
+    if (this.focused && !this.focused.isConnected) this.clearRing();
+    this.syncFocus();
+    this.placeNotice();
   };
 
   private collect(node: Node) {
@@ -365,7 +402,6 @@ export class GamepadView {
   }
 
   private refresh() {
-    this.popoversChanged = false;
     const previous = this.active;
     let active = this.desktop?.isConnected && !this.desktop.closest(BLOCKED) ? this.desktop : null;
     let rank = active ? surfaces.toolbar.priority : 0;
@@ -377,16 +413,10 @@ export class GamepadView {
         rank = priority;
       }
     }
-    const under = active;
-    for (const node of this.popovers) {
-      const popup = padPopovers.get(node);
-      if (!popup?.anchor.isConnected || !node.isConnected || popup.anchor.closest(BLOCKED) ||
-          (under && !under.contains(popup.anchor))) continue;
-      // Body portals share a stacking level. The later sibling is painted on top.
-      if (active === under || (active && (active.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING))) {
-        active = node;
-        rank = surfaces[this.kind(node)].priority;
-      }
+    const popover = topPopover(active, this.popovers);
+    if (popover) {
+      active = popover;
+      rank = surfaces[this.kind(popover)].priority;
     }
     const auxiliary = this.auxiliary;
     if (auxiliary) {
@@ -400,6 +430,13 @@ export class GamepadView {
       this.activePhase = phase;
       this.resetInput();
       if (previous !== active) {
+        this.popoverContents?.disconnect();
+        if (active?.matches(".wpop[data-pad-placed]")) {
+          this.popoverContents ??= new MutationObserver(this.popoverContentChanged);
+          this.popoverContents.observe(active, {
+            subtree: true, childList: true, attributeFilter: ["disabled", "aria-disabled"],
+          });
+        }
         this.clearRing();
         const launch = this.launcher;
         if (launch && active && rank > surfaces[this.kind(launch.from)].priority && performance.now() - launch.at < 800) {
@@ -632,12 +669,12 @@ export class GamepadView {
     }
   }
 
-  private closePopover(root: HTMLElement, direction?: Direction) {
-    const popup = padPopovers.get(root);
-    if (!popup) return false;
-    this.overlayReturn = { root, anchor: popup.anchor.closest<HTMLElement>(CONTROL) ?? popup.anchor, direction };
+  private closePopover(root: PopoverElement, direction?: Direction) {
+    const { popoverAnchor: anchor, popoverClose: close } = root;
+    if (!anchor || !close || !this.popovers.has(root)) return false;
+    this.overlayReturn = { root, anchor: anchor.closest<HTMLElement>(CONTROL) ?? anchor, direction };
     this.debug.lastAction = "back";
-    popup.close();
+    close();
     this.sync();
     return true;
   }
@@ -731,7 +768,6 @@ export class GamepadView {
       window.addEventListener("resize", this.placeNotice);
       this.app?.addEventListener("scrollend", this.noticeScroll, true);
       this.app?.addEventListener("animationend", this.noticeAnimation);
-      document.addEventListener("padpopover", this.placeNotice);
     }
     this.notice.dataset.padHint = key;
     this.placeNotice();
@@ -751,7 +787,6 @@ export class GamepadView {
     window.removeEventListener("resize", this.placeNotice);
     this.app?.removeEventListener("scrollend", this.noticeScroll, true);
     this.app?.removeEventListener("animationend", this.noticeAnimation);
-    document.removeEventListener("padpopover", this.placeNotice);
     this.noticeChanges?.disconnect();
     this.noticeChanges = undefined;
     this.noticeHosts = [];
@@ -780,6 +815,10 @@ export class GamepadView {
       if (record.target === this.app || record.target === document.documentElement) return true;
       if (record.type === "attributes") {
         const target = record.target as Element;
+        // While unplugged, the notice follows trigger changes through its own short-lived app observer.
+        if (record.attributeName === "class" || record.attributeName === "aria-expanded") {
+          return !this.portalObserver && target.matches(".il .u[data-i], .nat-star");
+        }
         return target.matches(`${NOTICE_ANCHORS}, .toolbar-drawer`) || record.attributeName === "data-pad-scope" ||
           [...this.measured].some((element) => target.contains(element));
       }
@@ -800,15 +839,13 @@ export class GamepadView {
       // Observe surface commits, leaving canvas, world tags and unrelated app trees out of the notice lifetime.
       for (const host of hosts) this.noticeChanges?.observe(host, {
         subtree: true, childList: true, attributes: true,
-        attributeFilter: ["data-pad-scope", "data-pad-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled"],
+        attributeFilter: ["data-pad-scope", "data-pad-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled", "class", "aria-expanded"],
       });
     }
     let active = this.active?.isConnected && !this.active.closest(BLOCKED) ? this.active : null;
     let rank = active ? surfaces[this.kind(active)].priority : 0;
     const root = (node: HTMLElement) => {
       if (!visible(node) || node.closest(BLOCKED)) return;
-      const popup = padPopovers.get(node);
-      if (popup && (!popup.anchor.isConnected || popup.anchor.closest(BLOCKED) || (active && !active.contains(popup.anchor) && rank < 110))) return;
       const priority = surfaces[this.kind(node)]?.priority ?? 0;
       if (priority >= rank && priority > 0) { active = node; rank = priority; }
     };
@@ -817,7 +854,8 @@ export class GamepadView {
         if (host.matches(ROOTS)) root(host);
         for (const node of host.querySelectorAll<HTMLElement>(ROOTS)) root(node);
       }
-      for (const node of document.body.querySelectorAll<HTMLElement>(`:scope > ${SCOPE}`)) root(node);
+      const portals = document.body.querySelectorAll<PopoverElement>(`:scope > :is(${OPEN_PORTAL})`);
+      active = topPopover(active, portals) ?? active;
     }
     return active;
   }

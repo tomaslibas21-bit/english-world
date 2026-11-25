@@ -12,8 +12,7 @@ import type { Sentence } from "../convo/compose";
 import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
-import { WordPopover, inView } from "./Cards";
-import { registerPadPopover } from "./padPopover";
+import { WordPopover, inView, type PopoverElement } from "./Cards";
 
 /** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
 const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".nat-star") ? t.closest<HTMLElement>(".u[data-i]") : null);
@@ -82,7 +81,7 @@ function keyboardFocus(el: Element): boolean {
 function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
-  const boxRef = useRef<HTMLSpanElement>(null);
+  const boxRef = useRef<PopoverElement<HTMLSpanElement>>(null);
   const [tapped, setTapped] = useState(false); // opened with a tap or a click: stays until closed
   const [hover, setHover] = useState(false); // a mouse over the asterisk or the tooltip
   const [focused, setFocused] = useState(false); // keyboard focus on the asterisk
@@ -99,10 +98,12 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   // follow the asterisk (scrolling, new lines, the toggles), close when it's scrolled out of sight
   useLayoutEffect(() => {
     if (!open) { setSpot(null); return; }
+    const a = starRef.current, el = boxRef.current;
+    if (!a || !el) return;
+    el.popoverAnchor = a;
+    el.popoverClose = close;
     let raf = 0, last = "";
     const tick = () => {
-      const a = starRef.current, el = boxRef.current;
-      if (!a || !el) return;
       const r = a.getBoundingClientRect();
       const p = a.closest(".convo")?.getBoundingClientRect();
       const vw = window.innerWidth, vh = window.innerHeight;
@@ -135,10 +136,6 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   }, [open, close]);
 
   const placed = open && !!spot;
-  useLayoutEffect(() => {
-    if (placed) return registerPadPopover(boxRef.current, starRef.current, close);
-  }, [placed, close]);
-
   const tip = (
     <span ref={boxRef} id={id} role="tooltip" data-pad-scope={placed ? "tooltip" : undefined} lang="lt" className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
       onPointerEnter={enter} onPointerLeave={leave}

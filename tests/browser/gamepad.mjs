@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { init as initModuleLexer, parse as parseModules } from "es-module-lexer";
 import { contentUrl, progress as returnedPlayer } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -17,6 +18,7 @@ const toolbar = "[data-pad-toolbar], [data-pad-scope=drawer]";
 const phoneTool = "[data-pad-tool=phone]";
 const scenariosTool = "[data-pad-tool=scenarios]";
 const intro = ".scene-intro[data-pad-scope=intro]";
+const lazyPadAsset = /\/(?:assets\/(?:gamepad|padPopover|padButtons)-[^/]+\.(?:js|css)|src\/(?:game\/(?:gamepad|padButtons)|ui\/(?:gamepad|padPopover)|content\/gamepad)\.(?:ts|css))$/i;
 const button = { A: 0, B: 1, X: 2, LT: 6, RT: 7, Menu: 9, Up: 12, Down: 13, Left: 14, Right: 15 };
 const turn = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -61,6 +63,8 @@ function install({ key, progress }) {
   let now = 1000;
   let id = 0;
   let polls = 0;
+  let portalEvents = 0;
+  document.addEventListener("padpopover", () => { portalEvents++; });
   const callbacks = new Map();
   performance.now = () => now;
   window.requestAnimationFrame = (cb) => { callbacks.set(++id, cb); return id; };
@@ -130,6 +134,7 @@ function install({ key, progress }) {
   window.__padFixture = {
     attach, detach, dispatch, notices,
     get polls() { return polls; },
+    get portalEvents() { return portalEvents; },
     sample(axes, buttons) {
       pad.axes.splice(0, 4, ...axes);
       for (const [i, entry] of pad.buttons.entries()) {
@@ -182,8 +187,8 @@ function rideTravel(a, b) {
   return Math.hypot(b.ride.x - a.ride.x, b.ride.z - a.ride.z);
 }
 
-async function run(width, height, mobile, mode, contract) {
-  const label = `${width}x${height}-${mode}`;
+async function run(width, height, mobile, mode, contract, checkpoint = mode) {
+  const label = `${width}x${height}-${checkpoint}`;
   const errors = [];
   let context;
   let page;
@@ -221,6 +226,20 @@ async function run(width, height, mobile, mode, contract) {
     });
     page = await context.newPage();
     page.setDefaultTimeout(5000);
+    const padRequests = [];
+    const modules = [];
+    const tracksStartup = checkpoint === "light-popovers";
+    if (tracksStartup) {
+      page.on("request", (request) => {
+        const url = new URL(request.url());
+        if (url.origin === base.origin && lazyPadAsset.test(url.pathname)) padRequests.push(url.pathname);
+      });
+      page.on("response", (response) => {
+        if (response.ok() && response.request().resourceType() === "script" && new URL(response.url()).origin === base.origin) {
+          modules.push(response);
+        }
+      });
+    }
     page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
     page.on("console", (message) => {
       if (message.type() === "error" && !/^\s*(?:\[audio\]\s*)?Missing (?:audio )?clip\b/i.test(message.text())) {
@@ -292,7 +311,7 @@ async function run(width, height, mobile, mode, contract) {
     }
     await contract({
       context, page, mobile, step, state, until, when, sample, press, tap, attach, detach, duplicate,
-      focused, focusWith, check, shot, mark: (name) => { phase = name; },
+      focused, focusWith, check, shot, padRequests, modules, mark: (name) => { phase = name; },
     });
     check("no page or console errors", errors.length === 0, errors);
   } catch (error) {
@@ -1426,6 +1445,147 @@ async function townContract(h) {
   await detachContract(h, real);
 }
 
+async function lazyPopoverContract(h) {
+  const { page, mobile, step, when, until, attach, detach, press, sample, tap, check, padRequests, modules } = h;
+  h.mark("word and natural-line portals before the first eligible connection");
+  const sit = "p25-used-car"; // A return visit has a natural line with word notes in its first NPC turn.
+  const activate = (target) => mobile ? target.tap() : target.click();
+  await page.evaluate((id) => {
+    const { game, store } = window.__ew;
+    store.getState().updateProgress((p) => {
+      p.sits[id] = { visits: 1, completions: 0, used: [], twists: [], memory: {} };
+    });
+    store.getState().setSettings({ lt: true, ltNatural: false });
+    game.startScenario(id);
+  }, sit);
+  const primary = page.locator(`${intro} [data-pad-default]`);
+  await until("the used-car intro offers its primary", () => primary.isVisible());
+  await activate(primary);
+  const reading = page.locator(".convo .audio-recovery").getByRole("button", { name: "Tęsti skaitant", exact: true });
+  await until("the real learner turn is ready", async () => {
+    if ((await h.state()).phase === "you") return true;
+    if (await reading.isVisible()) await activate(reading);
+    return false;
+  });
+  const conversation = () => page.evaluate(() => {
+    const { game, store } = window.__ew;
+    const { conv } = store.getState();
+    return { active: conv.active && game.activeSession?.active, id: conv.sitId, run: conv.run,
+      lines: conv.transcript.map(({ id }) => id) };
+  });
+  const before = await conversation();
+  const sameConversation = async () => JSON.stringify(await conversation()) === JSON.stringify(before);
+  check("the natural line belongs to the running used-car scene", before.active && before.id === sit, before);
+
+  const npc = page.locator(".convo .transcript .msg.npc").filter({ has: page.locator(".nat-star") }).first();
+  const star = npc.locator(".nat-star").first();
+  const word = npc.locator('.il .u[data-i="0"]:has(.lt:not(.dash)) > .en').first();
+  const popup = page.locator('body > .wpop[role="dialog"]');
+  const actions = popup.locator(".wpop-acts button");
+  const openWord = async () => {
+    await activate(word);
+    await until("ordinary input opens the word card", () => actions.first().isVisible());
+  };
+  await openWord();
+  await page.keyboard.press("Escape");
+  await until("physical Escape closes only the word card", async () => await popup.count() === 0 && await sameConversation());
+
+  const id = await star.getAttribute("aria-describedby");
+  const tooltip = page.locator(`body > .nat-tipbox[id=${JSON.stringify(id)}][role=tooltip]`);
+  const portal = await tooltip.elementHandle();
+  check("the star already describes a hidden body portal", await portal.evaluate((el) => el.hidden));
+  const visibleTip = () => tooltip.isVisible();
+  if (mobile) await activate(star);
+  else {
+    await npc.locator(".meta button:enabled").last().focus();
+    await page.keyboard.press("Tab");
+    check("keyboard focus opens the star with its native outline", await star.evaluate((el) => {
+      const css = getComputedStyle(el);
+      return document.activeElement === el && el.matches(":focus-visible") && !el.hasAttribute("data-pad-focus") &&
+        css.outlineStyle === "solid" && parseFloat(css.outlineWidth) >= 2;
+    }));
+  }
+  await until("ordinary input reveals the mounted natural line", visibleTip);
+  check("the same described portal became visible", await portal.evaluate((el) => el.isConnected && !el.hidden &&
+    el.dataset.padScope === "tooltip"));
+  if (mobile) await activate(star);
+  else await page.keyboard.press("Escape");
+  await until("ordinary input hides the natural line and preserves the conversation", async () =>
+    !(await visibleTip()) && await sameConversation());
+  if (!mobile) {
+    await star.hover();
+    await until("hover also reveals the natural line before connection", visibleTip);
+    await page.mouse.move(2, 2);
+    await until("leaving the star hides the hovered line", async () => !(await visibleTip()));
+  }
+
+  await openWord();
+  await initModuleLexer;
+  const entryLinks = await page.locator('script[type=module][src], link[rel=modulepreload], link[rel=stylesheet]').evaluateAll(
+    (nodes) => nodes.map((node) => node.src || node.href),
+  );
+  const staticImports = (await Promise.all(modules.map(async (response) => {
+    const imported = parseModules(await response.text(), response.url())[0];
+    return imported.filter(({ d, n }) => d === -1 && n).map(({ n }) => new URL(n, response.url()).href);
+  }))).flat();
+  const eager = [...new Set([...entryLinks, ...staticImports].map((url) => new URL(url).pathname)
+    .filter((path) => lazyPadAsset.test(path)))];
+  const idle = await h.state();
+  const portalEvents = await page.evaluate(() => window.__padFixture.portalEvents);
+  check("ordinary portals leave the named controller graph, requests and registration events idle",
+    !eager.length && !padRequests.length && !portalEvents && !idle.pad.connected && !idle.hint,
+    { eager, padRequests, portalEvents, pad: idle.pad });
+
+  h.mark("attach with a word card already open");
+  await attach();
+  await when("the first Standard pad attaches while the word card is open", (s) => s.pad.connected, { frames: 1 });
+  check("the eligible connection requests the named controller payload", padRequests.some((path) =>
+    /\/(?:assets\/gamepad-[^/]+\.js|src\/game\/gamepad\.ts)$/i.test(path)), padRequests);
+  await step(2);
+  await tap("Down");
+  check("the first direction reaches the already-open word card", await actions.first().evaluate((el) =>
+    document.activeElement === el && el.hasAttribute("data-pad-focus")), await h.state());
+  await press("B");
+  await step();
+  await until("B closes the already-open word card", async () => await popup.count() === 0);
+  await step(32);
+  check("held B leaves that conversation running", await sameConversation());
+  await sample();
+  await step(2);
+
+  h.mark("replacement pad and natural line");
+  await detach();
+  await activate(star);
+  if (!mobile) await page.mouse.move(2, 2);
+  await until("the natural line opens while unplugged", visibleTip);
+  await attach("standard", [button.B]);
+  await when("a replacement pad attaches while the tooltip is open", (s) => s.pad.connected, { frames: 1 });
+  await step(32);
+  check("a carried B keeps the natural line open", await visibleTip());
+  await sample();
+  await step(2);
+  await tap("A");
+  check("A on the natural line leaves the underlying conversation alone", await visibleTip() && await sameConversation());
+  await press("B");
+  await step();
+  await until("B hides the already-open natural line", async () => !(await visibleTip()));
+  await step(32);
+  check("held B restores the real star and preserves the conversation", await sameConversation() &&
+    await star.evaluate((el) => document.activeElement === el && el.hasAttribute("data-pad-focus")));
+  await sample();
+  await step(2);
+
+  await activate(star);
+  if (!mobile) await page.mouse.move(2, 2);
+  await until("the mounted natural line reopens with the pad connected", visibleTip);
+  await step(2);
+  await tap("Down");
+  await until("a direction hides the natural line", async () => !(await visibleTip()));
+  check("the direction continues from the star within the same conversation", await sameConversation() &&
+    await h.focused(".convo [data-pad-focus]:not(.nat-star)"), await h.state());
+  await portal.dispose();
+}
+
 async function lightContract(h) {
   const { page, step, state, attach, detach, focused, focusWith, check, shot, tap, when, until } = h;
   h.mark("light home");
@@ -1497,10 +1657,12 @@ async function lightContract(h) {
 
 try {
   let failed = 0;
+  const contracts = [["town", townContract], ["light", lightContract]];
+  if (storage !== "puerto-colibri") contracts.unshift(["light", lazyPopoverContract, "light-popovers"]);
   for (const [width, height, mobile] of [[390, 844, true], [1280, 800, false]]) {
-    for (const [mode, contract] of [["town", townContract], ["light", lightContract]]) {
+    for (const [mode, contract, checkpoint] of contracts) {
       try {
-        await run(width, height, mobile, mode, contract);
+        await run(width, height, mobile, mode, contract, checkpoint);
       } catch (error) {
         failed++;
         console.error(error);
@@ -1508,7 +1670,7 @@ try {
     }
   }
   if (failed) {
-    console.error(`gamepad: ${failed} of 4 cases failed`);
+    console.error(`gamepad: ${failed} of ${2 * contracts.length} cases failed`);
     process.exitCode = 1;
   } else {
     console.log("gamepad: all checks passed");

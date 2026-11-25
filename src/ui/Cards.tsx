@@ -14,7 +14,6 @@ import { SitIcon } from "./SitIcon";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";
-import { registerPadPopover } from "./padPopover";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -56,6 +55,12 @@ function keepCaps(word: string): boolean {
 
 interface Spot { left: number; top: number; below: boolean; arrow: number }
 
+/** A body portal keeps its trigger and close action on the node that owns them. */
+export type PopoverElement<T extends HTMLElement = HTMLElement> = T & {
+  popoverAnchor?: HTMLElement;
+  popoverClose?: () => void;
+};
+
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
 function place(r: DOMRect, w: number, h: number): Spot {
   const m = 8, gap = 9, vw = window.innerWidth, vh = window.innerHeight;
@@ -88,7 +93,7 @@ export function inView(el: HTMLElement): boolean {
  *  (only the sentence for words glossed "—"). Closes on an outside tap, Esc, or when the word
  *  scrolls away. */
 export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index: number; anchor: HTMLElement; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<PopoverElement<HTMLDivElement>>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
@@ -132,10 +137,12 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [anchor]);
 
-  const placed = !!spot;
   useLayoutEffect(() => {
-    if (placed) return registerPadPopover(ref.current, anchor, () => closeRef.current());
-  }, [anchor, placed]);
+    const el = ref.current;
+    if (!el) return;
+    el.popoverAnchor = anchor;
+    el.popoverClose = closeRef.current;
+  }, [anchor, onClose]);
 
   if (!u) return null;
   const add = (x: typeof whole | null) => { if (x && useCards.getState().add(x)) setSaved(true); };
@@ -143,7 +150,7 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" data-pad-scope="popover" aria-label={`Žodis „${shown}“`}
+    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" data-pad-scope="popover" data-pad-placed={spot ? "" : undefined} aria-label={`Žodis „${shown}“`}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang="en">{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
