@@ -723,12 +723,14 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
     rides.water?.cameraFloor(cam.position, time);
     rides.water?.presented();
   };
-  const frame = (controls: typeof go | null = null, ms = 1000 / hz, resume = false) => {
+  const frame = (controls: typeof go | null = null, ms = 1000 / hz, resume = false,
+    updateFoot?: (dt: number, time: number) => void) => {
     now += ms; time += dt;
-    const handled = rides.water?.tick(dt, time, resume);
+    if (updateFoot) updateFoot(dt, time);
+    const handled = !updateFoot && rides.water?.tick(dt, time, resume);
     if (!handled || rides.water?.returning || !rides.riding) rides.update(dt, time, handled ? null : controls);
     effects?.drops.update(dt, time, null, 0);
-    player.update(dt);
+    if (!updateFoot) player.update(dt);
     ambient.update(dt, player.root.position, cam.position);
     present();
   };
@@ -816,6 +818,51 @@ function townWalking(f: ReturnType<typeof occupiedTown>) {
   f.adapter.foot = foot => game.carWaterFoot(foot);
   return { game, ledges };
 }
+
+it("drops the touch brake on detachment and routes fresh stick input after the covered handback", async () => {
+  const hz = 60, f = occupiedTown(hz, RIDES, undefined, undefined, true);
+  try {
+    const { game } = townWalking(f), car = f.rides.find("park")!;
+    const advance = () => f.frame(null, 1000 / hz, false, (dt, time) => {
+      game.t = time;
+      game.updatePlayer(dt, false);
+    });
+    await f.board(car);
+    f.stage(-96, -81, Math.PI);
+    f.frame();
+    expect(f.inspect()).toMatchObject({ phase: "float", region: "coast" });
+    game.hold(true);
+    expect(f.rides.leave()).toBe(true);
+    expect(f.inspect().assistedOnFoot).toBe(true);
+    expect(game.brake).toBe(false);
+
+    // The old brake node has gone away. No pointer-up callback reaches Game.
+    game.setJoystick(0.62, 0.6);
+    for (let i = 0; i < 3.5 * hz && f.inspect().active; i++) advance();
+    expect(f.inspect()).toMatchObject({ active: false, landing: "spare" });
+    expect(car.m.fz).toBeCloseTo(1);
+    expect(f.fades).toContain("opaque");
+    expect(game.joy).toEqual({ x: 0.62, y: 0.6 });
+    expect(game.waterNeutral).toBe(true);
+    const foot = f.player.root.position, landing = foot.clone();
+    for (let i = 0; i < hz; i++) advance();
+    expect(foot.distanceTo(landing)).toBeLessThan(0.025);
+
+    game.setJoystick(0, 0);
+    expect(game.waterNeutral).toBe(false);
+    game.setJoystick(0.62, 0.6);
+    for (let i = 0; i < 8; i++) advance();
+    expect(Math.hypot(foot.x - landing.x, foot.z - landing.z)).toBeGreaterThan(0.01);
+    game.setJoystick(0, 0);
+
+    expect(f.rides.near(foot.x, foot.z)).toBe(car);
+    expect(f.rides.board(car, false)).toBe(true);
+    f.rides.prefetchWater(car, f.adapter);
+    const z = car.m.z;
+    for (let i = 0; i < 2 * hz && car.m.z - z < 2; i++) f.frame(go);
+    expect(car.m.z - z).toBeGreaterThanOrEqual(2);
+  } finally { f.close(); }
+}, 20_000);
 
 describe.each([60, 20])("released cenote walking at %i Hz", hz => {
   it.each([

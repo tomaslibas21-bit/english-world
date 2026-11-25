@@ -33,6 +33,7 @@ const WET_LIMIT = W.maxWetSeconds * 1000, RETURN_LIMIT = 3500;
 const FLOAT = 0.5, TOW_END = 2.35, DRAIN = 0.65, FADE = 0.18, TOW_SPEED = 8;
 const FOOT_STEP = 0.22, EXIT_START = W.footRadius + 0.06;
 const PADDING = 0.04, STEP = 0.12, SEPARATION = 9;
+const COAST_SPARE_INSET = 1;
 const DOOR_STEP = 0.1, DOOR_EXTRA_STEPS = 6, WALK_RADIUS = 0.38;
 const FOOT_RISE = 0.32;
 const DISC_ANGLES = Array.from({ length: 16 }, (_, i) => ({
@@ -652,13 +653,16 @@ export class CarWaterRecovery {
     }
     if (selected < 0) {
       if (area.id !== "coast") return false;
-      // The western coast has no named landing. Search the actual inland strip around the approach first.
+      // The western coast has no named landing. Check both rows of the inland strip around the approach.
       const column = Math.round((r.m.x - this.searchX) / 4);
       for (let offset = 0; offset <= 10; offset++) {
         const i = column + (offset % 2 ? -1 : 1) * Math.ceil(offset / 2);
         if (i < 0 || i >= this.searchCols) continue;
-        p.x = this.searchX + i * 4; p.z = this.searchZ; p.heading = 0;
-        if (this.trySpare(r, slot, p)) return true;
+        p.x = this.searchX + i * 4; p.heading = 0;
+        for (let row = 0; row < 2; row++) {
+          p.z = this.searchZ + row * COAST_SPARE_INSET;
+          if (this.trySpare(r, slot, p)) return true;
+        }
       }
       return false;
     }
@@ -674,9 +678,12 @@ export class CarWaterRecovery {
       const end = Math.min(this.searchLimit, this.scan + budget), p = this.search;
       while (this.scan < end) {
         const k = this.scan++, cell = Math.floor(k / 2);
+        const row = Math.floor(cell / this.searchCols), alternate = k % 2;
+        const coast = row === 0 || this.area?.id === "coast";
         p.x = this.searchX + cell % this.searchCols * 4;
-        p.z = this.searchZ + Math.floor(cell / this.searchCols) * 4;
-        p.heading = k % 2 * Math.PI / 2;
+        // The first row is coastal even before region selection. Try farther inland if the tail would hit the seafront.
+        p.z = this.searchZ + row * 4 + (coast ? alternate * COAST_SPARE_INSET : 0);
+        p.heading = coast ? 0 : alternate * Math.PI / 2;
         if (this.trySpare(r, slot, p)) break;
       }
     }

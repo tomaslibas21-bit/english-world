@@ -137,6 +137,29 @@ async function installReads() {
     HOTEL_POOL, POOL_KIDS, predictPoolHeading } = await import("/tests/browser/car-water-observations.mjs");
   const g = window.__ew.game;
   const R = g.rides;
+  const controlSelector = ".joy, .act-btn, .jump-btn, canvas";
+  const pointerEvents = [];
+  for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel", "gotpointercapture", "lostpointercapture"]) {
+    document.addEventListener(type, e => {
+      if (e.pointerType !== "touch") return;
+      const target = e.target instanceof Element ? e.target.closest(controlSelector) ?? e.target : null;
+      pointerEvents.push({ type, id: e.pointerId, x: e.clientX, y: e.clientY,
+        target: target?.getAttribute("class") || e.target?.nodeName });
+      if (pointerEvents.length > 10) pointerEvents.shift();
+    }, true);
+  }
+  function touchInput(hud, w) {
+    const knob = document.querySelector(".joy .knob");
+    const offset = knob?.style.transform ? new DOMMatrixReadOnly(knob.style.transform) : null;
+    const ids = [...new Set(pointerEvents.map(e => e.id))];
+    const captures = [...document.querySelectorAll(controlSelector)].flatMap(el => {
+      const held = ids.filter(id => el.hasPointerCapture(id));
+      return held.length ? [{ target: el.getAttribute("class") || el.tagName, ids: held }] : [];
+    });
+    return { rawStick: knob ? { x: (offset?.m41 ?? 0) / 60, y: -(offset?.m42 ?? 0) / 60 } : null,
+      capture: captures, events: pointerEvents.slice(), mode: w?.assistedOnFoot ? `assisted ${w.phase}` : hud.ride ?? "walk",
+      neutral: g.waterNeutral, brake: g.brake };
+  }
   const v = g.player.root.position.clone();
   const depth = (x, z) => waterY(x, z, g.t) === null ? 0 : Math.max(0, (poolAt(x, z)?.y ?? SEA_LEVEL) - floorY(x, z));
   const point = (p) => ({ x: p.x, y: p.y, z: p.z });
@@ -516,6 +539,7 @@ async function installReads() {
       riding: R.riding?.id ?? null, ridePhase: R.riding ? R.phase : null, swim: g.swimming, dive: g.diveK,
       undersea: g.undersea.on, prompt: hud.prompt?.kind ?? null, nearest: g.nearest?.id ?? null, hudRide: hud.ride ?? null,
       hudPanel: hud.panel, brake: g.brake || g.keys.has(" "), stick: { x: g.joy.x, y: g.joy.y }, reservations: g.ambient.waterReservations?.length ?? 0,
+      touchInput: hud.showTouch ? touchInput(hud, w) : null,
       fade: hud.fade, opaque, coveredTarget: opaque ? point(g.rig.target) : null, corridorClear,
       document: Number(sessionStorage.getItem("car-water-document")), poolMode: g.modes.owns("pool"),
       nearbyWays: ways.filter(q => Math.hypot(q.x - player.x, q.z - player.z) <= q.reach + 0.42).map(q => q.id),
@@ -584,6 +608,7 @@ class Run {
     this.chunks = [];
     this.coastFrames = new Set();
     this.downKeys = new Set();
+    this.touches = new Map();
     this.stageName = "startup";
     page.on("pageerror", e => this.errors.push(e.stack ?? e.message));
     page.on("console", m => {
@@ -914,7 +939,10 @@ class Run {
   }
 
   pressKey(key) { return this.op(`press ${key}`, () => this.page.keyboard.press(key), actionTimeout); }
-  tap(p) { return this.op(`tap (${p.x}, ${p.y})`, () => this.page.touchscreen.tap(p.x, p.y), actionTimeout); }
+  async tap(p) {
+    await this.touch("touchStart", 3, p);
+    await this.touch("touchEnd", 3);
+  }
 
   async act(action) {
     const expectedKind = ["convertible", "parked"].includes(action) ? "drive" : action;
@@ -943,8 +971,14 @@ class Run {
     else this.downKeys.delete(key);
   }
 
-  async touch(type, p) {
-    await this.op(type, () => this.cdp.send("Input.dispatchTouchEvent", { type, touchPoints: p ? [{ x: p.x, y: p.y, id: 1 }] : [] }), actionTimeout);
+  async touch(type, id, p) {
+    const end = type === "touchEnd";
+    const point = end ? this.touches.get(id) : { x: p.x, y: p.y, id };
+    // Use one CDP session for every finger. End only this contact when another is still down.
+    const touchPoints = end && this.touches.size === 1 ? [] : [point];
+    await this.op(`${type} ${id}`, () => this.cdp.send("Input.dispatchTouchEvent", { type, touchPoints }), actionTimeout);
+    if (end) this.touches.delete(id);
+    else this.touches.set(id, point);
   }
 
   async drive(y = 0, x = 0) {
@@ -956,23 +990,23 @@ class Run {
     } else if (x || y) {
       if (!this.joy) {
         this.joy = await this.control(".joy", "left");
-        await this.touch("touchStart", this.joy);
+        await this.touch("touchStart", 1, this.joy);
       }
       const point = { x: this.joy.x + 60 * x, y: this.joy.y - 60 * y };
       assert.ok(point.x > 0 && point.x < 390 && point.y > 0 && point.y < 844, "captured stick move remains inside phone viewport");
-      await this.touch("touchMove", point);
+      await this.touch("touchMove", 1, point);
     } else if (this.joy) {
-      await this.touch("touchEnd");
+      await this.touch("touchEnd", 1);
       this.joy = null;
     }
   }
 
   async stop(on) {
     if (!this.phone) return this.key("Space", on);
-    if (!on) return this.touch("touchEnd");
+    if (!on) return this.touch("touchEnd", 2);
     const p = await this.control(".jump-btn.brake-btn");
     assert.equal(p.text, "STOP");
-    await this.touch("touchStart", p);
+    await this.touch("touchStart", 2, p);
   }
 
   async jump() {
@@ -1092,6 +1126,9 @@ const convertible = "park";
 const recovering = s => s.water?.secondsLeft != null;
 const released = s => !s.water?.active && !recovering(s);
 const forwardProgress = (start, end, direction) => (end.x - start.x) * direction.x + (end.z - start.z) * direction.z;
+const inputDetail = s => JSON.stringify({ ...s.touchInput, gameInput: s.stick, keys: s.keys,
+  ride: s.hudRide, recovery: s.water?.phase });
+const stickPointer = s => s.touchInput?.capture.find(({ target }) => target.split(" ").includes("joy"))?.ids[0];
 
 async function measuredDepths(run, x, depths) {
   const samples = await run.evaluate(({ x, zs }) => zs.map(z => window.__carWaterTest.support(x, z)), { x, zs: depths.map(([z]) => z) });
@@ -1279,7 +1316,7 @@ async function mainTrip(run) {
   for (let i = 0; i < 480; i++) {
     const s = await run.frame(), c = s.car, w = s.water, previous = samples.at(-1);
     samples.push(s);
-    if (run.phone) assert.ok(s.stick.y > 0.96 && Math.abs(s.stick.x) < 0.02, "continuous physical joystick input");
+    if (run.phone) assert.ok(s.stick.y > 0.96 && Math.abs(s.stick.x) < 0.02, `continuous physical joystick input ${inputDetail(s)}`);
     close(c.x, site.road[0], 0.85, "continuous straight path down the fixture");
     const step = gap(c, previous.car);
     assert.ok(step <= Math.max(c.pace, previous.car.pace) * quantum / 1000 + 0.08 && c.z <= previous.car.z + 0.02, "physical step toward water");
@@ -1425,8 +1462,8 @@ async function steering(run, wet) {
   await run.drive();
   assert.ok(frames.every(s => s.water.band === band && !recovering(s)), "turn stays on the same surface for all 15 frames");
   if (run.phone) for (const s of frames) {
-    close(s.stick.x, input.x, 0.015, "same physical stick turn");
-    close(s.stick.y, input.y, 0.015, "same physical stick throttle");
+    close(s.stick.x, input.x, 0.015, `same physical stick turn ${inputDetail(s)}`);
+    close(s.stick.y, input.y, 0.015, `same physical stick throttle ${inputDetail(s)}`);
   }
   let angle = 0, heading = input.startHeading;
   for (const s of frames) { angle += turn(s.car.heading, heading); heading = s.car.heading; }
@@ -1442,7 +1479,8 @@ async function steering(run, wet) {
     await run.until(s => recovering(s) && s.riding === null, "exit the body-depth steering fixture");
     await run.drive(0.6, 0.62);
     await finish(run, { onFoot: true });
-    assert.ok(run.phone ? run.last.stick.x > 0.5 : run.last.keys.includes("d"), "old steering stayed held through the covered handback");
+    assert.ok(run.phone ? run.last.stick.x > 0.5 : run.last.keys.includes("d"),
+      `old steering stayed held through the covered handback ${inputDetail(run.last)}`);
     await run.drive();
     await run.until(s => s.prompt === "drive" && s.nearest === run.id, "ordinary drive prompt beside the recovered car");
   }
@@ -1531,10 +1569,12 @@ async function assistedTrip(run, deep, route = deep ? site.west : site.east, roo
     assert.ok(held.every(s => s.brake && s.water.phase === "float" && s.car.pace < 0.02), "real brake held during the float beat");
     assert.ok((await run.read()).brake, "brake still held when requesting exit");
   } else {
-    assert.ok(run.phone ? before.stick.y > 0.96 : before.keys.includes("w"), "shallow exit requested under physical throttle");
+    assert.ok(run.phone ? before.stick.y > 0.96 : before.keys.includes("w"),
+      `shallow exit requested under physical throttle ${inputDetail(before)}`);
   }
   await run.act("out");
   const exited = await run.frame();
+  if (deep && run.phone) assert.ok(!exited.brake, `the touch brake ends on detachment ${inputDetail(exited)}`);
   if (deep) await run.stop(false);
   else await run.drive();
   assert.ok(exited.riding === null && exited.player.shown && exited.player.inView && exited.water.assistedOnFoot && recovering(exited),
@@ -1572,22 +1612,37 @@ async function assistedTrip(run, deep, route = deep ? site.west : site.east, roo
   assertDetached(await run.frame());
   await run.drive(0.60, 0.62);
   if (!run.phone) await run.stop(true);
-  for (const s of await run.frames(12)) {
+  const steeringFrames = await run.frames(12), pointer = stickPointer(steeringFrames[0]);
+  for (const s of steeringFrames) {
     assertDetached(s);
-    assert.ok(run.phone ? s.stick.x > 0.5 : s.keys.includes("d"), "steer input really reaches the game while assisted");
+    assert.ok(run.phone ? s.stick.x > 0.5 && pointer != null && stickPointer(s) === pointer : s.keys.includes("d"),
+      `steer input reaches the game while assisted ${inputDetail(s)}`);
   }
-  const heldThroughHandback = route === site.road;
+  const heldThroughHandback = deep;
   if (!heldThroughHandback) {
     await run.drive();
     if (!run.phone) await run.stop(false);
   }
   const handback = await finish(run, { onFoot: true });
+  if (heldThroughHandback) assert.ok(run.phone ? run.last.stick.x > 0.5 && stickPointer(run.last) === pointer : run.last.keys.includes("d"),
+    `held steering remains registered through the handback ${inputDetail(run.last)}`);
   await run.drive();
   if (!run.phone) await run.stop(false);
   assert.ok(gap(handback.car, exited.car) >= 3, "assisted exit returned both bodies to land");
   if (route === site.road) assert.equal(handback.water.landing, "trail", "the clear wide approach admits an exterior swept return");
-  if (handback.water.landing === "spare") assert.ok(handback.opaque, "covered landing when a gate narrows the tow corridor");
+  if (handback.water.landing === "spare") {
+    assert.ok(handback.opaque, "covered landing when a gate narrows the tow corridor");
+    if (pc && route === site.west) assert.ok(Math.cos(handback.car.heading) > 0.5, "western coastal spare faces inland");
+  }
   delete run.safety;
+  if (deep && run.phone) {
+    await run.drive(0.60, 0.62);
+    const steps = await run.frames(8);
+    const walked = steps.at(-1);
+    assert.ok(steps.every(s => s.stick.x > 0.5) && gap(handback.player, walked.player) > 0.01,
+      `fresh diagonal stick moves the learner after handback ${inputDetail(walked)}`);
+    await run.drive();
+  }
   await reboardInland(run, roofed);
 }
 
@@ -1724,7 +1779,8 @@ async function abruptLip(run) {
   assert.ok(reversal.every(s => s.car.pace <= 0.02 && gap(s.car, first.car) < 0.02), "reverse cannot override a real deep-water latch");
   const land = await finish(run);
   assert.ok(land.water.fallback && land.water.fallbackReason === "no-corridor" && gap(land.car, first.car) > 5);
-  assert.ok(run.phone ? run.last.stick.y < -0.96 : run.last.keys.includes("s"), "old reverse stayed held through the covered handback");
+  assert.ok(run.phone ? run.last.stick.y < -0.96 : run.last.keys.includes("s"),
+    `old reverse stayed held through the covered handback ${inputDetail(run.last)}`);
   await run.drive();
   await run.drive(1);
   await run.until(s => s.car.speed > 0.25 && !recovering(s), "fresh throttle drives the same car after release", 30);

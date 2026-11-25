@@ -1668,7 +1668,9 @@ export class Game implements GameApi {
     this.hop.land(p.y); this.applyHop();
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
-    if (!this.rides.water?.returning) { this.keys.delete(" "); this.brake = false; }
+    // The touch brake becomes the jump button on exit and can lose its release handler.
+    this.brake = false;
+    if (!this.rides.water?.returning) this.keys.delete(" ");
     this.rideGoal = null;
     this.helmSteer.reset();
     this.ambient.riding = false;
