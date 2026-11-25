@@ -35,6 +35,7 @@ export class SpeedFeel {
   private amplitude = 0;
   private offsetY = 0;
   private presentedY = 0;
+  private townPoseHeld = false;
   private roadCamera?: PerspectiveCamera;
   private roadDelta = 0;
   private roadAmplitude = 0;
@@ -103,10 +104,11 @@ export class SpeedFeel {
 
   private readonly onMotionChange = () => {
     const reduced = this.reducedMotion;
-    this.resume = reduced || this.active ? 0 : VISUAL_RESUME;
-    this.strips.classList.toggle("resuming", !reduced && this.active);
+    const drivingView = this.active || !!this.roadCamera;
+    this.resume = reduced || drivingView ? 0 : VISUAL_RESUME;
+    this.strips.classList.toggle("resuming", !reduced && drivingView);
     if (reduced) {
-      this.clearPose();
+      if (!this.townPoseHeld) this.clearPose();
       this.setTier(0);
     }
   };
@@ -143,14 +145,24 @@ export class SpeedFeel {
     this.roadAmplitude = amplitude;
   }
 
+  /** Keep the live departure camera registered while releasing the town driver's cues. */
+  holdTownPose() { this.townPoseHeld = true; }
+
+  restoreTownPose() { if (this.townPoseHeld) this.clearPose(); }
+
   clearPose() {
     const base = this.baseFov;
     if (base !== this.cam.fov) {
       this.cam.fov = base;
       this.cam.updateProjectionMatrix();
     }
-    this.cam.position.y -= this.townVibration;
+    const vibration = this.townVibration;
+    if (vibration) {
+      this.cam.position.y -= vibration;
+      this.cam.updateMatrixWorld(true);
+    }
     this.lensDelta = this.amplitude = this.offsetY = 0;
+    this.townPoseHeld = false;
   }
 
   release() {
@@ -161,7 +173,8 @@ export class SpeedFeel {
     this.resume = this.reducedMotion ? 0 : VISUAL_RESUME;
     this.strips.classList.remove("resuming");
     this.setTier(0);
-    this.clearPose();
+    if (this.townPoseHeld) this.amplitude = 0;
+    else this.clearPose();
     audio.motor(null);
     audio.rush("wind", 0);
     return true;
@@ -169,6 +182,7 @@ export class SpeedFeel {
 
   dispose() {
     this.release();
+    this.restoreTownPose();
     this.motion?.removeEventListener("change", this.onMotionChange);
     this.strips.remove();
     if (window.__speedFeel === this.readout) delete window.__speedFeel;

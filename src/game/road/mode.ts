@@ -165,8 +165,9 @@ export class RoadMode {
     car.yaw = Math.atan2(Math.sin(heading), Math.cos(heading)) + Math.PI - course(0);
     car.slide = -m.slip * Math.cos(heading) - m.speed * Math.sin(heading);
     const dimensions = this.host.viewport();
-    view.depart(mesh, this.host.player().root, this.host.rig.cam, dimensions.width, dimensions.height, this.host.speedFeel());
-    // The seam has copied the presented town camera. Release the town cues now.
+    const feel = this.host.speedFeel();
+    view.depart(mesh, this.host.player().root, this.host.rig.cam, dimensions.width, dimensions.height, feel);
+    feel?.holdTownPose();
     this.host.clearTownHud();
     this.brief();
     const run = this.newRun(track, view, car);
@@ -461,8 +462,10 @@ export class RoadMode {
     const run = this.run;
     if (!run) return false;
     const { view } = run;
-    view.render(renderer, width, height, run.gate, this.feel);
-    this.host.speedFeel()?.presentRoad(view.camera, view.speedFovDelta, view.shakeAmplitude);
+    const feel = this.host.speedFeel();
+    if (feel?.reducedMotion) feel.restoreTownPose();
+    view.render(renderer, width, height, run.gate, feel);
+    feel?.presentRoad(view.camera, view.speedFovDelta, view.shakeAmplitude);
     return true;
   }
 
@@ -532,6 +535,7 @@ export class RoadMode {
     this.clearRun();
     audio.stop();
     this.releaseDrive();
+    this.host.speedFeel()?.restoreTownPose();
     if (this.lift) {
       this.host.deferLift();
       this.host.hideNpc(driver.npc, false);

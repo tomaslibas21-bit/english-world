@@ -125,7 +125,7 @@ export class RoadView {
   private seam?: {
     age: number; camera: THREE.PerspectiveCamera; carRotation: THREE.Quaternion;
     carY: number; rider: THREE.Object3D; reference?: DepartureFrame; framing?: ReturnType<typeof projectedCar>;
-    fovDelta: number; vibration: number;
+    fovDelta: number; vibration: number; speedSuppressed?: boolean;
   };
   private continuity?: { town: DepartureFrame; road: DepartureFrame };
   private vergeFade?: { color: THREE.BufferAttribute; original: Float32Array; count: number };
@@ -484,6 +484,8 @@ export class RoadView {
     this.speedFovDelta = this.chase.speedFovDelta;
     const seam = this.seam;
     if (seam) {
+      // Once the inherited cues are removed, fresh road feedback supplies any returning motion.
+      if (feel?.reducedMotion) seam.speedSuppressed = true;
       const mix = THREE.MathUtils.smoothstep(seam.age, 0, ROAD_CAMERA_SECONDS);
       if (mix === 0) {
         this.camera.copy(seam.camera, false);
@@ -495,14 +497,22 @@ export class RoadView {
           this.camera.updateMatrixWorld(true);
         }
         this.speedFovDelta = seam.fovDelta;
+        if (seam.speedSuppressed && (seam.fovDelta || seam.vibration)) {
+          this.camera.fov -= seam.fovDelta;
+          this.camera.updateProjectionMatrix();
+          this.camera.position.y -= seam.vibration;
+          this.camera.updateMatrixWorld(true);
+          this.speedFovDelta = 0;
+        }
         this.shakeAmplitude = vibration = 0;
       } else if (mix < 1 && seam.framing) {
-        const inheritedDelta = seam.fovDelta * strength;
+        const inheritedStrength = seam.speedSuppressed ? 0 : strength;
+        const inheritedDelta = seam.fovDelta * inheritedStrength;
         const startFov = seam.camera.fov - (seam.fovDelta - inheritedDelta);
         this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car), this.worldCorners, mix, width, height, startFov);
         this.speedFovDelta = THREE.MathUtils.lerp(inheritedDelta, this.speedFovDelta, mix);
         this.shakeAmplitude *= mix;
-        vibration = THREE.MathUtils.lerp(seam.vibration * strength, vibration, mix);
+        vibration = THREE.MathUtils.lerp(seam.vibration * inheritedStrength, vibration, mix);
       }
       this.blendTownLight(1 - THREE.MathUtils.smoothstep(seam.age, 0, 3));
       this.fadeVerge(seam.age);
