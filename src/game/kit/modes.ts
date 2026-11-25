@@ -25,6 +25,7 @@ export interface GameMode {
   id: string;
   readonly active: boolean;
   readonly modal?: boolean;
+  readonly padDriving?: boolean;
   readonly indoorPrompt?: boolean;
   readonly cleanScreen: CleanScreen;
   readonly exitLabel?: string;

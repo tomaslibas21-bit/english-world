@@ -261,6 +261,11 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
 
   const [menuOpen, setMenuOpen] = useState(false);
   const open = folds && !panel && !(phone && radioOpen) && (menuOpen || listHint);
+  useLayoutEffect(() => {
+    const owner = game;
+    owner?.setPadDrawer?.(open);
+    return () => owner?.setPadDrawer?.(false);
+  }, [open]);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const closeMenu = useCallback(() => {
     setMenuOpen(false);

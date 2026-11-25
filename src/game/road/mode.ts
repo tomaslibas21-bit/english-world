@@ -128,6 +128,7 @@ export class RoadMode {
 
   constructor(private host: RoadHost) {}
   get active() { return this.phase !== "town"; }
+  get padDriving() { return this.phase === "drive"; }
   get lifted() { return !!this.lift; }
 
   start(edge: WalkEdge) {

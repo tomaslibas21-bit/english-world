@@ -62,6 +62,7 @@ export class RoadEntry implements GameMode {
   get inStrip() { return this.onStrip; }
   leaveStrip() { this.cancelPreparation(); }
   get modal() { return !!this.pending; }
+  get padDriving() { return this.mode?.padDriving ?? false; }
 
   prefetch(car: Ride) {
     this.cancelPreparation();

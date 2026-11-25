@@ -1,4 +1,4 @@
-import { StreetLife } from "./street";
+import { StreetLife, useStreet } from "./street/StreetLife";
 import { TownStreet } from "./street/world";
 import type { StreetSnapshot } from "./street/schedule";
 import { ROUTE } from "../content/route";
@@ -85,6 +85,7 @@ import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
 import type { GameApi } from "./gameRef";
+import { attachPad, effectiveStick, type PadLink } from "./padLink";
 import { THEME } from "./world/theme";
 export type { GameApi } from "./gameRef";
 
@@ -314,6 +315,8 @@ export class Game implements GameApi {
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
 
   private brake = false;
+  private pad?: PadLink;
+  private padDrawer = false;
   /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
    *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
    *  still to back up with the wheel the other way round (a turn in three: a tap behind a parked car), how many times
@@ -682,6 +685,12 @@ export class Game implements GameApi {
     else if (this.wantsFlight()) this.beginFlight();
     else this.enterZone("airport", ARRIVAL, true);
     this.phoneWatch.push(useStore.subscribe((state, previous) => {
+      const h = state.hud, before = previous.hud;
+      if (this.pad?.input && ((h.panel && h.panel !== before.panel) || (h.modeScreen && h.modeScreen !== before.modeScreen) ||
+          (h.fade && !before.fade) || (h.phoneCard && h.phoneCard !== before.phoneCard) ||
+          (state.conv.active && !previous.conv.active) || (state.screen !== "play" && previous.screen === "play"))) {
+        this.pad.cancel();
+      }
       if (state.conv.active !== previous.conv.active || state.hud.panel !== previous.hud.panel || state.hud.phoneCard !== previous.hud.phoneCard) {
         this.reactions.observe(state.conv.active);
       }
@@ -689,6 +698,7 @@ export class Game implements GameApi {
         this.observeStreetAndPhone();
       }
     }), radio.store.subscribe((state, previous) => {
+      if (state.open && !previous.open) this.pad?.cancel();
       if (state.open !== previous.open) this.observeStreetAndPhone();
     }));
     if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.observeStreetAndPhone()));
@@ -877,6 +887,7 @@ export class Game implements GameApi {
   enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void) {
     const z = this.getZone(id);
     if (!z) return;
+    this.pad?.cancel();
     const doIt = () => {
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
@@ -1050,6 +1061,31 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ input
 
   private bindInput() {
+    this.pad = attachPad({
+      scope: () => {
+        const st = useStore.getState();
+        if (st.screen !== "play" || st.conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
+            st.hud.panel || st.hud.fade || useStreet.getState().moment ||
+            st.hud.phoneCard || this.padDrawer || radio.store.getState().open || this.transitioning ||
+            this.flight || this.rideTimer !== undefined || this.modes.modal) return null;
+        const mode = this.modes.active;
+        if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving ? mode : null;
+        if (useSurf.getState().picking) return null;
+        const ride = this.rides.riding;
+        return ride ? (this.rides.phase === "on" ? ride.kind : null) : "foot";
+      },
+      canLook: () => this.rig.mode === "follow" && !this.pointer.down && !this.road?.active && !this.sea?.active,
+      orbit: (dx, dy) => {
+        if (this.keeperFrame > 0.001) this.keeperFrameDismissed = true;
+        this.rig.drag(dx, dy);
+      },
+      jump: () => this.jump(),
+      interact: () => this.interact(),
+      manual: (brake) => {
+        if (brake) this.rideGoal = null;
+        if (this.inputStick(true) === this.pad?.input) this.cancelManualPath();
+      },
+    });
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("blur", this.onBlur);
@@ -1150,6 +1186,7 @@ export class Game implements GameApi {
       x: start.x + sin * along + cos * across, z: start.z + cos * along - sin * across, rot: start.rot,
     })).find(({ x, z }) => this.rides.freeParkingAt(car, x, z)) ?? start;
     this.keys.clear();
+    this.pad?.cancel();
     this.joy.x = this.joy.y = 0;
     this.brake = false;
     this.rideFov = 0;
@@ -1185,6 +1222,7 @@ export class Game implements GameApi {
 
   private returnSeaBoat(boat: Ride, onFoot: boolean, handoff?: SeaHandoff) {
     this.keys.clear();
+    this.pad?.cancel();
     this.setJoystick(0, 0);
     this.brake = false;
     if (onFoot) {
@@ -1255,8 +1293,17 @@ export class Game implements GameApi {
 
   setJoystick(x: number, y: number) {
     this.joy.x = x; this.joy.y = y;
-    if (x || y) { this.autoPath = null; this.autoTarget = null; this.rideGoal = null; }
+    if (x || y) this.cancelManualPath();
     else this.helmSteer.reset();
+  }
+
+  private cancelManualPath() { this.autoPath = null; this.autoTarget = null; this.rideGoal = null; }
+  private inputStick(driving = false) { return effectiveStick(this.joy, this.pad?.input, driving); }
+  private get braking() { return this.keys.has(" ") || this.brake || !!this.pad?.input?.brake; }
+
+  setPadDrawer(open: boolean) {
+    this.padDrawer = open;
+    if (open) this.pad?.cancel();
   }
 
   /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
@@ -1415,6 +1462,7 @@ export class Game implements GameApi {
     this.surface(true);
     this.player.bank = 0;
     if (!this.rides.board(r)) return false;
+    this.pad?.cancel();
     this.observeStreetAndPhone();
     this.keepsake.clear();
     this.ambient.riding = r.kind === "car";
@@ -1467,6 +1515,7 @@ export class Game implements GameApi {
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.delete(" "); this.brake = false;
+    this.pad?.cancel();
     this.rideGoal = null;
     this.helmSteer.reset();
     this.ambient.riding = false;
@@ -1539,7 +1588,8 @@ export class Game implements GameApi {
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), r?.kind === "boat" ? -SEA_LEVEL : 0);
     const p = new THREE.Vector3();
     if (r) {
-      if (this.rides.phase !== "on" || this.keys.size || this.joy.x || this.joy.y || this.brake ||
+      const stick = this.inputStick(true);
+      if (this.rides.phase !== "on" || this.keys.size || stick.x || stick.y || stick !== this.joy || this.braking ||
           !this.raycaster.ray.intersectPlane(plane, p)) return;
       if (r.kind === "boat") {
         // Leave room for the turn the bay puts into the boat as it approaches its edges.
@@ -2000,6 +2050,7 @@ export class Game implements GameApi {
     this.fader.reset();
     CUT.r.value = 0;
     this.autoPath = null; this.autoTarget = null; this.keys.clear(); this.joy = { x: 0, y: 0 };
+    this.pad?.cancel();
     this.talkNpc = actor;
     coach.did("talk");
     const st = useStore.getState();
@@ -2654,13 +2705,15 @@ export class Game implements GameApi {
     this.adaptResolution(performance.now());
     const elapsed = this.clock.getDelta();
     // Both sides of the water handoff present the same simulation instant.
-    const dt = this.sea?.handingOff ? 0 : Math.min(0.05, elapsed);
+    const wallDt = Math.min(0.05, Math.max(0, elapsed));
+    const dt = this.sea?.handingOff ? 0 : wallDt;
     this.t += dt;
     if (this.seaReturnView) Object.assign(this.rig.cam, this.seaReturnView.live);
     if (this.frameFade.active) {
       this.frameFade.update(dt);
       this.transitioning = this.frameFade.active;
     }
+    this.pad?.tick(wallDt);
     const st = useStore.getState();
     const talking = !!this.session?.active;
     const mode = this.modes.active;
@@ -2932,22 +2985,27 @@ export class Game implements GameApi {
       if (this.keys.has("arrowdown") || this.keys.has("s")) y -= 1;
       if (this.keys.has("arrowleft") || this.keys.has("a")) x -= 1;
       if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
-      if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
+      const pad = this.pad?.input, stick = this.inputStick(true);
+      if (stick === pad && pad) { x = pad.x; y = pad.brake ? 0 : pad.throttle || pad.y; }
+      else if (stick.x || stick.y) { x = stick.x; y = stick.y; }
     }
-    return { x, y, brake: this.keys.has(" ") || this.brake };
+    return { x, y, brake: this.braking };
   }
 
   /** At a car's wheel or a boat's helm in the town: the keys or the stick drive it (rides/drive.ts); at the helm on a
    *  phone the stick points the way (point and go); a tap on the ground or the water drives there (`rideGoal`). */
   private townRideControls(dt: number, blocked: boolean): Controls | null {
     const r = this.rides.riding!, m = r.m;
-    const stick = !blocked && (this.joy.x !== 0 || this.joy.y !== 0);
+    const source = this.inputStick(true), pad = this.pad?.input;
+    const fromPad = source === pad;
+    const stick = !blocked && !!(source.x || source.y || fromPad);
     const { x, y, brake } = this.driveInput(blocked);
     let hands = controlsFrom(x, y, brake);
     if (r.kind === "boat") {
-      const aim = this.helmSteer.update(stick ? x : 0, stick ? y : 0, true, this.rig.yaw, this.rig.manualTurn, dt);
+      const point = stick && !(fromPad && pad?.throttle);
+      const aim = this.helmSteer.update(point ? x : 0, point ? y : 0, true, this.rig.yaw, this.rig.manualTurn, dt);
       if (aim.dir !== null && !brake) hands = pointAndGo(m.heading, aim.dir, aim.mag, m.speed);
-    }
+    } else if (stick && fromPad) hands.throttle = y;
     this.rig.manualTurn = 0;
     if (this.keys.size || stick || brake || this.rides.phase !== "on") this.rideGoal = null;
     const goal = blocked ? null : this.rideGoal;
@@ -3074,6 +3132,7 @@ export class Game implements GameApi {
     this.surface(true);
     this.player.bank = 0;
     this.keys.clear();
+    this.pad?.cancel();
     this.nearest = null;
     this.guidance.setPath(null);
   }
@@ -3087,6 +3146,7 @@ export class Game implements GameApi {
     this.hop.land(p.y); this.applyHop();
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.clear();
+    this.pad?.cancel();
     this.rig.mode = this.zone.interior ? "interior" : "follow";
     this.rig.target.copy(p);
     this.rig.yaw = rot; this.rig.snap();
@@ -3095,9 +3155,13 @@ export class Game implements GameApi {
 
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
-    if (this.modes.active) {
+    const mode = this.modes.active;
+    if (mode) {
       this.rideGoal = null;
-      this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
+      const input = this.driveInput(blocked);
+      // The sea uses a down-stick command for slowing and turning back.
+      if (mode === this.sea && !blocked && this.pad?.input?.brake) input.y = -1;
+      this.modes.update({ dt, time: this.t, blocked, ...input });
       if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
       else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
       return;
@@ -3120,13 +3184,14 @@ export class Game implements GameApi {
     }
     // the keys or the stick → a heading (movement.ts Steer: the direction as the camera shows it when pressed; the
     // camera's own swing behind the player doesn't turn it, the player's drag does); the stick pushed far: a run
-    const stick = (!blocked || through) && (this.joy.x !== 0 || this.joy.y !== 0);
-    const jm = Math.hypot(this.joy.x, this.joy.y);
+    const source = this.inputStick();
+    const stick = (!blocked || through) && (source.x !== 0 || source.y !== 0);
+    const jm = Math.hypot(source.x, source.y);
     this.joyRun = stick && (jm > 0.9 || (this.joyRun && jm > 0.8));
     const turned = this.rig.manualTurn;
     this.rig.manualTurn = 0;
     const camYaw = this.rig.mode === "follow" ? this.rig.yaw : Math.PI;
-    const steer = this.steer.update(stick ? this.joy.x : ix, stick ? this.joy.y : iz, stick, camYaw, turned, dt);
+    const steer = this.steer.update(stick ? source.x : ix, stick ? source.y : iz, stick, camYaw, turned, dt);
     if (steer.dir !== null) this.stepOut = 0;
     let want = new THREE.Vector3();
     // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
@@ -3645,6 +3710,7 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    this.pad?.dispose();
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);
