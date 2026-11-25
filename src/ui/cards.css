@@ -53,7 +53,7 @@
 }
 .pb-tab:hover { color: var(--ink); background: rgba(255, 255, 255, 0.6); }
 .pb-tab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(20, 30, 40, 0.14); }
-.pb-tab .n { font-weight: 800; font-size: 0.85em; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pb-tab .n { font-weight: 800; font-size: 0.85em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .pb-tab .due {
   min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #3b2a00;
   font-size: 0.75em; font-weight: 900; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
@@ -61,10 +61,17 @@
 .pb-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 4px; }
 .pb-bar p { margin: 0; color: var(--ink-soft); font-size: 0.9em; line-height: 1.4; flex: 1 1 220px; }
 .pb-bar .all-in { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 0.88em; color: var(--accent); }
+.hint-row:has(> .pb-acts) > .ex { overflow-wrap: anywhere; }
 .hint-row .pb-acts { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 6px; align-items: flex-start; }
 .hint-row .play.add { background: #fff; color: var(--accent); box-shadow: inset 0 0 0 1.5px #cfe4e1; }
 .hint-row .play.add:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
 .pb-in { width: 42px; height: 42px; display: grid; place-items: center; color: var(--good); flex: none; }
+
+@media (pointer: coarse) {
+  .pb-tab, .pb-bar .btn.small, .hint-row .pb-acts :is(.play, .pb-in), .rv-play, .rv-top .btn.small {
+    min-width: 44px; min-height: 44px;
+  }
+}
 
 /* ---------- the cards tab ---------- */
 .cards-empty { text-align: center; padding: 26px 16px 10px; color: var(--ink-soft); line-height: 1.5; }
@@ -121,12 +128,13 @@
 .rv-progress i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
 .rv-count { font-weight: 900; font-size: 0.85em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .rv-card {
-  background: #fff; border: 1px solid #ebe1cf; border-radius: 20px; padding: 18px 18px 20px; text-align: center; min-height: 230px;
+  background: var(--panel-solid); border: 1px solid #ebe1cf; border-radius: 20px; padding: 18px 18px 20px; text-align: center; min-height: 230px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 10px 26px -16px rgba(20, 30, 40, 0.35);
 }
 .rv-card.shown { cursor: default; }
-.rv-label { font-size: 0.78em; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint); }
+.rv-label, .rv-sit { font-size: calc(14px * var(--scale)); line-height: 1.3; color: var(--ink-soft); }
+.rv-label { max-inline-size: 100%; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; overflow-wrap: anywhere; }
 .rv-sit { text-transform: none; letter-spacing: 0; font-weight: 700; }
 .rv-lt { font-size: 1.55em; font-weight: 800; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; max-width: 100%; }
 .rv-card.long .rv-lt { font-size: 1.2em; }
@@ -168,6 +176,7 @@
   .cards-hero .hero-txt { flex-basis: 100%; }
   .cards-hero .btn { width: 100%; }
   .rv-card { padding: 16px 14px 18px; min-height: 210px; }
+  html:lang(lt) .rv-sit { display: block; margin-block-start: 2px; }
   .rv-lt { font-size: 1.4em; }
   .rv-en { font-size: 1.7em; }
   .cd-row { padding-left: 11px; gap: 6px; }

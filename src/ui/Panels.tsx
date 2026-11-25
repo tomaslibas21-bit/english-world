@@ -2,7 +2,7 @@ import { isTownQuest } from "../content/townQuests";
 import { clearPhotos } from "../game/photowalk/photos";
 import { PhotoBookContact } from "./PhotoWalk";
 import { useKeyboardHints } from "./keyboardHints";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
@@ -16,9 +16,10 @@ import { TEXT_THREADS } from "../content/texts";
 import { TextList, TextThread } from "./TextThread";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
-import { OUTDOOR_NPCS, AIRPORT_EXIT } from "../game/world/layout";
+import { AIRPORT_EXIT, OUTDOOR_NPCS } from "../game/world/layout";
 import { CAVE_ZONE, preferredCaveEntry } from "../game/cave/groundsPlan";
 import { drawTownMap, groundBounds, mapPoint, townBounds } from "./worldMap";
+import { takeMapOpener } from "./mapOpener";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
@@ -30,7 +31,7 @@ import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
-import { showToast } from "./Toasts";
+import { showToast, Toasts } from "./Toasts";
 import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
@@ -118,11 +119,12 @@ function Help({ close }: { close: () => void }) {
   </div>;
 }
 
-function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; close: () => void }) {
+function SheetHead({ icon, title, close, tools }: { icon: IconName; title: ReactNode; close: () => void; tools?: ReactNode }) {
   return (
     <div className="sheet-head">
       <span className="sheet-ico" aria-hidden><Icon name={icon} size={24} /></span>
       <h2>{title}</h2>
+      {tools}
       <button className="close-x" onClick={close} aria-label={L("Uždaryti")}><Icon name="close" /></button>
     </div>
   );
@@ -319,85 +321,78 @@ function Journal({ close }: { close: () => void }) {
   );
 }
 
-function locationPoint(loc: string): { x: number; z: number } | null {
-  if (loc === CAVE_ZONE) return preferredCaveEntry() ?? null;
-  if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
-  const d = game?.doors.find((dd) => dd.loc === loc);
-  if (d) return { x: d.x, z: d.z };
-  const s = SITUATIONS.find((x) => x.location === loc);
-  const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
-  return o ? { x: o.x, z: o.z } : null;
-}
+const MapPlaces = lazy(() => import("./MapPlaces"));
 
 function MapPanel({ close }: { close: () => void }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const [sel, setSel] = useState<string | null>(null);
-  const progress = useStore((s) => s.progress);
-  const mm = useStore((s) => s.hud.minimap);
-  useEffect(() => {
-    const g = game?.groundCanvas, c = ref.current;
-    if (!g || !c) return;
-    const ppm = g.width / (groundBounds.maxX - groundBounds.minX);
-    c.width = Math.round((townBounds.maxX - townBounds.minX) * ppm);
-    c.height = Math.round((townBounds.maxZ - townBounds.minZ) * ppm);
-    c.dataset.map = drawTownMap(c, g, townBounds) ? "cenote" : "town";
+  const sheet = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const map = sheet.current!;
+    const overlay = map.parentElement!;
+    const opener = takeMapOpener() ?? document.activeElement;
+    const others = [...overlay.parentElement!.children].filter(
+      (el): el is HTMLElement => el instanceof HTMLElement && el !== overlay && !el.inert,
+    );
+    const closeButton = map.querySelector<HTMLButtonElement>(".close-x")!;
+    const focusClose = () => closeButton.focus({ preventScroll: true });
+    focusClose();
+    for (const el of others) el.inert = true;
+    const keepFocus = (e: FocusEvent) => {
+      if (!map.contains(e.target as Node)) focusClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+      }
+      if (e.key !== "Tab") return;
+      const controls = [...map.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")].filter((el) => el.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (document.activeElement !== (e.shiftKey ? first : last)) return;
+      e.preventDefault();
+      (e.shiftKey ? last : first)?.focus();
+    };
+    document.addEventListener("focusin", keepFocus);
+    map.addEventListener("keydown", onKey);
+    return () => {
+      map.removeEventListener("keydown", onKey);
+      document.removeEventListener("focusin", keepFocus);
+      for (const el of others) el.inert = false;
+      queueMicrotask(() => {
+        const { hud, conv } = useStore.getState();
+        if (hud.panel || conv.active) return;
+        const target = opener instanceof HTMLElement && opener !== document.body && opener.isConnected
+          && !opener.closest("[inert]") && opener.getClientRects().length ? opener
+          : document.querySelector<HTMLElement>(opener?.closest(".toolbar") || opener?.matches("[data-map-tool]")
+            ? ".toolbar .ride-menu, .toolbar [data-map-tool]" : ".minimap");
+        target?.focus({ preventScroll: true });
+      });
+    };
   }, []);
-  const pct = (x: number, z: number) => {
-    const [u, v] = mapPoint(townBounds, x, z);
-    return { left: `${u * 100}%`, top: `${v * 100}%` };
+  // Keep the map's shared game and UI dependencies in their existing chunks.
+  const data = useMemo(() => ({
+    locations: LOCATIONS, route: SITUATIONS, catalog: CATALOG, outdoor: OUTDOOR_NPCS, airport: AIRPORT_EXIT,
+    caveZone: CAVE_ZONE, caveEntry: preferredCaveEntry, isTownQuest, isPhone, townBounds, mapPoint,
+  }), []);
+  const showPins = () => {
+    const map = sheet.current!;
+    const pin = map.querySelector<HTMLElement>('.map-pin[aria-expanded="true"]')
+      ?? map.querySelector<HTMLElement>(".map-pin.sel")
+      ?? map.querySelector<HTMLElement>(".map-pin");
+    map.querySelector(".sheet-body")?.scrollTo(0, 0);
+    pin?.focus({ preventScroll: true });
   };
-  const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
-  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
-  const selSits = sel ? mapSits(sel) : [];
   return (
-    <div className="sheet">
-      <SheetHead icon="map" title={EDITION.town} close={close} />
-      <div className="sheet-body">
-        <div className="town-lt" lang={EDITION.helper}>{TOWN_LT}</div>
-        <div className="map-wrap">
-          <div className="map-canvas">
-            <canvas ref={ref} />
-            {mm.zone === "town" && <div className="map-me" style={pct(mm.px, mm.pz)} title={L("Tu esi čia")} />}
-            {locs.map((l) => {
-              const p = locationPoint(l.id);
-              if (!p) return null;
-              const sits = mapSits(l.id);
-              const allDone = sits.some((s) => !isTownQuest(s.id))
-                && sits.every((s) => isTownQuest(s.id) || sitProgress(progress, s.id).completions > 0);
-              return (
-                <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
-                  <Icon name={locIcon(l.id)} size={18} />
-                  {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label={L("įveikta")} /></span>}
-                </button>
-              );
-            })}
-          </div>
-          <div>
-            {!sel && <div className="info-box">{L("Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.")}<br /><br /><InlineIcon name="smartphone" /> {L("Kai kurios užduotys atliekamos telefonu (P).")}</div>}
-            {sel && (
-              <div>
-                <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
-                <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
-                <div className="sit-list">
-                  {sel === CAVE_ZONE && !game?.light && mm.zone !== CAVE_ZONE && (
-                    <button className="btn soft small" onClick={() => { close(); game?.autoWalkToObjective("cave"); }}>
-                      <Icon name="walk" size={17} /> {L("Nuvesk mane")}
-                    </button>
-                  )}
-                  {selSits.map((s) => (
-                    <div key={s.id}>
-                      <SitCard s={s} open onClick={() => {}} />
-                      <div style={{ padding: "6px 4px" }}><div style={{ color: "var(--ink-soft)", fontSize: "0.9em" }}>{s.goal}</div><SitActions s={s} close={close} /></div>
-                    </div>
-                  ))}
-                  {!selSits.length && <div className="info-box">{L("Čia kol kas nėra užduočių.")}</div>}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="sheet map-sheet" ref={sheet} role="dialog" aria-modal="true" aria-label={EDITION.town}>
+      <SheetHead icon="map" title={EDITION.town} close={close} tools={
+        <button type="button" className="btn soft small map-return" onClick={showPins}>
+          <Icon name="map" size={18} /> {L("Miesto žemėlapis")}
+        </button>
+      } />
+      <Suspense fallback={null}>
+        <MapPlaces close={close} town={game} townName={TOWN_LT} data={data} groundBounds={groundBounds} drawTownMap={drawTownMap}
+          SitCard={SitCard} SitActions={SitActions} Icon={Icon} InlineIcon={InlineIcon} locIcon={locIcon} placeLt={placeLt} />
+      </Suspense>
     </div>
   );
 }
@@ -408,12 +403,19 @@ function Phone({ close }: { close: () => void }) {
   const textId = useStore((s) => s.hud.textThread);
   const thread = TEXT_THREADS.find(({ id, from }) => id === textId && NPCS[from] && progress.texts?.got[id]);
   const missed = calls.filter((sit) => progress.phone?.missed[sit.id]);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    closeButton.current?.focus({ preventScroll: true });
+    return () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); };
+  }, []);
   return (
     <div className={"phone" + (thread ? " thread-open" : "")} role="dialog" aria-label={L("Telefonas")}>
       <div className="phone-status">
-        <span>9:41</span><button className="phone-close" onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
+        <span>9:41</span><button className="phone-close" ref={closeButton} onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
       </div>
-      {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <>
+      <Toasts phone />
+      {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <div className="phone-directory">
       <TextList got={progress.texts?.got} />
       <PhotoBookContact close={close} />
       {!!missed.length && <section className="missed-calls">
@@ -441,7 +443,7 @@ function Phone({ close }: { close: () => void }) {
           </button>
         );
       })}
-      </>}
+      </div>}
     </div>
   );
 }

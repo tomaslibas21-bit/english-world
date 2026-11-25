@@ -4,8 +4,9 @@ import { townRide, usesTownNotes, useStore, type HudState } from "../state/store
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
-import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
+import { useBarista } from "../game/barista/store";
 import { useTownQuests } from "../game/photowalk/store";
+import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
 import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { TaxiOverlay } from "./Taxi";
 import { PoolOverlay } from "./Pool";
@@ -13,9 +14,12 @@ import { LoteriaOverlay } from "./Loteria";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
+import type { Game } from "../game/Game";
 import { coach } from "../game/coach";
 import { CAVE_ZONE } from "../game/cave/groundsPlan";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { LOCATIONS } from "../content/locations";
+import { NPCS } from "../content/npcs";
 import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
@@ -30,7 +34,7 @@ import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
-import { TownToast, useTownToast } from "./Toasts";
+import { useTownToast } from "./Toasts";
 import { useStreet } from "../game/street/StreetLife";
 import { StreetCard } from "./street/StreetCard";
 import { StreetBubbles } from "./street/StreetBubbles";
@@ -42,6 +46,7 @@ import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
 import { getRoadOverlay } from "./roadOverlay";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
+import { openMap } from "./mapOpener";
 import "./light.css";
 import "./townPhone.css";
 
@@ -51,7 +56,7 @@ export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
   const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
+    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} data-map-tool={panel === "map" || undefined} onClick={(e) => panel === "map" ? openMap(e.currentTarget) : useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
       <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -88,13 +93,19 @@ export function Hud() {
   const toast = useTownToast(note === "toast");
   const questHud = hud.minimap.zone === "town" && !hud.ride && !hud.panel && !picking;
   const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
-  const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
+  const requested = useTownQuests((s) => s.directions?.id);
+  const directions = useStore((s) => questHud && notesVisible && requested && !s.hud.cave
+    && !s.townToasts.some(({ toast }) => toast.sitId === ASK_WAY_SITUATION && toast.kind === "stamp") ? requested : undefined);
   const narrow = useNarrowHud();
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
+  const anchoredChatter = useStreet((s) => !!s.bubble?.anchor);
   const portrait = screen.portraitPhone;
+  const baristaOffer = useBarista((s) => s.offered);
+  const compactForPhoto = useTownQuests((s) => questHud && portrait && s.camera && (!!s.near || screen.h <= 720));
   const phoneToast = narrow && toast !== null;
   const autoCollapse = (phoneToast || photoReady) && !hud.cave;
-  const task = useTaskCard(taskId, notesVisible && !hud.cave, autoCollapse, layout);
+  const shortChatter = portrait && screen.h <= 720 && anchoredChatter && taskId !== null && !hud.panel && !hud.cave;
+  const task = useTaskCard(taskId, notesVisible && !hud.cave, taskCardNote(directions, autoCollapse, shortChatter), layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -124,10 +135,24 @@ export function Hud() {
     );
   }
   const banner = note === "banner" && hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
+  const subtitle = hud.zoneBanner?.sub?.trim();
+  const zone = hud.minimap.zone;
+  const kind = hud.prompt?.kind;
+  // Boarding clears the prompt before the next HUD update publishes the ride kind.
+  const rideControls = !hud.modeScreen && (ride === "car" || ride === "boat" || (game as Game | null)?.rides?.riding)
+    ? kind === "out" && !hud.panel && !hud.glyph && !picking : undefined;
+  const talk = kind === "talk";
+  const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards";
+  const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
+  const foldForContext = portrait && !hud.panel && target !== undefined && target !== zone
+    && ((zone !== "town" && localOffer) || (talk && note === "guide" && !hud.roadApproach));
   const moving = hud.walking || riding;
+  const step = hud.coach?.step;
+  const compactGuide = portrait && (compactForPhoto || ((moving || talk) && step !== "walk" && step !== "list"));
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = !hud.cave && (streetCard || (autoCollapse ? !task.openedDuringAutoCollapse
-    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving)))));
+  const movingFollowUp = moving && !!hud.objective?.followUp;
+  const collapsed = !hud.cave && ((!directions && streetCard) || (task.note ? !task.openedDuringNote
+    : movingFollowUp || (task.manual ?? (screen.sidewaysPhone || foldForContext || (!task.fresh && moving)))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       {hud.speedLines && !hud.panel && <div className="drive-wind" aria-hidden />}
@@ -135,16 +160,16 @@ export function Hud() {
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
           {streetCard && portrait && <StreetCard />}
-          {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && subtitle !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
-          <Guide visible={note === "guide"} />
-          <TownToast toast={toast} />
-          {questHud && !directionsToast && <DirectionsCard />}
+          <Guide visible={note === "guide"} compact={compactGuide} />
+          {hud.panel !== "phone" && <QuestArrival toast={toast} />}
+          {directions && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
       </div>
-      <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} />
+      <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} hornReady={rideControls} />
       <RadioSetLayer />
       {streetCard && !portrait && <StreetCard />}
       {!hud.panel && <StreetBubbles />}
@@ -160,9 +185,9 @@ export function Hud() {
       {riding && hud.rideStartedAt !== null && !hud.showTouch && (
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
-      {hud.showTouch && <TouchControls />}
+      {hud.showTouch && <TouchControls rideControls={rideControls} />}
       {!hud.panel && <BaristaOffer />}
-      {questHud && <><PhotoChip /><QuestArrival /></>}
+      {questHud && <PhotoChip />}
       <SurfPicker />
       <Fade />
     </div>
@@ -181,10 +206,14 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, autoCollapse: boolean, layout: string) {
+export function taskCardNote(directions: string | undefined, autoCollapse: boolean, shortChatter: boolean) {
+  return directions ?? (autoCollapse || (shortChatter && "chatter"));
+}
+
+function useTaskCard(taskId: string | null, visible: boolean, note: ReturnType<typeof taskCardNote>, layout: string) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const [openedDuringAutoCollapse, setOpenedDuringAutoCollapse] = useState(false);
-  if (openedDuringAutoCollapse && (!autoCollapse || taskId !== state.id)) setOpenedDuringAutoCollapse(false);
+  const [openedDuringNote, setOpenedDuringNote] = useState<string | boolean>(false);
+  if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (typeof note === "string" && layout !== state.layout))) setOpenedDuringNote(false);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
   // is back on screen.
   if (taskId !== state.id) setState({ id: taskId, layout, manual: null, fresh: taskId !== null });
@@ -195,27 +224,27 @@ function useTaskCard(taskId: string | null, visible: boolean, autoCollapse: bool
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    setState((current) => ({ ...current, manual }));
-    setOpenedDuringAutoCollapse(autoCollapse && !manual);
+    if (typeof note === "boolean") setState((current) => ({ ...current, manual }));
+    setOpenedDuringNote(!manual && note);
   }
-  return { ...state, openedDuringAutoCollapse, setManual };
+  return { ...state, note, openedDuringNote, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
 function activateHudButton(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(".minimap, [data-map-tool], :focus-visible")) e.stopPropagation();
 }
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
  *  they fold only at a wheel, at the helm, in the water, in a mini-game or the surf lesson (`surf`: in its top bar,
  *  without the town's keys). Opened, the drawer is the fewest even columns that fit above the controls, the right
  *  column first (`toolbarColumns`): one column wherever it fits. */
-function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = false, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string; hint?: boolean }) {
+function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = false, modeExit, hint = false, hornReady = true }: Screen & { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string; hint?: boolean; hornReady?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const unread = useStore((s) => unreadTexts(s.progress.texts));
@@ -226,7 +255,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   const panel = useStore((s) => s.hud.panel);
   const prompt = useStore((s) => s.hud.prompt?.kind);
   // (`hint`: the town's guide is on screen; the hint that points at the list opens the menu while it shows)
-  const listHint = useStore((s) => s.hud.coach?.step === "list" && !s.hud.coach.ok) && hint;
+  const listHint = useStore((s) => s.hud.coach?.step === "list" && !s.hud.coach.ok && !s.hud.walking && !s.hud.ride) && hint;
   const phone = portraitPhone || sidewaysPhone;
   const folds = phone || riding;
   // On a computer the radio stays beside the menu button during a ride; on a phone or in the surf lesson it is one of
@@ -234,7 +263,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   const radioInDrawer = phone || surf;
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
-  const hornInMenu = canHonk && !touch;
+  const hornInMenu = canHonk && !touch && hornReady;
   const rows = portraitToolbarRows({ hasHelp, hasRadio: hasRadio && radioInDrawer, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
   const single = rows.single + Number(hornInMenu);
   const split = Math.ceil(single / 2);
@@ -273,15 +302,15 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   }, []);
   const keepOpen = useCallback(() => {
     clearTimeout(timer.current);
-    if (!listHint) timer.current = setTimeout(() => setMenuOpen(false), 5000);
-  }, [listHint]);
+    timer.current = setTimeout(() => setMenuOpen(false), 5000);
+  }, []);
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => {
       const target = e.target as Element;
       if (toolbar.current?.contains(target)) return;
-      // The guide's buttons dismiss their own hint when the tap finishes.
-      if (target.closest?.(".coach-row")) setMenuOpen(false);
+      // Keep the guide mounted until its button handles the tap.
+      if (target.closest?.(".coach-row, .coach-toggle")) setMenuOpen(false);
       else closeMenu();
     };
     const escape = (e: globalThis.KeyboardEvent) => { if (e.key === "Escape") closeMenu(); };
@@ -293,9 +322,9 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
     };
   }, [open, closeMenu]);
   useEffect(() => {
-    if (open) keepOpen();
+    if (open && menuOpen) keepOpen();
     return () => clearTimeout(timer.current);
-  }, [open, keepOpen]);
+  }, [open, menuOpen, keepOpen]);
   useLayoutEffect(() => {
     if (!folds) setMenuOpen(false);
     else if (panel || (phone && radioOpen)) {
@@ -310,7 +339,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
     ...(modeExit ? [<button key="exit" className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>] : []),
     <ToolButton key="scenarios" icon="clapper" title={L("Visos situacijos")} panel="scenarios" />,
     <ToolButton key="map" icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" shortcuts={!surf} />,
-    <ToolButton key="journal" icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />,
+    <ToolButton key="journal" icon={phone && !surf ? "clipboard" : "journal"} title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />,
     <ToolButton key="phone" icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} shortcuts={!surf} />,
     <ToolButton key="phrasebook" icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />,
     <ToolButton key="settings" icon="settings" title={L("Nustatymai (Esc)")} panel="settings" shortcuts={!surf} />,
@@ -353,7 +382,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>
       <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
-      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
+      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={menuOpen ? keepOpen : undefined} onClick={menuOpen ? keepOpen : undefined}>
         <div className="toolbar-tools">
           <div className="toolbar-actions">{actions.map(slot)}</div>
           {radioInDrawer && slot(<RadioTool phone={phone} shortcut={!surf} />, actions.length)}
@@ -422,72 +451,57 @@ function Fade() {
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
-  // A conversation's own drawing stands before its title; a follow-up errand and "all done" keep the target.
   const situation = o && !o.followUp ? o.sitId : null;
-  if (collapsed) {
-    return (
-      <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
-        <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
-          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
-          <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? L("Visos užduotys atliktos")}</span>
-          <Icon name="chevronDown" size={16} strokeWidth={2} />
-          {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
-        </button>
-      </div>
-    );
-  }
-  const fold = <button className="collapse-btn" onClick={() => setCollapsed(true)} onKeyDown={activateHudButton} aria-label={L("Suskleisti")} aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
-  const className = "objective-card" + (fresh ? " fresh" : "");
-  if (!o) {
-    return (
-      <div className={className}>
-        <div className="kicker">{L("Visos užduotys atliktos")} <InlineIcon name="party" />{fold}</div>
-        <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
-      </div>
-    );
-  }
-  if (o.followUp) return (
-    <div className={className} data-target-location={o.targetLoc}>
-      <div className="kicker">
-        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
-        {fold}
-      </div>
-      <h3>{o.title}</h3>
-      <div className="row">
-        {o.dist !== null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
-        <button className="btn small" onClick={() => game?.autoWalkToObjective("objective")} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-      </div>
-    </div>
-  );
-  const sit = SITUATION_BY_ID[o.sitId];
+  const sit = situation ? SITUATION_BY_ID[situation] : undefined;
   const phone = sit && isPhone(sit);
-  const st = stars(sitProgress(progress, o.sitId));
+  const title = o?.title ?? L("Visos užduotys atliktos");
+  const npc = sit?.npc;
+  const profile = progress.profile;
+  const person = npc === "sam" || npc === "emma" ? profile?.datePartner ?? (profile?.gender === "f" ? "sam" : "emma") : npc;
+  const place = phone ? undefined : person && sit && LOCATIONS[sit.location]?.kind === "outdoor"
+    ? NPCS[person]?.name ?? o?.where
+    : o?.where;
+  const meters = o?.dist != null ? `${o.dist} m` : null;
+  const details = (place || meters) && <span className="objective-meta">
+    {place && <span className="objective-destination">{place}</span>}
+    {meters && <span className="dist">{o?.angle != null && <Arrow angle={o.angle} />}{meters}</span>}
+  </span>;
+  const st = !collapsed && situation ? stars(sitProgress(progress, situation)) : 0;
   return (
-    <div className={className}>
-      <div className="objective-head">
-        <div className="kicker">
-          <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
-          {st > 0 && <Stars n={st} size={14} />}
-          {fold}
+    <div className={"objective-card" + (collapsed ? " collapsed" : fresh ? " fresh" : "")} data-target-location={o?.targetLoc}>
+      {/* The same native button keeps focus across both layouts. */}
+      <button className={collapsed ? "collapse-btn objective-summary" : "collapse-btn"} aria-expanded={!collapsed}
+        aria-label={collapsed ? [title, place, meters].filter(Boolean).join(", ") : L("Suskleisti")}
+        onClick={() => setCollapsed(!collapsed)}>
+        {collapsed && <>
+          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
+          <span className="objective-title">{title}</span>
+          {details}
+        </>}
+        <Icon name={collapsed ? "chevronDown" : "chevronUp"} size={collapsed ? 16 : 18} strokeWidth={2} />
+      </button>
+      {!collapsed && (o ? <>
+        <div className={situation ? "objective-head" : undefined}>
+          <div className="kicker">
+            <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
+            {st > 0 && <Stars n={st} size={14} />}
+          </div>
+          {situation && <SitIcon id={situation} size={32} className="objective-ico" />}
+          <h3 lang={HL}>{title}{sit && <> <span lang={TL} className="en-title">· {sit.title.en}</span></>}</h3>
         </div>
-        <SitIcon id={o.sitId} size={32} className="objective-ico" />
-        <h3 lang={HL}>{o.title}{sit && <> <span lang={TL} className="en-title">· {sit.title.en}</span></>}</h3>
-      </div>
-      {o.goal && <p>{o.goal}</p>}
-      <div className="row">
-        {phone ? (
-          <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button>
-        ) : (
-          <>
-            <span className="dist">
-              {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? L("Čia pat!") : o.dist !== null ? `${o.dist} m` : ""}{o.where && ` · ${o.where}`}
-            </span>
-            <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-          </>
-        )}
-        <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>{L("Kita užduotis")}</button>
-      </div>
+        {o.goal && <p>{o.goal}</p>}
+        <div className="row">
+          {details}
+          {phone ?
+            <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button> :
+            <button className="btn small" onClick={() => game?.autoWalkToObjective(o.followUp ? "objective" : undefined)} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          }
+          {!o.followUp && <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>{L("Kita užduotis")}</button>}
+        </div>
+      </> : <>
+        <div className="kicker">{title} <InlineIcon name="party" /></div>
+        <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
+      </>)}
     </div>
   );
 }
@@ -504,7 +518,7 @@ function Arrow({ angle }: { angle: number }) {
 
 function Minimap({ w, h }: Screen) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const card = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLSpanElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
   // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
@@ -552,6 +566,11 @@ function Minimap({ w, h }: Screen) {
     c.dataset.map = cave ? "gruta" : grounds ? "cenote" : "town";
     c.dataset.player = `${px},${pz}`;
     c.dataset.gates = cave ? String(mm.gates ?? 0) : "";
+    if (cave && mm.questX !== undefined && mm.questZ !== undefined) {
+      const [u, v] = mapPoint(bounds, mm.questX, mm.questZ);
+      x.strokeStyle = "#fff"; x.lineWidth = 2; x.fillStyle = "#2d968d";
+      x.beginPath(); x.arc(u * S, v * S, 9, 0, Math.PI * 2); x.fill(); x.stroke();
+    }
     // target
     if (mm.targetX !== undefined && mm.targetZ !== undefined) {
       const [u, v] = mapPoint(bounds, mm.targetX, mm.targetZ);
@@ -571,19 +590,19 @@ function Minimap({ w, h }: Screen) {
     x.restore();
   }, [mm, cave, inside]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <button type="button" className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
-      onClick={() => useStore.getState().setHud({ panel: "map" })}
-      title={L("Žemėlapis (M)")}>
-      <canvas ref={ref} />
-      <div className="label">{inside ? "" : zoneName}</div>
-      <div className="mm-card" ref={card} aria-hidden={!inside}>
+      onClick={(e) => openMap(e.currentTarget)} onKeyDown={activateHudButton}
+      title={L("Žemėlapis (M)")} aria-label={L("Miesto žemėlapis")} aria-describedby={inside ? "minimap-place" : undefined}>
+      <canvas ref={ref} aria-hidden />
+      <span className="label">{inside ? "" : zoneName}</span>
+      <span className="mm-card" id="minimap-place" ref={card} aria-hidden={!inside}>
         <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
         <small>{L("Viduje")}</small>
         <b><span>{place.current}</span></b>
         <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -593,7 +612,12 @@ function HornButton({ touch }: { touch?: boolean }) {
     title={label} onClick={() => game?.horn?.()}><Icon name="horn" size={23} /></button>;
 }
 
-function TouchControls({ road = false, stickOnly = false }: { road?: boolean; stickOnly?: boolean }) {
+function releaseBrakeOnRemove() {
+  const currentGame = game;
+  return () => currentGame?.hold(false);
+}
+
+function TouchControls({ road = false, stickOnly = false, rideControls }: { road?: boolean; stickOnly?: boolean; rideControls?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
@@ -635,6 +659,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
   }, []);
   const stick = <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>;
   if (stickOnly) return stick;
+  if (rideControls === false) return <>{stick}</>;
   return (
     <>
       {stick}
@@ -642,9 +667,9 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
-      {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
+      {/* Removing a held free-ride brake during exit or a panel also releases it. */}
       {ride === "car" || ride === "boat" || ride === "taxi"
-        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
+        ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}

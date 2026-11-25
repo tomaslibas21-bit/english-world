@@ -6,6 +6,17 @@
 // a gentle brightening travels along them towards the destination. They fade in over the first metres in front of
 // the player and out with distance: only the next stretch of the way is marked.
 import * as THREE from "three";
+import type { Destination } from "./photowalk/store";
+
+/** A requested door uses the endpoint of its live walk, including any navigation snap. */
+export function directionsTarget(
+  path: [number, number][] | null,
+  target: { kind: string; id?: string; directions?: Destination | null; onward?: "pool-hall" } | null,
+  current: Destination | null,
+) {
+  const end = current && target?.directions === current ? path?.at(-1) : undefined;
+  return end ? { kind: "point" as const, x: end[0], z: end[1] } : null;
+}
 
 /** One mark of the way: where it lies, which way it points (a heading: 0 towards +z) and how strongly it shows (0–1). */
 export interface WayMark { x: number; z: number; rot: number; alpha: number }
@@ -63,7 +74,7 @@ export class Guidance {
     geo.setAttribute("aAlpha", this.alpha);
     const mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
-      uniforms: { uFill: { value: new THREE.Color("#ffe9ad") }, uEdge: { value: new THREE.Color("#4a3a26") } },
+      uniforms: { uFill: { value: new THREE.Color("#ffe9ad") }, uEdge: { value: new THREE.Color("#403323") } },
       vertexShader: `attribute float aAlpha; varying vec2 vUv; varying float vA;
         void main() { vUv = uv; vA = aAlpha; gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0); }`,
       fragmentShader: `uniform vec3 uFill; uniform vec3 uEdge; varying vec2 vUv; varying float vA;
@@ -74,7 +85,7 @@ export class Guidance {
           vec2 p = vec2(vUv.x - 0.5, 0.5 - vUv.y);
           float d = min(seg(p, vec2(0.0, 0.2), vec2(-0.25, -0.1)), seg(p, vec2(0.0, 0.2), vec2(0.25, -0.1))) - 0.07;
           float fill = 1.0 - smoothstep(-0.012, 0.012, d);
-          float edge = (1.0 - smoothstep(0.0, 0.1, d)) * 0.46;
+          float edge = (1.0 - smoothstep(0.0, 0.1, d)) * 0.72;
           float a = max(fill * 0.85, edge) * vA;
           if (a < 0.004) discard;
           gl_FragColor = vec4(mix(uEdge, uFill, fill), a);
@@ -123,10 +134,10 @@ export class Guidance {
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }
   /** The beacon over (x, z), its gem at `height`. With `stand` (where to stand to talk to the person under it, across a
    *  counter), a smaller ring lies there instead of round the beacon's foot. */
-  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, lowRoof = false) {
+  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, hideBeam = false) {
     if (x === null || z === undefined) { this.beacon.visible = false; return; }
     this.beacon.visible = true;
-    this.beam.visible = !lowRoof;
+    this.beam.visible = !hideBeam;
     this.beacon.position.set(x, 0, z);
     this.gem.position.y = height;
     this.ring.position.set(stand ? stand.x - x : 0, 0.04, stand ? stand.z - z : 0);

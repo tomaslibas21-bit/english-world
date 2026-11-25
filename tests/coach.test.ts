@@ -2,15 +2,16 @@
 // remembered; done by doing it, by "Gerai" or by itself after a while; "Daugiau nerodyti" ends them all.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { coach, COACH_STEPS } from "../src/game/coach";
-import { useStore } from "../src/state/store";
+import { useStore, type HudState } from "../src/state/store";
 import { radio } from "../src/radio";
 
 const hud = () => useStore.getState().hud.coach;
-const prompt = (kind: "talk" | "drive" | "boat" | "enter" | null) => useStore.getState().setHud({ prompt: kind ? { label: "x", kind } : null });
+const prompt = (kind: NonNullable<HudState["prompt"]>["kind"] | null) =>
+  useStore.getState().setHud({ prompt: kind ? { label: "x", kind } : null });
 const fresh = () => {
   useStore.getState().updateProgress((p) => { delete p.coach; });
   useStore.setState({ toasts: [] });
-  useStore.getState().setHud({ coach: null, prompt: null, ride: null });
+  useStore.getState().setHud({ coach: null, prompt: null, ride: null, walking: false, panel: null, zoneBanner: null, phoneCard: null });
 };
 
 describe("the town's guide", () => {
@@ -92,6 +93,92 @@ describe("the town's guide", () => {
     coach.begin(); coach.next();
     expect(coach.cue("water")).toBe(true);
     expect(hud()!.step).toBe("water");
+  });
+
+  it.each([false, true])("replaces a passed car with talk, with cleared prompt = %s", (cleared) => {
+    coach.begin(); coach.next();
+    prompt("drive");
+    expect(hud()).toEqual({ step: "car", ok: false });
+    vi.advanceTimersByTime(7000);
+    if (cleared) {
+      prompt(null);
+      expect(hud()).toBeNull();
+    }
+    prompt("talk");
+    expect(hud()).toEqual({ step: "talk", ok: false });
+    vi.advanceTimersByTime(24999); // Past the discarded car cue's deadline.
+    expect(hud()?.step).toBe("talk");
+    vi.advanceTimersByTime(1);
+    expect(hud()).toBeNull();
+  });
+
+  it("drops a passed car when the talk cue was already seen", () => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { talk: true } }; });
+    coach.begin(); coach.next();
+    prompt("drive");
+    expect(hud()?.step).toBe("car");
+    prompt("talk");
+    expect(hud()).toBeNull();
+    prompt("drive");
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen).toMatchObject({ car: true, talk: true });
+  });
+
+  it.each([null, "out", "together"] as const)("acknowledges genuine boarding with the prompt transition %s", (transition) => {
+    const st = useStore.getState();
+    coach.begin(); coach.next();
+    prompt("drive");
+    vi.advanceTimersByTime(8000);
+    if (transition === "together") {
+      st.setHud({ ride: "car", prompt: null });
+    } else {
+      prompt(null); // boardRide clears this before updateHud reports the ride.
+      expect(hud()).toBeNull();
+      vi.advanceTimersByTime(120);
+      if (transition) prompt(transition);
+      st.setHud({ ride: "car" });
+    }
+    expect(hud()).toEqual({ step: "car", ok: true });
+    prompt("out");
+    vi.advanceTimersByTime(1099);
+    expect(hud()).toEqual({ step: "car", ok: true });
+    vi.advanceTimersByTime(1);
+    expect(hud()).toBeNull();
+  });
+
+  it("keeps a car offer for 25 uncovered seconds and cancels a pending tick when coaching ends", () => {
+    const st = useStore.getState();
+    coach.begin(); coach.next();
+    prompt("drive");
+    vi.advanceTimersByTime(10000);
+    st.setHud({ phoneCard: "lizzie" });
+    vi.advanceTimersByTime(20000);
+    expect(hud()).toEqual({ step: "car", ok: false });
+    st.setHud({ phoneCard: null });
+    vi.advanceTimersByTime(14999);
+    expect(hud()?.step).toBe("car");
+    vi.advanceTimersByTime(1);
+    expect(hud()).toBeNull();
+    prompt(null);
+    st.updateProgress((p) => { delete p.coach?.seen?.car; });
+    prompt("drive");
+    prompt(null);
+    coach.finish();
+    st.setHud({ ride: "car" });
+    expect(hud()).toBeNull();
+  });
+
+  it("acknowledges surf and water on their own ride signals", () => {
+    const st = useStore.getState();
+    coach.begin(); coach.next();
+    prompt("surf");
+    st.setHud({ ride: "surf", prompt: null });
+    expect(hud()).toEqual({ step: "surf", ok: true });
+    vi.advanceTimersByTime(1100);
+    expect(coach.cue("water")).toBe(true);
+    st.setHud({ ride: "swim" });
+    expect(hud()).toEqual({ step: "water", ok: true });
   });
 
   it("after a stretch on foot: jumping, and later the radio where there is one", () => {
@@ -177,6 +264,39 @@ describe("the town's guide", () => {
     useStore.getState().setHud({ panel: null });
     expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
     coach.begin(true);
+    expect(hud()).toBeNull();
+  });
+
+  it.each([{ walking: true }, { ride: "car" }, { ride: "boat" }] as const)("retires the returning list cue on %j", (movement) => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    coach.begin(true);
+    expect(hud()).toEqual({ step: "list", ok: false });
+    st.setHud(movement);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
+    st.setHud({ walking: false, ride: null });
+    coach.begin(true);
+    expect(hud()).toBeNull();
+  });
+
+  it("retires a list cue offered during a walk and leaves no timer", () => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    st.setHud({ walking: true });
+    coach.begin(true);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("acknowledges the list if the learner opens it while starting to walk", () => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    coach.begin(true);
+    st.setHud({ panel: "scenarios", walking: true });
+    expect(hud()).toEqual({ step: "list", ok: true });
+    vi.advanceTimersByTime(1100);
     expect(hud()).toBeNull();
   });
 

@@ -80,12 +80,13 @@ export function LightPlay() {
   }, []);
   // the home screen is the situation list: "Visos situacijos" (and the town's map) just show it
   const homePanel = panel === "scenarios" || panel === "map";
+  const panelsMounted = ready && !homePanel;
   useEffect(() => { if (homePanel) useStore.getState().setHud({ panel: null }); }, [homePanel]);
   return (
     <>
-      {ready && <><LightHome /><CallBackdrop /><SceneBackdrop /><Conversation />{!homePanel && <Panels />}</>}
+      {ready && <><LightHome /><CallBackdrop /><SceneBackdrop /><Conversation />{panelsMounted && <Panels />}</>}
       {!ready && <Loading />}
-      <Toasts />
+      <Toasts panelsMounted={panelsMounted} />
     </>
   );
 }

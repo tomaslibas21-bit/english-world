@@ -1,10 +1,77 @@
 // The way to the objective, marked on the ground (src/game/guidance.ts): small arrowheads that lie still, fewer than
 // the discs there were, fading in before the player and out with distance, a brightening travelling along them.
 import { describe, expect, it } from "vitest";
-import { wayMarks, WAY } from "../src/game/guidance";
+import { ASK_WAY_PLACES } from "../src/content/ask-way-lines";
+import { Game } from "../src/game/Game";
+import { directionsTarget, Guidance, wayMarks, WAY } from "../src/game/guidance";
 
 /** A way of 60 m: 30 m east, then 30 m north (towards -z). */
 const way = (from = 0): [number, number][] => [[from, 0], [30, 0], [30, -30]];
+
+describe("the route to a door requested from Queta", () => {
+  const [post, cafe] = ASK_WAY_PLACES;
+  const route = { kind: "point", directions: post };
+
+  it("uses the active walk's endpoint while the airport stays saved", () => {
+    const airport = { kind: "door", id: "airport", x: 0, z: 8 };
+    expect(directionsTarget(way(), route, post) ?? airport).toEqual({ kind: "point", x: 30, z: -30 });
+    expect(directionsTarget(null, null, post) ?? airport).toBe(airport); // Manual steering.
+    expect(directionsTarget([], route, post) ?? airport).toBe(airport); // Arrival.
+  });
+
+  it("releases the marker on close or replacement, including another request for the same door", () => {
+    expect(directionsTarget(way(), route, null)).toBeNull();
+    expect(directionsTarget(way(), route, cafe)).toBeNull();
+    expect(directionsTarget(way(), route, { ...post })).toBeNull();
+    expect(directionsTarget([[2, 5]], { kind: "point", directions: cafe }, cafe)).toEqual({ kind: "point", x: 2, z: 5 });
+  });
+
+  it("leaves named points, cave and pool walks, and phone errands to the saved guide", () => {
+    const exit = { kind: "exit", id: "grieta", onward: "pool-hall" as const };
+    const office = { kind: "point", id: "office", x: 15, z: 8 };
+    for (const target of [{ kind: "point", id: post.location }, { kind: "cave-entry", id: "grieta" }, exit, office]) {
+      expect(directionsTarget(way(), target, post)).toBeNull();
+    }
+    expect(directionsTarget(way(), route, null) ?? office).toBe(office);
+  });
+
+  it("hides only the detour beam and restores the saved beacon for travel outdoors or in the cave", () => {
+    const guidance = new Guidance();
+    const game: Game = Object.assign(Object.create(Game.prototype), { guidance });
+    const airport = { kind: "door", id: "airport", x: 0, z: 8 } as const;
+    const detour = directionsTarget(way(), route, post)!;
+    const caveExit = { kind: "exit", id: "grieta", x: 4, z: 6 } as const;
+    const beacon = guidance["beacon"];
+    const beam = guidance["beam"];
+    const gem = guidance["gem"];
+    const ring = guidance["ring"];
+
+    const check = (x: number, z: number, gemHeight: number, beamVisible: boolean) => {
+      expect(beacon.visible).toBe(true);
+      expect(beacon.position.toArray()).toEqual([x, 0, z]);
+      expect([beam.visible, ring.visible, gem.visible]).toEqual([beamVisible, true, true]);
+      expect(gem.position.y).toBe(gemHeight);
+      expect(ring.position.toArray()).toEqual([0, 0.04, 0]);
+    };
+
+    game["showBeacon"](airport);
+    check(0, 8, 3.8, true);
+    game["showBeacon"](detour, true);
+    check(30, -30, 3.8, false);
+    guidance.update(0);
+    check(30, -30, 3.8, false);
+    game["showBeacon"](airport, false);
+    check(0, 8, 3.8, true);
+
+    game["showBeacon"](detour, true);
+    Object.assign(game, { cave: {} });
+    game["showBeacon"](caveExit, false);
+    check(4, 6, 1.8, false);
+    Object.assign(game, { cave: undefined });
+    game["showBeacon"](airport);
+    check(0, 8, 3.8, true);
+  });
+});
 
 describe("the way's marks", () => {
   it("lie along the way, a mark every 2.2 m, each pointing on, the last one short of the destination", () => {

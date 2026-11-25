@@ -49,6 +49,7 @@ function Play({ onBack }: { onBack: () => void }) {
   const [ready, setReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [failure, setFailure] = useState<{ retry(): void; back(): void } | null>(null);
+  const panelsMounted = ready && !!game;
   useEffect(() => {
     // Start all three requests in this effect, before either module is available.
     useStore.getState().setScreen("loading");
@@ -115,8 +116,8 @@ function Play({ onBack }: { onBack: () => void }) {
     <>
       <div className="stage" ref={stage} />
       <div className="tag-layer" ref={tags} />
-      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
-      <Toasts />
+      {panelsMounted && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
+      <Toasts panelsMounted={panelsMounted} />
       {!ready && <Loading />}
       {failure && <div className="startup-error" role="alert">
         <p>{L("Nepavyko įkelti žaidimo")}.</p>

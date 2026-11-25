@@ -131,6 +131,10 @@
 .photo-page[data-found="false"] .photo-placeholder { filter: grayscale(1); opacity: 0.63; }
 .photo-page .btn { justify-self: start; font-size: 0.93em; min-height: 36px; padding: 4px 6px; text-align: left; }
 .photo-page .il { font-size: 1.1em; gap: 3px 5px; }
+@media (pointer: coarse) {
+  .photo-book .photo-page .btn, .photo-book footer .btn { min-width: 44px; min-height: 44px; }
+  .photo-book .photo-pages { min-height: 44px; scroll-padding-block: 6px; }
+}
 .photo-visit { flex: 0 1 auto; max-height: 25dvh; overflow: auto; padding: 4px; }
 .photo-quiz, .photo-finale { display: grid; gap: 10px; }
 .photo-preview { flex: none; width: min(160px, 42%); height: auto; border-radius: 8px; }
@@ -142,46 +146,93 @@
 .photo-quiz-mic .mic { width: 44px; height: 44px; padding: 0; }
 .photo-flash { position: fixed; inset: 0; z-index: 1; background: white; pointer-events: none; animation: photo-flash 0.22s ease-out both; }
 @keyframes photo-flash { from { opacity: 0.85; } to { opacity: 0; } }
-.quest-sparkle { color: #c58a19; animation: quest-sparkle 0.65s ease-out both; }
-.quest-arrival { position: absolute; left: calc(50% - 16px); top: 46%; pointer-events: none; color: #ffe29a; filter: drop-shadow(0 0 5px #c58121); }
+.quest-arrival { display: contents; }
+.quest-sparkle, .quest-arrival .t-icon .ui-icon { color: #c58a19; animation: quest-sparkle 0.65s ease-out both; }
 @keyframes quest-sparkle { 0% { transform: scale(0.55); } 55% { transform: scale(1.24); } }
 @media (prefers-reduced-motion: reduce) {
   .photo-flash { display: none; }
-  .quest-sparkle { animation: none; }
+  .quest-sparkle, .quest-arrival .t-icon .ui-icon { animation: none; }
 }
 
+/* Scroll the phrases between the destination and the actions. */
 .directions-card {
   display: grid;
-  gap: 4px;
+  grid-template-rows: auto minmax(44px, 1fr) auto;
+  flex: 0 var(--directions-shrink, 0) auto;
+  min-height: 0;
+  gap: 6px;
   width: 100%;
   padding: 6px 8px 8px;
   pointer-events: auto;
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow-y: var(--directions-overflow, visible);
 }
-.directions-card .direction-lines { display: grid; gap: 3px; }
+.directions-card h2 { color: var(--ink-soft); font-size: 0.84em; }
+.directions-card header > div { min-width: 0; overflow-wrap: anywhere; }
+.directions-card header p { color: var(--ink); font-size: 1em; font-weight: 900; }
+.directions-card .direction-lines {
+  display: grid;
+  grid-auto-rows: max-content;
+  min-height: 0;
+  gap: 6px;
+  padding: 2px;
+  overflow-y: var(--directions-overflow, visible);
+}
 .direction-lines button {
   border: 0;
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--ink);
   padding: 5px 7px;
+  min-width: 44px;
+  min-height: 44px;
   text-align: left;
   line-height: 1.12;
+  white-space: normal;
 }
-.direction-lines button .kit-gloss-compact { font-size: 0.94em; }
-.directions-card .btn { min-height: 38px; white-space: normal; text-align: left; padding: 3px 7px; font-size: 0.78em; }
+.directions-card button:focus-visible { outline-offset: -3px; }
+.direction-lines .kit-gloss-compact {
+  --kit-phrase-size: calc(18px * var(--scale));
+  --kit-translation-size: calc(14px * var(--scale));
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.direction-lines .kit-gloss-compact > span { font-size: var(--kit-phrase-size); }
+.direction-lines .kit-gloss-compact > small { font-size: var(--kit-translation-size); }
+.directions-card footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.directions-card footer .btn.small {
+  min-width: 44px; min-height: 44px; gap: 6px; white-space: normal; text-align: left;
+  padding: 3px 7px; font-size: 0.82em;
+}
+.directions-card footer .btn:not(.ghost) { background: #1f6f78; }
 .directions-card .quest-close { align-self: start; }
 
-.objective-notes:has(.directions-card) {
+.objective-notes:has(> .directions-card) {
+  --directions-top: max(var(--card-top), env(safe-area-inset-top));
+  --directions-reserve: calc(174px + env(safe-area-inset-bottom));
+  --directions-space: calc(100dvh - var(--directions-top) - var(--directions-reserve));
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: var(--directions-space);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
 }
-.objective-notes:has(.directions-card) .objective-card {
-  position: static;
+.objective-notes:has(> .directions-card) .objective-card {
+  position: relative;
+  inset: auto;
+  flex: none;
   max-width: none;
   width: 100%;
+}
+.objective-notes:has(> .directions-card) .objective-card:not(.collapsed) { max-height: none; overflow: visible; }
+.objective-notes:has(> .directions-card) > .town-toasts:empty { display: none; }
+/* With a folded task the card gets the remaining height. Open notes scroll together. */
+.objective-notes.task-folded:has(> .directions-card):not(:has(> :is(.zone-banner, .coach, .phone-ring, .text-arrival, .street-card, .town-toasts:not(:empty)))) {
+  height: var(--directions-space);
+  pointer-events: none;
+  --directions-shrink: 1;
+  --directions-overflow: auto;
 }
 @media (min-width: 901px) {
   .objective-notes:has(.directions-card) { grid-area: 1 / 1; }
@@ -190,52 +241,62 @@
 @media (max-width: 900px) {
   .objective-notes:has(.directions-card) {
     position: absolute;
-    top: var(--card-top);
+    top: var(--directions-top);
     left: max(var(--card-left), env(safe-area-inset-left));
-    max-height: calc(100dvh - 174px - env(safe-area-inset-bottom));
-    width: min(350px, calc(100vw - 120px));
-    overflow-y: auto;
+    width: min(350px, calc(100vw - 120px - env(safe-area-inset-left) - env(safe-area-inset-right)));
   }
-  .objective-notes:has(.directions-card) .objective-card:not(.collapsed) {
-    flex-shrink: 0;
-    max-height: min(30dvh, 175px);
-    overflow: auto;
+  .objective-notes:has(> .directions-card) > :is(.zone-banner, .coach, .phone-ring, .text-arrival, .town-toasts:not(:empty)) {
+    position: static;
+    width: 100%;
+    max-width: none;
+    flex: none;
+    margin: 0;
+    transform: none;
+    animation-name: note-in;
   }
-  .directions-card { min-height: min(160px, 43dvh); }
 }
 @media (max-width: 900px) and (orientation: landscape) {
   .objective-notes:has(.directions-card) { width: min(348px, 43vw); }
-  .objective-notes:has(.directions-card) .objective-card:not(.collapsed) { flex-shrink: 1; }
-  .objective-notes:has(.directions-card) .zone-banner { left: 56%; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
+  .objective-notes:has(.directions-card) {
+    /* The stick is 140px tall, sits 18px above the safe area and needs 8px of clearance. */
+    --directions-reserve: calc(140px + 18px + 8px + env(safe-area-inset-bottom));
+    max-width: calc(100vw - max(var(--card-left), env(safe-area-inset-left)) - 196px - env(safe-area-inset-right));
+  }
   .directions-card {
     width: min(256px, 100%);
-    min-height: 0;
-    padding: 4px 6px 6px;
+    padding: 4px 6px;
     gap: 3px;
     border-radius: 12px;
-    font-size: 0.82em;
+    font-size: 0.9em;
   }
   .directions-card header { gap: 5px; }
   .directions-card header > .ui-icon { width: 15px; height: 15px; }
-  .directions-card p { margin-top: 2px; }
-  .directions-card .quest-close { flex-basis: 30px; width: 30px; height: 30px; border-radius: 8px; }
-  .directions-card .direction-lines { gap: 2px; }
+  .directions-card header p { margin: 0; line-height: 1.1; }
+  .directions-card .direction-lines { gap: 3px; padding: 0; }
   .direction-lines button { padding: 3px 5px; border-radius: 6px; }
-  .direction-lines .kit-gloss-compact { gap: 1px; line-height: 1.1; }
-  .directions-card footer { gap: 4px; }
-  .directions-card .btn.small { min-height: 28px; padding: 2px 4px; font-size: 0.82em; }
+  .direction-lines .kit-gloss-compact {
+    --kit-phrase-size: calc(16px * var(--scale));
+    --kit-translation-size: calc(13px * var(--scale));
+  }
+  .directions-card footer .btn.small { padding-block: 2px; }
   .directions-card footer .ui-icon { width: 13px; height: 13px; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
-  .hud:has(.photo-chip) .objective-notes:has(.coach, .directions-card) {
-    max-height: calc(100dvh - var(--card-top) - var(--photo-chip-clearance));
+  .hud:has(> .photo-chip) .objective-notes:has(> .coach, > .directions-card) {
+    --photo-note-reserve: max(var(--photo-reserve), var(--photo-chip-clearance));
+    max-height: calc(100dvh - max(var(--card-top), env(safe-area-inset-top)) - var(--photo-note-reserve));
   }
-  .hud:has(.photo-chip) .objective-notes:has(.coach) .objective-card:not(.collapsed) {
+  .hud:has(> .photo-chip) .objective-notes:has(> .coach):not(:has(> .directions-card)) .objective-card:not(.collapsed) {
     flex-shrink: 1;
   }
-  .hud:has(.photo-chip) .objective-notes .coach { overflow-y: auto; }
+  .hud:has(> .photo-chip) .objective-notes > .coach { overflow-y: auto; }
+  .hud:has(> .photo-chip) .objective-notes:has(> .directions-card) { --directions-reserve: var(--photo-note-reserve); }
+  .hud:has(> .photo-chip) .objective-notes:has(> .directions-card) > .directions-card {
+    flex-shrink: var(--directions-shrink, 0);
+    overflow-y: var(--directions-overflow, visible);
+  }
   .photo-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* batch 5 media: an empty page's round sticker and the book's cover (PhotoWalk.tsx Sticker; the icon stands in) */

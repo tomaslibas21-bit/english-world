@@ -10,22 +10,30 @@
 body.light-mode { background: #f5efe5; }
 
 /* ---------- home: the situation list ---------- */
-.lh { position: fixed; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain; background: var(--lh-bg); background-attachment: fixed; }
+.lh {
+  position: fixed; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--lh-bg); background-attachment: fixed;
+}
 .lh-in { max-width: 960px; margin: 0 auto; padding: 16px 20px 36px; }
 .lh-top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 10px; }
 .lh-brand { flex: 1 1 22em; min-width: min(100%, 22em); display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
 .lh-logo { font-family: var(--en); font-size: 1.75em; font-weight: 600; color: var(--accent); line-height: 1.05; }
 .lh-town { font-size: 0.7em; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm); }
-.lh-tools { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 auto; min-width: 0; }
+.lh-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-inline-size: 0; }
 .lh-tool {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 14px 0 11px; flex: none; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
+  min-width: 44px; min-height: 48px; max-inline-size: 100%; padding: 0 8px; white-space: normal;
   border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.85); background: var(--panel); color: var(--accent); font-weight: 800;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.06), 0 6px 16px -8px rgba(20, 30, 40, 0.28); transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
-.lh-tool span { color: var(--ink); font-size: 0.88em; }
+.lh-tool > span:not(.due-badge) { min-inline-size: 0; color: var(--ink); font-size: 0.88em; overflow-wrap: anywhere; }
+.lh-tool > .due-badge { color: var(--ink); }
 .lh-tool:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(20, 30, 40, 0.08), 0 10px 22px -8px rgba(20, 30, 40, 0.34); }
 .lh-tool:active { transform: scale(0.96); }
-.lh-3d { background: transparent; border: 1.5px solid var(--line); box-shadow: none; }
+.lh-3d { gap: 4px; background: transparent; border: 1.5px solid var(--line); box-shadow: none; }
+.lh-3d .ui-icon { width: 20px; height: 20px; }
+.lh-3d > span:not(.due-badge) { font-size: calc(13px * var(--scale)); line-height: 1.2; }
 .lh-3d:hover { background: rgba(255, 255, 255, 0.7); box-shadow: none; }
 
 .lh-hello {
@@ -63,25 +71,23 @@ body.light-mode { background: #f5efe5; }
 .lh-card.current { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(244, 180, 0, 0.22); }
 .lh-ico { grid-area: ico; width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent); transition: background-color 0.15s, color 0.15s; }
 .lh-card:hover .lh-ico { background: var(--accent); color: #fff; }
-.lh-txt { grid-area: txt; align-self: start; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lh-txt { grid-area: txt; align-self: start; min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
 .lh-txt b { font-size: 1.02em; line-height: 1.22; }
 .lh-txt i { font-family: var(--en); font-size: 1.1em; line-height: 1.2; color: var(--ink-soft); }
-.lh-txt span { font-size: 0.8em; line-height: 1.35; color: var(--ink-faint); }
+.lh-txt > span { font-size: max(0.8em, calc(14px * var(--scale))); line-height: 1.3; color: var(--ink-soft); }
 .lh-tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px; background: var(--gold-soft); color: #8a5a00; font-style: normal; font-weight: 900; font-size: 0.92em; }
 .lh-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 30px 0 6px; text-align: center; color: var(--ink-faint); font-size: 0.85em; }
 .lh-foot .btn { font-size: 1.15em; }
 
 @media (max-width: 760px) {
-  .lh-3d { display: none; }
-  .lh-tool:not(.lh-3d) { width: 48px; padding: 0; }
-  .lh-tool:not(.lh-3d) span { display: none; }
+  .lh-tool { min-height: 44px; border-radius: 13px; }
+  button.lh-tool:not(.lh-3d) { width: 44px; }
+  button.lh-tool:not(.lh-3d) > span:not(.due-badge) { display: none; }
 }
 @media (min-width: 761px) { .lh-foot { display: none; } }
 @media (max-width: 480px) {
   .lh-in { padding: 12px 12px 28px; }
   .lh-logo { font-size: 1.5em; }
-  .lh-tools { gap: 6px; }
-  .lh-tool:not(.lh-3d) { width: 44px; min-height: 44px; border-radius: 13px; }
   .lh-hello { padding: 18px 16px 14px; border-radius: 20px; }
   .lh-hello h1 { font-size: 1.45em; }
   .lh-hello-sky { display: none; }
