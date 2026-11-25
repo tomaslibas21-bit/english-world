@@ -1,6 +1,6 @@
 import { Vector3, type Object3D } from "three";
 import { classifyTalk, talkPersonality } from "../../content/talkNatural";
-import type { ConvUI } from "../../state/store";
+import type { ConvUI, TranscriptLine } from "../../state/store";
 import type { AudioSystem } from "../audio";
 import type { GameCharacter } from "../characters";
 import { talkRoomAnchors } from "../world/talkNatural";
@@ -13,6 +13,7 @@ import { lineSeed, talkRandom } from "./seed";
 export interface TalkActor { id: string; ch: GameCharacter }
 type Pose = NonNullable<ReturnType<typeof bindConversationPose>>;
 type Voice = Pick<AudioSystem, "visualOwner" | "visualState" | "visualElapsed" | "readVisualEnvelope">;
+const CUE_WINDOW = 0.24;
 
 export interface NaturalOptions {
   run: number;
@@ -46,7 +47,10 @@ export function mountedTalkActor(ch: GameCharacter) {
 export class NaturalSession {
   private readonly anchors;
   private readonly cast: Peer[];
-  private readonly bystander?: Peer;
+  private readonly extras: TalkActor[];
+  private readonly observerRandom: () => number;
+  private bystander?: Peer;
+  private observerReduced = false;
   private readonly player: Peer;
   private current?: Peer;
   private shown = false;
@@ -63,7 +67,7 @@ export class NaturalSession {
   private cueLine: number | null = null;
   private readonly openings = new Map<string, number>();
   private serial = 0;
-  private pending?: { line: number; peer: Peer; cue: ClassifiedCue };
+  private pending?: { line: number; peer: Peer; cue: ClassifiedCue; at: number; entry: TranscriptLine };
   private time = 0;
   private armAt = -Infinity;
   private bystanderAt = Infinity;
@@ -88,11 +92,9 @@ export class NaturalSession {
     this.player = this.makePeer({ id: "player", ch: options.player });
     this.cast = options.cast.map((actor) => this.makePeer(actor));
     this.current = this.cast.find(({ actor }) => actor === options.host);
-    const candidate = this.findBystander();
-    if (candidate) {
-      this.bystander = this.makePeer(candidate);
-      this.scheduleBystander();
-    }
+    this.extras = options.extras.map((ch, i) => ({ id: `nearby:${i}`, ch }));
+    this.observerRandom = talkRandom(lineSeed(options.host.id, options.run, 0, 10));
+    this.scheduleBystander();
     if (import.meta.env.DEV) this.uninspect = inspectTalkNatural(() => this.sample());
   }
 
@@ -100,13 +102,13 @@ export class NaturalSession {
     return { actor, style: talkPersonality(actor.id), random: talkRandom(lineSeed(actor.id, this.options.run, 0, 9)) };
   }
 
-  private findBystander() {
-    const { host, people, extras, authoredCast, free } = this.options;
-    host.ch.root.getWorldPosition(this.target);
+  private findBystander(speaker: Peer) {
+    const { people, authoredCast, free } = this.options;
+    speaker.actor.ch.root.getWorldPosition(this.target);
     let nearest: TalkActor | undefined, best = 4.5 ** 2;
     const consider = (actor: TalkActor) => {
       const ch = actor.ch;
-      if (!this.canObserve(ch)) return;
+      if (!free(actor) || !this.canObserve(ch)) return;
       ch.root.getWorldPosition(this.world);
       const distance = this.target.distanceToSquared(this.world);
       if (distance >= best) return;
@@ -117,15 +119,15 @@ export class NaturalSession {
       best = distance;
     };
     for (const actor of people) {
-      if (!this.cast.some((peer) => peer.actor === actor) && !authoredCast?.includes(actor.id) && free(actor)) consider(actor);
+      if (!this.cast.some((peer) => peer.actor === actor) && !authoredCast?.includes(actor.id)) consider(actor);
     }
-    for (let i = 0; i < extras.length; i++) consider({ id: `nearby:${i}`, ch: extras[i] });
+    for (const actor of this.extras) consider(actor);
     return nearest;
   }
 
   private canObserve(ch: GameCharacter) {
     return mountedTalkActor(ch) && (ch.anim === "idle" || ch.anim === "sit") && !ch.busy &&
-      !ch.handsOccupied && !ch.rightHand.children.length && !ch.talkPose &&
+      !ch.handsOccupied && !ch.rightHand.children.length && (!ch.talkPose || ch.talkPose === this.bystander?.pose) &&
       ch.canNoticeTalk?.() !== false && !ch.naturalRig?.()?.carry;
   }
 
@@ -139,7 +141,7 @@ export class NaturalSession {
 
   private bind(peer: Peer, role: TalkRole) {
     const ch = peer.actor.ch;
-    if (peer.pose?.active || (ch.talkPose && !ch.talkPose.releasing) || !mountedTalkActor(ch)) return;
+    if ((ch.talkPose && !ch.talkPose.releasing) || !mountedTalkActor(ch)) return;
     const counter = role === "cast" && this.anchors.counter?.withinReach(ch.root.getWorldPosition(this.world)) ? this.anchors.counter : undefined;
     peer.pose = bindConversationPose(ch, {
       audio: this.options.audio, role, random: peer.random, counterY: counter?.center.y,
@@ -164,6 +166,7 @@ export class NaturalSession {
 
   discardPending(conv: ConvUI) {
     this.pending = this.completion = undefined;
+    this.current?.pose?.discardReadablePoint();
     this.skipLine = conv.speaking;
     this.skipOwner = this.options.audio.visualOwner;
   }
@@ -182,6 +185,7 @@ export class NaturalSession {
     this.reaction = undefined;
     this.attention = undefined;
     this.interruptActors();
+    this.bystanderUntil = Infinity;
     this.scheduleBystander();
   }
 
@@ -246,7 +250,12 @@ export class NaturalSession {
       this.pending = undefined;
       return;
     }
-    speaker.pose?.speak(line, this.voice ?? null);
+    const repeated = replay || entry.acting?.replay || this.voice?.replay === "turn";
+    if (repeated) {
+      this.pending = undefined;
+      speaker.pose?.discardReadablePoint();
+    }
+    speaker.pose?.speak(line, this.voice ?? null, undefined, !repeated);
     if (replay) {
       this.pending = undefined;
       if (this.voice && this.voice !== previousVoice && this.voice !== this.skipOwner && conv.phase !== "ended") {
@@ -260,24 +269,24 @@ export class NaturalSession {
     this.serial++;
     const id = speaker.actor.id;
     if (!this.openings.has(id)) this.openings.set(id, line);
-    if (line === this.skipLine || speaker.pose?.reduced) return;
+    if (line === this.skipLine || speaker.pose?.reduced || repeated) return;
     const cue = classifyTalk(entry.sentence.say, this.options.zone.id, this.openings.get(id) === line,
-      conv.stepId === "closing", this.voice?.replay === "turn");
-    this.pending = { line, peer: speaker, cue };
+      conv.stepId === "closing");
+    this.pending = { line, peer: speaker, cue, at: this.time, entry };
   }
 
-  private signOff(peer: Peer, line: number, delay: number) {
+  private signOff(peer: Peer, line: number, delay: number, textOnly = false) {
     if (this.farewell) return;
     this.farewell = true;
     this.completion = undefined;
     const pose = peer.pose;
     if (!pose) return;
-    let kind = peer.style.farewell;
+    let kind: typeof peer.style.farewell | "headGreeting" = peer.style.farewell;
     if (!pose.canWave || this.time + delay - this.armAt < 1.6 ||
-      lineSeed(peer.actor.id, this.options.run, line, 5) >= peer.style.armChance) kind = "yes";
+      lineSeed(peer.actor.id, this.options.run, line, 5) >= peer.style.armChance) kind = peer.style.directs ? "headGreeting" : "yes";
     const side = lineSeed(peer.actor.id, this.options.run, line, 4) < 0.5 ? -1 : 1;
-    if (pose.react(kind, side, delay)) {
-      if (kind !== "yes") this.armAt = this.time + delay;
+    if (pose.react(kind, side, delay, line, textOnly && peer.style.directs)) {
+      if (kind === "wave" || kind === "heart") this.armAt = this.time + delay;
       this.reaction = { peer, kind: "farewell", sequence: ++this.sequence };
     }
   }
@@ -295,23 +304,24 @@ export class NaturalSession {
     if (point) peer.pose?.glanceAt(point, delay, hold, cue.anchor);
   }
 
-  private playCue(elapsed: number) {
+  private playCue(elapsed: number, textOnly = false) {
     const pending = this.pending;
     if (!pending) return;
     this.pending = undefined;
     const { peer, cue, line } = pending, pose = peer.pose;
-    if (!pose || pose.reduced || this.voice?.replay || cue.family === "repeat") return;
+    if (!pose?.active || pose.reduced || peer !== this.current || !mountedTalkActor(peer.actor.ch) ||
+      this.voice?.replay || cue.family === "repeat") return;
     const { ch, id } = peer.actor;
     const run = this.options.run;
     const glanceAt = 0.25 + 0.30 * lineSeed(id, run, line, 1);
     if (elapsed <= glanceAt) this.glance(peer, cue, glanceAt - elapsed, 0.26 + 0.16 * lineSeed(id, run, line, 6));
-    if (elapsed > 0.24) {
+    if (elapsed > CUE_WINDOW) {
       if (cue.family === "goodbye") { this.farewell = true; this.completion = undefined; }
       return;
     }
     if (cue.family === "rest") return;
-    const delay = Math.max(0, 0.05 + 0.17 * lineSeed(id, run, line, 2) - elapsed);
-    if (cue.family === "goodbye") { this.signOff(peer, line, delay); return; }
+    const delay = textOnly ? 0 : Math.max(0, 0.05 + 0.17 * lineSeed(id, run, line, 2) - elapsed);
+    if (cue.family === "goodbye") { this.signOff(peer, line, delay, textOnly); return; }
     const last = peer.lastStroke;
     if (last?.serial === this.serial - 1 && last.kind === cue.family && last.side === cue.side &&
       last.straight === cue.straight && last.count === cue.quantity) {
@@ -332,36 +342,53 @@ export class NaturalSession {
     }
     let kind: GestureRequest["kind"] = cue.family;
     const wantsArm = kind !== "yes" && kind !== "no";
-    const arms = wantsArm && pose.armOpportunity > 0 && this.time + delay - this.armAt >= 1.6 &&
-      lineSeed(id, run, line, 5) < peer.style.armChance && (kind !== "greeting" || pose.canWave);
+    const routePoint = peer.style.directs && kind === "point" && (cue.side || cue.straight);
+    const allowed = peer.style.directs ? routePoint : lineSeed(id, run, line, 5) < peer.style.armChance;
+    const opportunity = pose.armOpportunity;
+    const arms = wantsArm && opportunity > 0 && this.time + delay - this.armAt >= 1.6 &&
+      allowed && (kind !== "greeting" || pose.canWave);
     if (wantsArm && !arms) {
-      if (kind === "greeting" || kind === "offer") kind = "headGreeting";
+      if (kind === "greeting" || kind === "offer" || peer.style.directs) kind = "headGreeting";
       else return;
     }
-    if (pose.gestureForLine(line, { kind, side, count: cue.quantity, delay, directional: !!cue.side,
-      straight: cue.straight, strength: peer.style.smallGreeting && kind === "greeting" ? 0.53 : 1,
-      smile: peer.style.quickSmile && (kind === "greeting" || kind === "offer") })) {
+    // Carry the existing point high enough to read above the portrait panel, using the free arm.
+    const strength = routePoint && arms ? 1.2 / opportunity : peer.style.smallGreeting && kind === "greeting" ? 0.53 : 1;
+    if (pose.gestureForLine(line, { kind, side, count: cue.quantity, delay, directional: !!cue.side && !cue.straight,
+      straight: cue.straight, strength,
+      smile: peer.style.quickSmile && (kind === "greeting" || kind === "offer"),
+      readable: textOnly && (kind === "point" || (peer.style.directs && cue.family === "point")) })) {
       if (arms) this.armAt = this.time + delay;
     }
   }
 
   private scheduleBystander() {
-    if (this.bystander) this.bystanderAt = this.time + 6 + 4 * this.bystander.random();
+    this.bystanderAt = this.time + 6 + 4 * this.observerRandom();
   }
 
-  private observe() {
-    const peer = this.bystander;
-    if (!peer) return;
-    if (this.time >= this.bystanderUntil) {
-      peer.pose?.release(0.16);
+  private observe(edge: boolean, ended: boolean) {
+    const reduced = this.player.pose?.reduced ?? false;
+    if (reduced !== this.observerReduced) {
+      this.observerReduced = reduced;
+      this.bystanderUntil = reduced ? Infinity : this.time;
+      edge = true;
+    }
+    if (this.time >= this.bystanderUntil || (ended && edge && !reduced)) {
+      this.bystander?.pose?.release(0.16);
       this.bystanderUntil = Infinity;
     }
-    if (this.time < this.bystanderAt) return;
-    this.scheduleBystander();
-    if (!this.current?.pose?.active || !this.options.free(peer.actor) || !this.canObserve(peer.actor.ch)) return;
-    peer.actor.ch.root.getWorldPosition(this.world);
-    if (this.world.distanceToSquared(this.speakerHead) > 4.5 ** 2) return;
+    const due = !ended && this.time >= this.bystanderAt;
+    if (!edge && !due) return;
+    if (due) this.scheduleBystander();
+    if (!this.current?.pose?.active || this.bystanderUntil !== Infinity || (!reduced && this.bystander?.pose?.active)) return;
+    const candidate = this.findBystander(this.current);
+    if (candidate !== this.bystander?.actor) {
+      this.bystander?.pose?.interrupt();
+      this.bystander = candidate ? this.makePeer(candidate) : undefined;
+    }
+    const peer = this.bystander;
+    if (!peer || (!reduced && !due)) return;
     this.bind(peer, "bystander");
+    if (reduced) return;
     const hold = 0.26 + 0.08 * peer.random();
     if (peer.pose?.glanceAt(this.speakerHead, 0, hold, this.current.actor.id)) this.bystanderUntil = this.time + 0.43 + hold;
     else peer.pose?.interrupt();
@@ -394,8 +421,8 @@ export class NaturalSession {
     if (!conv.active || conv.run !== this.options.run) return false;
     this.time += dt;
     const owner = this.options.audio.visualOwner;
-    if (conv.phase !== this.phase || conv.speaking !== this.observedLine ||
-      conv.npcId !== this.observedNpc || owner !== this.observedOwner) {
+    const edge = conv.phase !== this.phase || conv.speaking !== this.observedLine || conv.npcId !== this.observedNpc;
+    if (edge || owner !== this.observedOwner) {
       this.phase = conv.phase;
       this.observedLine = conv.speaking;
       this.observedNpc = conv.npcId;
@@ -403,13 +430,23 @@ export class NaturalSession {
       this.readTurn(conv, owner);
     }
     this.aimEyes(dt);
-    if (this.pending && this.voice) {
-      const state = this.options.audio.visualState(this.voice);
-      if (state === "playing" || state === "muted") this.playCue(this.options.audio.visualElapsed(this.voice));
+    const pending = this.pending;
+    if (pending) {
+      const acting = pending.entry.acting;
+      const voice = this.voice;
+      const state = voice && this.options.audio.visualState(voice);
+      if (acting?.replay) {
+        pending.peer.pose?.discardReadablePoint();
+        this.pending = undefined;
+      } else if (voice && (state === "playing" || state === "muted")) this.playCue(this.options.audio.visualElapsed(voice));
+      else if (state === "unavailable" || (!owner && acting?.unavailable)) {
+        const age = acting ? (performance.now() - acting.at) / 1000 : 0;
+        this.playCue(Math.max(age, this.time - pending.at), true);
+      }
     }
-    if (conv.phase === "ended") {
-      if (this.completion) this.signOff(this.completion, this.lastLine ?? 0, 0);
-    } else this.observe();
+    const ended = conv.phase === "ended";
+    if (ended && this.completion) this.signOff(this.completion, this.lastLine ?? 0, 0);
+    this.observe(edge, ended);
     return true;
   }
 
@@ -418,7 +455,7 @@ export class NaturalSession {
     const snapshot = (peer?: Peer, watch?: string) => {
       const a = peer?.pose?.applied;
       return peer && a?.active ? {
-        ...a, actorId: peer.actor.id, deltas: { ...a.deltas },
+        ...a, actorId: peer.actor.id, identity: peer.actor.ch.root.uuid, deltas: { ...a.deltas },
         gaze: { target: a.gazeTarget ?? (a.watching ? watch ?? null : null), yaw: a.gazeYaw, pitch: a.gazePitch, eyeX: a.gazeEyeX, eyeY: a.gazeEyeY },
         listening: a.role === "listening" || a.role === "thinking", envelope: a.level !== null && a.level >= 0 ? a.level : null,
       } : null;

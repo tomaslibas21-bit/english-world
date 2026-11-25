@@ -45,6 +45,7 @@ import { TownPhone } from "./phone/Phone";
 import { inTownRuins, reactionTestSpot, TownReactions } from "./life/townReactions";
 import { speakTownLine } from "./life/townVoice";
 import { ActorTalk } from "./talkNatural/binding";
+import { presentTalkVoice } from "./talkNatural/contract";
 import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { FriendMeeting } from "./phone/meeting";
@@ -2178,7 +2179,7 @@ export class Game implements GameApi {
           (picturesOn(settings) && sceneFor(conv.sitId, conv.hostId))) return;
         const n = this.talkCast.find((speaker) => speaker.id === id);
         return n && this.npcs.includes(n) && n.ch.root.parent === this.npcLayer && n.ch.root.visible
-          ? { actor: n.ch, line, replay } : undefined;
+          ? presentTalkVoice(n.ch, line, replay, conv.transcript.at(-1)) : undefined;
       } : undefined,
       npcReact: (id, kind, repeat) => { if (this.session === session) this.naturalView?.feedback(id, repeat ? "repeat" : kind); },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
@@ -2215,7 +2216,7 @@ export class Game implements GameApi {
           authoredCast: session.sit.npcs,
           extras: this.extras.filter((_, i) => {
             const person = ROOM_PEOPLE[zone.id]?.[i];
-            return person?.chat === undefined && !person?.phone && !person?.says;
+            return person?.chat === undefined && !person?.says;
           }),
           free: (n) => !this.modes.active?.controlsNpc?.(n.id),
           idleWorkHands: (n) => !!AT_WORK[n.id] && n.ch.busy === AT_WORK[n.id],

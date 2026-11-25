@@ -11,6 +11,8 @@ import { audio } from "@/game/audio";
 import { Character } from "@/game/characters/Character";
 import { setGame, type GameApi } from "@/game/gameRef";
 import { Session } from "@/game/session";
+import { presentTalkVoice } from "@/game/talkNatural/contract";
+import { NaturalSession } from "@/game/talkNatural/session";
 import { talkRoomAnchors } from "@/game/world/talkNatural";
 import { emptyProgress } from "@/state/progress";
 import { DEFAULT_SETTINGS, EMPTY_CONV, useStore, type TranscriptLine } from "@/state/store";
@@ -84,7 +86,7 @@ describe("Puerto Colibrí cues from composed speech", () => {
       const way = (id: string) => classifyTalk(spoken(ASK_WAY_LINES[id][0], "queta"), "town", id === "aw_greet");
       expect(way("aw_greet")).toMatchObject({ family: "greeting" });
       expect(way("aw_post_1")).toMatchObject({ family: "point", side: -1, anchor: undefined });
-      expect(way("aw_cafe_1")).toMatchObject({ family: "point", side: 1 });
+      expect(way("aw_cafe_1")).toMatchObject({ family: "point", side: 1, straight: true });
       expect(way("aw_pier_2")).toMatchObject({ family: "point", side: -1 });
       expect(way("aw_easy").family).toBe("yes");
       expect(way("aw_bye").family).toBe("goodbye");
@@ -228,4 +230,101 @@ describe("recorded-only Session and transcript replay", () => {
     }
     expect(onEnd).toHaveBeenCalledWith(session.sit, false);
   });
+});
+
+it("acts on Queta's optional authored lines through a post-office turn, slow repeat and café return", async () => {
+  await loadSituation("x13-por-donde");
+  vi.useFakeTimers();
+  vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));
+  useStore.setState({ conv: { ...EMPTY_CONV }, progress: emptyProgress(), settings: { ...DEFAULT_SETTINGS } });
+  vi.mocked(audio.clipDuration).mockReturnValue(null);
+  vi.mocked(audio.play).mockImplementation(async (_voice, _speed, _say, opts) => {
+    opts?.visual?.onUnavailable?.();
+    return false;
+  });
+  const group = new Group();
+  const host = { id: "queta", ch: new Character({ ...NPCS.queta.look, female: true }) };
+  const player = new Character(NPCS.queta.look);
+  group.add(host.ch.root, player.root);
+  player.root.position.z = 2;
+  let acting: NaturalSession | undefined;
+  let session: Session | undefined;
+  const samples: NonNullable<ReturnType<NaturalSession["sample"]>>[] = [];
+  const store = () => useStore.getState().conv;
+  async function frames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await vi.advanceTimersByTimeAsync(17);
+      acting!.update(store(), 0.017);
+      host.ch.update(0.017);
+      player.update(0.017);
+      samples.push(acting!.sample()!);
+    }
+  }
+  async function start() {
+    session = new Session("x13-por-donde", {
+      npcTalk() {}, npcVoice: (_id, line, replay) => presentTalkVoice(host.ch, line, replay, store().transcript.at(-1)),
+      npcReact: (id, kind, repeat) => acting?.feedback(id, repeat ? "repeat" : kind), onEvent() {}, onEnd() {},
+    });
+    const begin = session.begin();
+    useStore.getState().setConv({ introOpen: false });
+    acting = new NaturalSession({
+      run: store().run, zone: { id: "town", group }, host, cast: [host], people: [host], extras: [], player,
+      audio: { visualOwner: undefined, visualState: () => "interrupt", visualElapsed: () => 0,
+        readVisualEnvelope: () => "interrupt" }, free: () => true,
+    });
+    acting.present(store(), true);
+    await frames(45);
+    await begin;
+    expect(store().phase).toBe("you");
+    return session;
+  }
+  const lineId = (text: string) => store().transcript.find((line) => line.sentence?.say.includes(text))!.id;
+  try {
+    const first = await start();
+    const post = first.submit("Disculpe, ¿cómo llego al correo?");
+    await frames(39);
+    await post;
+    const left = lineId("a la izquierda"), bank = lineId("junto al banco");
+    const stroke = samples.find((frame) => frame.speaker?.pointLine === left && frame.speaker.pointWeight > 0.9)!;
+    expect(stroke).toMatchObject({ speakingLineId: bank, mouth: 0,
+      speaker: { pointSide: 1, pointDirection: -1, pointStraight: false } });
+    expect(stroke.deltas).toMatchObject({ upperL: 0, elbowL: 0, outL: 0 });
+    expect(stroke.deltas!.outR).toBeLessThan(-0.03);
+    expect(samples.some((frame) => frame.speaker?.gestureLine === bank && frame.gesture === "headGreeting" &&
+      frame.gestureWeight > 0.2 && frame.mouth === 0)).toBe(true);
+
+    let from = samples.length;
+    const slower = first.submit("¿Puede hablar más despacio, por favor?");
+    await frames(50);
+    await slower;
+    expect(store().slowMode).toBe(true);
+    expect(samples.slice(from).every((frame) => !frame.speaker?.pointWeight)).toBe(true);
+    const thanks = first.submit("¡Muchas gracias!");
+    from = samples.length;
+    await frames(55);
+    await thanks;
+    const ending = samples.slice(from).filter((frame) => frame.reaction?.kind === "farewell");
+    expect(ending.some((frame) => frame.reaction!.weight > 0.10)).toBe(true);
+    expect(new Set(ending.map((frame) => frame.reaction!.sequence)).size).toBe(1);
+    expect(samples.at(-1)!.reaction!.weight).toBe(0);
+
+    first.close();
+    acting!.dispose();
+    const again = await start();
+    expect(store().slowMode).toBe(true);
+    const cafe = again.submit("Disculpe, ¿cómo llego al café La Ceiba?");
+    from = samples.length;
+    await frames(39);
+    await cafe;
+    const straight = lineId("Siga derecho");
+    const forward = samples.slice(from).find((frame) => frame.speaker?.pointLine === straight && frame.speaker.pointWeight > 0.55)!;
+    expect(forward).toMatchObject({ mouth: 0, speaker: { pointStraight: true, pointSide: 1 } });
+    expect(forward.deltas!.upperR).toBeLessThan(-0.035);
+    expect(forward.deltas!.outR).toBeLessThan(Math.abs(stroke.deltas!.outR));
+  } finally {
+    session?.close();
+    acting?.dispose();
+    host.ch.dispose();
+    player.dispose();
+  }
 });

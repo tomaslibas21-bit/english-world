@@ -4,6 +4,7 @@ import { NPCS } from "../src/content/npcs";
 import { classifyTalk } from "../src/content/talkNatural";
 import type { VisualPlaybackState, VisualVoiceSample } from "../src/game/audio";
 import { Character } from "../src/game/characters/Character";
+import { ROOM_PEOPLE } from "../src/game/world/roomPeople";
 import type { VoiceVisualOwner } from "../src/game/talkNatural/contract";
 import { NaturalSession, type NaturalOptions } from "../src/game/talkNatural/session";
 import { lineSeed } from "../src/game/talkNatural/seed";
@@ -19,14 +20,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function scene(run = 17, room = "dans-house", npc = "dan") {
+function scene(run = 17, room = "dans-house", npc = "dan", phone = false) {
   vi.stubGlobal("window", new EventTarget());
   const doc = Object.assign(new EventTarget(), { hidden: false });
   vi.stubGlobal("document", doc);
   const group = new Group();
   const host = { id: npc, ch: new Character(NPCS[npc].look) };
   const other = { id: "nora", ch: new Character(NPCS.nora.look) };
-  const near = new Character({ ...NPCS.dan.look, carry: undefined });
+  const near = new Character({ ...NPCS.dan.look, carry: undefined, phone });
   const player = new Character(NPCS.dan.look);
   group.add(host.ch.root, other.ch.root, near.root, player.root);
   host.ch.root.position.set(room === "sunny-cup" ? -1.2 : 0, 0, room === "sunny-cup" ? -4.2 : 0);
@@ -65,6 +66,9 @@ function scene(run = 17, room = "dans-house", npc = "dan") {
     Object.assign(conv, { speaking: null, phase: "you" });
     audio.visualOwner = undefined;
   }
+  function authored(unavailable: boolean, replay = false, age = 0) {
+    return (conv.transcript.at(-1)!.acting = { at: performance.now() - age * 1000, replay, unavailable });
+  }
   function advance(seconds: number) {
     for (let i = 0; i < Math.round(seconds * 60); i++) {
       natural.update(conv, 1 / 60);
@@ -72,7 +76,7 @@ function scene(run = 17, room = "dans-house", npc = "dan") {
       if (audio.visualOwner && audio.state === "playing") audio.elapsed += 1 / 60;
     }
   }
-  return { natural, conv, options, audio, group, doc, host, other, player, near, advance, turn, waitForLearner };
+  return { natural, conv, options, audio, group, doc, host, other, player, near, advance, turn, waitForLearner, authored };
 }
 
 function eligible(id: string, run: number, chance = 0.70) {
@@ -230,6 +234,90 @@ describe("shared 3D presentation", () => {
     expect(sample()!.timers.armAt - first).toBeGreaterThanOrEqual(1.6);
   });
 
+  it("renders one authored silent point, finishes its stroke on a fast same-speaker handoff, and retains the signed arm", () => {
+    const s = scene();
+    const [line, next] = eligible("dan", 17);
+    s.turn(line, "Turn left.");
+    s.audio.visualOwner = undefined;
+    s.authored(true);
+    s.natural.present(s.conv, true);
+    s.advance(0.15);
+    const before = sample()!.speaker!;
+    expect(before).toMatchObject({ gestureLine: line, pointLine: line, pointSide: -1, mouth: 0 });
+
+    s.turn(next, "Yes, I'm ready.");
+    s.audio.visualOwner = undefined;
+    s.authored(true);
+    s.advance(0.10);
+    const peak = sample()!;
+    expect(peak).toMatchObject({ lineId: next, speakingLineId: next, requestOwned: false, mouth: 0,
+      speaker: { gestureLine: next, pointLine: line, pointSide: -1, pointStraight: false } });
+    expect(peak.speaker!.pointWeight).toBeGreaterThan(before.pointWeight);
+    expect(peak.deltas!.outL).toBeLessThan(-0.03);
+    expect(peak.deltas!.outR).toBe(0);
+    const rig = s.host.ch.naturalRig()!;
+    expect(rig.mouth.scale.toArray().every((axis) => Math.abs(axis) <= 0.00002)).toBe(true);
+    expect(rig.upperL.rotation.x).toBeCloseTo(peak.speaker!.upperL);
+    s.advance(0.17);
+    expect(sample()?.speaker?.pointLine).toBeNull();
+    const onset = peak.timers.armAt;
+    expect(sample()?.timers.armAt).toBe(onset);
+  });
+
+  it.each(["unavailable", "optional failure", "playing", "stale"] as const)("waits for the pending owner or a confirmed %s", (resolution) => {
+    const s = scene();
+    const [line] = eligible("dan", 17);
+    const owner = s.turn(line, "Turn right.");
+    if (resolution !== "optional failure") s.authored(false);
+    s.audio.state = "loading";
+    s.natural.present(s.conv, true);
+    s.advance(resolution === "stale" || resolution === "playing" ? 0.32 : 0.08);
+    expect(sample()).toMatchObject({ requestOwned: true, gesture: null, mouth: 0 });
+    if (resolution === "optional failure") {
+      s.audio.visualOwner = undefined;
+      s.authored(true);
+    } else s.audio.state = resolution === "playing" ? "playing" : "unavailable";
+
+    s.advance(0.36);
+    if (resolution === "stale") expect(sample()?.gesture).toBeNull();
+    else {
+      expect(sample()).toMatchObject({ gesture: "point", speaker: { pointLine: line, pointSide: 1 } });
+      expect(sample()!.speaker!.pointWeight).toBeGreaterThan(0.20);
+      if (resolution === "playing") expect(sample()!.mouth).toBeGreaterThan(0.6);
+      else expect(sample()!.mouth).toBe(0);
+    }
+    const armAt = sample()!.timers.armAt;
+    s.audio.visualOwner = { ...owner };
+    s.audio.elapsed = 0;
+    s.audio.state = "playing";
+    s.advance(0.8);
+    expect(sample()).toMatchObject({ gesture: null, timers: { armAt } });
+  });
+
+  it("discards recovery at cast handoff and skips stale, replayed, and unowned lines", () => {
+    const s = scene();
+    const ids = eligible("dan", 17);
+    for (const [i, unavailable, replay, age] of [[0, false, false, 0], [1, true, true, 0], [2, true, false, 0.5]] as const) {
+      s.turn(ids[i], "Turn left.");
+      s.audio.visualOwner = { actor: s.other.ch, line: ids[i] };
+      s.authored(unavailable, replay, age);
+      if (i === 0) s.natural.present(s.conv, true);
+      s.advance(0.2);
+      expect(sample()).toMatchObject({ requestOwned: false, gesture: null, mouth: 0 });
+    }
+    s.turn(ids[3], "Turn right.");
+    s.audio.visualOwner = undefined;
+    s.authored(true);
+    s.advance(0.12);
+    expect(sample()?.speaker?.pointLine).toBe(ids[3]);
+    s.natural.aim(s.other.id);
+    s.turn(ids[4], "Here we are.", s.other);
+    s.audio.visualOwner = undefined;
+    s.authored(true);
+    s.advance(0.10);
+    expect(sample()).toMatchObject({ speakerId: s.other.id, gesture: null, others: [{ gesture: null, pointLine: null }] });
+  });
+
   it("lets one free nearby observer glance briefly after the seeded interval", () => {
     const s = scene();
     s.natural.present(s.conv, true);
@@ -249,6 +337,57 @@ describe("shared 3D presentation", () => {
     expect(glances / 60).toBeGreaterThanOrEqual(0.45);
     expect(glances / 60).toBeLessThanOrEqual(0.8);
     expect(s.near.talkPose).toBeUndefined();
+  });
+
+  it("finds the real café phone neighbour only once their hands are free, and holds the reduced rig quiet", () => {
+    const query = Object.assign(new EventTarget(), { matches: true });
+    vi.stubGlobal("matchMedia", () => query);
+    const s = scene(17, "sunny-cup", "mia", true);
+    const { x, z, rot } = ROOM_PEOPLE["sunny-cup"][4];
+    s.near.root.position.set(x, 0, z);
+    s.near.root.rotation.y = rot;
+    s.group.rotation.y = Math.PI / 3;
+    const phone = s.near["phone"]!;
+    expect(phone.scale.x).toBeLessThan(0.5);
+    expect(s.near.canNoticeTalk()).toBe(true);
+
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.1);
+    fixtures.push(() => random.mockRestore());
+    s.near.fidgets = true;
+    s.near["momentT"] = 0;
+    s.near.update(0.4);
+    expect(phone.scale.x).toBeGreaterThanOrEqual(0.5);
+    expect(s.near.canNoticeTalk()).toBe(false);
+    s.turn(1, "Hi!");
+    s.natural.present(s.conv, false);
+    expect(sample()?.bystander).toBeNull();
+
+    s.near.attentive = true;
+    s.advance(0.5);
+    expect(phone.scale.x).toBeLessThan(0.5);
+    expect(s.near.canNoticeTalk()).toBe(true);
+    const prop = new Group();
+    s.near.rightHand.add(prop);
+    s.waitForLearner();
+    s.advance(0.1);
+    expect(sample()?.bystander).toBeNull();
+    s.near.rightHand.remove(prop);
+    s.turn(2, "Hi again.");
+    s.advance(0.1);
+    expect(sample()?.bystander).toMatchObject({ identity: s.near.root.uuid, role: "bystander", reduced: true,
+      mouth: 0, gestureWeight: 0, gaze: { target: null } });
+    expect(sample()!.timers.time).toBeLessThan(sample()!.timers.bystanderAt);
+
+    s.waitForLearner();
+    const rig = s.near.naturalRig()!;
+    const nodes = [rig.body, rig.head, rig.eye, rig.corners!, rig.upperL, rig.foreR];
+    const joints = () => nodes.flatMap(({ rotation, position }) => [rotation.x, rotation.y, rotation.z, ...position.toArray()]);
+    const rest = joints();
+    for (let i = 0; i < 14; i++) {
+      s.advance(0.5);
+      expect(Math.max(...joints().map((value, j) => Math.abs(value - rest[j])))).toBeLessThanOrEqual(0.002);
+      expect(sample()?.bystander?.identity).toBe(s.near.root.uuid);
+    }
   });
 
   it.each([true, false])("deduplicates completion and farewells, then releases the rigs (clap first %s)", (clapFirst) => {

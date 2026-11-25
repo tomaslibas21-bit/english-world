@@ -159,7 +159,7 @@ function observe({ hash, shorten }) {
     for (const member of game.talkCast ?? []) put(member.id, member.ch);
     const nearby = probe?.bystander?.actorId;
     if (nearby?.startsWith("nearby:")) {
-      const bound = game.extras.find((ch) => ch.talkPose?.applied?.role === "bystander");
+      const bound = game.extras.find((ch) => ch.root.uuid === probe.bystander.identity);
       if (bound) put(nearby, bound);
     }
     const other = [nearby, probe?.speakerId].filter(Boolean);
@@ -185,25 +185,28 @@ function observe({ hash, shorten }) {
     if (!poses.has(controller)) poses.set(controller, ++poseSerial);
     return poses.get(controller);
   }
-  function pose(actor, face) {
+  function pose(actor, face, pointing = false) {
     const rig = actor.naturalRig?.();
     const head = actor.headJoint;
     const root = actor.root, controller = actor.talkPose;
     const joint = (bone) => bone ? [...bone.rotation.toArray().slice(0, 3), ...bone.position.toArray()] : null;
     const world = (bone) => bone?.getWorldPosition(root.position.clone()).toArray() ?? null;
-    const screen = (bone) => {
-      const p = bone.getWorldPosition(root.position.clone()).project(game.rig.cam);
-      const canvas = game.renderer.domElement.getBoundingClientRect();
+    const canvas = game.renderer.domElement.getBoundingClientRect();
+    const screen = (point) => {
+      const p = point.clone().project(game.rig.cam);
       return [canvas.left + (p.x + 1) * canvas.width / 2, canvas.top + (1 - p.y) * canvas.height / 2, p.z];
     };
-    const left = rig?.foreL && rig.foreL.localToWorld(actor.rightHand.position.clone().setX(-actor.rightHand.position.x)).toArray();
+    const left = rig?.foreL && rig.foreL.localToWorld(actor.rightHand.position.clone().setX(-actor.rightHand.position.x));
+    const right = actor.rightHand.getWorldPosition(root.position.clone());
     const mouth = face ? face.mouth : rig?.mouth;
     const smile = face ? face.smile : actor.smile;
     return { identity: root.uuid, live: bodyWithin(root, game.scene), visible: visible(root),
       skinned: face ? face.skinned : !!mouth?.isBone && bodyWithin(mouth, root), anim: actor.anim, seat: actor.seatY,
       root: world(root), facing: root.getWorldDirection(root.position.clone()).toArray(), headWorld: world(head),
-      headScreen: head && screen(head), mouthScreen: mouth && screen(mouth), pelvis: world(rig?.thighL),
-      hands: [left, world(actor.rightHand)], elbows: [world(rig?.foreL), world(rig?.foreR)],
+      headScreen: head && screen(head.getWorldPosition(root.position.clone())),
+      mouthScreen: mouth && screen(mouth.getWorldPosition(root.position.clone())), pelvis: world(rig?.thighL),
+      hands: [left?.toArray(), right.toArray()], handScreen: pointing ? [left && screen(left), screen(right)] : undefined,
+      elbows: [world(rig?.foreL), world(rig?.foreR)],
       gazeAim: controller?.watch && (root.parent?.localToWorld(controller.watch.clone()) ?? controller.watch).toArray(),
       weight: controller?.weight ?? 0, poseId: poseId(controller),
       mouthId: mouth?.uuid, mouth: mouth?.scale.toArray(), closed: smile?.scale.toArray(), eyeScale: actor.eyes?.scale.y,
@@ -313,7 +316,8 @@ function observe({ hash, shorten }) {
       rendered, calls: game.renderer.info.render.calls, p: probe, media, request: request?.id ?? null,
       voiceOwner: owner ? owners.get(owner)?.id ?? null : null, audioState: audio.getState(),
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
-      actual: Object.fromEntries([...actors].map(([id, actor]) => [id, pose(actor)])),
+      actual: Object.fromEntries([...actors].map(([id, actor]) => [id,
+        pose(actor, undefined, id === probe?.speakerId && probe.speaker?.pointLine != null)])),
       pinned: Object.fromEntries([...pins].map(([id, pin]) => [id, pinSample(pin)])),
       conv: { id: conv.sitId, active: conv.active, run: conv.run, host: conv.hostId, npc: conv.npcId, phase: conv.phase,
         intro: conv.introOpen, step: conv.stepId, line: conv.speaking, lineKey: conv.lineKey, text: line?.sentence?.say,
@@ -418,6 +422,9 @@ const compact = (f) => f && ({ wall: f.wall, gameTime: f.gameTime, frame: f.fram
   identity: f.actual[f.p?.speakerId ?? f.conv.npc]?.identity, run: f.conv.run, phase: f.conv.phase, step: f.conv.step,
   lineKey: f.conv.lineKey ?? f.p?.lineId, line: f.conv.line, text: f.conv.text, request: f.request, media: f.media,
   cue: f.p?.gesture, reaction: f.p?.reaction, gaze: f.p?.gaze?.target, mouth: f.p?.mouth, camera: f.scene.lens, scene: f.scene.mode,
+  gestureLine: f.p?.speaker?.gestureLine,
+  point: f.p?.speaker?.pointLine != null ? { line: f.p.speaker.pointLine, side: f.p.speaker.pointSide,
+    direction: f.p.speaker.pointDirection, straight: f.p.speaker.pointStraight, weight: f.p.speaker.pointWeight } : null,
   canvas: f.scene.canvas, panel: f.scene.panel, mode: f.scene.modeId, board: f.scene.board, street: f.street,
   nearest: f.scene.nearest, prompt: f.scene.prompt, walking: f.scene.walking,
   transition: f.scene.transition, phone: f.conv.phone, banner: f.scene.banner, coach: f.scene.coach,
@@ -591,9 +598,13 @@ class Route {
     return event;
   }
 
-  mark(label, frame) {
+  mark(label, frame, origin) {
     if (!frame || !Number.isFinite(frame.wall)) return;
     this.labels[label] ??= compact(frame);
+    if (origin) {
+      const { line, lineKey, text } = origin.conv;
+      this.labels[label].origin ??= { line, lineKey, text, frame: origin.frame };
+    }
   }
 
   require(...labels) {
@@ -985,25 +996,28 @@ async function layoutEvidence(route, actor) {
   return row;
 }
 
-function motionPeak(route, frames, actor, cue, label, { head = false } = {}) {
-  const candidates = frames.filter((f) => f.p?.speakerId === actor && cue.includes(f.p.gesture));
-  const peak = candidates.reduce((best, f) => !best || f.p.gestureWeight > best.p.gestureWeight ? f : best, null);
-  assert(peak?.p.gestureWeight > 0.20, `${actor} ${cue.join("/")} rendered stroke`);
+function motionPeak(route, frames, actor, cue, label, { head = false, origin } = {}) {
+  const weight = origin ? (f) => f.p?.speaker?.pointLine === origin.conv.line ? f.p.speaker.pointWeight : 0
+    : (f) => f.p?.gestureWeight ?? 0;
+  const candidates = frames.filter((f) => f.p?.speakerId === actor && (origin ? weight(f) > 0 : cue.includes(f.p.gesture)));
+  const peak = candidates.reduce((best, f) => !best || weight(f) > weight(best) ? f : best, null);
+  assert(peak && weight(peak) > 0.20, `${actor} ${cue.join("/")} rendered stroke`);
   const joint = live(peak, actor).joints;
   const deltas = peak.p.deltas;
   const axis = head ? [["head", "headPitch", 0], ["head", "headYaw", 1]]
     : [["upperL", "upperL", 0], ["upperR", "upperR", 0], ["foreL", "elbowL", 0], ["foreR", "elbowR", 0]];
   const low = frames.find((f) => f.frame < peak.frame && f.actual[actor]?.identity === peak.actual[actor].identity
-    && (f.p?.gestureWeight ?? 0) < peak.p.gestureWeight * 0.4);
+    && weight(f) < weight(peak) * 0.4);
   assert(low && axis.some(([name, field, i]) => Math.abs(deltas[field]) > (head ? 0.014 : 0.035)
     && Math.abs(joint[name][i] - low.actual[actor].joints[name][i]) > (head ? 0.006 : 0.018)), "DEV cue appears on the actual joint");
-  assert(frames.some((f) => f.frame > peak.frame && (f.p?.gestureWeight ?? 0) < peak.p.gestureWeight * 0.5), "gesture eases out");
-  route.mark(label, peak);
+  assert(frames.some((f) => f.frame > peak.frame && weight(f) < weight(peak) * 0.5), "gesture eases out");
+  route.mark(label, peak, origin);
   route.require(label);
   route.checkpoints(label, peak, [8]);
-  route.row.peaks.push({ actor, cue: peak.p.gesture, line: peak.conv.lineKey, text: peak.conv.text,
-    relative: peak.gameTime - (frames.find((f) => f.conv.line === peak.conv.line)?.gameTime ?? peak.gameTime),
-    weight: peak.p.gestureWeight, joints: joint });
+  const source = origin ?? peak;
+  const start = origin ?? frames.find((f) => f.conv.line === peak.conv.line) ?? peak;
+  route.row.peaks.push({ actor, cue: origin ? "point" : peak.p.gesture, line: source.conv.lineKey, text: source.conv.text,
+    relative: peak.gameTime - start.gameTime, weight: weight(peak), joints: joint });
   return peak;
 }
 
@@ -1036,8 +1050,17 @@ async function listening(route, actor, { duration = 0.65, seated = false, cafe =
     if (observer) {
       const observed = live(nearby, observer);
       assert.notEqual(observed.identity, first.identity);
+      assert.equal(observed.identity, nearby.p.bystander.identity);
       assert.equal(nearby.p.bystander.role, "bystander");
       silent(observed, "observer waiting");
+      const glance = rows.find((f) => f.p?.bystander?.gaze.target === actor);
+      assert(glance, "the free observer looks at Mariana during the learner turn");
+      const glances = rows.filter((f) => f.p?.bystander?.gaze.target === actor && f.gameTime - glance.gameTime < 1);
+      assert(glances.length && glances.at(-1).gameTime - glances[0].gameTime >= 0.45
+        && glances.at(-1).gameTime - glances[0].gameTime <= 0.8, "one brief glance on the free observer");
+      const tracked = glances.map((f) => live(f, observer));
+      assert(tracked.every((ch) => ch.identity === observed.identity), "the glance stays on the selected actor");
+      assert(span(tracked.map((ch) => ch.joints.head[1])) > 0.018, "glance turns the actual head and returns");
     } else {
       route.row.errors.push("Café has no sampled free bystander on the existing cast");
     }
@@ -1359,14 +1382,25 @@ async function directions(route) {
   const first = rows.filter((f) => f.conv.lineKey === "aw_post_1");
   const second = rows.filter((f) => f.conv.lineKey === "aw_post_2");
   assert(first[0].conv.text.includes("a la izquierda") && second[0].conv.text.includes("junto al banco"));
+  const exchange = route.frames.filter((f) => f.conv.run === entry.conv.run && f.frame >= first[0].frame);
   let beat;
   try {
-    beat = motionPeak(route, first, "queta", ["point"], "gesture-peak");
+    beat = motionPeak(route, exchange, "queta", ["point"], "gesture-peak", { origin: first[0] });
+    const { queta, player } = beat.actual;
+    const forward = queta.facing[0] * (player.root[0] - queta.root[0]) + queta.facing[2] * (player.root[2] - queta.root[2]);
+    const side = forward >= 0 ? -1 : 1;
+    const axis = beat.p.speaker.pointSide < 0 ? "outL" : "outR";
+    assert.equal(beat.p.speaker.pointDirection, side, "actual arm follows the learner's left");
+    assert(!beat.p.speaker.pointStraight && side * beat.p.deltas[axis] > 0.03, "left point reaches out laterally");
+    if (route.size.touch) {
+      const hand = queta.handScreen[beat.p.speaker.pointSide < 0 ? 0 : 1];
+      assert(inRect(hand, beat.scene.canvas, 4) && hand[1] < beat.scene.panel[1] - 4, "lateral point clears the portrait panel");
+    }
   } catch (error) {
     route.row.errors.push(errorText(error));
   }
   const arm = (f) => [f.p.deltas.upperL, f.p.deltas.upperR, f.p.deltas.elbowL, f.p.deltas.elbowR];
-  const repetition = second.filter((f) => f.p?.gesture === "point" && f.p.gestureWeight > 0.17);
+  const repetition = exchange.filter((f) => f.p?.speaker?.pointLine === second[0].conv.line && f.p.speaker.pointWeight > 0.17);
   if (beat) assert(!repetition.length || repetition.some((f) => distance(arm(f), arm(beat)) > 0.04), "landmark line varies the directional beat");
   for (const [label, group] of [["direction-left", first], ["direction-landmark", second]]) {
     const spoken = group.find((f) => audible(f) && f.p?.mouth > 0.12);
@@ -1374,11 +1408,16 @@ async function directions(route) {
     else {
       const closed = group.filter((f) => isSilent(f.actual.queta) && !mediaPlaying(f));
       assert(closed.length > 2, "optional unrecorded line stays silent");
-      if (!closed.some((f) => f.p?.gestureWeight > 0.15)) {
+      const line = group[0].conv.line;
+      const emitted = exchange.some((f) => isSilent(f.actual.queta) && !mediaPlaying(f) &&
+        (f.p?.speaker?.pointLine === line && f.p.speaker.pointWeight > 0.15 ||
+          f.p?.speaker?.gestureLine === line && f.p.gestureWeight > 0.15));
+      if (!emitted) {
         route.row.errors.push(`${group[0].conv.lineKey} has text and closed-mouth evidence but no emitted silent stroke`);
       }
     }
-    route.mark(label, spoken ?? group.find((f) => f.p?.speakerId === "queta"));
+    const landmark = group.find((f) => f.p?.speaker?.gestureLine === group[0].conv.line && f.p.gestureWeight > 0.15);
+    route.mark(label, spoken ?? (label === "direction-left" ? beat : landmark) ?? group.find((f) => f.p?.speakerId === "queta"), group[0]);
     route.require(label);
   }
   await layoutEvidence(route, "queta");
@@ -1388,6 +1427,7 @@ async function directions(route) {
   assert(repeated.conv.slow && repeated.conv.step === "thanks", "real slow repeat keeps the original directions turn");
   assert.deepEqual([...new Set(repeat.map((f) => f.conv.text))], [first[0].conv.text, second[0].conv.text], "repeated Spanish route, both lines");
   assert(repeat.every((f) => f.p?.gesture !== "point" || f.p.gestureWeight <= 0.001), "the replay does not repeat the pointing stroke");
+  assert(repeat.every((f) => (f.p?.speaker?.pointWeight ?? 0) <= 0.001), "no recovered point on the slow replay");
   route.mark("replay", repeat.find((f) => audible(f)) ?? repeat[0]);
   route.require("replay");
   const from = route.frames.length;
@@ -1403,7 +1443,7 @@ async function directions(route) {
     route.row.errors.push("No single rendered sign-off in the actual exchange");
   }
   assert((route.last.p?.reaction?.weight ?? 0) <= 0.001 && route.last.conv.completions === 1, "one restrained sign-off that releases");
-  route.mark("sign-off", farewell.reduce((a, b) => !a || a.p.reaction.weight < b.p.reaction.weight ? b : a, null));
+  route.mark("sign-off", farewell.reduce((a, b) => !a || a.p.reaction.weight < b.p.reaction.weight ? b : a, null), bye);
   route.require("sign-off");
   assert(await route.page.locator(".ended-box .ended-title").isVisible(), "real directions end card");
   await route.close();
@@ -1415,9 +1455,23 @@ async function directions(route) {
   await route.next();
   const section = route.frames.slice(straight.from).filter((f) => f.conv.run === again.conv.run && f.conv.lineKey === "aw_cafe_1");
   assert(section.some((f) => /Siga derecho/.test(f.conv.text)), "authored straight instruction");
-  const sample = section.find((f) => f.p?.gesture === "point" && f.p.gestureWeight > 0.20 && f.actual.queta?.joints);
+  const straightLine = section[0].conv.line;
+  const forward = route.frames.slice(straight.from).filter((f) => f.conv.run === again.conv.run && f.p?.speakerId === "queta"
+    && f.p.speaker?.pointLine === straightLine && f.p.speaker.pointWeight > 0.20 && f.actual.queta?.joints);
+  const sample = forward.reduce((best, f) => !best || f.p.speaker.pointWeight > best.p.speaker.pointWeight ? f : best, null);
   if (!sample) route.row.errors.push("No rendered point on the authored straight instruction");
-  route.mark("direction-straight", sample);
+  else {
+    const side = sample.p.speaker.pointSide < 0 ? "L" : "R";
+    const rig = live(sample, "queta"), rest = live(section[0], "queta");
+    assert(sample.p.speaker.pointStraight && Math.abs(sample.p.deltas[`upper${side}`]) > 0.035
+      && Math.abs(rig.joints[`upper${side}`][0] - rest.joints[`upper${side}`][0]) > 0.018,
+      "the straight instruction uses the actual forward arm reach");
+    if (route.size.touch) {
+      const hand = rig.handScreen[side === "L" ? 0 : 1];
+      assert(inRect(hand, sample.scene.canvas, 4) && hand[1] < sample.scene.panel[1] - 4, "forward point clears the portrait panel");
+    }
+  }
+  route.mark("direction-straight", sample, section[0]);
   route.require("direction-straight");
   await route.close();
 }
@@ -1642,12 +1696,14 @@ async function mic(route) {
   await route.close();
 }
 
-function reducedStill(rows, ids) {
+function reducedStill(rows, ids, observer) {
   assert(rows.at(-1).gameTime - rows[0].gameTime >= 7, "seven rendered seconds after the reduced pose settles");
   const ranges = {};
   for (const id of ids) {
     const actors = rows.map((f) => live(f, id));
     assert(actors.every((ch) => ch.identity === actors[0].identity));
+    if (id === observer) assert(rows.every((f) => f.p?.bystander?.actorId === observer
+      && f.actual[observer].identity === f.p.bystander.identity), "the same quiet observer is mounted throughout the seven-second sample");
     ranges[id] = {};
     for (const name of ["body", "head", "upperL", "upperR", "foreL", "foreR", "iris", "smile"]) {
       assert(actors.every((ch) => ch.joints[name]?.length === 6), `${id} ${name} joint sample`);
@@ -1671,8 +1727,8 @@ async function reduced(route) {
   const rows = route.frames.filter((f) => f.gameTime >= start.gameTime && f.conv.phase === "you" && f.conv.run === entry.conv.run);
   const observer = rows.find((f) => f.p?.bystander)?.p.bystander.actorId;
   if (!observer) route.row.errors.push("The fresh reduced café did not expose a mounted free observer");
-  const ids = observer && rows.every((f) => f.actual[observer]) ? ["mia", "player", observer] : ["mia", "player"];
-  route.row.still = reducedStill(rows, ids);
+  const ids = observer ? ["mia", "player", observer] : ["mia", "player"];
+  route.row.still = reducedStill(rows, ids, observer);
   const blink = rows.find((f) => f.p.blink > 0.45 && f.actual.mia.eyeScale < 0.65);
   assert(blink, "fresh reduced blink on the actual eye bone");
   route.mark("reduced-blink", blink);
@@ -1700,7 +1756,7 @@ async function reduced(route) {
   const tail = await route.elapsed(0.45, end);
   await route.elapsed(7.05, tail);
   const still = route.frames.filter((f) => f.gameTime >= tail.gameTime && f.conv.phase === "you" && f.conv.run === entry.conv.run);
-  route.row.toggledStill = reducedStill(still, ids);
+  route.row.toggledStill = reducedStill(still, ids, observer);
   await replay(route, "mia");
   await route.close();
 }

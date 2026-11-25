@@ -1,5 +1,6 @@
 // Seams for the character adapters and playback.
 import type { Object3D, Vector3 } from "three";
+import type { TranscriptLine } from "../../state/store";
 import type { GameCharacter } from "../characters";
 
 export type TalkLineId = string | number;
@@ -19,6 +20,15 @@ export interface VoiceVisualOwner {
   readonly actor: GameCharacter;
   readonly line: TalkLineId;
   readonly replay?: "turn" | "transcript";
+  /** A line that has to be read after a skipped or unsuccessful request. */
+  onUnavailable?(): void;
+}
+
+export function presentTalkVoice(actor: GameCharacter, line: number, replay: VoiceVisualOwner["replay"], entry?: TranscriptLine): VoiceVisualOwner {
+  if (replay === "transcript" || entry?.id !== line) return { actor, line, replay };
+  const acting: NonNullable<TranscriptLine["acting"]> = { at: performance.now(), replay: replay === "turn", unavailable: false };
+  entry.acting = acting;
+  return { actor, line, replay, onUnavailable() { acting.unavailable = true; } };
 }
 
 export interface NaturalRig {
@@ -74,4 +84,5 @@ export interface TalkPersonality {
   farewell: "yes" | "wave" | "heart";
   smallGreeting?: true;
   quickSmile?: true;
+  directs?: true;
 }

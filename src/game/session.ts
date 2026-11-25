@@ -178,10 +178,11 @@ export class Session {
       const clip = audio.clipDuration(voice, speed, l.sentence.say);
       const dur = clip ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
+      const visual = this.hooks.npcVoice?.(l.npc, id, repeat ? "turn" : undefined);
       if (this.hooks.recordedOnly && clip === null) {
+        visual?.onUnavailable?.();
         await wait(Math.min(2000, dur * 600));
       } else {
-        const visual = this.hooks.npcVoice?.(l.npc, id, repeat ? "turn" : undefined);
         const played = await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m",
           ...(optionalVoice ? { optional: true } : {}), ...(visual ? { visual } : {}) });
         if (!played && !optionalVoice) return;

@@ -1413,7 +1413,8 @@ export class Character {
 
   canNoticeTalk() {
     const moment = this.moment?.kind;
-    return this.talking <= 0 && !this.reaction && moment !== "phone" && moment !== "sip" && moment !== "type" && moment !== "wipe";
+    return this.talking <= 0 && !this.reaction && !(this.phone && this.phone.scale.x >= 0.5) &&
+      moment !== "phone" && moment !== "sip" && moment !== "type" && moment !== "wipe";
   }
 
   beginNaturalPose(preserveWork = false) {

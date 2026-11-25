@@ -269,7 +269,7 @@ export class AudioSystem {
   }
 
   hasClip(voice: string, speed: number, text: string) { return !!this.manifest[audioKey(voice, speed, text)]; }
-  clipDuration(voice: string, speed: number, text: string) { return this.manifest[audioKey(voice, speed, text)] ?? null; }
+  clipDuration(voice: string, speed: number, text: string): number | null { return this.manifest[audioKey(voice, speed, text)] ?? null; }
 
   /** The player's names (lines that address the player by name are voiced without it). */
   names: string[] = [];
@@ -397,7 +397,10 @@ export class AudioSystem {
           if (request.done) return;
           if (!opts.optional) this.setState(state);
           else if (!opts.recordingOnly && request.fallback) request.fallback();
-          else request.finish(false);
+          else {
+            if (request.visualStartedAt === undefined) request.visual?.onUnavailable?.();
+            request.finish(false);
+          }
         }, cleanup: () => {},
         finish: (completed, playedToEnd) => {
           if (request.done) return;

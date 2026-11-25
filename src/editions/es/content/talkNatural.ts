@@ -7,7 +7,7 @@ const warm: TalkPersonality = { armChance: 0.55, farewell: "heart" };
 const people: Record<string, TalkPersonality> = {
   walter: reserved, aaron: reserved, tienda: reserved,
   vinnie: { ...expressive, smallGreeting: true },
-  queta: expressive,
+  queta: { ...expressive, directs: true },
   tona: { ...expressive, smallGreeting: true },
   mia: { ...warm, smallGreeting: true, quickSmile: true },
   marco_host: warm, marco: warm,
@@ -59,7 +59,8 @@ export function classifyTalk(say: string, room: string, opening: boolean, closin
     return { family: "offer", anchor };
   }
   const side = (turn.exec(statements) ?? lateral.exec(statements))?.[1];
-  if (side) return { family: "point", side: side === "izquierda" ? -1 : 1, anchor };
+  if (side) return { family: "point", side: side === "izquierda" ? -1 : 1,
+    ...(straight.test(statements) ? { straight: true as const } : {}), anchor };
   if (straight.test(statements)) return { family: "point", straight: true, anchor };
   if (direction.test(statements)) return { family: "point", anchor };
   if (uncertainty.test(text)) return { family: "shrug", anchor };
