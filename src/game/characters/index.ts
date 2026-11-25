@@ -12,6 +12,7 @@ export interface GameCharacter {
   readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;
+  readonly headJoint: THREE.Object3D;
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;
   update(dt: number): void;

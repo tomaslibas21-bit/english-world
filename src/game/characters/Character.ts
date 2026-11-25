@@ -63,7 +63,7 @@ function trait(look: Look, salt: number) {
 /** (phone memory, 16 Nov 2026) A baked mesh in fewer bytes: its normals, colours and skin weights as 16-bit integers
  *  and its bone numbers as 8-bit ones where there are few enough bones (normalized: the graphics card reads the same
  *  values, to 1/32767), 60 bytes a vertex down to 36. Each townsperson keeps their mesh in memory, and Puerto
- *  Colibrí's ~70 of them made up a fifth of its memory in the town. The box (Game.ts headTop) is measured first. */
+ *  Colibrí's ~70 of them made up a fifth of its memory in the town. The geometry bounds are measured first. */
 function compact(g: THREE.BufferGeometry, bones: number): THREE.BufferGeometry {
   g.computeBoundingBox();
   const pack = (name: string, Arr: typeof Int16Array | typeof Uint16Array, max: number) => {
@@ -350,6 +350,7 @@ export class Character {
   root = new THREE.Group();
   private body = new THREE.Group();
   private head = new THREE.Group();
+  get headJoint() { return this.head; }
   private armL = new THREE.Group();
   private armR = new THREE.Group();
   readonly rightHand = new THREE.Group();

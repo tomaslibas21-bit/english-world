@@ -83,6 +83,8 @@ export class StyledCharacter {
   setAnim(a: Anim) { this.anim = a; }
   talk(seconds: number) { this.talking = Math.max(this.talking, seconds); }
 
+  get headJoint() { return this.bones[BONE.head]; }
+
   headPosition(out: THREE.Vector3) {
     return this.bones[BONE.head].getWorldPosition(out);
   }

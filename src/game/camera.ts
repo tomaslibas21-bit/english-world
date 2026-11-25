@@ -169,6 +169,24 @@ export class CameraRig {
     this.lastMode = this.mode;
   }
 
+  get presentedLook() { return this.curLook; }
+
+  /** Apply an already validated, eased pose and the exact lens used to measure it. */
+  presentTalk(w: number, h: number, x: number, y: number, fov: number, near: number) {
+    const cam = this.cam, view = cam.view;
+    const lensChanged = cam.fov !== fov || cam.near !== near;
+    cam.fov = fov;
+    cam.near = near;
+    if (!view?.enabled || view.fullWidth !== w || view.fullHeight !== h || view.width !== w || view.height !== h
+      || view.offsetX !== x || view.offsetY !== y || cam.aspect !== w / h) {
+      cam.setViewOffset(w, h, x, y, w, h);
+    } else if (lensChanged) cam.updateProjectionMatrix();
+    this.snap();
+    cam.position.copy(this.curPos);
+    cam.lookAt(this.curLook);
+    cam.updateMatrixWorld();
+  }
+
   /** Pick a view under the pickup/retry fade, with at most five positions and four rays each. */
   snapTaxi(subject: TaxiSubject, clear: Sightline) {
     this.mode = this.lastMode = "follow";
