@@ -22,7 +22,7 @@ import { readPlayStats } from "../src/state/playStats";
 import { useStore } from "../src/state/store";
 
 const mocks = vi.hoisted(() => ({
-  audio: { volume: 0.9, play: vi.fn(), clipDuration: vi.fn(() => 1) },
+  audio: { volume: 0.9, play: vi.fn(), clipDuration: vi.fn(() => 1), sfx: vi.fn() },
   attempts: [] as { options: SpeechOptions; start: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }[],
 }));
 vi.mock("../src/game/audio", () => ({ audio: mocks.audio }));
