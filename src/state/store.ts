@@ -155,6 +155,8 @@ export interface Toast {
   source?: string;
   ms?: number;
   rideHint?: "waiting" | "other";
+  /** A line someone in the town said (a passer-by, a ride owner, staff, the keeper): the pair the toast's save keeps. */
+  phrase?: { en: string; lt: string };
 }
 
 export interface HudState {

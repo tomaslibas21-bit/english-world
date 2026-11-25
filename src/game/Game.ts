@@ -1525,7 +1525,7 @@ export class Game implements GameApi {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
     speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
-    useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200, ...(source && { source }) });
+    useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200, phrase: line, ...(source && { source }) });
   }
 
   /** A member of the room's staff with no conversation here says their one line (roomPeople.ts `says`). */
@@ -1962,7 +1962,7 @@ export class Game implements GameApi {
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
-        st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
+        st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt, phrase: line });
         return;
       }
     }

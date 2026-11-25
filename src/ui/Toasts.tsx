@@ -1,9 +1,13 @@
+import { memo } from "react";
 import { KEEPER_SIT } from "../content/situations/catalog";
 import { useStore, usesTownNotes, type Toast } from "../state/store";
+import { STREET_WORDS } from "../game/street/words";
 import { useSurf } from "../game/surf/store";
 import { townNote } from "../state/townNotes";
 import { SitIcon } from "./SitIcon";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
+import { resolvePhrase } from "./kit/phraseLine";
+import { PhraseSave } from "./kit/PhraseSave";
 
 /** A toast from the UI can name its own icon (game toasts put an emoji at the start of the title). */
 export type ToastInput = Omit<Toast, "id"> & { icon?: IconName };
@@ -33,6 +37,12 @@ export function TownToast({ toast }: { toast: Toast | null }) {
   return <ToastList toasts={toast ? [toast] : []} town />;
 }
 
+/** A spoken town line keeps its own save, as the chatter bubbles and the conversations do. */
+const SpokenToastSave = memo(function SpokenToastSave({ phrase }: { phrase: NonNullable<Toast["phrase"]> }) {
+  const sentence = resolvePhrase({ targetText: phrase.en, helperText: phrase.lt });
+  return sentence && <PhraseSave sentence={sentence} situationId="street" sourceLabel={STREET_WORDS.overheard} />;
+});
+
 function ToastList({ toasts, town, inConversation }: { toasts: Toast[]; town?: boolean; inConversation?: boolean }) {
   const dismiss = useStore((s) => s.dismissToast);
   return (
@@ -46,10 +56,11 @@ function ToastList({ toasts, town, inConversation }: { toasts: Toast[]; town?: b
               ? <SitIcon id={t.sitId} size="1.25em" className="t-situation" />
               : <span className="t-icon"><Icon name={icon} size={22} /></span>}
             <div className="t-text">
-              <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={`${lead.stars} iš 3`} />}{withIcons(lead.rest)}</b>
-              {t.body && <p>{withIcons(t.body)}</p>}
+              <b lang={t.phrase ? "en" : undefined}>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={`${lead.stars} iš 3`} />}{withIcons(lead.rest)}</b>
+              {t.body && <p lang={t.phrase ? "lt" : undefined}>{withIcons(t.body)}</p>}
               {t.better && <div className="better">{t.better}</div>}
             </div>
+            {t.phrase && <SpokenToastSave phrase={t.phrase} />}
             <button className="x" onClick={() => dismiss(t.id)} aria-label="Uždaryti"><Icon name="close" size={18} /></button>
           </div>
         );

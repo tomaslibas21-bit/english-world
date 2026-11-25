@@ -612,6 +612,22 @@ async function visit(context, view, speech) {
     const ambient = (en, lt) => visible(page.locator(".toast", { has: page.getByText(en, { exact: true }) })
       .getByText(lt, { exact: true }), en);
     await ambient("„Not many visitors make it out here. Enjoy the view!“", "Nedaug kas atplaukia iki čia. Pasigrožėkite vaizdu!");
+    // The keeper's greeting toast keeps its own line, like every spoken town line.
+    const greetingSave = page.locator(".toast", { has: page.getByText("„Not many visitors make it out here. Enjoy the view!“", { exact: true }) })
+      .locator("[data-phrase-save]");
+    assert.equal(await greetingSave.getAttribute("aria-label"), "Į korteles");
+    await press(greetingSave);
+    assert.equal(await greetingSave.getAttribute("aria-label"), "Kortelėse");
+    const keptGreeting = await page.evaluate(() => (JSON.parse(localStorage.getItem("english-world-cards-v1") || "{}").cards ?? [])
+      .filter((card) => card.en === "Not many visitors make it out here. Enjoy the view!").map((card) => [card.lt, card.situationId]));
+    assert.deepEqual(keptGreeting, [["Nedaug kas atplaukia iki čia. Pasigrožėkite vaizdu!", "street"]], "the greeting is saved to the cards");
+    // (the visit's phrasebook checks below count the conversation's own cards)
+    assert.equal(await page.evaluate(async () => {
+      const { useCards } = await import("/src/state/cards.ts");
+      const cards = useCards.getState();
+      for (const card of cards.cards.filter((c) => c.en === "Not many visitors make it out here. Enjoy the view!")) cards.remove(card.id);
+      return useCards.getState().cards.filter((c) => c.en === "Not many visitors make it out here. Enjoy the view!").length;
+    }), 0);
     const readyToTalk = (label) => {
       const { game: g, store } = window.__ew;
       const p = store.getState().hud.prompt;
