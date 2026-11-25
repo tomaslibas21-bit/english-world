@@ -96,7 +96,8 @@
 :is(.bl-confirm, .bl-confirm-measure) {
   font: inherit;
   display: grid; justify-items: center; gap: 3px; width: 100%; padding: 3px 5px 5px;
-  border: 1px solid #f2cd82; border-radius: 10px; background: #edcc8d; color: #29291e; --bl-light: #463d32;
+  border: 1px solid #f2cd82; border-radius: 10px; background: #edcc8d; color: #29291e;
+  --kit-gloss-color: #463d32;
 }
 .bl-confirm-label { display: flex; align-items: center; gap: 5px; font: 780 0.72rem/1.1 system-ui; }
 .bl-confirm [data-mic=listening] .ui-icon { color: #257049; }
@@ -181,6 +182,23 @@
   .bl-ball-chips { margin-block: 4px; }
   .bl-choice { min-height: 32px; padding: 2px 5px; }
   .bl-confirm-row { margin-top: 4px; }
+}
+
+@media (min-aspect-ratio: 6/5) and (max-height: 480px) {
+  .billiards[data-phase="listen"] {
+    grid-template-columns: minmax(140px, auto) minmax(0, 1fr) minmax(290px, 43vw);
+  }
+  /* The listening turn has no power bar, so its space can go to the choices. */
+  .billiards[data-phase="listen"] .bl-stage { grid-template-columns: minmax(0, 1fr); }
+  .billiards[data-phase="listen"] .bl-instruction {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px;
+  }
+  .billiards[data-phase="listen"] .bl-speech {
+    --kit-phrase-size: 15px; --kit-translation-size: 12px; padding-block: 2px;
+  }
+  .billiards[data-phase="listen"] .bl-pocket-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .billiards[data-phase="listen"] :is(.bl-pocket-chips .bl-choice, .bl-replay) { min-height: 44px; }
+  .billiards[data-phase="listen"] .bl-pocket-chips .kit-gloss-compact { overflow-wrap: anywhere; }
 }
 
 .bl-listen-actions { display: inline-flex; align-items: center; gap: 6px; }
