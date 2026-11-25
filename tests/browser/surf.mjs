@@ -239,7 +239,8 @@ try {
       const p = g.player.root.position.clone().project(g.rig.cam), y = ((1 - p.y) / 2) * innerHeight, x = ((p.x + 1) / 2) * innerWidth;
       const r = card.getBoundingClientRect(), f = document.querySelector(".surf-pic").getBoundingClientRect();
       const cue = window.__ew.game.surf.logic?.saying;
-      return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase };
+      const wordRows = new Set([...card.querySelectorAll(".surf-words .il .u")].map((word) => word.getBoundingClientRect().top)).size;
+      return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase, wordRows };
     });
     /** What the moves are called (Lithuanian, English) and their keys: what the learner reads under her line. */
     const MOVES = { paddle: [/Irkluok|Paddle/, ["↑"]], duck: [/Nerk|Duck/, ["↓"]], turn: [/Suk lentą|Turn the board/, ["←", "→"]], up: [/Stokis|Stand up/, ["↑"]], left: [/kairę|left/, ["←"]], right: [/dešinę|right/, ["→"]], down: [/Tūpk|Crouch/, ["↓"]], fwd: [/pirmyn|forward/, ["↑"]], jump: [/Šok|Jump/, ["↑"]], steady: [/ramiai|steady/, []] };
@@ -289,6 +290,16 @@ try {
             : s.options[0];
           if (s.choice === "board") wrongBoard = false;
           const i = s.options.indexOf(pick), es = u.choice[i].es;
+          if (label === "short-phone" && s.options.includes("a_and_now") && !shown.has("turn:arrive")) {
+            shown.add("turn:arrive");
+            const gap = await page.locator(".surf-choices").evaluate((el) => {
+              const { player, rig } = window.__ew.game;
+              const head = player.headPosition(player.root.position.clone());
+              head.y -= player.height * 0.15;
+              return el.getBoundingClientRect().top - (1 - head.project(rig.cam).y) * innerHeight / 2;
+            });
+            check(`${label}: the answers to “Ya estamos…” sit below the surfer's head`, gap > 0, gap);
+          }
           if (!shown.has("turn:" + s.choice)) {
             shown.add("turn:" + s.choice);
             await real(350);
@@ -439,7 +450,7 @@ try {
       const lt = await scoreCard.evaluate((el) => el.closest("[lang]").lang === "lt");
       assert.equal(await scoreCard.locator(".surf-best").innerText(), lt
         ? `Iš viso: bangų – ${waves}, sekundžių ant bangos – ${seconds}`
-        : `All time: ${waves} waves, ${seconds} seconds riding`);
+        : `All time: ${waves} ${waves === 1 ? "wave" : "waves"}, ${seconds} ${seconds === 1 ? "second" : "seconds"} riding`);
       assert.equal(await scoreCard.getByText(lt ? "Frazės, kurias girdėjai, jau tavo kortelėse."
         : "The phrases you heard are in your cards now.", { exact: true }).count(), 1);
       assert.equal(await scoreCard.locator(".mode-score-actions button").count(), 3);
@@ -464,6 +475,7 @@ try {
       const of = await page.evaluate(() => window.__ew.game.surf.content.pictures.of);
       const rows = [...seenPics.entries()];
       await new Promise((r) => setTimeout(r, 300));
+      if (label === "short-phone") check(`${label}: “¡Esta sí!” fits on one line beside the picture`, seenPics.get("this_one")?.wordRows === 1);
       check(`${label}: her commands came with their pictures, each the right one`, rows.length >= 8 && rows.every(([cue, v]) => (of[cue] ? v.name === of[cue] : ["good1", "good2", "good3", "r_exact", "not_yet", "ride_q", "easy"].includes(cue))), rows.map(([cue, v]) => `${cue}:${v.name}`).join(" "));
       // (the cards' pictures were fetched ahead as the lesson began)
       const ready = await page.evaluate(() => window.__ew.game.surf.loaded.every((i) => i.complete && i.naturalWidth > 0) && window.__ew.game.surf.loaded.length);

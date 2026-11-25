@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { LOOKS } from "../../src/ui/Title";
 import type { Accessory } from "../../src/content/npcs";
@@ -13,6 +15,36 @@ import { SURF_SPOT } from "../../src/game/world/surf";
 import { arrowFor, NO_INPUT, type Do, type Phase, type SurfArrow, type SurfInput } from "../../src/game/surf/logic";
 import { SurfPlay } from "../../src/game/surf/play";
 import { Surf } from "../../src/game/surf/Surf";
+import { EMPTY_SCORE, useSurf, type SurfUi } from "../../src/game/surf/store";
+import { SurfOverlay, SurfPicker } from "../../src/ui/Surf";
+
+vi.mock("../../src/game/surf/store", async (load) => {
+  const store = await load<typeof import("../../src/game/surf/store")>();
+  return {
+    ...store,
+    useSurf: Object.assign((select = (state: SurfUi) => state) => select(store.useSurf.getState()), store.useSurf),
+  };
+});
+
+describe("surf totals", () => {
+  it.each([
+    [1, 2, "1 wave, 2 seconds"],
+    [2, 1, "2 waves, 1 second"],
+    [1, 1, "1 wave, 1 second"],
+    [2, 0, "2 waves, 0 seconds"],
+  ])("shows the totals for %i waves and %i seconds on both cards", (waves, seconds, expected) => {
+    const previous = useSurf.getState();
+    try {
+      useSurf.setState({ picking: true, best: { waves, seconds } });
+      expect(renderToStaticMarkup(createElement(SurfPicker))).toContain(`All time: ${expected} riding`);
+
+      useSurf.setState({ picking: false, active: true, over: true, best: { waves: waves - 1, seconds }, score: { ...EMPTY_SCORE, waves: 1 } });
+      expect(renderToStaticMarkup(createElement(SurfOverlay, { toolbar: null }))).toContain(`All time: ${expected} riding`);
+    } finally {
+      useSurf.setState(previous);
+    }
+  });
+});
 
 function gameWith(normal: Character | StyledCharacter): Game {
   return Object.assign(Object.create(Game.prototype), { player: normal, playerLook: normal.look, normalPlayer: normal });

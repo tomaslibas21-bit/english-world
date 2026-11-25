@@ -23,11 +23,13 @@
 .surf-card.asked { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .surf-card.ok { border-color: var(--good, #37a26b); }
 .surf-card.no { border-color: var(--warm, #e7a13a); }
-.surf-words { min-width: 0; padding-inline-end: 48px; }
+.surf-words { flex: 1 1 auto; min-width: 0; }
 .surf-cue-line { display: flow-root; }
+.surf-cue-footer { display: flex; align-items: center; gap: 6px; }
+.surf-cue-details { flex: 1; min-width: 0; }
 .surf-feedback { float: inline-start; width: 28px; height: 24px; }
 .surf .mode-score-actions .surf-later { min-height: 44px; }
-.surf-again { position: absolute; inset-inline-end: 2px; bottom: 2px; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
+.surf-again { flex: none; margin-inline-start: auto; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
 .surf-again:hover { filter: brightness(1.06); }
 
 /* The cue and the arrow under the thumb use the same gold. */
@@ -177,6 +179,9 @@ button.surf-move { cursor: pointer; }
   .surf-balance { margin-top: 5px; }
   .surf-move { min-height: 40px; padding: 6px 14px; }
   .surf-move-text { font-size: 20px; }
+}
+@media (max-width: 520px) and (max-height: 700px) and (orientation: portrait) {
+  .surf.touch .surf-choices { align-self: end; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .surf.touch { --pad-space: calc(3 * var(--arrow-size) + 2 * var(--pad-gap) + 26px + env(safe-area-inset-right)); }

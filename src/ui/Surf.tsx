@@ -18,20 +18,13 @@ import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { SitIcon } from "./SitIcon";
 import { SURF } from "../content/surf";
 import { L, Lx, TL } from "./i18n";
+import { ltCount } from "./lt";
 import { EDITION } from "../edition";
 import "./surf.css";
 
 /** A line of Spanish with nothing under it but the same words: no second translation for it. */
 const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const sameAsGloss = (s: SurfLine["s"]) => bare(s.units.map((u) => u.lt).join(" ")) === bare(s.nat ?? "");
-
-/** One of her lines, with the help every conversation gives (the game's own setting „Vertimas po žodžiais“): the word
- *  line under the Spanish and the meaning under that, every time she says it (owner, 22 Nov 2026: lines that had lost
- *  their translation after a few hearings read as untranslated). With the setting off, the Spanish alone; a tap on a
- *  word still gives its meaning. */
-function Line({ line, lt }: { line: SurfLine; lt: boolean }) {
-  return <Interlinear s={line.s} lt={lt} ipa={false} nat={lt && !sameAsGloss(line.s)} />;
-}
 
 /** One of the learner's answers inside its button: the Spanish, each word with its meaning under it, and the whole
  *  meaning where it says more than the words (no popovers: the tap is the answer). */
@@ -203,6 +196,14 @@ function Mic({ mic, on }: { mic: SurfUi["mic"]; on: boolean }) {
   );
 }
 
+function surfTotals(waves: number, seconds: number): string {
+  return L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", {
+    waves, seconds,
+    waveUnit: ltCount(waves, "banga", "bangos", "bangų"),
+    secondUnit: ltCount(seconds, "sekundė", "sekundės", "sekundžių"),
+  });
+}
+
 /** The level's choice, as the lesson is started at the school's boards. */
 export function SurfPicker() {
   const picking = useSurf((s) => s.picking);
@@ -223,7 +224,7 @@ export function SurfPicker() {
             <span>{L("Žalios bangos, posūkiai, eilė prie bangos.")}</span>
           </button>
         </div>
-        {best.waves > 0 && <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: best.waves, seconds: best.seconds })}</p>}
+        {best.waves > 0 && <p className="surf-best">{surfTotals(best.waves, best.seconds)}</p>}
         <button className="surf-later" onClick={() => game?.surfStop()}>{L("Ne dabar")}</button>
       </div>
     </div>
@@ -240,7 +241,9 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   if (!s.active) return null;
   const sc = s.score;
   const riding = s.phase === "ride";
-  const pic = s.line?.pic;
+  const line = s.line;
+  const pic = line?.pic;
+  const nat = line && lt && !sameAsGloss(line.s) ? line.s.nat : null;
   return (
     <div className={"surf" + (touch ? " touch" : "")}>
       <div className="surf-top">
@@ -253,7 +256,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
         </div>
         {!s.over && toolbar}
       </div>
-      {s.line && !s.over && (
+      {line && !s.over && (
         <div className="surf-say">
           <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
             {pic && <Picture src={pic} />}
@@ -263,11 +266,18 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
                   {s.mark === "ok" && <FeedbackBadge correct label={L("Teisingai!")} />}
                   {s.mark === "no" && <FeedbackBadge correct={false} label={L("Pabandyk dar kartą")} />}
                 </div>
-                <Line line={s.line} lt={lt} />
+                <Interlinear s={line.s} lt={lt} ipa={false} nat={false} />
               </div>
-              {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
+              <div className="surf-cue-footer">
+                {(nat || riding) && (
+                  <div className="surf-cue-details">
+                    {nat && <div className="nat" lang={EDITION.helper}>{nat}</div>}
+                    {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
+                  </div>
+                )}
+                <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
+              </div>
             </div>
-            <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
           </div>
           {/* her line asks for a move: the move and its key, large, right under it */}
           <Move todo={s.todo} touch={touch} />
@@ -298,7 +308,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
           <button className="btn surf-level adv" onClick={() => game?.surfAgain("advanced")}><b>{L("Dar viena pamoka")}</b><span>{L("Pažengusiems")}</span></button>
           <button className="btn soft surf-later" onClick={() => game?.surfStop()}>{L("Į krantą")}</button>
         </>}>
-          <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: s.best.waves + sc.waves, seconds: s.best.seconds + sc.seconds })}</p>
+          <p className="surf-best">{surfTotals(s.best.waves + sc.waves, s.best.seconds + sc.seconds)}</p>
           <p>{L("Frazės, kurias girdėjai, jau tavo kortelėse.")}</p>
         </ScoreCard>
       )}
