@@ -16,6 +16,8 @@ import { STYLED } from "../style";
 import { LIGHTHOUSE_ISLAND } from "./island";
 import { addLighthouse } from "./lighthouseTower";
 import { MAPLE_BLOCKS } from "./styled";
+import { addHarborSurf } from "./harborSurf";
+import { HARBOR_SURF, SURF_SPOT } from "./surf";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -133,6 +135,7 @@ export function makeLobsterBoats(boatMat: THREE.Material) {
 export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
   const { M, col, group, photo } = c;
   const add: Add = (g, color, o = {}) => M.add("mh-" + color + (o.flat ? "f" : "") + (o.emissive ?? ""), mat(color, { flat: o.flat || undefined, emissive: o.emissive }), g, o.cast ?? true);
+  addHarborSurf(c, add);
   const placePumpkin = (x: number, y: number, z: number, scale: number, seed: number) => {
     pumpkin(add, x, y, z, scale, seed);
     photo("pumpkin", x, y + scale * 0.7, z);
@@ -533,6 +536,7 @@ function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((
   for (let i = 0; i < 44; i++) {
     const x = -100 + br() * 270, z = -79 - br() * 34, lean = (br() - 0.5) * 0.5;
     if (Math.hypot(x - LIGHTHOUSE.x, z - LIGHTHOUSE.z) < (LIGHTHOUSE_ISLAND ? 19 : 10) || (x > -48 && x < -12 && z > -92) || (Math.abs(x + 6.5) < 4 && z > -80)) continue;
+    if (x > SURF_SPOT.x - 6 && x < SURF_SPOT.x + 8 && z < SURF_SPOT.z && z > SURF_SPOT.z - 31) continue;
     const [a, b] = liveries[i % liveries.length];
     buoy(parts, x, -0.3, z, a, b, lean);
   }
@@ -564,10 +568,25 @@ function addBeach(add: Add, col: Colliders) {
     col.addBox(x, z, Math.abs(Math.cos(rot)) * len + 0.3, Math.abs(Math.sin(rot)) * len + 0.3);
   }
   const gr = rand(204);
+  const [supX, supZ] = SURF_SPOT.boards[1];
+  const { shack } = HARBOR_SURF;
   for (let x = -104; x < 122; x += 3.4 + gr() * 3.2) {
     const z = BEACH_Z - 0.9 - gr() * 1.5;
-    if (Math.abs(x + 30) < 5 || Math.hypot(x - 104, z + 70) < 5) { gr(); continue; }
     const n = 4 + Math.floor(gr() * 3);
-    for (let i = 0; i < n; i++) add(new THREE.ConeGeometry(0.05, 0.55 + (i % 3) * 0.18, 3).rotateZ((i - n / 2) * 0.16).translate(x + (i - n / 2) * 0.09, 0.3, z + (i % 2) * 0.1), i % 2 ? "#b9b46a" : "#9fa85a", { flat: true, cast: false });
+    // Leave the two paddleboard decks and their 0.2 m margin clear. Keep the count draw for each tuft.
+    if (Math.abs(x - supX) < 1.2 && Math.abs(z - supZ) < 1.75) continue;
+    if (Math.abs(x + 30) < 5 || Math.hypot(x - 104, z + 70) < 5) continue;
+    for (let i = 0; i < n; i++) {
+      const s = i - n / 2;
+      const blade = new THREE.ConeGeometry(0.05, 0.55 + (i % 3) * 0.18, 3)
+        .rotateZ(s * 0.16).translate(x + s * 0.09, 0.3, z + (i % 2) * 0.1);
+      if (Math.abs(x - shack.x) < shack.w / 2 + 0.6) {
+        blade.computeBoundingBox();
+        const { min, max } = blade.boundingBox!;
+        if (min.x < shack.x + shack.w / 2 && max.x > shack.x - shack.w / 2
+          && min.z < shack.z + shack.d / 2 && max.z > shack.z - shack.d / 2 - 0.2) continue;
+      }
+      add(blade, i % 2 ? "#b9b46a" : "#9fa85a", { flat: true, cast: false });
+    }
   }
 }

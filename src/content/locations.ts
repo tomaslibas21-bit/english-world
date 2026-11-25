@@ -37,6 +37,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("dans-house", "Dan & Nora's House", "Dano ir Noros namai", "residential", "interior", "🏡"),
   L("office", "Brightline Office", "„Brightline“ biuras", "work", "interior", "💼"),
   L("the-pier", "The Pier Restaurant", "Restoranas „The Pier“", "harbor", "interior", "🌅"),
+  L("harbor-surf", "Harbor Surf", "Banglenčių mokykla „Harbor Surf“", "harbor", "outdoor", "🏄"),
   L("clinic", "Harbor Family Clinic", "Šeimos klinika", "downtown", "interior", "🩺"),
   L("market", "Harbor Market", "Prekybos centras „Harbor Market“", "downtown", "interior", "🛒"),
   L("gym", "Harbor Fitness", "Sporto klubas „Harbor Fitness“", "residential", "interior", "🏋️"),

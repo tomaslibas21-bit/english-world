@@ -36,6 +36,7 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
+import { HARBOR_SURF } from "../game/world/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -302,11 +303,16 @@ const MapPlaces = lazy(() => import("./MapPlaces"));
 
 function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
+  if (loc === HARBOR_SURF.location) return HARBOR_SURF.shack;
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
   const s = SITUATIONS.find((x) => x.location === loc);
   const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
   return o ? { x: o.x, z: o.z } : null;
+}
+
+function MapPlaceIcon({ loc, size }: { loc: string; size: number }) {
+  return loc === HARBOR_SURF.location ? <SitIcon id={SURF.situation} size={size} /> : <Icon name={locIcon(loc)} size={size} />;
 }
 
 function MapPanel({ close }: { close: () => void }) {
@@ -364,7 +370,7 @@ function MapPanel({ close }: { close: () => void }) {
               {/* Pass the existing UI and content through so opening the map is their only new chunk boundary. */}
               <MapPlaces canvas={ref} island={island} north={north} positionFor={locationPoint} progress={progress}
                 selected={sel} onSelect={setSel} route={ROUTE} situations={SITUATIONS} doors={game?.doors}
-                Icon={Icon} iconFor={locIcon} portal={createPortal} />
+                landmark={HARBOR_SURF.location} Icon={Icon} MapPlaceIcon={MapPlaceIcon} portal={createPortal} />
             </Suspense>
             {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && (
@@ -376,7 +382,7 @@ function MapPanel({ close }: { close: () => void }) {
             )}
             {sel && LOCATIONS[sel] && (
               <div>
-                <h3 className="place-title" tabIndex={0}><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
+                <h3 className="place-title" tabIndex={0}><span className="place-ico"><MapPlaceIcon loc={sel} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 <div className="sit-list">

@@ -13,9 +13,11 @@ import { prepareTownCollision } from "../src/game/townCollisionPreparation";
 import {
   decodeTownCollision, readTownCollision, TOWN_COLLISION_METADATA_OFFSET, TOWN_COLLISION_TIMEOUT_MS,
 } from "../src/game/townCollisionTransport";
+import { sandY } from "../src/game/water";
 import { LIGHTHOUSE_ISLAND } from "../src/game/world/island";
 import { BUS_STOP } from "../src/game/world/layout";
 import { buildLighthouseIsland } from "../src/game/world/lighthouseIsland";
+import { HARBOR_SURF } from "../src/game/world/surf";
 import { buildTown, type Town } from "../src/game/world/town";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 import { bakeTownCollision } from "../tools/town-collision-data";
@@ -95,9 +97,13 @@ describe("Maple Harbor collision asset", () => {
     expect([restored.field.nx, restored.field.nz]).toEqual([684, 496]);
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
-    // Pin the merged town's camera field, including the west ridge outside the driving boundary.
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("fb520d9e11debb986d373b34d3341afc880c321b6caab3ee94bc54d2f2a643ad");
+    // Pin the camera field with both the west ridge and the surf school.
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("51a41151d7495a1dd9d36dfbb4e743de29aff79eb111133c7d1fffb81b829f8a");
     expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
+    const { approach, shack } = HARBOR_SURF;
+    const ridgeY = sandY(shack.x, shack.z) + shack.ridge;
+    expect(restored.field.solidAt(shack.x, ridgeY - 0.05, shack.z)).toBe(true);
+    expect(restored.field.solidAt(approach.x, 0.6, approach.z)).toBe(false);
     expect(ledges.pieces.slice(boats.length)).toStrictEqual(baked.ledges.pieces);
     expect(restored.ledges.pieces).toStrictEqual(ledges.pieces);
     expect(restored.ledges.things).toStrictEqual(ledges.things);

@@ -12,6 +12,7 @@ import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL }
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
 import { EXIT_HAZE, EXIT_MEADOW, EXIT_PREVIEW_LENGTH, EXIT_VERGE, exitToTown, makeCoastalRidge, makeExitSign, shapeExitHill } from "./roadExit";
+import { HARBOR_SURF, SURF_SPOT } from "./surf";
 import { ROAD_EDITION } from "../../content/road";
 import { makeGateSilhouette } from "../road/gates";
 import { previewCones } from "../road/props";
@@ -661,6 +662,19 @@ function drawGround(): HTMLCanvasElement {
   }
   // pier path from Harbor Road
   rectW(x, -32.2, BEACH_Z - 7, -27.8, -59.5, P.pierPath);
+  // Worn sand from the promenade around the east side of Harbor Surf and on to the board rack.
+  const { shack, approach } = HARBOR_SURF, boardX = SURF_SPOT.boards[0][0];
+  const sideX = shack.x + shack.w / 2 + 1.05;
+  x.save();
+  x.strokeStyle = "#c6a781"; x.globalAlpha = 0.32; x.lineWidth = 1.45 * PPM; x.lineCap = "round"; x.lineJoin = "round";
+  x.beginPath();
+  x.moveTo(...toC(sideX, -62.9));
+  x.lineTo(...toC(sideX, approach.z + 1.3));
+  x.quadraticCurveTo(...toC(sideX, approach.z), ...toC(sideX - 1.6, approach.z));
+  x.lineTo(...toC(approach.x, approach.z));
+  x.lineTo(...toC(boardX + 1.4, SURF_SPOT.start.z + 0.5));
+  x.stroke();
+  x.restore();
   // footprints darkening (fake ambient occlusion)
   for (const b of BUILDINGS) {
     const [x0, z0] = toC(b.x - b.w / 2 - 0.8, b.z - b.d / 2 - 0.8);

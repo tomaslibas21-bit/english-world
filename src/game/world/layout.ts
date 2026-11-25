@@ -3,6 +3,8 @@ import { QUEST_PEOPLE_SPOTS } from "../../content/townQuests";
 import { ROAD_EDITION } from "../../content/road";
 import { LOCATIONS } from "../../content/locations";
 import type { CarModelName, CarPlacement } from "./carModels";
+import { SURF } from "../../content/surf";
+import { HARBOR_SURF } from "./surf";
 
 export type Face = "n" | "s" | "e" | "w";
 export interface Road { x1: number; z1: number; x2: number; z2: number; w: number; name?: string }
@@ -107,6 +109,7 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   // Advanced song P25: Maggie Holt by her convertible for sale (CONVERTIBLE) in the drive on Cedar Lane, the quiet
   // stretch between the two houses east of the clinic; you stand on the sidewalk
   { npc: "maggie", x: 101.2, z: 47.7, rot: Math.PI, ax: 101.2, az: 45.5 },
+  { npc: SURF.npc, ...HARBOR_SURF.coach, ax: HARBOR_SURF.approach.x, az: HARBOR_SURF.approach.z },
 ];
 
 /** Two townspeople standing and chatting (Ambient), face to face: [x, z] of one and [x, z] of the other. In the square
@@ -128,6 +131,12 @@ export const DROPOFF: Record<string, { x: number; z: number; rot: number }> = {
   "sophies-house": { x: -42.5, z: 44.4, rot: 0 },
   "bus-stop": { x: -6, z: 46, rot: Math.PI },
   "cedar-lane": { x: 99.6, z: 44.9, rot: 0 },
+  [HARBOR_SURF.location]: HARBOR_SURF.approach,
+};
+
+/** Registered outdoor places with a dedicated pedestrian approach. */
+export const OUTDOOR_GUIDES: Partial<Record<string, { x: number; z: number; rot: number; alignCamera?: boolean }>> = {
+  [HARBOR_SURF.location]: HARBOR_SURF.approach,
 };
 
 /** Market stalls in the town square. */

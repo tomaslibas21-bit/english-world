@@ -4,7 +4,12 @@
 
 import type { EntityDef, SentSrc } from "../content/types";
 import { agree, genderChoice, parseForms, caseIndex, type Case, type Gender } from "./lt-morph";
-import { learnerNote } from "../content/notes-lt";
+import { learnerNote, NOTES_LT } from "../content/notes-lt";
+
+/** Lets a lazy situation supply notes before its lines are composed. */
+export function registerLearnerNotes(notes: Readonly<Record<string, string>>) {
+  Object.assign(NOTES_LT, notes);
+}
 
 export interface Unit { en: string; lt: string; flag?: string }
 export interface Sentence { units: Unit[]; en: string; nat: string; say: string }

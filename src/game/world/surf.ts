@@ -1,5 +1,4 @@
-// Where one surfs in this town (the engine is src/game/surf/; the instructor's words are the edition's lines,
-// src/content/surf.ts). Maple Harbor has no surf school yet: null. Puerto Colibrí's is src/editions/es/game/world/surf.ts.
+// Harbor Surf on Maple Harbor's west beach. The layout is shared by the town, map and walking guide.
 export interface SurfSpot {
   /** The lane the lesson uses: its middle along the beach (x) and the waterline (z); out to sea is −z. */
   x: number; z: number;
@@ -15,4 +14,20 @@ export interface SurfSpot {
   face: string; deep: string;
 }
 
-export const SURF_SPOT: SurfSpot | null = null;
+const SHACK = { x: -99.8, z: -65.6, w: 4.8, d: 2.8, eave: 2.35, ridge: 3.05 };
+
+export const HARBOR_SURF = {
+  location: "harbor-surf",
+  shack: SHACK,
+  counter: { z: -67, w: 3.1, d: 0.42, top: 1.02 },
+  coach: { x: SHACK.x, z: -66.45, rot: Math.PI },
+  approach: { x: SHACK.x, z: -68.55, rot: 0, alignCamera: true },
+};
+
+export const SURF_SPOT = {
+  x: -94.5, z: -72.2,
+  start: { x: -104.2, z: -69.9, rot: Math.PI, r: 2.6 },
+  boards: [[-104.2, -68.6, 2.8], [-104.5, -65.8, 2.4], [-108, -68.9, 2.6]],
+  hintWithin: 15,
+  face: "#81c5d0", deep: "#2a93ad",
+} satisfies SurfSpot;

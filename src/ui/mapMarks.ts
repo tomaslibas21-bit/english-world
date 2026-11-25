@@ -1,4 +1,5 @@
 import type { IslandPlan } from "../game/world/island";
+import { HARBOR_SURF } from "../game/world/surf";
 
 // The small marks on the round map for what one can take: the boats (a white hull in a yellow ring, so they are
 // found from the beach) and the convertibles (a small car in its paint). Drawn where they are now.
@@ -27,6 +28,32 @@ export function drawRideMarks(c: CanvasRenderingContext2D, marks: RideMark[], px
     }
     c.restore();
   }
+}
+
+/** The board symbol at the school, projected at the same scale as the ride marks. */
+export function drawSurfMark(c: CanvasRenderingContext2D, px: number, pz: number, view: number, size: number) {
+  const site = HARBOR_SURF.shack;
+  const x = ((site.x - px) / view + 0.5) * size, y = ((site.z - pz) / view + 0.5) * size;
+  if (x < 10 || x > size - 10 || y < 10 || y > size - 10) return;
+  c.save();
+  c.translate(x, y);
+  c.rotate(0.46);
+  c.fillStyle = "#287c79";
+  c.strokeStyle = "#f6ecd9";
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(0, -8);
+  c.bezierCurveTo(5, -4, 5, 3, 2.4, 7);
+  c.lineTo(-2.4, 7);
+  c.bezierCurveTo(-5, 3, -5, -4, 0, -8);
+  c.closePath();
+  c.fill();
+  c.stroke();
+  c.beginPath();
+  c.moveTo(0, -4);
+  c.lineTo(0, 4);
+  c.stroke();
+  c.restore();
 }
 
 /** The same coastline and boards on both scales of map. */

@@ -11,6 +11,13 @@ const size = process.env.SEA_SIZE || "1280x800";
 assert.ok(["1280x800", "390x844", "390x664"].includes(size), `Unsupported SEA_SIZE: ${size}`);
 const [width, height] = size.split("x").map(Number);
 const phone = width === 390;
+const startedAt = performance.now();
+function checkpoint(stage, state) {
+  const elapsed = ((performance.now() - startedAt) / 1000).toFixed(1);
+  const scene = state?.presented?.scene ?? "pending";
+  const draw = state?.drawCalls === undefined ? "" : ` calls=${state.drawCalls} baseline=unmatched`;
+  console.log(`sea ${size} +${elapsed}s ${stage} phase=${state?.phase ?? "boot"} scene=${scene}${draw}`);
+}
 const locationTitle = process.env.VITE_EDITION === "es" && process.env.VITE_LEARNER !== "lt" ? "Open sea" : "Atvira jūra";
 const distance = (a, b) => Math.hypot(...a.map((n, i) => n - b[i]));
 const dot = (a, b) => a.reduce((n, q, i) => n + q * b[i], 0);
@@ -61,6 +68,7 @@ function installClock([key, save]) {
   Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
 }
 
+checkpoint("boot");
 const browser = await chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
   headless: true,
@@ -108,8 +116,10 @@ try {
   const hasPlayScreen = () => page.evaluate(() => window.__ew?.store.getState().screen === "play");
   await waitFor(hasPlayScreen, "the beach loads", 500);
   await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
-  assert.equal((await read()).phase, "town");
+  const town = await read();
+  assert.equal(town.phase, "town");
   assert.deepEqual(seaRequests, [], "the mode chunk stays unloaded before boarding");
+  checkpoint("town rendered", town);
   await page.evaluate(() => {
     const { audio } = window.__ew;
     window.__seaAudio = [];
@@ -131,6 +141,7 @@ try {
   assert.equal(mooring.id, "anchored-1");
   await ready();
   assert.ok(seaRequests.some((path) => path.endsWith("/mode.ts")), "the mode prefetches aboard");
+  checkpoint("boat ready", await read());
 
   const title = page.locator(".sea-crossing-title");
   const titleState = () => page.evaluate(() => {
@@ -300,6 +311,7 @@ try {
   async function checkReturn(label, first) {
     const mounts = (await titleState()).mounts;
     let last = first ?? await read(), patch;
+    checkpoint(`return started (${label})`, last);
     if (last.presented.scene === "sea" && last.returnAge > 0) patch = await patches(last, label);
     for (let i = 0; i < Math.ceil(1300 / milliseconds) + 3; i++) {
       const state = await frame(last);
@@ -332,6 +344,7 @@ try {
           assert.ok(angle(sample.townFrame.camera.rotation, slerp(rotation, live.rotation, k)) <= 0.15);
         }
         assert.equal((await titleState()).mounts, mounts);
+        checkpoint(`return checked (${label})`, towns.at(-1));
         return state;
       }
       assertBoatFrame(state, label);
@@ -385,6 +398,7 @@ try {
     assert.equal(first.elapsed, 0);
     assert.equal(await page.locator(".fade").evaluate((element) => Number(getComputedStyle(element).opacity)), 0);
     assert.ok(first.drawCalls <= 25, `first sea frame uses ${first.drawCalls} draw calls`);
+    checkpoint("border crossed", first);
     await page.keyboard.up("ArrowUp");
     await press(page.locator('[data-way="words"]'));
     const start = await read();
@@ -507,13 +521,16 @@ try {
     throw new Error(`${error.message}
 Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   });
-  assert.ok((await read()).drawCalls <= 25);
+  const firstGate = await read();
+  assert.ok(firstGate.drawCalls <= 25);
+  checkpoint("first gate readable", firstGate);
   assert.equal(await page.locator(".sea-mode .drive-horn, .sea-mode .road-ghost").count(), 0);
   await shot("gates");
   await press(gates.nth((await read()).right));
   await waitFor(async () => (await read()).rightGates === 1, "taps and sails through the correct gate");
 
   let correct = await read();
+  checkpoint("first gate passed", correct);
   await step(6);
   registration.verify();
   registration = undefined;
@@ -576,6 +593,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assertBoatFrame(scored, "timed score card");
   assert.equal(scored.result.missed.length, 1);
   assert.equal(await result.getByRole("button", { name: "Nuvesk mane" }).count(), 1);
+  checkpoint("score checked", scored);
   await shot("result");
 
   await press(result.getByRole("button", { name: "Atgal į krantą" }));
@@ -596,6 +614,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   const deep = await read();
   assert.equal(deep.elapsed, 120);
   assert.ok(deep.z < deep.edge - 400 && deep.drawCalls <= 25);
+  checkpoint("offshore score checked", deep);
   await press(result.getByRole("button", { name: "Atgal į krantą" }));
   await checkReturn("offshore timed result → Back to shore");
 
@@ -649,7 +668,9 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await waitFor(() => result.isVisible(), "shows the score before retrying");
   const beforeRetry = await titleState();
   await press(result.getByRole("button", { name: "Dar kartą" }));
-  assert.equal((await read()).phase, "briefing");
+  const briefing = await read();
+  assert.equal(briefing.phase, "briefing");
+  checkpoint("retry briefing", briefing);
   await press(page.locator('[data-way="words"]'));
   await waitFor(async () => (await read()).phase === "drive" && !!(await read()).gates, "retry opens a prompt offshore", 15, 1);
   const retried = await read();
@@ -657,6 +678,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.equal((await titleState()).clips, beforeRetry.clips + Number(!retried.gap));
   assert.equal(await page.locator(".road-cue").count(), 1);
   assert.equal(retried.totalGates, 0);
+  checkpoint("retry prompt checked", retried);
   await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before following the guide");
   await page.keyboard.press("Escape");
@@ -695,6 +717,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await ready();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await sailOut();
+  checkpoint("reload started", await read());
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitFor(hasPlayScreen, "reloads from open water", 500);
   await waitFor(async () => (await read()).town?.phase === "on", "restores the lobster boat inside the bay");
@@ -702,6 +725,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.equal(returned.phase, "town");
   assert.equal(returned.town.id, "lobster-1");
   assert.ok(returned.town.z > returned.edge + 10 && Math.cos(returned.town.heading) > 0.99);
+  checkpoint("reload checked", returned);
 
   assert.deepEqual(errors, []);
   await context.close();

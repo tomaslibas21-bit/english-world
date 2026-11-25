@@ -156,11 +156,18 @@ try {
       const airport = page.getByRole("button", { name: "Maple Harbor Airport", exact: true });
       await airport.click();
       assert.equal(await airport.getAttribute("aria-pressed"), "true");
-      assert.equal(await page.locator(".map-pin svg[data-sit-icon]").count(), 0);
+      const school = page.getByRole("button", { name: "Harbor Surf", exact: true });
+      const mapIcons = page.locator(".map-pin svg[data-sit-icon]");
+      assert.equal(await mapIcons.count(), 1);
+      assert.equal(await school.locator("svg[data-sit-icon]").getAttribute("data-sit-icon"), "waves-horizontal");
       const places = await inspect(page, ".map-wrap .sit-card", ".txt b, .txt i");
       match(places);
       assert.deepEqual(new Set(places.map(([id]) => id)), new Set(situations.filter((s) => s.location === "airport").map((s) => s.id)));
       await shot("map", ".map-wrap .sit-card");
+      await school.click();
+      assert.equal(await school.getAttribute("aria-pressed"), "true");
+      assert.equal(await page.locator(".place-title svg[data-sit-icon]").getAttribute("data-sit-icon"), "waves-horizontal");
+      assert.deepEqual(await inspect(page, ".map-wrap .sit-card", ".txt b, .txt i"), [["x04-surf", "waves-horizontal"]]);
 
       await panel("phrasebook");
       await page.locator('.chapter h3 svg[data-sit-icon="car-taxi-front"]').waitFor();

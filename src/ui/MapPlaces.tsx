@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type RefObject } from "react";
 import type { createPortal } from "react-dom";
 import { LOCATIONS } from "../content/locations";
 import type { SituationMeta } from "../content/types";
@@ -8,7 +8,7 @@ import type { IslandPlan, IslandPoint } from "../game/world/island";
 import type { Door } from "../game/world/town";
 import type { Progress } from "../state/progress";
 import { useStore } from "../state/store";
-import type { Icon as PlaceIcon, IconName } from "./icons";
+import type { Icon as PlaceIcon } from "./icons";
 import { packMapPlaces, type MapPoint } from "./mapPacking";
 import "./MapPlaces.css";
 
@@ -56,7 +56,7 @@ function faceOffset(pin: MapPoint, mark: MapPoint | null, { size, height }: Boun
 }
 
 export default function MapPlaces({ canvas, island, north, positionFor, progress, selected, onSelect,
-  route, situations, doors, Icon, iconFor, portal }: {
+  route, situations, doors, landmark, Icon, MapPlaceIcon, portal }: {
   canvas: RefObject<HTMLCanvasElement | null>;
   island?: IslandPlan;
   north: number;
@@ -67,8 +67,9 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
   route: readonly SituationMeta[];
   situations: readonly SituationMeta[];
   doors?: Door[];
+  landmark: string;
   Icon: typeof PlaceIcon;
-  iconFor: (id: string) => IconName;
+  MapPlaceIcon: ComponentType<{ loc: string; size: number }>;
   portal: typeof createPortal;
 }) {
   const [bounds, setBounds] = useState<Bounds | null>(null);
@@ -100,13 +101,13 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
 
   const places = useMemo(() => {
     const points = Object.values(LOCATIONS).flatMap(({ id, kind, lt, name }) => {
-      if (kind === "phone" || (id !== "pool-hall" && !route.some((s) => s.location === id))) return [];
+      if (kind === "phone" || (id !== "pool-hall" && id !== landmark && !route.some((s) => s.location === id))) return [];
       const point = positionFor(id);
-      return point ? [{ id, lt, name, reserved: id === "airport", ...project(point, north) }] : [];
+      return point ? [{ id, lt, name, reserved: id === "airport" || id === landmark, ...project(point, north) }] : [];
     });
     if (island) points.push({ id: "lighthouse", lt: island.lt, name: island.name, reserved: true, ...project(island.center, north) });
     return points;
-  }, [north, island, positionFor, route, doors]);
+  }, [north, island, positionFor, route, doors, landmark]);
 
   const completed = useMemo(() => {
     const names = new Set<string>();
@@ -192,7 +193,7 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
             }
           }}>
           <span className={"map-pin-face" + (offset === undefined ? "" : " clears-objective")}>
-            <Icon name={iconFor(place.id)} size={group && bounds.size === 30 ? 14 : 18} />
+            <MapPlaceIcon loc={place.id} size={group && bounds.size === 30 ? 14 : 18} />
             {group && <span className="map-pin-count">{pin.members.length}</span>}
             {done && check}
             {lighthouse && <span className="map-place-label">{name}</span>}
@@ -207,7 +208,7 @@ export default function MapPlaces({ canvas, island, north, positionFor, progress
           <button key={id} type="button" className="map-member" aria-pressed={id === selected}
             onFocus={(event) => { lastFocus.current = { el: event.currentTarget, place: id }; }}
             onClick={() => { setOpenPlace(id); select(id); }}>
-            <Icon name={iconFor(id)} size={20} />
+            <MapPlaceIcon loc={id} size={20} />
             <span><b lang="lt">{lt}</b><small lang="en">{name}</small></span>
             {completed.has(id) && <Icon name="check" size={16} strokeWidth={3} label="įveikta" />}
           </button>)}

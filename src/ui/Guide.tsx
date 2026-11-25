@@ -7,6 +7,7 @@ import { useStore, type HudState } from "../state/store";
 import { coach, type CoachStep } from "../game/coach";
 import { useRadio } from "../radio";
 import { Icon, type IconName } from "./icons";
+import { SURF_HINT_KEYS, SURF_HINT_TOUCH, SURF_LESSON } from "../content/surf-town";
 
 export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", list: "clapper", car: "car", boat: "sunset", water: "drop", surf: "star", radio: "radio" };
 
@@ -21,7 +22,7 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
     case "car": return ["Važiuok", touch ? "Prieik prie kabrioleto ir bakstelėk mygtuką – sėsi prie vairo. Vairalazdė vairuoja, STOP stabdo." : "Prieik prie kabrioleto ir spausk E – sėsi prie vairo. Rodyklės vairuoja, Tarpas stabdo, E – išlipti."];
     case "boat": return ["Plauk valtimi", touch ? "Prieik prie valties ir bakstelėk mygtuką – įlipsi. Vairalazdė vairuoja." : "Prieik prie valties ir spausk E – įlipsi. Rodyklės vairuoja, E – išlipti."];
     case "water": return ["Jūra", touch ? "Bristi galima tol, kol gilu, – toliau plauksi. Mygtukas su rodykle žemyn – panerti." : "Bristi galima tol, kol gilu, – toliau plauksi. Tarpas – panerti, Shift – plaukti greičiau."];
-    case "surf": return ["Banglenčių pamoka", touch ? "Prie La Ola lentų paplūdimyje bakstelėk „Banglentė“ – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje." : "Prie La Ola lentų paplūdimyje spausk E – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje."];
+    case "surf": return [SURF_LESSON.lt, (touch ? SURF_HINT_TOUCH : SURF_HINT_KEYS).lt];
     case "radio": return ["Radijas", touch ? "Radijo mygtukas dešinėje: kurso dainos, kol vaikštai." : "R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai."];
   }
 }

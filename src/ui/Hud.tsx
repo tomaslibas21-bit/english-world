@@ -5,7 +5,7 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { useBarista } from "../game/barista/store";
 import { useGoFish } from "../game/gofish/store";
-import { SurfOverlay, SurfPicker } from "./Surf";
+import { getSurfOverlay } from "./surfOverlay";
 import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { GoFishOffer, GoFishOverlay } from "./GoFish";
@@ -22,7 +22,7 @@ import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
 import { isPhone } from "./objective";
-import { drawIslandMap, drawRideMarks } from "./mapMarks";
+import { drawIslandMap, drawRideMarks, drawSurfMark } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
@@ -84,6 +84,7 @@ export function Hud() {
   const surfPicking = useSurf((s) => s.picking);
   const baristaOffer = useBarista((s) => s.offered);
   const goFishOffer = useGoFish((s) => s.offered);
+  const surfUi = surfing || surfPicking ? getSurfOverlay() : undefined;
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
   const riding = ride !== null;
@@ -102,10 +103,9 @@ export function Hud() {
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
   // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
-  if (surfing) return (
+  if (surfing && surfUi) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <SurfOverlay />
-      {hud.showTouch && <TouchControls />}
+      <surfUi.SurfOverlay toolbar={<><Toolbar {...screen} surf riding touch={hud.showTouch} /><RadioSetLayer /></>} />
       <Fade />
     </div>
   );
@@ -177,7 +177,7 @@ export function Hud() {
       {hud.showTouch && <TouchControls />}
       {!hud.panel && <><BaristaOffer /><GoFishOffer /></>}
       {questHud && <><PhotoChip /><QuestArrival /></>}
-      <SurfPicker />
+      {surfPicking && surfUi && <surfUi.SurfPicker />}
       <Fade />
     </div>
   );
@@ -231,7 +231,7 @@ function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
  *  they fold only at a wheel, at the helm or in a mini-game. Opened, the drawer is the fewest even columns that fit
  *  above the controls, the right column first (`toolbarColumns`): one column wherever it fits. */
-function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; modeExit?: string; hint?: boolean }) {
+function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, hint = false, surf = false }: Screen & { riding: boolean; touch: boolean; modeExit?: string; hint?: boolean; surf?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const unread = useStore((s) => unreadTexts(s.progress.texts));
@@ -246,7 +246,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   const phone = portraitPhone || sidewaysPhone;
   const folds = phone || riding;
   // On a computer the radio stays beside the menu button during a ride; on a phone it is one of the drawer's buttons.
-  const radioInDrawer = phone;
+  const radioInDrawer = phone || surf;
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
   const hornInMenu = canHonk && !touch;
@@ -257,14 +257,14 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   useLayoutEffect(() => {
     const bar = toolbar.current, limit = fitLimit.current;
     if (!folds || !bar || !limit) return;
-    const controls = bar.parentElement!.querySelectorAll<HTMLElement>(".prompt, .jump-btn, .act-btn");
+    const controls = (surf ? bar.closest(".hud")! : bar.parentElement!).querySelectorAll<HTMLElement>(surf ? ".surf-pad" : ".prompt, .jump-btn, .act-btn");
     const update = () => {
       const style = getComputedStyle(bar);
       const size = parseFloat(style.getPropertyValue("--tool-size"));
       const gap = parseFloat(style.getPropertyValue("--tool-gap"));
       const top = bar.getBoundingClientRect().top + size + gap;
       let bottom = limit.getBoundingClientRect().bottom;
-      for (const control of controls) bottom = Math.min(bottom, control.offsetTop);
+      for (const control of controls) bottom = Math.min(bottom, surf ? control.getBoundingClientRect().top : control.offsetTop);
       // Count the rows that end above the controls, with room to tap them.
       setMaxRows(Math.max(1, Math.floor((bottom - top - (portraitPhone ? 12 : 8) + gap) / (size + gap))));
     };
@@ -273,7 +273,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     for (const control of controls) observer?.observe(control);
     update();
     return () => observer?.disconnect();
-  }, [folds, portraitPhone, w, h, touch, prompt, panel, riding, single]);
+  }, [folds, portraitPhone, w, h, touch, prompt, panel, riding, single, surf]);
   const columns = toolbarColumns(single, portraitPhone ? Math.max(maxRows, split) : maxRows);
   const toolColumns = columns.flatMap((count, column) => Array<number>(count).fill(column + 1));
 
@@ -323,11 +323,11 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     ...(hornInMenu ? [<HornButton key="horn" />] : []),
     ...(modeExit ? [<button key="exit" className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>] : []),
     <ToolButton key="scenarios" icon="clapper" title="Visos situacijos" panel="scenarios" />,
-    <ToolButton key="map" icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />,
-    <ToolButton key="journal" icon={phone ? "clipboard" : "journal"} title="Užduotys (J)" panel="journal" hotkey="J" />,
-    <ToolButton key="phone" icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} />,
+    <ToolButton key="map" icon="map" title={surf ? "Žemėlapis" : "Žemėlapis (M)"} panel="map" hotkey={surf ? undefined : "M"} />,
+    <ToolButton key="journal" icon={phone ? "clipboard" : "journal"} title={surf ? "Užduotys" : "Užduotys (J)"} panel="journal" hotkey={surf ? undefined : "J"} />,
+    <ToolButton key="phone" icon="smartphone" title={surf ? "Telefonas" : "Telefonas (P)"} panel="phone" hotkey={surf ? undefined : "P"} badge={missedCalls + unread} unread={unread} />,
     <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
-    <ToolButton key="settings" icon="settings" title="Nustatymai (Esc)" panel="settings" />,
+    <ToolButton key="settings" icon="settings" title={surf ? "Nustatymai" : "Nustatymai (Esc)"} panel="settings" />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
   ];
   const lightMode = (
@@ -336,7 +336,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
       <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
     </button>
   );
-  const className = "toolbar" + (hasRadio ? " has-radio" : "");
+  const className = "toolbar" + (hasRadio ? " has-radio" : "") + (surf ? " surf-toolbar" : "");
   if (!folds) return (
     <div className={className} onKeyDown={activateHudButton}>
       <div className="toolbar-tools">{course}{actions}</div>
@@ -355,6 +355,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
           if (open) closeMenu();
           else {
             if (phone && radioOpen) radio.setOpen(false);
+            if (surf) game?.modeAction("surf", "clear");
             setMenuOpen(true);
           }
         }}>
@@ -596,6 +597,7 @@ function Minimap({ w, h }: Screen) {
     }
     // what one can take: the boats and the convertibles, where they are now
     if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
+    drawSurfMark(x, mm.px, mm.pz, view, S);
     // player arrow
     x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;

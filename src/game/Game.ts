@@ -12,7 +12,8 @@ import { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { HARBOR_SURF } from "./world/surf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -205,7 +206,13 @@ export class Game implements GameApi {
   private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
-  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string; directions?: Destination | null } | null = null;
+  private autoTarget: {
+    kind: "npc" | "door" | "exit" | "point";
+    id?: string;
+    directions?: Destination | null;
+    rot?: number;
+    alignCamera?: boolean;
+  } | null = null;
   private walkCheck = { time: 0, remaining: Infinity };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
@@ -322,7 +329,12 @@ export class Game implements GameApi {
   });
 
   // Retained for the surf browser tests and diagnostics.
-  get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
+  get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>) ?? null; }
+  get surf_picking() { return useSurf.getState().picking; }
+  get outfit() { return this.surf?.outfit ?? null; }
+  surfStart(level: "beginner" | "advanced") { this.modeStart("surf", level); }
+  surfChoose(cue: string) { this.modeAction("surf", "choose", cue); }
+  surfAgain(level?: "beginner" | "advanced") { this.modeAction("surf", "again", level); }
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
 
   /** The level agreed in the conversation, available from the end card's surf lesson button. */
@@ -551,11 +563,17 @@ export class Game implements GameApi {
     const host: ModeHost = this.modeHost = {
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
       add: (...objects) => this.scene.add(...objects),
-      canStart: (indoors) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
-        && !this.transitioning && !this.flight && this.rideTimer === undefined && (indoors || !this.zone.interior),
+      canStart: (indoors, duringTransition) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
+        && (duringTransition || !this.transitioning) && !this.flight && this.rideTimer === undefined && (indoors || !this.zone.interior),
       fade: (fn) => { if (this.transitioning || this.disposed) return false; this.fadeThen(() => { if (!this.disposed) fn(); }); return true; },
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
-      hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
+      hideNpc: (id, hidden) => {
+        const n = this.npcs.find((q) => q.id === id);
+        if (!n) return;
+        const visible = n.ch.root.visible;
+        n.ch.root.visible = !hidden;
+        return visible;
+      },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
       entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
       left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
@@ -586,7 +604,7 @@ export class Game implements GameApi {
           (x, z) => this.zone.colliders.blocked(x, z, 0.65), beside);
       },
     };
-    this.modes.register(createSurfMode(host));
+    this.modes.register(createSurfMode(host, (player) => { this.player = this.rides.host.player = player; }));
     this.modes.register(createTaxiMode(host));
     this.modes.register(this.quests = new TownQuests(host, {
       spots: this.town.photoSpots,
@@ -983,6 +1001,7 @@ export class Game implements GameApi {
     if (this.disposed || this.enteringFirstExterior) return;
     const z = this.getZone(id);
     if (!z) return;
+    if (this.modes.owns("surf")) this.modes.exit(true);
     const doIt = () => {
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
@@ -1251,7 +1270,8 @@ export class Game implements GameApi {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
+      if ((!this.transitioning || (k === "escape" && this.modes.owns("surf")))
+        && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
     if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
@@ -1276,9 +1296,14 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     this.keys.delete(key);
+    if (this.modes.owns("surf")) this.modeAction("surf", "key-up", key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
+  private onBlur = () => {
+    this.keys.clear();
+    this.billiards.release(" ", true);
+    if (this.modes.owns("surf")) this.modeAction("surf", "clear");
+  };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -2251,7 +2276,12 @@ export class Game implements GameApi {
     const camSide = (this.rig.cam.position.x - mid.x) * dir.z - (this.rig.cam.position.z - mid.z) * dir.x;
     const shoulder = room && Math.abs(dir.x) > 0.5 ? -dir.x : this.container.clientWidth > 900 ? -1 : room ? -focus.x * dir.z : camSide;
     const near = tc ? shoulderShots(p, a, focus, Math.max(NEAR_TALK, spread * 2.2), tc.max, shoulder >= 0 ? 1 : -1) : null;
-    return tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, ...group], near, solo) : frame(dist);
+    const shop = HARBOR_SURF;
+    // From seaward of the counter, the low lens sees under the eave and the plate fits beside Maren.
+    const front = !room && to.id === this.surf?.content.npc && p.z < shop.counter.z
+      && Math.hypot(p.x - shop.approach.x, p.z - shop.approach.z) < 1.2
+      ? { pos: new THREE.Vector3(-103.25, 3, -74.7), look: new THREE.Vector3(-100.65, 1.61, shop.coach.z) } : undefined;
+    return tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, ...group], near, solo, front) : frame(dist);
   }
 
   /** The conversation's camera that keeps everyone taking part in the picture (theme.ts talkCamera). The framing at
@@ -2261,7 +2291,7 @@ export class Game implements GameApi {
    *  `max`, on either side of them outdoors, rising as it goes: indoors at the same angle, outdoors looking down at
    *  least 26° (more of the ground and less of the town behind them in the picture). The widest framing tried if none
    *  fits. */
-  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false): Shot {
+  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false, seaward?: Shot): Shot {
     const w = this.container.clientWidth, h = this.container.clientHeight, wide = w > 900;
     // styles.css .convo: on a wide screen a panel min(500px, 42vw) wide on the right, 14 px in; on a phone 58vh tall
     // at the bottom, 8 px up. The free part of the screen, 10 px in from its edges, and the loop's shift of the picture.
@@ -2314,9 +2344,9 @@ export class Game implements GameApi {
     // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
     const col = this.town.colliders;
     const boxes = this.zone.interior ? [] : BUILDINGS.map((b) => ({ minX: b.x - b.w / 2, maxX: b.x + b.w / 2, minZ: b.z - b.d / 2, maxZ: b.z + b.d / 2, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) }));
-    const seen = (f: Shot) => {
+    const seen = (f: Shot, overSea = false) => {
       if (this.zone.interior) return true;
-      if (col.blocked(f.pos.x, f.pos.z, 0.5)) return false;
+      if (col.blocked(f.pos.x, f.pos.z, 0.5, overSea)) return false;
       const o = f.pos;
       // (only what stands within the lines' reach)
       let x0 = o.x, x1 = o.x, z0 = o.z, z1 = o.z;
@@ -2388,6 +2418,7 @@ export class Game implements GameApi {
     // the nearer views first; if the room hides the learner from every one of them (they stand behind a counter, in
     // a corner), then those that show the people spoken with
     over = true;
+    if (seaward && seen(seaward, true) && clear(seaward) && fits(seaward)) return seaward;
     const nears = near ? [...near] : [];
     for (const whole of [true, false]) {
       for (const f0 of nears) {
@@ -2489,9 +2520,13 @@ export class Game implements GameApi {
   }
   modeExit() { this.modes.exit(); }
   modeAction(id: string, name: string, value?: string | boolean) {
-    if (this.transitioning || useStore.getState().hud.panel) return;
+    const release = id === "surf" && (name === "clear" || name === "key-up" || (name.startsWith("arrow:") && value === false));
+    if (!release && (this.transitioning || useStore.getState().hud.panel)) return;
     if (id === "directions") this.quests.directionAction(name);
-    else if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
+    else if (this.modes.owns(id)) {
+      if (id === "surf" && name === "clear") this.setJoystick(0, 0);
+      this.modes.get(id)?.action?.(name, value);
+    }
   }
   debugBilliards() {
     const debug = this.billiards.debug();
@@ -2602,10 +2637,15 @@ export class Game implements GameApi {
 
   guideToPlace(loc: string, directions?: Destination | null) {
     const door = this.town.doors.find((d) => d.loc === loc);
-    if (!door || this.zone.id === loc || this.rides.riding) return;
+    const outdoor = OUTDOOR_GUIDES[loc];
+    if ((!door && !outdoor) || this.zone.id === loc || this.rides.riding) return;
     if (this.zone.interior) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc, directions });
-    } else this.walkTo(door.outX, door.outZ, { kind: "point", id: loc, directions });
+    } else if (door) {
+      this.walkTo(door.outX, door.outZ, { kind: "point", id: loc, directions });
+    } else if (outdoor) {
+      this.walkTo(outdoor.x, outdoor.z, { kind: "point", id: loc, directions, rot: outdoor.rot, alignCamera: outdoor.alignCamera });
+    }
     if (this.autoTarget) this.pathT = 0;
   }
 
@@ -3100,7 +3140,7 @@ export class Game implements GameApi {
   private covered = false;
 
   /** The keys or the stick, for a ride of the town's or a mini-game's (kit modes get them as they are). */
-  private driveInput(blocked: boolean) {
+  private driveInput(blocked: boolean, out = { x: 0, y: 0, brake: false }) {
     let x = 0, y = 0;
     if (!blocked) {
       if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
@@ -3109,7 +3149,8 @@ export class Game implements GameApi {
       if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
       if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
     }
-    return { x, y, brake: this.keys.has(" ") || this.brake };
+    out.x = x; out.y = y; out.brake = this.keys.has(" ") || this.brake;
+    return out;
   }
 
   /** At a car's wheel or a boat's helm in the town: the keys or the stick drive it (rides/drive.ts); at the helm on a
@@ -3239,6 +3280,7 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    if (this.modes.owns("surf")) this.setJoystick(0, 0);
     this.keepsake.clear();
     useStore.getState().dismissRideToasts();
     this.endRide();
@@ -3268,11 +3310,16 @@ export class Game implements GameApi {
     this.nearest = null;
   }
 
+  private readonly modeFrame = { dt: 0, time: 0, blocked: false, x: 0, y: 0, brake: false };
+
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
     if (this.modes.active) {
       this.rideGoal = null;
-      this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
+      const frame = this.modeFrame;
+      frame.dt = dt; frame.time = this.t; frame.blocked = blocked;
+      this.driveInput(blocked, frame);
+      this.modes.update(frame);
       if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
       else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
       return;
@@ -3568,6 +3615,16 @@ export class Game implements GameApi {
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
     else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!, t.directions) : undefined);
+    else if (t.kind === "point" && t.rot !== undefined) {
+      this.vel.set(0, 0, 0);
+      this.heading = t.rot;
+      if (t.alignCamera && this.rig.mode === "follow" && useStore.getState().settings.cameraFollow
+        && !this.pointer.down && !this.rig.manuallyAiming) {
+        this.moveVel.set(0, 0, 0);
+        this.rig.target.copy(this.player.root.position);
+        this.rig.snap(t.rot);
+      }
+    }
   }
 
   private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {
@@ -3774,7 +3831,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone) return;
+    if (!this.player || !this.zone || this.surf?.active) return;
     const p = this.player.root.position;
     const island = LIGHTHOUSE_ISLAND;
     useStore.getState().updateProgress((pr) => {
