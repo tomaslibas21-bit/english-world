@@ -1,11 +1,75 @@
 import assert from "node:assert/strict";
 
+export async function readCardFile(page, key) {
+  const data = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), key);
+  if (data === null) return [];
+  assert.equal(data.v, 1, "cards use the persistent v1 envelope");
+  assert(Array.isArray(data.cards));
+  return data.cards;
+}
+
+export async function cardCentre(control, minimum = 1) {
+  const bounds = await control.evaluate((element) => {
+    const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
+    const x = left + width / 2, y = top + height / 2;
+    return { x, y, width, height, inside: left >= -0.5 && top >= -0.5 && right <= innerWidth + 0.5 && bottom <= innerHeight + 0.5,
+      hit: !element.disabled && element.contains(document.elementFromPoint(x, y)) };
+  });
+  assert(bounds.width >= minimum && bounds.height >= minimum && bounds.inside && bounds.hit, `control centre: ${JSON.stringify(bounds)}`);
+  return bounds;
+}
+
+export async function checkCardList(page, { learner, target, cards, press }) {
+  const book = learner === "lt" ? "Frazių knygelė" : "Phrasebook";
+  const tab = learner === "lt" ? "Mano kortelės" : "My cards";
+  const toolbar = page.locator(".toolbar");
+  const fold = toolbar.locator('.ride-menu[aria-expanded="false"]');
+  if (await fold.isVisible()) await press(fold);
+  await press(toolbar.locator(`button[title="${book}"]`));
+  const listTab = page.getByRole("tablist", { name: book }).getByRole("tab").filter({ hasText: tab });
+  await press(listTab);
+  assert.equal(await listTab.getAttribute("aria-selected"), "true");
+  const list = page.locator(".cd-list");
+  await list.waitFor();
+  for (const card of cards) {
+    const row = list.locator(".cd-row").filter({ has: page.locator(".cd-en").and(page.getByText(card.en, { exact: true })) });
+    assert.equal(await row.count(), 1, `one visible card row for ${card.en}`);
+    const en = row.locator(".cd-en"), lt = row.locator(".cd-lt");
+    assert.equal(await en.textContent(), card.en);
+    assert.equal(await lt.textContent(), card.lt);
+    assert.equal(await en.getAttribute("lang"), target);
+    assert.equal(await lt.getAttribute("lang"), learner);
+    assert(await en.isVisible() && await lt.isVisible());
+  }
+  assert(await list.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "My cards fits horizontally");
+}
+
 export function cardsFor(page, target) {
-  return page.evaluate(async (text) => {
+  return page.evaluate(async ({ text, key }) => {
     const { cardKey, STORAGE_KEY } = await import("/src/state/cards.ts");
-    const { cards = [] } = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    const data = JSON.parse(localStorage.getItem(key || STORAGE_KEY));
+    if (!data) return [];
+    if (data.v !== 1 || !Array.isArray(data.cards)) throw new Error("Expected the v1 cards envelope");
+    const { cards } = data;
     return cards.filter((card) => cardKey(card.en) === cardKey(text));
-  }, target);
+  }, { text: target, key: process.env.WORLD_CARDS_KEY });
+}
+
+export function fixtureSentence(page, situation, key, learnerLine = false) {
+  return page.evaluate(async ({ situation, key, learnerLine }) => {
+    const { loadSituation } = await import("/src/content/situations/catalog.ts");
+    const { conversationLine } = await import("/src/game/kit/lines.ts");
+    const def = await loadSituation(situation);
+    const sentence = conversationLine(situation, def.npc, key, undefined, learnerLine);
+    if (!sentence) throw new Error(`Missing fixture line ${situation}:${key}`);
+    return sentence;
+  }, { situation, key, learnerLine });
+}
+
+export function assertSavedSentence(card, sentence, situationId) {
+  assert.deepEqual([card.en, card.lt, card.sentence.en, card.sentence.lt, card.situationId, card.sourceLabel],
+    [sentence.en, sentence.nat, sentence.en, sentence.nat, situationId, undefined]);
+  assert.equal(card.sentence.say ?? card.sentence.en, sentence.say);
 }
 
 export async function activatePhraseControl(page, control, touch, key = "Enter") {

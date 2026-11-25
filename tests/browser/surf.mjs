@@ -9,6 +9,7 @@
 // of a town with a surf school (Puerto Colibrí); WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
+import { checkSurfPhraseResult } from "./fixtures/surf-phrase-result.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
@@ -443,6 +444,7 @@ try {
       assert.equal(await scoreCard.getByText(lt ? "Frazės, kurias girdėjai, jau tavo kortelėse."
         : "The phrases you heard are in your cards now.", { exact: true }).count(), 1);
       assert.equal(await scoreCard.locator(".mode-score-actions button").count(), 3);
+      if (storage === "puerto-colibri") await checkSurfPhraseResult(page, scoreCard, phone, score.waves === waves, shots);
     };
     const beginnerScore = s.score;
     await checkResult(beginnerScore, beginnerScore.waves, beginnerScore.seconds);

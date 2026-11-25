@@ -96,7 +96,11 @@ export async function openGame(browser, game, size) {
   const choose = (way) => press(choice.locator(`[data-way="${way}"]`));
   const cue = overlay.locator(".road-question strong");
   const karaoke = overlay.locator(".road-karaoke");
-  const step = (count = 1) => page.evaluate(([n, ms]) => window.__step(n, ms), [count, frameMs]);
+  let frame = 0;
+  const step = async (count = 1) => {
+    await page.evaluate(([n, ms]) => window.__step(n, ms), [count, frameMs]);
+    frame += count;
+  };
   const read = () => page.evaluate((id) => id === "road" ? window.__ew?.road.state() : window.__ew?.sea?.(), game);
   const wait = async (predicate, description, frames = 8) => {
     const deadline = Date.now() + 8000;
@@ -106,7 +110,7 @@ export async function openGame(browser, game, size) {
       await step(frames);
     } while (Date.now() < deadline);
     const state = await read();
-    assert.fail(`${description} (phase ${state?.phase}, gate ${state?.totalGates}, distance ${state?.gateDistance})`);
+    assert.fail(`${description} (frame ${frame}, phase ${state?.phase}, gate ${state?.totalGates}, distance ${state?.gateDistance})`);
   };
   const waitState = (predicate, description, frames) => wait(async () => {
     const state = await read();

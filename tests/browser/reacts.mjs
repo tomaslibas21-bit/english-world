@@ -1,6 +1,6 @@
 // See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
-import { checkManualSave } from "./fixtures/phrase-saves.mjs";
+import { cardsFor, checkCardList, checkManualSave } from "./fixtures/phrase-saves.mjs";
 import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, lineText, manualFrames, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -21,6 +21,12 @@ try {
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await assertTownProfile(page, url);
       const { step, waitFor, during } = manualFrames(page);
+      const savedReactions = [];
+      const evidence = async (name) => {
+        const frame = await page.evaluate(() => window.__lifeFrame);
+        const edition = targetLang === "es" ? "PC" : "MH";
+        await during(() => screenshot(page, `${edition}-${name}-F${frame}`, width, height));
+      };
       await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town opens");
       await waitFor(() => page.evaluate(() => !window.__ew.store.getState().hud.zoneBanner), "zone banner clears");
       await probeEffects(page);
@@ -51,6 +57,7 @@ try {
         assert(start.width === 44 && start.height === 44 && start.gap >= 4 && start.gap <= 8 && start.separate,
           `the translation and save have independent hit areas at ${width}x${height} (${JSON.stringify(start)})`);
         const card = await checkManualSave(page, save, touch, line.text, "street", snapshot);
+        savedReactions.push(card);
         assert.deepEqual([card.lt, card.sentence, card.sourceLabel],
           [line.lt, { en: line.text, lt: line.lt }, learnerLabel("Išgirsta gatvėje", "Overheard")]);
         assert.deepEqual(await saveGeometry(), start, "the checked action keeps its hit box");
@@ -158,6 +165,7 @@ try {
       await checkPlacement();
       await saveTwice(honk, true);
       await during(() => screenshot(page, "react-translation", width, height));
+      await evidence("react-save");
       await stepTo(honkStart + durationMs(honk.text) + 100);
       await opacityIs(1);
       await checkPlacement();
@@ -332,6 +340,12 @@ try {
         await waitFor(() => page.evaluate(() => window.__ew.game.zone.id === "gruta" && !window.__ew.game.caveLoading), "the grotto opens");
         await assertSuppressed("the grotto blocks reactions");
       }
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"
+        && !window.__ew.store.getState().hud.zoneBanner), "town returns after a real reload");
+      for (const card of savedReactions) assert.deepEqual(await cardsFor(page, card.en), [card]);
+      await checkCardList(page, { learner: helperLang, target: targetLang, cards: savedReactions, press });
+      await evidence("react-post-reload-cards");
       assert.deepEqual(errors, []);
       console.log(`ok ${profileName} reactions ${width}×${height}`);
     } finally {

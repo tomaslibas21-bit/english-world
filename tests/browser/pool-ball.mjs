@@ -2,7 +2,7 @@
 // WORLD_SHOTS saves the idle rally, stage, hit, splash and score card.
 import assert from "node:assert/strict";
 import { launchPoolBrowser, poolPage, poolViewports } from "./pool-browser.mjs";
-import { checkManualSave } from "./fixtures/phrase-saves.mjs";
+import { assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const browser = await launchPoolBrowser();
 try {
@@ -24,7 +24,13 @@ try {
     await open();
     await page.waitForFunction(() => window.__ew?.game?.zoneId === "town", null, { polling: 50 });
 
-    const step = (n = 1) => page.evaluate((frames) => window.__stepPool(frames), n);
+    let frame = 0;
+    const step = async (n = 1) => {
+      await page.evaluate((frames) => window.__stepPool(frames), n);
+      frame += n;
+    };
+    const learner = process.env.WORLD_LEARNER || "en";
+    assert.equal(await page.locator("html").getAttribute("lang"), learner);
     const state = () => page.evaluate(() => window.__ew.game.pool?.debug());
     const backpack = () => page.evaluate(() => window.__ew.game.player.backpackVisible);
     const waitFor = async (predicate, description, batch = 5, limit = 150) => {
@@ -109,7 +115,16 @@ try {
     await restoreRandom.dispose();
     const yours = page.locator('.pool-cue[data-line="pl_tuya"]');
     assert(await page.locator('[data-line="pl_tuya"]').isVisible());
-    await checkManualSave(page, yours.locator("[data-phrase-save]"), phone, "¡Tuya!", "x09-alberca", state, "Space");
+    const sit = "x09-alberca";
+    const saveState = () => page.evaluate(async () => {
+      const { usePool } = await import("/src/game/pool/store.ts");
+      const { game, store } = window.__ew;
+      const { play, pool } = store.getState().progress;
+      return { round: game.pool.debug(), result: usePool.getState().result, kept: [...game.pool.kept.keys()], play, pool };
+    });
+    const keptCue = await checkManualSave(page, yours.locator("[data-phrase-save]"), phone, "¡Tuya!", sit, saveState, "Space");
+    assertSavedSentence(keptCue, await fixtureSentence(page, sit, "pl_tuya"), sit);
+    await shot(`PC-${learner}-${label}-live-cue-F${frame}`);
     if (!phone) await page.evaluate(() => document.activeElement.blur());
     const { subjects, foreground } = await page.evaluate(() => window.__ew.game.poolFraming());
     assert.deepEqual(subjects.map(({ id }) => id).sort(), ["ball", "diego", "learner", "santi", "vale"]);
@@ -158,10 +173,16 @@ try {
     const review = card.locator(".phrase-review-row");
     const rules = "Hay que tener la pelota en el aire.";
     await review.getByRole("combobox").selectOption({ label: rules });
-    await checkManualSave(page, review.locator("[data-phrase-save]"), phone, rules, "x09-alberca", state);
+    const keptRule = await checkManualSave(page, review.locator("[data-phrase-save]"), phone, rules, sit, saveState);
+    assertSavedSentence(keptRule, await fixtureSentence(page, sit, "pl_rules"), sit);
+    await review.getByRole("combobox").selectOption({ label: keptCue.en });
+    assert.equal(await review.locator(`small[lang="${learner}"]`).textContent(), keptCue.lt);
+    assert.equal(await review.locator("[data-phrase-save]").getAttribute("aria-pressed"), "true");
+    assert.deepEqual(await cardsFor(page, keptCue.en), [keptCue]);
     const saved = await page.evaluate(() => window.__ew.store.getState().progress.pool);
     assert.deepEqual(saved, { best: 2, rounds: 1, rulesHeard: true });
     await shot("score");
+    await shot(`PC-${learner}-${label}-score-checked-F${frame}`);
     await page.keyboard.press("Escape");
     assert.equal((await state()).phase, null, `${label}: the ball game ended`);
     assert.equal(await backpack(), true, `${label}: backpack restored after the ball game`);

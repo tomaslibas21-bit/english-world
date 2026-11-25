@@ -1,6 +1,6 @@
 // Run on each PC learner's local dev server with WORLD_STORAGE=puerto-colibri and WORLD_LEARNER=en or lt.
 import assert from "node:assert/strict";
-import { activatePhraseControl, cardsFor, checkManualSave } from "./fixtures/phrase-saves.mjs";
+import { activatePhraseControl, cardsFor, checkCardList, checkManualSave } from "./fixtures/phrase-saves.mjs";
 import { assertTownProfile, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl,
   manualFrames, profileName, progress, screenshot, stubVoiceClips } from "./life-harness.mjs";
 
@@ -31,6 +31,10 @@ try {
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await assertTownProfile(page, url);
       const { step, waitFor, during } = manualFrames(page);
+      const shot = async (name) => {
+        const frame = await page.evaluate(() => window.__lifeFrame);
+        await during(() => screenshot(page, `PC-${name}-F${frame}`, width, height));
+      };
       const ready = () => page.evaluate(() => {
         const world = window.__ew;
         return world?.store.getState().screen === "play" && world.game?.ledges?.ready && !world.store.getState().hud.zoneBanner;
@@ -62,6 +66,7 @@ try {
       });
 
       async function saveSpeech(name, phrase, display) {
+        display = display.filter({ has: page.locator(".t-text b").filter({ hasText: phrase.en }) });
         await waitFor(() => display.isVisible(), `${name} renders as a bilingual toast`, 0);
         const title = display.locator(".t-text b");
         const helper = display.locator(".t-text p");
@@ -91,6 +96,7 @@ try {
         assert.deepEqual(await box(), before);
         saved.push(card);
         await during(() => screenshot(page, `speech-toast-${name}`, width, height));
+        await shot(`speech-toast-${name}`);
         console.log(`${profileName} ${width}x${height} ${name} ${JSON.stringify(phrase)}`);
         // Use the original dismiss button even after the repeated save.
         await press(display.locator(".x"));
@@ -207,6 +213,8 @@ try {
       await page.reload({ waitUntil: "domcontentloaded" });
       await waitFor(ready, "the saved town opens again");
       for (const card of saved) assert.deepEqual(await cardsFor(page, card.en), [card], "the raw pair survives reload with its source");
+      await checkCardList(page, { learner: helperLang, target: "es", cards: saved, press });
+      await shot("speech-toast-post-reload-cards");
       assert.deepEqual(errors, []);
     } finally {
       await context.close();

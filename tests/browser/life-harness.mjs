@@ -48,9 +48,11 @@ export function installTown({ key, progress, manual, variety }) {
   performance.now = () => now;
   window.requestAnimationFrame = (fn) => { frames.set(++id, fn); return id; };
   window.cancelAnimationFrame = (id) => frames.delete(id);
+  window.__lifeFrame = 0;
   window.__lifeStep = (count, ms) => {
     for (let i = 0; i < count; i++) {
       now += ms;
+      if (ms) window.__lifeFrame++;
       for (const [id, frame] of [...frames]) if (frames.delete(id)) frame(now);
     }
   };
