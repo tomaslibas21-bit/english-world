@@ -21,9 +21,6 @@ export class LightGame implements GameApi {
   private session: Session | null = null;
   lastScenario: string | null = null;
   onReady?: () => void;
-  /** The voice clip list: a conversation tapped while it loads starts a moment later. */
-  private loading: Promise<void> | null = null;
-  private loaded = false;
   private pending = 0;
   private disposed = false;
   private opening = false;
@@ -32,11 +29,9 @@ export class LightGame implements GameApi {
 
   init() {
     audio.stopAmbience();
-    this.loading = audio.init().then(() => {
-      this.loaded = true;
-      audio.volume = useStore.getState().settings.volume;
-      audio.sounds = useStore.getState().settings.sounds;
-    });
+    void audio.init();
+    audio.volume = useStore.getState().settings.volume;
+    audio.sounds = useStore.getState().settings.sounds;
     window.addEventListener("keydown", this.onKeyDown);
     this.onReady?.();
     this.unwatchStreet = useStore.subscribe((state, previous) => {
@@ -69,8 +64,7 @@ export class LightGame implements GameApi {
 
   get activeSession() { return this.session; }
 
-  /** A situation from the list, the end box ("Kita situacija", "Dar kartą") or the journal: the
-   *  conversation starts at once (a running one is closed first, and the panel just changes). */
+  /** Open the scene card from the list, end card or journal. */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit || isTownQuest(sitId)) return;
@@ -84,13 +78,14 @@ export class LightGame implements GameApi {
       if (ticket !== this.pending || this.disposed) return;
       this.opening = false;
       if (def && !this.session?.active) this.begin(def);
+      else this.observeStreet();
     };
-    // the voices (the first time) and the conversation's own file (src/content/situations/catalog.ts)
+    // The voice clip list can load while the learner reads the scene card.
     const def = getSituation(sitId);
-    if (def && (this.loaded || !this.loading)) { go(def); return; }
-    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: def ? "Ruošiami balsai…" : "Kraunamas pokalbis…", ms: 2500 }), 500);
-    Promise.all([loadSituation(sitId), this.loaded ? null : this.loading]).then(
-      ([d]) => { clearTimeout(slow); go(d); },
+    if (def) { go(def); return; }
+    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: "Kraunamas pokalbis…", ms: 2500 }), 500);
+    loadSituation(sitId).then(
+      (d) => { clearTimeout(slow); go(d); },
       () => { clearTimeout(slow); go(null); useStore.getState().toast({ kind: "info", title: "Nepavyko atsisiųsti pokalbio", body: "Patikrink interneto ryšį ir pabandyk dar kartą." }); },
     );
   }
@@ -168,12 +163,12 @@ export class LightGame implements GameApi {
   modeAction() {}
   modeOffer() { return null; }
   modeFromConversation() {}
-  /** "Nuvesk mane" (the journal): there is nowhere to walk, so the task's conversation starts. */
+  /** "Nuvesk mane" (the journal): there is nowhere to walk, so open the task's scene card. */
   autoWalkToObjective() {
     const o = this.currentObjective();
     if (o) this.startScenario(o.id);
   }
-  /** "Nuvykti taksi" (the journal): likewise, straight into the task's conversation. */
+  /** "Nuvykti taksi" (the journal): likewise, open the task's scene card. */
   teleportTo(loc: string) {
     const o = this.currentObjective();
     if (o && o.location === loc) this.startScenario(o.id);

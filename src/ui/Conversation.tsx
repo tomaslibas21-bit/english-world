@@ -147,11 +147,14 @@ export function Conversation() {
       </div>
 
       <SceneIntro sit={sit} />
-      <AudioRecovery />
-      {!townPhone && (sit.mode === "video" || sit.mode === "phone") && <CallStrip key={conv.run} sit={sit} />}
-      <Mission />
+      {!conv.introOpen && <>
+        <AudioRecovery />
+        {!townPhone && (sit.mode === "video" || sit.mode === "phone") && <CallStrip key={conv.run} sit={sit} />}
+        <Mission />
+      </>}
       </div>
 
+      {!conv.introOpen && <>
       <div className="transcript" ref={scrollRef} aria-live="polite">
         {conv.transcript.length === 0 && <div style={{ color: "var(--ink-faint)", textAlign: "center", marginTop: 20 }}>…</div>}
         {groupLines(conv.transcript).map((grp) => grp.length > 1
@@ -219,6 +222,7 @@ export function Conversation() {
           </div>
         </div>
       ) : <EndCard sit={sit} />}
+      </>}
     </div>
     </>
   );
@@ -586,7 +590,7 @@ function CallClock({ ended }: { ended: boolean }) {
 }
 
 function PhoneCallHeader() {
-  const { npcId, sitId, phase, speaking, transcript } = useStore((s) => s.conv);
+  const { npcId, sitId, phase, speaking, transcript, introOpen } = useStore((s) => s.conv);
   const portrait = usePortrait(npcId);
   const name = NPCS[npcId].name;
   const caller = transcript.length ? name : PHONE_CALLS[sitId]?.name ?? name;
@@ -602,7 +606,7 @@ function PhoneCallHeader() {
       </div>
       <span className="phone-call-wave" data-speaking={speaking !== null} aria-hidden="true"><i /><i /><i /></span>
     </>}
-    <CallClock ended={ended} />
+    <CallClock ended={ended || introOpen} />
   </div>;
 }
 

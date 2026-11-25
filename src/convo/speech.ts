@@ -15,8 +15,8 @@
 // (Chrome's processLocally) is an opt-in setting: more private, but it hears accents less well.
 
 import { NEGATION_TOKENS } from "./normalize";
-import { captureAudio } from "./audioFocus";
-import { audioDiagnosticsEnabled, createRecognitionDiagnostics } from "./audioDiagnostics";
+import { captureAudio, microphoneHandoffState, waitForCaptureRelease } from "./audioFocus";
+import { createRecognitionDiagnostics } from "./audioDiagnostics";
 
 export const SPEECH_REC: any =
   typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
@@ -83,6 +83,8 @@ export interface SpeechOptions {
   lang?: string;
   /** Short prompts can settle sooner after speech. */
   timing?: Partial<Record<"finishedAnswer" | "unclear" | "interimStable", number>>;
+  /** Identifies the feature in the microphone log. */
+  source?: string;
   /** Tests: a fake recogniser and clock. */
   createRecognition?: () => SpeechRecognizer;
   clock?: Clock;
@@ -182,23 +184,27 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     for (const t of [idleTimer, restartTimer, startupTimer, stableTimer]) if (t !== undefined) clock.clearTimeout(t);
     idleTimer = restartTimer = startupTimer = stableTimer = undefined;
   };
-  const release = () => {
+  const release = (reason?: string) => {
     const r = rec; rec = null;
     const lease = capture; capture = null;
     const trace = recognitionTrace; recognitionTrace = null;
     if (!r) return;
-    r.onstart = r.onresult = r.onerror = r.onspeechstart = r.onspeechend = null;
+    r.onresult = null;
+    if (!reason) {
+      r.onend = null;
+      return;
+    }
     r.onend = () => {
       trace?.ended();
       r.onend = null;
       lease?.ended();
     };
     lease?.stopping();
-    trace?.event("abort");
+    trace?.event("abort", { reason });
     trace?.observeLate();
     try { r.abort(); } catch (error) { lease?.failed(error); }
   };
-  const stopRunning = () => { generation++; running = false; speaking = false; clearTimers(); release(); };
+  const stopRunning = (reason: string) => { generation++; running = false; speaking = false; clearTimers(); release(reason); };
 
   /** Each new piece of speech (all of the recogniser's alternatives for it) continues every candidate so far. A
    *  learner may also restart from the beginning ("I… I'd like a latte"): only a piece the grammar can use on its
@@ -216,13 +222,13 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     return unique.map((text, i) => ({ text, i, r: rank(text) })).sort((a, b) => b.r - a.r || a.i - b.i).slice(0, MAX_CANDIDATES).map((x) => x.text);
   };
 
-  const commit = () => {
+  const commit = (reason = "answer settled") => {
     if (!running || disposed) return;
     const cands = pendingInterim ? interimCandidates : finalCandidates;
     const all = [...new Set([...cands, ...finalCandidates, ...interimCandidates].map((t) => t.trim()).filter(Boolean))];
     all.sort((a, b) => rank(b) - rank(a));
     const best = all[0] ?? "";
-    stopRunning();
+    stopRunning(reason);
     if (!best) { update({ status: "nothing", heard: "" }); return; }
     update({ status: "idle", heard: best });
     if (!disposed) opt.onCommit(best, all.slice(1));
@@ -234,7 +240,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     if (!running || startedAt === null) return;
     const now = clock.now();
     const totalRemaining = SPEECH_TIMING.session - (now - startedAt);
-    if (totalRemaining <= 0) { commit(); return; }
+    if (totalRemaining <= 0) { commit("attempt deadline"); return; }
     const best = heard();
     const v = hasSpeech && best ? verdict(best) : null;
     const allowance = !v ? SPEECH_TIMING.firstWord
@@ -245,7 +251,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       : timing.unclear;
     const silenceRemaining = allowance - (now - lastActivity);
     if (!speaking && silenceRemaining <= 0) {
-      if (!hasSpeech || !best) { stopRunning(); update({ status: "nothing", heard: "" }); return; }
+      if (!hasSpeech || !best) { stopRunning("no speech before deadline"); update({ status: "nothing", heard: "" }); return; }
       commit(); return;
     }
     idleTimer = clock.setTimeout(scheduleIdle, Math.max(1, Math.min(totalRemaining, speaking ? 1_000 : silenceRemaining)));
@@ -254,7 +260,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   const cancelStable = () => { if (stableTimer !== undefined) clock.clearTimeout(stableTimer); stableTimer = undefined; };
 
   const failService = (error: string) => {
-    stopRunning();
+    stopRunning(`recogniser error: ${error}`);
     update({ status: error === "not-allowed" || error === "service-not-allowed" ? "denied" : "error", error });
   };
   const reconnectSoon = (run: number) => {
@@ -264,26 +270,30 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   const connect = () => {
     if (!running || disposed) return;
     const run = generation;
+    // A native abort only requests shutdown. A new start can fail while the previous service still owns capture.
+    if (microphoneHandoffState().captures) {
+      void waitForCaptureRelease().then(() => { if (run === generation) connect(); });
+      return;
+    }
     let r: SpeechRecognizer;
     try { r = createRecognition(); } catch { failService("unavailable"); return; }
     rec = r;
-    const trace = createRecognitionDiagnostics();
+    const trace = createRecognitionDiagnostics(opt.source ?? "speech");
     let lateTimer: ReturnType<typeof setTimeout> | undefined;
     const clearAudioTrace = () => {
       clearTimeout(lateTimer);
-      r.onaudiostart = r.onaudioend = r.onspeechstart = r.onspeechend = r.onerror = null;
+      r.onstart = r.onaudiostart = r.onaudioend = r.onspeechstart = r.onspeechend = r.onerror = null;
     };
     const observeLate = () => {
       clearTimeout(lateTimer);
       // Native audioend can follow service end. Observe it without extending GUI/capture ownership.
-      if (audioDiagnosticsEnabled()) {
-        r.onaudiostart = () => trace.event("audiostart");
-        r.onaudioend = () => trace.event("audioend");
-        r.onspeechstart = () => trace.event("speechstart");
-        r.onspeechend = () => trace.event("speechend");
-        r.onerror = event => trace.event("error", { error: event.error });
-        lateTimer = setTimeout(clearAudioTrace, 4000);
-      } else clearAudioTrace();
+      r.onstart = () => trace.event("service-start");
+      r.onaudiostart = () => trace.event("audiostart");
+      r.onaudioend = () => trace.event("audioend");
+      r.onspeechstart = () => trace.event("speechstart");
+      r.onspeechend = () => trace.event("speechend");
+      r.onerror = event => trace.event("error", { error: event.error });
+      lateTimer = setTimeout(clearAudioTrace, 4000);
     };
     const ended = () => { trace.event("end"); observeLate(); };
     recognitionTrace = { ...trace, ended, observeLate };
@@ -386,7 +396,8 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       const err = e?.error || "error";
       trace.event("error", { error: err });
       if (!current()) return;
-      if (err === "no-speech" || (err === "aborted" && transientRecoveries++ < 1)) {
+      const interrupted = err === "aborted" || (err === "audio-capture" && !hasSpeech);
+      if (err === "no-speech" || (interrupted && transientRecoveries++ < 1)) {
         // Normal silence is not a wrong answer: onend resumes the same attempt. Some browsers omit onend after an
         // error, so don't leave a live mic showing.
         speaking = false;
@@ -398,13 +409,13 @@ export function createSpeechAttempt(opt: SpeechOptions) {
             if (!current()) return;
             preserveSession();
             // This is a missing-end watchdog, not an actual onend from the browser.
-            release(); reconnectSoon(run);
+            release(`missing onend after ${err}`); reconnectSoon(run);
           }, 2_000);
         }
         return;
       }
-      if (err === "phrases-not-supported") { phrasesRefused = true; preserveSession(); release(); reconnectSoon(run); return; }
-      if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; preserveSession(); release(); reconnectSoon(run); return; }
+      if (err === "phrases-not-supported") { phrasesRefused = true; preserveSession(); release(err); reconnectSoon(run); return; }
+      if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; preserveSession(); release(err); reconnectSoon(run); return; }
       // a network hiccup after an understood answer: the answer stands
       if ([...finalCandidates, ...(pendingInterim ? interimCandidates : [])].some((t) => t.trim() && understood(verdict(t)))) { commit(); return; }
       failService(err);
@@ -432,7 +443,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   return {
     start() {
       if (disposed || running) return;
-      stopRunning();
+      stopRunning("reset");
       // Every explicit try is a new answer; only the browser's own restarts inside an attempt keep its words.
       finalCandidates = [""]; interimCandidates = [""];
       pendingInterim = false; hasSpeech = false; speaking = false; topNegated = false;
@@ -446,9 +457,9 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       connect();
     },
     /** Stop listening and use what was heard so far (if anything). */
-    finish() { if (running) commit(); },
-    stop() { stopRunning(); update({ status: "idle", heard: "" }); },
-    dispose() { disposed = true; stopRunning(); },
+    finish() { if (running) commit("finish requested"); },
+    stop(reason = "stop requested") { stopRunning(reason); update({ status: "idle", heard: "" }); },
+    dispose(reason = "disposed by caller") { disposed = true; stopRunning(reason); },
     get running() { return running; },
   };
 }

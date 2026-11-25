@@ -73,16 +73,25 @@ function hidden(value: boolean) {
 }
 
 describe("the scene card", () => {
-  it("the person's first line waits for it, and starts after a few seconds if it stays open", async () => {
+  it.each([true, false])("waits for the start action, even with no scene text (intro=%s)", async hasIntro => {
+    if (!hasIntro) session.sit = { ...session.sit, intro: undefined };
     const begin = session.begin();
     expect(useStore.getState().conv.introOpen).toBe(true);
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(10_000);
     expect(vi.mocked(audio.play)).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(3000);
-    expect(useStore.getState().conv.introOpen).toBe(false);
+    expect(useStore.getState().conv).toMatchObject({ introOpen: true, transcript: [] });
+    useStore.getState().setConv({ introOpen: false });
     while (useStore.getState().conv.phase === "npc") await vi.advanceTimersByTimeAsync(160);
     await begin;
     expect(vi.mocked(audio.play)).toHaveBeenCalled();
+  });
+
+  it("closing the conversation cancels the pending first line", async () => {
+    const begin = session.begin();
+    session.close();
+    await begin;
+    expect(vi.mocked(audio.play)).not.toHaveBeenCalled();
+    expect(useStore.getState().conv.introOpen).toBe(false);
   });
 });
 

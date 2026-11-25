@@ -313,6 +313,8 @@ export class Game implements GameApi {
   get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
 
+  /** The level agreed in the conversation, available from the end card's surf lesson button. */
+  private pendingSurf: "beginner" | "advanced" | null = null;
   private brake = false;
   /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
    *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
@@ -1800,8 +1802,7 @@ export class Game implements GameApi {
     this.requestConversation(sit.id, actor);
   }
 
-  /** Situation picker: go straight into a conversation (no walking). The player appears in front of
-   *  the NPC in the right place; phone and video calls start at once. */
+  /** Situation picker: take the player to the scene card, in front of the NPC or in a call. */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
@@ -1811,7 +1812,12 @@ export class Game implements GameApi {
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
-      if (isCall(sit)) { this.call(sitId); return; }
+      if (isCall(sit)) {
+        // A link can open a call on the first visit before the flyover has landed.
+        if (this.flight) this.enterZone("airport", ARRIVAL, true);
+        this.call(sitId);
+        return;
+      }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
@@ -2285,7 +2291,9 @@ export class Game implements GameApi {
     if (name === "bus-ride" && data?.to) this.pendingRide = { to: data.to, by: "bus" };
     if (name === "go" && data?.zone) this.pendingRide = { to: data.zone, by: "taxi" };
     if (name === "board") this.pendingRide = { to: "airport", by: "plane" };
-    this.modes.event(name, data);
+    if (name === "surf") {
+      if (this.surf) this.pendingSurf = data?.level === "advanced" ? "advanced" : "beginner";
+    } else this.modes.event(name, data);
     const st = useStore.getState();
     if (name === "give" && data?.item) {
       // known props, else the situation's own item (a jacket, a medicine…) in the accusative
@@ -2314,6 +2322,7 @@ export class Game implements GameApi {
       this.keepsake.show(this.player.rightHand, keepsakeFor(sit.id));
     }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
+    this.pendingSurf = null;
     this.modes.launchQueued();
     if (completed && !sit.bonus) this.advanceObjective(sit);
     this.refreshObjective();
@@ -2323,6 +2332,7 @@ export class Game implements GameApi {
   modeOffer(sitId: string) { return this.modes.offer(sitId); }
   modeFromConversation(id: string) {
     if (!this.modes.queue(id)) return;
+    if (id === "surf" && this.pendingSurf) this.modes.event(id, { level: this.pendingSurf });
     this.pendingRide = null;
     if (this.session?.active) this.session.close(); else this.modes.launchQueued();
   }
@@ -2407,6 +2417,7 @@ export class Game implements GameApi {
   private cancelRide() {
     this.pendingRide = null;
     this.modes.cancelQueued();
+    this.pendingSurf = null;
     if (this.rideTimer === undefined) return;
     clearTimeout(this.rideTimer);
     this.rideTimer = undefined;

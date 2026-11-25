@@ -121,7 +121,11 @@ export function audioSessionSnapshot() {
   return result;
 }
 
-export function createRecognitionDiagnostics() {
+type MicLogEntry = { time: number; id: number; source: string; event: string; reason?: string; error?: string; finalSlots?: number; interimSlots?: number };
+const micLog: MicLogEntry[] = [];
+if (typeof window !== "undefined") (window as Window & { __micLog?: MicLogEntry[] }).__micLog = micLog;
+
+export function createRecognitionDiagnostics(source = "speech") {
   const id = ++recognitionId;
   return {
     id,
@@ -129,12 +133,15 @@ export function createRecognitionDiagnostics() {
       name: string,
       detail?: {
         error?: string;
+        reason?: string;
         resultIndex?: number;
         resultSlots?: number;
         finalSlots?: number;
         interimSlots?: number;
       },
     ) {
+      micLog.push({ time: Date.now(), id, source, event: name, ...detail });
+      if (micLog.length > 40) micLog.shift();
       if (!audioDiagnosticsEnabled()) return;
       if (
         ![
@@ -154,6 +161,7 @@ export function createRecognitionDiagnostics() {
         return;
       audioDiagnostic(`recognition.${name}`, {
         recognizerId: id,
+        source,
         ...audioSessionSnapshot(),
         ...detail,
         ...(detail?.error ? { error: diagnosticError(detail.error) } : {}),

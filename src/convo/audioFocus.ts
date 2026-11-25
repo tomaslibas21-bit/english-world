@@ -62,8 +62,12 @@ export function playbackRoute(recoverCaptureRoute = false): boolean {
   return true;
 }
 
-export async function waitForMicrophone() {
+export async function waitForCaptureRelease() {
   while (captures.size) await Promise.all([...captures]);
+}
+
+export async function waitForMicrophone() {
+  if (captures.size) await waitForCaptureRelease();
   playbackRoute();
 }
 

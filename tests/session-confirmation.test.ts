@@ -28,6 +28,7 @@ beforeEach(async () => {
   useStore.setState({ settings: { ...DEFAULT_SETTINGS }, progress: emptyProgress() });
   session = new Session("s35-gym", { npcTalk() {}, onEvent() {}, onEnd() {} });
   const begin = session.begin();
+  useStore.getState().setConv({ introOpen: false });
   await vi.runAllTimersAsync();
   await begin;
   session.stopListening();
