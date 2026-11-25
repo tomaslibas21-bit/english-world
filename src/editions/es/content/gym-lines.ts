@@ -16,6 +16,6 @@ export const GYM_LINES = {
   gy_intro: [t("¡Muévase | conmigo!", "Move | with me!", "Move with me!")],
   gy_right_a: [t("¡Eso es!", "That’s it!", "That’s it!")],
   gy_right_b: [t("¡Muy | bien!", "Very | well!", "Nice work!")],
-  gy_retry: [t("Pruebe | otra | vez.", "Try | another | time.", "Try again.")],
+  gy_retry: [t("Pruebe | otra | vez.", "Try | one more | time.", "Try again.")],
   gy_end: [t("¡Terminamos!", "We finished!", "We’re done!")],
 } satisfies Record<GyLineId, SentSrc[]>;

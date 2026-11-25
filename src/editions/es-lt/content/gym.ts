@@ -7,7 +7,7 @@ export const learnerLang = "lt";
 export const GYM_UI = {
   readyTitle: "Mónica kviečia į treniruotę",
   readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
-  readyKeys: "Klausykite. Judesį pasirinkite rodykle arba skaičiumi nuo 1 iki 4.",
+  readyKeys: "Klausykite. Judesį pasirinkite rodyklių arba skaičių klavišais (1–4).",
   start: "Pradėti",
   progress: (current: number, total: number) => `Judesys ${current} iš ${total}`,
   exit: "Išeiti iš treniruotės",

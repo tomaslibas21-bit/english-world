@@ -28,7 +28,7 @@ export const STRINGS: Record<string, string> = {
   "Pasakyti garsiai": "Say it aloud",
   "Nebeklausyti": "Stop listening",
   "Puikiai pasakyta! +1": "Well said! +1",
-  "Beveik! Galite bandyti dar": "Almost! You can try again",
+  "Beveik! Galite pabandyti dar kartą.": "Almost! You can try again",
   "Pasakyta garsiai": "Said aloud",
   "Pasakykite garsiai – gausite +1": "Say it aloud for +1",
   "Rasta: {n} iš {of}": "Found: {n} of {of}",
@@ -477,12 +477,12 @@ export const STRINGS: Record<string, string> = {
 
   // Cards (src/ui/Cards.tsx)
   "Žodis „{word}“": "Word “{word}”",
-  "Atskirai neverčiama – išsaugok visą sakinį.": "Not translated on its own – save the whole sentence.",
+  "Atskirai neverčiama – išsaugokite visą sakinį.": "Not translated on its own – save the whole sentence.",
   "Kortelėse": "In cards",
   "Į korteles": "Add to cards",
   "Sakinys kortelėse": "Sentence in cards",
   "Visą sakinį": "Whole sentence",
-  "Kortelę rasi „Frazių knygelėje“.": "You'll find the card in the “Phrasebook”.",
+  "Kortelę rasite „Frazių knygelėje“.": "You'll find the card in the “Phrasebook”.",
   "šiandien": "today",
   "rytoj": "tomorrow",
   "poryt": "in 2 days",

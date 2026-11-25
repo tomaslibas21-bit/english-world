@@ -45,7 +45,7 @@ const intro = pc ? "¡Muévase conmigo!" : "Move with me!";
 const jacks = pc ? "¡Haga saltos de tijera!" : "Jumping jacks!";
 const toes = pc ? "¡Tóquese los pies!" : "Touch your toes!";
 const firstHelp = pc
-  ? EDITION.helper === "lt" ? "Šokinėkite skėsdami kojas ir keldami rankas!" : "Do jumping jacks!"
+  ? EDITION.helper === "lt" ? "Šokinėkite, skėskite kojas ir kelkite rankas!" : "Do jumping jacks!"
   : "Pašokite, praskėskite kojas ir pakelkite rankas!";
 const firstGloss = pc
   ? EDITION.helper === "lt" ? ["Darykite", "šuoliukus skėčiant kojas!"] : ["Do", "jumping jacks!"]

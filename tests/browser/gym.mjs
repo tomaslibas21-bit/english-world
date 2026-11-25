@@ -41,7 +41,7 @@ const progress = {
 // Pinned from the PC writing brief, EN authoring rows and the compact LT table.
 // There are no browser imports of workout content or of the s35 situation/table.
 const sourceLines = {
-  gy_jacks: ["¡Haga | saltos de tijera!", "Do | jumping jacks!", "Do jumping jacks!", "Darykite | šuoliukus skėčiant kojas!", "Šokinėkite skėsdami kojas ir keldami rankas!"],
+  gy_jacks: ["¡Haga | saltos de tijera!", "Do | jumping jacks!", "Do jumping jacks!", "Darykite | šuoliukus skėčiant kojas!", "Šokinėkite, skėskite kojas ir kelkite rankas!"],
   gy_toes: ["¡Tóquese | los | pies!", "Touch | your | feet!", "Bend down and touch your feet!", "Palieskite | — | pėdas!", "Pasilenkite ir palieskite pėdas!"],
   gy_squats: ["¡Haga | una | sentadilla!", "Do | a | squat!", "Do a squat!", "Padarykite | vieną | pritūpimą!", "Pritūpkite!"],
   gy_circles: ["¡Haga | círculos | con | los | brazos!", "Make | circles | with | your | arms!", "Circle your arms!", "Sukite | ratus | su | — | rankomis!", "Sukite rankas ratu!"],
@@ -52,7 +52,7 @@ const sourceLines = {
   gy_intro: ["¡Muévase | conmigo!", "Move | with me!", "Move with me!", "Judėkite | su manimi!", "Pajudėkime kartu!"],
   gy_right_a: ["¡Eso es!", "That’s it!", "That’s it!", "Štai taip!", "Štai taip!"],
   gy_right_b: ["¡Muy | bien!", "Very | well!", "Nice work!", "Labai | gerai!", "Puikiai!"],
-  gy_retry: ["Pruebe | otra | vez.", "Try | another | time.", "Try again.", "Pabandykite | dar | kartą.", "Pabandykite dar kartą."],
+  gy_retry: ["Pruebe | otra | vez.", "Try | one more | time.", "Try again.", "Pabandykite | dar | kartą.", "Pabandykite dar kartą."],
   gy_end: ["¡Terminamos!", "We finished!", "We’re done!", "Baigėme!", "Štai ir baigėme!"],
 };
 const fixture = {
@@ -78,7 +78,7 @@ const fixture = {
     entry: { startLabel: "Treniruotis su trenere", mapLabel: "Treniruotė prasideda ant kilimėlio sporto klube „Gimnasio Colibrí“.", listAction: "Rasti treniruočių kilimėlį" },
     ui: {
       readyTitle: "Mónica kviečia į treniruotę", readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
-      readyKeys: "Klausykite. Judesį pasirinkite rodykle arba skaičiumi nuo 1 iki 4.", start: "Pradėti",
+      readyKeys: "Klausykite. Judesį pasirinkite rodyklių arba skaičių klavišais (1–4).", start: "Pradėti",
       progress: (i) => `Judesys ${i} iš 10`, exit: "Išeiti iš treniruotės", replay: "Klausyti dar kartą", reveal: "Rodyti žodžius",
       choices: "Pasirinkti judesį", scoreTitle: "Treniruotė baigta", completed: "Atlikti judesiai", firstTry: "Teisingai iš pirmo karto",
       again: "Dar kartą", done: "Grįžti į sporto klubą",
@@ -87,7 +87,7 @@ const fixture = {
       jacks: "Šokinėti skėčiant kojas ir keliant rankas", toes: "Paliesti pėdas", squats: "Pritūpti", circles: "Sukti rankas ratu",
       run: "Bėgti vietoje", reach: "Pakelti rankas aukštyn", lunges: "Daryti įtūpstą", pushups: "Daryti atsispaudimą",
     },
-    speech: { mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1", miss: "Beveik! Galite bandyti dar", stat: "Pasakyta garsiai" },
+    speech: { mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1", miss: "Beveik! Galite pabandyti dar kartą.", stat: "Pasakyta garsiai" },
   }),
 };
 
