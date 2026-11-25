@@ -28,7 +28,6 @@ const names = {
   phrasebook: local("Phrasebook", "Frazių knygelė"),
 };
 const real = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const normalize = (value) => value.normalize("NFC").replace(/\s+/gu, " ").trim();
 const units = (value) => value.split(" | ");
 const spanish = (key) => units(lines[key][0]).join(" ");
 const gloss = (key) => units(lines[key][local(1, 3)]);
@@ -225,32 +224,65 @@ function watchPage(page) {
   return { errors, requests, runtime, flush: () => Promise.all([...pending]) };
 }
 
-async function visibleText(locator, expected) {
-  await locator.waitFor({ state: "visible" });
-  const actual = await locator.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    let left = 0, top = 0, right = innerWidth, bottom = innerHeight;
-    for (let node = el; node; node = node.parentElement) {
-      const style = getComputedStyle(node);
-      if (style.visibility === "hidden" || Number(style.opacity) === 0) return { visible: false, text: el.innerText };
-      if (node === el) continue;
-      const box = node.getBoundingClientRect();
-      if (style.overflowX !== "visible") { left = Math.max(left, box.left); right = Math.min(right, box.right); }
-      if (style.overflowY !== "visible") { top = Math.max(top, box.top); bottom = Math.min(bottom, box.bottom); }
-    }
-    return {
-      visible: r.width > 0 && r.height > 0 && r.left >= left - 1 && r.right <= right + 1
-        && r.top >= top - 1 && r.bottom <= bottom + 1,
-      text: el.innerText,
+async function visibleText(locator, expected, { settle = false } = {}) {
+  if (!settle) await locator.waitFor({ state: "visible" });
+  const actual = await locator.evaluate(async (el, { expected, settle }) => {
+    const normalize = (value) => value.normalize("NFC").replace(/\s+/gu, " ").trim();
+    const expectedText = normalize(expected);
+    const measure = () => {
+      const bounds = el.getBoundingClientRect().toJSON();
+      const viewport = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+      const clip = { ...viewport };
+      const fitsX = (box) => bounds.left >= box.left - 1 && bounds.right <= box.right + 1;
+      const fitsY = (box) => bounds.top >= box.top - 1 && bounds.bottom <= box.bottom + 1;
+      let firstClip = null, firstHidden = null;
+      const scroll = [];
+      for (let node = el; node; node = node.parentElement) {
+        const { visibility, opacity, overflowX, overflowY } = getComputedStyle(node);
+        const label = node.tagName.toLowerCase() + [...node.classList].map((name) => "." + name).join("");
+        if (!firstHidden && (visibility === "hidden" || Number(opacity) === 0)) {
+          firstHidden = { node: label, visibility, opacity };
+        }
+        if (node === el) continue;
+        const clipsX = overflowX !== "visible", clipsY = overflowY !== "visible";
+        if (!clipsX && !clipsY) continue;
+        const box = node.getBoundingClientRect();
+        if (clipsX) { clip.left = Math.max(clip.left, box.left); clip.right = Math.min(clip.right, box.right); }
+        if (clipsY) { clip.top = Math.max(clip.top, box.top); clip.bottom = Math.min(clip.bottom, box.bottom); }
+        if (!firstClip && ((clipsX && !fitsX(box)) || (clipsY && !fitsY(box)))) {
+          firstClip = { node: label, bounds: box.toJSON(), overflowX, overflowY, opacity };
+        }
+        const maxTop = node.scrollHeight - node.clientHeight, maxLeft = node.scrollWidth - node.clientWidth;
+        if (maxTop || maxLeft || overflowY === "auto" || overflowY === "scroll") {
+          scroll.push({ node: label, top: node.scrollTop, left: node.scrollLeft, maxTop, maxLeft });
+        }
+      }
+      return {
+        visible: !firstHidden && bounds.width > 0 && bounds.height > 0 && fitsX(clip) && fitsY(clip),
+        text: normalize(el.innerText), bounds, viewport, clip, firstClip, firstHidden, scroll,
+      };
     };
-  });
-  assert.equal(normalize(actual.text), normalize(expected), `visible text in ${locator}`);
-  assert(actual.visible, `expected the full text to be visible in ${locator}: ${JSON.stringify(actual)}`);
+
+    // CSS and native scrolling use wall time. Keep measuring the original element on this clock.
+    const deadline = Date.now() + 1000;
+    let sample = measure();
+    let consecutive = Number(sample.visible && sample.text === expectedText);
+    while (settle && consecutive < 2 && Date.now() + 25 <= deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      if (Date.now() > deadline) break;
+      sample = measure();
+      consecutive = sample.visible && sample.text === expectedText ? consecutive + 1 : 0;
+    }
+    return { ...sample, expectedText, consecutive };
+  }, { expected, settle }, settle ? { timeout: 1000 } : undefined);
+  assert.equal(actual.text, actual.expectedText, `visible text in ${locator}: ${JSON.stringify(actual)}`);
+  assert(actual.consecutive >= (settle ? 2 : 1),
+    `expected the full text to be visible in ${locator}: ${JSON.stringify(actual)}`);
 }
 
-async function naturalText(line, key, compact) {
+async function naturalText(line, key, compact, options) {
   if (compact) await visibleText(line.locator('.kit-gloss-compact > [lang="es"]'), spanish(key));
-  await visibleText(line.locator(`${compact ? ".kit-gloss-compact > small" : ".nat"}[lang="${learner}"]`), natural(key));
+  await visibleText(line.locator(`${compact ? ".kit-gloss-compact > small" : ".nat"}[lang="${learner}"]`), natural(key), options);
   assert.equal(await line.locator(`[lang="${local("lt", "en")}"]`).count(), 0, `${key} has no other helper language`);
 }
 
@@ -491,7 +523,7 @@ async function enterChat(h, first, card) {
   const opened = await wait(`the ${id} conversation with Inés`, (s) => s.chat?.active && s.chat.sit === id && s.chat.host === guide);
   const start = page.locator(".scene-intro").getByRole("button", { name: names.start, exact: true });
   if (opened.chat.intro || await start.isVisible()) {
-    await visibleText(page.locator(`.scene-intro p[lang="${learner}"]`), outing.intro[learner]);
+    await visibleText(page.locator(`.scene-intro p[lang="${learner}"]`), outing.intro[learner], { settle: true });
     await press(start);
   } else {
     assert(!first, "a fresh save should show Inés's scene intro");
@@ -566,7 +598,13 @@ async function decline(h) {
   const ended = await h.wait("the polite decline and ordinary end card", (s) => s.chat?.phase === "ended" && s.chat.key === "later");
   assert(!ended.chat.completed);
   await visibleText(h.page.locator(".ended-box .ended-title"), names.declined);
-  await naturalText(h.page.locator(".transcript .msg.npc").last(), "later", false);
+  const farewell = h.page.locator(".transcript .msg.npc").last();
+  await naturalText(farewell, "later", false, { settle: true });
+  const closing = await farewell.evaluate((msg) => ({
+    bottom: msg.querySelector(".nat").getBoundingClientRect().bottom,
+    endCardTop: msg.closest(".convo").querySelector(".ended-box").getBoundingClientRect().top,
+  }));
+  assert(closing.bottom <= closing.endCardTop + 1, `farewell above the end card: ${JSON.stringify(closing)}`);
   await assertChatOrder(h, run, ["greet", "later"]);
   noLaunch(ended, 0, 0);
   await h.press(h.page.locator(".ended-box").getByRole("button", { name: local("Continue", "Tęsti"), exact: true }));
@@ -993,8 +1031,8 @@ async function lookAtCards(h, branch) {
   const persisted = await page.evaluate((prefix) => JSON.parse(localStorage.getItem(prefix + "-cards-v1"))?.cards, storage);
   assert.deepEqual(persisted.map(({ en, lt, situationId }) => ({ en, lt, situationId })), expected);
   for (const card of expected) {
-    const front = list.getByText(card.en, { exact: true });
-    const row = list.locator(".cd-row").filter({ has: front });
+    const row = list.locator(".cd-row").filter({ has: page.getByText(card.en, { exact: true }) });
+    assert.equal(await row.count(), 1, `one saved card row for "${card.en}"`);
     await row.scrollIntoViewIfNeeded();
     await visibleText(row.locator('.cd-en[lang="es"]'), card.en);
     await visibleText(row.locator(`.cd-lt[lang="${learner}"]`), card.lt);
