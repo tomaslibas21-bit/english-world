@@ -53,7 +53,7 @@ export interface GameApi {
   modeOffer(sitId: string): { id: string; label: string } | null;
   modeFromConversation(id: string): void;
   modeStart?(id: string, option?: string): void;
-  modeExit(immediate?: boolean): void;
+  modeExit(): void;
   modeAction(id: string, name: string, value?: string | boolean): void;
   setQuality(q: "high" | "low"): void;
   /** The name tags say the role in the Spanish just chosen (the Spanish edition's switch; compose.ts roleSaid). */

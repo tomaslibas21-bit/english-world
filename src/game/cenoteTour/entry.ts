@@ -6,7 +6,7 @@ import type { CenoteTourMode } from "./mode";
 export const CENOTE_MODE = "cenote-tour";
 const BOARD = "board";
 
-export interface CenoteTourHost extends ModeHost {
+export interface CenoteTourHost extends Pick<ModeHost, "player" | "rig" | "add" | "time" | "canStart" | "entered" | "left" | "place"> {
   dry(): void;
   guide(): GameCharacter | undefined;
   curtain(opacity: number): void;

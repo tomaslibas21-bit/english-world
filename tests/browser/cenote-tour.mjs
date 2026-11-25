@@ -145,6 +145,8 @@ function readPage({ id, mode, prefix }) {
     session: !!game.activeSession, swimming: game.swimming, dive: game.diveK, wading: game.wading?.depth,
     ride: game.rides?.riding?.id ?? null, mode: game.modes?.active?.id ?? null, queued: !!game.modes?.hasQueued,
     undersea: game.undersea?.on ?? false, listening: window.__listening(),
+    voice: world.voice?.(), modeBed: world.audio?.playingBed,
+    wildlifeAttached: !!game.scene?.getObjectByName("cenote-tour-wildlife"),
     chat: {
       active: conv.active, run: conv.run, sit: conv.sitId, step: conv.stepId, phase: conv.phase, key: conv.lineKey,
       host: conv.hostId, speaker: conv.npcId, completed: conv.completed, intro: conv.introOpen,
@@ -410,6 +412,7 @@ function noLaunch(s, starts, completions) {
     assert.equal(s.tour.state, "idle");
     assert.deepEqual(s.tour.animals, []);
     assert.deepEqual(s.draw, []);
+    assert.equal(s.wildlifeAttached, false, "idle town has no tour wildlife attached");
   }
 }
 
@@ -939,6 +942,8 @@ async function assertDry(h, s, reason, count) {
   dryPose(s.pose, s.tour);
   assert(!s.swimming && s.dive === 0 && s.wading === 0 && !s.undersea);
   assert(!s.session && !s.ride && !s.listening && !s.chat.active && s.chat.completed);
+  assert.equal(s.voice, "idle", "tour speech is stopped on return");
+  assert.equal(s.modeBed, null, "the tour leaves no mode audio playing");
   assert(s.follow && s.camera === "follow" && !s.stage);
   assert(s.hudMode === null && s.hudRide === null && !s.hudFade && !s.curtain);
   assert.equal(await h.page.locator(".mode-hud, .cenote-tour-card, .cenote-tour-curtain, .ride-strip, .surf-toolbar").count(), 0);
@@ -1054,6 +1059,9 @@ async function reloadWet(h, branch) {
   assert(distance(reloaded.pose, outing.hut) <= 0.35 && reloaded.camera === "follow" && !reloaded.swimming);
   assert(!reloaded.undersea && !reloaded.listening && !reloaded.chat.active && !reloaded.session && reloaded.mode === null);
   assert.deepEqual(reloaded.tour.animals, []);
+  assert.equal(reloaded.wildlifeAttached, false);
+  assert.equal(reloaded.voice, "idle");
+  assert.equal(reloaded.modeBed, null);
   dryPose(reloaded.pose, reloaded.tour);
   savedHut(reloaded.saved);
   assert(await page.locator(".toolbar").isVisible());

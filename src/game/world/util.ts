@@ -170,7 +170,7 @@ export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
   boxes: AABB[] = [];
-  circles: { x: number; z: number; r: number; split?: boolean; npc?: string }[] = [];
+  circles: { x: number; z: number; r: number; split?: boolean; npc?: string; extra?: boolean }[] = [];
   addBox(cx: number, cz: number, w: number, d: number, tag?: string) {
     this.boxes.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag });
   }
