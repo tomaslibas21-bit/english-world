@@ -985,21 +985,25 @@ async function checkWallet(run) {
       ["¡Se le cayó la cartera!", lt ? "Jums iškrito piniginė!" : "You dropped your wallet!",
         "¡Igualmente! ¡Gracias otra vez!", lt ? "Ir Jums! Dar kartą ačiū!" : "You too! Thanks again!"]);
   }
-  const card = page.locator('.street-card[data-moment="i_dropped"][data-cast="a"][data-script="first"]');
+  const cardSelector = 'section.street-card[data-moment="i_dropped"][data-cast="a"][data-script="first"]';
+  const card = page.locator(cardSelector);
   const current = card.locator(".street-current");
   const rewardRow = card.locator("[data-street-reward]");
   const targetOf = (row) => row.locator(".kit-gloss-compact > span");
+  const currentTarget = targetOf(current);
   const street = () => page.evaluate(() => window.__ew.game.streetState());
   assert.equal(await page.evaluate(() => window.__ew.game.streetNow("i_dropped", "a")), true);
-  for (const step of [0, 1]) {
-    const button = card.locator(".street-choice").first();
-    await waitFor(async () => await card.getAttribute("data-step") === "choices"
-      && await card.getAttribute("data-exchange") === String(step) && await button.isVisible(), `wallet exchange ${step}`, { frames: 2 });
-    await press(button);
+  for (const exchange of [0, 1]) {
+    const button = page.locator(`${cardSelector}[data-step="choices"][data-exchange="${exchange}"] .street-choice`).first();
+    // A missing choice must return immediately so the poll can advance the encounter.
+    await run.visible(button, `wallet exchange ${exchange}`, 2);
+    await run.layout(() => press(button));
   }
-  await waitFor(async () => await rewardRow.isVisible() && await targetOf(current).textContent() === reply.en,
+  const closingTarget = currentTarget.and(page.getByText(reply.en, { exact: true }));
+  await waitFor(async () => await rewardRow.isVisible() && await closingTarget.isVisible(),
     "closing reply exposes the pre-award reward");
   assert.equal(await card.getAttribute("data-step"), "reply");
+  assert.equal(await currentTarget.textContent(), reply.en);
   assert.equal(await targetOf(rewardRow).textContent(), reward.en);
   assert.equal(await rewardRow.locator(`small[lang="${learner}"]`).textContent(), reward.lt);
   const beforeAward = await street();
@@ -1013,10 +1017,12 @@ async function checkWallet(run) {
     const actor = game.streetLife.active.actor.person.root;
     window.__walletActor = { actor, start: actor.position.clone() };
   });
-  await waitFor(() => card.getAttribute("data-step").then((step) => step === "done"), "wallet reaches done");
+  await waitFor(() => page.locator(`${cardSelector}[data-step="done"]`).isVisible(), "wallet reaches done");
   assert.deepEqual([(await street()).memory.i_dropped.seen, (await street()).memory.i_dropped.helped], [1, 1]);
-  assert.equal(await targetOf(current).textContent(), reply.en);
-  await press(current.locator(".street-line"));
+  assert.equal(await currentTarget.textContent(), reply.en);
+  const replyButton = current.locator(".street-line");
+  assert.equal(await replyButton.getAttribute("aria-expanded"), "false", "the closing reply stays untranslated until clicked");
+  await press(replyButton);
   assert.equal(await current.locator(`.street-tr[lang="${learner}"]`).textContent(), reply.lt);
   const atEnd = await street();
   const keptReply = await saveTwice(run, current.locator("[data-phrase-save]"), reply, {
