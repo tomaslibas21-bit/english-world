@@ -1,16 +1,29 @@
 // Run against a local Vite development server. The 3D inspection hooks are DEV-only.
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=playwright node tests/browser/talk-natural.mjs
 import assert from "node:assert/strict";
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { before, INTRO_START, launchBrowser, remaining, seedFramingPage, worldConfig } from "../../tools/talk-framing-browser.mjs";
+import { audioKey, withoutAddressedNames } from "../../src/audio-key.ts";
+import { before, INTRO_START, launchBrowser, seedFramingPage, worldConfig } from "../../tools/talk-framing-browser.mjs";
+import { ActingFilm, writeFilmIndex } from "./talk-natural-film.mjs";
+import { ordinaryPlaywright, runFramingAudit } from "./talk-natural-framing.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const config = worldConfig();
 const pc = config.storage === "puerto-colibri";
 const layer = pc ? `pc-${config.learner}` : "mh-lt";
-const out = path.join(root, ".b6/audit", `talk-natural-${layer}`);
+const evidence = path.join(root, ".b6/audit", `talk-natural-${layer}`);
+const shotDir = process.env.WORLD_SHOTS && path.resolve(process.env.WORLD_SHOTS);
+const wrapperShots = process.env.SHOTS_OUT && path.resolve(process.env.SHOTS_OUT);
+const chainCapture = !pc && !!shotDir && !!wrapperShots;
+const chainMs = 1_200_000;
+const started = Date.now();
+// Reserve time for the unrestricted four-viewport audit even if routes stall.
+const deadline = started + chainMs - 15_000;
+const actingBy = chainCapture ? started + 630_000 : deadline;
+const measureBy = shotDir ? actingBy - 150_000 : actingBy;
+let out;
 const sizes = [
   { width: 390, height: 844, touch: true, label: "390x844" },
   { width: 1280, height: 800, touch: false, label: "1280x800" },
@@ -30,7 +43,7 @@ const report = { target: config.url.href, edition: config.storage, layer: config
 
 // As in talk-framing.mjs, canceling a callback from another callback must take effect
 // in that same frame. Browser timers and both native audio clocks keep real time.
-function installPage({ key, save, speech, seed }) {
+function installPage({ key, save, speech, seed, film }) {
   if (window.top !== window) return;
   sessionStorage.setItem("ew-play-now", "1");
   localStorage.clear();
@@ -68,6 +81,20 @@ function installPage({ key, save, speech, seed }) {
   const period = 2 ** 32;
   const seedDate = Math.floor(nowDate() / period) * period + seed;
   Date.now = () => window.__ew?.game?.conversationLoads ? seedDate : nowDate();
+  window.__naturalWall = nowDate;
+  if (film) {
+    // Let Chromium present frames on its own clock during film. The contract
+    // uses the explicit stepping clock below, with the same native media clocks.
+    window.__step = () => performance.now();
+    window.__naturalInput = {};
+    addEventListener("submit", (event) => {
+      if (event.target.matches?.(".typebox")) window.__naturalInput.submit = nowDate();
+    }, true);
+    addEventListener("click", (event) => {
+      if (event.target.closest?.(".convo-head .head-actions .close-x:last-child")) window.__naturalInput.close = nowDate();
+    }, true);
+    return;
+  }
   let now = 1000, next = 0;
   const queued = new Map();
   performance.now = () => now;
@@ -117,7 +144,8 @@ async function recordings() {
     if (!files.includes("manifest.json")) continue;
     const durations = JSON.parse(await readFile(path.join(base, "manifest.json"), "utf8"));
     catalogue[dir] = Object.fromEntries(files.filter((name) => name.endsWith(".mp3"))
-      .map((name) => name.slice(0, -4)).filter((key) => durations[key] > 0).map((key) => [key, durations[key]]));
+      .map((name) => name.slice(0, -4)).filter((key) => Number.isFinite(durations[key]) && durations[key] > 0)
+      .map((key) => [key, durations[key]]));
   }
   for (const key of [transportKey, taxiKey]) assert(catalogue.audio?.[key] > 0, `local recording public/audio/${key}.mp3`);
   const npcSource = await readFile(path.join(root, "src/content/npcs.ts"), "utf8");
@@ -125,6 +153,33 @@ async function recordings() {
   if (!pc) assert.equal(voices.vinnie, "am_puck");
   Object.assign(voices, { earl: "am_michael", g_coach_m: "af_heart", g_coach_f: "af_heart" });
   return { catalogue, voices };
+}
+
+async function audioFixture() {
+  const helpers = `return { audioKey: ${audioKey}, withoutAddressedNames: ${withoutAddressedNames} };`;
+  const browserHelpers = new Function(helpers)();
+  assert.equal(browserHelpers.audioKey("am_puck", 1, taxiText), taxiKey);
+  assert.equal(browserHelpers.withoutAddressedNames("Thanks, Rūta!", ["Rūta"]), "Thanks!");
+  assert.equal(browserHelpers.withoutAddressedNames(taxiText, ["Rūta"]), null);
+
+  const fixture = { ...await recordings(), helpers };
+  const bytes = new Map();
+  fixture.bytes = (dir, key) => {
+    const file = path.join(root, "public", dir, `${key}.mp3`);
+    if (!bytes.has(file)) bytes.set(file, readFile(file));
+    return bytes.get(file);
+  };
+  for (const key of [transportKey, taxiKey]) {
+    const clip = await fixture.bytes("audio", key);
+    assert(clip.length > 3 && (clip.toString("ascii", 0, 3) === "ID3" || (clip[0] === 255 && (clip[1] & 224) === 224)),
+      `local MP3 header public/audio/${key}.mp3`);
+    const route = { request: () => ({ headers: () => ({ range: "bytes=0-15" }) }), fulfill: (response) => response };
+    const response = await serveRecording(route, clip);
+    assert.equal(response.status, 206);
+    assert.equal(response.headers["content-range"], `bytes 0-15/${clip.length}`);
+    assert.deepEqual(response.body, clip.subarray(0, 16));
+  }
+  return fixture;
 }
 
 async function serveRecording(route, bytes) {
@@ -139,7 +194,7 @@ async function serveRecording(route, bytes) {
 
 // Provide fixture entries at the existing duration and playback boundaries. The
 // original key lookup, speed, repair URL, decoder, player and promises still run.
-function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, id, subcase, film, helpers }) {
+function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, helpers }) {
   const { game, store, audio } = window.__ew;
   const { audioKey, withoutAddressedNames } = new Function(helpers)();
   const files = new Map(), requests = [], owners = new WeakMap(), actors = new Map();
@@ -169,7 +224,7 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
     if (!source && !forceGap) {
       for (const candidate of [asked, alt]) {
         if (catalogue[dir]?.[candidate]) {
-          source = { dir, key: candidate, duration: catalogue[dir][candidate], match: candidate !== alt ? true : "addressed-name" };
+          source = { dir, key: candidate, voice, duration: catalogue[dir][candidate], match: candidate !== alt ? true : "addressed-name" };
           if (candidate === alt) {
             delete audio.manifest[asked];
             key = alt;
@@ -181,9 +236,14 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
         const v1 = voices[voice] ?? voices[voice.replace(/^g_/, "")] ?? voice;
         const full = audioKey(v1, speed, text), shortened = plain && audioKey(v1, speed, plain);
         const existing = catalogue.audio[full] ? full : catalogue.audio[shortened] ? shortened : null;
-        if (existing) source = { dir: "audio", key: existing, duration: catalogue.audio[existing], match: existing === full ? true : "addressed-name" };
-        if (text === taxiText && conv.npcId === "vinnie") source = { dir: "audio", key: taxiKey, duration: catalogue.audio[taxiKey], match: true };
+        if (existing) source = { dir: "audio", key: existing, voice: v1, duration: catalogue.audio[existing], match: existing === full ? true : "addressed-name" };
       }
+    }
+    if (film && !source) {
+      delete audio.manifest[asked];
+      if (alt) delete audio.manifest[alt];
+      files.delete(asked);
+      return { key, source: { unavailable: true, match: false }, slow: !!options.slow };
     }
     source ??= transport;
     audio.manifest[key] = source.duration;
@@ -210,12 +270,14 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
     const mode = game.modes?.active?.id ?? (game.modes?.owns("gofish") ? "gofish" : null);
     const street = !!game.streetLife?.active?.actor;
     const wrapped = { id: ++serial, ...fixture, voice, speed, text, run: conv.run, phase: conv.phase,
-      owner: owner?.line ?? null, replay: owner?.replay ?? null, npc: line?.npc ?? null, mode, street, started: performance.now() };
+      owner: owner?.line ?? null, replay: owner?.replay ?? null, npc: line?.npc ?? null, mode, street,
+      ownerMatches: line?.npc ? game.talkCast?.some((actor) => actor.id === line.npc && actor.ch === owner.actor) ?? false : null,
+      started: performance.now(), wall: window.__naturalWall() };
     if (owner) owners.set(owner, wrapped);
     requests.push(wrapped);
     const playback = play(voice, speed, text, options);
     void playback.then((ok) => {
-      wrapped.result = { ok, state: owner ? audio.visualState(owner) : audio.getState(), time: performance.now() };
+      wrapped.result = { ok, state: owner ? audio.visualState(owner) : audio.getState(), time: performance.now(), wall: window.__naturalWall() };
     });
     return playback;
   };
@@ -223,7 +285,7 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
     for (let node = object; node; node = node.parent) if (node === game.scene) return true;
     return false;
   };
-  let release;
+  let release, tracked;
   function pose(ch) {
     const { root, mouth, smile, body, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, iris, browL, browR, eyes, corners } = ch;
     const joint = (bone) => bone && [...bone.rotation.toArray().slice(0, 3), ...bone.position.toArray()];
@@ -259,6 +321,7 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
     const street = game.streetLife?.active;
     const put = (id, actor) => { if (actor?.mouth?.isBone) actors.set(id, actor); };
     for (const n of game.talkCast ?? []) put(n.id, n.ch);
+    if (tracked) put(tracked, game.npcs.find((n) => n.id === tracked)?.ch);
     if (p?.bystander?.actorId) {
       const id = p.bystander.actorId;
       put(id, game.npcs.find((n) => n.id === id)?.ch ?? game.naturalTalk?.bystander?.actor?.ch);
@@ -283,8 +346,10 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
     const person = street?.actor?.projection?.().person ?? null;
     const line = conv.transcript.find((row) => row.id === conv.speaking);
     return {
-      gameTime: game.t, clock: performance.now(), frame, rendered, reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
-      p, media, request: request?.id ?? null,
+      gameTime: game.t, clock: performance.now(), wall: window.__naturalWall(), frame, rendered,
+      reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      p, media, request: request?.id ?? null, audioState: audio.getState(), inputTimes: window.__naturalInput,
+      speech: request && { id: request.id, actor: request.npc, line: request.owner, text: request.text, source: request.source },
       actual: Object.fromEntries([...actors].map(([id, actor]) => [id, pose(actor)])),
       release: release && { mouth: release.actor.mouth.scale.toArray(), closed: release.actor.smile.scale.toArray(),
         skinned: !!release.actor.mouth.isBone, weight: release.controller?.weight ?? 0,
@@ -293,7 +358,7 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
         host: conv.hostId, npc: conv.npcId, intro: conv.introOpen, line: conv.speaking, typing: conv.typing,
         slow: conv.slowMode, mic: conv.mic.status, completed: conv.completed, text: line?.sentence?.say ?? null,
         phone: !!hud.phoneCard, visits: progress.sits[conv.sitId]?.completions ?? 0 },
-      scene: { mode: game.rig.mode, zone: game.zone.id, mountedZone: sceneBound(game.zone.group), modeId: mode,
+      scene: { mode: game.rig.mode, zone: game.zone.id, mountedZone: sceneBound(game.zone.group), modeId: mode, nearest: game.nearest?.id,
         host: game.talkNpc?.id, speaker: game.talkSpeaker?.id, cast: game.talkCast?.map((n) => n.id),
         heading: game.heading, transition: game.transitioning, quality: settings.quality, view: !!game.rig.cam.view?.enabled,
         pendingRide: game.pendingRide ?? null, ride: !!game.rideTimer || !!game.rides?.riding,
@@ -305,6 +370,7 @@ function observeAudio({ catalogue, voices, transportKey, taxiKey, taxiText, pc, 
   }
   window.__naturalTest = {
     frame, requests, files, stop: () => { active = false; },
+    track: (id) => { tracked = id; },
     pinRelease(id) {
       const actor = actors.get(id);
       if (!actor) throw new Error(`missing closing actor ${id}`);
@@ -338,7 +404,7 @@ class Route {
     this.missingUrls = new Set();
     this.playheads = new Map();
     this.lastRecorded = null;
-    this.deadline = Date.now() + 105_000;
+    this.deadline = Math.min(Date.now() + 105_000, this.by);
   }
 
   async boot() {
@@ -392,10 +458,12 @@ class Route {
         if (row.id === directions && (this.subcase === "missing" || pc)) {
           save.sits[directions] = { ...saved, completions: 0 };
         }
+        if (this.film) save.objective = row.id;
         // Seed 2 skips the café small-talk opening in both editions, so the first
         // learner turn is the authored order with complete, selectable examples.
-        const seed = row.id === "s66-taxi" && !pc ? seedForTaxi() : row.id === "s72-cafe" ? 2 : 42;
-        await page.addInitScript(installPage, { key, save, speech: this.subcase === "mic", seed });
+        const cafeSeed = this.film && !pc ? 1 : 2; // Seed 1 selects Mia's matching opening with the internal pause.
+        const seed = row.id === "s66-taxi" && !pc ? seedForTaxi() : row.id === "s72-cafe" ? cafeSeed : 42;
+        await page.addInitScript(installPage, { key, save, speech: this.subcase === "mic", seed, film: !!this.film });
       },
     }, config.storage, { quietTexts: true });
     await page.goto(config.url.href, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -435,9 +503,19 @@ class Route {
       if (!window.__ew.audio.ready) throw new Error("local voice manifest unavailable");
     }));
     await page.evaluate(observeAudio, {
-      catalogue: this.fixture.catalogue, voices: this.fixture.voices, transportKey, taxiKey, taxiText, pc,
+      catalogue: this.fixture.catalogue, voices: this.fixture.voices, transportKey, pc,
       id: row.id, subcase: this.subcase, film: this.film, helpers: this.fixture.helpers,
     });
+    if (row.id === "s66-taxi" && !this.subcase) {
+      const url = new URL(`audio/${taxiKey}.mp3?natural-range=1`, config.url).href;
+      row.range = await page.evaluate(async (url) => {
+        const response = await fetch(url, { headers: { Range: "bytes=0-15" } });
+        return { status: response.status, range: response.headers.get("content-range"),
+          accept: response.headers.get("accept-ranges"), bytes: [...new Uint8Array(await response.arrayBuffer())] };
+      }, url);
+      const bytes = await this.fixture.bytes("audio", taxiKey);
+      assert.deepEqual(row.range, { status: 206, range: `bytes 0-15/${bytes.length}`, accept: "bytes", bytes: [...bytes.subarray(0, 16)] });
+    }
   }
 
   async tick(n = 1, dt = stepMs) {
@@ -446,6 +524,7 @@ class Route {
       return window.__naturalTest.frame();
     }, [n, dt]).then((frame) => {
       this.last = frame;
+      this.capture?.sample(frame);
       if (isVoice(frame) && frame.media.owner != null) {
         const { owner, key, time, envelope, pipeline } = frame.media;
         const sample = this.playheads.get(owner) ?? { id: owner, key, pipeline, first: time, last: time, peakEnvelope: 0, frames: 0 };
@@ -506,27 +585,26 @@ class Route {
   }
 
   async filmFrame(f) {
-    if (!this.film || !f.rendered || !f.p) return;
-    if (isVoice(f) && f.media.envelope > 0.45 && f.p.mouth > 0.22) await this.mark("voiced-high", f);
-    if (f.media?.state === "playing" && f.media.time > 0.15 && f.media.envelope >= 0 && f.media.envelope < 0.08 && f.p.mouth <= 0.04) {
-      await this.mark("voiced-low", f);
+    if (!this.capture || !f.rendered) return;
+    if (f.audioState === "unavailable" && f.speech?.source.unavailable && this.continued !== f.speech.id) {
+      const button = this.page.locator(".audio-recovery button.link-btn").last();
+      if (await button.isVisible()) {
+        this.continued = f.speech.id;
+        await this.mark("continue-reading", f, { once: false, image: false });
+        await this.press(button, "continue reading an unmatched line");
+      }
     }
-    if (["handoff", "menu", "machine", "map"].includes(f.p.gaze?.target) && Math.abs(f.p.gaze.pitch) > 0.01) await this.mark("object-glance", f);
-    if (this.labels.has("object-glance") && f.p.gaze?.target === "learner") await this.mark("object-return", f);
-    if (f.conv.id === directions && f.conv.slow && f.media?.rate === 0.82 && isVoice(f)) await this.mark("repeat", f);
   }
 
-  async mark(label, frame = this.last) {
-    if (this.labels.has(label)) return;
-    this.labels.add(label);
-    const entry = { label, frame: frame?.frame, time: frame?.gameTime, request: frame?.request, speaker: frame?.p?.speakerId,
-      line: frame?.conv.text ?? frame?.p?.lineId, recording: frame?.media?.source ?? null };
+  async mark(label, frame = this.last, { once = true, image = true } = {}) {
+    if (once && this.labels.has(label)) return;
+    if (once) this.labels.add(label);
+    const entry = { label, frame: frame?.frame, time: frame?.gameTime, wall: frame?.wall, request: frame?.request,
+      speaker: frame?.p?.speakerId ?? frame?.conv.npc ?? this.row.runtime?.id, run: frame?.p?.run ?? frame?.conv.run,
+      line: frame?.conv.text ?? frame?.p?.lineId, lineId: frame?.conv.line ?? frame?.p?.lineId,
+      recording: frame?.media?.source ?? frame?.speech?.source ?? null, inputTimes: frame?.inputTimes };
     this.row.labels.push(entry);
-    if (this.film) {
-      const name = `talk-natural-${layer}-${this.size.label}-${this.row.id}-${label}.png`;
-      await this.page.screenshot({ path: path.join(this.shotDir, name), scale: "css", timeout: 3000 });
-      entry.image = name;
-    }
+    if (this.capture) this.capture.mark(entry, image);
   }
 
   async press(locator, label) {
@@ -549,17 +627,25 @@ class Route {
   }
 
   async walkUp(actor) {
-    const at = await this.page.evaluate((id) => {
+    const at = await this.page.evaluate(({ id, film }) => {
       const { game } = window.__ew;
       const target = game.npcs.find((n) => n.id === id);
       if (!target) throw new Error(`no town actor ${id}`);
       const { x: hx, z: hz } = target.home;
       const p = target.approach ?? { x: hx + Math.sin(target.rot) * 1.25, z: hz + Math.cos(target.rot) * 1.25 };
-      game.placeOnFoot(p.x, p.z, Math.atan2(hx - p.x, hz - p.z));
+      if (film && id === "vinnie") game.walkTo(p.x, p.z, { kind: "point" });
+      else game.placeOnFoot(p.x, p.z, Math.atan2(hx - p.x, hz - p.z), film);
       return { at: [p.x, p.z], home: [hx, hz], approach: !!target.approach };
-    }, actor);
+    }, { id: actor, film: !!this.film });
     this.row.approach = at;
-    await this.until(() => this.page.evaluate((actor) => {
+    if (this.film) {
+      await this.wait((f) => f.scene.nearest === actor && !f.conv.phone, `physical interaction prompt at ${actor}'s approach`);
+      if (this.row.id === "s66-taxi") {
+        const wave = await this.wait((f) => f.actual[actor]?.anim === "wave" && !f.actual[actor].controller, "native approach wave before binding");
+        await this.mark("approach-wave", wave, { image: false });
+        await this.series(3);
+      }
+    } else await this.until(() => this.page.evaluate((actor) => {
       window.__step(2);
       const { game, store } = window.__ew;
       return game.zone.id === "town" && game.nearest?.kind === "npc" && game.nearest.id === actor
@@ -639,16 +725,33 @@ class Route {
     else await input.press("Enter");
     const row = await this.page.evaluate((old) => window.__ew.store.getState().conv.transcript.find((r) => r.who === "you" && r.id > old), old);
     assert.equal(row?.understood, reaction !== "puzzled", `${turn.conv.step}: ${JSON.stringify(row)}`);
-    if (reaction) await this.feedback(reaction, turn.p.reaction?.sequence ?? 0);
+    if (reaction) {
+      const submitted = this.film ? await this.tick() : null;
+      if (submitted) await this.mark(`submit-${reaction}`, submitted, { image: false });
+      try { await this.feedback(reaction, turn.p.reaction?.sequence ?? 0, submitted?.inputTimes?.submit); }
+      catch (error) {
+        if (!this.film) throw error;
+        this.row.errors.push(error.stack ?? error.message);
+      }
+    }
     return row;
   }
 
-  async feedback(kind, beforeSerial) {
-    const rows = [];
-    for (let i = 1; i <= 21; i++) {
-      const [f] = await this.series(1, 1000 / 30);
-      rows.push(f);
-      if ([4, 10, 18].includes(i)) await this.mark(`submit-${kind}+${i}`, f);
+  async feedback(kind, beforeSerial, submittedAt) {
+    let rows = [];
+    if (this.film) {
+      assert(Number.isFinite(submittedAt), "trusted typebox submission timestamp");
+      rows = await through(this, (f) => f.wall >= submittedAt + 700, "render the response after submission", 2500);
+      for (const offset of [4, 10, 18]) {
+        const f = rows.find((f) => f.rendered && f.wall >= submittedAt + offset * 1000 / 30);
+        if (f) await this.mark(`submit-${kind}+${offset}`, f);
+      }
+    } else {
+      for (let i = 1; i <= 21; i++) {
+        const [f] = await this.series(1, 1000 / 30);
+        rows.push(f);
+        if ([4, 10, 18].includes(i)) await this.mark(`submit-${kind}+${i}`, f);
+      }
     }
     const samples = rows.filter((f) => f.p?.reaction?.kind === kind && f.p.reaction.sequence > beforeSerial);
     const peak = samples.reduce((a, b) => !a || b.p.reaction.weight > a.p.reaction.weight ? b : a, null);
@@ -1223,15 +1326,163 @@ const routes = new Map([
   ["s67a-tickets", tickets], ["s73-restaurant", restaurant], [directions, way], ["street-i_dropped", street],
 ]);
 
+async function startFilm(route, actor, zone, kind) {
+  ({ actor, zone } = await route.page.evaluate(({ actor, zone, id, pc }) => {
+    const { game } = window.__ew;
+    if (pc) {
+      const meta = game.orderedSituations().find((sit) => sit.id === id);
+      if (meta) {
+        actor = meta.npc;
+        zone = game.getZone(meta.location)?.interior ? meta.location : "town";
+      }
+    }
+    if (game.zone.id !== zone) game.enterZone(zone, undefined, true);
+    if (actor === "vinnie") {
+      const { home, rot } = game.npcs.find((n) => n.id === actor);
+      // Begin outside the ordinary 4.5 m wave radius and use the normal walk
+      // path to enter it. Never set the actor's animation from the test.
+      game.placeOnFoot(home.x + Math.sin(rot) * 4.8, home.z + Math.cos(rot) * 4.8, rot + Math.PI);
+    }
+    window.__naturalTest.track(actor);
+    return { actor, zone };
+  }, { actor, zone, id: route.row.id, pc }));
+  await route.wait((f) => f.scene.zone === zone && f.rendered && f.actual[actor]?.live && !f.scene.transition, "approach location rendered");
+  await route.capture.start(kind);
+  await route.series(4);
+  return route.start(route.row.id, actor, true);
+}
+
+async function filmExit(route) {
+  const f = await route.tick();
+  await route.page.evaluate((id) => window.__naturalTest.pinRelease(id), f.p?.speakerId ?? f.conv.npc);
+  await route.mark("close", f, { image: false });
+  await route.press(route.page.locator(".convo-head .head-actions .close-x").last(), "close through the original conversation button");
+  const closed = await route.wait((f) => !f.conv.active && f.rendered, "first rendered frame after release begins");
+  await route.mark("release", closed, { image: false });
+  const closedAt = closed.inputTimes?.close;
+  assert(Number.isFinite(closedAt), "trusted close button timestamp");
+  for (const offset of [1, 4, 9]) {
+    const f = await route.wait((f) => f.rendered && f.wall >= closedAt + offset * 1000 / 30, `release +${offset}/30 s`);
+    await route.mark(`exit+${offset}`, f);
+  }
+  await route.series(5);
+}
+
+async function filmCafe(route) {
+  const reduced = route.subcase === "reduced";
+  const entry = await startFilm(route, "mia", "sunny-cup", reduced ? "Mia · reduced motion" : "Mia · counter, miss, yes and slow replay");
+  const opening = await through(route, (f) => f.conv.phase === "you", "Mia's real opening to learner turn");
+  const spoken = opening.find((f) => isVoice(f) && f.p?.requestOwned && f.p.mouth > 0.22
+    && f.media.envelope > 0.45 && f.media.source?.match);
+  const quiet = opening.find((f, i) => f.request === spoken?.request && f.media?.state === "playing"
+    && f.media.envelope >= 0 && f.media.envelope < 0.08 && f.p?.mouth <= 0.04
+    && opening.slice(0, i).some((g) => g.request === f.request && isVoice(g) && g.p?.mouth > 0.22)
+    && opening.slice(i + 1).some((g) => g.request === f.request && isVoice(g) && g.p?.mouth > 0.22));
+  if (spoken) await route.mark("voiced-high", spoken);
+  if (quiet) await route.mark("voiced-low", quiet);
+  if (!spoken || (!pc && spoken.media.source.key !== transportKey) || !quiet) {
+    route.row.errors.push("Mia's matching opening did not supply voiced and internal quiet frames on the same playhead");
+  }
+  const listening = await route.yourTurn();
+  await route.mark("listen-start", listening, { image: false });
+  for (const seconds of [0.32, 2]) {
+    const f = await route.wait((f) => f.rendered && f.p?.listening && f.clock >= listening.clock + seconds * 1000,
+      `counter still listening after ${seconds} s`);
+    await route.mark(seconds < 1 ? "listen" : "listen+2s", f);
+  }
+  if (reduced) await route.mark("reduced-motion", route.last, { image: false });
+  if (!reduced) {
+    await route.answer(pc ? "¿Puede hablar más despacio, por favor?" : "Could you speak more slowly, please?");
+    const replay = await through(route, (f) => f.conv.phase === "you", "matching slow repeat");
+    const slow = replay.find((f) => isVoice(f) && f.p?.requestOwned && f.media.source?.key === spoken?.media.source.key
+      && f.media.rate === 0.82 && f.conv.run === entry.conv.run && f.conv.text === spoken.conv.text);
+    if (slow) await route.mark("repeat", slow);
+    else route.row.errors.push("the matching opening must replay slowly");
+    await route.answer("zzzqvv", { reaction: "puzzled" });
+    await route.answer(cafeOrder, { reaction: "understood" });
+    await through(route, (f) => f.conv.phase === "you", "Mia answers the real order");
+  }
+  await filmExit(route);
+}
+
+async function filmTaxi(route) {
+  const entry = await startFilm(route, "vinnie", "town", "Vinnie · approach wave and sociable opening");
+  const after = await route.wait((f) => f.rendered && f.p?.run === entry.conv.run && f.gameTime >= entry.gameTime + 0.24,
+    "continuous approach and bind through +0.24 s");
+  await route.mark("bind+0.24s", after);
+  const opening = await through(route, (f) => f.conv.phase === "you", "Vinnie's real greeting completes");
+  if (!pc) assert(opening.some((f) => f.media?.source?.key === taxiKey && f.conv.text === taxiText && isVoice(f)),
+    "Vinnie's greeting must use the exact recording");
+  await filmExit(route);
+}
+
+async function filmTickets(route) {
+  const entry = await startFilm(route, "walter", "station", "Walter · reserved counter and ticket handoff");
+  const rows = await through(route, (f) => f.conv.phase === "you", "Walter's opening");
+  for (let i = 0; i < 7 && !rows.some((f) => ticketText.test(f.conv.text ?? "")); i++) {
+    await route.answer(ticketAnswers[route.last.conv.step]);
+    rows.push(...await through(route, (f) => f.conv.phase === "you" || f.conv.phase === "ended", "real ticket counter response"));
+  }
+  const object = rows.find((f) => ticketText.test(f.conv.text ?? "") && f.p?.speakerId === entry.conv.host
+    && f.media?.source?.match && f.p.gaze?.target === "handoff" && f.p.gaze.pitch > 0.015);
+  if (object) {
+    await route.mark("object-glance", object);
+    const back = rows.slice(rows.indexOf(object) + 1).find((f) => f.p?.speakerId === entry.conv.host
+      && f.p.gaze?.target === "learner" && f.gameTime - object.gameTime < 0.85);
+    if (back) await route.mark("object-return", back);
+  }
+  if (route.last.conv.phase === "you" && route.last.conv.step === "closing") {
+    await route.answer(pc ? "¡Hasta luego!" : "Goodbye!");
+    const ending = await through(route, (f) => f.conv.phase === "ended", "Walter's natural sign-off");
+    const goodbye = ending.find((f) => f.p?.gestureWeight > 0.1 && /goodbye|have a|bye|viaje|hasta/i.test(f.conv.text ?? ""));
+    if (goodbye) await route.mark("walter-sign-off", goodbye, { image: false });
+    await route.series(36);
+  }
+  await filmExit(route);
+}
+
+async function filmRestaurant(route) {
+  const entry = await startFilm(route, "marco_host", "trattoria", "Lucia and Marco · cast switch");
+  await through(route, (f) => f.conv.phase === "you", "Lucia's opening");
+  let incoming;
+  for (let i = 0; i < 6 && !incoming; i++) {
+    await route.answer(restaurantAnswers[route.last.conv.step]);
+    const rows = await through(route, (f) => f.conv.phase === "you", "the restaurant's next real turn");
+    incoming = rows.find((f) => f.p?.speakerId !== entry.conv.host && f.p?.requestOwned && f.media?.source?.match && isVoice(f));
+    if (incoming) {
+      const handoff = rows.find((f) => f.rendered && f.p?.speakerId === incoming.p.speakerId);
+      await route.mark("cast-handoff", handoff, { image: false });
+      await route.mark("cast-switch", incoming);
+    }
+  }
+  await filmExit(route);
+  assert(incoming && entry.scene.cast.includes(incoming.p.speakerId), "a matching recording belongs to the incoming live actor");
+}
+
+async function filmWay(route) {
+  await startFilm(route, directionActor, "town", "Directions · natural sign-off and release");
+  await route.yourTurn();
+  await route.answer(pc ? "Disculpe, ¿cómo llego al correo?" : "Excuse me, how do I get to the post office?");
+  await route.yourTurn();
+  await route.answer(pc ? "¡Muchas gracias!" : "Thank you so much!");
+  const f = await route.wait((f) => f.conv.completed && f.p?.reaction?.kind === "farewell" && f.p.reaction.weight > 0.1,
+    "authored completion and farewell");
+  await route.mark("sign-off", f, { image: false });
+  await route.series(45);
+  await filmExit(route);
+  assert(await route.page.locator(".directions-card").isVisible(), "sign-off still reveals the authored directions card");
+}
+
 async function runPage(context, fixture, size, id, action, options = {}) {
-  const row = { id, size: size.label, edition: config.storage, layer: config.learner, subcase: options.subcase ?? null,
+  const row = { id, size: size.label, input: size.touch ? "touch" : "keys", edition: config.storage, layer: config.learner, subcase: options.subcase ?? null,
     labels: [], peaks: [], expectedErrors: [], errors: [], pass: false };
   (options.film ? report.films : options.subcase ? report.subcases : report.rows).push(row);
   let page, route;
   const label = `${size.label}/${id}${options.subcase ? `/${options.subcase}` : ""}${options.film ? "/film" : ""}`;
   try {
-    page = await context.newPage();
+    page = await before(options.by, "opening route page", () => context.newPage());
     route = new Route(page, context, row, fixture, { size, ...options });
+    if (options.film) route.capture = new ActingFilm(page, context, { out, shotDir, layer, row, fixture });
     await before(route.deadline, label, async () => {
       await route.boot();
       await action(route);
@@ -1254,11 +1505,22 @@ async function runPage(context, fixture, size, id, action, options = {}) {
         row.utterances = [...new Set(inspected.requests.filter((request) => voiced.has(request.id) && request.owner != null &&
           !request.replay && !request.source.missing && (request.npc || request.street || request.mode))
           .map((request) => request.text))];
-        if (!options.subcase) assert(row.utterances.length >= 2, `two distinct voiced NPC utterances: ${JSON.stringify(row.utterances)}`);
+        if (!options.film && !options.subcase) assert(row.utterances.length >= 2, `two distinct voiced NPC utterances: ${JSON.stringify(row.utterances)}`);
+        assert(inspected.requests.every((request) => !voiced.has(request.id) || !request.npc || request.ownerMatches),
+          "each voiced session request belongs to the rendered actor for its transcript line");
         if (options.subcase === "missing") {
           assert(inspected.requests.some((r) => r.source.missing && r.result?.ok === false && !voiced.has(r.id)), "missing request resolved without fabricated speech");
         }
       } catch (error) { row.errors.push(error.stack ?? error.message); }
+      if (options.film) {
+        try {
+          await route.capture.finish(row.requests ?? []);
+          assert(row.requests?.every((request) => !request.source.match || !request.npc
+            || (request.source.voice === request.voice || request.source.voice === fixture.voices[request.npc])
+            && (request.voice === fixture.voices[request.npc] || request.voice === `g_${request.npc}` || pc)),
+          "matching film recordings belong to the requested actor and voice");
+        } catch (error) { row.errors.push(error.stack ?? error.message); }
+      }
     }
     try { await page?.close(); } catch (error) { row.errors.push(error.message); }
     row.pass = row.errors.length === 0;
@@ -1284,81 +1546,131 @@ async function contextFor(browser, size, reducedMotion = "no-preference") {
   return context;
 }
 
-const started = Date.now();
-let browser;
-await mkdir(out, { recursive: true });
-try {
-  assert(["127.0.0.1", "localhost", "[::1]"].includes(config.url.hostname) && /^https?:$/.test(config.url.protocol),
-    "WORLD_TEST_URL must point at a local edition server");
-  const module = process.env.WORLD_PLAYWRIGHT_MODULE;
-  const fileModule = module && await stat(path.resolve(module)).then((info) => info.isFile(), () => false);
-  if (module && (fileModule || module.startsWith(".") || path.isAbsolute(module))) {
-    process.env.WORLD_PLAYWRIGHT_MODULE = pathToFileURL(path.resolve(module)).href;
-  }
-  const fixture = await recordings();
-  const keySource = await readFile(path.join(root, "src/audio-key.ts"), "utf8");
-  const { default: ts } = await import("typescript");
-  fixture.helpers = ts.transpileModule(keySource, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText.replace(/^export /gm, "") + "\nreturn { audioKey, withoutAddressedNames };";
-  const bytes = new Map();
-  fixture.bytes = (dir, key) => {
-    const file = path.join(root, "public", dir, `${key}.mp3`);
-    if (!bytes.has(file)) bytes.set(file, readFile(file));
-    return bytes.get(file);
-  };
-  await fixture.bytes("audio", transportKey);
-  await fixture.bytes("audio", taxiKey);
-  report.recordings = {
-    gap: { file: `public/audio/${transportKey}.mp3`, duration: fixture.catalogue.audio[transportKey], quietSeconds: [0.702, 1.062], usage: "transport-only" },
+const requiredLabels = ["entry", "voiced-high", "voiced-low", "object-glance", "object-return", "listen",
+  "submit-puzzled+4", "submit-puzzled+10", "submit-puzzled+18", "submit-understood+4", "submit-understood+10", "submit-understood+18",
+  "repeat", "cast-switch", "exit+1", "exit+4", "exit+9"];
+const filmRoutes = [
+  ["s72-cafe", filmCafe], ["s66-taxi", filmTaxi], ["s67a-tickets", filmTickets], ["s73-restaurant", filmRestaurant], [directions, filmWay],
+];
+
+function recordingInventory(fixture) {
+  return {
+    gap: { file: `public/audio/${transportKey}.mp3`, duration: fixture.catalogue.audio[transportKey],
+      quietSeconds: [0.702, 1.062], usage: "matching Mia when her opening hashes to this key, otherwise transport-only" },
     vinnie: { file: `public/audio/${taxiKey}.mp3`, duration: fixture.catalogue.audio[taxiKey], text: taxiText, usage: "matching v1 speech" },
   };
-  browser = await launchBrowser(30_000);
-  for (const size of sizes) {
-    const context = await contextFor(browser, size);
-    try {
-      for (const [id, action] of routes) await runPage(context, fixture, size, id, action);
-      await runPage(context, fixture, size, directions, missingRecording, { subcase: "missing" });
-      await runPage(context, fixture, size, "s72-cafe", interruptEntry, { subcase: "interrupted" });
-      if (size.touch) await runPage(context, fixture, size, "s66-taxi", micExample, { subcase: "mic" });
-    } finally { await context.close(); }
-    const reduced = await contextFor(browser, size, "reduce");
-    try { await runPage(reduced, fixture, size, "s72-cafe", reducedMotion, { subcase: "reduced" }); }
-    finally { await reduced.close(); }
-  }
+}
 
-  if (process.env.WORLD_SHOTS) {
-    const shotDir = path.resolve(process.env.WORLD_SHOTS);
-    await mkdir(shotDir, { recursive: true });
-    // Capture separately so screenshot pauses cannot affect the contract's media or joint sampling.
+async function run() {
+  await mkdir(evidence, { recursive: true });
+  out = await mkdtemp(path.join(evidence, `${shotDir ? "capture" : "plain"}-${new Date(started).toISOString().replaceAll(":", "-")}-`));
+  report.invocation = shotDir ? "capture" : "plain";
+  report.budgetMs = chainMs;
+  report.node = process.version;
+  let browser, directModule, validTarget = false;
+  try {
+    assert(["127.0.0.1", "localhost", "[::1]"].includes(config.url.hostname) && /^https?:$/.test(config.url.protocol),
+      "WORLD_TEST_URL must point at a local edition server");
+    validTarget = true;
+    let module = process.env.WORLD_PLAYWRIGHT_MODULE;
+    const fileModule = module && await stat(path.resolve(module)).then((info) => info.isFile(), () => false);
+    if (module && (fileModule || module.startsWith(".") || path.isAbsolute(module))) {
+      module = pathToFileURL(path.resolve(module)).href;
+      process.env.WORLD_PLAYWRIGHT_MODULE = module;
+    }
+    directModule = await ordinaryPlaywright(module, !!wrapperShots);
+    if (directModule) process.env.WORLD_PLAYWRIGHT_MODULE = directModule;
+    else if (wrapperShots) {
+      // The known wrapper awaits screenshots and reuses page-local names.
+      // On hosts with only the wrapper, disable its shots in the acting run.
+      process.env.SHOTS_CAP = "0";
+      process.env.SHOTS_OUT = path.join(out, "wrapper");
+    }
+    report.playwright = process.env.WORLD_PLAYWRIGHT_MODULE || "playwright";
+    const fixture = await audioFixture();
+    report.recordings = recordingInventory(fixture);
+    browser = await launchBrowser(30_000);
+    const measureStart = Date.now();
     for (const size of sizes) {
       const context = await contextFor(browser, size);
       try {
-        for (const [id, action] of routes) await runPage(context, fixture, size, id, action, { film: true, shotDir });
+        for (const [id, action] of routes) await runPage(context, fixture, size, id, action, { by: measureBy });
+        await runPage(context, fixture, size, directions, missingRecording, { subcase: "missing", by: measureBy });
+        await runPage(context, fixture, size, "s72-cafe", interruptEntry, { subcase: "interrupted", by: measureBy });
+        if (size.touch) await runPage(context, fixture, size, "s66-taxi", micExample, { subcase: "mic", by: measureBy });
       } finally { await context.close(); }
+      const reduced = await contextFor(browser, size, "reduce");
+      try { await runPage(reduced, fixture, size, "s72-cafe", reducedMotion, { subcase: "reduced", by: measureBy }); }
+      finally { await reduced.close(); }
     }
+    report.measureWallMs = Date.now() - measureStart;
+
+    if (shotDir) {
+      const filmStart = Date.now();
+      await Promise.all([shotDir, path.join(out, "labels"), path.join(out, "film")].map((dir) => mkdir(dir, { recursive: true })));
+      for (const size of sizes) {
+        const context = await contextFor(browser, size);
+        try {
+          for (const [id, action] of filmRoutes) await runPage(context, fixture, size, id, action, { film: true, by: actingBy });
+        } finally { await context.close(); }
+        const reduced = await contextFor(browser, size, "reduce");
+        try { await runPage(reduced, fixture, size, "s72-cafe", filmCafe, { film: true, subcase: "reduced", by: actingBy }); }
+        finally { await reduced.close(); }
+      }
+      report.filmWallMs = Date.now() - filmStart;
+    }
+  } catch (error) {
+    report.errors.push(error.stack ?? error.message);
+  } finally {
+    try { await browser?.close(); } catch (error) { report.errors.push(error.message); }
   }
-} catch (error) {
-  report.errors.push(error.stack ?? error.message);
-} finally {
-  try { await browser?.close(); } catch (error) { report.errors.push(error.message); }
-  report.wallMs = Date.now() - started;
+
   const expected = sizes.flatMap(({ label }) => roster.map((id) => `${label}/${id}`));
   const actual = report.rows.map(({ size, id }) => `${size}/${id}`);
   if (roster.length !== 8 || new Set(roster).size !== 8 || JSON.stringify(actual) !== JSON.stringify(expected)) {
     report.errors.push(`route rows differ from the fixed roster: ${JSON.stringify({ expected, actual })}`);
   }
-  const requiredLabels = ["entry", "voiced-high", "voiced-low", "object-glance", "object-return", "listen",
-    "submit-puzzled+4", "submit-puzzled+10", "submit-puzzled+18", "submit-understood+4", "submit-understood+10", "submit-understood+18",
-    "repeat", "cast-switch", "exit+1", "exit+4", "exit+9"];
-  report.missingFilm = process.env.WORLD_SHOTS ? sizes.flatMap(({ label }) => {
+  report.missingFilm = shotDir ? sizes.flatMap(({ label }) => {
     const found = new Set(report.films.filter((r) => r.size === label).flatMap((r) => r.labels.filter((l) => l.image).map((l) => l.label)));
     return requiredLabels.filter((name) => !found.has(name)).map((name) => `${label}/${name}`);
-  }) : ["WORLD_SHOTS was unset"];
-  await writeFile(path.join(out, "results.json"), JSON.stringify(report, null, 2) + "\n");
+  }) : [];
+  if (shotDir) {
+    try { await writeFilmIndex(out, report.films); }
+    catch (error) { report.errors.push(error.stack ?? error.message); }
+  }
+  report.actingWallMs = Date.now() - started;
+  const results = path.join(out, "results.json");
+  await writeFile(results, JSON.stringify(report, null, 2) + "\n");
+
+  let auditFailed = false;
+  if (chainCapture && validTarget) {
+    const dir = path.join(root, ".b6/audit/natural-mh", path.basename(out));
+    try {
+      const audit = await runFramingAudit({ root, dir, target: config.url.href, module: directModule, deadline });
+      report.framingAudit = { status: path.relative(root, path.join(dir, "status.json")), pass: audit.pass };
+      auditFailed = !audit.pass;
+    } catch (error) {
+      report.framingAudit = { pass: false, error: error.stack ?? error.message };
+      console.error(report.framingAudit.error);
+      auditFailed = true;
+    }
+  }
+
+  report.wallMs = Date.now() - started;
+  report.withinBudget = report.wallMs < chainMs;
+  if (!report.withinBudget) report.errors.push("capture invocation exceeded the chain's 1,200 s deadline");
+  await writeFile(results, JSON.stringify(report, null, 2) + "\n");
   const failures = [...report.rows, ...report.subcases, ...report.films].filter((row) => !row.pass).length + report.errors.length;
   for (const error of report.errors) console.error(error);
-  if (report.missingFilm.length) console.log(`Film evidence missing: ${report.missingFilm.join(", ")}`);
-  console.log(`${report.rows.filter((row) => row.pass).length}/16 rendered routes · ${failures} failures · ${out}`);
-  if (failures || (process.env.WORLD_SHOTS && report.missingFilm.length)) process.exitCode = 1;
+  if (report.missingFilm.length) console.error(`Film evidence missing: ${report.missingFilm.join(", ")}`);
+  console.log(`${report.rows.filter((row) => row.pass).length}/16 rendered routes · ${failures} acting failures · ${report.wallMs} / ${chainMs} ms · ${out}`);
+  if (failures || report.missingFilm.length || auditFailed) process.exitCode = 1;
+}
+
+if (process.argv.includes("--preflight")) {
+  const fixture = await audioFixture();
+  console.log(JSON.stringify({ node: process.version, recordings: recordingInventory(fixture) }, null, 2));
+  console.log("PASS browser-free audio fixture and browser helper factory");
+} else {
+  await run();
 }
