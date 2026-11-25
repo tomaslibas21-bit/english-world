@@ -29,6 +29,7 @@ export class SpeedFeel {
   private speed = 0;
   private envelope = 0;
   private tier = 0;
+  private appliedReduced: boolean;
   private resume = VISUAL_RESUME;
   private lensDelta = 0;
   private presentedFov = 0;
@@ -45,7 +46,8 @@ export class SpeedFeel {
     this.strips.setAttribute("aria-hidden", "true");
     for (let i = 0; i < 4; i++) this.strips.appendChild(document.createElement("span"));
     stage.appendChild(this.strips);
-    if (this.reducedMotion) this.resume = 0;
+    this.appliedReduced = this.reducedMotion;
+    if (this.appliedReduced) this.resume = 0;
     motion?.addEventListener("change", this.onMotionChange);
 
     const feel = this;
@@ -90,6 +92,7 @@ export class SpeedFeel {
   }
 
   sound() {
+    if (!this.active) this.onMotionChange();
     this.active = true;
     const e = this.envelope;
     audio.motor("car", e);
@@ -104,9 +107,14 @@ export class SpeedFeel {
 
   private readonly onMotionChange = () => {
     const reduced = this.reducedMotion;
-    const drivingView = this.active || !!this.roadCamera;
+    // A draw can see the new matches value before the change event arrives.
+    if (reduced === this.appliedReduced) return;
+    this.appliedReduced = reduced;
+    const drivingView = this.active || this.townPoseHeld || !!this.roadCamera;
     this.resume = reduced || drivingView ? 0 : VISUAL_RESUME;
-    this.strips.classList.toggle("resuming", !reduced && drivingView);
+    const resuming = !reduced && drivingView;
+    this.strips.classList.toggle("resuming", resuming);
+    if (resuming) this.strips.style.setProperty("--speed-feel-strength", "0");
     if (reduced) {
       if (!this.townPoseHeld) this.clearPose();
       this.setTier(0);
@@ -114,11 +122,12 @@ export class SpeedFeel {
   };
 
   stepVisuals(dt: number, follow: boolean) {
-    const reduced = this.reducedMotion, show = this.active && follow && !reduced;
-    if (reduced) this.resume = 0;
-    else if (show && this.resume < VISUAL_RESUME) {
+    this.onMotionChange();
+    const show = this.active && follow && !this.appliedReduced;
+    if (show && dt > 0 && this.resume < VISUAL_RESUME) {
       this.resume = Math.min(VISUAL_RESUME, this.resume + dt);
       if (this.resume === VISUAL_RESUME) this.strips.classList.remove("resuming");
+      else this.strips.style.setProperty("--speed-feel-strength", String(this.visualStrength));
     }
     const e = this.envelope;
     if (!show) this.setTier(0);
@@ -143,6 +152,8 @@ export class SpeedFeel {
     this.roadCamera = camera;
     this.roadDelta = delta;
     this.roadAmplitude = amplitude;
+    // A frozen road view still presents when there is no driving step.
+    this.onMotionChange();
   }
 
   /** Keep the live departure camera registered while releasing the town driver's cues. */
@@ -166,11 +177,12 @@ export class SpeedFeel {
   }
 
   release() {
+    this.onMotionChange();
     this.roadCamera = undefined;
     if (this.speed || this.envelope) this.speed = this.envelope = 0;
     if (!this.active) return false;
     this.active = false;
-    this.resume = this.reducedMotion ? 0 : VISUAL_RESUME;
+    this.resume = this.appliedReduced ? 0 : VISUAL_RESUME;
     this.strips.classList.remove("resuming");
     this.setTier(0);
     if (this.townPoseHeld) this.amplitude = 0;

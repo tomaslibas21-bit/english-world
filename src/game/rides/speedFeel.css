@@ -30,7 +30,7 @@
 .speed-feel > span:nth-child(3) { animation-delay: -.42s; }
 .speed-feel > span:nth-child(4) { animation-delay: -.63s; }
 .speed-feel[data-tier="1"] > span:nth-child(-n+2), .speed-feel[data-tier="2"] > span { display: block; }
-.speed-feel.resuming > span::before { animation: speed-feel-resume .35s cubic-bezier(.333333, 0, .666667, 1) both; }
+.speed-feel.resuming > span::before { opacity: var(--speed-feel-strength, 0); }
 
 @keyframes speed-feel-streak {
   0% { transform: translateX(0) rotate(var(--angle)); opacity: 0; }
@@ -38,5 +38,4 @@
   100% { transform: translateX(var(--out)) rotate(var(--angle)); opacity: 0; }
 }
 
-@keyframes speed-feel-resume { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .speed-feel { display: none; } }
