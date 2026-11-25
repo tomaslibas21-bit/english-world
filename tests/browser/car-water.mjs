@@ -2,6 +2,7 @@
 // Each invocation runs the same cases on 390×844 touch and 1280×800 keyboard.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
@@ -10,6 +11,7 @@ const pc = edition === "es";
 const storage = process.env.WORLD_STORAGE || (pc ? "puerto-colibri" : "english-world");
 const helper = pc ? process.env.VITE_LEARNER || "en" : "lt";
 const town = pc ? "puerto-colibri" : "maple-harbor";
+const coastShots = pc && process.env.WORLD_SHOTS;
 const lithuanian = {
   phone: { convertible: "Vairuoti", parked: "Vairuoti", boat: "Plaukti", out: "Išlipti" },
   desktop: { convertible: "Vairuoti: {name}", parked: "Vairuoti", boat: "Plaukti: {name}", out: "Išlipti" },
@@ -18,6 +20,7 @@ const fixtures = {
   "maple-harbor": {
     labels: { lt: { ...lithuanian, desktop: { ...lithuanian.desktop, convertible: "Vairuoti: Convertible", boat: "Plaukti: Motorboat" } } },
     storage: "english-world",
+    roadExit: { x: -109.7, z: -8, outward: -Math.PI / 2 },
     road: [24, -55, Math.PI],
     east: [76, -55, Math.PI],
     west: [-96, -55, Math.PI],
@@ -38,6 +41,7 @@ const fixtures = {
   },
   "puerto-colibri": {
     storage: "puerto-colibri",
+    roadExit: { x: 0, z: 93.7, outward: 0 },
     labels: {
       en: {
         phone: { convertible: "Drive", parked: "Drive", boat: "Sail", out: "Get out" },
@@ -127,14 +131,9 @@ function installClock([key, save]) {
 
 // Runs inside DEV, once per document. Nothing here runs from an application animation callback.
 async function installReads() {
-  const [{ waterY, floorY, sandY, poolAt, poolBedY, SEA_LEVEL, DECKS, FLOORS, POOLS }, { ROAD_EDITION },
-    { BONE }, { controlsFrom, pointAndGo }, { WORLD, TRAFFIC_LANES }, { EDITION },
-    { CONVERTIBLE_BUMPER }, { THEME }, { caveWays, groundsBounds }, { POOL_KIDS }] = await Promise.all([
-    import("/src/game/water.ts"), import("/src/content/road.ts"), import("/src/game/characters/builders.ts"),
-    import("/src/game/rides/drive.ts"), import("/src/game/world/layout.ts"), import("/src/edition.ts"),
-    import("/src/game/rides/shapes.ts"), import("/src/game/world/theme.ts"), import("/src/game/cave/groundsPlan.ts"),
-    import("/src/game/world/pool.ts"),
-  ]);
+  const { waterY, floorY, sandY, poolAt, poolBedY, SEA_LEVEL, DECKS, FLOORS, POOLS, ROAD_EDITION, BONE,
+    controlsFrom, pointAndGo, WORLD, TRAFFIC_LANES, EDITION, CONVERTIBLE_BUMPER, THEME, caveWays, groundsBounds,
+    HOTEL_POOL, POOL_KIDS } = await import("/tests/browser/car-water-observations.mjs");
   const g = window.__ew.game;
   const R = g.rides;
   const v = g.player.root.position.clone();
@@ -394,8 +393,13 @@ async function installReads() {
         yaw: q.mesh.rotation.y, pitch: q.mesh.rotation.x, roll: q.mesh.rotation.z })),
     };
   }
+  const exitPoint = ({ x, z, outward }) => ({ x, z, outward });
   window.__carWaterTest = { identity: { town: ROAD_EDITION.id, edition: EDITION.id, helper: EDITION.helper, lang: document.documentElement.lang,
-    storage: EDITION.storage }, depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids,
+    storage: EDITION.storage }, roadExit: exitPoint(ROAD_EDITION.edge), liveRoadExit: exitPoint(window.__ew.road.state().exit),
+    world: () => ({ decks: DECKS.length, floors: FLOORS.length, pools: POOLS.length, west, ways: ways.map(w => w.id),
+      pier: floorY(-30, -77), hotel: poolAt(HOTEL_POOL.x, HOTEL_POOL.z)?.y ?? null,
+      cenote: THEME.cenote && depth(THEME.cenote.x, THEME.cenote.z), fleet: g.carVisuals.stats(), parkedRides: R.modeCars.size }),
+    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids,
     footprint: id => footprint(pose(R.find(id))).map(p => ({ ...p, depth: depth(p.x, p.z) })),
     boxOverlap: (car, obstacle) => overlap(car, box(obstacle)), footprintDistance,
     support: (x, z) => {
@@ -414,6 +418,7 @@ class Run {
     this.media = [];
     this.errors = [];
     this.chunks = [];
+    this.coastFrames = new Set();
     this.downKeys = new Set();
     this.stageName = "startup";
     page.on("pageerror", e => this.errors.push(e.stack ?? e.message));
@@ -473,8 +478,14 @@ class Run {
     await this.op("wait for Game.init on the frozen clock", () => this.page.waitForFunction(() => !!window.__ew?.game,
       null, { polling: 20, timeout: actionTimeout }));
     await this.evaluate(installReads, undefined, "install independent observations");
-    assert.deepEqual(await this.evaluate(() => window.__carWaterTest.identity), { town, edition, helper, lang: helper, storage },
+    this.observations = await this.evaluate(() => {
+      const { identity, roadExit, liveRoadExit } = window.__carWaterTest;
+      return { identity, roadExit, liveRoadExit };
+    });
+    assert.deepEqual(this.observations.identity, { town, edition, helper, lang: helper, storage },
       "the Vite server's actual road edition, edition id, helper, HTML lang and storage match the invocation");
+    assert.deepEqual(this.observations.roadExit, this.observations.liveRoadExit, "resolved road definition agrees with the live exit");
+    assert.deepEqual(this.observations.liveRoadExit, site.roadExit, "live road exit matches the invoked town");
     let ready;
     do {
       const startup = await this.evaluate(({ ms, captureId }) => {
@@ -503,6 +514,16 @@ class Run {
       window.__ew.store.getState().setHud({ panel: null });
     });
     await this.assertLazy();
+    const world = await this.evaluate(() => window.__carWaterTest.world());
+    this.observations.world = world;
+    assert.ok(world.decks > 0 && world.pier === 0.3, "the observer reads the built pier from the live deck registry");
+    assert.ok(world.fleet.parkedModels > 0 && world.fleet.trafficModels > 0 && world.parkedRides > 0, "the town fleet loaded and rides are registered");
+    if (pc) {
+      assert.ok(world.west && world.floors > 0 && world.pools >= 2, "the observer reads the open grounds and registered floors and pools");
+      assert.deepEqual(world.ways, ["boca", "grieta", "ojo"], "the open cenote's three real entrances");
+      assert.equal(world.hotel, -0.12, "the actual hotel pool's still surface");
+      close(world.cenote, 3.4, 0.001, "the actual cenote depth");
+    }
     this.traffic = null;
     this.lastTraffic = null;
     this.trafficProgress = 0;
@@ -880,6 +901,22 @@ class Run {
     return measured.withEffects - measured.withoutEffects;
   }
 
+  async coastShot(name, s) {
+    if (!coastShots || this.coastFrames.has(name)) return;
+    const { width, height } = this.page.viewportSize();
+    const file = `${width}x${height}-coast-${name}.jpg`;
+    await this.op(`capture ${file}`, () => this.page.screenshot({ path: join(coastShots, file), type: "jpeg", quality: 88,
+      timeout: actionTimeout }), actionTimeout);
+    this.coastFrames.add(name);
+    this.log({ coastFrame: file, serial: s.serial, simulationSeconds: s.time, clockMs: s.now, car: s.car.id, object: s.car.object,
+      x: s.car.x, z: s.car.z, band: s.water?.band, phase: s.water?.phase, riding: s.riding });
+    const frozen = await this.evaluate(() => {
+      const g = window.__ew.game;
+      return { serial: g.presentedWorld.serial, time: g.t, now: performance.now() };
+    });
+    assert.deepEqual(frozen, { serial: s.serial, time: s.time, now: s.now }, "shore capture kept the sampled presentation frozen");
+  }
+
   log(details) {
     console.log(this.label, JSON.stringify({ route: this.route, ...details, trafficProgress: this.trafficProgress,
       peakSubmersion: this.safety?.peak, worstClearance: this.safety?.margin }));
@@ -1077,6 +1114,7 @@ async function mainTrip(run) {
       close(w.lastSpray.y, surf, 0.005, "spray origin at the live surface");
       if (c.effects?.spray > 0 && w.band === "shallow" && firstSpray === undefined) {
         firstSpray = s.now;
+        await run.coastShot("01-shallow", s);
         drawDeltas.spray = await run.drawDelta();
         assert.ok(drawDeltas.spray >= 1 && drawDeltas.spray <= 2, "visible spray contributes at most two effect draws");
       }
@@ -1084,13 +1122,18 @@ async function mainTrip(run) {
     }
     const wake = c.effects?.wake;
     if (w.band === "shallow" && wake?.sides.every(n => n > 0) && wake.fore < -0.75 && !w.bowVertices) {
-      wakeAtBow.push({ segments: w.wakeSegments, length: wake.fore - wake.aft, at: s.now });
+      const trail = { segments: w.wakeSegments, length: wake.fore - wake.aft, at: s.now };
+      wakeAtBow.push(trail);
+      if (s.now > firstSpray && trail.length > wakeAtBow[0].length + 0.12 && trail.segments > wakeAtBow[0].segments) {
+        await run.coastShot("02-trail", s);
+      }
     }
     const bow = c.effects?.bow ?? [];
     if (!firstBow && bow.some(p => p.visible && p.above >= 0.065 && Math.abs(p.along - c.half - 0.12) < 0.09 && Math.abs(p.across) < 0.12
       && p.nosePixels < 70) && bow.some(p => p.visible && p.across > c.wide) && bow.some(p => p.visible && p.across < -c.wide)) {
       assert.equal(w.band, "body-deep", "raised bow appears at body depth");
       firstBow = s.now;
+      await run.coastShot("03-bow", s);
       drawDeltas.bow = await run.drawDelta();
       assert.ok(drawDeltas.bow >= 1 && drawDeltas.bow <= 2, "raised crest and spray share the two-draw budget");
     }
@@ -1124,11 +1167,18 @@ async function mainTrip(run) {
     const s = await run.frame();
     if (!recovering(s)) { assert.fail("release must follow a sampled visible settle and draining doors"); }
     samples.push(s);
-    if (s.water.phase === "float") floats.push(s);
-    if (s.water.phase === "tow") tow ??= s;
+    if (s.water.phase === "float") {
+      floats.push(s);
+      if (s.car.visible && s.car.pitch < -0.055) await run.coastShot("04-float", s);
+    }
+    if (s.water.phase === "tow") {
+      tow ??= s;
+      if (s.car.visible && gap(s.car, trigger.car) >= 1) await run.coastShot("05-tow", s);
+    }
     if (s.water.phase === "settle") settle ??= s;
     if (s.water.phase === "settle" && s.car.effects?.streams.every(n => n >= 1) && s.water.drainLive >= 2) {
       drain = s;
+      await run.coastShot("06-drain", s);
       drawDeltas.drain = await run.drawDelta();
       assert.ok(drawDeltas.drain >= 1 && drawDeltas.drain <= 2, "both falling door streams are in the Points draw");
       break;
@@ -1152,8 +1202,10 @@ async function mainTrip(run) {
   assert.equal(drawDeltas.idle, 0, "zero idle effect draws once the trail and drain expire");
   run.log({ drawDeltas, floatMs: floats.at(-1).now - trigger.now, coastZ: trigger.car.z });
   delete run.inspectFrame;
-  await dryExit(run, false);
+  const exterior = await dryExit(run, false);
+  if (exterior.player.inView && exterior.car.visible) await run.coastShot("07-exit", exterior);
   await reboardInland(run, false);
+  await run.coastShot("08-dry-reboard", run.last);
   await boatTrip(run);
 }
 
@@ -1904,8 +1956,23 @@ const knownSceneRecordings = new Set(`
 for (const name of pc ? ["plaza-night", "room-cantina"] : ["room-poolhall-mh", "arrive", "shutter", "sparkle", "book-page"]) {
   knownSceneRecordings.add(`/sfx/${name}.mp3`);
 }
+// Vite serves the imported CSS's individual font files from node_modules in DEV.
+// Both formats and all subsets come from the CSS references, including latin-ext for Lithuanian.
+async function bundledFontPaths() {
+  const root = new URL("../../", import.meta.url);
+  const entry = await readFile(new URL("src/main.tsx", root), "utf8");
+  const imports = [...entry.matchAll(/^import\s+["'](@fontsource\/[\w-]+\/[\w-]+\.css)["']/gm)];
+  const paths = await Promise.all(imports.map(async ([, specifier]) => {
+    const sheet = `/node_modules/${specifier}`;
+    const css = await readFile(new URL(sheet.slice(1), root), "utf8");
+    return [...css.matchAll(/url\(\s*["']?\.\/(files\/[\w-]+\.woff2?)["']?\s*\)/g)]
+      .map(([, file]) => `${sheet.slice(0, sheet.lastIndexOf("/") + 1)}${file}`);
+  }));
+  return paths.flat();
+}
 const knownVisuals = new Set([
-  "/brand/loading-wordmark.svg", "/brand/eb-garamond-latin-500-normal.woff2", "/brand/eb-garamond-latin-600-normal.woff2",
+  "/brand/loading-wordmark.svg",
+  ...await bundledFontPaths(),
   ...["cafe", "hotel", "market", "party", "passport", "taxi"].map(name => `/title/${name}.webp`),
   ...["sedan", "suv", "van", "truck", "delivery", "taxi", "police", "ambulance", "firetruck", "garbage-truck", "cone", "cone-flat"]
     .map(name => `/models/cars/${name}.glb`),
@@ -1952,6 +2019,7 @@ try {
           return route.continue();
         }));
         await run.start();
+        if (scenario === mainTrip) run.log({ observations: run.observations });
         const environment = await run.evaluate(() => ({ w: innerWidth, h: innerHeight, dpr: devicePixelRatio, touches: navigator.maxTouchPoints }));
         assert.equal(environment.w, viewport.width);
         assert.equal(environment.h, viewport.height);
@@ -1965,7 +2033,7 @@ try {
         console.log("ok", label);
       } catch (error) {
         console.error(label, JSON.stringify({ stage: run?.stageName, route: run?.route, operation: run?.operation,
-          condition: run?.condition, startup: run?.startup, trace: run?.trace, errors: run?.errors,
+          condition: run?.condition, observations: run?.observations, startup: run?.startup, trace: run?.trace, errors: run?.errors,
           chunks: run?.chunks, media: run && [...new Set(run.media)].slice(-24) }));
         console.error(error);
         failures.push(error);
