@@ -1462,7 +1462,7 @@ export class Character {
     // (sitting: the shins' turn sideways and the right one's forward, for crossed ankles)
     let ankles = 0;
     // breathing, at this person's own pace
-    const breath = Math.sin(t * this.breathRate) * idle;
+    const breath = pose?.reduced ? 0 : Math.sin(t * this.breathRate);
     if (walking) {
       const run = this.anim === "run";
       // steps at the pace of the real speed when it is known (4.4 m/s walking, 7.4 running)
@@ -1507,7 +1507,7 @@ export class Character {
       tilt = -this.stance * 0.02 * idle;
     }
     // the shoulders rise and widen a little with each breath
-    lz -= breath * 0.008; rz += breath * 0.008;
+    lz -= breath * 0.008 * idle; rz += breath * 0.008 * idle;
     // what they carry: the coffee held in front, the bag hanging from a straight arm
     if (this.holds === "coffee") { rx = walking ? -0.1 + rx * 0.08 : -0.1; rz = -0.06; rf = -COFFEE_ELBOW + (walking ? Math.sin(this.walkPhase * 2) * 0.03 : 0); }
     if (this.holds === "bag") { lx *= 0.3; lf = -0.05; }

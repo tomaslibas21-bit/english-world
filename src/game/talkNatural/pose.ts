@@ -30,6 +30,8 @@ export interface PoseOptions {
   mouth?: VoiceMouth;
   beforeAdvance?(dt: number): boolean;
   onDetach?(): void;
+  /** How large this character moves: about 0.75 for a reserved one, 1.25 for a lively one. */
+  energy?: number;
 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
@@ -145,6 +147,12 @@ class ConversationPose implements NaturalPoseDriver {
   private listenAt = Infinity;
   private listenAge = Infinity;
   private learnerHip = false;
+  /** Speech carriage: the head rides the voice (stress) and drifts a little while the line plays (talk). */
+  private talk = 0;
+  private stress = 0;
+  private readonly energy: number;
+  private readonly swayA = Math.random() * 6.283;
+  private readonly swayB = Math.random() * 6.283;
 
   private voice: VoiceVisualOwner | null = null;
   private line: TalkLineId | null = null;
@@ -195,6 +203,7 @@ class ConversationPose implements NaturalPoseDriver {
     if (entry.active && this.blend < 1) this.armEntry = entry;
     this.lips = options.mouth ?? new VoiceMouth();
     this.role = options.role ?? "cast";
+    this.energy = options.energy ?? 1;
     this.counterY = options.counterY;
     this.leftThigh = thigh(rig.thighL);
     this.rightThigh = thigh(rig.thighR);
@@ -429,6 +438,9 @@ class ConversationPose implements NaturalPoseDriver {
       this.inclination = clamp(this.inclination + dt * (incline ? 1 / 0.26 : -1 / 0.20), 0, 1);
     }
     this.sampleVoice(dt, paused);
+    const voiced = this.engaged && this.role === "speaking" && this.lips.silence < 0.45;
+    this.talk = clamp(this.talk + dt * (voiced ? 1 / 0.30 : -1 / 0.45), 0, 1);
+    this.stress += (this.lips.mouth - this.stress) * (1 - Math.exp(-dt / 0.11));
   }
 
   private applyGaze(head: Object3D, eye: Object3D) {
@@ -539,18 +551,18 @@ class ConversationPose implements NaturalPoseDriver {
     if (!kind || weight === 0) return;
     const { head, browL, corners, upperL, upperR } = this.rig;
     if (kind === "yes" || kind === "understood") {
-      head.rotation.x += (kind === "yes" ? 0.065 : 0.08) * weight;
-      if (kind === "understood" && corners) corners.position.y += 0.008 * weight;
+      head.rotation.x += (kind === "yes" ? 0.12 : 0.15) * weight;
     } else if (kind === "no") {
       const phase = clamp(c.age / 0.71, 0, 1);
-      head.rotation.y += Math.sin(phase * Math.PI * 2) * 0.085 * weight;
+      head.rotation.y += Math.sin(phase * Math.PI * 2) * 0.15 * weight;
     } else if (kind === "headGreeting") {
-      head.rotation.x += 0.036 * weight;
-      if (corners) corners.position.y += 0.005 * weight;
+      head.rotation.x += 0.085 * weight;
+      if (corners) corners.position.y += 0.01 * weight;
     } else if (kind === "repeat") {
-      head.rotation.z += 0.055 * c.side * weight;
+      // "Hm?": the head tips to one side, one brow up.
+      head.rotation.z += 0.11 * c.side * weight;
       const brow = c.side < 0 ? browL : this.rig.browR ?? browL;
-      brow.position.y += 0.005 * weight;
+      brow.position.y += 0.012 * weight;
     }
     const r = REACH[kind];
     if (!r) return;
@@ -608,17 +620,32 @@ class ConversationPose implements NaturalPoseDriver {
       const learner = this.role === "learner";
       const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * this.weight * (1 - Math.max(cueWeight, responseWeight));
       const hip = learner && this.learnerHip && !supported;
-      if (!supported) this.mixTorso(0.035 * listen, hip ? 0.012 * listenBeat : 0);
+      const e = this.energy;
+      if (!supported) this.mixTorso(0.055 * listen, hip ? 0.014 * listenBeat : 0);
       if (!supported) {
         if (left) r.foreL.rotation.x -= 0.13 * listen;
         if (right) r.foreR.rotation.x -= 0.13 * listen;
       }
-      if (!hip) r.head.rotation.x += (learner ? 0.03 : 0.035) * listenBeat;
+      if (!hip) r.head.rotation.x += (learner ? 0.055 : 0.075 * e) * listenBeat;
+      // An attentive head: a little to one side, the mouth a touch warmer, for as long as the learner has the turn.
+      const attend = listen * (1 - responseWeight);
+      r.head.rotation.z += (this.swayA > 3.1416 ? 0.042 : -0.042) * e * attend;
+      if (r.corners) r.corners.position.y += 0.005 * attend;
       if (this.role === "speaking" && kind !== "yes" && kind !== "no") {
         const phrase = oneShot(this.phraseAge, 0.09, 0.02, 0.28) * this.weight * (1 - responseWeight);
-        r.head.rotation.x += 0.045 * phrase * (1 - cueWeight);
-        r.browL.position.y += 0.008 * phrase;
-        if (r.browR) r.browR.position.y += 0.008 * phrase;
+        r.head.rotation.x += 0.06 * e * phrase * (1 - cueWeight);
+        r.browL.position.y += 0.009 * phrase;
+        if (r.browR) r.browR.position.y += 0.009 * phrase;
+      }
+      const talk = ease(this.talk) * this.weight * (1 - responseWeight) * (1 - 0.6 * cueWeight) * e;
+      if (talk > 0) {
+        // The head rides the voice: down a little on a stressed syllable, and it never sits dead still mid-sentence.
+        const t = this.time, stress = this.stress;
+        r.head.rotation.x += (0.07 * stress - 0.012) * talk;
+        r.head.rotation.y += Math.sin(t * 1.9 + this.swayA) * 0.032 * talk;
+        r.head.rotation.z += Math.sin(t * 1.3 + this.swayB) * 0.024 * talk;
+        r.browL.position.y += 0.006 * stress * talk;
+        if (r.browR) r.browR.position.y += 0.006 * stress * talk;
       }
       const fading = this.fading.kind;
       if (fading && this.fadeAge < 0.16) {
@@ -627,6 +654,10 @@ class ConversationPose implements NaturalPoseDriver {
       }
       this.applyCue(this.cue, cueWeight * addResponse, seated, left, right, supported);
       this.applyCue(this.response, responseWeight, seated, left, right, supported);
+      // The smile outlasts the nod.
+      if (response === "understood" && r.corners) {
+        r.corners.position.y += 0.012 * oneShot(this.response.age - 0.1, 0.2, 0.75, 0.5) * this.weight;
+      }
       if (import.meta.env.DEV) this.values.reactionWeight = responseWeight;
       const gazing = this.applyGaze(r.head, r.eye);
       if (incline) {

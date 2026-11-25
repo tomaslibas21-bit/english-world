@@ -1,8 +1,8 @@
 import type { AnchorKind, ClassifiedCue, TalkPersonality } from "../game/talkNatural/contract";
 
-const reserved: TalkPersonality = { armChance: 0.45, farewell: "yes" };
-const sociable: TalkPersonality = { armChance: 0.70, farewell: "wave" };
-const steady: TalkPersonality = { armChance: 0.55, farewell: "heart" };
+const reserved: TalkPersonality = { armChance: 0.45, farewell: "yes", energy: 0.75 };
+const sociable: TalkPersonality = { armChance: 0.70, farewell: "wave", energy: 1.25 };
+const steady: TalkPersonality = { armChance: 0.55, farewell: "heart", energy: 1 };
 const PERSONALITIES: Record<string, TalkPersonality> = {
   diaz: reserved, walter: reserved, priya: reserved, aaron: reserved,
   vinnie: sociable, dan: sociable, earl: sociable, mia: sociable,

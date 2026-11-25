@@ -121,7 +121,7 @@ export class NaturalSession {
     const ch = peer.actor.ch;
     if (ch.talkPose && !ch.talkPose.releasing || !ch.root.parent || !ch.root.visible) return;
     const counterY = counter ? talkCounterHeight(this.anchors, ch.root.getWorldPosition(this.world)) : undefined;
-    peer.pose = bindConversationPose(ch, { audio: this.options.audio, role, counterY });
+    peer.pose = bindConversationPose(ch, { audio: this.options.audio, role, counterY, energy: role === "learner" ? 1 : peer.personality.energy });
   }
 
   private peer(id: string, ch?: GameCharacter) {

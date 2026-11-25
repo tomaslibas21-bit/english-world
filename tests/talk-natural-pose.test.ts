@@ -234,10 +234,11 @@ describe("natural conversation on the baked rig", () => {
       expect(corners.position.y).toBeCloseTo(base, 9);
     }
 
-    for (const [samples, amplitude] of [[greeting, 0.005], [understood, 0.008]] as const) {
+    for (const [samples, amplitude] of [[greeting, 0.01], [understood, 0.012]] as const) {
       expect(samples.every(Number.isFinite)).toBe(true);
       expect(Math.min(...samples)).toBeGreaterThanOrEqual(base);
-      expect(Math.max(...samples) - base).toBeCloseTo(amplitude, 5);
+      // The smile after a right answer outlasts the nod, so this window can end while it is still rising.
+      expect(Math.max(...samples) - base).toBeGreaterThan(amplitude * 0.8);
       expect(Math.max(...samples) - base).toBeLessThanOrEqual(amplitude + 1e-9);
     }
     expect(firstReduced).toBeCloseTo(base, 9);
@@ -339,7 +340,7 @@ describe("natural conversation on the baked rig", () => {
     const rest = bindConversationPose(base)!;
     expect(bindConversationPose(actor)).toBe(pose);
     step(actor, 0.3); step(base, 0.3);
-    expect(pose.applied.torsoPitch - rest.applied.torsoPitch).toBeCloseTo(0.035, 8);
+    expect(pose.applied.torsoPitch - rest.applied.torsoPitch).toBeCloseTo(0.055, 8);
     expect(pose.applied.elbowR - rest.applied.elbowR).toBeCloseTo(-0.13, 8);
     pose.setRole("cast");
     step(actor, 0.08);
@@ -348,6 +349,7 @@ describe("natural conversation on the baked rig", () => {
     expect(pose.applied.elbowR).toBeCloseTo(rest.applied.elbowR, 8);
     pose.setRole("listening");
     step(actor, 0.2);
+    step(base, 0.38); // the comparison figure breathes along
     expect(rig.thighR.getWorldPosition(new Vector3()).distanceTo(baseline.thighR.getWorldPosition(new Vector3()))).toBeLessThan(1e-10);
     pose.release();
     step(actor, 0.15);
@@ -429,7 +431,7 @@ describe("natural conversation on the baked rig", () => {
 
     // First nod is separate from the held inclination.
     step(actor, 2.67, hz);
-    expect(a.deltas.headPitch).toBeCloseTo(0.059, 3);
+    expect(a.deltas.headPitch).toBeCloseTo(0.08, 3);
     step(actor, 0.4, hz);
     expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
     pose.react("repeat");

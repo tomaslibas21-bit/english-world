@@ -141,7 +141,7 @@ export function presentExchange(turn: ActingTurn, rig: NaturalRig, mouth: VoiceM
     }
   }
 
-  pose = bindConversationPose(actor, { audio, counterY, rig, mouth, beforeAdvance, onDetach: () => {
+  pose = bindConversationPose(actor, { audio, counterY, rig, mouth, beforeAdvance, energy: personality.energy, onDetach: () => {
     close();
     if (import.meta.env.DEV) uninspect?.();
   } });

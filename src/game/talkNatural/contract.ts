@@ -14,6 +14,7 @@ export interface ClassifiedCue {
 export interface TalkPersonality {
   armChance: number;
   farewell: "yes" | "heart" | "wave";
+  energy: number;
 }
 
 /** Pass the same object to the pose and to audio.play. Create a fresh object for every playback, including replays. */
