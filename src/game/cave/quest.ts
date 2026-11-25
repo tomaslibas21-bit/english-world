@@ -324,7 +324,7 @@ export class CaveQuest {
   /** The stone says it again. */
   say() {
     const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
-    if (!g || !opening) return;
+    if (!g || !opening || this.attempt?.running) return;
     clearTimeout(opening.timer);
     const playback = this.playGlyph(g.text, g.solved);
     if (!g.solved) return;
@@ -336,7 +336,6 @@ export class CaveQuest {
   }
 
   private playGlyph(text: string, optional = false) {
-    this.stopMic();
     return audio.play(this.voice, 1, text, { male: this.voice.endsWith("_m"), optional });
   }
 
@@ -355,8 +354,8 @@ export class CaveQuest {
     audio.sfx("error");
     this.patch({ wrong: [...g.wrong, i], shown: true });
     clearTimeout(opening.timer);
-    opening.timer = setTimeout(() => {
-      if (this.glyphOpening === opening && !useStore.getState().hud.glyph?.solved) void this.playGlyph(g.text);
+    if (!this.attempt?.running) opening.timer = setTimeout(() => {
+      if (this.glyphOpening === opening && !useStore.getState().hud.glyph?.solved) this.say();
     }, 500);
   }
   /** Saying it back: the microphone listens for the stone's phrase. */
@@ -364,9 +363,11 @@ export class CaveQuest {
     const g = useStore.getState().hud.glyph;
     if (!g || g.solved || !speechSupported()) return;
     if (this.attempt?.running) { this.attempt.finish(); return; }
+    clearTimeout(this.glyphOpening?.timer);
     audio.stop();
     this.attempt?.dispose();
     const attempt = createSpeechAttempt({
+      source: "cave glyph",
       evaluate: (t) => (P.saidBack(t, g.text) ? "complete" : "open"),
       phrases: [g.text],
       preferLocal: useStore.getState().settings.onDevice,
@@ -384,7 +385,6 @@ export class CaveQuest {
     this.patch({ mic: "listening", heard: "" });
     attempt.start();
   }
-  private stopMic() { if (this.attempt?.running) this.attempt.stop(); }
   /** The card is put away (Esc, the cross, a tap beside it). */
   close() {
     const opening = this.glyphOpening;

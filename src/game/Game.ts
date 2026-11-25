@@ -359,7 +359,8 @@ export class Game implements GameApi {
   get pool() { return this.modes.get("pool") as NonNullable<ReturnType<typeof createPoolMode>> | undefined; }
   // The surf overlay and browser diagnostics use the original controller.
   get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
-
+  /** The surf event is held for the end card's lesson button. */
+  private pendingSurf: { data: unknown } | null = null;
   private brake = false;
   /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
    *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
@@ -1909,8 +1910,7 @@ export class Game implements GameApi {
     this.requestConversation(sit.id, actor);
   }
 
-  /** Situation picker: go straight into a conversation (no walking). The player appears in front of
-   *  the NPC in the right place; phone and video calls start at once. */
+  /** Situation picker: take the player to the scene card, in front of the NPC or in a call. */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
@@ -1920,7 +1920,12 @@ export class Game implements GameApi {
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
-      if (isCall(sit)) { this.call(sitId); return; }
+      if (isCall(sit)) {
+        // A link can open a call on the first visit before the flyover has landed.
+        if (this.flight) this.enterZone("airport", ARRIVAL, true);
+        this.call(sitId);
+        return;
+      }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
@@ -2501,7 +2506,9 @@ export class Game implements GameApi {
     if (name === "alux-pass" && data?.gate) this.cave?.pass(data.gate);
     // (the grotto's great tree has said what it had to say: the stones speak again)
     if (name === "tree-heard") this.cave?.treeHeard();
-    this.modes.event(name, data);
+    // "¿Probamos una ola?": remember the level for the end card's surf lesson button.
+    if (name === "surf" && this.surf) this.pendingSurf = { data };
+    else this.modes.event(name, data);
     const st = useStore.getState();
     if (name === "give" && data?.item) {
       // known props, else the situation's own item (a jacket, a medicine…) in the accusative
@@ -2532,6 +2539,7 @@ export class Game implements GameApi {
       if (kind) this.keepsake.show(this.player.rightHand, kind);
     }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
+    this.pendingSurf = null;
     this.modes.launchQueued();
     // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
     if (completed && !sit.bonus) this.advanceObjective(sit);
@@ -2548,6 +2556,7 @@ export class Game implements GameApi {
   modeOffer(sitId: string) { return this.modes.offer(sitId); }
   modeFromConversation(id: string) {
     if (!this.modes.queue(id)) return;
+    if (id === "surf" && this.pendingSurf) this.modes.event(id, this.pendingSurf.data);
     this.pendingRide = null;
     if (this.session?.active) this.session.close(); else this.modes.launchQueued();
   }
@@ -2630,6 +2639,8 @@ export class Game implements GameApi {
   private cancelRide() {
     this.pendingRide = null;
     this.modes.cancelQueued();
+    // (and a surf lesson the conversation asked for: another conversation was picked instead)
+    this.pendingSurf = null;
     if (this.rideTimer === undefined) return;
     clearTimeout(this.rideTimer);
     this.rideTimer = undefined;

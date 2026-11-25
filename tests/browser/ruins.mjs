@@ -91,6 +91,7 @@ try {
       for (let i = 0; i < 500 && !started; i++) { await step(15); await real(15); started = await ev(() => window.__ew.store.getState().conv.active); }
       const conv = await ev(() => { const s = window.__ew.store.getState().conv, g = window.__ew.game, p = g.player.root.position; return { sit: s.sitId, npc: s.npcId, at: [+p.x.toFixed(1), +p.z.toFixed(1)], mode: g.rig.mode }; });
       check(`${c.npc}: arriving starts their chat` + (k ? "" : ", inside the walls (in through the gateway)"), started && conv.sit === c.sit && conv.npc === c.npc && conv.at[0] < GATE.x - 0.8, conv);
+      await page.locator(".scene-start").click();
       await turn();
       if (k === 0) {
         const cards = await ev(() => window.__ew.store.getState().conv.suggest.map((s) => s.lt));

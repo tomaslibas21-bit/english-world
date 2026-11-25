@@ -97,6 +97,7 @@ try {
   for (let i = 0; i < 300 && !started; i++) { await step(15); await real(20); started = await ev(() => window.__ew.store.getState().conv.active); }
   const conv = await ev(() => { const s = window.__ew.store.getState().conv, p = window.__ew.game.player.root.position; return { sit: s.sitId, npc: s.npcId, at: [+p.x.toFixed(1), +p.z.toFixed(1)] }; });
   check("arriving starts x05-tienda, the learner across the counter from him", started && conv.sit === "x05-tienda" && conv.npc === "tienda" && Math.abs(conv.at[0] + 3) < 0.3 && Math.abs(conv.at[1] + 1.7) < 0.3, conv);
+  await page.locator(".scene-start").click();
   const turn = async () => { for (let i = 0; i < 400; i++) { await step(12); await real(30); const s = await ev(() => { const c = window.__ew.store.getState().conv; return { phase: c.phase, active: c.active }; }); if (!s.active || s.phase === "you" || s.phase === "ended") return s; } return null; };
   const said = () => ev(() => window.__ew.store.getState().conv.transcript.filter((l) => l.who === "npc").map((l) => l.sentence.units.map((u) => u.en).join(" ")));
   await turn();
