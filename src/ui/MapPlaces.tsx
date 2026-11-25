@@ -8,6 +8,7 @@ import type { preferredCaveEntry } from "../game/cave/groundsPlan";
 import type { GameApi } from "../game/gameRef";
 import type { AIRPORT_EXIT, OUTDOOR_NPCS } from "../game/world/layout";
 import type { Door } from "../game/world/town";
+import { GYM_ENTRY } from "../content/gym-entry";
 import { useStore } from "../state/store";
 import { HL, L, TL } from "./i18n";
 import type { Icon, InlineIcon } from "./icons";
@@ -298,6 +299,7 @@ export default function MapPlaces({ close, town, townName, data, groundBounds, d
               <span className="place-ico"><Icon name={locIcon(chosen.id)} size={22} /></span>{chosen.name}
             </h3>
             <div className="map-place-learner" lang={HL}>{placeLt(chosen.id)}</div>
+            {chosen.id === GYM_ENTRY.location && town?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
             <div className="sit-list">
               {chosen.id === caveZone && !light && zone !== caveZone && (
                 <button className="btn soft small" onClick={() => { close(); town?.autoWalkToObjective("cave"); }}>

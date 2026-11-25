@@ -28,7 +28,7 @@ export const STRINGS: Record<string, string> = {
   "Pasakyti garsiai": "Say it aloud",
   "Nebeklausyti": "Stop listening",
   "Puikiai pasakyta! +1": "Well said! +1",
-  "Beveik! Galite bandyti dar": "Almost! You can try again",
+  "Beveik! Galite pabandyti dar kartą.": "Almost! You can try again",
   "Pasakyta garsiai": "Said aloud",
   "Pasakykite garsiai – gausite +1": "Say it aloud for +1",
   "Rasta: {n} iš {of}": "Found: {n} of {of}",

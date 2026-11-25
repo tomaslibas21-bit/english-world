@@ -6,6 +6,8 @@ import type { Door } from "./world/town";
 import type { Do, SurfArrow } from "./surf/logic";
 import { watchSituations } from "./prefetch";
 
+export type WalkPlace = "pool-hall" | "gym";
+
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
 export interface GameApi {
@@ -31,6 +33,7 @@ export interface GameApi {
   autoWalkToObjective(mode?: "objective" | "cave"): void;
   objectiveTarget?(mode: "objective", townMap: true): { x: number; z: number } | null;
   guideToPoolHall?(): void;
+  guideToPlace?(place: WalkPlace): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
   /** A jump (Space, the phone's button); again in the air: a flip; a third time: the high jump, twice head over heels. */

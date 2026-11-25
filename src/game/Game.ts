@@ -60,6 +60,9 @@ import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { createPoolMode } from "./pool/mode";
+import { GYM_ENTRY } from "../content/gym-entry";
+import { createGymMode } from "./gym/entry";
+import { GYM_MAT } from "./world/gymMat";
 import { createLoteriaMode, type LoteriaMode } from "./loteria/mode";
 import { loteriaDusk } from "./loteria/scene";
 import { LOTERIA_APPROACH } from "./loteria/location";
@@ -100,11 +103,11 @@ import { givenItem } from "./given";
 import { L, TL } from "../ui/i18n";
 import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
-import type { GameApi } from "./gameRef";
+import type { GameApi, WalkPlace } from "./gameRef";
 import { THEME } from "./world/theme";
 import { caveLure } from "./cave";
 import { CAVE_ZONE, caveWays, groundsBounds, preferredCaveEntry } from "./cave/groundsPlan";
-import { emptyCave, gateState, GATES, SPAWNS, TREE_SIT as CAVE_TREE, TREES } from "./cave/plan";
+import { emptyCave, gateState, GATES, SPAWNS, TREE_SIT as CAVE_TREE, TREES, type CaveSave } from "./cave/plan";
 import type { caveGateGrid } from "./cave/routing";
 import type { CaveQuest } from "./cave/quest";
 import type { CaveView } from "./cave/Cave";
@@ -116,11 +119,12 @@ const CAVE_TREE_AT = TREES[1];
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
 
-type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: "pool-hall"; directions?: Destination | null };
+type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: WalkPlace; directions?: Destination | null };
 type GuideTarget = WalkTarget & { x: number; z: number; person?: { x: number; z: number } };
 type GuideMode = "objective" | "cave";
 
 interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3; alux?: { next: number; hop: number } }
+const isGymTrainer = (actor: NpcActor) => actor.id === GYM_ENTRY.npc;
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior; cave?: { view: CaveView; syncGates: ReturnType<typeof caveGateGrid> } }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -216,6 +220,7 @@ export class Game implements GameApi {
   /** Trial world styles (Settings → "Pasaulio stilius"); null for the original "blocks" look. */
   private fx: StyleFx | null = null;
   private keys = new Set<string>();
+  private gymHeldKeys = new Set<string>();
   private joy = { x: 0, y: 0 };
   private waterNeutral = false;
   private waterActionHeld = false;
@@ -692,7 +697,7 @@ export class Game implements GameApi {
       returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
     });
     this.modes.register(this.road);
-    this.barista = createBaristaMode({
+    const indoorStageHost: ModeHost = {
       ...host,
       fade: (swap) => {
         if (this.transitioning || this.disposed) return false;
@@ -701,7 +706,8 @@ export class Game implements GameApi {
         this.frameFade.start(swap);
         return true;
       },
-    }, {
+    };
+    this.barista = createBaristaMode(indoorStageHost, {
       room: () => this.zone.id === BARISTA_CONVERSATION.location ? this.zone.group : null,
       mia: () => this.npcs.find((actor) => actor.id === BARISTA_CONVERSATION.npc)?.ch,
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
@@ -745,6 +751,14 @@ export class Game implements GameApi {
       actors: () => this.npcs, colliders: () => this.zone.colliders, ambient: this.ambient,
       spawnNpc: (spot) => this.spawnNpc(spot), disposeNpc: (actor) => this.disposeNpc(actor),
     });
+    this.modes.register(createGymMode(indoorStageHost, {
+      room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
+      trainer: () => this.npcs.find(isGymTrainer)?.ch,
+      heading: () => this.heading,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      savePlace: () => this.savePlace(),
+      viewport: () => ({ width: this.screenW, height: this.screenH }),
+    }));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -1404,10 +1418,17 @@ export class Game implements GameApi {
     if (this.flight) { if (!e.metaKey && !e.ctrlKey && !e.altKey) { this.endFlight(); e.preventDefault(); } return; }
     const st = useStore.getState();
     const k = e.key.toLowerCase();
+    if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
     // (at a glyph stone: its card has the keys; Esc puts it away)
     if (st.hud.glyph) { if (k === "escape") this.cave?.close(); return; }
+    if (this.modes.owns("gym")) {
+      this.gymHeldKeys.add(k);
+      const handled = (!this.transitioning || k === "escape") && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys });
+      if (handled || k.startsWith("arrow")) e.preventDefault();
+      return;
+    }
     if (this.modes.modal) {
       if (k === "escape") this.modes.exit();
       return;
@@ -1450,9 +1471,10 @@ export class Game implements GameApi {
     this.keys.delete(key);
     if (key === "e" || key === "enter") this.waterActionHeld = false;
     this.releaseWaterInput();
+    this.gymHeldKeys.delete(key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.waterActionHeld = false; this.releaseWaterInput(); this.billiards.release(" ", true); };
+  private onBlur = () => { this.keys.clear(); this.gymHeldKeys.clear(); this.waterActionHeld = false; this.releaseWaterInput(); this.billiards.release(" ", true); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -2150,8 +2172,9 @@ export class Game implements GameApi {
     this.enterZone(CAVE_ZONE, { x: sp.x, z: sp.z, rot: sp.rot }, false, "in");
   }
 
-  exitInterior(exitId?: string, onEntered?: () => void) {
+  exitInterior(exitId?: string, onward = this.autoTarget?.onward) {
     if (!this.zone.interior) return;
+    const onEntered = onward ? () => this.guideToPlace(onward) : undefined;
     const loc = this.zone.id;
     // (the grotto is left where one went in: its water comes up at the cave's mouth, its cleft at La Grieta; gone in
     // by the sinkhole, the water brings one up beside it, in the cenote)
@@ -2722,18 +2745,25 @@ export class Game implements GameApi {
     return pickerSituations();
   }
 
-  guideToPoolHall() {
-    if (this.rides.riding || this.zone.id === BILLIARDS_PLACE) return;
-    const door = this.town.doors.find((d) => d.loc === BILLIARDS_PLACE);
+  guideToPoolHall() { this.guideToPlace(BILLIARDS_PLACE); }
+
+  guideToPlace(place: WalkPlace) {
+    if (this.rides.riding || this.modes.active) return;
+    if (this.zone.id === place) {
+      if (place === GYM_ENTRY.location) this.walkTo(GYM_MAT.x, GYM_MAT.z, { kind: "point" });
+      return;
+    }
+    const door = this.town.doors.find((d) => d.loc === place);
     if (!door) return;
     if (!this.zone.interior) {
       this.walkTo(door.outX, door.outZ, { kind: "point" });
     } else if (this.wild) {
-      const exit = this.objectiveTarget("objective");
-      if (exit?.kind === "exit") this.walkTo(exit.x, exit.z, { kind: "exit", id: exit.id, onward: BILLIARDS_PLACE });
+      const saved = useStore.getState().progress.cave ?? emptyCave();
+      const exit = this.caveExitTarget(saved);
+      this.walkTo(exit.x, exit.z, exit.kind === "exit" ? { ...exit, onward: place } : { kind: "point" });
     } else {
       const { x, z } = this.zone.interior.exit;
-      this.walkTo(x, z - 0.6, { kind: "exit", onward: BILLIARDS_PLACE });
+      this.walkTo(x, z - 0.6, { kind: "exit", onward: place });
     }
   }
 
@@ -2810,7 +2840,14 @@ export class Game implements GameApi {
     }
   }
 
-  /** The destination of the current leg, or the saved task's exterior target for the town map. */
+  private caveExitTarget(saved: CaveSave): GuideTarget {
+    const exits = this.wild!.exits;
+    const exit = exits.find((e) => e.id === "grieta") ?? exits[0];
+    return this.caveCode?.caveGateTarget(this.player.root.position, exit, saved, this.cave?.seeAll) ?? { ...exit, kind: "exit" };
+  }
+
+  /** The destination of the current leg, or the saved task's exterior target for the town map. Cave prerequisites use
+   *  the same route for the arrow, beacon and walk. */
   objectiveTarget(mode: GuideMode = "objective", townMap = false): GuideTarget | null {
     const task = mode === "objective" ? this.phoneTask() : null;
     const sit = this.currentObjective();
@@ -2825,11 +2862,7 @@ export class Game implements GameApi {
       return next && (this.caveCode?.caveGateTarget(p, next, saved, all) ?? next);
     }
     if (mode === "objective" && !task && (!sit || !loc || isCall(sit))) return null;
-    if (saved && !stayInCave) {
-      const exits = this.wild!.exits;
-      const exit = exits.find((e) => e.id === "grieta") ?? exits[0];
-      return this.caveCode?.caveGateTarget(p, exit, saved, all) ?? { ...exit, kind: "exit" };
-    }
+    if (saved && !stayInCave) return this.caveExitTarget(saved);
     if (stayInCave && !interior) {
       const way = preferredCaveEntry();
       if (!way) return null;
@@ -3407,6 +3440,7 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    if (this.modes.owns("gym")) for (const key of this.keys) this.gymHeldKeys.add(key);
     this.keepsake.clear();
     this.endRide();
     this.stopAutoWalk();
@@ -3894,7 +3928,7 @@ export class Game implements GameApi {
     if (!t) return;
     if (t.kind === "cave-entry" && t.id) { this.enterCave(t.id); return; }
     if (t.kind === "exit") {
-      this.exitInterior(t.id, t.onward ? () => this.guideToPoolHall() : undefined);
+      this.exitInterior(t.id, t.onward);
       return;
     }
     if (t.kind === "door" && t.id) {

@@ -15,6 +15,8 @@ const feedback = {
   error: "Klausymas nepavyko",
 };
 
+type Feedback = { tip: string; miss: string };
+
 function firstTip(game: string) {
   if (seenTips.has(game)) return false;
   seenTips.add(game);
@@ -26,7 +28,7 @@ function firstTip(game: string) {
   return true;
 }
 
-function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
+function SayItButton({ game, cue, feedback: custom }: { game: string; cue: SayItCue; feedback?: Feedback }) {
   const status = useSyncExternalStore(cue.subscribe, cue.getSnapshot, cue.getSnapshot);
   const [tip, setTip] = useState(false);
   useEffect(() => {
@@ -38,7 +40,8 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
   const listening = status === "listening";
   const awarded = cue.awarded;
   const credited = awarded && status !== "hit";
-  const message = status === "idle" ? (tip ? L(words.tip) : null) : listening ? null : L(feedback[status]);
+  const message = status === "idle" ? (tip ? custom?.tip ?? L(words.tip) : null) : listening ? null
+    : status === "miss" ? custom?.miss ?? L(words.miss) : L(feedback[status]);
   return <span className="say-it" data-status={status}>
     <button type="button" className="say-it-mic" aria-label={listening ? L(words.micStop) : L(words.mic)}
       aria-pressed={listening} aria-disabled={awarded} onClick={() => { setTip(false); cue.toggle(); }}>
@@ -50,6 +53,6 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
   </span>;
 }
 
-export function SayIt({ game, cue }: { game: string; cue?: SayItCue | null }) {
-  return speechSupported() && cue ? <SayItButton game={game} cue={cue} /> : null;
+export function SayIt({ game, cue, feedback }: { game: string; cue?: SayItCue | null; feedback?: Feedback }) {
+  return speechSupported() && cue ? <SayItButton game={game} cue={cue} feedback={feedback} /> : null;
 }

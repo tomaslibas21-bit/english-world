@@ -39,6 +39,7 @@ import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
+import { GYM_ENTRY } from "../content/gym-entry";
 import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
@@ -247,8 +248,11 @@ function Scenarios({ close }: { close: () => void }) {
             <div className="scn-grid">{list.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}</div>
           </div>
         ))}
-        <div className="scn-foot">
+        <div className="scn-foot" style={{ flexWrap: "wrap", gap: 8 }}>
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> {L("Vaikščioti po miestą")}</button>
+          {!light && <button type="button" className="btn soft small" style={{ minHeight: 44 }} onClick={() => { close(); game?.guideToPlace?.(GYM_ENTRY.location); }}>
+            <Icon name="walk" size={19} /> {GYM_ENTRY.listAction}
+          </button>}
         </div>
       </div>
     </div>

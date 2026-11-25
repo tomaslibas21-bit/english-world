@@ -23,6 +23,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { GYM_LINES } from "@/content/gym-lines";
 import { payHint, pick, pickFrom } from "../hint-pick";
 import { yesAgreeGroups } from "../global";
 
@@ -162,6 +163,7 @@ export const gym: SituationDef = {
     "en calor": { reason: "lexical_expression", split: "en → in + calor → heat is false; = warm (after exercise).", minimal: "Two words." },
     "con calma": { reason: "lexical_expression", split: "con → with + calma → calm; the manner phrase = nice and easy.", minimal: "Two words." },
     "mucho gusto": { reason: "lexical_expression", split: "mucho → much + gusto → pleasure; the greeting = nice to meet you.", minimal: "Two words." },
+    "saltos de tijera": { reason: "lexical_expression", split: "saltos → jumps + de → of + tijera → scissors. Together they name jumping jacks.", minimal: "The three words name the exercise. Haz stays separate." },
   },
 
   grammar: {
@@ -1163,6 +1165,8 @@ export const gym: SituationDef = {
       t("¡Cuídate!", "Take care!", "Take care!"),
       t("¡Hasta luego! | ¡Que | te | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! Take care!"),
     ],
+    // The learner table translates this copy in place.
+    ...structuredClone(GYM_LINES),
   },
 
   domains: {
