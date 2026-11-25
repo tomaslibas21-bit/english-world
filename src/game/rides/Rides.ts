@@ -10,7 +10,7 @@ import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, colourMerge, rand } from "../world/util";
 import { PARKED_CARS, WORLD } from "../world/layout";
 import { carHasRoof, carLedges, carModelEntry, carTop, spinCarWheels, type CarModelName, type CarPlacement } from "../world/carModels";
-import { TOE, type Piece } from "../ledges";
+import { Ledges, TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { countPlay } from "../../state/playStats";
@@ -29,6 +29,7 @@ export interface RideHost {
   cam: THREE.PerspectiveCamera;
   /** The town's ground plan and its way-finding. */
   colliders: Colliders;
+  ledges?: Ledges;
   nav: NavGrid;
   ambient: Ambient;
   player: GameCharacter;
@@ -91,7 +92,7 @@ export interface Ride {
   townBoat?: TownBoat;
   crashParking?: { visual(): THREE.Mesh; solo(): boolean; take(): void; untake(): void };
   home: { x: number; z: number; rot: number };
-  beach?: { y: number; roll: number; circles: Colliders["circles"]; launch: Ride["home"] };
+  beach?: { y: number; roll: number; circles: Colliders["circles"]; pieces: Piece[]; launch: Ride["home"] };
   mesh: THREE.Object3D;
   m: Motion;
   owners: Owner[];
@@ -431,9 +432,13 @@ export class Rides {
       awayT: 0, thanked: true, phase, sus: this.springs(), tint, townBoat };
     if (townBoat.beached) {
       // Register these after the town's static meshes and navigation grid have been built.
-      const circles = [-2, 0, 2].map((k) => ({ x: x + Math.sin(rot) * k, z: z + Math.cos(rot) * k, r: 0.95 }));
+      const hull = new Colliders();
+      for (const k of [-2, 0, 2]) hull.addCircle(x + Math.sin(rot) * k, z + Math.cos(rot) * k, 0.95);
+      const { circles } = hull, ledges = this.host.ledges;
+      const pieces = ledges ? Ledges.build(mesh, hull, { maxTop: 1, sampleCell: 0.25 }).pieces : [];
+      if (ledges) for (const piece of pieces) ledges.add(piece);
       this.host.colliders.circles.push(...circles);
-      ride.beach = { y: mesh.position.y, roll: mesh.rotation.z, circles,
+      ride.beach = { y: mesh.position.y, roll: mesh.rotation.z, circles, pieces,
         launch: { x: x - Math.sin(rot) * 1.2, z: SHORE.edge - half, rot: 0 } };
     }
     this.list.push(ride);
@@ -441,6 +446,8 @@ export class Rides {
 
   private removeSandCollider(ride: Ride) {
     if (!ride.beach) return;
+    this.host.ledges?.remove(ride.beach.pieces);
+    ride.beach.pieces.length = 0;
     const { circles } = this.host.colliders;
     for (const circle of ride.beach.circles) {
       const index = circles.indexOf(circle);

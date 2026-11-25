@@ -4,7 +4,7 @@ import { TownStreet } from "./street/world";
 import type { StreetSnapshot } from "./street/schedule";
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
-import { buildTown, type Town, type Door } from "./world/town";
+import { buildTown, buildTownLedges, type Town, type Door } from "./world/town";
 import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
@@ -15,7 +15,7 @@ import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig, FOLLOW } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
-import { Ledges, LAND } from "./ledges";
+import { LAND, type Ledges } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
@@ -477,12 +477,9 @@ export class Game implements GameApi {
     this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
     this.fader = new PropFader(this.town.group, moves, 1.3, THEME.fade);
     // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
-    // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
+    // time once the town is up. The camera field keeps structures such as the gazebo solid.
     // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
-    this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
-      beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
-    }, (next) => setTimeout(next, 16));
+    this.ledges = buildTownLedges(this.town, this.field, (next) => setTimeout(next, 16));
     // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
     this.ledges.dynamic = (x, z) => {
       const traffic = this.ambient.carPieces(x, z);
@@ -532,7 +529,7 @@ export class Game implements GameApi {
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
     const game = this;
     this.rides = new Rides({
-      cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, quality: st.settings.quality,
+      cam: this.rig.cam, colliders: this.town.colliders, ledges: this.ledges, nav, ambient: this.ambient, quality: st.settings.quality,
       get player() { return game.player; },
       people: () => (this.zone.interior ? [] : this.npcs.filter((n) => n.ch.root.visible).map((n) => n.home)),
       say: (line, voice, female, ch) => {
@@ -1572,7 +1569,7 @@ export class Game implements GameApi {
   }
 
   /** Up on something higher than a bench (a car, a low wall): nobody is talked to and no door gone through from there. */
-  private get aloft() { return !this.zone.interior && this.hop.ground > LAND + 0.1; }
+  private get aloft() { return !this.wild && this.hop.ground > LAND + 0.1; }
 
   /** Outdoors, walking: the passers-by, their dogs, the cars and the town's people (not the player) that would stand
    *  under about 8 px tall in the picture are left out of it (layer 0 off; back on as they come nearer, and always in a
@@ -3480,7 +3477,9 @@ export class Game implements GameApi {
     // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
     // count again), a run with Shift or the stick at its edge; indoors always a walk; slower the deeper one wades
     // (`indoor`: not the town: a room or a place like the grotto; `room`: a room, where one only walks)
-    const indoor = !!this.zone.interior, room = this.room, wild = this.wild;
+    const interior = this.zone.interior;
+    const indoor = !!interior, wild = interior?.wild, room = indoor && !wild;
+    const ledges = interior ? interior.ledges : this.ledges;
     if (!room && steer.dir !== null && this.wading.depth < 0.3 && !this.swimming && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
       if (this.jogDir === null || Math.abs(angleDiff(steer.dir, this.jogDir)) > 0.55) { this.jogDir = steer.dir; this.jogT = 0; }
       // (a long curve is still one way: the direction counted from follows slowly)
@@ -3557,11 +3556,10 @@ export class Game implements GameApi {
       p.x += sea ? bayHold(p.x, bayHold(p.x, this.vel.x * dt, BAY.x0, -1), BAY.x1, 1) : this.vel.x * dt;
       p.z += sea ? bayHold(p.z, this.vel.z * dt, BAY.z0, -1) : this.vel.z * dt;
       if (!indoor && !blocked && !this.swimming && !this.hop.air && this.hop.y < 0.5) this.ambient.checkBump(before, p, dt);
-      // outdoors the player's own ground plan: what is low enough to jump onto has its height (ledges.ts), and the
-      // sea's edge is open as far as one can wade
-      this.zone.colliders.resolve(p, 0.38, !indoor);
+      // The player uses the prebuilt heights for low props. Outdoors the sea is also open to wading.
+      this.zone.colliders.resolve(p, 0.38, !wild);
+      ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
       if (!indoor) {
-        this.ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
         this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38, true);
         // (the convertibles and their people standing about; swimming, the rocks and the boats at anchor)
         this.rides.resolvePlayer(p, 0.38, this.swimming, this.hop.y);
@@ -3577,9 +3575,8 @@ export class Game implements GameApi {
     if (wild) {
       // (walking on into the water one came through, or out through the cleft's slit of daylight: back up to the town)
       for (const ex of wild.exits) if (Math.hypot(p.x - ex.x, p.z - ex.z) < ex.push && this.vel.x * ex.dir[0] + this.vel.z * ex.dir[1] > 0.5 && !blocked && !this.hop.air) { this.exitInterior(ex.id); break; }
-    } else if (this.zone.interior) {
-      const it = this.zone.interior;
-      if (p.z > it.d / 2 - 0.2 && Math.abs(p.x) < 1.2 && this.vel.z > 0.5) { this.exitInterior(); }
+    } else if (interior) {
+      if (p.z > interior.d / 2 - 0.2 && Math.abs(p.x) < 1.2 && this.vel.z > 0.5 && !this.aloft) { this.exitInterior(); }
     } else {
       this.checkDoorPush(dt);
       this.checkCavePush(dt);
@@ -3622,9 +3619,9 @@ export class Game implements GameApi {
     // what is under their feet: a bench's seat or a planter's rim they jumped onto, else the ground, which by the sea
     // is the sand sloping down under the water (but for a pier's or a terrace's boards over it). A jump lands on it;
     // walking off an edge is a fall.
-    const surfacePiece = indoor ? undefined : this.ledges?.supportPiece(p.x, p.z, this.hop.y, this.hop.air);
+    const surfacePiece = ledges?.supportPiece(p.x, p.z, this.hop.y, this.hop.air);
     const on = surfacePiece?.top ?? 0;
-    const ground = wild ? wild.floor(p.x, p.z) : indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
+    const ground = wild ? wild.floor(p.x, p.z) : on > 0 ? on : indoor ? 0 : floorY(p.x, p.z);
     // the water here (the sea with its swell, a pool's), and how much of it is over what is underfoot
     const sur = indoor ? null : waterY(p.x, p.z, this.t), surface = sur ?? -99;
     const over = sur === null || on > 0 ? 0 : sur - ground;
@@ -3655,7 +3652,7 @@ export class Game implements GameApi {
     } else {
       this.diveT = 0; this.diveK = Math.max(0, this.diveK - dt * 3);
       landed = this.hop.update(dt, ground);
-      const car = landed > 0 && surfacePiece && this.rides.carUnder(surfacePiece);
+      const car = !indoor && landed > 0 && surfacePiece && this.rides.carUnder(surfacePiece);
       if (car) this.reactions.landing(this.ambient, car);
     }
     this.swimK = Math.max(0, Math.min(1, this.swimK + (this.swimming ? dt / 0.4 : -dt / 0.3)));

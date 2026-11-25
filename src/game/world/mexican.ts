@@ -25,12 +25,12 @@ const place = (g: THREE.BufferGeometry, x: number, z: number, rot: number) => g.
 /** The heading of a face's outward side (0: +z), as buildBuilding has it. */
 const faceRot = (f: Face) => ({ n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 })[f];
 /** A collider over a rectangle made round (0, 0) (x0…x1 across, z0…z1 out) and placed like `place`. */
-function blockRect(col: Colliders, x: number, z: number, rot: number, x0: number, x1: number, z0: number, z1: number) {
+function blockRect(col: Colliders, x: number, z: number, rot: number, x0: number, x1: number, z0: number, z1: number, tag?: string) {
   const c = Math.cos(rot), s = Math.sin(rot);
   const pts = [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].map(([lx, lz]) => [x + lx * c + lz * s, z - lx * s + lz * c]);
   const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
   const [ax, bx, az, bz] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
-  col.addBox((ax + bx) / 2, (az + bz) / 2, bx - ax, bz - az);
+  return col.addBox((ax + bx) / 2, (az + bz) / 2, bx - ax, bz - az, tag);
 }
 
 // ------------------------------------------------------------------------------------------------ the sign atlas
@@ -273,7 +273,7 @@ export function kiosk(parts: Part[], col: Colliders, atlas: SignAtlas, x: number
   for (const s of [-1, 1]) parts.push([cyl(0.06, 0.06, 2.6, x + s * 1.3, 1.3, z + 1.05, 6), WOOD]);
   parts.push([new THREE.ConeGeometry(2.1, 1.4, 4).rotateY(Math.PI / 4).scale(1, 1, 0.82).translate(x, 2.9, z + 0.15), THATCH]);
   parts.push([new THREE.ConeGeometry(0.5, 0.4, 4).rotateY(Math.PI / 4).translate(x, 3.75, z + 0.15), THATCH_DARK]);
-  col.addBox(x, z + 0.15, 2.6, 2.0);
+  col.addBox(x, z + 0.15, 2.6, 2.0, "counter");
   // the sign painted on its front under the counter, towards the street
   atlas.add("kiosk", 512, 160, drawBoard(sign, "Snorkel · Ruinas · Tulum", "#fdf3d7", "#1f6f8b", "#0f4c5c"), 2.3, 0.72, x, 0.6, z + 0.77, 0);
   // and its name on a board standing on the front of the roof, over the heads of whoever is at the counter (from the
@@ -614,7 +614,7 @@ export function foodCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: num
     const o = new THREE.Vector3(s * 0.025, 2.11, 0.23).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
     atlas.add("cartboard:" + sign, 480, 256, drawBoard(sign, "", "#fff3d0", "#c8102e", "#7a1020"), 1.5, 0.8, x + o.x, o.y, z + o.z, rot + s * Math.PI / 2);
   }
-  blockRect(col, x, z, rot, -0.6, 0.6, -1.2, 1.15);
+  blockRect(col, x, z, rot, -0.6, 0.6, -1.2, 1.15, "counter");
 }
 
 // ------------------------------------------------------------------------------------------------ the corner shop
@@ -642,7 +642,7 @@ export function tiendita(parts: Part[], col: Colliders, atlas: SignAtlas, P: (u:
     for (let k = 0; k < 4; k++) add(cyl(0.035, 0.035, 0.12, -0.12 + (k % 2) * 0.24, 0.32 + i * 0.32 + 0.06, -0.08 + Math.floor(k / 2) * 0.16), u + w / 2 + 0.45, 0.45, "#5a3a25");
   }
   const [cx, cz] = P(u, 0.42);
-  blockRect(col, cx, cz, rot, -w / 2, w / 2 + 0.75, -0.35, 0.35);
+  blockRect(col, cx, cz, rot, -w / 2, w / 2 + 0.75, -0.35, 0.35, "counter");
   const [sx, sz] = P(u, 0.07);
   atlas.add("shop:" + sign, 768, 128, drawPainted(sign, "", "#f6d743", "#c8102e", "#1f4f8f"), w + 0.2, 0.75, sx, 3.15, sz, rot);
   // (between the ground floor's windows and the first floor's)
@@ -698,7 +698,8 @@ export function mercadoFront(parts: Part[], col: Colliders, P: (u: number, v: nu
   // the stacks against the wall: three, two and one crates high, and one in front
   ([[-7.75, 0.3, 3, ORANGE, 0.05], [-7.18, 0.3, 2, TOMATO, -0.04], [-6.6, 0.3, 1, LIME, 0.06], [-7.0, 0.75, 1, CHILE, 0.3], [-6.45, 0.74, 1, MANGO, -0.2]] as [number, number, number, string, number][])
     .forEach(([u, v, n, fruit, turn]) => { for (let i = 0; i < n; i++) huacal(at(u, v, turn + (i % 2) * 0.06), 0, i * 0.3, 0, i === n - 1 ? fruit : null, r); });
-  blockRect(col, ...P(-7.1, 0.55), rot, -1.0, 1.0, -0.45, 0.45);
+  // The fruit makes the tops uneven. Use the highest crate and its produce for clearance.
+  blockRect(col, ...P(-7.1, 0.55), rot, -1.0, 1.0, -0.45, 0.45).vault = 0.975;
   // the diablito: two rails on two wheels, its nose plate on the ground, leaning back against the wall, two crates on it
   {
     const lean: Part[] = [];
@@ -714,7 +715,7 @@ export function mercadoFront(parts: Part[], col: Colliders, P: (u: number, v: nu
     const [x, z] = P(-5.75, 0.45);
     for (const [g, c] of lean) parts.push([place(g.applyMatrix4(tilt).translate(0, 0.06, 0), x, z, rot), c]);
     for (const s of [-1, 1]) parts.push([place(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 12).rotateZ(Math.PI / 2).translate(s * 0.27, 0.13, -0.12), x, z, rot), BLACK]);
-    blockRect(col, x, z, rot, -0.35, 0.35, -0.4, 0.45);
+    blockRect(col, x, z, rot, -0.35, 0.35, -0.4, 0.45).vault = 1.5;
   }
   // the cargo tricycle: a blue box on two front wheels, the rider's seat and a wheel behind, crates in the box; it
   // stands along the front, its box towards the corner
@@ -977,15 +978,15 @@ export function cenoteWalk(col: Colliders, x: number, z: number, edge: number) {
   const x3 = dx + 3.05, x2 = dx + 1.6, x1 = dx - 1.6, x0 = dx - 4.6;
   FLOORS.push({ x0, x1: x3, z0: z - 1.2, z1: z + 1.2, y: (px) => (px > x2 ? (top * (x3 - px)) / (x3 - x2) : px > x1 ? top : top - ((top + 0.75) * (x1 - px)) / (x1 - x0)) });
   // the deck's rails (a wall each side of it), and the stones and the cliff round the water, open at the deck
-  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2);
+  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2, "edge");
   const ring = R + 0.75, n = Math.round((2 * Math.PI * ring) / 1.15);
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.3) continue;
-    col.addCircle(x + Math.cos(a) * ring, z + Math.sin(a) * ring, 0.8);
+    col.addCircle(x + Math.cos(a) * ring, z + Math.sin(a) * ring, 0.8, "edge");
   }
   // the taquilla's palapa, the sign's posts, the palms on the clearing
-  col.addBox(x + R + 4.8 + 0.3, z + 4.6, 3.4, 2.8);
+  col.addBox(x + R + 4.8 + 0.3, z + 4.6, 3.4, 2.8, "counter");
   for (const s of [-1, 1]) col.addCircle(x + R + 6.2, z - 2.4 + s * 1.35, 0.15);
   for (const [px, pz, r] of [[x + R + 7.5, z + 7.5, 0.3], [x + R + 3.2, z - 5.5, 0.3], [x + R + 8, z - 7, 1.2], [x + R + 7.5, z + 9.5, 1.5]]) col.addCircle(px, pz, r);
   // the clearing's edge: north and south of the sacbé, and west of it either side of the water
@@ -1301,9 +1302,18 @@ export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders,
   const o = new THREE.Vector3(0, 0, zf + 0.02).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   atlas.add("tianguis:" + sign.join("|") + ink, 512, 160, drawBoard(sign[0], sign[1], "#fff6dc", ink, "#3b2a20"), 1.72, 0.52, x + o.x, yf + 0.33, z + o.z, rot);
   // solid: the table, the front poles
-  blockRect(col, x, z, rot, -STALL_SIZE.table.x, STALL_SIZE.table.x, STALL_SIZE.table.z0, STALL_SIZE.table.z1);
+  blockRect(col, x, z, rot, -STALL_SIZE.table.x, STALL_SIZE.table.x, STALL_SIZE.table.z0, STALL_SIZE.table.z1, "counter");
   for (const s of [-1, 1]) { const q = new THREE.Vector3(s * xp, 0, zf).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot); col.addCircle(x + q.x, z + q.z, 0.08); }
   STALL_GOODS[goods](addGoods, r, H);
+  if (goods === "fruit" || goods === "veg") {
+    const colors = goods === "fruit" ? ["#f77f00", "#3f9b2f"] : ["#2d6a1f", "#d62828"];
+    for (const [i, cx] of [-1.5, 1.5].entries()) {
+      const stacked = goods === "fruit" && i === 0;
+      crate(addGoods, cx, 0, 1.0, colors[i]);
+      if (stacked) crate(addGoods, cx, 0.26, 1.0, "#f4b400");
+      blockRect(col, x, z, rot, cx - 0.26, cx + 0.26, 0.82, 1.18).vault = stacked ? 0.625 : 0.365;
+    }
+  }
 }
 
 /** A crate of produce for the stalls (lighter than the mercado's huacal: the stalls show dozens): the box, its
@@ -1364,8 +1374,6 @@ const STALL_GOODS: Record<TianguisGoods, (add: Add, r: () => number, h: number) 
     }
     add(new THREE.SphereGeometry(0.26, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.9, 1.2).translate(1.55, h, 0.3), "#2f7d32");
     add(new THREE.CylinderGeometry(0.26, 0.26, 0.01, 8).scale(1, 1, 1.2).translate(1.55, h + 0.005, 0.3), "#e63946");
-    // crates stacked on the ground in front
-    crate(add, -1.5, 0, 1.0, ORANGE); crate(add, -1.5, 0.26, 1.0, MANGO); crate(add, 1.5, 0, 1.0, LIME);
   },
   // vegetables: huacales of tomatoes, chiles, onions and avocados, a stack of nopales, limes
   veg: (add, r, h) => {
@@ -1373,7 +1381,6 @@ const STALL_GOODS: Record<TianguisGoods, (add: Add, r: () => number, h: number) 
     crate(add, 0.4, h, -0.15, "#33502a"); crate(add, -1.15, h, 0.3, "#c1121f");
     for (let i = 0; i < 6; i++) add(new THREE.CylinderGeometry(0.12, 0.12, 0.025, 7).scale(1, 1, 1.5).rotateY(0.4 * i).translate(0.9 + (i % 2) * 0.05, h + 0.015 + i * 0.026, 0.25), i % 2 ? "#5a9a3a" : "#4b8a33");
     for (let i = 0; i < 9; i++) add(new THREE.OctahedronGeometry(0.05, 0).translate(1.35 + (i % 3) * 0.1, h + 0.05 + Math.floor(i / 3) * 0.03, 0.15 + Math.floor(i / 3) * 0.08), "#4caf50");
-    crate(add, 1.5, 0, 1.0, "#d62828"); crate(add, -1.5, 0, 1.0, "#2d6a1f");
   },
   // pan dulce: trays of conchas (white, pink and chocolate sugar tops) and a basket of bolillos
   bread: (add, r, h) => {
@@ -1752,7 +1759,7 @@ export function sidewalkProps(parts: Part[], col: Colliders, o: { bins: [number,
       parts.push([cyl(0.1, 0.13, 0.7, x, 0.35, z, 6), IRON]);
       parts.push([new THREE.SphereGeometry(0.11, 6, 3).translate(x, 0.72, z), IRON]);
       parts.push([cyl(0.135, 0.135, 0.06, x, 0.5, z, 6), "#c9a227"]);
-      col.addCircle(x, z, 0.15);
+      col.addCircle(x, z, 0.15).vault = 0.83;
     }
   }
   if (o.bolero) {
@@ -1780,6 +1787,7 @@ export function macetas(parts: Part[], col: Colliders, spots: [number, number, n
     const px = x + s * half, k = 0.85 + r() * 0.3;
     parts.push([cyl(0.28 * k, 0.2 * k, 0.5 * k, px, 0.25 * k, z, 7), "#b5562f"]);
     parts.push([cyl(0.3 * k, 0.3 * k, 0.06 * k, px, 0.5 * k, z, 7), "#a24a2a"]);
+    const firstLeaf = parts.length;
     if (r() < 0.5) for (let i = 0; i < 7; i++) {
       // an agave: pointed leaves fanning out
       const a = (i / 7) * Math.PI * 2 + r(), tilt = 0.35 + (i % 3) * 0.22;
@@ -1788,7 +1796,13 @@ export function macetas(parts: Part[], col: Colliders, spots: [number, number, n
       parts.push([new THREE.IcosahedronGeometry(0.42 * k, 0).scale(1, 1.1, 1).translate(px, 0.92 * k, z), "#3f7d3a"]);
       for (let i = 0; i < 5; i++) parts.push([new THREE.OctahedronGeometry(0.07 * k, 0).translate(px + Math.cos(i * 1.3) * 0.3 * k, 1.0 * k + (i % 2) * 0.18 * k, z + Math.sin(i * 1.3) * 0.3 * k), ["#e4007c", "#ff8fab", "#f6c000"][i % 3]]);
     }
-    col.addCircle(px, z, 0.3 * k);
+    let top = 0;
+    for (let i = firstLeaf; i < parts.length; i++) {
+      const [g] = parts[i];
+      g.computeBoundingBox();
+      top = Math.max(top, g.boundingBox!.max.y);
+    }
+    col.addCircle(px, z, 0.3 * k).vault = top;
   }
 }
 
@@ -1817,7 +1831,7 @@ export function fruitCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: nu
     const o = new THREE.Vector3(0, 0.8, s * 0.385).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
     atlas.add("fruit:" + sign, 384, 128, drawBoard(sign, "", "#fff3d0", "#1f8a4c", "#14532d"), 1.28, 0.42, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
   }
-  blockRect(col, x, z, rot, -0.75, 0.75, -0.75, 1.1);
+  blockRect(col, x, z, rot, -0.75, 0.75, -0.75, 1.1, "counter");
 }
 
 /** The water man's cargo tricycle (the garrafones delivered to the houses): a front box of blue water jugs, a seat, the
@@ -1837,7 +1851,11 @@ export function waterTrike(parts: Part[], col: Colliders, x: number, z: number, 
   add(box(0.06, 0.5, 0.06, 0, 0.8, -0.5), "#26292e");
   add(box(0.28, 0.08, 0.32, 0, 1.08, -0.52), "#1d1d1d");
   add(box(0.6, 0.05, 0.05, 0, 1.15, 0.1), "#26292e");
-  blockRect(col, x, z, rot, -0.6, 0.6, -1.1, 1.1);
+  // The narrow rear wheel and frame are reachable in a running jump. The saddle and cargo are taller.
+  blockRect(col, x, z, rot, -0.12, 0.12, -1.1, -0.36).vault = 0.64;
+  blockRect(col, x, z, rot, -0.15, 0.15, -0.68, -0.36).vault = 1.12;
+  blockRect(col, x, z, rot, -0.12, 0.12, -0.36, 0.075).vault = 0.58;
+  blockRect(col, x, z, rot, -0.6, 0.6, 0.075, 1.1).vault = 1.175;
 }
 
 /** El Muelle's terrace on the sand beside its pier (theme.ts `terrace`): a wooden deck on posts with a rail, tables in
@@ -1891,7 +1909,7 @@ export function cocoCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: num
     const o = new THREE.Vector3(0, 0.7, s * 0.41).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
     atlas.add("coco:" + sign, 384, 160, drawBoard(sign, "", "#eafbe0", "#1f6fd1", "#0b3b7a"), 1.34, 0.56, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
   }
-  blockRect(col, x, z, rot, -0.8, 0.8, -0.7, 0.7);
+  blockRect(col, x, z, rot, -0.8, 0.8, -0.7, 0.7, "counter");
 }
 
 /** Towels on the sand (x, z, which way they lie, colour) and a beach bag beside some: flat, in the no-shadow mesh. */
@@ -2313,7 +2331,7 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
     const [cx, cz] = at(bx + o.x, bz + o.z);
     atlas.add("surf-report", 448, 560, drawChalk(s.report[0], s.report.slice(1)), 1.04, 1.3, cx, 0.8, cz, rot + a);
     const [fx, fz] = at(bx, bz);
-    col.addCircle(fx, fz, 0.62);
+    col.addCircle(fx, fz, 0.62).vault = 1.49;
   }
   // surfboards standing in a rack along the seaward side (local −x), their noses up, leaning in against its rail
   const BOARDS: [string, string, number][] = [["#ffd23f", "#e4572e", 2.75], ["#ff6b6b", "#fff7e6", 2.3], ["#2ec4b6", "#fff7e6", 2.6], ["#fdfcf7", "#1f6fd1", 1.95], ["#f78fb3", "#3d348b", 2.45], ["#7ac143", "#fff7e6", 2.2]];
@@ -2360,7 +2378,7 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
     }
   }
   // nobody walks in under it: the counter, the floor behind it, the rack, the boards against the back
-  blockRect(col, x, z, rot, -HW - 0.75, HW + 0.1, -HD - 0.55, HD + 0.1);
+  blockRect(col, x, z, rot, -HW - 0.75, HW + 0.1, -HD - 0.55, HD + 0.1, "counter");
   // the kayak on the sand: a sit-on-top in mango, its paddle across it
   {
     const [kx, kz, kr] = s.kayak;

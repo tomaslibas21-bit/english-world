@@ -1,13 +1,20 @@
 import { BufferGeometry, Float32BufferAttribute, TubeGeometry, Vector3, LineCurve3, DoubleSide } from "three";
 import type { AddPhotoSpot } from "../../content/townQuests";
-import { mat, type Merger } from "./util";
+import { mat, type Colliders, type Merger } from "./util";
 
-export function addBeachHammock(merger: Merger, photo: AddPhotoSpot, { x1, x2, z }: { x1: number; x2: number; z: number }) {
+export function addBeachHammock(merger: Merger, col: Colliders, photo: AddPhotoSpot, { x1, x2, z }: { x1: number; x2: number; z: number }) {
   const colors = ["#bd3158", "#ed784a", "#f4bc5f", "#efda9b", "#2a8b83", "#1d6c82", "#bd3158"];
   const point = (t: number, across: number) => {
     const arch = Math.sin(t * Math.PI);
     return new Vector3(x1 + (x2 - x1) * t, 1.75 - (1.12 - 0.21 * across ** 2) * arch, z + across * 0.6 * arch);
   };
+  // Match the sag with three clearance bands. The cloth offers no standing surface.
+  const bands = [0.12, 0.36, 0.64, 0.88];
+  for (let i = 1; i < bands.length; i++) {
+    const a = point(bands[i - 1], 1), b = point(bands[i], 1);
+    const width = i === 2 ? 1.2 : 2 * (Math.max(a.z, b.z) - z);
+    col.addBox((a.x + b.x) / 2, z, b.x - a.x, width).vault = Math.max(a.y, b.y);
+  }
 
   // Each stripe follows the sag of the cloth and rises along its edges.
   for (const [stripe, color] of colors.entries()) {
