@@ -66,7 +66,10 @@ function rng(seed: number) {
 }
 
 /** `v2`: the voice ids of the Gemini voices (src/content/voices.ts) instead of the ones the game plays now. */
-export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean } = {}): { utts: Utt[]; errors: string[]; unreached: Unreached[]; unfilled: string[] } {
+/** `legacy`: the list as it was made before the 25 Nov 2026 cleanup (every item of the lists a line was heard with,
+ *  every list for an unheard one, everyone's voice for a line nobody was heard saying, lines no code names voiced
+ *  too), for the comparison in tests/voice-list.test.ts. */
+export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean; legacy?: boolean } = {}): { utts: Utt[]; errors: string[]; unreached: Unreached[]; unfilled: string[] } {
   const unreached: Unreached[] = [];
   /** item lines no play said and no code could be read for: not voiced with every item list any more (18 Nov 2026) */
   const unfilled: string[] = [];
@@ -126,10 +129,29 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       } catch { /* a sim that throws is check-content's to report */ }
     }
     // 1. static lines and value-domain lines
-    for (const [lid, variants] of Object.entries({ ...sit.lines, ...KIT_EXTRA_LINES[sit.id] })) {
-      const speakers = usedBy.has(lid) ? voices.filter((n) => usedBy.get(lid)!.has(n.id)) : voices;
+    const extra = KIT_EXTRA_LINES[sit.id] ?? {};
+    // a line nobody was heard saying belongs to whoever says the lines around it (the lines come grouped by speaker),
+    // when the nearest heard line on each side was said by one and the same person; else to everyone here (as
+    // tools/es-voices/lines-es.ts does for Puerto Colibrí, 25 Nov 2026: s34's term_mute is Kate's, not Paul's or Sara's)
+    const ids = Object.keys(sit.lines);
+    const single = (l: string) => { const by = usedBy.get(l); return by?.size === 1 ? [...by][0] : undefined; };
+    const near = (i: number, step: number) => { for (let j = i + step; j >= 0 && j < ids.length; j += step) if (usedBy.has(ids[j])) return single(ids[j]); return undefined; };
+    const guessed = new Map<string, string>();
+    if (!opts.legacy) ids.forEach((l, i) => { if (!usedBy.has(l)) { const a = near(i, -1), b = near(i, 1); if (a && a === b && voices.some((n) => n.id === a)) guessed.set(l, a); } });
+    for (const [lid, variants] of Object.entries({ ...sit.lines, ...extra })) {
+      const speakers = usedBy.has(lid) ? voices.filter((n) => usedBy.get(lid)!.has(n.id)) :
+        guessed.has(lid) ? voices.filter((n) => n.id === guessed.get(lid)) : voices;
       const lists = usedLists.get(lid);
-      if (!usedBy.has(lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
+      if (!usedBy.has(lid)) {
+        const named = referenced(sit, lid);
+        unreached.push({ sit: sit.id, line: lid, named });
+        // a line no play said and no code names (as a string, a prefix or a suffix it is built with) is never said
+        // (25 Nov 2026): it is reported and not voiced. The mini-games' lines keep their own cases below.
+        const kit = KIT_LEARNER[sit.id];
+        const mode = lid in extra || (sit.id === "s72-cafe" && isBaristaCoachLine(lid)) || !!kit?.only?.test(lid) ||
+          !!kit?.both?.test(lid) || (sit.id === "s66-taxi" && /^rd_a_/.test(lid));
+        if (!named && !mode && !opts.legacy) continue;
+      }
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         const bindings: Record<string, any>[] = [];
@@ -144,14 +166,27 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           }
           bindings.push(...combos);
         } else if (ph.entities.length === 1 && !ph.values.length) {
-          // {X} only with the line's own items (18 Nov 2026): the lists simulated play said it with, as before; for a
-          // line play never reached, the items its code says it with (line-reach.ts). Before, such a line was
-          // voiced with every item of every list (s87's ask_years_field2 ×105, said only with customer_service).
-          const pool = new Set<string>(usedIds.get(lid) ?? []);
-          const own = lists ? undefined : itemsFor(sit, lid, ph.entities[0]);
-          if (lists) for (const [ln, list] of Object.entries(sit.entities || {})) if (lists.has(ln)) for (const e of list) pool.add(e.id);
-          else if (own) for (const e of own) pool.add(e.id);
-          // read nowhere: every list, as before (its item comes from the state: c.s.win2, retDay(c)…), and reported
+          // {X} only with the items the game can say it with (18 Nov 2026, fixed 25 Nov 2026). Before, a heard line was
+          // voiced with every item of every list it was heard with (s87's ask_years_field2 ×105, said only with
+          // customer_service; s35's machine_intro ×28, said only with the leg or the chest press), and an unheard
+          // line's code-read items were never used (a dangling `else` bound them to the inner `if`).
+          //  • what play said it with (the game's own Conversation in the runs and the sims) always stays;
+          //  • a heard line: the items of the lists play said it with, narrowed to the items its own code says it
+          //    with (line-reach.ts itemsFor) when that reading explains everything play said it with (a reading that
+          //    misses a heard item is incomplete: the whole lists stay). The reading only narrows: it adds no item
+          //    of a list play never said the line with;
+          //  • an unheard line: the items its code says it with; read nowhere, every list, as before (its item comes
+          //    from the state: c.s.win2, retDay(c)…), and reported.
+          const heard = usedIds.get(lid) ?? new Set<string>();
+          const pool = new Set<string>(heard);
+          const own = opts.legacy ? undefined : itemsFor(sit, lid, ph.entities[0]);
+          const ownIds = own ? new Set(own.map((e) => e.id)) : undefined;
+          const narrow = !!ownIds && [...heard].every((id) => ownIds.has(id));
+          if (lists) {
+            for (const [ln, list] of Object.entries(sit.entities || {})) {
+              if (lists.has(ln)) for (const e of list) if (!narrow || ownIds!.has(e.id)) pool.add(e.id);
+            }
+          } else if (ownIds) for (const id of ownIds) pool.add(id);
           if (!pool.size) { unfilled.push(`${sit.id}:${lid}`); for (const list of Object.values(sit.entities || {})) for (const e of list) pool.add(e.id); }
           for (const id of pool) bindings.push({ [ph.entities[0]]: id });
           const u = unreached.find((x) => x.sit === sit.id && x.line === lid);
