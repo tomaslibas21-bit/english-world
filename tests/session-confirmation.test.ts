@@ -16,7 +16,7 @@ vi.mock("../src/convo/speech", async (importOriginal) => ({
 
 let session: Session;
 // (a conversation's file is loaded before its session starts: src/content/situations/catalog.ts)
-beforeAll(async () => { for (const id of ["s35-gym"]) await loadSituation(id); });
+beforeAll(async () => { for (const id of ["s35-gym", "s72-cafe"]) await loadSituation(id); });
 beforeEach(async () => {
   vi.useFakeTimers();
   vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));
@@ -137,6 +137,29 @@ describe("speech confirmations belong to the learner's current turn", () => {
     expect(listen).not.toHaveBeenCalled();
     listen.mockRestore();
   });
+});
+
+it("records the display outcome of each resolved answer through a café sound check", async () => {
+  session.close();
+  session = new Session("s72-cafe", { npcTalk() {}, onEvent() {}, onEnd() {} });
+  const begin = session.begin();
+  useStore.getState().setConv({ introOpen: false, typing: true });
+  await finishSubmit(begin);
+
+  await finishSubmit(session.submit("zxqvpl zrqv"));
+  expect(answers().at(-1)).toMatchObject({ understood: false, answerDisplay: "retry" });
+
+  await finishSubmit(session.submit("Lata please", [], "voice"));
+  expect(answers().at(-1)).toMatchObject({ understood: true, answerDisplay: "clarify" });
+  expect(useStore.getState().conv.transcript.at(-1)?.sentence?.en).toMatch(/latte\?/i);
+
+  await finishSubmit(session.submit("No."));
+  expect(answers().at(-1)).toMatchObject({ understood: true, answerDisplay: "retry" });
+
+  const match = session.submit("A latte, please.", [], "picked");
+  expect(useStore.getState().conv.transcript.at(-1)?.who).toBe("npc");
+  expect(answers().at(-1)).toMatchObject({ understood: true, answerDisplay: "matched", via: "picked" });
+  await finishSubmit(match);
 });
 
 it("ticks Tina's name checklist immediately and opens the group turn after interrupted voice", async () => {

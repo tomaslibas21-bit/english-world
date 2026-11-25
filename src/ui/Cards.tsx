@@ -14,6 +14,7 @@ import { SitIcon } from "./SitIcon";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";
+import { placeTip, type TipSpot } from "./natTip";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -53,10 +54,8 @@ function keepCaps(word: string): boolean {
   return NAMES.has(w) || (!!p && (w === p.name.trim().toLowerCase() || w === p.surname.trim().toLowerCase()));
 }
 
-interface Spot { left: number; top: number; below: boolean; arrow: number }
-
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
-function place(r: DOMRect, w: number, h: number): Spot {
+function place(r: DOMRect, w: number, h: number): TipSpot {
   const m = 8, gap = 9, vw = window.innerWidth, vh = window.innerHeight;
   const cx = r.left + r.width / 2;
   const left = Math.round(Math.max(m, Math.min(vw - m - w, cx - w / 2)));
@@ -68,9 +67,9 @@ function place(r: DOMRect, w: number, h: number): Spot {
 
 /** Is the word still visible (not scrolled out of the transcript or the hints)? Also the asterisk's tooltip
  *  (Interlinear.tsx NatTip). */
-export function inView(el: HTMLElement): boolean {
+export function inView(el: HTMLElement, rect?: DOMRect): boolean {
   if (!el.isConnected) return false;
-  const r = el.getBoundingClientRect();
+  const r = rect ?? el.getBoundingClientRect();
   if (!r.width && !r.height) return false;
   let top = 0, bottom = window.innerHeight, left = 0, right = window.innerWidth;
   for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
@@ -92,36 +91,96 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
   const sitId = useStore((st) => st.conv.sitId);
-  const [spot, setSpot] = useState<Spot | null>(null);
+  const [spot, setSpot] = useState<TipSpot | null>(null);
   const [saved, setSaved] = useState(false);
   const u = s.units[index];
   const word = useMemo(() => unitInput(s, index, sitId, keepCaps), [s, index, sitId]);
   const whole = useMemo(() => sentenceInput(s, sitId), [s, sitId]);
   const dash = !u || isDashGloss(u.lt) || !word;
+  const panel = anchor.closest(".convo");
 
   // follow the word (scrolling, new lines, the LT/IPA toggles), close when it's gone
   useLayoutEffect(() => {
-    let raf = 0, last = "";
-    const tick = () => {
-      const el = ref.current;
-      if (!el) return;
+    const el = ref.current;
+    if (!el) return;
+    const inset = 8, gap = 9;
+    const viewport = window.visualViewport;
+    let raf = 0, last = "", lastSize = "";
+    const update = () => {
+      raf = 0;
       const r = anchor.getBoundingClientRect();
-      const sig = [r.left, r.top, r.width, r.height, el.offsetWidth, el.offsetHeight, window.innerWidth, window.innerHeight].join("|");
+      if (!inView(anchor, r)) { closeRef.current(); return; }
+      const p = panel?.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const vx = viewport?.offsetLeft ?? 0, vy = viewport?.offsetTop ?? 0;
+      const box = p && {
+        left: Math.max(0, p.left, vx), top: Math.max(0, p.top, vy),
+        right: Math.min(vw, p.right, vx + (viewport?.width ?? vw)),
+        bottom: Math.min(vh, p.bottom, vy + (viewport?.height ?? vh)),
+      };
+      if (box) {
+        const width = Math.floor(box.right - box.left - 2 * inset);
+        const roomAbove = r.top - gap - (box.top + inset);
+        const roomBelow = box.bottom - inset - (r.bottom + gap);
+        const height = Math.floor(Math.min(box.bottom - box.top - 2 * inset, Math.max(64, roomAbove, roomBelow)));
+        if (width <= 0 || height <= 0 || r.bottom <= box.top || r.top >= box.bottom || r.right <= box.left || r.left >= box.right) {
+          closeRef.current();
+          return;
+        }
+        const size = `${width}|${height}`;
+        if (size !== lastSize) {
+          lastSize = size;
+          el.style.setProperty("--wpop-max-width", width + "px");
+          el.style.setProperty("--wpop-max-height", height + "px");
+        }
+      }
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const sig = [r.left, r.top, r.width, r.height, w, h, box?.left, box?.top, box?.right, box?.bottom, vw, vh].join("|");
       if (sig !== last) {
         last = sig;
-        if (!inView(anchor)) { closeRef.current(); return; }
-        setSpot(place(r, el.offsetWidth, el.offsetHeight));
+        setSpot(box ? placeTip(r, w, h, box, inset, gap) : place(r, w, h));
       }
-      raf = requestAnimationFrame(tick);
     };
-    tick();
-    return () => cancelAnimationFrame(raf);
-  }, [anchor]);
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      if (target === document || target === window || (target instanceof Element && target.contains(anchor))) schedule();
+    };
+    const resizeObserver = new ResizeObserver(schedule);
+    const contentObserver = new MutationObserver(schedule);
+    const scope = panel ?? anchor.parentElement ?? anchor;
+    const attributes = { attributes: true, attributeFilter: ["class", "style", "hidden", "open"] };
+    // Content can move the anchor without resizing it or its scroller.
+    contentObserver.observe(scope, { ...attributes, subtree: true, childList: true, characterData: true });
+    resizeObserver.observe(el);
+    for (let node: HTMLElement | null = anchor; node && node !== document.body; node = node.parentElement) {
+      resizeObserver.observe(node);
+      if (node === panel) break;
+      if (!panel && node !== scope && node !== anchor) contentObserver.observe(node, attributes);
+    }
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    viewport?.addEventListener("resize", schedule);
+    viewport?.addEventListener("scroll", schedule);
+    panel?.addEventListener("animationend", schedule);
+    update();
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+      contentObserver.disconnect();
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("scroll", schedule);
+      panel?.removeEventListener("animationend", schedule);
+    };
+  }, [anchor, panel]);
 
   useEffect(() => {
     const down = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (ref.current?.contains(t) || anchor.contains(t)) return; // the word itself toggles
+      const onWord = anchor.contains(t) && !(t instanceof Element && t.closest(".nat-star"));
+      if (ref.current?.contains(t) || onWord) return; // the word itself toggles
       closeRef.current();
     };
     // capture, so Esc closes only the popover (not the conversation)
@@ -137,20 +196,22 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
+    <div ref={ref} className={"wpop" + (panel ? " in-convo" : "") + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
-      <div className="wpop-en" lang="en">{shown}</div>
-      {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
-      <div className="wpop-acts">
-        {!dash && (wordIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>
-          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> Į korteles</button>)}
-        {sentIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Sakinys kortelėse</span>
-          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> Visą sakinį</button>}
+      <div className="wpop-body">
+        <div className="wpop-en" lang="en">{shown}</div>
+        {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
+        {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
+        <div className="wpop-acts">
+          {!dash && (wordIn
+            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>
+            : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> Į korteles</button>)}
+          {sentIn
+            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Sakinys kortelėse</span>
+            : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> Visą sakinį</button>}
+        </div>
+        {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
       </div>
-      {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
     </div>,
     document.body,
   );

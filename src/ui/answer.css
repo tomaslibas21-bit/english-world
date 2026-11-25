@@ -1,69 +1,130 @@
-/* Help with speaking (Conversation.tsx; logic in src/convo/suggest.ts):
-   "Did you mean…?" in the miss box, "Listen and repeat" in the guide, and how an answer was given. */
+/* Listening and answer feedback in the conversation. */
+.convo :is(.mic-status b, .recovery-title, .dym-q, .rp-verdict) {
+  font: 800 calc(15px * var(--scale))/1.25 var(--ui);
+}
+.convo :is(.mic-status .sub, .dym-hint, .rp-res) {
+  font: 600 calc(14px * var(--scale))/1.3 var(--ui); color: #465563;
+}
+.convo :is(.mic-status .heard, .miss-box .heard, .speech-confirm .dym-opt[lang="en"], .msg.you.clarify .bubble,
+  .rp-words, .rp-heard[lang="en"], .rp-heard [lang="en"]) {
+  font: 500 calc(20px * var(--scale))/1.22 var(--en); color: var(--ink); overflow-wrap: anywhere;
+}
+.convo .mic-status { position: relative; overflow-wrap: anywhere; }
+.convo .mic-status b { display: flex; align-items: baseline; gap: 8px; }
+.convo .mic-status .sub { display: block; }
+.convo .mic-status b + .sub { margin-block-start: 2px; }
+.convo .listening-bars { display: inline-flex; flex: none; align-items: end; gap: 2px; min-height: 12px; }
+.convo .listening-bars i { width: 3px; height: 6px; border-radius: 1px; background: #1f6f78; }
+.convo .listening-bars i:nth-child(2) { height: 12px; }
+.convo .listening-bars i:nth-child(3) { height: 8px; }
+.convo .mic-status .heard {
+  display: block; max-block-size: calc(var(--heard-lines, 3) * 1.22em); overflow: auto; overscroll-behavior: contain;
+  border-inline-start: 3px solid #1f6f78; padding-inline: 8px 2px;
+}
+@media (max-height: 700px) and (orientation: portrait) {
+  .convo .mic-status { --heard-lines: 2; }
+}
+.convo .status-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+}
+
+/* The input row keeps the same space for the instruction throughout the brief echo. */
+.convo .match-echo { flex: 0 0 24px; height: 24px; display: grid; place-items: center; pointer-events: none; }
+.convo :is(.match-echo, .msg.you.matched) .ok {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+}
+.convo .match-echo .ok { background: #1f6f78; color: #fff; }
+.convo .msg.you.matched .ok {
+  color: #185a62; background: #fff; vertical-align: middle; animation: answer-match-pop 180ms ease-out;
+}
+@keyframes answer-match-pop { from { transform: scale(.86); } to { transform: scale(1); } }
+.convo .msg.you.clarify .bubble { background: #fff; color: var(--ink); box-shadow: none; border-inline-start: 3px solid #75838c; }
+.convo .msg.you .bubble { overflow-wrap: anywhere; }
+.convo .msg.you .retry-mark { margin-inline-start: 8px; color: #664b22; }
 
 /* heard words that aren't in the suggestion, and model words that weren't heard */
-.hw-miss {
-  background: #fde4d5; color: #9a3b22; border-radius: 5px; padding: 0 3px; margin: 0 -1px;
+.convo .hw-miss {
+  background: #fff0c8; color: #664b22; text-decoration: underline dotted; text-underline-offset: 2px;
+  border-radius: 5px; padding: 0 3px; margin: 0 -1px;
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
 
-/* ---- "Did you mean…?" ---- */
-.dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; display: flex; flex-direction: column; gap: 6px; }
-.dym-q { font-weight: 800; color: var(--ink); }
-.dym-opt {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer; color: var(--ink);
-  border: 1.5px solid var(--accent-soft-2); background: var(--accent-soft); border-radius: 13px; padding: 7px 11px 7px 13px;
-  font-family: var(--ui); font-size: 1em; transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+/* ---- Sentence choices after a miss or a speech confirmation ---- */
+.convo .yt-scroll { --answer-gap: 8px; scroll-padding-block: 4px; }
+.convo .miss-box {
+  background: #fff8e8; border-inline-start: 3px solid #946722; border-radius: 12px;
+  color: var(--ink); padding: 10px; margin-bottom: 10px; overflow-wrap: anywhere;
 }
-.dym-opt:hover { background: #d7ecea; border-color: #b7dad6; box-shadow: 0 4px 10px -6px rgba(31, 111, 120, 0.6); }
-.dym-opt:active { transform: translateY(1px); }
-.dym-opt:focus-visible { outline: none; box-shadow: var(--ring); }
-.dym-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dym-en { font-family: var(--en); font-size: 1.22em; line-height: 1.25; overflow-wrap: anywhere; }
-.dym-lt { font-size: 0.84em; color: var(--ink-soft); margin-top: 1px; }
-.dym-go { flex: none; color: var(--accent); }
-.dym-hint { font-size: 0.85em; color: var(--ink-soft); }
+.convo .miss-box.speech-confirm { background: #fff; border-inline-start-color: #75838c; }
+.convo .miss-box .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.convo .miss-box .recovery-title { display: flex; align-items: baseline; gap: 6px; }
+.convo .miss-box .recovery-title .ui-icon { align-self: start; color: #664b22; }
+.convo .miss-box .heard { margin-block-start: 4px; }
+.convo :is(.dym, .speech-confirm) {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--answer-gap);
+}
+.convo .speech-confirm p { margin: 0; }
+.convo .dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; }
+.convo .dym-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; text-align: left; color: var(--ink);
+  border: 1px solid var(--accent-soft-2); background: var(--accent-soft); border-radius: 13px; padding: 8px 10px;
+}
+.convo .dym-opt:hover { background: #d7ecea; border-color: #b7dad6; }
+.convo .dym-opt[lang="en"] { display: block; }
+.convo .dym-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.convo .dym-en { font: 500 calc(21px * var(--scale))/1.22 var(--en); }
+.convo .dym-lt { font: 600 calc(14px * var(--scale))/1.28 var(--ui); color: #465563; margin-top: 2px; }
+.convo .dym-go { flex: 0 0 18px; color: var(--accent); }
 /* never stuck: skip this answer (after two misses in a row) */
 .link-btn { background: none; border: 0; padding: 0 2px; font: inherit; font-weight: 700; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.convo .dym-hint .link-btn { padding-inline: 6px; border-radius: 8px; }
 
 /* ---- "Listen and repeat" (guide examples): a round button under the speaker's, so the phrase has the row's width ---- */
-.gx-btns { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.gx-btns .play { width: 36px; height: 36px; }
-.gx .rp-btn {
+.convo .gx-btns { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.convo .gx-btns .play { width: 36px; height: 36px; }
+.convo .gx .rp-btn {
   flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; cursor: pointer; position: relative;
   border: 1.5px solid var(--line); background: #fffdf9; color: var(--accent);
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
-/* (a finger's 44 px on a touch screen, the buttons no bigger to look at: each one's own reach, the two not overlapping) */
-@media (pointer: coarse), (max-width: 900px) {
-  .gx-btns { gap: 8px; }
-  .gx-btns .play, .gx .rp-btn { width: 36px; height: 36px; position: relative; }
-  .gx-btns .play::after, .gx .rp-btn::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
-  .gx .rp-btn::after { inset: -5.5px; }
+.convo .gx .rp-btn:is(:hover, .playing) { background: var(--accent-soft); border-color: #b7dad6; }
+.convo .gx .rp-btn.listening { background: #1f6f78; border-color: #1f6f78; color: #fff; }
+
+/* Each control owns its box inside the scrolling area, including its keyboard outline. */
+.convo .yt-scroll :is(button, summary):where(:not(.nat-star)) {
+  max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;
+  transition: background-color 100ms, border-color 100ms, box-shadow 100ms, color 100ms;
 }
-.gx .rp-btn:hover { background: var(--accent-soft); border-color: #b7dad6; }
-.gx .rp-btn:active { transform: scale(0.96); }
-.gx .rp-btn.playing { background: var(--accent-soft); border-color: #b7dad6; }
-.gx .rp-btn.listening { background: var(--bad); border-color: var(--bad); color: #fff; }
-.rp-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 5px; font-size: 0.86em; color: var(--ink-soft); line-height: 1.35; }
-.rp-res.wait { align-items: center; }
-.rp-verdict { font-weight: 900; }
-.rp-res.great .rp-verdict { color: var(--good); }
-.rp-res.almost .rp-verdict { color: #a86b00; }
-.rp-res.again .rp-verdict { color: #b0532b; }
-.rp-words { font-family: var(--en); font-size: 1.22em; color: var(--ink); }
-.rp-heard { font-size: 1em; }
-.rp-heard[lang="en"], .rp-heard [lang="en"] { font-family: var(--en); font-size: 1.12em; }
-.rp-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: rp-pulse 1.2s ease-in-out infinite; }
+.convo .yt-scroll :is(button, summary):not(:disabled, .nat-star):active {
+  background: #d2e8e6; color: #185a62; box-shadow: inset 0 0 0 1px #1f6f78; transform: none; filter: none;
+  transition: none;
+}
+.convo .yt-scroll :is(button, summary, [tabindex]):focus-visible { outline: 2px solid #1f6f78; outline-offset: 2px; }
+.convo .yt-scroll button:disabled {
+  background: #eeeae3; color: #53606b; border: 1px dashed #867e72; opacity: 1;
+  box-shadow: none; filter: none; transform: none; pointer-events: none;
+}
+@media (any-pointer: coarse), (max-width: 900px) {
+  .convo .yt-scroll { --answer-gap: 6px; }
+  .convo .yt-scroll :is(button, summary):where(:not(.nat-star)), .convo .chips .chip, .convo .say-toggles .toggle { min-width: 44px; min-height: 44px; }
+  .convo .gx-btns .play, .convo .gx .rp-btn, .convo .hints .hint-row .play { width: 44px; height: 44px; }
+}
+.convo .rp-res { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 5px; }
+.convo .rp-res.wait { align-items: center; }
+.convo .rp-verdict { display: inline-flex; align-items: center; gap: 4px; }
+.convo .rp-res.great .rp-verdict { color: #1f6f78; }
+.convo .rp-res:is(.almost, .again) .rp-verdict { color: #664b22; }
+.convo .rp-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #1f6f78; animation: rp-pulse 1.2s ease-in-out infinite; }
 @keyframes rp-pulse { 50% { opacity: 0.35; } }
 
 /* ---- the learner's bubble: spoken (mic), typed (keyboard) or a picked suggestion ---- */
-.msg.you .via { display: inline-grid; place-items: center; margin-right: 7px; vertical-align: -1px; opacity: 0.8; }
-.msg.you.miss .via { color: var(--ink-faint); opacity: 1; }
+.convo .msg.you .via { display: inline-grid; place-items: center; margin-right: 7px; vertical-align: -1px; opacity: 0.8; }
+.convo .msg.you.miss .via { color: var(--ink-faint); opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rp-dot { animation: none; }
-  .dym-opt, .gx .rp-btn { transition: none; }
+  .convo .rp-dot, .convo .msg.you.matched .ok { animation: none; }
+  .convo .yt-scroll :is(button, summary, .hint-toggle .chev, .il .u.tap),
+  .convo .yt-bottom :is(button, input) { transition: none; }
+  .convo :is(.mic, .type-toggle):is(:hover, :active):not(:disabled) { transform: none; }
 }
 
 .beta-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 18px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-muted,var(--ink));}
