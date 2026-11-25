@@ -241,21 +241,31 @@ async function checkMovingChatter(page, bubble, viewport) {
       const at = { x: point.x + 4 * i, y: point.y };
       if (cdp) await finger("touchMove", at);
       else await page.mouse.move(at.x, at.y);
-      const sample = await bubble.evaluate((el) => {
+      const sample = await bubble.evaluate((el, refreshTownHud) => {
         const { game } = window.__ew;
         const layer = document.querySelector(".tag-layer");
         const hud = el.parentElement;
+        const controls = hud.querySelectorAll(".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, " +
+          ".minimap, .toolbar, .toolbar .radio-tool, .joy, .jump-btn, .act-btn, .prompt, .toolbar-drawer, .toolbar-tools");
+        const stableBlockers = new Set([...controls].filter((control) => control.checkVisibility({ visibilityProperty: true })));
         const alreadyPlaced = new Set(game.nametagLayout.boxes.map(({ tag }) => tag));
         const nativeRect = Element.prototype.getBoundingClientRect;
         const updateTags = game.updateTags;
+        const hudBoxes = game.hudBoxes;
         const offsets = ["offsetWidth", "offsetHeight"].map((key) =>
           [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]);
-        let inTags = false, reads = 0, layerRects = 0, groupRects = 0, uiRects = 0;
+        let inTags = false, inTownHud = false;
+        let reads = 0, layerRects = 0, groupRects = 0, uiRects = 0, blockerRects = 0, townBlockerRects = 0;
         let frameSizes = 0, tagSizes = 0;
         game.updateTags = function () {
           inTags = true;
           try { return updateTags.call(this); }
           finally { inTags = false; }
+        };
+        game.hudBoxes = function () {
+          inTownHud = true;
+          try { return hudBoxes.call(this); }
+          finally { inTownHud = false; }
         };
         Element.prototype.getBoundingClientRect = function () {
           if (this.classList.contains("nametag")) reads++;
@@ -263,6 +273,10 @@ async function checkMovingChatter(page, bubble, viewport) {
           if (this === el || this === hud) {
             if (inTags) groupRects++;
             else uiRects++;
+          }
+          if (stableBlockers.has(this)) {
+            if (inTownHud) townBlockerRects++;
+            else if (inTags) blockerRects++;
           }
           return nativeRect.call(this);
         };
@@ -274,27 +288,38 @@ async function checkMovingChatter(page, bubble, viewport) {
             return descriptor.get.call(this);
           },
         });
-        try { window.__stepStreet(1, 16); }
+        try {
+          // One actual periodic refresh proves the same elements are counted separately.
+          if (refreshTownHud) game.hudCheck = 1;
+          window.__stepStreet(1, 16);
+        }
         finally {
           delete game.updateTags;
+          delete game.hudBoxes;
           Element.prototype.getBoundingClientRect = nativeRect;
           for (const [key, descriptor] of offsets) Object.defineProperty(HTMLElement.prototype, key, descriptor);
         }
         // The test's own clearance reads happen after restoring the native accessors.
         const r = el.getBoundingClientRect();
         const tags = [...document.querySelectorAll(".nametag")].filter((tag) => tag.checkVisibility({ visibilityProperty: true }));
-        const clear = tags.every((tag) => {
-          const b = tag.getBoundingClientRect();
-          return r.left >= b.right || r.right <= b.left || r.top >= b.bottom || r.bottom <= b.top;
-        });
-        return { reads, layerRects, groupRects, uiRects, frameSizes, tagSizes,
-          tags: tags.length, clear, visible: getComputedStyle(el).visibility === "visible" };
-      });
+        const clears = (control) => {
+          const b = control.getBoundingClientRect();
+          return !b.width || !b.height || r.left >= b.right || r.right <= b.left || r.top >= b.bottom || r.bottom <= b.top;
+        };
+        return { reads, layerRects, groupRects, uiRects, frameSizes, tagSizes, blockerRects, townBlockerRects,
+          tags: tags.length, clear: tags.every(clears), clearHud: [...stableBlockers].every(clears),
+          landmarks: [".objective-card", ".minimap", ".toolbar"].every((selector) => stableBlockers.has(hud.querySelector(selector))),
+          visible: getComputedStyle(el).visibility === "visible" };
+      }, i === 1);
       assert.equal(sample.reads, 0, "live chatter placement reads no nametag DOMRects");
       assert.deepEqual([sample.layerRects, sample.groupRects, sample.frameSizes, sample.tagSizes], [0, 0, 0, 0],
         "steady chatter reuses the layer transform, group size and already placed tag sizes");
       assert.equal(sample.uiRects, 0, "the former UI loop's group and HUD reads do not recur outside tag placement");
+      assert(sample.landmarks, "each sample counts the visible task card, map and toolbar");
+      if (i === 1) assert(sample.townBlockerRects > 0, "the town's periodic HUD reads reached the sampled blockers");
+      assert.equal(sample.blockerRects, 0, "steady chatter reuses the cached blocker bounds during tag placement");
       assert(sample.visible && sample.clear, "the moving bubble stays visible and clears the tags");
+      assert(sample.clearHud, "the moving bubble clears the stable HUD controls");
       await assertSaveSiblings(bubble, ".street-bubble-text");
       if (sample.tags) taggedFrames++;
     }
@@ -602,6 +627,23 @@ try {
       const toggleTask = page.locator(".objective-card .collapse-btn");
       const taskFolded = async () => await toggleTask.getAttribute("aria-expanded") === "false";
       const initiallyFolded = await taskFolded();
+      const assertChatterClear = async (context) => {
+        const { onScreen, overlaps } = await bubble.evaluate((el) => {
+          const a = el.getBoundingClientRect();
+          const onScreen = getComputedStyle(el).visibility === "visible" &&
+            a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth && a.top >= 0 && a.bottom <= innerHeight;
+          const overlaps = [...document.querySelectorAll(".objective-card, .minimap, .toolbar-drawer, .toolbar button, .joy, .jump-btn, .act-btn, .nametag")]
+            .filter((control) => {
+              const b = control.getBoundingClientRect();
+              return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
+                a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+            }).map((control) => control.className);
+          return { onScreen, overlaps };
+        });
+        assert(onScreen, `${context}: bubble fits on screen`);
+        assert.deepEqual(overlaps, [], `${context}: bubble clears the task card, minimap and menu`);
+        await assertSaveSiblings(bubble, ".street-bubble-text");
+      };
       const checkSpeaker = async (speaker) => {
         for (const translated of [false, true]) {
           if (translated) await assertTranslation(bubble.locator(".street-bubble-text"), press);
@@ -611,21 +653,7 @@ try {
             const context = `${viewport.join("x")} ${speaker} speaker, ${translated ? "translated" : "original"} line, ${folded ? "folded" : "open"} task`;
             assert.equal(await toggleTask.getAttribute("aria-expanded"), String(!folded));
             assert.equal(await bubble.getAttribute("aria-expanded"), String(translated));
-            const { onScreen, overlaps } = await bubble.evaluate((el) => {
-              const a = el.getBoundingClientRect();
-              const onScreen = getComputedStyle(el).visibility === "visible" &&
-                a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth && a.top >= 0 && a.bottom <= innerHeight;
-              const overlaps = [...document.querySelectorAll(".objective-card, .minimap, .toolbar button, .joy, .jump-btn, .act-btn, .nametag")]
-                .filter((control) => {
-                  const b = control.getBoundingClientRect();
-                  return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
-                    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-                }).map((control) => control.className);
-              return { onScreen, overlaps };
-            });
-            assert(onScreen, `${context}: bubble fits on screen`);
-            assert.deepEqual(overlaps, [], `${context}: bubble clears the task card, minimap and menu`);
-            await assertSaveSiblings(bubble, ".street-bubble-text");
+            await assertChatterClear(context);
             if (speaker === "first" && translated && folded === initiallyFolded) await shot("chatter");
           }
         }
@@ -645,6 +673,17 @@ try {
       if (checkMoving) {
         await checkResizedTag(bubble, viewport);
         await checkMovingChatter(page, bubble, viewport);
+      }
+      const menu = page.locator(".toolbar .ride-menu");
+      if (await menu.isVisible()) {
+        const drawer = page.locator(".toolbar-drawer");
+        for (const open of [true, false]) {
+          if (await menu.getAttribute("aria-expanded") !== String(open)) await press(menu);
+          await step(1, 0);
+          assert.equal(await menu.getAttribute("aria-expanded"), String(open));
+          assert.equal(await drawer.isVisible(), open);
+          await assertChatterClear(`${viewport.join("x")} chatter with menu ${open ? "open" : "closed"}`);
+        }
       }
       await wait(async () => await bubble.isVisible() && await bubble.getAttribute("aria-expanded") === "false"
         && await lineText(bubble).textContent() !== first,
