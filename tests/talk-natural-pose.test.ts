@@ -155,6 +155,99 @@ describe("natural conversation on the baked rig", () => {
     speaker.dispose(); other.dispose();
   });
 
+  it.each([30, 60])("resets hidden blocks smile corners through voiced cues and live reduced motion at %i Hz", (hz) => {
+    const query = new MotionPreference();
+    vi.stubGlobal("matchMedia", () => query);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const actor = new Character(NPCS.mia.look), dt = 1 / hz;
+    const rig = actor.naturalRig(), { mouth } = rig, corners = rig.corners!;
+    const bones = actor["skin"]!.skeleton.bones;
+    const stroke = actor["smile"], eyes = actor["eyes"];
+    expect(bones).toContain(mouth);
+    expect(bones).toContain(corners);
+    const owner = { actor, line: 1 };
+    let level = 1;
+    const audio = {
+      visualState: (request: VoiceVisualOwner) => request === owner ? "playing" as const : "interrupt" as const,
+      level: () => level, vowel: () => 0.65,
+    };
+    const pose = bindConversationPose(actor, { audio })!;
+    step(actor, 0.3, hz);
+    const base = corners.position.y;
+    expect(base).toBeCloseTo(0.02, 9);
+    const openCorners = (seconds: number) => Array.from({ length: Math.round(seconds * hz) }, () => {
+      actor.update(dt);
+      expect(mouth.scale.y).toBeGreaterThan(0.2);
+      expect(stroke.scale.y).toBeLessThan(0.001);
+      expect(corners.scale.y).toBeLessThan(0.001);
+      return corners.position.y;
+    });
+
+    pose.speak(owner.line, owner, { kind: "headGreeting" });
+    const greeting = openCorners(0.75);
+    expect(pose.react("understood")).toBe(true);
+    const understood = openCorners(0.25);
+    const voicedHeight = mouth.scale.y;
+
+    query.set(true);
+    const still: number[][] = [];
+    let blink = false;
+    const reducedFrames = (frames: number) => {
+      for (let i = 0; i < frames; i++) {
+        actor.update(dt);
+        still.push(bones.flatMap((joint) => [
+          joint.rotation.x, joint.rotation.y, joint.rotation.z, ...joint.position.toArray(),
+        ]));
+        blink ||= pose.applied.blink > 0.45 && eyes.scale.y < 0.65;
+      }
+    };
+    reducedFrames(1);
+    const firstReduced = corners.position.y;
+    expect(pose.applied.reduced).toBe(true);
+    expect(mouth.scale.y).toBeCloseTo(voicedHeight, 6);
+    expect(corners.scale.y).toBeLessThan(0.001);
+
+    level = 0.45;
+    reducedFrames(Math.round(0.3 * hz));
+    const softHeight = mouth.scale.y;
+    expect(softHeight).toBeGreaterThan(0.2);
+    expect(softHeight).toBeLessThan(voicedHeight - 0.2);
+    level = 0;
+    reducedFrames(Math.floor(0.24 * hz));
+    expect(pose.applied.sample).toBe("quiet");
+    expect(mouth.scale.y).toBeLessThan(0.001);
+    expect(stroke.scale.y).toBe(1);
+    reducedFrames(7 * hz);
+    expect(blink).toBe(true);
+
+    level = 0.8;
+    reducedFrames(Math.round(0.3 * hz));
+    expect(pose.applied.sample).toBe("voiced");
+    expect(mouth.scale.y).toBeGreaterThan(softHeight + 0.2);
+    expect(stroke.scale.y).toBeLessThan(0.001);
+    expect(pose.react("headGreeting", 1, 0.1)).toBe(false);
+    query.set(false);
+    for (let i = 0; i < Math.round(0.3 * hz); i++) {
+      actor.update(dt);
+      expect(pose.applied).toMatchObject({ reduced: false, gesture: null, gestureWeight: 0, reactionWeight: 0 });
+      expect(mouth.scale.y).toBeGreaterThan(softHeight + 0.2);
+      expect(corners.position.y).toBeCloseTo(base, 9);
+    }
+
+    for (const [samples, amplitude] of [[greeting, 0.005], [understood, 0.008]] as const) {
+      expect(samples.every(Number.isFinite)).toBe(true);
+      expect(Math.min(...samples)).toBeGreaterThanOrEqual(base);
+      expect(Math.max(...samples) - base).toBeCloseTo(amplitude, 5);
+      expect(Math.max(...samples) - base).toBeLessThanOrEqual(amplitude + 1e-9);
+    }
+    expect(firstReduced).toBeCloseTo(base, 9);
+    still[0].forEach((_, channel) => {
+      const values = still.map((row) => row[channel]);
+      expect(Math.max(...values) - Math.min(...values)).toBeLessThanOrEqual(0.002);
+    });
+    actor.dispose();
+  });
+
   it.each([30, 60])("uses the thumb-side forearm for three bounded pulses at %i Hz", (hz) => {
     const actor = new Character(NPCS.mia.look), dt = 1 / hz;
     const pose = bindConversationPose(actor)!;

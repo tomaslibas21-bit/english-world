@@ -1705,6 +1705,9 @@ export class Character {
     this.browR.position.y = by;
     this.browL.rotation.z = f.tilt * idle + browOne * 8;
     this.browR.rotation.z = -f.tilt * idle;
+    const smile = pose ? friendly.smile + (f.smile - friendly.smile) * idle : f.smile;
+    // The pose adds to this frame's expression even when the corners are hidden.
+    this.corners.position.y = smile * (speaking ? 0.6 : 1);
     if (pose ? pose.mouth > 0 : speaking && open > 0.06) {
       // open: narrow and tall for a round sound, wide and flatter for a bright one
       const rd = pose?.roundness ?? this.mouthRound;
@@ -1717,11 +1720,9 @@ export class Character {
     } else {
       // closed: the stroke, its corners up or down with the expression (lips together between words: a smaller smile)
       vis(this.mouth, false);
-      const smile = pose ? friendly.smile + (f.smile - friendly.smile) * idle : f.smile;
       const wide = 1 + Math.max(0, smile) * 4.5;
       this.smile.scale.set(wide, 1, 1);
       this.corners.scale.set(wide, 1, 1);
-      this.corners.position.y = smile * (speaking ? 0.6 : 1);
     }
 
     if (seated) {
