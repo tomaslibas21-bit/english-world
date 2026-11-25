@@ -9,6 +9,7 @@ import { compose } from "../src/convo/compose";
 import type { VisualPlaybackState } from "../src/game/audio";
 import { Character } from "../src/game/characters/Character";
 import type { VoiceVisualOwner } from "../src/game/talkNatural/contract";
+import { bindConversationPose } from "../src/game/talkNatural/pose";
 import { lineSeed, NaturalSession } from "../src/game/talkNatural/session";
 import { talkRoomAnchors } from "../src/game/world/talkNatural";
 import { EMPTY_CONV, type ConvUI } from "../src/state/store";
@@ -103,8 +104,9 @@ function scene(run = 17, room = "dans-house", npc = "dan") {
     level: () => 0.7,
     vowel: () => 0.5,
   };
+  const people = [host, other];
   const natural = new NaturalSession({
-    run, zone: { id: room, group }, host, cast: [host, other], people: [host, other],
+    run, zone: { id: room, group }, host, cast: [host, other], people,
     extras: [near], player, audio, free: () => true,
   });
   const actors = [host.ch, other.ch, near, player];
@@ -129,7 +131,7 @@ function scene(run = 17, room = "dans-house", npc = "dan") {
       if (audio.visualOwner && audio.state === "playing") audio.elapsed += 1 / 60;
     }
   };
-  return { natural, group, host, other, player, near, conv, audio, turn, advance, waitForLearner };
+  return { natural, group, host, other, people, player, near, conv, audio, turn, advance, waitForLearner };
 }
 
 describe("the 3D situation presentation", () => {
@@ -225,6 +227,31 @@ describe("the 3D situation presentation", () => {
     expect(glanced).toBe(true);
   });
 
+  it("varies the bystander's intervals reproducibly for the same run", () => {
+    const intervals = () => {
+      const s = scene();
+      s.natural.present(s.conv, true);
+      const glance = vi.spyOn(bindConversationPose(s.near)!, "glanceAt");
+      const gaps: number[] = [];
+      let last = 0;
+      for (let frame = 1; frame <= 31 * 60; frame++) {
+        s.natural.update(s.conv, 1 / 60);
+        if (glance.mock.calls.length > gaps.length) {
+          gaps.push(frame - last);
+          last = frame;
+        }
+      }
+      glance.mockRestore();
+      s.natural.dispose();
+      return gaps;
+    };
+    const gaps = intervals();
+    expect(gaps.length).toBeGreaterThanOrEqual(3);
+    expect(gaps.every((gap) => gap >= 6 * 60 - 1 && gap <= 10 * 60 + 1)).toBe(true);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeGreaterThan(1);
+    expect(intervals()).toEqual(gaps);
+  });
+
   it.each([true, false])("deduplicates completion and farewell, then releases existing rigs (completion first %s)", (first) => {
     const s = scene();
     s.natural.present(s.conv, true);
@@ -243,6 +270,33 @@ describe("the 3D situation presentation", () => {
     s.advance(0.15);
     expect(sample()).toBeNull();
     expect(s.player.talkPose).toBeUndefined();
+  });
+
+  it("waits for a hidden late cast member to detach after the other poses are gone", () => {
+    const s = scene();
+    s.player.root.visible = false;
+    s.natural.present(s.conv, true);
+    expect(s.player.talkPose).toBeUndefined();
+    expect(s.near.talkPose).toBeDefined();
+
+    const late = { id: "chloe", ch: new Character(NPCS.chloe.look) };
+    fixtures.push(() => late.ch.dispose());
+    s.group.add(late.ch.root);
+    s.people.push(late);
+    s.turn(1, "Hi!", late);
+    s.advance(0.3);
+    late.ch.update(0.3);
+    expect(s.natural.speaker).toBe(late.ch);
+
+    s.natural.close();
+    s.group.remove(s.near.root, s.host.ch.root, s.other.ch.root);
+    late.ch.root.visible = false;
+    expect(s.natural.update(s.conv, 0)).toBe(true);
+    late.ch.update(0.15);
+    expect(s.natural.update(s.conv, 0)).toBe(true);
+    late.ch.update(0.15);
+    expect(late.ch.talkPose).toBeUndefined();
+    expect(s.natural.update(s.conv, 0)).toBe(false);
   });
 
   it("clears a delayed cue on live reduced motion and does not let a removed run displace a new one", () => {

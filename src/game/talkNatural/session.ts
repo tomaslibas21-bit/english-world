@@ -41,6 +41,7 @@ interface Participant {
 export class NaturalSession {
   private readonly anchors;
   private readonly participants = new Map<string, Participant>();
+  private readonly cast: Participant[];
   private readonly player: Participant;
   private bystander?: Participant;
   private current?: Participant;
@@ -60,7 +61,7 @@ export class NaturalSession {
   private time = 0;
   private armAt = -Infinity;
   private bystanderAt = Infinity;
-  private bystanderBeat = 0;
+  private bystanderSeed = 0;
   private readonly world = new Vector3();
   private readonly target = new Vector3();
   private completion?: Participant;
@@ -73,9 +74,14 @@ export class NaturalSession {
     this.anchors = talkRoomAnchors(options.zone.id, options.zone.group);
     this.player = this.participant({ id: "player", ch: options.player });
     for (const actor of options.cast) this.participants.set(actor.id, this.participant(actor));
+    this.cast = Array.from(this.participants.values());
     this.current = this.participants.get(options.host.id);
     this.bystander = this.findBystander();
-    this.nextBystander();
+    if (this.bystander) {
+      const first = this.chance(this.bystander, 1, 0);
+      this.bystanderSeed = first * 0x100000000;
+      this.bystanderAt = 6 + 4 * first;
+    }
     if (import.meta.env.DEV) this.uninspect = inspectTalkNatural(() => this.sample(), 1);
   }
 
@@ -108,7 +114,7 @@ export class NaturalSession {
   }
 
   private validPeer(peer?: Participant): peer is Participant {
-    return !!peer?.pose?.applied.active && peer.actor.ch.root.visible;
+    return !!peer?.pose?.active && peer.actor.ch.root.visible;
   }
 
   private bind(peer: Participant, role: TalkRole, counter = false) {
@@ -127,9 +133,11 @@ export class NaturalSession {
       if (this.bystander?.actor.ch === actor.ch) {
         this.bystander.pose?.interrupt();
         this.bystander = undefined;
+        this.bystanderAt = Infinity;
       }
       peer = this.participant(actor);
       this.participants.set(id, peer);
+      this.cast.push(peer);
     }
     if (ch && peer.actor.ch !== ch) return;
     if (!peer.pose) this.bind(peer, "cast", true);
@@ -140,7 +148,7 @@ export class NaturalSession {
     this.shown = true;
     this.phase = undefined;
     if (!allowCurrent) this.discardPending(conv);
-    for (const peer of this.participants.values()) {
+    for (const peer of this.cast) {
       if (this.options.free(peer.actor)) this.bind(peer, "cast", true);
     }
     this.bind(this.player, "learner");
@@ -165,13 +173,13 @@ export class NaturalSession {
     this.releasing = true;
     this.shown = false;
     this.pending = this.completion = this.voice = this.observedOwner = this.skipOwner = undefined;
-    for (const peer of this.participants.values()) peer.pose?.release();
+    for (const peer of this.cast) peer.pose?.release();
     this.player.pose?.release();
     this.bystander?.pose?.release();
   }
 
   private interruptActors() {
-    for (const peer of this.participants.values()) { peer.pose?.interrupt(); peer.pose = undefined; }
+    for (const peer of this.cast) { peer.pose?.interrupt(); peer.pose = undefined; }
     this.player.pose?.interrupt(); this.player.pose = undefined;
     this.bystander?.pose?.interrupt();
     if (this.bystander) this.bystander.pose = undefined;
@@ -184,8 +192,11 @@ export class NaturalSession {
   }
 
   private hasPose() {
-    if (this.player.pose?.applied.active || this.bystander?.pose?.applied.active) return true;
-    for (const peer of this.participants.values()) if (peer.pose?.applied.active) return true;
+    // A hidden actor still owns its pose until the release or an interrupt detaches it.
+    if (this.player.pose?.active || this.bystander?.pose?.active) return true;
+    for (let i = 0; i < this.cast.length; i++) {
+      if (this.cast[i].pose?.active) return true;
+    }
     return false;
   }
 
@@ -220,7 +231,7 @@ export class NaturalSession {
     this.line = speaker ? line : null;
     if (this.line !== null) this.lastLine = this.line;
     this.voice = voice ?? (speaker && !replay && previousLine === line && previousVoice?.actor === speaker.actor.ch ? previousVoice : undefined);
-    for (const other of this.participants.values()) {
+    for (const other of this.cast) {
       const role = conv.phase === "ended" ? "closing" : conv.phase === "you" ? "listening" : "thinking";
       if (other !== speaker) other.pose?.setRole(role);
     }
@@ -298,7 +309,10 @@ export class NaturalSession {
   }
 
   private nextBystander() {
-    this.bystanderAt = this.bystander ? this.time + 6 + 4 * this.chance(this.bystander, ++this.bystanderBeat, 0) : Infinity;
+    if (!this.bystander) return;
+    // Advance the session's seeded 32-bit linear congruential generator once per interval.
+    this.bystanderSeed = (Math.imul(1664525, this.bystanderSeed) + 1013904223) >>> 0;
+    this.bystanderAt = this.time + 6 + 4 * (this.bystanderSeed / 0x100000000);
   }
 
   /** Runs before the existing character updates. Store reads do not schedule React work. */
@@ -331,6 +345,7 @@ export class NaturalSession {
   }
 
   private sample() {
+    if (!import.meta.env.DEV) return null;
     if ((!this.shown && !this.releasing) || !this.hasPose()) return null;
     const current = this.current, voice = this.voice, audio = this.options.audio;
     const speakerId = current?.actor.id ?? null;
@@ -351,7 +366,7 @@ export class NaturalSession {
       reaction: reaction ? { actorId: reaction.peer.actor.id, kind: reaction.kind, sequence: reaction.sequence,
         weight: (reaction.kind === "farewell" ? reaction.peer.pose?.applied.gestureWeight : reaction.peer.pose?.applied.reactionWeight) ?? 0 } : null,
       speaker: applied, player: snapshot(this.player, speakerId), bystander: snapshot(this.bystander, "learner"),
-      others: Array.from(this.participants.values()).filter((p) => p !== current).map((p) => snapshot(p, "learner")).filter(Boolean),
+      others: this.cast.filter((p) => p !== current).map((p) => snapshot(p, "learner")).filter(Boolean),
     };
   }
 }

@@ -95,7 +95,7 @@ function jointValues() {
 }
 
 type JointValues = ReturnType<typeof jointValues>;
-const joints = Object.keys(jointValues()) as (keyof JointValues)[];
+const joints = import.meta.env.DEV ? Object.keys(jointValues()) as (keyof JointValues)[] : undefined;
 
 function readJoints(r: NaturalRig, a: JointValues, eyeBaseY: number) {
   a.torsoPitch = r.body.rotation.x; a.hipRoll = r.body.rotation.z;
@@ -119,7 +119,9 @@ function observation() {
 }
 
 class ConversationPose implements NaturalPoseDriver {
-  private readonly values = observation();
+  declare private readonly values: ReturnType<typeof observation>;
+  declare private readonly base: JointValues;
+  /** Live DEV sample. Runtime callers use the pose's own animation and lifetime state. */
   get applied(): Readonly<ReturnType<typeof observation>> { return this.values; }
   weight = 0;
   private readonly lips: VoiceMouth;
@@ -130,6 +132,7 @@ class ConversationPose implements NaturalPoseDriver {
   private role: TalkRole;
   private engaged = true;
   get releasing() { return !this.engaged && !this.closed; }
+  get active() { return !this.closed; }
   private closed = false;
   private blend: number;
   private armEntry?: ArmEntry;
@@ -165,7 +168,6 @@ class ConversationPose implements NaturalPoseDriver {
   private gazeEnding = false;
   private gazeHold = 0.32;
   private gazeTarget = "";
-  private readonly base = jointValues();
 
   private readonly hand = new Vector3();
   private readonly armAngle = new Euler();
@@ -176,12 +178,18 @@ class ConversationPose implements NaturalPoseDriver {
   private readonly rightThigh: Thigh;
   private torsoMixed = false;
   private shouldersMixed = false;
+  private shoulderBaseL = 0;
+  private shoulderBaseR = 0;
   private readonly motion: MediaQueryList | undefined;
   private readonly mount: Object3D[] = [];
   private eyeBaseX = 0;
   private eyeBaseY = 0;
 
   constructor(private readonly actor: GameCharacter, private readonly rig: NaturalRig, private readonly audio: VoiceSource | undefined, private readonly options: PoseOptions, entry: ArmEntry) {
+    if (import.meta.env.DEV) {
+      this.values = observation();
+      this.base = jointValues();
+    }
     this.blend = entry.progress;
     this.weight = ease(this.blend);
     if (entry.active && this.blend < 1) this.armEntry = entry;
@@ -307,8 +315,10 @@ class ConversationPose implements NaturalPoseDriver {
     this.rig.eye.position.x = this.eyeBaseX;
     this.rig.eye.position.y = this.eyeBaseY;
     this.detach();
-    this.values.sample = "interrupt";
-    this.values.level = null;
+    if (import.meta.env.DEV) {
+      this.values.sample = "interrupt";
+      this.values.level = null;
+    }
     if (this.actor.anim === "wave") this.actor.setAnim("idle");
     this.actor.update(0);
   };
@@ -320,11 +330,13 @@ class ConversationPose implements NaturalPoseDriver {
     this.gestured.clear();
     this.lips.reset();
     this.weight = 0;
-    this.values.active = false;
-    this.values.weight = this.values.mouth = this.values.gestureWeight = 0;
-    this.values.gesture = null;
+    if (import.meta.env.DEV) {
+      this.values.active = false;
+      this.values.weight = this.values.mouth = this.values.gestureWeight = 0;
+      this.values.gesture = null;
+    }
     this.motion?.removeEventListener("change", this.motionChanged);
-    for (const node of this.mount) node.removeEventListener("removed", this.interrupt);
+    for (let i = 0; i < this.mount.length; i++) this.mount[i].removeEventListener("removed", this.interrupt);
     this.mount.length = 0;
     if (this.actor.talkPose === this) this.actor.talkPose = undefined;
     this.options.onDetach?.();
@@ -372,8 +384,10 @@ class ConversationPose implements NaturalPoseDriver {
   private sampleVoice(dt: number, paused: boolean) {
     this.lips.read(dt, this.audio, this.voice ?? undefined, paused);
     const { sample, level, silence } = this.lips;
-    this.values.sample = sample;
-    this.values.level = level;
+    if (import.meta.env.DEV) {
+      this.values.sample = sample;
+      this.values.level = level;
+    }
     if (silence >= 0.18) this.afterQuiet = true;
     if (sample === "voiced" && level! >= 0.18 && this.afterQuiet) {
       this.afterQuiet = false;
@@ -421,7 +435,7 @@ class ConversationPose implements NaturalPoseDriver {
     const age = this.gazeAge;
     const blend = this.weight * ease(this.gazeFade);
     const eyesWeight = oneShot(age, 0.08, 0.13 + this.gazeHold, 0.22) * blend;
-    if (eyesWeight === 0) return;
+    if (eyesWeight === 0) return false;
     // The target is in world space. Work in the root's frame so parent rotation/scale also count.
     const root = this.actor.root, body = this.rig.body;
     root.updateWorldMatrix(true, false);
@@ -431,23 +445,29 @@ class ConversationPose implements NaturalPoseDriver {
     this.ray.copy(this.gaze).applyMatrix4(this.inverseWorld).sub(this.hand);
     const yaw = Math.atan2(this.ray.x, this.ray.z);
     const pitch = -Math.atan2(this.ray.y, Math.hypot(this.ray.x, this.ray.z));
-    if (Math.abs(yaw) > 65 * Math.PI / 180 || Math.abs(pitch) > 35 * Math.PI / 180) return;
+    if (Math.abs(yaw) > 65 * Math.PI / 180 || Math.abs(pitch) > 35 * Math.PI / 180) return false;
     const x = yaw - head.rotation.y, y = pitch - head.rotation.x;
     // With no iris joint, move the style's shared eye joint by the same limited amount.
     const eyeX = clamp(eye.position.x, -0.009, 0.009);
     const eyeY = this.rig.corners ? clamp(eye.position.y, -0.004, 0.004) : 0;
-    const eyeBeforeX = eye.position.x, eyeBeforeY = eye.position.y;
+    const eyeBeforeX = import.meta.env.DEV ? eye.position.x : 0;
+    const eyeBeforeY = import.meta.env.DEV ? eye.position.y : 0;
     eye.position.x = mix(eyeX, clamp(x * 0.028, -0.009, 0.009), eyesWeight);
     eye.position.y = (this.rig.corners ? 0 : this.eyeBaseY) + mix(eyeY, clamp(-y * 0.019, -0.004, 0.004), eyesWeight);
     const headWeight = oneShot(age - 0.08, 0.13, this.gazeHold, 0.22) * blend;
-    const a = this.values;
-    a.gazeTarget = this.gazeTarget;
-    a.gazeEyeX = eye.position.x - eyeBeforeX;
-    a.gazeEyeY = eye.position.y - eyeBeforeY;
-    a.gazeYaw = clamp(x, -0.12, 0.12) * headWeight;
-    a.gazePitch = clamp(y, -0.07, 0.07) * headWeight;
-    head.rotation.y += a.gazeYaw;
-    head.rotation.x += a.gazePitch;
+    const gazeYaw = clamp(x, -0.12, 0.12) * headWeight;
+    const gazePitch = clamp(y, -0.07, 0.07) * headWeight;
+    if (import.meta.env.DEV) {
+      const a = this.values;
+      a.gazeTarget = this.gazeTarget;
+      a.gazeEyeX = eye.position.x - eyeBeforeX;
+      a.gazeEyeY = eye.position.y - eyeBeforeY;
+      a.gazeYaw = gazeYaw;
+      a.gazePitch = gazePitch;
+    }
+    head.rotation.y += gazeYaw;
+    head.rotation.x += gazePitch;
+    return !!this.gazeTarget;
   }
 
   private mixTorso(pitch: number, roll: number) {
@@ -473,8 +493,8 @@ class ConversationPose implements NaturalPoseDriver {
   restoreBase() {
     if (this.shouldersMixed) {
       this.shouldersMixed = false;
-      this.rig.upperL.position.y = this.base.shoulderL;
-      this.rig.upperR.position.y = this.base.shoulderR;
+      this.rig.upperL.position.y = this.shoulderBaseL;
+      this.rig.upperR.position.y = this.shoulderBaseR;
     }
     if (!this.torsoMixed) return;
     this.torsoMixed = false;
@@ -536,9 +556,13 @@ class ConversationPose implements NaturalPoseDriver {
     if (!r) return;
     if (kind === "shrug") {
       if (!supported) {
-        this.shouldersMixed = true;
-        upperL.position.y = this.base.shoulderL + 0.015 * weight;
-        upperR.position.y = this.base.shoulderR + 0.015 * weight;
+        if (!this.shouldersMixed) {
+          this.shoulderBaseL = upperL.position.y;
+          this.shoulderBaseR = upperR.position.y;
+          this.shouldersMixed = true;
+        }
+        upperL.position.y = this.shoulderBaseL + 0.015 * weight;
+        upperR.position.y = this.shoulderBaseR + 0.015 * weight;
       }
       head.rotation.z += 0.04 * c.side * weight;
     }
@@ -557,7 +581,7 @@ class ConversationPose implements NaturalPoseDriver {
   }
 
   apply(dt: number, moving: boolean, blink: number, watching = false) {
-    const r = this.rig, a = this.values, actor = this.actor;
+    const r = this.rig, actor = this.actor;
     const seated = actor.anim === "sit";
     const blocked = this.blockedHands, blockL = !!(blocked & 1), blockR = !!(blocked & 2);
     const supported = seated || blockL || blockR || this.counterY !== undefined;
@@ -569,13 +593,18 @@ class ConversationPose implements NaturalPoseDriver {
     const responseWeight = response ? cueTime(response, this.response.age) * this.weight : 0;
     const addResponse = kind === "yes" || kind === "no" || kind === "headGreeting" ? 1 - responseWeight : 1;
     let faded = 0;
-    a.gazeTarget = null;
-    a.gazeYaw = a.gazePitch = a.gazeEyeX = a.gazeEyeY = a.listeningWeight = a.reactionWeight = 0;
-    readJoints(r, this.base, r.corners ? 0 : this.eyeBaseY);
+    if (import.meta.env.DEV) {
+      const a = this.values;
+      a.gazeTarget = null;
+      a.gazeYaw = a.gazePitch = a.gazeEyeX = a.gazeEyeY = a.listeningWeight = a.reactionWeight = 0;
+      readJoints(r, this.base, r.corners ? 0 : this.eyeBaseY);
+    }
     if (!this.reduced && !moving && this.weight > 0) {
+      const incline = supported && this.inclination > 0;
+      const headBasePitch = incline ? r.head.rotation.x : 0;
       const left = !blockL, right = !blockR;
       const listen = ease(this.listenWeight) * this.weight;
-      a.listeningWeight = listen;
+      if (import.meta.env.DEV) this.values.listeningWeight = listen;
       const learner = this.role === "learner";
       const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * this.weight * (1 - Math.max(cueWeight, responseWeight));
       const hip = learner && this.learnerHip && !supported;
@@ -598,15 +627,15 @@ class ConversationPose implements NaturalPoseDriver {
       }
       this.applyCue(this.cue, cueWeight * addResponse, seated, left, right, supported);
       this.applyCue(this.response, responseWeight, seated, left, right, supported);
-      a.reactionWeight = responseWeight;
-      this.applyGaze(r.head, r.eye);
-      if (supported && this.inclination > 0) {
+      if (import.meta.env.DEV) this.values.reactionWeight = responseWeight;
+      const gazing = this.applyGaze(r.head, r.eye);
+      if (incline) {
         // Leave room for the listening nod and give speech, glances and reactions their pitch.
-        const limit = responseWeight > 0 ? 0.08 : a.gazeTarget ? 0.07 : this.role === "speaking" ? 0.045 : 0.08;
-        const room = Math.max(0, limit - (r.head.rotation.x - this.base.headPitch));
+        const limit = responseWeight > 0 ? 0.08 : gazing ? 0.07 : this.role === "speaking" ? 0.045 : 0.08;
+        const room = Math.max(0, limit - (r.head.rotation.x - headBasePitch));
         const pitch = Math.min(room, 0.024 * ease(this.inclination) * this.weight);
         r.head.rotation.x += pitch;
-        if (watching && !a.gazeTarget) r.eye.position.y += pitch * 0.012;
+        if (watching && !gazing) r.eye.position.y += pitch * 0.012;
       }
     }
     if (this.armEntry) {
@@ -614,15 +643,19 @@ class ConversationPose implements NaturalPoseDriver {
       if (weight === 1 || seated || moving) this.armEntry = undefined;
       else this.armEntry.apply(weight, blocked);
     }
-    a.role = this.role; a.weight = this.weight; a.reduced = this.reduced; a.watching = watching && !this.reduced;
-    const appliedCue = moving || this.reduced ? 0 : cueWeight * addResponse;
-    a.gesture = appliedCue ? kind : faded ? this.fading.kind : null;
-    a.gestureWeight = appliedCue || faded;
-    a.mouth = this.mouth; a.mouthScaleY = r.mouth.scale.y; a.blink = blink;
-    readJoints(r, a, r.corners ? 0 : this.eyeBaseY);
-    for (let i = 0; i < joints.length; i++) {
-      const joint = joints[i];
-      a.deltas[joint] = a[joint] - this.base[joint];
+    if (import.meta.env.DEV) {
+      const a = this.values;
+      a.role = this.role; a.weight = this.weight; a.reduced = this.reduced; a.watching = watching && !this.reduced;
+      const appliedCue = moving || this.reduced ? 0 : cueWeight * addResponse;
+      a.gesture = appliedCue ? kind : faded ? this.fading.kind : null;
+      a.gestureWeight = appliedCue || faded;
+      a.mouth = this.mouth; a.mouthScaleY = r.mouth.scale.y; a.blink = blink;
+      readJoints(r, a, r.corners ? 0 : this.eyeBaseY);
+      const keys = joints!;
+      for (let i = 0; i < keys.length; i++) {
+        const joint = keys[i];
+        a.deltas[joint] = a[joint] - this.base[joint];
+      }
     }
     if (!this.engaged && this.weight === 0 && !this.armEntry) this.detach();
   }
