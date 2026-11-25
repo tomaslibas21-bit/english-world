@@ -339,7 +339,7 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
   return <div className="npc-info" ref={ref}
     onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(false); dismissed.current = false; } }}
     onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) close(); }}>
-    <button className="npc-info-button" aria-label="Apie pašnekovą" aria-expanded={open} aria-controls="npc-info-card"
+    <button className="npc-info-button" data-pad-focus-opens aria-label="Apie pašnekovą" aria-expanded={open} aria-controls="npc-info-card"
       onPointerEnter={(e) => { if (e.pointerType === "mouse" && !dismissed.current) setHover(true); }}
       onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))} onClick={() => { dismissed.current = false; setTapped(!tapped); }}>
       <span aria-hidden="true">i</span>

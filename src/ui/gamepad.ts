@@ -1,5 +1,6 @@
 import { PAD_LINES } from "../content/gamepad";
 import type { PadDebug } from "../game/gamepad";
+import { padPopovers } from "./padPopover";
 import "./gamepad.css";
 
 const SCOPE = "[data-pad-scope]";
@@ -11,6 +12,8 @@ const DEFAULT = "[data-pad-default]";
 const NOTES = ".objective-notes";
 const GRIDS = ".scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
 const ANSWERS = "[data-pad-answer], .dym-opt";
+const MEETING_ANSWERS = "[data-meeting-answer]";
+const FOCUS_OPENS = "[data-pad-focus-opens]";
 
 interface Surface {
   priority: number;
@@ -20,6 +23,8 @@ interface Surface {
 }
 
 const surfaces: Record<string, Surface> = {
+  popover: { priority: 110 },
+  tooltip: { priority: 110 },
   intro: { priority: 100, first: DEFAULT },
   thread: { priority: 90, first: ".text-replies button, .text-bubble", slot: ".text-thread" },
   panel: { priority: 80, first: ".scn-card[data-sit], .contact", slot: ".sheet, .phone" },
@@ -31,6 +36,7 @@ const surfaces: Record<string, Surface> = {
   "surf-picker": { priority: 60, first: ".surf-level" },
   "surf-choices": { priority: 60, first: ".surf-choice", back: ".surf-x" },
   taxi: { priority: 60, first: ".taxi-choice", back: ".mode-hud .mode-exit", slot: ".taxi-choices" },
+  meeting: { priority: 60, first: MEETING_ANSWERS },
   "road-offer": { priority: 60, first: ".road-choice" },
   "road-status": { priority: 60 },
   "sea-status": { priority: 60 },
@@ -57,6 +63,7 @@ const MENU_MAP = [["✚/L", "move"], ["A", "choose"], ["B", "back"]] as const;
 
 type Direction = "up" | "down" | "left" | "right";
 type Launcher = { target: HTMLElement; from: HTMLElement; at: number };
+type OverlayReturn = { root: HTMLElement; anchor: HTMLElement; direction?: Direction };
 
 function control(el: Element | null): el is HTMLElement {
   return !!el && el instanceof HTMLElement && el.matches(CONTROL) && !el.matches(UNAVAILABLE) && !el.closest(BLOCKED) && el.isConnected;
@@ -92,39 +99,81 @@ function gridNeighbor(current: HTMLElement, controls: HTMLElement[], direction: 
   return best;
 }
 
+function trayNeighbor(current: HTMLElement, controls: HTMLElement[], direction: Direction) {
+  const row = current.closest("[data-row]");
+  const tray = row?.parentElement;
+  const from = current.getBoundingClientRect();
+  const sign = direction === "up" ? -1 : 1;
+  let best: HTMLElement | undefined, vertical = Infinity, horizontal = Infinity;
+  for (const item of controls) {
+    if (!tray?.contains(item) || item.closest("[data-row]") === row) continue;
+    const to = item.getBoundingClientRect();
+    const y = (to.top + to.bottom - from.top - from.bottom) * sign;
+    const x = Math.abs(to.left + to.right - from.left - from.right);
+    if (y > 4 && (y < vertical || (y === vertical && x < horizontal))) {
+      best = item;
+      vertical = y;
+      horizontal = x;
+    }
+  }
+  return best;
+}
+
 function overlaps(left: number, top: number, width: number, height: number, box: DOMRect, gap = 8) {
   return left < box.right + gap && left + width > box.left - gap &&
     top < box.bottom + gap && top + height > box.top - gap;
 }
 
 function scrollNear(target: HTMLElement, scope: HTMLElement) {
+  let needX = true, needY = true;
   for (let parent = target.parentElement; parent; parent = parent.parentElement) {
     const style = getComputedStyle(parent);
-    const x = /auto|scroll/.test(style.overflowX) && parent.scrollWidth > parent.clientWidth;
-    const y = /auto|scroll/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight;
+    const x: boolean = needX && /auto|scroll/.test(style.overflowX) && parent.scrollWidth > parent.clientWidth;
+    const y: boolean = needY && /auto|scroll/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight;
     if (x || y) {
       const box = target.getBoundingClientRect(), bounds = parent.getBoundingClientRect();
       const left = bounds.left + parent.clientLeft + 4, top = bounds.top + parent.clientTop + 4;
       const right = left + parent.clientWidth - 8, bottom = top + parent.clientHeight - 8;
-      if (x && box.left < left) parent.scrollLeft += box.left - left;
-      else if (x && box.right > right) parent.scrollLeft += box.right - right;
-      if (y && box.top < top) parent.scrollTop += box.top - top;
-      else if (y && box.bottom > bottom) parent.scrollTop += box.bottom - bottom;
+      let dx = 0, dy = 0;
+      if (x && box.left < left) dx = box.left - left;
+      else if (x && box.right > right) dx = box.right - right;
+      if (y && box.top < top) dy = box.top - top;
+      else if (y && box.bottom > bottom) dy = box.bottom - bottom;
+      if (dx || dy) parent.scrollBy({ left: dx, top: dy, behavior: "instant" });
+      needX &&= !x;
+      needY &&= !y;
     }
-    if (parent === scope) break;
+    if (parent === scope || (!needX && !needY)) break;
   }
 }
 
 function label(target: HTMLElement) {
   const data = target.dataset;
-  return target.id || data.sit || data.line || data.padAnswer || data.chip || data.thread || data.ball || data.pocket ||
+  return target.id || data.sit || data.line || data.padAnswer || data.meetingAnswer || data.chip || data.thread || data.ball || data.pocket ||
     data.word || data.target || data.choice || data.way || data.padTool || target.classList[0] || target.localName;
+}
+
+function focusKey(root: HTMLElement, target: HTMLElement) {
+  const key = label(target);
+  const { sit, padAnswer, meetingAnswer, padTool } = target.dataset;
+  // The featured card and its copy in the chapter list share the same situation key.
+  if (sit || padAnswer || meetingAnswer || padTool) return key;
+  let index = 0, count = 0;
+  for (const item of root.querySelectorAll<HTMLElement>(CONTROL)) if (label(item) === key) {
+    count++;
+    if (item === target) index = count;
+  }
+  return count > 1 ? `${key}#${index}` : key;
 }
 
 export class GamepadView {
   private app?: HTMLElement;
   private observer?: MutationObserver;
   private readonly roots = new Set<HTMLElement>();
+  private readonly popovers = new Set<HTMLElement>();
+  private popoversChanged = false;
+  private overlayReturn?: OverlayReturn;
+  private lastControl = new WeakMap<HTMLElement, HTMLElement>();
   private active: HTMLElement | null = null;
   private activePhase: string | undefined;
   private desktop: HTMLElement | null = null;
@@ -160,7 +209,11 @@ export class GamepadView {
       subtree: true, childList: true, attributes: true,
       attributeFilter: ["data-pad-scope", "data-pad-phase", "disabled", "aria-disabled"],
     });
+    for (const node of document.body.children) {
+      if (node instanceof HTMLElement && padPopovers.has(node)) this.watchPopover(node);
+    }
     document.addEventListener("pointerdown", this.otherInput, true);
+    document.addEventListener("padpopover", this.popoverChanged);
     document.addEventListener("keydown", this.otherInput, true);
     document.addEventListener("click", this.rememberClick, true);
     document.addEventListener("focusin", this.syncFocus);
@@ -188,6 +241,10 @@ export class GamepadView {
     this.observer?.disconnect();
     this.observer = undefined;
     this.roots.clear();
+    this.popovers.clear();
+    this.popoversChanged = false;
+    this.overlayReturn = undefined;
+    this.lastControl = new WeakMap();
     this.returnTo = new WeakMap();
     this.active = this.desktop = null;
     this.activePhase = undefined;
@@ -196,6 +253,7 @@ export class GamepadView {
     this.clearRing();
     this.debug.focusTarget = null;
     document.removeEventListener("pointerdown", this.otherInput, true);
+    document.removeEventListener("padpopover", this.popoverChanged);
     document.removeEventListener("keydown", this.otherInput, true);
     document.removeEventListener("click", this.rememberClick, true);
     document.removeEventListener("focusin", this.syncFocus);
@@ -205,10 +263,27 @@ export class GamepadView {
   }
 
   /** Drain synchronous DOM commits before an action. The observer owns updates between samples. */
-  sync() {
+  sync = () => {
     const changes = this.observer?.takeRecords();
     if (changes?.length) this.changed(changes);
+    if (this.popoversChanged) this.refresh();
+  };
+
+  private watchPopover(node: HTMLElement) {
+    this.popovers.add(node);
+    if (this.kind(node) === "popover") this.observer?.observe(node, {
+      subtree: true, childList: true, attributes: true, attributeFilter: ["disabled", "aria-disabled"],
+    });
   }
+
+  private popoverChanged = (event: Event) => {
+    const node = (event as CustomEvent<HTMLElement>).detail;
+    if (padPopovers.has(node)) this.watchPopover(node);
+    else this.popovers.delete(node);
+    if (this.popoversChanged) return;
+    this.popoversChanged = true;
+    queueMicrotask(this.sync);
+  };
 
   private collect(node: Node) {
     if (!(node instanceof HTMLElement)) return false;
@@ -256,6 +331,7 @@ export class GamepadView {
   }
 
   private refresh() {
+    this.popoversChanged = false;
     const previous = this.active;
     let active = this.desktop?.isConnected ? this.desktop : null;
     let rank = active ? surfaces.toolbar.priority : 0;
@@ -265,6 +341,17 @@ export class GamepadView {
       if (priority > rank || (priority === rank && active && (active.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING))) {
         active = node;
         rank = priority;
+      }
+    }
+    const under = active;
+    for (const node of this.popovers) {
+      const popup = padPopovers.get(node);
+      if (!popup?.anchor.isConnected || !node.isConnected || popup.anchor.closest(BLOCKED) ||
+          (under && !under.contains(popup.anchor))) continue;
+      // Body portals share a stacking level. The later sibling is painted on top.
+      if (active === under || (active && (active.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING))) {
+        active = node;
+        rank = surfaces[this.kind(node)].priority;
       }
     }
     const phase = active?.dataset.padPhase;
@@ -281,7 +368,17 @@ export class GamepadView {
         this.launcher = undefined;
       }
     }
-    if (this.openingDrawer && active?.dataset.padScope === "drawer") {
+    if (this.overlayReturn && this.overlayReturn.root === previous && active !== previous) {
+      const { anchor, direction } = this.overlayReturn;
+      this.overlayReturn = undefined;
+      if (active && !textEntry(document.activeElement)) {
+        const controls = this.candidates();
+        const target = [anchor, document.activeElement, this.lastControl.get(active)].find(
+          (item): item is HTMLElement => !!item && controls.includes(item as HTMLElement),
+        ) ?? controls[0];
+        if (target && (!direction || !this.moveFocus(direction, target))) this.focus(target, true);
+      }
+    } else if (this.openingDrawer && active?.dataset.padScope === "drawer") {
       this.openingDrawer = false;
       const target = this.restore ?? this.candidates()[0];
       this.restore = undefined;
@@ -312,6 +409,7 @@ export class GamepadView {
     if (!event.isTrusted) return;
     this.clearRing();
     this.launcher = undefined;
+    this.overlayReturn = undefined;
     if (event.type === "pointerdown" && this.desktop && !this.desktop.contains(event.target as Node) && this.active === this.desktop) {
       this.desktop = null;
       this.refresh();
@@ -332,24 +430,32 @@ export class GamepadView {
   };
   private syncFocus = () => {
     const target = document.activeElement;
-    this.debug.focusTarget = this.active?.contains(target) && control(target) ? label(target) : null;
+    const root = this.active;
+    if (root?.contains(target) && control(target) && visible(target)) {
+      this.lastControl.set(root, target);
+      this.debug.focusTarget = focusKey(root, target);
+    } else this.debug.focusTarget = null;
   };
 
   private candidates() {
     const root = this.active!;
     const kind = this.kind(root);
-    const first = kind === "home" ? undefined : surfaces[kind].first;
+    const first = kind === "home" || kind === "meeting" ? undefined : surfaces[kind].first;
     const priority: HTMLElement[] = [], rest: HTMLElement[] = [], back: HTMLElement[] = [];
-    for (const target of root.querySelectorAll(CONTROL)) {
+    for (const target of root.querySelectorAll(kind === "popover" ? "button" : CONTROL)) {
       if (!control(target) || !visible(target)) continue;
       (first && target.matches(first) ? priority : target.matches(BACK) ? back : rest).push(target);
     }
     return priority.concat(rest, back);
   }
 
-  private focus(target: HTMLElement) {
+  private focus(target: HTMLElement, restoring = false) {
     const previous = document.activeElement;
+    // Keep native focus. Suppress the delegated React focus opener only during restoration.
+    const quiet = restoring && target.matches(FOCUS_OPENS);
+    if (quiet) target.addEventListener("focusin", this.stopFocusOpen);
     target.focus({ preventScroll: true });
+    if (quiet) target.removeEventListener("focusin", this.stopFocusOpen);
     if (document.activeElement !== target) return false;
     this.clearRing();
     this.focused = target;
@@ -362,33 +468,50 @@ export class GamepadView {
     return true;
   }
 
+  private stopFocusOpen = (event: Event) => event.stopPropagation();
+
   navigate(direction: Direction) {
     if (!this.active || this.composing || textEntry(document.activeElement)) return;
-    const controls = this.candidates(), current = document.activeElement as HTMLElement;
-    const index = controls.indexOf(current), step = direction === "up" || direction === "left" ? -1 : 1;
+    if (this.kind(this.active) === "tooltip") {
+      this.closePopover(this.active, direction);
+      return;
+    }
+    this.moveFocus(direction, document.activeElement);
+  }
+
+  private moveFocus(direction: Direction, current: Element | null) {
+    const controls = this.candidates();
+    const index = controls.indexOf(current as HTMLElement), step = direction === "up" || direction === "left" ? -1 : 1;
     let next: HTMLElement | undefined = controls[index + step];
-    if (index < 0) next = this.kind(this.active) === "home"
-      ? controls.find((item) => item.matches(surfaces.home.first!)) ?? controls[0] : controls[0];
-    const grid = index >= 0 ? current.closest(GRIDS) : null;
+    if (index < 0) {
+      const first = surfaces[this.kind(this.active!)].first;
+      next = (first && controls.find((item) => item.matches(first))) || controls[0];
+    }
+    const grid = index >= 0 ? controls[index].closest(GRIDS) : null;
     if (grid) {
       const columns = getComputedStyle(grid).gridTemplateColumns;
       if (!columns || columns === "none" || columns.includes(" ")) {
-        const neighbor = gridNeighbor(current, controls, direction, grid);
+        const neighbor = gridNeighbor(controls[index], controls, direction, grid);
         // At the edge of a grid, the ordered list can lead into the next group.
-        next = neighbor ?? (next?.closest(GRIDS) !== grid ? next : undefined);
+        next = neighbor ?? (grid.matches(".barista-chips") && (direction === "up" || direction === "down")
+          ? trayNeighbor(controls[index], controls, direction)
+          : next?.closest(GRIDS) !== grid ? next : undefined);
       }
     }
-    if (next && this.focus(next)) this.debug.lastAction = "focus";
+    if (!next || !this.focus(next)) return false;
+    this.debug.lastAction = "focus";
+    return true;
   }
 
   confirm() {
     const root = this.active;
     if (!root || this.composing || textEntry(document.activeElement)) return;
     const current = document.activeElement;
-    const target = root.contains(current) && control(current) ? current :
-      root.dataset.padScope === "intro" ? root.querySelector(DEFAULT) : null;
-    if (!control(target) || !visible(target)) return;
-    this.focus(target);
+    const kind = this.kind(root);
+    const target = root.contains(current) && control(current) && (kind !== "popover" || current.matches("button")) ? current :
+      kind === "intro" ? root.querySelector<HTMLElement>(DEFAULT) : kind === "popover" ? this.candidates()[0] :
+      kind === "meeting" ? this.candidates().find((item) => item.matches(MEETING_ANSWERS)) : null;
+    if (!target || !control(target) || !visible(target) || !this.focus(target)) return;
     this.sync();
     if (this.active !== root || !control(target) || !visible(target)) return;
     if (!target.matches(BACK)) this.launcher = { target, from: root, at: performance.now() };
@@ -400,7 +523,9 @@ export class GamepadView {
   back(fallback?: () => void) {
     const root = this.active;
     if (!root || this.composing) return;
-    if (textEntry(document.activeElement)) {
+    if (this.closePopover(root)) return;
+    const kind = this.kind(root);
+    if (kind !== "info" && textEntry(document.activeElement)) {
       // Keep the draft and the existing typing state when recognition gave the field focus.
       const field = document.activeElement;
       if (!root.contains(field) || !field?.matches(".typebox input")) return;
@@ -410,7 +535,6 @@ export class GamepadView {
       if (target && this.focus(target)) { this.debug.lastAction = "back"; this.resetInput(); this.syncFocus(); }
       return;
     }
-    const kind = this.kind(root);
     const target = kind === "drawer" ? this.menuButton() :
       root.querySelector(BACK) ?? (surfaces[kind].back ? this.app?.querySelector(surfaces[kind].back!) : null);
     if (kind === "toolbar") {
@@ -419,7 +543,9 @@ export class GamepadView {
       this.debug.lastAction = "back";
       this.refresh();
     } else if (control(target ?? null) && visible(target as HTMLElement)) {
-      this.restore = kind === "drawer" ? target as HTMLElement : kind === "info" ? undefined : this.returnTo.get(root)?.target;
+      const infoLauncher = kind === "info" && root.parentElement?.querySelector<HTMLElement>(FOCUS_OPENS);
+      if (infoLauncher) this.overlayReturn = { root, anchor: infoLauncher };
+      this.restore = kind === "drawer" ? target as HTMLElement : infoLauncher ? undefined : this.returnTo.get(root)?.target;
       this.focusOnReturn = !!this.restore;
       this.returnTo.delete(root);
       this.debug.lastAction = "back";
@@ -429,6 +555,16 @@ export class GamepadView {
       this.debug.lastAction = "back";
       fallback();
     }
+  }
+
+  private closePopover(root: HTMLElement, direction?: Direction) {
+    const popup = padPopovers.get(root);
+    if (!popup) return false;
+    this.overlayReturn = { root, anchor: popup.anchor.closest<HTMLElement>(CONTROL) ?? popup.anchor, direction };
+    this.debug.lastAction = "back";
+    popup.close();
+    this.sync();
+    return true;
   }
 
   private menuButton() {
@@ -545,7 +681,7 @@ export class GamepadView {
       } else if (kind === "panel") {
         const sheet = active.querySelector<HTMLElement>(surfaces.panel.slot!);
         if (!desktop || !sheet || sheet.getBoundingClientRect().left < 292) slot = sheet;
-      } else if (!desktop && kind !== "drawer" && kind !== "toolbar") {
+      } else if (!desktop && !["drawer", "toolbar", "popover", "tooltip", "meeting"].includes(kind)) {
         const selector = surfaces[kind].slot;
         slot = selector ? active.matches(selector) ? active : app.querySelector<HTMLElement>(selector) : active;
       }
@@ -573,6 +709,7 @@ export class GamepadView {
       for (const target of [first, back]) if (target && visible(target)) choices.push(target);
       const convo = active.closest<HTMLElement>(".convo");
       if (!slot && convo) choices.push(convo);
+      if (kind === "popover" || kind === "tooltip" || kind === "meeting") choices.push(active);
     }
     if (slot) {
       notice.dataset.padPlacement = slot === notes ? "notes" : "flow";

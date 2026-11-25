@@ -11,7 +11,7 @@ export default function LizzieMeeting() {
   const gloss = useStore((s) => s.settings.lt);
   const answerGloss = useStore((s) => s.settings.sayLt);
   return (
-    <section className="lizzie-meeting" aria-label={NPCS.lizzie.name}>
+    <section className="lizzie-meeting" data-pad-scope="meeting" data-pad-phase={choices.map(({ key }) => key).join(" ")} aria-label={NPCS.lizzie.name}>
       <header>
         <b>{NPCS.lizzie.name}</b>
         {choices.length > 0 && speechSupported() && (

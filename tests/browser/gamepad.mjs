@@ -790,7 +790,7 @@ async function startScene(h, sit) {
     after.clicks === 1 && after.who === "npc", { before, after });
 }
 
-async function checkFocusRing(h, selector, key) {
+async function checkFocusRing(h, selector, key, scope = "convo") {
   const effect = await h.page.evaluate((selector) => {
     const f = document.activeElement;
     if (!f?.matches(selector)) return null;
@@ -811,12 +811,68 @@ async function checkFocusRing(h, selector, key) {
     return {
       marked: f.hasAttribute("data-pad-focus"), scope: f.closest("[data-pad-scope]")?.dataset.padScope,
       key: window.__pad.focusTarget, width: parseFloat(css.outlineWidth), style: css.outlineStyle, contrast,
+      color: css.outlineColor, offset: css.outlineOffset,
       onTop: f.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
     };
   }, selector);
-  h.check("the selected answer has scoped focus and a visible, unobstructed contrast ring", effect?.scope === "convo" &&
+  h.check("the selected control has scoped focus and a visible, unobstructed contrast ring", effect?.scope === scope &&
     effect.key === key && effect.marked && effect.style === "solid" && effect.width >= 2 &&
-    effect.contrast >= 3 && effect.onTop, effect);
+    effect.contrast >= 3 && effect.onTop && effect.color === "rgb(8, 124, 120)" && effect.offset === "2px", effect);
+}
+
+async function wordPopoverContract(h, launcher) {
+  const { page, mobile, focused, tap, press, step, sample, until, state, check, shot } = h;
+  h.mark("word popover over the café");
+  const conversation = () => page.evaluate(() => {
+    const { game, store } = window.__ew;
+    const { conv } = store.getState();
+    return { active: conv.active && game.activeSession?.active, id: conv.sitId, run: conv.run,
+      lines: conv.transcript.map(({ id }) => id) };
+  });
+  const before = await conversation();
+  // Use the ordinary transcript tap from nat-star.mjs while the existing café turn is open.
+  const word = page.locator('.convo .transcript .msg.npc .il .u[data-i="0"]:has(.lt:not(.dash)) > .en').first();
+  await word.evaluate((el) => el.scrollIntoView({ block: "nearest", behavior: "instant" }));
+  const point = await word.evaluate((el) => {
+    const { left, top, width, height } = el.getBoundingClientRect();
+    const x = left + width / 2, y = top + height / 2;
+    return el.contains(document.elementFromPoint(x, y)) && { x, y };
+  });
+  check("a real NPC word can be tapped in the transcript", point, point);
+  if (mobile) await page.touchscreen.tap(point.x, point.y);
+  else await page.mouse.click(point.x, point.y);
+  const popup = 'body > .wpop[role="dialog"]';
+  const choices = page.locator(`${popup} .wpop-acts button`);
+  await until("the body portal offers both card actions", async () =>
+    await choices.count() === 2 && await choices.first().isVisible());
+  await step(2);
+  await tap("Down");
+  const first = (await state()).pad.focusTarget;
+  check("the first direction focuses the word action in the upper dialog",
+    first && await focused(`${popup} .wpop-acts button:nth-of-type(1)`), first);
+  await tap("Right");
+  const second = (await state()).pad.focusTarget;
+  check("the two sibling buttons have distinct controller IDs", second && second !== first, { first, second });
+  await checkFocusRing(h, `${popup} .wpop-acts button:nth-of-type(2)`, second, "popover");
+  await shot("word-popover-focus");
+  await tap("A");
+  await until("A saves the whole sentence through the upper button", async () =>
+    await choices.count() === 1 && await page.locator(`${popup} .wpop-in`).filter({ hasText: "Sakinys kortelėse" }).count() === 1);
+  await tap("Down");
+  check("the remaining word action accepts focus", await focused(`${popup} .wpop-acts button`), await state());
+  await tap("A");
+  await until("the real dialog stays open with both cards saved and no buttons", async () =>
+    await choices.count() === 0 && await page.locator(`${popup} .wpop-in`).count() === 2);
+  await press("B");
+  await until("B closes the buttonless word popover", async () => await page.locator(popup).count() === 0);
+  await step(32);
+  const after = await conversation();
+  check("held B closes only the word dialog and restores the same answer in the same conversation",
+    after.active && after.id === before.id && after.run === before.run &&
+    JSON.stringify(after.lines) === JSON.stringify(before.lines) &&
+    await focused(launcher + "[data-pad-focus]"), { before, after, focus: (await state()).focus });
+  await sample();
+  await step(2);
 }
 
 async function townUi(h) {
@@ -913,6 +969,8 @@ async function townUi(h) {
   await tap("Down");
   await checkFocusRing(h, second, answers[1]);
   await shot("choice-focus");
+  if (storage !== "puerto-colibri") await wordPopoverContract(h, second);
+  h.mark("scoped café answer");
   await press("A");
   await step();
   await until("one real learner transcript entry is added", () => page.evaluate(({ ids }) =>
@@ -976,6 +1034,46 @@ async function kitContract(h) {
   await tap("B");
   await when("B exits the café shift", (s) => !s.transition && s.phase === "on");
   await until("town controls return after the kit", () => page.locator(".toolbar").isVisible());
+}
+
+async function meetingContract(h) {
+  const { page, until, focused, when, tap, press, sample, step, check, shot, state } = h;
+  h.mark("Lizzie meeting choices");
+  await page.evaluate(() => {
+    const { game, store } = window.__ew;
+    // This is the saved invitation and town arrival used by phone-rings.mjs.
+    store.getState().updateProgress((p) => {
+      p.phone ??= { played: 0, missed: {} };
+      p.phone.invitation = { place: "cafe", chip: "prie kavinės", when: "penktadienį 19:30" };
+    });
+    game.teleportTo("sunny-cup");
+  });
+  const meeting = '.lizzie-meeting[data-pad-scope="meeting"]';
+  const ready = `${meeting} [data-meeting-answer="phone_meet_ready"]:enabled`;
+  const tickets = `${meeting} [data-meeting-answer="phone_meet_tickets"]:enabled`;
+  const greeting = page.locator(`${meeting} [data-meeting-line="phone_meet_hello"]`);
+  await until("arriving at Sunny Cup starts Lizzie's actual greeting", () => greeting.isVisible(), { timeout: 25000 });
+  await step(2);
+  await press("A");
+  await until("the greeting finishes and both reading-only answers remain available", async () =>
+    await page.locator(ready).isVisible() && await page.locator(tickets).isVisible(), { timeout: 20000, frames: 6 });
+  await step(4);
+  check("A held through the narration cannot submit the new turn", await page.locator(tickets).isVisible(), await state());
+  await sample();
+  await step(2);
+  await tap("Down");
+  check("the first direction starts on the first available meeting answer",
+    await focused(ready) && (await state()).pad.focusTarget === "phone_meet_ready", await state());
+  await tap("Down");
+  await checkFocusRing(h, tickets, "phone_meet_tickets", "meeting");
+  await shot("lizzie-choice-focus");
+  await tap("A");
+  await until("Lizzie gives her follow-up after the focused answer", () =>
+    page.locator(`${meeting} [data-meeting-line="phone_meet_go"]`).isVisible(), { timeout: 20000, frames: 6 });
+  await when("the meeting completes and returns to town", (s) => !s.mode && !s.transition && s.phase === "on",
+    { timeout: 20000, frames: 6 });
+  check("the chosen reply consumes the saved invitation through normal progression",
+    await page.evaluate(() => !window.__ew.game.phoneState().invitation), await state());
 }
 
 async function detachContract(h, real) {
@@ -1063,6 +1161,7 @@ async function townContract(h) {
   await boatContract(h);
   await townUi(h);
   await kitContract(h);
+  if (storage !== "puerto-colibri") await meetingContract(h);
   await detachContract(h, real);
 }
 

@@ -13,6 +13,7 @@ import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
+import { registerPadPopover } from "./padPopover";
 
 /** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
 const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".nat-star") ? t.closest<HTMLElement>(".u[data-i]") : null);
@@ -133,8 +134,13 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [open, close]);
 
+  const placed = open && !!spot;
+  useLayoutEffect(() => {
+    if (placed) return registerPadPopover(boxRef.current, starRef.current, close);
+  }, [placed, close]);
+
   const tip = (
-    <span ref={boxRef} id={id} role="tooltip" lang="lt" className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
+    <span ref={boxRef} id={id} role="tooltip" data-pad-scope={placed ? "tooltip" : undefined} lang="lt" className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
       onPointerEnter={enter} onPointerLeave={leave}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       {text}
@@ -143,7 +149,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   );
   return (
     <>
-      <button ref={starRef} type="button" className="nat-star" aria-label={text ? "Natūralus vertimas" : "Pastabos"} aria-expanded={open} aria-describedby={id}
+      <button ref={starRef} type="button" className="nat-star" data-pad-focus-opens aria-label={text ? "Natūralus vertimas" : "Pastabos"} aria-expanded={open} aria-describedby={id}
         onClick={() => setTapped((v) => !v)} onPointerEnter={enter} onPointerLeave={leave}
         onFocus={(e) => setFocused(keyboardFocus(e.currentTarget))}
         onBlur={(e) => {

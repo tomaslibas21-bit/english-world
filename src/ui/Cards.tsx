@@ -14,6 +14,7 @@ import { SitIcon } from "./SitIcon";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";
+import { registerPadPopover } from "./padPopover";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -131,13 +132,18 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [anchor]);
 
+  const placed = !!spot;
+  useLayoutEffect(() => {
+    if (placed) return registerPadPopover(ref.current, anchor, () => closeRef.current());
+  }, [anchor, placed]);
+
   if (!u) return null;
   const add = (x: typeof whole | null) => { if (x && useCards.getState().add(x)) setSaved(true); };
   const wordIn = !!word && keys.has(cardKey(word.en));
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
+    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" data-pad-scope="popover" aria-label={`Žodis „${shown}“`}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang="en">{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
