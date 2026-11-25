@@ -4,11 +4,14 @@ import { contentUrl, contextOptions, installTown, key, manualFrames, probeEffect
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
+const cardsKey = process.env.WORLD_CARDS_KEY || key.replace(/-progress-v1$/, "-cards-v1");
 const durationMs = (text) => Math.max(2600, 1600 + 55 * Array.from(text).length);
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true,
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
   for (const [width, height] of viewports) {
+    const checkSaves = (width === 390 && height === 844) || (width === 1280 && height === 800);
+    const touch = Math.min(width, height) < 600;
     // A separate context isolates cookies and storage as well as the page's reaction scheduler.
     const context = await browser.newContext(contextOptions(width, height));
     try {
@@ -17,14 +20,16 @@ try {
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
+      page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
       await stubVoiceClips(page);
+      await page.addInitScript(() => { Object.defineProperty(window, "speechSynthesis", { value: undefined }); });
       await page.goto(url, { waitUntil: "domcontentloaded" });
       const { step, waitFor, during } = manualFrames(page);
       await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town opens");
       await waitFor(() => page.evaluate(() => !window.__ew.store.getState().hud.zoneBanner), "zone banner clears");
       await probeEffects(page);
       const lines = await page.evaluate(async (url) => (await import(url)).REACT_LINES, contentUrl(url, "content/reacts"));
-      const hint = await page.evaluate(async (url) => (await import(url)).STREET_WORDS.translation, contentUrl(url, "game/street/words"));
+      const { translation: hint, overheard } = await page.evaluate(async (url) => (await import(url)).STREET_WORDS, contentUrl(url, "game/street/words"));
       const state = () => page.evaluate(() => window.__ew.game.reactState());
       assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.started), save.started, "this viewport loaded its own save");
       assert.deepEqual(await state(), { last: null, count: 0, blockedUntil: 0 });
@@ -32,6 +37,8 @@ try {
       const force = (kind) => page.evaluate((kind) => window.__ew.game.react(kind, { force: true }), kind);
       const effectCount = () => page.evaluate(() => window.__lifeEffects.filter((name) => name === "horn" || name === "doubleHonk").length);
       const bubble = page.locator(".reaction-bubble");
+      const translate = bubble.getByRole("button", { name: "Vertimas", exact: true });
+      const press = (button) => during(() => touch ? button.tap() : button.click());
       const reactionStart = async () => ((await state()).blockedUntil - 20) * 1000;
       const stepTo = (ms) => page.evaluate((ms) => window.__lifeStep(1, Math.max(0, ms - performance.now())), ms);
       const opacityIs = async (expected) => {
@@ -70,6 +77,72 @@ try {
         assert.equal(last?.kind, kind);
         assert(lines[kind].some((line) => line.en === last.text && line.lt === last.lt));
         return last;
+      };
+      const readCards = () => page.evaluate((key) => JSON.parse(localStorage.getItem(key) || "{}").cards || [], cardsKey);
+      const reactionSnapshot = () => page.evaluate(() => {
+        const { game, store } = window.__ew;
+        const { id, start, end } = game.reactions.active;
+        const { hud, conv } = store.getState();
+        return { id, start, end, schedule: game.reactState(), panel: hud.panel, talking: conv.active,
+          jumping: game.hop.air, pointing: game.pointer.down };
+      });
+      const saveAction = (name) => bubble.getByRole("button", { name, exact: true });
+      const saveGeometry = async (name) => {
+        const button = saveAction(name);
+        assert(await button.isVisible() && await button.isEnabled(), `${name} is reachable`);
+        assert.equal(await button.getAttribute("title"), name);
+        assert.equal(await button.getAttribute("data-phrase-save"), "");
+        assert.equal(await button.getAttribute("data-icon-only"), "true");
+        const geometry = await button.evaluate((save) => {
+          const text = save.previousElementSibling;
+          const box = save.getBoundingClientRect(), textBox = text.getBoundingClientRect();
+          const hits = (el, r) => el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+          return { width: box.width, height: box.height, left: save.offsetLeft, top: save.offsetTop,
+            gap: save.offsetLeft - text.offsetLeft - text.offsetWidth, saveHit: hits(save, box), textHit: hits(text, textBox) };
+        });
+        assert.deepEqual([geometry.width, geometry.height], [44, 44]);
+        assert(geometry.gap >= 4 && geometry.gap <= 6 && geometry.saveHit && geometry.textHit,
+          `save and translation have separate centre hits: ${JSON.stringify(geometry)}`);
+        return geometry;
+      };
+      const capture = async (name) => {
+        const clockMs = await page.evaluate(() => performance.now());
+        await during(() => screenshot(page, name, width, height));
+        console.log(`reaction ${width}x${height} ${name} clockMs=${clockMs}`);
+      };
+      const saveTwice = async (line, { add, inCards }, translated) => {
+        const before = await reactionSnapshot();
+        const cards = await readCards();
+        const geometry = await saveGeometry(add);
+        const checkReaction = async () => {
+          assert.deepEqual(await reactionSnapshot(), before, "save preserves the reaction clock, schedule and town input state");
+          assert.equal(await translate.getAttribute("aria-expanded"), String(translated));
+          assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
+          if (translated) assert.equal(await bubble.locator("small").innerText(), line.lt);
+          else assert.equal(await bubble.locator("small").count(), 0, "saving the later line keeps its translation hidden");
+          assert.deepEqual(await saveGeometry(inCards), geometry, "checked action keeps the same hit box");
+        };
+
+        await press(saveAction(add));
+        await checkReaction();
+        const saved = await readCards();
+        assert.equal(saved.length, cards.length + 1, "the first save adds one ordinary card");
+        assert.deepEqual(saved.slice(0, -1), cards);
+        const card = saved.at(-1);
+        assert.deepEqual([card.en, card.lt, card.sentence, card.situationId, card.sourceLabel],
+          [line.text, line.lt, { en: line.text, lt: line.lt }, "street", overheard]);
+        assert(card.id && Number.isFinite(card.createdAt));
+        assert.equal(card.box, 1);
+        assert.equal(card.due, new Date(card.createdAt).setHours(0, 0, 0, 0));
+
+        if (touch) await press(saveAction(inCards));
+        else {
+          assert(await saveAction(inCards).evaluate((node) => node === document.activeElement), "the checked action retains focus");
+          await during(() => page.keyboard.press("Enter"));
+        }
+        await checkReaction();
+        assert.deepEqual(await readCards(), saved, "saving again preserves the card, its source, due date and id");
+        console.log(`reaction ${width}x${height} ${line.kind} saved ${JSON.stringify(card)}`);
       };
       const dropOntoCar = (withOwner) => page.evaluate((withOwner) => {
         const { game: g } = window.__ew;
@@ -113,17 +186,32 @@ try {
       await waitFor(() => bubble.isVisible(), "the honk bubble appears", 0);
       assert.equal(await bubble.locator('[lang="en"]').innerText(), honk.text);
       await opacityIs(0.5);
+      const saveLabels = checkSaves ? await page.evaluate(async (url) => (await import(url)).PHRASE_CARD_UI,
+        contentUrl(url, "content/phrase-card-ui")) : null;
+      if (saveLabels) {
+        assert.equal(await translate.getAttribute("aria-expanded"), "false");
+        assert.equal(await bubble.locator("small").innerText(), hint);
+        await saveGeometry(saveLabels.add);
+        await checkPlacement();
+        await capture("react-save-first-frame");
+      }
       await stepTo(honkStart + 150);
       await opacityIs(1);
       assert.equal(await bubble.locator("small").innerText(), hint);
       if (width === 390 && height === 664) await checkPlacement();
-      const translate = bubble.getByRole("button");
-      await during(() => Math.min(width, height) < 600 ? translate.tap() : translate.click());
+      const beforeTranslation = saveLabels && await reactionSnapshot();
+      await press(translate);
       assert.equal(await bubble.locator("small").innerText(), honk.lt);
+      if (beforeTranslation) {
+        assert.deepEqual(await reactionSnapshot(), { ...beforeTranslation, end: beforeTranslation.end + 3 },
+          "translation extends the reading time by three seconds and preserves the schedule");
+        await saveTwice(honk, saveLabels, true);
+      }
       await stepTo(honkStart + durationMs(honk.text) + 100);
       await opacityIs(1);
       await checkPlacement();
-      await during(() => screenshot(page, "react-translation", width, height));
+      if (saveLabels) await capture("react-translation");
+      else await during(() => screenshot(page, "react-translation", width, height));
       // Drive the real clamping code with a low projection even if this driver's bubble is naturally higher.
       await page.evaluate(() => {
         const { game } = window.__ew;
@@ -203,6 +291,10 @@ try {
       await waitFor(() => bubble.isVisible(), "the bump shows a bubble");
       assert.equal(await bubble.locator("small").count(), 0, "later reactions omit the tap hint");
       const bumpEnd = await reactionStart() + durationMs(bump.text);
+      if (saveLabels) {
+        await saveTwice(bump, saveLabels, false);
+        await capture("react-save-bump");
+      }
       await stepTo(bumpEnd - 125);
       await opacityIs(0.5);
       await stepTo(bumpEnd + 5);
