@@ -190,7 +190,7 @@ function DirectionLines({ place }: { place: Destination }) {
       return sentence && <div className="phrase-save-row" key={key}>
         <button type="button" data-line={key} aria-expanded={gloss}
           onClick={() => setRevealed((ids) => gloss ? ids.filter((id) => id !== key) : [...ids, key])}>
-          <GlossLine sentence={sentence} gloss compact />
+          <GlossLine sentence={sentence} gloss={gloss} compact />
         </button>
         <PhraseSave sentence={sentence} situationId={ASK_WAY_SITUATION} iconOnly />
       </div>;
