@@ -204,7 +204,7 @@ const surf: SituationDef = {
     hours_whole: [t("We | rent | by | the | full | hour.", "Mes | nuomojame | po | — | visą | valandą.", "Nuomojame tik pilnomis valandomis.")],
     hours_max: [t("Three | hours | at | most.", "Trys | valandos | — | daugiausia.", "Ilgiausiai – trims valandoms.")],
     hours_help: [t("You | can | start | with | one | hour.", "Jūs | galite | pradėti | nuo | vienos | valandos.", "Galite pradėti nuo vienos valandos.")],
-    deposit_ask: [t("Please | leave | an | ID | or | a | {$deposit} | deposit.", "Prašau | palikite | — | dokumentą | arba | — | {$deposit} | užstatą.", "Prašau palikti asmens dokumentą arba {$deposit} užstatą.")],
+    deposit_ask: [t("Please | leave | an | ID | or | a | deposit | of | {$deposit}.", "Prašau | palikti | — | dokumentą | arba | — | užstatą | — | {$deposit}.", "Prašau palikti asmens dokumentą arba {$deposit} užstatą.")],
     deposit_id_only: [t("Can you | leave | an | ID? | I'll | give | it | back.", "Ar galite | palikti | — | dokumentą? | Aš | atiduosiu | jį | atgal.", "Ar galite palikti asmens dokumentą? Kai grįšite, jį atgausite.")],
     deposit_one: [t("I | need | an | ID | or | a | deposit.", "Man | reikia | — | dokumento | arba | — | užstato.", "Reikės asmens dokumento arba užstato.")],
     deposit_which: [t("Which | works | for | you?", "Kuris | tinka | — | Jums?", "Kuris variantas Jums tinka?")],
