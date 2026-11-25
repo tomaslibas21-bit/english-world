@@ -1229,9 +1229,12 @@ export class Game implements GameApi {
         return new DOMRect(x - half, Math.min(head, foot) - 12, half * 2, Math.abs(foot - head) + 24);
       },
       back: (surface) => {
-        if (surface !== "meeting" || this.modes.active?.id !== "friend-meeting") return false;
-        this.modeExit();
-        return true;
+        if (surface === "meeting") {
+          if (this.modes.active?.id !== "friend-meeting") return false;
+          this.modeExit();
+          return true;
+        }
+        return this.modes.padBackFrom(surface);
       },
       jump: () => this.jump(),
       interact: () => {

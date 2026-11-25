@@ -106,7 +106,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
         {concealed && (
           <div className="barista-listen barista-panel">
             {revealed && (
-              <ul className="barista-order-text" role="list" tabIndex={0}
+              <ul className="barista-order-text" role="list" tabIndex={0} data-pad-scroll
                 onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.stopPropagation(); }}>
                 {hiddenOrder.map(({ key, sentence }) => (
                   <li key={key} data-line={key}>

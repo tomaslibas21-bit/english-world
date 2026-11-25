@@ -85,6 +85,12 @@ class TaxiMode implements GameMode {
   get padPhase() { return this.run?.phase; }
 
   padBack() { this.exit(false); return true; }
+  /** B on the Taxi's answers: the same exit as the physical Escape. */
+  padBackFrom(surface: string) {
+    if (surface !== "choice" || !this.run || this.run.phase === "result") return false;
+    this.exit(false);
+    return true;
+  }
 
   padTick(_input: unknown, pressed: number, released: number) {
     if (released & PadButton.A) this.padCancel();

@@ -5,7 +5,9 @@ import type { PopoverElement } from "./Cards";
 import "./gamepad.css";
 
 const ADJUST = "input[type=range][data-pad-adjust], select[data-pad-adjust]:not([multiple])";
-const CONTROL = `button, a[href], summary, ${ADJUST}`;
+/** A read-only region that scrolls (Barista's revealed order, the Lotería's called cards): focusable while it overflows. */
+const SCROLL = "[data-pad-scroll]";
+const CONTROL = `button, a[href], summary, ${ADJUST}, ${SCROLL}`;
 const BLOCKED = "[hidden], [inert], [aria-hidden=true]";
 const DISABLED = ":disabled, [aria-disabled=true], [data-pad-skip], .taxi-action, .bl-power-track";
 const BACK = "[data-pad-back]";
@@ -55,6 +57,8 @@ const POLICIES: Record<string, Policy> = {
   drawer: { rank: 20, first: "[data-pad-tool=scenarios]" },
   toolbar: { rank: 20, first: "[data-pad-tool=scenarios]" },
   home: { rank: 10, first: ".lh-card[data-sit]", flow: ".lh-in" },
+  // the first visit's flight: a fresh A skips it as a click or any key does (the world stays still throughout)
+  flight: { rank: 130, first: "button.flight" },
   popover: { rank: 110 },
   tooltip: { rank: 110 },
 };
@@ -214,6 +218,8 @@ export class GamepadView {
   connect(app: HTMLElement) {
     this.app = app;
     this.connected = true;
+    // (controls offered only to a controller, such as Billiards' header microphone, show while one is connected)
+    document.documentElement.setAttribute("data-pad-connected", "");
     if (!this.observer) {
       this.collect(app);
       this.observer = new MutationObserver(this.changed);
@@ -258,6 +264,7 @@ export class GamepadView {
   }
 
   private stopInput() {
+    document.documentElement.removeAttribute("data-pad-connected");
     this.connected = this.desktop = this.opening = this.composing = this.lastField = false;
     this.pending = this.launch = undefined;
     this.toolbarReturn = undefined;
@@ -319,6 +326,8 @@ export class GamepadView {
     for (const record of records) {
       const target = record.target;
       if (!(target instanceof HTMLElement)) continue;
+      // The notice's own slot and card: their inserts, removals and attributes are its layout, not a UI change.
+      if (this.notice.owns(target) || (record.type === "childList" && this.notice.only(record))) continue;
       if (this.focused) focus ||= target === this.focused || target.contains(this.focused);
       if (record.type === "attributes") {
         if (this.portals.has(target)) refresh = true;
@@ -488,6 +497,7 @@ export class GamepadView {
     }
     return controls.filter((el) => {
       if (!this.owns(root, el) || !available(el)) return false;
+      if (el.matches(SCROLL) && el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1) return false;
       const box = visibleBox(el);
       return !box || hit(el, box);
     });
@@ -510,6 +520,8 @@ export class GamepadView {
     target.setAttribute("data-pad-focus", "");
     this.last.set(root, target);
     this.debug.focusTarget = focusId(root, target);
+    // (a board that keeps its own cursor, the Lotería's, follows the controller's focus, and only the controller's)
+    target.dispatchEvent(new Event("padfocus", { bubbles: true }));
     if (kind(root) === "drawer") root.closest(".toolbar")?.dispatchEvent(new Event("padnavigate"));
     return true;
   }
@@ -597,10 +609,25 @@ export class GamepadView {
       this.notice.layout();
     } else if (kind(root) === "tooltip") {
       this.closePortal(root, direction);
+    } else if (this.scroll(direction)) {
+      this.debug.lastAction = "focus";
     } else if (this.move(root, this.controls(root), document.activeElement, direction)) {
       this.debug.lastAction = "focus";
       this.notice.layout();
     }
+  }
+
+  /** A focused scrolling region moves its own text along the pressed axis; at its end the D-pad leaves it again. */
+  private scroll(direction: Direction) {
+    const region = this.focused;
+    if (!region?.matches(SCROLL) || region !== document.activeElement) return false;
+    const vertical = direction === "up" || direction === "down", sign = direction === "up" || direction === "left" ? -1 : 1;
+    const before = vertical ? region.scrollTop : region.scrollLeft;
+    const room = vertical ? region.scrollHeight - region.clientHeight : region.scrollWidth - region.clientWidth;
+    if (room <= 1 || (sign < 0 ? before <= 0 : before >= room - 1)) return false;
+    const by = Math.max(24, (vertical ? region.clientHeight : region.clientWidth) * 0.6) * sign;
+    region.scrollBy(vertical ? { top: by } : { left: by });
+    return true;
   }
 
   confirm() {
@@ -655,8 +682,17 @@ export class GamepadView {
       return;
     }
     let target: Element | null | undefined;
-    if (kind(root) === "drawer") target = this.menuButton();
-    else {
+    if (kind(root) === "drawer") {
+      // Back from the phone's drawer folds it and returns to play, as Maple Harbor does (not to its opener)
+      const focused = this.focused;
+      this.leaveTools();
+      this.clearRing();
+      if (focused && focused === document.activeElement) focused.blur();
+      this.pending = this.launch = undefined;
+      this.debug.lastAction = "back";
+      this.sync();
+      return;
+    } else {
       const selector = policy(root).back;
       target = this.controls(root).find((item) => item.matches(BACK));
       if (!target && selector) target = root.querySelector(selector) ?? root.closest(".convo")?.querySelector(selector);
@@ -798,6 +834,8 @@ const NOTES = ".objective-card, .zone-banner, .coach, .town-toasts, .directions-
 const OBSTACLES = ".toolbar, .toolbar-drawer:not([inert]), .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .photo-chip, .view-chip, .lh-tools, .street-bubble, .minimap, .radio-strip, .ride-keys, .toasts, .lc-center, .phone-ring, .surf-pad";
 const NOTICE_ANCHORS = `${NOTES}, ${OBSTACLES}, ${ROOTS}`;
 type Obstacle = { box: DOMRect; gap: number };
+/** The narrower card for a crowded phone screen (CSS px). */
+const COMPACT = 184;
 
 class PadNotice {
   private app?: HTMLElement;
@@ -811,10 +849,24 @@ class PadNotice {
   private menu?: boolean;
   private state?: State;
   private fontChange?: MutationObserver;
+  /** The last in-flow attempt that did not fit: not retried until the host or the viewport changes size. */
+  private noFlow?: { host: HTMLElement; key: string };
 
   constructor(private surface: () => HTMLElement | null, private avatar?: () => DOMRect | undefined) {}
 
   get visible() { return !!this.node; }
+
+  /** The card or its in-flow slot. */
+  owns(node: Node) { return !!node && (node === this.node || node === this.slot); }
+
+  /** A child-list record that only moved the card's own nodes. */
+  only(record: MutationRecord) {
+    const { addedNodes: added, removedNodes: removed } = record;
+    if (!added.length && !removed.length) return false;
+    for (let i = 0; i < added.length; i++) if (!this.owns(added[i])) return false;
+    for (let i = 0; i < removed.length; i++) if (!this.owns(removed[i])) return false;
+    return true;
+  }
 
   show(app: HTMLElement, state: State, done: () => void) {
     this.app = app;
@@ -866,7 +918,7 @@ class PadNotice {
     document.fonts?.removeEventListener("loadingdone", this.layout);
     window.visualViewport?.removeEventListener("resize", this.layout);
     this.node = this.title = this.legend = this.slot = this.app = undefined;
-    this.menu = this.state = undefined;
+    this.menu = this.state = this.noFlow = undefined;
   }
 
   private layoutEvent = (event: Event) => {
@@ -919,6 +971,10 @@ class PadNotice {
     node.style.removeProperty("max-width");
     const status = node.getBoundingClientRect();
     const inset = portrait ? 8 : 12;
+    // The device's own safe area (notch, home bar) on each side, then the 8 px phone / 12 px desktop margin.
+    const safe = getComputedStyle(node);
+    const edge = (side: string) => inset + (parseFloat(safe.getPropertyValue(`--pad-safe-${side}`)) || 0);
+    const top = edge("top"), right = edge("right"), bottom = edge("bottom"), left = edge("left");
     const width = Math.min(document.documentElement.clientWidth, window.visualViewport?.width ?? innerWidth);
     const height = Math.min(innerHeight, window.visualViewport?.height ?? innerHeight);
     const av = !panel && this.avatar?.();
@@ -939,23 +995,26 @@ class PadNotice {
     const separate = anchor && active && active !== margin ? [active] : [];
     this.observe([...notes, ...hud, node, ...separate, ...(margin && margin !== slotHost && !margin.contains(slotHost) ? [margin] : [])]);
     const fits = (x: number, y: number, w: number, h: number, boxes: Obstacle[]) =>
-      w > 0 && h > 0 && x >= inset && y >= inset && x + w <= width - inset && y + h <= height - inset &&
+      w > 0 && h > 0 && x >= left && y >= top && x + w <= width - right && y + h <= height - bottom &&
       boxes.every(({ box, gap }) => x >= box.right + gap || x + w <= box.left - gap ||
         y >= box.bottom + gap || y + h <= box.top - gap);
-    const place = (left: number, top: number, placement: string) => {
-      node.style.left = `${left}px`;
-      node.style.top = `${top}px`;
-      node.dataset.padPlacement = placement;
-      node.setAttribute("data-pad-positioned", "");
+    const place = (x: number, y: number, placement: string) => {
+      // Unchanged geometry writes nothing (no style churn for the observers to see).
+      const l = `${x}px`, t = `${y}px`;
+      if (node.style.left !== l) node.style.left = l;
+      if (node.style.top !== t) node.style.top = t;
+      if (node.dataset.padPlacement !== placement) node.dataset.padPlacement = placement;
+      if (!node.hasAttribute("data-pad-positioned")) node.setAttribute("data-pad-positioned", "");
     };
+    const size = { w: status.width, h: status.height };
     const fixed = (boxes: Obstacle[], preferred?: { left: number; top: number }) => {
-      const w = status.width, h = status.height;
+      const { w, h } = size;
       if (preferred && fits(preferred.left, preferred.top, w, h, boxes)) {
         place(preferred.left, preferred.top, "notes");
         return true;
       }
-      const xs = [inset, width - inset - w, ...boxes.flatMap(({ box, gap }) => [box.right + gap, box.left - gap - w])];
-      const ys = portrait ? [inset, height - inset - h] : [height - inset - h, inset];
+      const xs = [left, width - right - w, ...boxes.flatMap(({ box, gap }) => [box.right + gap, box.left - gap - w])];
+      const ys = portrait ? [top, height - bottom - h] : [height - bottom - h, top];
       ys.push(...boxes.flatMap(({ box, gap }) => [box.bottom + gap, box.top - gap - h]));
       for (const y of ys) for (const x of xs) if (fits(x, y, w, h, boxes)) {
         place(x, y, "fixed");
@@ -964,37 +1023,55 @@ class PadNotice {
       return false;
     };
     const below = world && portrait && notes.length ? {
-      left: Math.max(inset, Math.min(...notes.map((el) => el.getBoundingClientRect().left))),
+      left: Math.max(left, Math.min(...notes.map((el) => el.getBoundingClientRect().left))),
       top: Math.max(...notes.map((el) => el.getBoundingClientRect().bottom)) + 6,
     } : undefined;
     const margins = margin && visible(margin) ? [margin, ...separate] : separate;
     const clearSurface = cover.concat(obstacles(margins));
     if (!this.slot?.isConnected && name !== "home" && fixed(clearSurface, below)) return;
-    if (slotHost && visible(slotHost)) {
+    const flowKey = slotHost ? `${width}x${height}:${slotHost.clientWidth}:${status.width}x${status.height}` : "";
+    const retry = !this.noFlow || this.noFlow.host !== slotHost || this.noFlow.key !== flowKey;
+    if (slotHost && visible(slotHost) && (retry || this.slot?.parentElement === slotHost)) {
       const slot = this.useSlot(slotHost);
       const width = Math.min(status.width, slot.getBoundingClientRect().width);
       node.style.maxWidth = `${width}px`;
       const height = node.getBoundingClientRect().height;
-      slot.style.height = `${height}px`;
+      const tall = `${height}px`;
+      if (slot.style.height !== tall) slot.style.height = tall;
       const box = visibleBox(slot);
       const choices = obstacles(visibleChoices(), 2).concat(obstacles(separate));
       if (box && fits(box.left, box.top, width, height, panel ? choices : cover.concat(choices))) {
+        this.noFlow = undefined;
         place(box.left, box.top, "flow");
         return;
       }
+      this.noFlow = { host: slotHost, key: flowKey };
     }
     this.slot?.remove();
     node.style.removeProperty("max-width");
     if (fixed(name === "home" ? cover.concat(obstacles(visibleChoices())) : clearSurface, below)) return;
     if (active && fixed(cover.concat(obstacles(visibleChoices())))) return;
+    // A crowded phone screen (street chatter, the task card, the thumb controls) may have no room for the full width:
+    // the same card, narrower, with its map on two lines, before waiting for room.
+    if (portrait && world) {
+      node.style.maxWidth = `${COMPACT}px`;
+      const compact = node.getBoundingClientRect();
+      size.w = compact.width;
+      size.h = compact.height;
+      if (fixed(clearSurface, below)) return;
+      node.style.removeProperty("max-width");
+    }
     // Keep the live region available during transient animations even when no safe box fits yet.
     node.removeAttribute("data-pad-positioned");
   };
 
   private useSlot(host: HTMLElement) {
-    const slot = this.slot ??= document.createElement("div");
-    slot.dataset.padSlot = "";
-    slot.setAttribute("aria-hidden", "true");
+    let slot = this.slot;
+    if (!slot) {
+      slot = this.slot = document.createElement("div");
+      slot.dataset.padSlot = "";
+      slot.setAttribute("aria-hidden", "true");
+    }
     if (slot.parentElement !== host) {
       const heading = host.querySelector(":scope > :is(.sheet-head, .phone-status, .text-thread-head, .convo-head, header, h2)");
       host.insertBefore(slot, heading ? heading.nextSibling : host.firstChild);

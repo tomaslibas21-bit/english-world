@@ -479,6 +479,13 @@ class BaristaMode implements GameMode {
     }
   }
 
+  /** B on Mia's offer (it has only Start): the pad player declines, as one who walks away from the counter does. */
+  padBackFrom(surface: string) {
+    if (surface !== "choice" || !this.offered || this.run || this.starting) return false;
+    this.exit(true);
+    return true;
+  }
+
   tick(dt: number) {
     if (!this.offered) return;
     const { x, z } = this.host.player().root.position;

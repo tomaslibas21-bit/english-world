@@ -158,7 +158,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
           <BallRow name={opponentLabels.name} balls={state.balls.tina} active={side === "tina"} />
         </div>
       </section>
-      {mic && <button className={`bl-mic mic${state.mic.status === "listening" ? " listening" : ""}`} type="button"
+      {mic && <button className={`bl-mic mic${state.mic.status === "listening" ? " listening" : ""}`} type="button" data-pad-only
         aria-pressed={state.micOn} aria-label={state.micOn ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")} onClick={() => act("mic")}>
         <Icon name="mic" size={20} />
       </button>}

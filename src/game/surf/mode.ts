@@ -32,6 +32,12 @@ export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlaye
     },
     get padPhase() { return useSurf.getState().phase ?? undefined; },
     padBack() { play.stop(); return true; },
+    // B on the lesson's answers: as the physical Escape (play.key), the lesson stops
+    padBackFrom(surface: string) {
+      if (surface !== "choice" || !play.active) return false;
+      play.stop();
+      return true;
+    },
     padCancel() { padDirection = 0; },
     padTick(_, pressed, _released, _dt, _direction, held) {
       const { choice, over, phase, todo } = useSurf.getState();

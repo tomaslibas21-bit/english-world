@@ -78,6 +78,9 @@ export class ModeRegistry {
 
   owns(id: string) { return this.selected?.id === id; }
 
+  /** B on a pad surface with no Back of its own: the engaged mode decides (GameMode.padBackFrom). */
+  padBackFrom(surface: string) { return !!this.selected?.padBackFrom?.(surface); }
+
   entered(id: string) {
     if (this.selected?.id !== id || this.screenBefore !== undefined) return;
     this.screenBefore = this.screen.read();

@@ -97,7 +97,7 @@ export function Hud() {
   const task = useTaskCard(taskId, notesVisible && !hud.cave, autoCollapse, layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
-  if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
+  if (hud.flight) return <div className="hud" data-pad-scope="flight"><Flight /><Fade /></div>;
   // The surf lesson keeps her line, the answers, the score, and its own arrows.
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>

@@ -25,6 +25,9 @@ export interface PadScope {
   readonly padNavigate?: boolean;
   readonly padPhase?: string;
   padBack?(): boolean;
+  /** B on one of the mode's own pad surfaces (its answers, its offer, its setup) that has no Back control of its own:
+   *  the mode's own exit or cancel, once, if its live phase allows it (the same as the physical Escape). */
+  padBackFrom?(surface: string): boolean;
   padTick?(input: PadScalars, pressed: number, released: number, dt: number, direction: number, held: number): PadDebug["lastAction"] | void;
   padCancel?(held: number): void;
 }

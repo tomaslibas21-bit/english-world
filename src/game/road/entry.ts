@@ -73,6 +73,7 @@ export class RoadEntry implements GameMode {
   get padAction() { return !this.pending && !!this.mode?.padAction; }
   get padPhase() { return this.mode?.padPhase; }
   padBack() { return !this.pending && (this.mode?.padBack() ?? false); }
+  padBackFrom(surface: string) { return !this.pending && (this.mode?.padBackFrom(surface) ?? false); }
   padTick(input: unknown, pressed: number) {
     if (this.padDriving) return this.mode?.padTick(input, pressed);
   }

@@ -17,7 +17,9 @@ assert(["en", "lt"].includes(learner), `Unknown WORLD_LEARNER layer: ${learner}`
 assert(["127.0.0.1", "localhost", "[::1]"].includes(base.hostname), "Use the matching local PC dev server");
 
 const cafe = "s72-cafe";
-const clearGround = { x: 28, z: -14.6, rot: Math.PI };
+// The Maple Harbor spawn (28, -14.6) is a lamp's nav cell in Puerto Colibrí; this plaza spot has 8+ m of open nav
+// grid and no collider (body radius 0.38) ahead and behind and 4 m to each side (probed on the live PC town).
+const clearGround = { x: 29.5, z: -10, rot: Math.PI };
 const padHint = "[data-pad-hint]";
 const toolbar = "[data-pad-toolbar], [data-pad-scope=drawer]";
 const phoneTool = "[data-pad-tool=phone]";
@@ -37,10 +39,13 @@ const answers = ["Un americano", "¿Me da un café de olla?"];
 
 if (shots) await mkdir(shots, { recursive: true });
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
-const browser = await chromium.launch({
+const launch = () => chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true,
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist", "--mute-audio"],
 });
+let browser = await launch();
+/** The context of the case running now, so a stalled case can be released without hanging the rest. */
+let live = null;
 
 function install({ key, progress }) {
   localStorage.setItem(key, JSON.stringify(progress));
@@ -233,6 +238,9 @@ async function run(width, height, mobile, mode, contract, checkpoint = mode) {
   let page;
   let failure;
   let phase = "startup";
+  // Allocated before the try so the reporter can always name them, even when setup fails.
+  const padRequests = [];
+  const modules = [];
   const check = (name, value, detail) => {
     assert(value, `${label} · ${name}: ${JSON.stringify(detail)}`);
     console.log("ok", label, name, detail === undefined ? "" : JSON.stringify(detail));
@@ -240,6 +248,7 @@ async function run(width, height, mobile, mode, contract, checkpoint = mode) {
   const shot = (name) => shots ? page.screenshot({ path: join(shots, `gamepad-${label}-${name}.png`), timeout: 5000 }) : undefined;
   try {
     context = await browser.newContext({ ...contextOptions(width, height), serviceWorkers: "block" });
+    live = context;
     const cors = { "access-control-allow-origin": "*" };
     await context.route("**/*", (route) => {
       const url = new URL(route.request().url());
@@ -264,8 +273,6 @@ async function run(width, height, mobile, mode, contract, checkpoint = mode) {
     });
     page = await context.newPage();
     page.setDefaultTimeout(5000);
-    const padRequests = [];
-    const modules = [];
     page.on("request", (request) => {
       const url = new URL(request.url());
       if (url.origin === base.origin && lazyPadAsset.test(url.pathname)) padRequests.push(url.pathname);
@@ -279,7 +286,9 @@ async function run(width, height, mobile, mode, contract, checkpoint = mode) {
     }
     page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
     page.on("console", (message) => {
-      if (message.type() === "error" && !/^\s*(?:\[audio\]\s*)?Missing (?:audio )?clip\b/i.test(message.text())) {
+      // (also the base's React dev notice for SceneBackdrop's lowercase fetchpriority, present before A10)
+      if (message.type() === "error" && !/^\s*(?:\[audio\]\s*)?Missing (?:audio )?clip\b/i.test(message.text()) &&
+          !/Invalid DOM property `%s`\. Did you mean `%s`\? fetchpriority fetchPriority/.test(message.text())) {
         errors.push(`console: ${message.text()}`);
       }
     });
@@ -601,9 +610,16 @@ async function idleAndAttach(h) {
   await place(h);
   const ground = await page.evaluate(({ x, z }) => {
     const g = window.__ew.game;
-    return { nav: g.zone.nav.free(g.zone.nav.idx(x, z)), body: !g.zone.colliders.blocked(x, z, 0.38), floor: g.hop.y };
+    const open = (px, pz) => g.zone.nav.free(g.zone.nav.idx(px, pz)) && !g.zone.colliders.blocked(px, pz, 0.38);
+    // The corridor the walking, running and released-stick checks use.
+    const corridor = [];
+    // (rot π walks toward -z: 4.5 m ahead, 2 m behind, 0.5 m to each side of the line)
+    for (let d = -4.5; d <= 2; d += 0.5) for (const side of [-0.5, 0, 0.5]) if (!open(x + side, z + d)) corridor.push([x + side, z + d]);
+    return { nav: g.zone.nav.free(g.zone.nav.idx(x, z)), body: !g.zone.colliders.blocked(x, z, 0.38), floor: g.hop.y,
+      pose: g.player.root.position.toArray(), corridor };
   }, clearGround);
-  check("moves.mjs clear ground is valid in PC", ground.nav && ground.body && Math.abs(ground.floor) < 0.05, ground);
+  check("the PC clear ground and its walking corridor are open", ground.nav && ground.body && Math.abs(ground.floor) < 0.05 &&
+    ground.corridor.length === 0, ground);
   const before = await state();
   const quiet = await step(60);
   const idle = await state();
@@ -737,6 +753,9 @@ async function walkLookJump(h) {
   const pitchStart = await state();
   await sample([0, 0, 0, 0.8]);
   await step(16);
+  await sample();
+  // The rendered arm follows the rig's pitch on the camera's existing spring: let it arrive before reading the view.
+  await step(30);
   const pitchEnd = await state();
   check("positive right Y increases rig pitch and lowers the rendered look direction",
     pitchEnd.pitch > pitchStart.pitch + 0.08 && pitchEnd.view[1] < pitchStart.view[1] - 0.04 &&
@@ -1050,7 +1069,11 @@ async function swimContract(h) {
         const lip = g.ledges.pieces?.find((p) => x > p.minX - radius && x < p.maxX + radius &&
           zz > p.minZ - radius && zz < p.maxZ + radius && p.top > floorY(x, zz) + 0.2);
         if (lip) return { reason: "ledge", z: zz, top: lip.top };
-        if (g.town.colliders.blocked(x, zz, radius, true)) return { reason: "town collider", z: zz };
+        // (Colliders.resolve lets the player wade through the sea-tagged passer-by blocker and leaves split pieces to
+        // the ledge check above: only the other boxes and the circles stop the swimmer)
+        if (g.town.colliders.boxes.some((b) => b.tag !== "sea" && !b.split && x > b.minX - radius && x < b.maxX + radius &&
+            zz > b.minZ - radius && zz < b.maxZ + radius) ||
+          g.town.colliders.circles.some((c) => Math.hypot(x - c.x, zz - c.z) < radius + c.r)) return { reason: "town collider", z: zz };
         const hull = boats.find((b) => g.rides.reach(b, x, zz) < radius);
         if (hull) return { reason: "live hull", id: hull.id, z: zz };
         if (zz < SHORE.limit && floorY(x, zz) !== seaBedY(x, zz)) return { reason: "coast or pool interrupts open water", z: zz };
@@ -1352,11 +1375,11 @@ async function kitContract(h) {
   const greeting = '.barista-choice[data-line="bs_a_hi"]:enabled';
   await until("the first greeting becomes available", () => page.locator(greeting).isVisible(), { timeout: 25000, frames: 6 });
   check("the kit is on the first customer's greeting", (await kitState())?.step === "greet", await kitState());
-  await focusWith(`[data-pad-scope=barista] ${greeting}`);
+  await focusWith(`.barista-overlay[data-pad-scope=choice] ${greeting}`);
   await tap("A");
 
   h.mark("café kit order and chip");
-  const enabled = '[data-pad-scope=barista] [data-row] [data-chip][aria-disabled="false"]';
+  const enabled = '.barista-overlay[data-pad-scope=choice] [data-row] [data-chip][aria-disabled="false"]';
   await until("A advances the greeting to a live order tray", async () =>
     ["order", "build"].includes((await kitState())?.step) && await page.locator(enabled).first().isVisible());
   const offered = await kitState();
@@ -1375,7 +1398,9 @@ async function kitContract(h) {
   await tap("B");
   await when("B exits the café shift", (s) => !s.transition && s.phase === "on");
   await until("town controls return after the kit", () => page.locator(".toolbar").isVisible());
-  await assertCount(h, counts, "games", "barista");
+  // Puerto Colibrí's barista counts a play when a shift reaches its score (game/barista/mode.ts), so leaving the shift
+  // part-way adds nothing; the controller adds no count of its own.
+  await assertCounts(h, counts, []);
 }
 
 async function meetingContract(h) {
@@ -1489,16 +1514,39 @@ async function townHudChoices(h) {
   const chip = ".photo-chip";
   const bubble = ".street-bubble[data-chatter]";
   const scenarios = `:is(${toolbar}) ${scenariosTool}`;
-  await page.evaluate(() => {
+  // The same Ambient pair search as street.mjs: stand 3.5 m from a real chatting pair, turning until it is in view.
+  const pairs = await page.evaluate(() => {
     const { game, store } = window.__ew;
     store.getState().updateProgress((p) => { p.photoWalk = { status: "on", found: [] }; });
-    // The same Ambient pair fixture as street.mjs.
-    const walker = game.ambient.walkerRoots.map((root) => game.ambient.walkerFor(root)).find((w) => w.kind === "stand" && w.chat);
-    const p = walker.ch.root.position;
-    game.placeOnFoot(p.x + 3.3, p.z + 1.8, Math.atan2(-3.3, -1.8));
+    const chats = new Map();
+    for (const root of game.ambient.walkerRoots) {
+      const walker = game.ambient.walkerFor(root);
+      if (!walker?.chat) continue;
+      const members = chats.get(walker.chat) ?? [];
+      members.push(root.position);
+      chats.set(walker.chat, members);
+    }
+    return [...chats.values()].filter((members) => members.length === 2).map(([first, second]) => {
+      const { x, z } = first.clone().lerp(second, 0.5);
+      return { x, z };
+    });
   });
-  await step(6);
-  check("the real pair begins chatter", await page.evaluate(() => window.__ew.game.streetChatterNow("c_calor")));
+  assert(pairs.length > 0, "real Ambient pairs are available");
+  let inView = false;
+  for (const pair of pairs) {
+    for (let turn = 0; turn < 2 * Math.PI && !inView; turn += Math.PI / 4) {
+      await page.evaluate(({ x, z, turn }) =>
+        window.__ew.game.placeOnFoot(x + 3.5 * Math.sin(turn), z + 3.5 * Math.cos(turn), turn + Math.PI), { ...pair, turn });
+      await step(30);
+      // (and a camera with room behind the player, so the avatar is not the whole screen)
+      inView = await page.evaluate(() => window.__ew.game.streetLife.world.pairs(5).length > 0 && window.__ew.game.rig.armL >= 5);
+    }
+    if (inView) break;
+  }
+  assert(inView, "a real pair qualifies for natural chatter");
+  await bannerGone(h);
+  check("the real pair begins chatter", await page.evaluate(() =>
+    window.__ew.game.streetChatterNow("c_calor") || window.__ew.game.streetChatterNow()));
   await until("the camera chip and untranslated speech bubble are visible", async () =>
     await page.locator(chip).isVisible() && await page.locator(bubble).isVisible());
   await attach();
@@ -1610,13 +1658,14 @@ async function startCafe(h, light, pad = true) {
   const { page, until, focused, tap, step, check } = h;
   const picker = '[data-pad-scope=panel][data-pad-phase=scenarios]';
   let card;
-  if (light) card = page.locator(`.lh-card[data-sit="${cafe}"]`);
+  // (the café card appears twice, in its chapter and as a suggestion: either opens the same intro)
+  if (light) card = page.locator(`.lh-card[data-sit="${cafe}"]`).first();
   else {
     await tap("Menu");
     await until("the tools focus their scenarios launcher", () => focused(scenariosTool));
     await tap("A");
     await until("A opens the real scenarios sheet", () => page.locator(picker).isVisible());
-    card = page.locator(`${picker} .scn-card[data-sit="${cafe}"]`);
+    card = page.locator(`${picker} .scn-card[data-sit="${cafe}"]`).first();
   }
   const selector = light ? `.lh-card[data-sit="${cafe}"]` : `${picker} .scn-card[data-sit="${cafe}"]`;
   if (pad) {
@@ -2098,8 +2147,15 @@ const pickerSurface = { root: '[data-pad-scope=panel][data-pad-phase=scenarios]'
 const introSurface = { root: intro, choice: "[data-pad-default]" };
 const conversationSurface = { root: ".convo", choice: "[data-pad-answer], .guide .chip, .guide-toggle, .type-toggle" };
 
+/** The town's arrival title lasts 2.6 s of wall time (Game.enterZone); a controller is plugged in during play. */
+async function bannerGone(h) {
+  await h.until("the town's arrival title has gone", async () => await h.page.locator(".zone-banner").count() === 0,
+    { timeout: 6000, frames: 1 });
+}
+
 async function worldHint(h, scale) {
   if (scale === 1.3) await hintAtLargeText(h);
+  await bannerGone(h);
   const baseline = await hudGeometry(h);
   await connect(h);
   const shown = await inspectHint(h, "connected", "world");
@@ -2122,7 +2178,7 @@ async function worldHint(h, scale) {
 async function scaledHint(h, surface, scale) {
   const { page, step, until, check } = h;
   if (scale === 1.3) await hintAtLargeText(h);
-  const home = surface === "picker" ? null : page.locator(`.lh-card[data-sit="${cafe}"]`);
+  const home = surface === "picker" ? null : page.locator(`.lh-card[data-sit="${cafe}"]`).first();
   if (surface === "intro" || surface === "conversation") {
     await physical(h, home);
     await until("the visible Light Home intro opens", () => page.locator(primary).isVisible());
@@ -2245,10 +2301,11 @@ async function photoContract(h) {
       g.rig.snap();
       g.rig.cam.updateMatrixWorld();
       const projections = g.town.photoSpots.map((s) => ({
-        id: s.id, distance: Math.hypot(s.x - side.x, s.z - side.z), radius: things.get(s.id)?.near,
+        id: s.id, distance: Math.hypot(s.x - side.x, s.z - side.z), radius: things.get(s.id)?.near, spot: s === spot,
         visible: s.visible?.() !== false, ndc: g.player.root.position.clone().set(s.x, s.y, s.z).project(g.rig.cam).toArray(),
       }));
-      const subject = projections.find(({ id }) => id === spot.id);
+      // (a kind of subject can stand in several places, the palms: this is the one beside this car)
+      const subject = projections.find((p) => p.spot);
       tested.push({ car, d, side, pose, subject });
       if (!subject.visible || Math.max(...subject.ndc.slice(0, 2).map(Math.abs)) > 0.85 || Math.abs(subject.ndc[2]) >= 1) continue;
       // Restrict this fixture to one remaining album subject, which isolates the
@@ -2267,8 +2324,9 @@ async function photoContract(h) {
     await page.locator(h.mobile ? ".act-btn" : ".prompt").isVisible());
   assert.equal(await page.locator(".photo-chip").getAttribute("data-near"), id);
   const live = await page.evaluate((id) => {
-    const g = window.__ew.game, s = g.town.photoSpots.find((s) => s.id === id);
-    return g.player.root.position.clone().set(s.x, s.y, s.z).project(g.rig.cam).toArray();
+    const g = window.__ew.game, p = g.player.root.position;
+    const s = g.town.photoSpots.filter((s) => s.id === id).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+    return p.clone().set(s.x, s.y, s.z).project(g.rig.cam).toArray();
   }, id);
   assert(Math.abs(live[0]) <= 0.98 && Math.abs(live[1]) <= 0.98 && Math.abs(live[2]) < 1, JSON.stringify(live));
   await tap("Menu");
@@ -2413,7 +2471,14 @@ async function loteriaContract(h) {
     for (let i = 0; i < 4 && axisValue(current) !== end; i++) {
       await tap(axisValue(current) < end ? keyPlus : keyMinus);
       const next = await cells.evaluateAll((nodes) => nodes.indexOf(document.activeElement));
-      assert(next >= 0 && next !== current);
+      if (!(next >= 0 && next !== current)) {
+        assert.fail(`the D-pad moves focus between Lotería cells: ${JSON.stringify({ current, next, state: await h.state(),
+          active: await page.evaluate(() => {
+            const v = window.__ew.game.pad?.input?.view, root = v?.scope, items = root ? v.controls(root) : [];
+            return { cls: document.activeElement?.className, scope: document.activeElement?.closest("[data-pad-scope]")?.className,
+              root: root?.className, items: items.length, has: items.includes(document.activeElement) };
+          }) })}`);
+      }
       current = next;
     }
     assert.equal(axisValue(current), end);
@@ -2440,8 +2505,19 @@ async function poolContract(h) {
   const { page, until, step, press, sample, tap, check } = h;
   const counts = await playCounts(h);
   await connect(h);
+  // As pool-ball.mjs: the finished x09-alberca chat unlocks the ball, and the prompt appears once the player wades in
+  await page.evaluate(() => window.__ew.store.getState().updateProgress((p) => {
+    p.sits["x09-alberca"] = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
+  }));
   assert(await page.evaluate(() => window.__ew.game.poolTeleport()));
-  await until("the ball game is available at the deck", async () => (await h.state()).prompt === "pool");
+  await step(4);
+  await sample([0, -0.8, 0, 0]);
+  try {
+    await until("the ball game is available at the deck", async () => (await h.state()).prompt === "pool", { frames: 2, timeout: 20000 });
+  } finally {
+    await sample();
+    await step(2);
+  }
   await tap("X");
   const read = () => page.evaluate(() => {
     const pool = window.__ew.game.pool;
@@ -2481,7 +2557,12 @@ async function cenoteContract(h) {
   const { page, when, until, tap, sample, step, check, state } = h;
   await connect(h);
   await page.evaluate(() => {
-    const { game } = window.__ew;
+    const { game, store } = window.__ew;
+    // As cave.mjs: Kin has let the learner through before the first glyph stone listens
+    store.getState().updateProgress((p) => { p.cave = { lit: [], ...(p.cave ?? {}), seen: true, passed: [...new Set([...(p.cave?.passed ?? []), "kin"])] }; });
+    // The stones say only lines that have a recording (cave/quest.ts sayable); this harness serves an empty manifest,
+    // so the recordings are taken as present (cave.mjs reads the real one).
+    window.__ew.audio.hasClip = () => true;
     game.enterZone("gruta", { x: -6.4, z: -24.5, rot: -Math.PI / 2 }, true);
   });
   await when("the real cave listen prompt identifies the stone", (s) => s.zone === "gruta" && s.prompt === "listen");
@@ -2491,7 +2572,8 @@ async function cenoteContract(h) {
   assert.equal(opened.text, "El agua guarda la memoria.");
   assert.equal(opened.options.length, 3);
   assert.equal(opened.options[opened.answer], opened.lt);
-  assert.deepEqual(await page.locator(".glyph-opt").evaluateAll((els) => els.map((el) => [el.lang, el.textContent.trim()])),
+  // (each option shows its number key before the meaning: the meaning is the option's text span)
+  assert.deepEqual(await page.locator(".glyph-opt").evaluateAll((els) => els.map((el) => [el.lang, (el.querySelector("span") ?? el).textContent.trim()])),
     opened.options.map((meaning) => [learner, meaning]));
   const before = await state();
   await sample([0, -0.8, 0, 0]);
@@ -2516,6 +2598,8 @@ async function billiardsContract(h, interruption) {
   assert(await page.evaluate(() => window.__ew.billiards.start("solids")), "stage the PC billiards rack");
   const read = () => page.evaluate(() => window.__ew.billiards.state());
   await until("the actual rack reaches the break phase", async () => (await read())?.phase === "break", { frames: 1, timeout: 25000 });
+  // (a press on the very frame a phase begins is re-armed, by design: the player's thumb arrives a few frames later)
+  await step(3);
   const ready = await read();
   await tap("Right");
   const coarse = await read();
@@ -2557,9 +2641,12 @@ async function billiardsContract(h, interruption) {
   await sample();
   await step(18);
   const shot = await read();
+  await step(4);
+  const later = await read();
   const a = canceled.layout[0], b = shot.layout[0];
+  // (the meter keeps the shot's power while the balls roll, as with Space; it is no longer charging)
   check("a fresh charge and physical release rolls the cue ball", shot.phase === "rolling" &&
-    shot.power === 0 && Math.hypot(b.x - a.x, b.z - a.z) > 0.02, { phase: shot.phase, power: shot.power, a, b });
+    later.power === shot.power && Math.hypot(b.x - a.x, b.z - a.z) > 0.02, { phase: shot.phase, power: shot.power, later: later.power, a, b });
   await h.shot("cue-ball-moving");
   await tap("B");
   await when("B leaves billiards", (s) => !s.mode && !s.transition);
@@ -2839,6 +2926,8 @@ async function seaDrive(h) {
   await connect(h);
   const source = await enterSea(h);
   await startPhrases(h, "sea", seaState);
+  // (the stick is re-armed when the run takes over the controls: neutral for a few frames, as a thumb would be)
+  await h.step(3);
   const straight = await seaState(h);
   await h.sample([0.85, -0.8, 0, 0]);
   await h.step(50);
@@ -2869,7 +2958,7 @@ async function seedReviewPrompts(h, name) {
   // destinations on these fixture prompts before the real scorer sees them.
   return h.page.evaluate(async (name) => {
     const { loadPhrasePool } = await import("/src/game/road/phrasePool.ts");
-    const { SITUATION_BY_ID } = await import("/tests/browser/fixtures/quest-content.mjs");
+    const { SITUATION_BY_ID } = await import("/src/content/situations/catalog.ts");
     const pool = await loadPhrasePool(() => 0.48);
     const specs = [
       ["Un bar servía café y pan.", "s72-cafe"],
@@ -2894,6 +2983,9 @@ async function steerGate(h, name, read, first, lane) {
   const road = name === "road";
   const laneModule = road ? "/src/game/road/track.ts" : "/src/game/sea/course.ts";
   const target = await h.page.evaluate(async ({ lane, laneModule }) => (await import(laneModule)).laneOffset(lane), { lane, laneModule });
+  // (the stick re-arms after the run takes the controls: start each gate from a neutral thumb)
+  await h.sample();
+  await h.step(3);
   let actual = first;
   for (let i = 0; i < 230 && actual.totalGates === first.totalGates; i++) {
     const position = road ? actual.x : await h.page.evaluate(() => window.__ew.game.modes.get("sea").mode.boat.x);
@@ -3080,19 +3172,45 @@ const cases = [
   ])),
 ];
 
+// PAD_CASES (a regular expression) and PAD_SIZES ("390" or "1280") narrow a local run; the default runs everything.
+const only = process.env.PAD_CASES ? new RegExp(process.env.PAD_CASES) : null;
+const sizes = [[390, 844, true], [1280, 800, false]].filter(([w]) => !process.env.PAD_SIZES || process.env.PAD_SIZES.split(",").includes(String(w)));
+const chosen = cases.filter(([, name]) => !only || only.test(name));
+// A case that stalls the page (an evaluate that never returns) fails on its own after CASE_MS; its context, or if
+// need be the whole browser, is released so the remaining independent cases still run.
+const CASE_MS = Number(process.env.PAD_CASE_MS) || 240000;
+const within = (promise, ms, what) => {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${what} stalled for ${ms} ms`)), ms); })])
+    .finally(() => clearTimeout(timer));
+};
 try {
   const failed = [];
-  for (const [width, height, mobile] of [[390, 844, true], [1280, 800, false]]) {
-    for (const [mode, name, contract] of cases) {
+  for (const [width, height, mobile] of sizes) {
+    for (const [mode, name, contract] of chosen) {
+      const id = `pc-${learner}-${width}x${height}-${name}`;
+      console.log("case start", id);
+      const started = Date.now();
       try {
-        await run(width, height, mobile, mode, contract, name);
+        live = null;
+        await within(run(width, height, mobile, mode, contract, name), CASE_MS, id);
+        console.log("case done", id, `${Math.round((Date.now() - started) / 1000)} s`);
       } catch (error) {
-        failed.push(`pc-${learner}-${width}x${height}-${name}`);
+        failed.push(id);
         console.error(error);
+        console.log("case failed", id, `${Math.round((Date.now() - started) / 1000)} s`);
+        if (/stalled for/.test(String(error?.message))) {
+          const released = await within(live?.close() ?? Promise.resolve(), 15000, `${id} context close`).then(() => true, () => false);
+          if (!released) {
+            await within(browser.close(), 15000, "browser close").catch(() => {});
+            browser = await launch();
+          }
+        }
       }
     }
   }
-  console.log(`gamepad PC-${learner} · ${2 * cases.length - failed.length}/${2 * cases.length} cases passed`);
+  const total = sizes.length * chosen.length;
+  console.log(`gamepad PC-${learner} · ${total - failed.length}/${total} cases passed${total < 2 * cases.length ? ` (subset of ${2 * cases.length})` : ""}`);
   if (failed.length) {
     console.error("Failed independent cases", failed.join(", "));
     process.exitCode = 1;

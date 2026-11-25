@@ -144,6 +144,15 @@ export class RoadMode {
     return true;
   }
 
+  /** B on the lift's answers or the run's setup: the same exit as the physical Escape (input below). */
+  padBackFrom(surface: string) {
+    const answers = surface === "choice" && ["approach", "offer", "depart"].includes(this.phase);
+    const setup = surface === "word-setup" && this.phase === "briefing";
+    if (!answers && !setup) return false;
+    this.exit(false);
+    return true;
+  }
+
   padTick(_input: unknown, pressed: number) {
     if (this.padDriving && (pressed & PadButton.X)) {
       this.action("horn");

@@ -383,6 +383,19 @@ export class BilliardsMode implements GameMode {
     ui({ power: value });
   }
 
+  /** A controller's held A charges on the existing clock without a store update per frame (the whole overlay listens
+   *  to the store): the mounted meter is painted directly, and the store hears the power once, when the charge ends. */
+  private meter: { track: HTMLElement | null; value: HTMLElement | null } | null = null;
+  private padPower(value: number) {
+    this.power = value;
+    const meter = this.meter ??= {
+      track: document.querySelector<HTMLElement>(".billiards .bl-power-track"),
+      value: document.querySelector<HTMLElement>(".billiards .bl-power-value"),
+    };
+    meter.track?.style.setProperty("--bl-power", String(value));
+    if (meter.value) meter.value.textContent = `${Math.round(value * 100)}%`;
+  }
+
   private get aiming() { return this.phase === "aim" || this.phase === "break"; }
   get padAction() { return this.active && this.phase !== "result"; }
   get padNavigate() { return this.aiming; }
@@ -405,6 +418,7 @@ export class BilliardsMode implements GameMode {
     if (this.charge !== null || (source === "pad" && this.pointerPower)) return;
     this.charge = 0;
     this.chargeSource = source;
+    this.meter = null;
   }
 
   private fire(power: number, call: Call | null) {
@@ -555,7 +569,9 @@ export class BilliardsMode implements GameMode {
     if (this.charge !== null) {
       this.charge += dt;
       const cycle = (this.charge / 1.2) % 2;
-      this.setPower(cycle <= 1 ? cycle : 2 - cycle);
+      const value = cycle <= 1 ? cycle : 2 - cycle;
+      if (this.chargeSource === "pad") this.padPower(value);
+      else this.setPower(value);
     }
     if (this.phase === "listen" && this.help.level === 1 && this.listened < 2) {
       this.listened += dt;
@@ -606,7 +622,10 @@ export class BilliardsMode implements GameMode {
     if (this.chargeSource !== source) return false;
     this.charge = null;
     this.chargeSource = null;
+    this.meter = null;
     const power = this.power;
+    // (the pad's charge painted the meter itself: the store now hears where it stopped, once)
+    if (source === "pad") ui({ power });
     if (!cancel && this.aiming && power >= 0.04) this.fire(power, this.ownCall);
     else this.setPower(0);
     return true;

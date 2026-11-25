@@ -43,7 +43,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
 
   const listening = mic.status === "starting" || mic.status === "listening";
   return (
-    <div className="taxi-overlay" data-pad-tools data-pad-phase={line?.key}>
+    <div className="taxi-overlay" data-pad-tools={choices.length ? "" : undefined} data-pad-phase={line?.key}>
       {line && (
         <div className="taxi-cue">
           {gloss || revealed === line
