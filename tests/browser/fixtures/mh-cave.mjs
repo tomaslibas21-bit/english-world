@@ -649,6 +649,8 @@ export async function crossIn(run, id, hold = false) {
     }
   });
   await settled(run, "gruta");
+  // (the cave card follows on the first frame the cave's quest runs after the fade)
+  await run.wait(() => !!window.__ew.store.getState().hud.cave, "the cave card after the walk in", 10_000);
   const inside = await run.state();
   assert(distance(inside, d.spawn) < (id === "main" ? 2.5 : 1.5) && inside.y === 0 && !inside.swim, JSON.stringify(inside));
   assert.equal(inside.visits, s.visits + 1);
