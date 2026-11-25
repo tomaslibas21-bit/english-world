@@ -35,7 +35,7 @@ const turns = [
   ] },
   { step: "storm", answers: [
     { id: "k_stay", en: "Where did you stay?", lt: "Kur likote per audrą?", reply: "I stayed inside. I checked the light again and again." },
-    { id: "k_light_on", en: "Did the light stay on?", lt: "Ar šviesa vis dar veikė?", reply: "Yes. I could still see the flash through the rain.", voice: true },
+    { id: "k_light_on", en: "Did the light stay on?", lt: "Ar šviesa neužgeso?", reply: "Yes. I could still see the flash through the rain.", voice: true },
   ] },
   { step: "gift", answers: [
     { id: "k_keep", en: "I'll keep it, thanks.", lt: "Pasiliksiu, ačiū.", reply: "Here you go. I hope you like it." },
