@@ -164,7 +164,7 @@ export function presentExchange(turn: ActingTurn, mouth: VoiceMouth, audio: Audi
     audio, mouth, entry, armEntryAge: entry ? entryAge : undefined, beforeAdvance, deferRefresh: true, preserveWork: true,
     onDetach: () => { close(mounted(actor) ? undefined : 0); uninspect?.(); },
     counterY: atCounter ? counter?.center.y : undefined, counterContains: atCounter ? counter?.contains : undefined,
-    random: talkRandom(lineSeed(id, run, 0, 7)),
+    random: talkRandom(lineSeed(id, run, 0, 7)), energy: personality.energy,
   });
   if (!pose) {
     if (turn.line?.owner) audio.disownVisual(turn.line.owner);

@@ -144,7 +144,7 @@ export class NaturalSession {
     if ((ch.talkPose && !ch.talkPose.releasing) || !mountedTalkActor(ch)) return;
     const counter = role === "cast" && this.anchors.counter?.withinReach(ch.root.getWorldPosition(this.world)) ? this.anchors.counter : undefined;
     peer.pose = bindConversationPose(ch, {
-      audio: this.options.audio, role, random: peer.random, counterY: counter?.center.y,
+      audio: this.options.audio, role, random: peer.random, energy: role === "learner" ? 1 : peer.style.energy, counterY: counter?.center.y,
       counterContains: counter?.contains, idleWorkHands: role === "cast" && this.options.idleWorkHands?.(peer.actor),
     });
   }

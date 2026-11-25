@@ -175,7 +175,7 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
       peak = Math.max(peak, r.head.rotation.x - startingPitch);
       arms.forEach((arm, j) => expect(arm.quaternion.angleTo(angles[j])).toBeLessThan(1e-6));
     }
-    expect(peak).toBeCloseTo(0.059, 3);
+    expect(peak).toBeCloseTo(0.099, 3);
     expect(r.body.quaternion.angleTo(hip)).toBeLessThan(1e-6);
     expect(pose.applied.mouth).toBe(0);
     actor.dispose();
@@ -189,9 +189,10 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     const before = r.thighR.getWorldPosition(new Vector3()), root = actor.root.position.clone();
     pose.setRole("listening");
     step(actor, 0.3, hz);
-    expect(pose.applied.deltas.torsoPitch).toBeCloseTo(0.035, 9);
+    expect(pose.applied.deltas.torsoPitch).toBeCloseTo(0.055, 9);
     expect(pose.applied.deltas.elbowR).toBeCloseTo(-0.13, 9);
-    expect(r.thighR.getWorldPosition(new Vector3()).distanceTo(before)).toBeLessThan(1e-9);
+    // The lean turns about the hips; only the breath (a few millimetres) moves them.
+    expect(r.thighR.getWorldPosition(new Vector3()).distanceTo(before)).toBeLessThan(0.006);
     expect(actor.root.position.equals(root)).toBe(true);
     actor.dispose();
   });
@@ -293,12 +294,14 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     source.follow(owner); source.state("playing"); source.level(1);
     pose.speak(1, owner, { kind: "headGreeting" });
     step(actor, 0.27, hz);
-    expect(corners.position.y - base).toBeCloseTo(0.005, 8);
+    expect(corners.position.y - base).toBeCloseTo(0.01, 8);
     expect(corners.scale.y).toBeLessThan(0.001);
     step(actor, 0.5, hz);
     expect(pose.react("understood")).toBe(true);
     step(actor, 0.24, hz);
-    expect(corners.position.y - base).toBeCloseTo(0.008, 7);
+    // The smile after a right answer is still rising here and outlasts the nod.
+    expect(corners.position.y - base).toBeGreaterThan(0.008);
+    expect(corners.position.y - base).toBeLessThanOrEqual(0.012);
     expect(corners.scale.y).toBeLessThan(0.001);
     const height = r.mouth.scale.y;
     pose.watch = new Vector3(1, 1.6, 1);
@@ -400,7 +403,7 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     step(actor, 0.12, hz);
     expect(pose.applied.reactionWeight).toBeGreaterThan(0.95);
     expect(pose.applied.deltas.headPitch).toBeGreaterThan(0.06);
-    expect(pose.applied.deltas.smile).toBeLessThanOrEqual(0.008 + 1e-9);
+    expect(pose.applied.deltas.smile).toBeLessThanOrEqual(0.014 + 1e-9);
     step(actor, 0.3, hz);
     expect(pose.applied.reactionWeight).toBe(0);
     actor.dispose();

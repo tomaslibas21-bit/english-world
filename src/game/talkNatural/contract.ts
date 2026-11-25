@@ -82,6 +82,7 @@ export interface ClassifiedCue {
 export interface TalkPersonality {
   armChance: number;
   farewell: "yes" | "wave" | "heart";
+  energy: number;
   smallGreeting?: true;
   quickSmile?: true;
   directs?: true;

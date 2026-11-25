@@ -41,6 +41,8 @@ export interface PoseOptions {
   beforeAdvance?(dt: number): boolean;
   deferRefresh?: boolean;
   onDetach?(): void;
+  /** How large this character moves: about 0.75 for a reserved one, 1.25 for a lively one. */
+  energy?: number;
 }
 
 const clamp = (t: number, min: number, max: number) => Math.max(min, Math.min(max, t));
@@ -185,6 +187,12 @@ class ConversationPose implements NaturalPoseDriver {
   private lastPhrase = -Infinity;
   private afterQuiet = true;
   private counterY: number | undefined;
+  /** Speech carriage: the head rides the voice (stress) and drifts a little while the line plays (talk). */
+  private talk = 0;
+  private stress = 0;
+  private readonly energy: number;
+  private readonly swayA: number;
+  private readonly swayB: number;
 
   private readonly gaze = new Vector3();
   private readonly ray = new Vector3();
@@ -228,6 +236,9 @@ class ConversationPose implements NaturalPoseDriver {
     this.counterY = options.counterY;
     this.entryAge = options.armEntryAge ?? 0;
     this.random = options.random ?? Math.random;
+    this.energy = options.energy ?? 1;
+    this.swayA = this.random() * 6.283;
+    this.swayB = this.random() * 6.283;
     if (handoff && !options.beforeAdvance) this.entrySeconds = HANDOFF_SECONDS;
     this.motion?.addEventListener("change", this.motionChanged);
     this.motionChanged();
@@ -475,6 +486,9 @@ class ConversationPose implements NaturalPoseDriver {
 
     this.lips.read(dt, this.options.audio, this.voice, held);
     const { sample, level, silence } = this.lips;
+    const voiced = !this.releasing && this.role === "speaking" && silence < 0.45;
+    this.talk = clamp(this.talk + dt * (voiced ? 1 / 0.30 : -1 / 0.45), 0, 1);
+    this.stress += (this.lips.mouth - this.stress) * (1 - Math.exp(-dt / 0.11));
     if (silence >= 0.18) this.afterQuiet = true;
     if (this.afterQuiet && sample === "voiced" && level! >= 0.18) {
       this.afterQuiet = false;
@@ -625,14 +639,15 @@ class ConversationPose implements NaturalPoseDriver {
     if (!kind || weight <= 0) return 0;
     const { head, browL, browR, corners, upperL, upperR } = this.rig;
     if (kind === "yes" || kind === "understood" || kind === "headGreeting") {
-      head.rotation.x += (kind === "yes" ? 0.065 : kind === "understood" ? 0.08 : 0.036) * weight;
-      if (corners && kind !== "yes") corners.position.y += (kind === "understood" ? 0.008 : 0.005) * weight;
+      head.rotation.x += (kind === "yes" ? 0.12 : kind === "understood" ? 0.15 : 0.085) * weight;
+      if (corners && kind === "headGreeting") corners.position.y += 0.01 * weight;
     } else if (kind === "no") {
-      head.rotation.y += Math.sin(clamp(c.age / 0.71, 0, 1) * 2 * Math.PI) * 0.085 * weight;
+      head.rotation.y += Math.sin(clamp(c.age / 0.71, 0, 1) * 2 * Math.PI) * 0.15 * weight;
     } else if (kind === "repeat") {
-      head.rotation.z += 0.055 * c.side * weight;
+      // "Hm?": the head tips to one side, one brow up.
+      head.rotation.z += 0.11 * c.side * weight;
       const brow = c.side < 0 ? browL : browR ?? browL;
-      brow.position.y += 0.005 * weight;
+      brow.position.y += 0.012 * weight;
     }
 
     if (c.smile && corners && kind !== "headGreeting") corners.position.y += 0.005 * weight;
@@ -697,28 +712,47 @@ class ConversationPose implements NaturalPoseDriver {
         const smileBase = r.corners?.position.y ?? 0;
         listen = ease(this.listenWeight);
         if (!supported) {
-          this.mixTorso(0.035 * listen, hip ? 0.012 * listenBeat : 0);
+          this.mixTorso(0.055 * listen, hip ? 0.014 * listenBeat : 0);
           r.foreL.rotation.x -= 0.13 * listen;
           r.foreR.rotation.x -= 0.13 * listen;
         }
-        if (!hip) r.head.rotation.x += (learner ? 0.03 : 0.035) * listenBeat;
+        const e = this.energy;
+        if (!hip) r.head.rotation.x += (learner ? 0.055 : 0.075 * e) * listenBeat;
+        // An attentive head: a little to one side, the mouth a touch warmer, for as long as the learner has the turn.
+        const attend = listen * (1 - response);
+        r.head.rotation.z += (this.swayA > 3.1416 ? 0.042 : -0.042) * e * attend;
+        if (r.corners) r.corners.position.y += 0.005 * attend;
         const phrase = this.role === "speaking" ? oneShot(this.phraseAge, 0.09, 0.02, 0.28) * (1 - response) : 0;
-        r.head.rotation.x += 0.045 * phrase * (1 - Math.max(cue, fading));
-        r.browL.position.y += 0.008 * phrase;
-        if (r.browR) r.browR.position.y += 0.008 * phrase;
+        r.head.rotation.x += 0.06 * e * phrase * (1 - Math.max(cue, fading));
+        r.browL.position.y += 0.009 * phrase;
+        if (r.browR) r.browR.position.y += 0.009 * phrase;
+        const talk = ease(this.talk) * (1 - response) * (1 - 0.6 * Math.max(cue, fading)) * e;
+        if (talk > 0) {
+          // The head rides the voice: down a little on a stressed syllable, and it never sits dead still mid-sentence.
+          const t = this.time, stress = this.stress;
+          r.head.rotation.x += (0.07 * stress - 0.012) * talk;
+          r.head.rotation.y += Math.sin(t * 1.9 + this.swayA) * 0.032 * talk;
+          r.head.rotation.z += Math.sin(t * 1.3 + this.swayB) * 0.024 * talk;
+          r.browL.position.y += 0.006 * stress * talk;
+          if (r.browR) r.browR.position.y += 0.006 * stress * talk;
+        }
         const fadingWeight = fading * (this.fading.readable ? 1 : 1 - response);
         const cueWeight = cue * (this.cue.readable ? 1 : 1 - response);
         const recoveredSide = this.applyCue(this.recovery, recovered, blocked, supported);
         const fadingSide = this.applyCue(this.fading, fadingWeight, blocked, supported);
         const cueSide = this.applyCue(this.cue, cueWeight, blocked, supported);
         this.applyCue(this.response, response, blocked, supported);
+        // The smile outlasts the nod.
+        if (this.response.kind === "understood" && r.corners) {
+          r.corners.position.y += 0.012 * oneShot(this.response.age - 0.1, 0.2, 0.75, 0.5);
+        }
         const gazing = (cue === 0 || this.cue.kind !== "no") && this.applyGaze();
-        const pitchLimit = response || this.cue.kind === "yes" || this.fading.kind === "yes" ? 0.08
-          : gazing ? 0.07 : supported && listen > 0 && this.role !== "speaking" ? 0.059 : 0.045;
-        const headLimit = headOnly || (this.options.preserveWork && (seated || blocked) && this.role !== "speaking") ? 0.035 : undefined;
+        const pitchLimit = response || this.cue.kind === "yes" || this.fading.kind === "yes" ? 0.16
+          : gazing ? 0.09 : supported && listen > 0 && this.role !== "speaking" ? 0.10 : 0.09;
+        const headLimit = headOnly || (this.options.preserveWork && (seated || blocked) && this.role !== "speaking") ? 0.06 : undefined;
         const pitch = headLimit ?? pitchLimit;
         const yaw = headLimit ?? 0.12;
-        const roll = headLimit ?? (response ? 0.055 : 0.025);
+        const roll = headLimit ?? (response ? 0.12 : 0.07);
         this.headX = clamp(r.head.rotation.x - headBase + (supported ? 0.024 * listen : 0), -pitch, pitch);
         this.headY = clamp(r.head.rotation.y - yawBase, -yaw, yaw);
         this.headZ = clamp(r.head.rotation.z - rollBase, -roll, roll);
@@ -726,9 +760,9 @@ class ConversationPose implements NaturalPoseDriver {
         r.head.rotation.x = headBase + this.headX * headWeight;
         r.head.rotation.y = yawBase + this.headY * headWeight;
         r.head.rotation.z = rollBase + this.headZ * headWeight;
-        r.browL.position.y = Math.min(r.browL.position.y, browBaseL + 0.008);
-        if (r.browR) r.browR.position.y = Math.min(r.browR.position.y, browBaseR + 0.008);
-        if (r.corners) r.corners.position.y = Math.min(r.corners.position.y, smileBase + 0.008);
+        r.browL.position.y = Math.min(r.browL.position.y, browBaseL + 0.014);
+        if (r.browR) r.browR.position.y = Math.min(r.browR.position.y, browBaseR + 0.014);
+        if (r.corners) r.corners.position.y = Math.min(r.corners.position.y, smileBase + 0.014);
         if (import.meta.env.DEV) {
           const a = this.values;
           const main = cueWeight ? this.cue : fadingWeight ? this.fading : this.recovery;

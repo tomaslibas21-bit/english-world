@@ -190,8 +190,8 @@ describe("shared 3D presentation", () => {
       if (i <= 18) continue; // The entry blend finishes before the first listening beat.
       const { headPitch, hipRoll } = sample()!.player!.deltas;
       const beat = Math.max(Math.abs(headPitch), Math.abs(hipRoll)) > 1e-7;
-      expect(Math.abs(headPitch)).toBeLessThanOrEqual(0.0300001);
-      expect(Math.abs(hipRoll)).toBeLessThanOrEqual(0.0120001);
+      expect(Math.abs(headPitch)).toBeLessThanOrEqual(0.0550001);
+      expect(Math.abs(hipRoll)).toBeLessThanOrEqual(0.0140001);
       if (beat && !moving) starts.push(i / 60);
       moving = beat;
     }

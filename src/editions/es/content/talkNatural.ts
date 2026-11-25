@@ -1,8 +1,8 @@
 import type { AnchorKind, ClassifiedCue, TalkPersonality } from "@/game/talkNatural/contract";
 
-const reserved: TalkPersonality = { armChance: 0.45, farewell: "yes" };
-const expressive: TalkPersonality = { armChance: 0.70, farewell: "wave" };
-const warm: TalkPersonality = { armChance: 0.55, farewell: "heart" };
+const reserved: TalkPersonality = { armChance: 0.45, farewell: "yes", energy: 0.75 };
+const expressive: TalkPersonality = { armChance: 0.70, farewell: "wave", energy: 1.25 };
+const warm: TalkPersonality = { armChance: 0.55, farewell: "heart", energy: 1 };
 
 const people: Record<string, TalkPersonality> = {
   walter: reserved, aaron: reserved, tienda: reserved,
