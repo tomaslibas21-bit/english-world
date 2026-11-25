@@ -5,7 +5,7 @@ import { launchPoolBrowser, poolPage, poolViewports } from "./pool-browser.mjs";
 
 const browser = await launchPoolBrowser();
 try {
-  for (const viewport of poolViewports) {
+  for (const viewport of [...poolViewports, [844, 390]]) {
     const { page, context, phone, label, errors, open, shot } = await poolPage(browser, viewport, { completed: true });
     await page.addInitScript(() => {
       let now = 1000;
@@ -67,7 +67,16 @@ try {
       Math.random = () => 0.5;
       return window.__ew.game.modes.start("pool");
     }), true);
-    await page.waitForTimeout(480);
+    await page.waitForFunction(() => window.__ew.game.pool.debug().phase === "opening"
+      && window.__ew.store.getState().hud.fade === 0, null, { polling: 50 });
+    await step(2);
+    const instruction = page.locator(".pool-instruction");
+    assert.equal(await instruction.getAttribute("data-help"), "long");
+    if (phone && viewport[0] === 390) {
+      const speech = await page.locator('[data-line="pl_rules"]').boundingBox();
+      const menu = await page.locator(".ride-menu").boundingBox();
+      assert(speech && menu && menu.x - (speech.x + speech.width) >= 8, `${label}: opening speech clears the menu`);
+    }
     await waitFor((s) => s?.phase === "play" && s.receiver === "learner", "first pass to the learner", 1, 300);
     const fast = phone && viewport[1] === 664;
     if (fast) await page.evaluate(() => Object.assign(window.__ew.game.pool.round.flight, { height: "fast", seconds: 2.1 }));
@@ -83,7 +92,7 @@ try {
     const startSlot = await slot.boundingBox();
     assert.equal(before.canHit, false);
     if (phone) assert.equal(before.ring, "false");
-    assert(await page.locator('.pool-instruction[data-help="long"]').isVisible());
+    assert.equal(await instruction.getAttribute("data-help"), phone ? "short" : "long");
     const openHitWindow = async () => {
       let previous = await timing();
       for (let f = 0; f < 100; f++) {
@@ -97,7 +106,7 @@ try {
     const { previous, now } = await openHitWindow();
     const opensAt = now.seconds - (fast ? 0.5 : phone ? 0.75 : 0.6);
     assert(previous.phaseTime < opensAt && now.phaseTime >= opensAt && now.phaseTime - opensAt <= 0.051);
-    assert(await page.locator('.pool-instruction[data-help="long"]').isVisible(), "instructions stay through the first actionable window");
+    assert.equal(await instruction.getAttribute("data-help"), phone ? "short" : "long", "the first-pass hint stays through the first actionable window");
     if (phone) assert(previous.ring === "false" && now.ring === "true" && now.gold);
     else {
       assert.equal(await slot.locator('[data-help="timing"]').count(), 1);
@@ -106,7 +115,9 @@ try {
     // The round has captured its RNG. Restore the world's randomness so the splash fans out.
     await page.evaluate((random) => { Math.random = random; }, restoreRandom);
     await restoreRandom.dispose();
-    assert(await page.locator('[data-line="pl_tuya"]').isVisible());
+    const call = page.locator('[data-line="pl_tuya"]');
+    assert(await call.isVisible());
+    assert.match(await call.textContent(), /Yours!|Tavo!/);
     const { subjects, foreground } = await page.evaluate(() => window.__ew.game.poolFraming());
     assert.deepEqual(subjects.map(({ id }) => id).sort(), ["ball", "diego", "learner", "santi", "vale"]);
     for (const { id, point: [x, y, z], blockers } of subjects) {
