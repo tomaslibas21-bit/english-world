@@ -534,7 +534,7 @@ function stageFrame() {
   const element = (bounds: object) => ({ getBoundingClientRect: () => bounds }) as HTMLElement;
   const observe = (game: ReturnType<typeof setup>) => {
     const stop = game.view().observeFrame(element(viewport), element(header), element(dock));
-    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => name === "resize")!;
+    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => (name as string) === "resize")!;
     const fitView = ([width, height, top, bottom]: typeof phone | typeof compact | typeof desktop) => {
       Object.assign(viewport, { width, height });
       header.bottom = top;

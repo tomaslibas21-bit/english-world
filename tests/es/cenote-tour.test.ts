@@ -40,7 +40,7 @@ function character() {
   headJoint.position.y = 1.7;
   root.add(headJoint);
   const ch: GameCharacter = {
-    root, headJoint, rightHand: new Group(), height: 1.7, anim: "idle", update: vi.fn(), talk: vi.fn(),
+    root, headJoint, joint: () => root, rightHand: new Group(), height: 1.7, anim: "idle", update: vi.fn(), talk: vi.fn(),
     setAnim: (anim) => { ch.anim = anim; },
   };
   return ch;

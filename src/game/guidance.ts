@@ -7,11 +7,12 @@
 // the player and out with distance: only the next stretch of the way is marked.
 import * as THREE from "three";
 import type { Destination } from "./photowalk/store";
+import type { WalkPlace } from "./gameRef";
 
 /** A requested door uses the endpoint of its live walk, including any navigation snap. */
 export function directionsTarget(
   path: [number, number][] | null,
-  target: { kind: string; id?: string; directions?: Destination | null; onward?: "pool-hall" } | null,
+  target: { kind: string; id?: string; directions?: Destination | null; onward?: WalkPlace } | null,
   current: Destination | null,
 ) {
   const end = current && target?.directions === current ? path?.at(-1) : undefined;
