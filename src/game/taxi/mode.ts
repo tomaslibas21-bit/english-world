@@ -78,6 +78,14 @@ class TaxiMode implements GameMode {
   get active() { return this.run !== null; }
   get camera() { return this.run?.phase === "result" && this.host.rig.stage ? "stage" : "follow"; }
   get route() { return this.run?.route; }
+  get townDrive() { return this.run && this.isDriving(this.run) ? this.car : undefined; }
+
+  private isDriving(run: Run) { return run.phase === "drive" || run.phase === "passed"; }
+
+  private startDriving(run: Run) {
+    run.phase = "drive";
+    this.host.startTownDrive(this.car);
+  }
 
   allowsRideHints() {
     return this.run?.phase === "drive" && !inStopZone(this.run.route, this.car.m);
@@ -169,7 +177,7 @@ class TaxiMode implements GameMode {
     if (!await this.say("tx_hello") || this.run !== run) return;
     if (!await this.answer(run, "tx_a_where")) return;
     if (!await this.say(`tx_${run.route.id}_dest`) || this.run !== run) return;
-    run.phase = "drive";
+    this.startDriving(run);
   }
 
   private async cue(run: Run) {
@@ -217,7 +225,7 @@ class TaxiMode implements GameMode {
       this.host.rides.resetPosition(this.car, resetPose(approach(run.route, run.index)));
       this.host.snapTaxi(this.car, taxiModel.collisionBox);
       this.assist = false;
-      run.phase = "drive";
+      this.startDriving(run);
       run.spoken = false;
       run.cue = null;
     });
@@ -289,7 +297,7 @@ class TaxiMode implements GameMode {
     }
     if (this.host.rides.riding !== this.car) { this.exit(true); return; }
     this.dialogue.update(dt, blocked);
-    const drive = run.phase === "drive" || run.phase === "passed";
+    const drive = this.isDriving(run);
     const m = this.car.m, previousPace = m.pace;
     const step = run.route.decisions[run.index];
     if (drive && this.assist && useTaxi.getState().action) {
@@ -372,7 +380,7 @@ class TaxiMode implements GameMode {
     if (!this.run) return false;
     if (input.kind !== "key") return true;
     const { key, keys, repeat } = input;
-    const driving = this.run.phase === "drive" || this.run.phase === "passed";
+    const driving = this.isDriving(this.run);
     if (driving && drivingKeys.has(key)) { keys.add(key); return true; }
     if (key === "escape" && !repeat) this.exit(false);
     else if (!repeat && this.dialogue.key(key)) useTaxi.setState({ micOn: this.dialogue.micOn });

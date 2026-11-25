@@ -153,7 +153,9 @@ export class SpeedFeel {
   }
 
   /** Apply speed offsets once the rig and the view offset are in place. */
-  presentTown(base: number, dt: number, time: number, follow: boolean) {
+  presentTown(base: number, dt: number, time: number, follow: boolean, heldShot = false) {
+    // Sound already follows the learner's speed. Start the visual lift at zero after the pickup shot.
+    if (heldShot) { this.resume = 0; follow = false; }
     this.stepVisuals(dt, follow);
     this.amplitude = follow ? this.visualAmplitude : 0;
     this.offsetY = this.amplitude * Math.sin(2 * Math.PI * 7 * time);

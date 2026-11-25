@@ -6,6 +6,7 @@ import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { sampleBoardRegistration } from "./board-registration.mjs";
 import { assertCameraSettle, assertRoadContinuity } from "./road-handoff.mjs";
+import { atTaxiStand, checkSightlines, taxiSightlines, taxiStandStart } from "./taxi-stand.mjs";
 
 const url = new URL(process.env.WORLD_TEST_URL || "http://127.0.0.1:5188");
 const storage = process.env.WORLD_STORAGE ?? "puerto-colibri";
@@ -58,9 +59,10 @@ const clamp = (k) => Math.min(1, Math.max(0, k));
 const rounded = (n) => Number(n.toFixed(6));
 const safeName = (name) => name.replace(/[^\w.-]+/g, "-");
 
-function installClock({ key, save, seed }) {
+function installClock({ key, save, seed, taxiFirst }) {
   localStorage.setItem(key, JSON.stringify(save));
   sessionStorage.setItem("ew-play-now", "1");
+  if (taxiFirst) window.SpeechRecognition = window.webkitSpeechRecognition = undefined;
   const input = window.__speedInput = {};
   document.addEventListener("pointerdown", (event) => {
     input.pointer = { trusted: event.isTrusted, type: event.pointerType, id: event.pointerId };
@@ -96,8 +98,11 @@ function installClock({ key, save, seed }) {
       return result;
     };
   }
-  observe(AudioParam.prototype, "setTargetAtTime", (param, [value, time, tau]) =>
-    targets.set(param, { value, time, tau, serial: ++serial }));
+  observe(AudioParam.prototype, "setTargetAtTime", (param, [value, time, tau]) => {
+    const record = { value, time, tau, serial: ++serial };
+    if (taxiFirst) record.writes = (targets.get(param)?.writes ?? 0) + 1;
+    targets.set(param, record);
+  });
   observe(AudioNode.prototype, "connect", (node, [destination]) => {
     if (!connections.has(node)) connections.set(node, new Set());
     connections.get(node).add(destination);
@@ -150,7 +155,7 @@ function installClock({ key, save, seed }) {
   };
 }
 
-function observeGame() {
+function observeGame(taxiFirst) {
   const { game, road, audio, store, carStats } = window.__ew;
   // Keep recording lookup and missing-file handling, and keep native synthesis local to the ride.
   const play = audio.play.bind(audio);
@@ -161,6 +166,7 @@ function observeGame() {
   const townClean = rig.cam.clone();
   const targetIds = new Map();
   let draws = [], targets = [], targetUses = 0, tierWrites = 0, pool;
+  let drewTaxiShot = false;
   const run = () => game.modes.get("road")?.mode?.run;
   const camera = (cam) => ({
     fov: cam.fov, eye: cam.position.toArray(), rotation: cam.quaternion.toArray(),
@@ -254,6 +260,8 @@ function observeGame() {
       townClean.position.copy(rig.curPos);
       townClean.lookAt(rig.curLook);
       const feel = window.__speedFeel;
+      const taxi = taxiFirst && game.modes.get("taxi");
+      const shot = rig.taxiShot;
       return {
         t: game.t, drawn: draws.findLast((draw) => draw.onScreen && draw.world !== "other"), draws, targets,
         presented: game.presentedWorld, calls: renderer.info.render.calls, camera: camera(view?.camera ?? rig.cam),
@@ -267,6 +275,10 @@ function observeGame() {
         ride: ride?.id, phase: rides.phase, model: ride?.model, speed: m?.pace ?? 0, max: m?.spec.max,
         pose: m && [m.x, ride.mesh.position.y, m.z, m.heading], player: game.player.root.position.toArray(),
         seatedVisible: game.player.root.visible, anim: game.player.anim, asphalt: m && rides.asphalt.has(m.x, m.z),
+        taxi: taxi ? {
+          phase: taxi.run?.phase, index: taxi.run?.index, route: taxi.route?.id, speed: taxi.car.m.speed,
+          drewTaxiShot, shot: shot && { distance: shot.distance, blend: shot.elapsed, rays: rig.taxiSnapRays },
+        } : undefined,
         damage: ride && rides.crashes.info(ride), hit: rides.crashes.last(),
         contact: rides.contacts?.map(({ target, x, z, push }) => ({ target: typeof target === "object" ? target?.id : target, x, z, push })), revs: rides.revs, slip: m?.slip, helm: rig.portraitHelm, boatLens: game.rideFov, boatBack: game.rideBack,
         rollingDust: game.dust.puffs.filter((p) => p.rolling && (p.s.visible || p.life > 0)).length,
@@ -290,6 +302,7 @@ function observeGame() {
     step(count, ms) {
       draws = [];
       targets = [];
+      drewTaxiShot = taxiFirst && rig.hasTaxiShot;
       window.__step(count, ms);
       return this.read();
     },
@@ -348,9 +361,10 @@ function verifyRelease(target, tau, label) {
   near(target.tau, tau, 1e-9, label);
 }
 
-function verifyCarAudio(frame, previous, e) {
+function verifyCarAudio(frame, previous, e, voiceCanDuck = false) {
   const { audio, probe } = frame;
-  assert.ok(audio.context === "running" && audio.volume === 1 && audio.sounds > 0 && audio.bus > 0 && audio.radio === 1, JSON.stringify(audio));
+  assert.ok(audio.context === "running" && audio.volume === 1 && audio.sounds > 0
+    && (voiceCanDuck ? audio.bus >= 0 : audio.bus > 0) && audio.radio === 1, JSON.stringify(audio));
   assert.ok(audio.kind === "car" && audio.motorConnected && audio.motorGain?.value > 0, JSON.stringify(audio));
   verifyTarget(audio.pitch, 52 + 62 * e, 0.08, audio.time, previous?.audio.pitch, "car oscillator");
   assert.ok(audio.pitch.value >= 52 && audio.pitch.value <= 114);
@@ -551,7 +565,7 @@ function observeRoadReference() {
   };
 }
 
-async function suite(browser, options, reduced, edition) {
+async function suite(browser, options, reduced, edition, taxiFirst = false) {
   const { viewport, hasTouch: phone, deviceScaleFactor } = options;
   const motion = reduced ? "reduce" : "no-preference", input = phone ? "touch" : "keys";
   const context = await browser.newContext({ ...options, reducedMotion: motion, serviceWorkers: "block" });
@@ -588,7 +602,8 @@ async function suite(browser, options, reduced, edition) {
       if (/\.mp3$/i.test(request.pathname)) return route.fulfill({ status: 204, body: "" });
       return route.continue();
     });
-    await page.addInitScript(installClock, { key: `${storage}-progress-v1`, save, seed });
+    const progress = taxiFirst ? { ...save, place: taxiStandStart, settings: { ...save.settings, quality: "high" } } : save;
+    await page.addInitScript(installClock, { key: `${storage}-progress-v1`, save: progress, seed, taxiFirst });
     await page.goto(url.href, { waitUntil: "domcontentloaded", timeout: 120_000 });
     const identity = await page.evaluate(() => ({ lang: document.documentElement.lang, title: document.title, origin: location.origin }));
     learner = identity.lang;
@@ -606,17 +621,17 @@ async function suite(browser, options, reduced, edition) {
     })}`);
     async function step(ms = tick) {
       last = await page.evaluate((ms) => window.__speedTest.step(1, ms), ms);
-      trace.push({ checkpoint, preference, car, ...summary(last), road: last.road, hit: last.hit, contact: last.contact });
+      trace.push({ checkpoint, preference, car, ...summary(last), taxi: last.taxi, road: last.road, hit: last.hit, contact: last.contact });
       if (trace.length > 180) trace.shift();
       checkErrors();
       return last;
     }
-    async function ready(predicate, name, frames = 1) {
+    async function ready(predicate, name, frames = 1, value) {
       checkpoint = name;
       const end = Date.now() + 120_000;
       do {
         checkErrors();
-        if (await page.evaluate(predicate)) return;
+        if (await page.evaluate(predicate, value)) return;
         if (frames) await page.evaluate(([n, dt]) => window.__step(n, dt), [frames, tick]);
         await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
       } while (Date.now() < end);
@@ -628,7 +643,7 @@ async function suite(browser, options, reduced, edition) {
     }
     async function note(name, frame) {
       checkpoint = name;
-      log(name, summary(frame));
+      log(name, frame.taxi ? { ...summary(frame), taxi: frame.taxi, mode: frame.rigMode, base: frame.base } : summary(frame));
       if (shots) await page.screenshot({ path: join(shots, `speed-feel-${safeName(label(name))}.png`), timeout: 15_000 });
     }
     const press = (selector) => phone ? page.locator(selector).tap() : page.locator(selector).click();
@@ -637,13 +652,13 @@ async function suite(browser, options, reduced, edition) {
       await page.emulateMedia({ reducedMotion: value });
       assert.equal(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches), value === "reduce");
     };
-    async function touch(selector, forward) {
+    async function touch(selector, forward, reverse = false) {
       const box = await page.locator(selector).boundingBox();
       assert.ok(box, selector);
       const center = { x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 };
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [center] });
       if (forward) {
-        const moved = { ...center, y: center.y - 68 };
+        const moved = { ...center, y: center.y + (reverse ? 68 : -68) };
         await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [moved] });
       }
       assert.ok(await page.evaluate((selector) => {
@@ -653,7 +668,8 @@ async function suite(browser, options, reduced, edition) {
       }, selector), `trusted ${selector} input`);
     }
     const releaseTouch = () => cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    const go = (on) => phone ? (on ? touch(".joy", true) : releaseTouch()) : page.keyboard[on ? "down" : "up"]("w");
+    const go = (on, reverse = false) => phone ? (on ? touch(".joy", true, reverse) : releaseTouch())
+      : page.keyboard[on ? "down" : "up"](reverse ? "s" : "w");
     async function brake(on) {
       if (!phone) return page.keyboard[on ? "down" : "up"]("Space");
       if (!on) return releaseTouch();
@@ -1507,21 +1523,235 @@ async function suite(browser, options, reduced, edition) {
       await returnFromRoad(".road-header .road-dash > button.road-icon:first-child", !!clear.audio.wind);
     }
 
+    async function standTaxi() {
+      const cap = 3.15;
+      const choice = '.taxi-choice[data-line="tx_a_where"]';
+      const taxiRequests = () => requests.filter(({ pathname }) => speedJs.test(pathname));
+      await ready(() => window.__ew.store.getState().hud.prompt?.kind === "taxi", "stand-action");
+      assert.ok(await page.evaluate(atTaxiStand), "the reserved taxi is at the stand");
+      assert.match(await page.locator(".prompt").innerText(), learner === "lt" ? /Vairuoti taksi/ : /Drive the taxi/);
+      car = "stand-taxi";
+      if (phone) await press(".act-btn");
+      else await page.keyboard.press("e");
+      assert.ok(await page.evaluate((phone) => phone ? window.__speedInput.click : window.__speedInput.key === "e", phone));
+
+      await ready(() => {
+        const { rides, transitioning } = window.__ew.game;
+        return !transitioning && rides.phase === "on" && !!document.querySelector('.taxi-choice[data-line="tx_a_where"]')
+          && window.__ew.audio.ctx?.state === "running";
+      }, "taxi-opening-choice", 5);
+      const pickup = await step();
+      verifyDraw(pickup, "town");
+      assert.equal(pickup.taxi.phase, "opening");
+      assert.ok(await page.evaluate(atTaxiStand, "r1"));
+      checkSightlines(await page.evaluate(taxiSightlines), "speed-feel pickup");
+      assert.equal(pickup.rigMode, "follow");
+      assert.ok(pickup.taxi.drewTaxiShot && !pickup.seatedVisible);
+      assert.equal(pickup.probe, undefined);
+      assert.deepEqual(taxiRequests(), [], "opening does not fetch the speed module");
+      near(pickup.audio.pitch?.value, 52, 1e-6, "opening motor at idle");
+      await note("taxi-pickup", pickup);
+      await press(choice);
+      await ready(() => window.__ew.game.modes.get("taxi").run?.phase === "drive", "taxi-learner-at-wheel", 5);
+
+      function cleanVisual(frame) {
+        near(frame.drawn.fov, pickup.drawn.fov, 0.05, "neutral taxi lens");
+        near(distance(frame.drawn.eye, frame.clean), 0, 0.00001, "neutral taxi eye");
+        assert.equal(frame.pool.marks.length, 0);
+        if (frame.probe) {
+          assert.equal(frame.probe.fovDelta, 0);
+          assert.equal(frame.probe.shakeAmplitude, 0);
+        }
+        if (frame.reduced) assert.equal(frame.rollingDust, 0);
+      }
+
+      let previous, e = 0;
+      function driving(frame) {
+        verifyDraw(frame, "town", previous);
+        assert.equal(frame.ride, "taxi");
+        assert.equal(frame.phase, "on");
+        assert.equal(frame.taxi.phase, "drive");
+        assert.equal(frame.taxi.index, 0);
+        assert.equal(frame.rigMode, "follow");
+        assert.equal(frame.max, cap);
+        assert.ok(frame.speed <= cap + 1e-8 && Math.abs(frame.slip) < 0.05, JSON.stringify(summary(frame)));
+        assert.ok(!frame.seatedVisible && frame.input.y > 0.85 && Math.abs(frame.input.x) < 0.03);
+        if (frame.taxi.shot?.blend > 0) assert.ok(frame.taxi.shot.distance >= 6, "the clear blend waits for six metres");
+      }
+
+      function feedback(frame, strength) {
+        driving(frame);
+        assert.ok(frame.probe?.active);
+        near(frame.probe.speed, frame.speed, 1e-9, "post-contact taxi pace");
+        e = envelope(e, frame.speed, max, frame.t - previous.t);
+        verifyCarAudio(frame, previous, e, true);
+        verifyPool(frame, 0, frame.reduced);
+        if (previous.probe?.active) {
+          assert.equal(frame.audio.pitch.writes, previous.audio.pitch.writes + 1, "one native motor write per learner frame");
+          if (frame.audio.wind && previous.audio.wind) {
+            assert.equal(frame.audio.wind.writes, previous.audio.wind.writes + 1, "one native wind write on the same gain node");
+          }
+        }
+        const lift = 3.5 * e * strength, amp = 0.0025 * e ** 2 * strength;
+        near(frame.drawn.fov - pickup.drawn.fov, lift, 0.02, "drawn taxi lens from the town scale");
+        near(frame.probe.fovDelta, lift, 1e-8, "taxi speed-only lens");
+        near(frame.probe.shakeAmplitude, amp, 1e-8, "taxi shake amplitude");
+        near(frame.drawn.eye[1] - frame.clean[1], amp * Math.sin(2 * Math.PI * 7 * frame.t), 1e-8, "taxi vertical motion");
+        near(distance(frame.drawn.rotation, frame.cleanRotation), 0, 1e-7, "taxi rig keeps its look direction");
+        if (!strength) cleanVisual(frame);
+        previous = frame;
+      }
+
+      checkpoint = "taxi-first-drive-held-import";
+      await go(true);
+      try {
+        for (let i = 0; i < 105; i++) {
+          const frame = await step();
+          driving(frame);
+          assert.ok(frame.reduced && frame.taxi.drewTaxiShot && frame.taxi.shot?.blend === 0);
+          assert.equal(frame.probe, undefined);
+          assert.equal(frame.pool.containers, 0);
+          assert.equal(frame.audio.kind, undefined, "legacy taxi motor releases before the shared module loads");
+          assert.equal(frame.audio.wind, undefined);
+          cleanVisual(frame);
+          previous = frame;
+          if (frame.speed >= 3.12) break;
+        }
+        assert.ok(previous.speed >= 3.12, "the first drive reaches town lesson pace before import");
+        assert.equal(taxiRequests().length, 1, "one lazy request on the first learner drive");
+        await note("taxi-first-reduced-cold", previous);
+
+        unholdModule();
+        await ready(() => !!window.__speedFeel, "taxi-speed-module-ready", 0);
+        const quiet = await step();
+        assert.ok(quiet.reduced && quiet.taxi.drewTaxiShot);
+        feedback(quiet, 0);
+        await note("taxi-first-reduced-mounted", quiet);
+
+        await setMotion("no-preference");
+        let blendStart, handoff;
+        checkpoint = "taxi-clearance-blend";
+        for (let i = 0; i < 240; i++) {
+          const frame = await step();
+          assert.equal(frame.reduced, false);
+          assert.ok(frame.taxi.drewTaxiShot, "the frame completing the blend still belongs to the taxi shot");
+          feedback(frame, 0);
+          if (frame.taxi.shot?.blend > 0 && blendStart === undefined) {
+            blendStart = frame.t - frame.taxi.shot.blend;
+            await note("taxi-blend-start", frame);
+          }
+          if (!frame.taxi.shot) { handoff = frame; break; }
+        }
+        if (!handoff || blendStart === undefined) fail("the dedicated taxi shot never finished its clearance blend");
+        near(handoff.t - blendStart, 0.4, 2 * tick / 1000, "clear taxi blend duration");
+        assert.ok(handoff.speed >= 3.12 && handoff.audio.wind?.value > 0);
+        await note("taxi-final-pickup-draw", handoff);
+
+        checkpoint = "taxi-follow-resume";
+        for (let i = 0; i < 33; i++) {
+          const frame = await step();
+          assert.ok(!frame.taxi.drewTaxiShot && !frame.taxi.shot);
+          const strength = smooth(clamp((frame.t - handoff.t) / 0.35));
+          feedback(frame, strength);
+          if (i === 0) {
+            assert.ok(frame.probe.fovDelta > 0 && frame.probe.fovDelta < 0.01, "no lens jump at cruise");
+            await note("taxi-first-follow-draw", frame);
+          }
+        }
+        assert.ok(previous.speed >= 3.12 && previous.asphalt);
+        near(e, previous.speed / max, 0.001, "settled taxi envelope at attained pace");
+        near(previous.drawn.fov - pickup.drawn.fov, 0.71, 0.025, "small taxi lens lift at the cap");
+        near(previous.audio.pitch.value, 64.6, 0.2, "taxi motor at the cap");
+        near(previous.audio.wind.value, 0.00104, 0.00005, "taxi wind at the cap");
+        near(previous.probe.shakeAmplitude, 0.0001, 0.000005, "taxi shake at the cap");
+        await note("taxi-follow-cruise", previous);
+
+        await setMotion("reduce");
+        checkpoint = "taxi-live-opt-out";
+        const quietFollow = await step();
+        assert.ok(quietFollow.reduced && quietFollow.speed >= 3.12 && !quietFollow.taxi.drewTaxiShot);
+        feedback(quietFollow, 0);
+        await note("taxi-live-opt-out", quietFollow);
+
+        // Hear the first cue on the outbound lane so its playback can finish during the reverse.
+        checkpoint = "taxi-first-direction";
+        const cue = page.locator('.taxi-cue [data-line="tx_r1_c1"]');
+        for (let i = 0; i < 18 && !await cue.count(); i++) {
+          await page.evaluate(() => window.__step(10, 50));
+        }
+        assert.ok(await cue.count(), "the learner drives far enough to hear the first direction");
+      } finally {
+        await go(false);
+      }
+
+      // Back up past the pullout to miss the first approach. The lesson supplies the retry pose and camera.
+      checkpoint = "taxi-reverses-off-approach";
+      await go(true, true);
+      try {
+        const nearPullout = await page.evaluate((x) => {
+          const taxi = window.__ew.game.modes.get("taxi");
+          for (let i = 0; i < 24 && taxi.car.m.x < x && taxi.run.phase === "drive"; i++) window.__step(15, 50);
+          return taxi.car.m.x;
+        }, pickup.pose[0] + 5);
+        assert.ok(nearPullout >= pickup.pose[0] + 5, "genuine reverse input reaches the far side of the stand");
+        for (let i = 0; i < 45; i++) {
+          const frame = await step(50);
+          if (frame.taxi.phase === "wrong") break;
+        }
+        assert.equal(last.taxi.phase, "wrong");
+        assert.ok(last.taxi.speed < -2.5 && !last.taxi.shot && !last.probe.active);
+        verifyDraw(last, "town");
+        cleanVisual(last);
+        verifyRelease(last.audio.retiredMotor, 0.08, "wrong approach releases learner motor");
+        verifyRelease(last.audio.retiredWind, 0.06, "wrong approach releases learner wind");
+        await note("taxi-wrong-approach-release", last);
+      } finally {
+        await go(false, true);
+      }
+      await ready(() => {
+        const { game } = window.__ew;
+        return !game.transitioning && game.modes.get("taxi").run?.phase === "drive" && game.rig.hasTaxiShot;
+      }, "taxi-retry-ready", 5);
+      const retry = await step();
+      verifyDraw(retry, "town");
+      checkSightlines(await page.evaluate(taxiSightlines), "speed-feel retry");
+      assert.ok(retry.taxi.drewTaxiShot && retry.probe.active && retry.speed < 0.5);
+      assert.equal(taxiRequests().length, 1, "retry reuses the mounted controller");
+      cleanVisual(retry);
+      await note("taxi-retry-pickup", retry);
+
+      const menu = page.getByRole("button", { name: learner === "lt" ? "Meniu" : "Menu", exact: true });
+      const out = page.getByRole("button", { name: localized.out[learner], exact: true });
+      const activate = (locator) => phone ? locator.tap() : locator.click();
+      await activate(menu);
+      await activate(out);
+      await ready(() => {
+        const { game } = window.__ew;
+        return !game.transitioning && !game.rides.riding && !game.modes.engaged;
+      }, "taxi-exit-to-town");
+      const exited = await step();
+      verifyNoCar(exited);
+      verifyRelease(exited.audio.retiredMotor, 0.08, "taxi exit releases the motor");
+      assert.equal(exited.eligible, 21, "the taxi remains reserved");
+      assert.ok(await page.evaluate(atTaxiStand), "the lesson taxi is back at its stand");
+      await note("taxi-normal-exit", exited);
+    }
+
     await ready(() => {
       const ew = window.__ew;
       return ew?.store.getState().screen === "play" && ew.game?.zone?.id === "town" && !!document.querySelector(".hud .toolbar");
     }, "saved-town", 4);
-    await page.evaluate(observeGame);
+    await page.evaluate(observeGame, taxiFirst);
     await page.evaluate(() => {
       window.__ew.coach?.finish?.();
       window.__ew.store.getState().setHud({ panel: null });
     });
-    await ready(() => {
+    await ready((trafficModels) => {
       const { game, carStats } = window.__ew;
       const stats = carStats();
       return game.ledges?.ready && !game.transitioning && game.carVisuals?.ready && game.crashShadersReady
-        && stats.loadedCarModels === 9 && stats.parkedModels === 19 && stats.trafficModels === 2 && stats.taxi;
-    }, "town-models-ledges-shaders");
+        && stats.loadedCarModels === 9 && stats.parkedModels === 19 && stats.trafficModels === trafficModels && stats.taxi;
+    }, "town-models-ledges-shaders", 1, taxiFirst ? 6 : 2);
     const signed = await page.evaluate(() => {
       let signed = false;
       window.__ew.game.town.group.traverse((node) => { signed ||= node.material?.map?.name === "Carretera del Desierto"; });
@@ -1539,6 +1769,13 @@ async function suite(browser, options, reduced, edition) {
     assert.deepEqual(requests, [], "zero A8 assets and road warmup fetches at startup");
     const eligible = startup.eligible;
     assert.equal(eligible, 21, "three owned convertibles and 18 eligible parked cars; stand taxi is reserved");
+    if (taxiFirst) {
+      await standTaxi();
+      checkErrors();
+      log("taxi-first-passed", { seed });
+      await context.tracing.stop();
+      return learner;
+    }
     const startupResources = await resources();
     let foot = startup;
     for (let i = 0; i < 25; i++) {
@@ -1628,6 +1865,13 @@ try {
       } catch (error) {
         failures.push(error);
       }
+    }
+  }
+  for (const viewport of options) {
+    try {
+      edition = await suite(browser, viewport, true, edition, true);
+    } catch (error) {
+      failures.push(error);
     }
   }
   if (failures.length) throw failures[0];

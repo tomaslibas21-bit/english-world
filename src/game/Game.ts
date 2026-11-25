@@ -596,7 +596,12 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot),
       updatePose: (dt, heading) => this.updateModePose(dt, heading),
       board: (ride) => this.boardRide(ride, true),
-      drive: (dt, controls) => this.updateRide(dt, controls),
+      startTownDrive: (ride) => {
+        const mode = this.modes.active;
+        if (mode?.townDrive === ride && this.rides.riding === ride && this.zone.id === "town") this.loadTownSpeedFeel(ride, mode);
+      },
+      drive: (dt, controls) => this.updateRide(dt, controls,
+        this.zone.id === "town" && this.modes.active?.townDrive === this.rides.riding),
       dismount: (x, z, rot, keepParked) => {
         const point = this.rides.riding && this.rides.carExit(this.rides.riding)?.clone();
         this.endRide(keepParked);
@@ -604,7 +609,7 @@ export class Game implements GameApi {
         this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
       },
       snapTaxi: ({ m, mesh }, dimensions) => {
-        if (this.speedFeel?.release()) this.dust.clearRolling();
+        this.releaseTownSpeedFeel();
         this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
@@ -1535,8 +1540,9 @@ export class Game implements GameApi {
     return true;
   }
 
-  private loadTownSpeedFeel(ride: Ride) {
-    this.loadSpeedFeel(() => !this.modes.engaged && this.rides.phase !== "out", ride);
+  private loadTownSpeedFeel(ride: Ride, mode?: GameMode) {
+    this.loadSpeedFeel(() => this.rides.phase !== "out"
+      && (mode ? this.modes.active === mode && mode.townDrive === ride : !this.modes.engaged), ride);
   }
 
   private loadSpeedFeel(accept: () => boolean, ride = this.rides.riding) {
@@ -2986,13 +2992,16 @@ export class Game implements GameApi {
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
     const motor = riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null;
-    const townDriver = motor === "car" && this.zone.id === "town" && !this.modes.engaged;
+    const townCar = motor === "car" && this.zone.id === "town";
+    const taxiDriver = townCar && this.modes.active?.townDrive === riding;
+    const townDriver = townCar && (!this.modes.engaged || taxiDriver);
     const townFeedback = townDriver && !blocked && st.screen === "play" && st.settings.play === "town";
-    if (townFeedback) this.speedFeel?.sound();
+    if (townFeedback && this.speedFeel) this.speedFeel.sound();
     else {
       const released = this.speedFeel?.release();
-      if (released) this.dust.clearRolling();
-      if (!townDriver && (!released || motor)) audio.motor(motor, this.rides.revs);
+      if (released || taxiDriver && !townFeedback) this.dust.clearRolling();
+      if (!released && taxiDriver) audio.motor(null);
+      else if (!townDriver && (!released || motor && mode?.id !== "taxi")) audio.motor(motor, this.rides.revs);
     }
     this.updateNpcs(dt, talking, mode ?? undefined);
     if (!this.zone.interior) {
@@ -3043,6 +3052,8 @@ export class Game implements GameApi {
     const roadAtCrest = !blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding);
     // The live camera still has the last draw if the lazy feedback controller missed that frame.
     if (roadAtCrest && !this.speedFeel?.hasTownPose(w, h)) this.roadTownView = this.rig.cam.clone();
+    // The rig can finish blending during update and still draw the final frame of the taxi shot.
+    const taxiShot = this.rig.hasTaxiShot;
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
@@ -3058,7 +3069,7 @@ export class Game implements GameApi {
       const fov = this.rig.fovFor(w, h, follow && !car && this.vel.lengthSq() > 30) + (follow && !car ? this.rideFov : 0);
       const base = this.speedFeel?.baseFov ?? cam.fov, d = fov - base;
       const lens = Math.abs(d) < 0.05 ? fov : base + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
-      const presented = townFeedback ? this.speedFeel?.presentTown(lens, dt, this.t, follow) ?? lens : lens;
+      const presented = townFeedback ? this.speedFeel?.presentTown(lens, dt, this.t, follow, taxiShot) ?? lens : lens;
       if (presented !== cam.fov) {
         cam.fov = presented;
         cam.updateProjectionMatrix();
@@ -3291,7 +3302,7 @@ export class Game implements GameApi {
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
-    if (car && on && townDriver) this.speedFeel?.stepTown(dt, pace);
+    if (car && on && townDriver && controls) this.speedFeel?.stepTown(dt, pace);
     const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
     this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
@@ -3318,7 +3329,7 @@ export class Game implements GameApi {
     {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
       audio.rush("squeal", car && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
-      if (!car || this.modes.engaged) audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
+      if (!car || this.modes.engaged && !townDriver) audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
       if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || m.boost <= 0) this.kicked = false;
     }
