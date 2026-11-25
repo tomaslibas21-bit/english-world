@@ -811,7 +811,7 @@ function townWalking(f: ReturnType<typeof occupiedTown>) {
     vel: new Vector3(), moveVel: new Vector3(), tmpV: new Vector3(),
     heading: 0, lastHeading: 0, stepOut: 0, jogT: 0, lastSpeed: 0, rideBack: 0,
     waterNeutral: false, swimK: 0, diveK: 0, washT: 0, stepN: null, caveHinted: new Set(), caveHints: [],
-    splashes: new Splashes(), dust: { update: noop, puff: noop }, pigeons: { update: noop },
+    splashes: new Splashes(), dust: { update: noop, puff: noop, clear: noop, clearRolling: noop }, pigeons: { update: noop },
   });
   const left = rides.onLeft;
   rides.onLeft = (...args) => { left?.(...args); game.leftRide(...args); };
