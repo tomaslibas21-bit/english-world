@@ -32,7 +32,6 @@ const withClass = (base: string, extra?: string) => extra ? `${base} ${extra}` :
 const editable = "input, select, textarea, [contenteditable]:not([contenteditable=false])";
 const activator = "button, a, summary, [role=button]";
 const focusable = "button, a[href], input, select, textarea, summary, [tabindex], [contenteditable=true]";
-const selectedText = () => !!window.getSelection()?.toString();
 
 /** Mount once per opening. The caller supplies the quiz and owns playback. */
 export default function StonePhraseCard({ reader, title, labels = reader.labels, classNames = {},
@@ -126,7 +125,8 @@ export default function StonePhraseCard({ reader, title, labels = reader.labels,
     onCancel={(event) => { event.preventDefault(); event.stopPropagation(); dismiss(); }}
     onPointerDown={(event) => {
       event.stopPropagation();
-      gesture.current = event.isPrimary && event.button === 0 && event.target === event.currentTarget && !selectedText()
+      // Only a press that starts on the veil can dismiss, even if an earlier gesture left text selected.
+      gesture.current = event.isPrimary && event.button === 0 && event.target === event.currentTarget
         ? { id: event.pointerId, x: event.clientX, y: event.clientY, released: false } : null;
     }}
     onPointerMove={(event) => {
@@ -148,7 +148,7 @@ export default function StonePhraseCard({ reader, title, labels = reader.labels,
       const start = gesture.current;
       clearGesture();
       if (start?.released && event.target === event.currentTarget && event.button === 0 && event.detail > 0 &&
-        Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 8 && !selectedText()) {
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 8) {
         event.preventDefault();
         dismiss();
       }

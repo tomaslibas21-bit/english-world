@@ -628,15 +628,6 @@ async function checkGlyph(run, mode) {
     await checkSettings(true, false, true);
     await checkSolved();
     await page.keyboard.press("n");
-    const word = await read.locator(".u > .en").nth(1).boundingBox();
-    await page.mouse.move(word.x + 1, word.y + word.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(word.x + word.width - 1, word.y + word.height / 2, { steps: 5 });
-    await page.mouse.up();
-    assert(await page.evaluate(() => getSelection().toString().trim()), "target text can be selected");
-    await checkSolved();
-    await mark("text-selection");
-    await page.evaluate(() => getSelection().removeAllRanges());
     await press(read.locator(".u > .en").nth(1));
     await visible(page.locator(".glyph-veil .wpop"), "word popover in the dialog");
     await page.keyboard.press("Escape");
@@ -710,8 +701,31 @@ async function checkGlyph(run, mode) {
     }
     await checkSolved();
     await mark("canceled-and-mismatched");
-    await page.evaluate(() => getSelection().removeAllRanges());
+
+    const word = read.locator(".u > .en").nth(1);
+    if (phone) {
+      await word.evaluate((el) => getSelection().selectAllChildren(el));
+    } else {
+      const { x, y, width, height } = await word.evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return range.getBoundingClientRect().toJSON();
+      });
+      await page.mouse.move(x + 1, y + height / 2);
+      await page.mouse.down();
+      await page.mouse.move(x + width - 1, y + height / 2, { steps: 5 });
+      await page.mouse.up();
+    }
+    await checkSolved();
+    assert.equal(await page.locator(".wpop").count(), 0, "selecting text leaves the word popover closed");
+    await mark("text-selection");
+    assert(await word.evaluate((el) => {
+      const selection = getSelection();
+      return selection?.rangeCount === 1 && !selection.isCollapsed && !!selection.toString().trim()
+        && el.contains(selection.anchorNode) && el.contains(selection.focusNode);
+    }), "displayed Spanish has a noncollapsed selection immediately before the outside input");
     await run.click(outside.x, outside.y);
+    assert.equal(await glyph(), null, "the first outside input dismisses the opening with text selected");
     assert.equal((await observe()).clicks, 0, "dismissal does not click the underlying control");
   } else if (mode === "starter") {
     const index = await beginReplay(!phone);
