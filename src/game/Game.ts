@@ -628,6 +628,10 @@ export class Game implements GameApi {
           this.tagLayer.style.visibility = "hidden";
           useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
         },
+        speedFeel: (accept) => {
+          if (accept) this.loadSpeedFeel(accept);
+          return this.speedFeel;
+        },
         left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
         deferLift: () => this.road?.deferLift(),
         returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
@@ -1169,7 +1173,7 @@ export class Game implements GameApi {
     if (this.rides.riding !== car) {
       this.placeOnFoot(step?.x ?? position.x, step?.z ?? position.z + 2, position.rot);
       if (!onFoot) this.boardRide(car);
-    } else if (!onFoot) this.loadSpeedFeel(car);
+    } else if (!onFoot) this.loadTownSpeedFeel(car);
     if (!onFoot && this.rides.riding === car) {
       this.rides.update(0, this.t, null);
       this.rideCourse = this.rig.yaw = position.rot;
@@ -1438,21 +1442,27 @@ export class Game implements GameApi {
       this.savePlace();
     } else {
       this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
-      speedFeelModule ??= import("./rides/speedFeel").catch(() => null);
-      this.loadSpeedFeel(r);
+      this.loadTownSpeedFeel(r);
       this.road?.prefetch(r);
     }
     return true;
   }
 
-  private loadSpeedFeel(ride: Ride) {
-    if (this.speedFeel || !speedFeelModule) return;
+  private loadTownSpeedFeel(ride: Ride) {
+    if (this.speedFeel) return;
     const board = this.speedFeelBoard = {}, zone = this.zone;
+    this.loadSpeedFeel(() => this.speedFeelBoard === board && this.zone === zone
+      && this.rides.riding === ride && this.rides.phase !== "out" && !this.modes.owns("road"));
+  }
+
+  private loadSpeedFeel(accept: () => boolean) {
+    if (this.speedFeel) return;
+    speedFeelModule ??= import("./rides/speedFeel").catch(() => null);
     void speedFeelModule.then((module) => {
-      if (!module || this.disposed || this.speedFeelBoard !== board || this.zone !== zone
-        || this.rides.riding !== ride || this.rides.phase === "out" || this.modes.owns("road")) return;
+      if (!module || this.speedFeel || this.disposed || !accept()) return;
       const st = useStore.getState();
       if (st.screen !== "play" || st.settings.play !== "town") return;
+      this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
       this.speedFeel = new module.SpeedFeel(this.container, this.rig.cam, CAR.max, this.carMotionQuery);
     }).catch(() => {});
   }

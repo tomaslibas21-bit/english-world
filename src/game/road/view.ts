@@ -13,6 +13,7 @@ import { Props } from "./props";
 import { Ranges } from "./ranges";
 import { DRIVE_SECONDS, FIRST_GATE } from "./run";
 import { projectedCar, RoadChase } from "./chase";
+import type { SpeedFeel } from "../rides/speedFeel";
 import type { Pose } from "./ghost";
 
 const dummy = new THREE.Object3D();
@@ -95,6 +96,7 @@ export class RoadView {
   private sparks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.095, 0.095, 0.38),
     new THREE.MeshBasicMaterial({ color: "#ffce52" }), 22);
   private burstAt = -Infinity;
+  private reactionSparks = 0;
   private sky = new OpenSky(700, ROAD_LOOK.sky, ROAD_LOOK.sunAzimuth);
   private ranges = new Ranges(ROAD_LOOK.rock);
   private clouds = makeClouds();
@@ -123,11 +125,14 @@ export class RoadView {
   private seam?: {
     age: number; camera: THREE.PerspectiveCamera; carRotation: THREE.Quaternion;
     carY: number; rider: THREE.Object3D; reference?: DepartureFrame; framing?: ReturnType<typeof projectedCar>;
+    fovDelta: number; vibration: number;
   };
   private continuity?: { town: DepartureFrame; road: DepartureFrame };
   private vergeFade?: { color: THREE.BufferAttribute; original: Float32Array; count: number };
   private chaseCenter = new THREE.Vector3();
-  private cameraMotion = { distance: 0, lift: 0, pace: 0, time: 0, dt: 0 };
+  private readonly cameraMotion = { distance: 0, lift: 0, time: 0, dt: 0 };
+  speedFovDelta = 0;
+  shakeAmplitude = 0;
 
   constructor(mesh: THREE.Object3D, size: { width: number; length: number }, private model: CarModelEntry) {
     this.scene.fog = this.fog;
@@ -189,7 +194,7 @@ export class RoadView {
     this.blendTownLight(1);
   }
 
-  depart(source: THREE.Object3D, rider: THREE.Object3D, camera: THREE.PerspectiveCamera, width: number, height: number) {
+  depart(source: THREE.Object3D, rider: THREE.Object3D, camera: THREE.PerspectiveCamera, width: number, height: number, feel?: SpeedFeel) {
     camera.updateMatrixWorld(true);
     source.updateWorldMatrix(true, true);
     rider.updateWorldMatrix(true, false);
@@ -213,6 +218,7 @@ export class RoadView {
       .premultiply(this.car.quaternion.clone().invert());
     this.seatPlayer(rider, position, rotation);
     this.seam = { age: 0, camera: localCamera,
+      fovDelta: camera.fov - (feel?.baseFov ?? camera.fov), vibration: feel?.townVibration ?? 0,
       carRotation: this.car.quaternion.clone(), carY: this.car.position.y, rider, reference };
   }
 
@@ -377,9 +383,8 @@ export class RoadView {
 
   passenger(root: THREE.Object3D) { this.car.add(root); }
 
-  pose(pose: Pose, ghost: Pose | undefined, pace: number, drift: boolean, wobble: number, time: number, dt: number, boost = false, speed = 0) {
+  pose(pose: Pose, ghost: Pose | undefined, visualStrength: number, drift: boolean, wobble: number, time: number, dt: number, boost = false, speed = 0) {
     const [s, lateral, lift, steer] = pose;
-    const fraction = Math.min(1.2, pace);
     this.chaseCenter.copy(point(s, lateral, lift));
     this.car.position.copy(this.chaseCenter);
     this.car.position.x += Math.sin(time * 29) * wobble * 0.23;
@@ -400,8 +405,10 @@ export class RoadView {
       this.ghost.position.copy(point(ghost[0], ghost[1], ghost[2] + 0.06));
       this.ghost.rotation.y = course(ghost[0]) + ghost[3];
     }
-    this.sparks.count = drift || boost ? 22 : 0;
     const burst = (time - this.burstAt) / 0.48;
+    const trail = boost && !drift && visualStrength > 0;
+    this.reactionSparks = drift ? 22 : burst < 1 ? 8 : 0;
+    this.sparks.count = trail ? 22 : this.reactionSparks;
     if (this.sparks.count) this.sparks.material.color.set(burst < 1 ? "#ffde91" : drift ? "#ffce52" : "#97ffe1");
     for (let i = 0; i < this.sparks.count; i++) {
       const side = i % 2 ? 1 : -1;
@@ -413,11 +420,11 @@ export class RoadView {
         dummy.rotation.set(i + burst * 3, side * 0.7, side * burst * 4);
         dummy.scale.setScalar(1.9 * (1 - burst));
       } else {
-        const age = (time * (boost ? 7 : 5) + i / this.sparks.count) % 1;
-        dummy.position.copy(point(s - 1.5 - age * (boost ? 5.8 : 3.7),
+        const age = (time * (trail ? 7 : 5) + i / this.sparks.count) % 1;
+        dummy.position.copy(point(s - 1.5 - age * (trail ? 5.8 : 3.7),
           lateral + side * 0.92 + steer * age, 0.12 + Math.sin(age * Math.PI) * (0.26 + i % 3 * 0.10)));
         dummy.rotation.set(age, i, time + i);
-        dummy.scale.setScalar(1.24 - age);
+        dummy.scale.setScalar((1.24 - age) * (trail ? visualStrength : 1));
       }
       dummy.updateMatrix();
       this.sparks.setMatrixAt(i, dummy.matrix);
@@ -427,7 +434,10 @@ export class RoadView {
     this.sky.update(dt, this.camera.position);
     this.ranges.update(s);
     spinCarWheels(this.car, this.model, speed * dt);
-    this.cameraMotion = { distance: s, lift, pace: fraction, time, dt };
+    this.cameraMotion.distance = s;
+    this.cameraMotion.lift = lift;
+    this.cameraMotion.time = time;
+    this.cameraMotion.dt = dt;
     // The clouds keep their place in the sky and drift a little.
     this.clouds.position.set(Math.sin(time * 0.02) * 14, 0, -s);
   }
@@ -460,25 +470,48 @@ export class RoadView {
     if (mix === 1) this.vergeFade = undefined;
   }
 
-  render(renderer: Pick<THREE.WebGLRenderer, "render">, width: number, height: number, gate: Gate | undefined) {
-    const { distance, lift, pace, time, dt } = this.cameraMotion;
+  render(renderer: Pick<THREE.WebGLRenderer, "render">, width: number, height: number, gate: Gate | undefined, feel?: SpeedFeel) {
+    const { distance, lift, time, dt } = this.cameraMotion;
+    const strength = feel?.visualStrength ?? 0;
+    if (!strength) this.sparks.count = Math.min(this.sparks.count, this.reactionSparks);
     this.car.updateMatrix();
     this.worldCorners.forEach((corner, i) => corner.copy(this.carCorners[i]).applyMatrix4(this.car.matrix));
     if (this.camera.view?.enabled) this.camera.clearViewOffset();
-    this.chase.update(this.camera, this.chaseCenter, distance, lift, pace, time, dt, width, height, this.worldCorners, gate?.crossed ? undefined : gate);
+    this.chase.update(this.camera, this.chaseCenter, distance, lift, feel?.visualPace ?? 0, time, dt,
+      width, height, this.worldCorners, gate?.crossed ? undefined : gate, feel?.visualAmplitude);
+    let vibration = this.chase.shakeY;
+    this.shakeAmplitude = this.chase.shakeAmplitude;
+    this.speedFovDelta = this.chase.speedFovDelta;
     const seam = this.seam;
     if (seam) {
       const mix = THREE.MathUtils.smoothstep(seam.age, 0, ROAD_CAMERA_SECONDS);
       if (mix === 0) {
         this.camera.copy(seam.camera, false);
-        this.camera.updateMatrixWorld(true);
-        seam.framing = projectedCar(this.camera, this.roof(this.car), this.worldCorners);
+        if (!seam.framing) {
+          this.camera.position.y -= seam.vibration;
+          this.camera.updateMatrixWorld(true);
+          seam.framing = projectedCar(this.camera, this.roof(this.car), this.worldCorners);
+          this.camera.position.y = seam.camera.position.y;
+          this.camera.updateMatrixWorld(true);
+        }
+        this.speedFovDelta = seam.fovDelta;
+        this.shakeAmplitude = vibration = 0;
       } else if (mix < 1 && seam.framing) {
-        this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car), this.worldCorners, mix, width, height);
+        const inheritedDelta = seam.fovDelta * strength;
+        const startFov = seam.camera.fov - (seam.fovDelta - inheritedDelta);
+        this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car), this.worldCorners, mix, width, height, startFov);
+        this.speedFovDelta = THREE.MathUtils.lerp(inheritedDelta, this.speedFovDelta, mix);
+        this.shakeAmplitude *= mix;
+        vibration = THREE.MathUtils.lerp(seam.vibration * strength, vibration, mix);
       }
       this.blendTownLight(1 - THREE.MathUtils.smoothstep(seam.age, 0, 3));
       this.fadeVerge(seam.age);
       if (seam.age >= 3) this.seam = undefined;
+    }
+    if (vibration) {
+      // Apply the final vertical translation after framing, with the look direction already set.
+      this.camera.position.y += vibration;
+      this.camera.updateMatrixWorld(true);
     }
     this.throwPaper(time, width, height);
     this.sky.mesh.position.copy(this.camera.position);

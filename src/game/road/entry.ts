@@ -4,6 +4,7 @@ import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import type { Controls } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
+import type { SpeedFeel } from "../rides/speedFeel";
 import { WORLD } from "../world/layout";
 import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
 import type { RoadEnvironment } from "./view";
@@ -19,6 +20,7 @@ export interface RoadHost extends ModeHost {
   viewport(): { width: number; height: number };
   approach(approaching: boolean): void;
   clearTownHud(): void;
+  speedFeel(accept?: () => boolean): SpeedFeel | undefined;
   returnCar(car: Ride, onFoot: boolean): void;
   deferLift(): void;
 }
