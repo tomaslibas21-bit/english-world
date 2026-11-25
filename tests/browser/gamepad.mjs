@@ -422,7 +422,8 @@ async function inspectHint(h, kind, map, extra = "", surface = null) {
         r.left < inset.right && r.top < inset.bottom;
     };
     const panel = document.querySelector(".overlay > :is(.sheet, .phone)");
-    const task = panel && within(box, panel.getBoundingClientRect()) ? "" : ".objective-card";
+    // (owner, 25 Nov 2026: the short-lived notice may sit over the task card's text, never over its buttons)
+    const task = panel && within(box, panel.getBoundingClientRect()) ? "" : ".objective-card button, .objective-card a[href]";
     const selectors = [".toolbar", ".joy", ".jump-btn", ".act-btn", ".ride-menu", ".prompt", ".zone-banner",
       ".town-toasts .toast", ".coach", task, extra].filter(Boolean).join(",");
     const controls = [...document.querySelectorAll(selectors)].filter(drawn);
@@ -2317,6 +2318,8 @@ async function photoContract(h) {
       for (const yaw of [rot, rot + Math.PI, rot + Math.PI / 2, rot - Math.PI / 2]) {
         g.rig.yaw = yaw;
         g.rig.snap();
+        // (snap sets where the camera should be; the game's own frame moves it there)
+        window.__step(2);
         g.rig.cam.updateMatrixWorld();
         const q = g.player.root.position.clone().set(spot.x, spot.y, spot.z).project(g.rig.cam);
         if (Math.abs(q.x) < 0.85 && Math.abs(q.y) < 0.85 && Math.abs(q.z) < 1) break;
@@ -2715,7 +2718,10 @@ async function surfContract(h) {
     }
     return false;
   }, { timeout: 28000, frames: 1 });
-  const first = await reach("the real beginner lesson asks for its first stroke", (s) => s.todo?.do === "paddle");
+  const first = await reach("the real beginner lesson asks for its first stroke", (s) => s.todo?.do === "paddle").catch(async (error) => {
+    const surf = await page.evaluate(() => { const u = window.__ew.surf?.getState(); return u && { choice: u.choice?.id, options: u.choice?.options?.map((o) => o.cue), phase: u.phase, todo: u.todo }; });
+    throw new Error(`${error.message}\nsurf logic ${JSON.stringify(await read())}\nsurf ui ${JSON.stringify(surf)}`);
+  });
   await tap("X");
   const stroked = await read();
   check("X performs exactly one requested stroke", stroked.todo?.do === "paddle" && stroked.todo.left === first.todo.left - 1,

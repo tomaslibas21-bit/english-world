@@ -1238,6 +1238,8 @@ export class Game implements GameApi {
       },
       jump: () => this.jump(),
       interact: () => {
+        // (the HUD looks for what is near only every 0.12 s: just after a mode closes, look now)
+        if (!this.nearest && !this.rides.riding && !this.modes.active) this.updateHud();
         if (!this.rides.riding && (!this.nearest || !useStore.getState().hud.prompt)) return false;
         this.interact();
         return true;

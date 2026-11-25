@@ -836,6 +836,7 @@ const NOTES = ".objective-card, .zone-banner, .coach, .town-toasts, .directions-
 const OBSTACLES = ".toolbar, .toolbar-drawer:not([inert]), .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .photo-chip, .view-chip, .lh-tools, .street-bubble, .minimap, .radio-strip, .ride-keys, .toasts, .lc-center, .phone-ring, .surf-pad";
 const NOTICE_ANCHORS = `${NOTES}, ${OBSTACLES}, ${ROOTS}`;
 type Obstacle = { box: DOMRect; gap: number };
+const sameBox = (a: DOMRect, b: DOMRect | null | undefined) => !!b && a.left === b.left && a.top === b.top && a.right === b.right && a.bottom === b.bottom;
 /** The narrower card for a crowded phone screen (CSS px). */
 const COMPACT = 160;
 
@@ -1062,6 +1063,22 @@ class PadNotice {
       size.h = compact.height;
       if (fixed(clearSurface, below)) return;
       node.style.removeProperty("max-width");
+      // Still no room (130 % text with the task card open): the short-lived notice may sit over the task card's text,
+      // never over its buttons, the other controls or the avatar (owner, 25 Nov 2026).
+      const task = notes.filter((el) => el.matches(".objective-card"));
+      if (task.length) {
+        const overTask = cover.filter(({ box }) => !task.some((el) => sameBox(box, visibleBox(el))))
+          .concat(obstacles(task.flatMap((el) => Array.from(el.querySelectorAll<HTMLElement>("button, a[href]")).filter(visible)), 6));
+        size.w = status.width;
+        size.h = status.height;
+        if (fixed(overTask)) return;
+        node.style.maxWidth = `${COMPACT}px`;
+        const narrow = node.getBoundingClientRect();
+        size.w = narrow.width;
+        size.h = narrow.height;
+        if (fixed(overTask)) return;
+        node.style.removeProperty("max-width");
+      }
     }
     // Keep the live region available during transient animations even when no safe box fits yet.
     node.removeAttribute("data-pad-positioned");
