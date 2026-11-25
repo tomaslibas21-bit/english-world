@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { KEEPER_NPC, NPCS } from "../../content/npcs";
+import type { TalkActor } from "../Game";
+import type { OcclusionField } from "../occlusion";
 import { createCharacter } from "../characters";
 import { addIslandTower, addLighthouse } from "./lighthouseTower";
 import { buoy, mums } from "./maple";
@@ -6,6 +9,23 @@ import { boxGeo, colourMerge, rand } from "./util";
 import type { IslandPlan, IslandPoint } from "./island";
 
 type Parts = [THREE.BufferGeometry, THREE.ColorRepresentation][];
+
+export function attachLighthouseIsland(island: IslandPlan, town: THREE.Group, field: OcclusionField,
+  learnerAt: THREE.Vector3, dry?: THREE.Object3D[]) {
+  const scene = buildLighthouseIsland(island);
+  try {
+    scene.keeper.watch = learnerAt;
+    scene.group.visible = !dry;
+    town.add(scene.group);
+    scene.ground.updateWorldMatrix(true, false);
+    field.addGeometry(scene.ground.geometry, scene.ground.matrixWorld);
+    dry?.push(scene.group);
+    return scene;
+  } catch (error) {
+    scene.dispose();
+    throw error;
+  }
+}
 
 function facet(points: [number, number, number][]) {
   const g = new THREE.BufferGeometry();
@@ -227,15 +247,19 @@ export function buildLighthouseIsland(island: IslandPlan) {
   const gull = new THREE.Mesh(colourMerge(bird), material);
   gull.name = "lighthouse-island-gull";
 
-  const ch = createCharacter({ female: false, skin: "#d3a07f", hair: { style: "short", color: "#bfc1be" },
-    acc: ["beard"], top: "#284c59", bottom: "#71604e", shoes: "#374548", height: 1.02, build: 1.08, face: { lines: true } });
+  const ch = createCharacter({ female: false, ...NPCS[KEEPER_NPC].look });
   ch.root.name = "lighthouse-keeper";
   ch.root.position.set(keeper.x, y, keeper.z);
-  ch.root.rotation.y = Math.atan2(keeper.approach.x - keeper.x, keeper.approach.z - keeper.z);
+  const { x, z } = keeper.approach;
+  const rot = Math.atan2(keeper.x - x, keeper.z - z);
+  ch.root.rotation.y = Math.atan2(x - keeper.x, z - keeper.z);
+  const keeperActor: TalkActor = {
+    id: KEEPER_NPC, ch, home: ch.root.position.clone(), rot: ch.root.rotation.y, approach: new THREE.Vector3(x, y, z),
+  };
   group.add(ground, glass, gull, ch.root);
 
   return {
-    group, ground, keeper: ch,
+    group, ground, keeper: ch, keeperActor, keeperSpawn: { x, z, rot },
     // From across the path, the keeper is in three-quarter view against the cottage and water.
     keeperView: {
       pos: new THREE.Vector3(keeper.x - 0.8, y + 2.12, keeper.z + 4.85),

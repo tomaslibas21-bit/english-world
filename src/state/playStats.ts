@@ -297,6 +297,7 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
     m.talking = c.active;
     if (c.active && c.run !== run) {
       run = c.run; completed = false; transcript = 0;
+      if (c.sitId === "x05-lighthouse-keeper") countPlay("games", "keeper");
       if (m.mode) {
         const mode = m.mode;
         m.tick(); save();

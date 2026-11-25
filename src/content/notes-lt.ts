@@ -1751,6 +1751,10 @@ export const NOTES_LT: Record<string, string> = {
   "down: the prefix už- of užrašyti carries it (linked to “to write”).": "„down“ perteikia priešdėlis už- žodyje užrašyti (susieta su „to write“).",
   "Question “does” has no Lithuanian word; the tense sits on “reiškia” (linked to “mean”).": "Klausiamasis „does“ lietuviškai žodžio neturi; laiką perteikia reiškia (susieta su „mean“).",
   "Partitive: the Lithuanian genitive ending carries “some”.": "Dalies kilmininkas: „some“ perteikia lietuviško kilmininko galūnė.",
+  "Here, ‘it’ has no Lithuanian equivalent.": "Šiame klausime žodžio „it“ neverčiame. Lietuviškai sakome „Ar čia tylu?“",
+  "‘Does’ helps form a question.": "„Does“ padeda užduoti klausimą. Lietuviškai sakome „Kaip ji padeda laivams?“",
+  "The first ‘do’ forms the question. The second ‘do’ means ‘darote’.": "Pirmasis „do“ padeda užduoti klausimą, o antrasis reiškia „darote“.",
+  "‘Did’ marks the past. In Lithuanian the verb form carries that meaning.": "„Did“ rodo, kad klausiame apie praeitį. Lietuviškai tai rodo žodis „likote“.",
 };
 
 /** A unit's note as the learner reads it: its Lithuanian (a note without one stays as written). */

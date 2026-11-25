@@ -8,6 +8,7 @@ import type { SituationDef, SituationMeta } from "../types";
 import { GYM_ENTRY } from "../gym-entry";
 import { META, LOAD } from "./meta.gen";
 
+export const KEEPER_SIT = "x05-lighthouse-keeper";
 export const SITUATIONS: readonly SituationMeta[] = META;
 export const SITUATION_BY_ID: Record<string, SituationMeta> = Object.fromEntries(META.map((s) => [s.id, s]));
 

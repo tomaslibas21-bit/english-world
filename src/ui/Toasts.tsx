@@ -1,3 +1,4 @@
+import { KEEPER_SIT } from "../content/situations/catalog";
 import { useStore, usesTownNotes, type Toast } from "../state/store";
 import { useSurf } from "../game/surf/store";
 import { townNote } from "../state/townNotes";
@@ -16,8 +17,10 @@ export function Toasts({ placement = "root" }: { placement?: "root" | "conversat
   const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
   const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
   const inConversation = useStore((s) => s.conv.active && !s.hud.panel);
+  const visitingKeeper = useStore((s) => s.conv.active && s.conv.sitId === KEEPER_SIT);
   if (inConversation !== (placement === "conversation")) return null;
-  return <ToastList toasts={(modeMenu ? toasts?.filter((t) => t.rideHint) : toasts) ?? []} inConversation={inConversation} />;
+  const visible = toasts?.filter((t) => (!modeMenu || t.rideHint) && (!visitingKeeper || t.source !== "keeper-greeting"));
+  return <ToastList toasts={visible ?? []} inConversation={inConversation} />;
 }
 
 export function useTownToast() {

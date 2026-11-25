@@ -177,6 +177,7 @@ export const KEEPSAKES: Record<string, KeepsakeKind> = {
   "s90-running-late": "note",
   "s91a-lost-wallet": "map",
   "s91b-police": "note",
+  "x05-lighthouse-keeper": "note",
 };
 
 export function keepsakeFor(sitId: string): KeepsakeKind {

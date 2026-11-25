@@ -13,6 +13,10 @@ describe("scene intros", () => {
 
   it("the other conversations speak to the learner in the intro", () => {
     const informalYou = /(?<![\p{L}])(tu|tau|tave|tavęs|tavo|tavimi|tavyje)(?![\p{L}])/iu;
+    const politeYou = /(?<![\p{L}\p{M}\p{N}_])Jus(?![\p{L}\p{M}\p{N}_])/u;
+    const keeperIntro = "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.";
+    const keeperId = "x05-lighthouse-keeper";
+    expect(SITUATIONS.some((s) => s.id === keeperId), `${keeperId} must exist`).toBe(true);
     const surfId = "x04-surf";
     expect(SITUATIONS.some((s) => s.id === surfId), `${surfId} must exist`).toBe(true);
 
@@ -23,6 +27,9 @@ describe("scene intros", () => {
         expect(intro).toContain("Maren Pike nuomoja lentas ir moko čiuožti banglente.");
         expect(intro).toContain("Atėjote išsinuomoti įrangos arba susitarti dėl pamokos.");
         expect(intro).not.toMatch(informalYou);
+      } else if (id === keeperId) {
+        expect(intro).toBe(keeperIntro);
+        expect(intro).toMatch(politeYou);
       } else {
         expect(intro ?? "", id).toMatch(informalYou);
       }

@@ -236,6 +236,7 @@ export class Rides {
   private r = rand(9090);
   /** Called when the player is on their feet (or in the water) again, where and facing which way. */
   onLeft: ((x: number, y: number, z: number, rot: number) => void) | null = null;
+  onIslandBoatReleased?: (id: string) => void;
   /** Called when there is nowhere to get out. */
   onStuck: (() => void) | null = null;
 
@@ -652,7 +653,7 @@ export class Rides {
     this.from.copy(p);
     this.fromRot = this.host.player.root.rotation.y;
     r.awayT = 0;
-    this.islandMoorings.delete(r.id);
+    this.releaseIslandBoat(r);
     r.thanked = false;
     let said = false;
     r.chat?.hold(6);
@@ -767,6 +768,10 @@ export class Rides {
 
   private islandMoorings = new Set<string>();
 
+  private releaseIslandBoat(r: Ride) {
+    if (this.islandMoorings.delete(r.id)) this.onIslandBoatReleased?.(r.id);
+  }
+
   private atIslandJetty(r: Ride) {
     const d = this.plan.island?.jetty;
     if (!d) return null;
@@ -775,18 +780,20 @@ export class Rides {
   }
 
   islandBoat() {
-    const boat = this.list.find((r) => this.islandMoorings.has(r.id));
+    let boat: Ride | undefined;
+    for (const id of this.islandMoorings) boat = this.find(id);
     return boat && { id: boat.id, x: boat.m.x, z: boat.m.z, rot: boat.m.heading };
   }
 
   restoreIslandBoat(saved?: NonNullable<ReturnType<Rides["islandBoat"]>>) {
     const island = this.plan.island;
-    if (!island) return;
-    const boat = this.list.find((r) => r.kind === "boat" && r.id === saved?.id)
-      ?? this.list.find((r) => r.kind === "boat");
-    if (!boat) return;
-    this.resetPosition(boat, saved ?? island.berth);
-    if (!this.atIslandJetty(boat)) this.resetPosition(boat, island.berth);
+    if (!island || this.islandMoorings.size) return;
+    const savedBoat = this.list.find((r) => r.kind === "boat" && r.id === saved?.id);
+    const boat = savedBoat ?? this.list.find((r) => r.kind === "boat");
+    if (!boat || boat === this.riding) return;
+    const position = savedBoat && saved && [saved.x, saved.z, saved.rot].every(Number.isFinite) ? saved : island.berth;
+    this.resetPosition(boat, position);
+    if (position !== island.berth && !this.atIslandJetty(boat)) this.resetPosition(boat, island.berth);
     this.islandMoorings.add(boat.id);
   }
 
@@ -830,6 +837,8 @@ export class Rides {
     ch.busy = null; ch.recline = 0; ch.steer = 0; ch.lift = 0; ch.tuck = 0;
     ch.setAnim("idle");
     this.hideRider(false);
+    // A picker can interrupt the hop onto the jetty after the boat has already moored.
+    if (this.islandMoorings.has(r.id)) return;
     if (keep || shore || r.parked || r.townBoat) this.resetPosition(r, { x: r.m.x, z: r.m.z, rot: r.m.heading });
     else this.sendHome(r);
   }
@@ -893,7 +902,7 @@ export class Rides {
   }
 
   private sendHome(r: Ride) {
-    this.islandMoorings.delete(r.id);
+    this.releaseIslandBoat(r);
     r.m.set(r.home.x, r.home.z, r.home.rot);
     r.awayT = 0;
     r.thanked = true;
@@ -1646,7 +1655,7 @@ export class Rides {
     if (r.townBoat) return;
     const island = this.plan.island;
     const p = this.host.player.root.position;
-    if (island && this.islandMoorings.has(r.id) && this.host.outdoors() && islandGroundY(island, p.x, p.z) !== undefined) return;
+    if (island && this.islandMoorings.has(r.id) && (!this.host.outdoors() || islandGroundY(island, p.x, p.z) !== undefined)) return;
     const away = Math.hypot(r.m.x - r.home.x, r.m.z - r.home.z) > 1 || Math.abs(wrap(r.m.heading - r.home.rot)) > 0.35;
     const out = r.owners.filter((o) => o.state !== "in");
     if (!away && !out.length) { r.awayT = 0; return; }

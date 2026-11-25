@@ -7,7 +7,7 @@
 // The table: npx tsx tools/voice-casting.ts
 import { ASK_WAY_NPC } from "../src/content/ask-way-lines";
 import { PHOTO_WALK_NPC } from "../src/content/photo-walk-lines";
-import { NPCS } from "../src/content/npcs";
+import { KEEPER_NPC, NPCS } from "../src/content/npcs";
 import { SITUATIONS } from "../src/content/situations";
 
 export interface Role { voice: string; style: string; note: string }
@@ -138,7 +138,7 @@ export const CAST: Record<string, Role> = {};
   const uses = new Map<string, number>();
   const take = (v: string) => uses.set(v, (uses.get(v) ?? 0) + 1);
   const coachOnly = new Set([COACH.f.voice, COACH.m.voice]);
-  const existing = people.filter((n) => !QUEST_PICKS[n.id] && n.id !== "maren");
+  const existing = people.filter((n) => !QUEST_PICKS[n.id] && n.id !== "maren" && n.id !== KEEPER_NPC);
   const style = (id: string) => STYLE[id] ?? "friendly and natural";
   const pick = (n: typeof people[number], reserved: Set<string>) => {
     const busy = new Set([...partners(n.id)].map((p) => CAST[p]?.voice).filter(Boolean));
@@ -166,6 +166,7 @@ export const CAST: Record<string, Role> = {};
   for (const n of people) if (QUEST_PICKS[n.id]) CAST[n.id] = QUEST_PICKS[n.id];
   CAST.maren = { voice: "Autonoe", style: "relaxed and friendly, clearly paced", note: "Local surf coach, warm and unhurried." };
 }
+CAST[KEEPER_NPC] = AMBIENT.m;
 
 /** The Gemini voice and style for a voice id of src/content/voices.ts (g_<npcId>, g_coach_f, g_amb_m, …). */
 export function roleFor(voiceId: string): (Role & { who: string }) | null {

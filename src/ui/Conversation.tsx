@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SceneIntro, sceneText } from "./SceneIntro";
 import { isTownQuest } from "../content/townQuests";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
@@ -6,7 +6,7 @@ import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { coachVoice, npcVoice } from "../content/voices";
-import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
+import { getSituation, KEEPER_SIT, SITUATION_BY_ID } from "../content/situations/catalog";
 import { KIND, keepsakeFor } from "../content/keepsakes";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
@@ -26,6 +26,9 @@ import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
 import { useKeyboardHints } from "./keyboardHints";
 import { usePortrait } from "./usePortrait";
+
+const KeeperAnswer = lazy(() => import("./KeeperAnswer"));
+const activeSession = () => game?.activeSession;
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -579,6 +582,7 @@ function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boole
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
                 <RepeatResult en={ex.en} />
               </div>
+              {sit.id === KEEPER_SIT && <Suspense><KeeperAnswer en={ex.en} activeSession={activeSession} /></Suspense>}
             </div>
           ))}
         </div>

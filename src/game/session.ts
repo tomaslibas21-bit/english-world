@@ -66,7 +66,7 @@ export class Session {
     setKnownNames([player.name, player.surname].filter(Boolean));
     audio.names = [player.name, player.surname].filter(Boolean);
     this.conv = new Conversation(sit, {
-      global: GLOBAL, npcs: NPCS, player, visits: sit.bonus ? sp.visits : sp.completions, memory: sp.memory, sharedNlu: nluCache,
+      global: GLOBAL, npcs: NPCS, player, visits: sit.bonus && sitId !== "x05-lighthouse-keeper" ? sp.visits : sp.completions, memory: sp.memory, sharedNlu: nluCache,
     });
     // „Lėčiau“ chosen last time in this situation
     if (sp.slow) this.conv.slow = true;

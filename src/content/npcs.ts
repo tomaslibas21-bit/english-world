@@ -89,6 +89,9 @@ const HAIR = { black: "#1f1a17", brown: "#5a3a25", chestnut: "#7b4a2a", blonde: 
 const N = (id: string, name: string, role: [string, string], gender: "m" | "f", voice: string, look: Look, extra: Partial<NpcDef> = {}): NpcDef =>
   ({ id, name, role: { en: role[0], lt: role[1] }, gender, voice, look, ...extra });
 
+export const KEEPER_NPC = "lighthouse_keeper";
+const keeperName = "Lighthouse keeper";
+
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   // Arrival
   N("diaz", "Officer Diaz", ["Passport control", "Pasų kontrolė"], "f", "af_kore",
@@ -232,6 +235,11 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.tan, hair: { style: "braid", color: HAIR.chestnut, side: -1, tie: "#e9a23b" }, top: "#d86c40", bottom: "#233e51", shorts: true },
     { speed: 1, bio: "32 metų. Užaugo Maple Harbore, čia ir išmoko čiuožti banglente." }),
   ...QUEST_PEOPLE,
+  N(KEEPER_NPC, keeperName, [keeperName, "Švyturio prižiūrėtojas"], "m", "am_adam", {
+    skin: "#d3a07f", hair: { style: "short", color: "#bfc1be" },
+    acc: ["beard"], top: "#284c59", bottom: "#71604e", shoes: "#374548",
+    height: 1.02, build: 1.08, face: { lines: true },
+  }, { speed: 1 }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

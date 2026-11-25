@@ -1,10 +1,10 @@
 // Which recorded voices the game plays (docs/VOICING-PLAN.md).
 //   v1: the local Kokoro voices in audio/: 60 characters share 18 voices, one coach voice.
-//   v2: the Gemini voices in audio-v2/: every character has a voice id of its own (g_<npcId>), and the example
+//   v2: the Gemini voices in audio-v2/: characters generally have their own voice id (g_<npcId>), and the example
 //       answers come in a female or a male coach voice, matching the learner.
 // Clip keys are audioKey(voice id, speed, text), so the two sets never mix. A build can choose with
 // VITE_VOICES=v1|v2; tools read the same variable from the environment.
-import { COACH_VOICE, type NpcDef } from "./npcs";
+import { COACH_VOICE, KEEPER_NPC, type NpcDef } from "./npcs";
 import { AMBIENT_VOICES } from "./ambient";
 
 /** v2 since 28 Oct 2026: every clip recorded, checked with Whisper and uploaded (docs/VOICING-PLAN.md). */
@@ -16,7 +16,11 @@ export const VOICES_V2 = (chosen || DEFAULT_VOICES) === "v2";
 export const audioDir = (v2 = VOICES_V2) => (v2 ? "audio-v2/" : "audio/");
 
 /** A character's voice id. */
-export const npcVoice = (n: NpcDef | undefined, v2 = VOICES_V2): string => (n ? (v2 ? `g_${n.id}` : n.voice) : v2 ? "g_coach_f" : "af_bella");
+export const npcVoice = (n: NpcDef | undefined, v2 = VOICES_V2): string => {
+  if (!n) return v2 ? "g_coach_f" : "af_bella";
+  if (n.id === KEEPER_NPC) return ambientVoice("m", v2);
+  return v2 ? `g_${n.id}` : n.voice;
+};
 
 /** The voice of the example answers: the learner's own gender in v2. */
 export const coachVoice = (gender: "m" | "f" | undefined, v2 = VOICES_V2): string => (v2 ? (gender === "m" ? "g_coach_m" : "g_coach_f") : COACH_VOICE);

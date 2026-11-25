@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { KEEPER_SIT, SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
@@ -126,8 +126,12 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> Skambinti dabar</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => { if (s.bonus) { close(); game?.guideToPlace?.(s.location); } else walkToSituation(s.id, close); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
-          <button className="btn ghost small" onClick={() => { if (!s.bonus) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>
+          <button className="btn soft small" onClick={() => {
+            if (s.location === "lighthouse") { close(); game?.guideToLighthouse?.(); }
+            else if (s.bonus) { close(); game?.guideToPlace?.(s.location); }
+            else walkToSituation(s.id, close);
+          }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+          {s.location !== "lighthouse" && <button className="btn ghost small" onClick={() => { if (!s.bonus) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>}
         </>
       )}
     </div>
@@ -325,6 +329,7 @@ function MapPanel({ close }: { close: () => void }) {
   const [sel, setSel] = useState<string | null>(null);
   const progress = useStore((s) => s.progress);
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
+  const lighthouse = LOCATIONS.lighthouse;
   const north = island ? WORLD.minZ : SEA_Z - 2;
   const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
   useLayoutEffect(() => {
@@ -379,12 +384,14 @@ function MapPanel({ close }: { close: () => void }) {
             {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && (
               <div>
-                <h3 className="place-title" tabIndex={0}>{island.name}</h3>
-                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
+                <h3 className="place-title" tabIndex={0}>{lighthouse.name}</h3>
+                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{lighthouse.lt}</div>
+                <b lang="lt">{SITUATION_BY_ID[KEEPER_SIT].title.lt}</b>
+                <p lang="lt">Prie namelio laukia švyturio prižiūrėtojas.</p>
                 <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
               </div>
             )}
-            {sel && LOCATIONS[sel] && (
+            {sel && LOCATIONS[sel] && !(island && sel === "lighthouse") && (
               <div>
                 <h3 className="place-title" tabIndex={0}><span className="place-ico"><MapPlaceIcon loc={sel} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>

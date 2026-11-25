@@ -80,4 +80,5 @@ export const SITUATION_ICONS: Record<string, string> = {
   "x03-ask-the-way": "route",          // Earl’s directions
   "x01-pool-hall": "circle-dot",         // pool at The Corner Pocket
   "x04-surf": "waves-horizontal",
+  "x05-lighthouse-keeper": "flame",
 };

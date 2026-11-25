@@ -56,6 +56,7 @@ export const META: SituationMeta[] = [
   {"id":"x02-photo-walk","bonus":true,"song":"","songTitle":"","title":{"en":"Photo Walk","lt":"Fotografavimo žygis"},"topic":{"en":"A tourist's photo book","lt":"Turistės nuotraukų knyga"},"chapter":9,"order":9,"location":"visitor-center","npc":"hana","mode":"talk","goal":"Pasišnekėk su Hana ir padėk jai: nufotografuok dvylika dalykų mieste ir pasakyk, kas tai.","intro":"Hana – turistė su dideliu fotoaparatu. Ji stovi prie Lankytojų centro ir dairosi aplink, lyg ko ieškotų."},
   {"id":"x03-ask-the-way","bonus":true,"song":"","songTitle":"","title":{"en":"Ask the Way","lt":"Paklausk kelio"},"topic":{"en":"On the street","lt":"Gatvėje"},"chapter":9,"order":10,"location":"town-square","npc":"earl","mode":"talk","goal":"Paklausk Earlo, kaip nueiti į vieną vietą mieste, ir eik pagal jo nurodymus.","intro":"Earlas visą gyvenimą gyvena Maple Harbor. Jis stovi aikštės kampe ir mielai padeda praeiviams."},
   {"id":"x04-surf","bonus":true,"song":"","songTitle":"","title":{"en":"Want to Try a Wave?","lt":"Norite pagauti bangą?"},"topic":{"en":"Gear Rental and Surf Lessons","lt":"Įrangos nuoma ir banglenčių pamokos"},"chapter":9,"order":11,"location":"harbor-surf","npc":"maren","mode":"talk","goal":"Išsinuomokite įrangą arba susitarkite dėl banglenčių pamokos. Paklauskite kainos, tada atsakykite į Maren kvietimą pagauti bangą.","intro":"Jūs prieinate prie „Harbor Surf“ namelio vakariniame paplūdimyje. Čia užaugusi Maren Pike nuomoja lentas ir moko čiuožti banglente. Atėjote išsinuomoti įrangos arba susitarti dėl pamokos. Lentoje – maždaug dviejų pėdų bangos, silpnas vėjas ir atoslūgis. Kainos – JAV doleriais."},
+  {"id":"x05-lighthouse-keeper","bonus":true,"song":"","songTitle":"","title":{"en":"A Visit to the Lighthouse","lt":"Viešnagė švyturyje"},"topic":{"en":"Life at the lighthouse","lt":"Gyvenimas prie švyturio"},"chapter":9,"order":12,"location":"lighthouse","npc":"lighthouse_keeper","mode":"talk","goal":"Paklauskite prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Pasiimkite jo raštelį atminimui.","intro":"Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas."},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -113,4 +114,5 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "x02-photo-walk": () => import("./x02-photo-walk").then((m) => m.default),
   "x03-ask-the-way": () => import("./x03-ask-the-way").then((m) => m.default),
   "x04-surf": () => import("./x04-surf").then((m) => m.default),
+  "x05-lighthouse-keeper": () => import("./x05-lighthouse-keeper").then((m) => m.default),
 };
