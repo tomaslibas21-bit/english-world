@@ -18,9 +18,11 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
   if (result) return <ScoreCard title={words.title} ratio={result.points / result.max}
     score={<><ScoreNumber value={result.points} />/{result.max}</>}
     rows={[
+      { label: words.turns, value: `${result.first}/${result.total}` },
+      { label: words.cleanStop.lt, value: `${Number(result.cleanStop)}/1` },
+      { label: words.collisionFree.lt, value: `${Number(result.crashes === 0)}/1` },
       { label: words.fare, value: cash(result.fare) },
       { label: words.tip, value: cash(result.tip) },
-      { label: words.turns, value: `${result.first}/${result.total}` },
       { label: words.stop, value: result.onTarget ? words.atDoor : words.tooFar },
     ]}
     phrases={{ label: words.cards, count: result.cards }}

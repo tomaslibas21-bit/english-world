@@ -47,6 +47,8 @@ export const TAXI_UI = {
   title: "Kelionė baigta",
   fare: "Kaina", tip: "Arbatpinigiai", turns: "Posūkiai iš pirmo karto", stop: "Sustojote",
   atDoor: "prie durų", tooFar: "per toli",
+  cleanStop: { en: "Smooth stop at the door", lt: "Sklandus sustojimas prie durų" },
+  collisionFree: { en: "Collision-free ride", lt: "Kelionė be susidūrimų" },
   cards: "Frazių kortelės",
   again: "Dar kartą", done: "Baigti", exit: "Išlipti",
   turn: "Tavo eilė", answer: "Pasirink atsakymą", listen: "Pasakyk garsiai – klausau",

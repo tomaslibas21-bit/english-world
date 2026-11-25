@@ -11,7 +11,7 @@ const cafe = "s72-cafe";
 const startLabel = "Pabandyti už prekystalio";
 const sizes = [
   [1280, 800],
-  ...(process.env.WORLD_PHONE_HEIGHT ? [[390, Number(process.env.WORLD_PHONE_HEIGHT)]] : [[390, 844], [390, 664]]),
+  ...(process.env.WORLD_PHONE_HEIGHT ? [[390, Number(process.env.WORLD_PHONE_HEIGHT)]] : [[390, 844], [390, 664], [844, 390]]),
 ];
 
 const progress = {
@@ -85,7 +85,8 @@ const browser = await chromium.launch({
 });
 try {
   for (const [width, height] of sizes) {
-    const phone = width === 390;
+    const landscapePhone = width > height && height <= 520;
+    const phone = width === 390 || landscapePhone;
     const label = `${width}x${height}`;
     const dir = phone ? join(shots, label) : shots;
     await mkdir(dir, { recursive: true });
@@ -178,7 +179,7 @@ try {
       };
     });
     assert(staged.behind && staged.camera && staged.mia && staged.customerZ > 3, JSON.stringify(staged));
-    if (phone) {
+    if (phone && !landscapePhone) {
       const intro = await page.locator('.barista-cue[data-line="bs_intro"]').evaluate((cue) => {
         const { game } = window.__ew;
         const { mia } = game.modes.get("barista").run;
@@ -237,18 +238,32 @@ try {
           const last = list.lastElementChild.getBoundingClientRect();
           list.scrollTop = 0;
           return {
-            aboveTray: bounds.top >= 0 && bounds.bottom <= tray.top,
+            clearOfTray: bounds.top >= 0 && bounds.bottom <= innerHeight && (bounds.bottom <= tray.top || bounds.right <= tray.left),
             scrollsToLastLine: last.bottom <= bounds.bottom + 1,
             fitsWidth: list.scrollWidth <= list.clientWidth + 1,
           };
         });
-        assert(textFits.aboveTray && textFits.scrollsToLastLine && textFits.fitsWidth, JSON.stringify(textFits));
+        assert(textFits.clearOfTray && textFits.scrollsToLastLine && textFits.fitsWidth, JSON.stringify(textFits));
+        if (width === 390 && height === 664) {
+          await step();
+          const face = await page.evaluate(() => {
+            const { game } = window.__ew;
+            const { ch } = game.modes.get("barista").run.customer;
+            const screenY = (scale) => {
+              const point = ch.root.position.clone().setY(ch.height * scale).project(game.rig.cam);
+              return (1 - point.y) * innerHeight / 2;
+            };
+            return { top: screenY(1.07), bottom: screenY(0.82), panel: document.querySelector(".barista-bottom").getBoundingClientRect().top };
+          });
+          assert(face.bottom - face.top >= 44 && face.top > 54 && face.bottom < face.panel,
+            `customer's head remains readable above the revealed order ${JSON.stringify(face)}`);
+        }
         for (const [row, id] of order) await press(chip(row, id));
       }
 
       if (i === 0) {
         await step();
-        const layout = await page.evaluate(async () => {
+        const layout = await page.evaluate(async (scrollTray) => {
           await document.fonts.ready;
           const { game } = window.__ew;
           const mode = game.modes.get("barista");
@@ -274,7 +289,8 @@ try {
           Object.assign(ray, { far, near });
           const drinkRow = document.querySelector('[data-row="drink"] .barista-chips');
           const range = document.createRange();
-          return {
+          const scrollTop = trayElement.scrollTop;
+          const layout = {
             tray: tray.top,
             trayFitsWidth: trayElement.scrollWidth <= trayElement.clientWidth + 1,
             clear,
@@ -288,6 +304,7 @@ try {
             mia: pixel(mia.ch.root.position.clone().setY(mia.ch.height * 0.91)),
             cup: pixel(serving.position.clone()),
             chipProblems: [...document.querySelectorAll(".barista-chip")].flatMap((item) => {
+              if (scrollTray) item.scrollIntoView({ block: "nearest" });
               const box = item.getBoundingClientRect();
               const typeFits = parseFloat(getComputedStyle(item).fontSize) >= 13
                 && parseFloat(getComputedStyle(item.querySelector("small")).fontSize) >= 12;
@@ -309,10 +326,12 @@ try {
               }];
             }),
           };
-        });
+          trayElement.scrollTop = scrollTop;
+          return layout;
+        }, landscapePhone);
         assert(!layout.chipProblems.length && layout.customerFacesBarista && layout.clear, JSON.stringify(layout));
         assert(layout.cameraPitch >= 25 && layout.cameraPitch <= 30, JSON.stringify(layout));
-        assert(Math.abs(layout.mia.x - layout.face.x) >= width * 0.15, JSON.stringify(layout));
+        assert(Math.abs(layout.mia.x - layout.face.x) >= (landscapePhone ? height : width) * 0.15, JSON.stringify(layout));
         assert(layout.shoulder.x < width * 0.35 && layout.shoulder.y > layout.face.y, JSON.stringify(layout));
         assert.equal(layout.drinkCount, 8);
         assert(layout.trayFitsWidth && layout.drinkRowFits, JSON.stringify(layout));
@@ -327,7 +346,8 @@ try {
         await wait(async () => (await state())?.step === "build" && await chip("size", "medium").evaluate((el) => el.classList.contains("barista-chip-glow")), "recorded size repeats and the correction glows");
         assert.equal((await state()).wrong, 1);
         const size = chip("size", "medium");
-        assert.equal((await page.locator('[data-row="size"] .barista-repair-mark').textContent()).trim(), "+");
+        assert.equal(await size.locator(".barista-repair-mark").textContent(), "+");
+        assert.equal(await page.locator(".barista-counter .kit-feedback[data-feedback=retry]").count(), 1);
         assert.equal(await size.getAttribute("aria-pressed"), "false");
         assert.equal(await size.getAttribute("data-repair"), "add");
         assert.equal(await size.evaluate((el) => getComputedStyle(el).outlineWidth), "2px");
@@ -344,7 +364,7 @@ try {
         await press(give);
         await wait(async () => (await state())?.wrong === 2 && (await state())?.step === "build",
           "the requested order is repeated and the extra can be removed");
-        assert.equal((await page.locator('[data-row="extras"] .barista-repair-mark').textContent()).trim(), "−");
+        assert.equal(await extra.locator(".barista-repair-mark").textContent(), "−");
         assert.equal(await extra.getAttribute("data-repair"), "remove");
         assert.equal(await extra.getAttribute("aria-pressed"), "true");
         assert.equal(await extra.evaluate((el) => getComputedStyle(el).backgroundColor), fill, "removal keeps the selected fill");
@@ -360,6 +380,7 @@ try {
       await press(give);
       if (i === 0) {
         await wait(async () => (await state())?.step === "handover", "the cup slides to the customer");
+        assert.equal(await page.locator(".barista-counter .kit-feedback[data-feedback=right]").count(), 1);
         // Sample the landing while the cup is still on the counter.
         await wait(() => page.evaluate(() => {
           const { serving, shift } = window.__ew.game.modes.get("barista").run;
@@ -368,7 +389,7 @@ try {
         await shot("handover", 0);
         const landing = await cameraState();
         assert.deepEqual(landing.pose, beforeHandover.pose, "the camera stays on the order axis");
-        if (phone) {
+        if (phone && !landscapePhone) {
           assert(landing.zoom > beforeHandover.zoom, "hand-over brings the cup closer");
           assert(landing.cup.x > width * 0.15 && landing.cup.x < width * 0.85
             && landing.cup.y > landing.face.y && landing.cup.y < height * 0.75, JSON.stringify(landing));
@@ -388,6 +409,7 @@ try {
     await wait(() => card.isVisible(), "score card opens");
     assert.equal(await card.locator("h2").innerText(), "Pamaina baigta");
     assert.deepEqual((await card.locator("dd").allTextContents()).slice(0, 2), ["6/6", "5/6"]);
+    assert.equal(await card.locator("dd .kit-feedback[data-feedback=retry]").innerText(), "5/6");
     assert(await page.evaluate((key) => {
       const cards = JSON.parse(localStorage.getItem(key) ?? "null")?.cards ?? [];
       return ["Can I get a latte?", "Iced, please.", "You're welcome! Have a nice day!"].every((en) =>

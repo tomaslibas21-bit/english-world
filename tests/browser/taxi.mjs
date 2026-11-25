@@ -341,8 +341,11 @@ try {
     const card = page.locator(".mode-score-card");
     assert.equal(await card.locator("h2").innerText(), "Kelionė baigta");
     assert.equal(await card.locator(".mode-score-line").innerText(), "6/7");
-    assert.equal(await card.locator("dt").last().innerText(), "Frazių kortelės");
-    assert.deepEqual(await card.locator("dd").allTextContents(), ["$24.50", "$3.50", "4/5", "prie durų", "10"]);
+    assert.deepEqual(await card.locator("dt").allTextContents(), [
+      "Posūkiai iš pirmo karto", "Sklandus sustojimas prie durų", "Kelionė be susidūrimų",
+      "Kaina", "Arbatpinigiai", "Sustojote", "Frazių kortelės",
+    ]);
+    assert.deepEqual(await card.locator("dd").allTextContents(), ["4/5", "1/1", "1/1", "$24.50", "$3.50", "prie durų", "10"]);
     assert.deepEqual(await page.evaluate(() => window.__taxiLines), [
       "tx_hello", "tx_r1_dest", "tx_r1_c1", "tx_wrong", "tx_r1_c1", "tx_r1_c2", "tx_r1_c3",
       "tx_r1_c4", "tx_r1_c5", "tx_r1_c6", "tx_owe", "tx_r1_tip_good", "tx_bye",
