@@ -88,6 +88,7 @@ async function ordinary(run) {
   await inspectPicker(run);
   await trail(run, "cleft", run.phone);
   await crossIn(run, "cleft");
+  await run.mark("tide-hall");
   await walk(run, 0.3, -2.5);
   await prompt(run, "talk", "cave_bram", ["Kalbėtis: Bram"]);
   await interact(run);
@@ -124,12 +125,14 @@ async function ordinary(run) {
   assert.equal((await run.state()).cave.lit.length, 4);
   assert.equal((await watch(run)).hearts, 0);
   await closeRune(run);
+  await run.mark("root-garden");
   await walk(run, -6.3, -99.5);
   assert(distance(await run.state(), [-4.62, -100.3]) < 2.9);
   await prompt(run, "talk", "cave_fern", ["Kalbėtis: Fern"]);
   await interact(run);
   await fernTalk(run);
   assert.equal((await run.state()).mask, 15);
+  await run.mark("hidden-river");
 
   await walk(run, -5, -107);
   await walk(run, 3.25, -117.6);
@@ -149,10 +152,12 @@ async function ordinary(run) {
   await walk(run, 13, -134);
   assert.equal((await run.state()).card.n, 4);
   await surface(run, run.page.locator(".cave-card"), ["Star Hall", "4 / 5"]);
+  await run.mark("star-hall");
   await walk(run, 6, -171.5);
   assert.equal((await run.state()).card.n, 5);
   await surface(run, run.page.locator(".cave-card"), ["Oak Heart", "5 / 5"]);
   assert(await run.ev(() => window.__ew.game.zone.interior.group.getObjectByName("oak-gold-leaves").visible));
+  await run.mark("oak-heart");
   await look(run, Math.PI);
   await forward(run, () => run.wait(() => window.__ew.store.getState().conv.sitId === "x08-old-oak"
     && window.__ew.store.getState().conv.active, "walking onto the island opens the Oak scene", 40_000));

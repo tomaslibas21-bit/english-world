@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { setTimeout as wall } from "node:timers/promises";
 import { tsImport } from "tsx/esm/api";
@@ -20,7 +19,11 @@ if (pc) {
   process.env.VITE_LEARNER = learner;
 }
 const shots = process.argv.find((arg) => arg.startsWith("--shots="))?.slice(8) || process.env.WORLD_SHOTS;
-if (shots) mkdirSync(shots, { recursive: true });
+// The chain's sheet takes the first named images by path for each viewport.
+const highlights = new Set([
+  "tide-hidden", "tide-reveal-ipa", "oak-projection", "oak-end", "fern-mid-hop", "stair-landing",
+  "tide-hall", "root-garden", "hidden-river", "star-hall", "oak-heart", "ring-lawn", "dry-guide-dots",
+]);
 
 const source = (file) => tsImport(`../../../src/${file}`, import.meta.url);
 export const { audioKey } = await source("audio-key.ts");
@@ -154,8 +157,18 @@ export async function suite(script, scenarios) {
     channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true,
     args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
   });
+  let failed = false;
   try { await scenarios((device, name, options, test) => withGame(browser, script, device, name, options, test)); }
-  finally { await browser.close(); }
+  catch (error) { failed = true; throw error; }
+  finally { await close(browser, failed); }
+}
+
+async function close(resource, failed) {
+  try { await resource.close(); }
+  catch (error) {
+    if (!failed) throw error;
+    console.warn("MH cave cleanup failed", error);
+  }
 }
 
 async function withGame(browser, script, [width, height], scenario, options, test) {
@@ -165,21 +178,47 @@ async function withGame(browser, script, [width, height], scenario, options, tes
     ...(phone && { isMobile: true, hasTouch: true, deviceScaleFactor: 2 }),
     ...(options.userAgent && { userAgent: options.userAgent }),
   });
-  const page = await context.newPage();
   const label = `${script}-${width}x${height}-${scenario}`;
   const errors = [], requests = [];
   const gender = options.save?.profile?.gender ?? progress.profile.gender;
   const missing = options.media === "listed-missing" ? audioKey(`g_coach_${gender}`, 1, TIDE_LINE[0]) : null;
-  page.setDefaultTimeout(15_000);
-  page.on("pageerror", (error) => errors.push(error.stack || error.message));
-  page.on("console", (message) => {
-    if (message.type() !== "error") return;
-    const { url } = message.location();
-    if (missing && url.split("?")[0].endsWith(`/${missing}.mp3`) &&
-      message.text() === "Failed to load resource: the server responded with a status of 404 (Not Found)") return;
-    errors.push(`${message.text()} (${url})`);
-  });
+  let page, lastState, lastMark;
+  let failed = false;
+  let captureFrames = false;
+
+  async function capture(name) {
+    if (!shots) return;
+    const folder = highlights.has(name) || /-approach-v\d+$/.test(name) ? "highlights" : "";
+    const path = join(shots, folder, `${label}-${name}.png`);
+    try {
+      await page.screenshot({ path, type: "png", timeout: 3_000 });
+      console.log(`shot=${path}`);
+    } catch (error) {
+      console.warn(`${label}: could not capture ${name}`, error);
+    }
+  }
+
   try {
+    page = await context.newPage();
+    page.setDefaultTimeout(15_000);
+    page.on("pageerror", (error) => errors.push(error.stack || error.message));
+    page.on("console", (message) => {
+      if (message.type() !== "error") return;
+      const { url } = message.location();
+      if (missing && url.split("?")[0].endsWith(`/${missing}.mp3`) &&
+        message.text() === "Failed to load resource: the server responded with a status of 404 (Not Found)") return;
+      errors.push(`${message.text()} (${url})`);
+    });
+    if (page.__mark && process.env.SHOTS_OUT) {
+      // The chain wrapper resets each JPEG sequence on newPage. Keep each scenario's sequence.
+      const screenshot = page.screenshot.bind(page);
+      page.screenshot = async (options = {}) => {
+        if (options.type !== "jpeg" || !options.path) return screenshot(options);
+        if (!captureFrames) return;
+        const path = join(dirname(options.path), label, basename(options.path));
+        return screenshot({ ...options, path, timeout: 3_000 });
+      };
+    }
     await context.route("**/*", async (route) => {
       const request = route.request(), url = new URL(request.url());
       const match = url.pathname.match(/\/([\da-f]{12})\.mp3$/i);
@@ -206,8 +245,18 @@ async function withGame(browser, script, [width, height], scenario, options, tes
     }]);
 
     const ev = (fn, arg) => page.evaluate(fn, arg);
-    const step = (n = 1, dt = 50) => ev(([n, dt]) => window.__step(n, dt), [n, dt]);
-    const state = () => ev(readState);
+    // The chain counts numeric arguments on evaluations mentioning __step. Layout, boot and
+    // replay timing still step the same clock, without waiting for frame screenshots.
+    const step = (n = 1, dt = 50) => captureFrames && dt === 50
+      ? ev((n) => window.__step(n), n)
+      : ev(([hook, n, dt]) => window[hook](n, dt), ["__step", n, dt]);
+    const state = async () => (lastState = await ev(readState));
+    async function withoutFrameCapture(action) {
+      const previous = captureFrames;
+      captureFrames = false;
+      try { return await action(); }
+      finally { captureFrames = previous; }
+    }
     async function until(read, what, { timeout = 15_000, frames = 3, dt = 50 } = {}) {
       const limit = performance.now() + timeout;
       do {
@@ -232,10 +281,12 @@ async function withGame(browser, script, [width, height], scenario, options, tes
     const press = (locator) => layout(() => phone ? locator.tap() : locator.click());
     const mark = async (name) => {
       await checkCanvasLabels(ev);
+      lastMark = name;
       console.log(`ok ${label} ${name}`);
-      if (shots) await layout(() => page.screenshot({ path: join(shots, `${label}-${name}.png`) }));
+      await capture(name);
     };
     async function enter(reload = false) {
+      captureFrames = false;
       const nav = { waitUntil: "domcontentloaded", timeout: options.boot || 120_000 };
       await (reload ? page.reload(nav) : page.goto(base.href, nav));
       assert.match(await page.title(), /Maple Harbor/);
@@ -249,20 +300,23 @@ async function withGame(browser, script, [width, height], scenario, options, tes
       });
       if (options.save?.settings?.play !== "light") await ev(observe);
       await step(4);
+      captureFrames = true;
     }
-    const run = { page, phone, width, height, ev, step, state, until, wait, visible, layout, press, mark, enter, requests, missing };
+    const run = { page, phone, width, height, ev, step, state, until, wait, visible, layout, press, mark, enter, requests, missing, withoutFrameCapture };
     await enter();
     await test(run);
     await wall(50);
     assert.deepEqual(errors, [], "browser errors");
   } catch (error) {
+    failed = true;
     let timer;
-    const diagnostic = await Promise.race([
+    const diagnostic = page && await Promise.race([
       page.evaluate(readState).catch(() => null),
       new Promise((resolve) => { timer = setTimeout(resolve, 2000, null); }),
     ]).finally(() => clearTimeout(timer));
-    throw new Error(`${label}: ${error.message}\nlast state: ${JSON.stringify(diagnostic)}\nerrors: ${JSON.stringify(errors)}`, { cause: error });
-  } finally { await context.close(); }
+    if (page && !lastMark) await capture("before-first-mark-failure");
+    throw new Error(`${label}: ${error.message}\nlast state: ${JSON.stringify(diagnostic ?? lastState ?? null)}\nerrors: ${JSON.stringify(errors)}`, { cause: error });
+  } finally { await close(context, failed); }
 }
 
 const normalize = (text) => text.normalize("NFKD").replace(/\p{M}/gu, "").replace(/[’‘]/g, "'").replace(/\s+/gu, " ").trim().toLowerCase();
@@ -378,6 +432,7 @@ export async function forward(run, task) {
     type: "touchStart",
     touchPoints: [{ x: x + width / 2, y: y + height / 2 - Math.min(48, height / 2 - 2) }],
   });
+  run.page.__mark?.();
   try { return await task(); }
   finally {
     await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
@@ -539,10 +594,12 @@ export async function tapGround(run, x, z) {
   assert(point.hit, `walk target hits the canvas: ${JSON.stringify({ x, z, point })}`);
   if (run.phone) await run.page.touchscreen.tap(point.x, point.y);
   else await run.page.mouse.click(point.x, point.y);
+  run.page.__mark?.();
 }
 
 export async function trail(run, door, realTaps = false) {
   const way = [[-108, -59], [-116, -59], ...(door === "main" ? [[-128, -61.7], [-132, -63]] : [[-119, -60], [-121, -61.8]])];
+  if (!realTaps) run.page.__mark?.();
   for (const [x, z] of way) {
     if (realTaps) {
       await tapGround(run, x, z);
@@ -557,6 +614,7 @@ export async function trail(run, door, realTaps = false) {
 }
 
 export async function crossIn(run, id, hold = false) {
+  await settled(run, "town");
   const d = DOORS[id], s = await run.state();
   assert(s.zone === "town" && s.y >= 0 && !s.swim && distance(s, d.at) < 4 && distance(s, d.at) > 2.4, JSON.stringify(s));
   await run.mark(`${id}-approach-v${s.visits + 1}`);

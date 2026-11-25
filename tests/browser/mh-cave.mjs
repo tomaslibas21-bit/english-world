@@ -9,6 +9,7 @@ import {
 
 const tideKey = audioKey("g_coach_m", 1, TIDE_LINE[0]);
 const stored = (run) => run.ev(() => JSON.parse(localStorage.getItem("english-world-cards-v1") || "{}").cards || []);
+const tideCredit = (run) => run.ev(() => window.__ew.store.getState().progress.phrases["x08-old-oak:tide_01"]);
 
 async function saveReader(run) {
   const save = run.page.locator(".glyph-card [data-phrase-save]");
@@ -54,15 +55,25 @@ async function firstRune(run) {
   await surface(run, card, ["Pamėginkite pasirinkti kitą reikšmę.", TIDE_LINE[1]]);
   await run.mark("tide-wrong");
 
+  await run.withoutFrameCapture(() => replayNearDeadline(run, q, card, reading));
+  const original = await saveReader(run);
+  await run.mark("tide-solved-saved");
+  await closeRune(run);
+  assert.deepEqual((await watch(run)).hush, [true, false]);
+  assert.equal(await run.ev(() => window.__ew.audio.hushed.has("cave-reader")), false);
+  assert.equal((await tideCredit(run)).count, 1);
+  assert.equal((await run.state()).card.lit, 1);
+  return original;
+}
+
+async function replayNearDeadline(run, q, card, reading) {
   await solve(run, q, TIDE_LINE);
   const node = await reading.elementHandle();
   assert.equal(await reading.locator(".u > .lt").nth(1).innerText(), "potvynis");
   assert.equal(await reading.locator(".u > .lt").nth(3).innerText(), "Jūsų");
   assert.equal(await card.locator(".glyph-opt").count(), 0);
-  const key = "x08-old-oak:tide_01";
-  const credit = () => run.ev((key) => window.__ew.store.getState().progress.phrases[key], key);
   assert.deepEqual((await run.state()).cave.lit, ["tide-1"]);
-  assert.equal((await credit()).count, 1);
+  assert.equal((await tideCredit(run)).count, 1);
   // 79 frames bring the simulation to 3.95 s while native time tracks the former deadline.
   const solvedAt = (await watch(run)).solvedAt;
   for (let i = 0; i < 79; i += 4) {
@@ -97,14 +108,6 @@ async function firstRune(run) {
   await wall(910);
   await run.step(19);
   assert(await card.isVisible() && await node.evaluate((el) => el === document.querySelector(".glyph-card.solved .glyph-text")));
-  const original = await saveReader(run);
-  await run.mark("tide-solved-saved");
-  await closeRune(run);
-  assert.deepEqual((await watch(run)).hush, [true, false]);
-  assert.equal(await run.ev(() => window.__ew.audio.hushed.has("cave-reader")), false);
-  assert.equal((await credit()).count, 1);
-  assert.equal((await run.state()).card.lit, 1);
-  return original;
 }
 
 async function main(run) {
