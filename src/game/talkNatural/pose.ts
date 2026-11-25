@@ -237,8 +237,10 @@ class ConversationPose implements NaturalPoseDriver {
     this.entryAge = options.armEntryAge ?? 0;
     this.random = options.random ?? Math.random;
     this.energy = options.energy ?? 1;
-    this.swayA = this.random() * 6.283;
-    this.swayB = this.random() * 6.283;
+    // Each person's own drift, from where they stand: no random draw, so seeded runs keep their sequence.
+    const spot = Math.abs(actor.root.position.x * 12.9898 + actor.root.position.z * 78.233);
+    this.swayA = spot % 6.283;
+    this.swayB = (spot * 1.618) % 6.283;
     if (handoff && !options.beforeAdvance) this.entrySeconds = HANDOFF_SECONDS;
     this.motion?.addEventListener("change", this.motionChanged);
     this.motionChanged();

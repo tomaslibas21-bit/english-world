@@ -2161,6 +2161,7 @@ async function main() {
       }
       if (film) {
         for (const [id, subcase, action, labels] of filmCases) {
+          if (!wanted(id, subcase)) continue;
           const windows = id === "x10-loteria" ? [] : [
             ...[8, 60, 150].map((n) => `choices+${n}`), "submit-1", "submit+4", "submit+10", "submit+18",
             ...[1, 4, 9, 15].map((n) => `close+${n}`),
