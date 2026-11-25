@@ -1520,6 +1520,8 @@ async function townHudChoices(h) {
   h.mark("town translation and camera controls");
   const chip = ".photo-chip";
   const bubble = ".street-bubble[data-chatter]";
+  // The bubble is a save row (stones-cards): the controller reaches its translate button.
+  const bubbleText = `${bubble} .street-bubble-text`;
   const scenarios = `:is(${toolbar}) ${scenariosTool}`;
   // The same Ambient pair search as street.mjs: stand 3.5 m from a real chatting pair, turning until it is in view.
   const pairs = await page.evaluate(() => {
@@ -1566,14 +1568,14 @@ async function townHudChoices(h) {
   await tap("Menu");
   // (Menu opens the tools on their camera chip when a photo subject is in view, else on the scenarios)
   await until("Menu focuses the existing scenarios default or the camera chip", async () => await focused(scenarios) || await focused(chip));
-  await focusWith(bubble, "Down", 22);
-  await checkFocusRing(h, bubble, "street-bubble", null);
+  await focusWith(bubbleText, "Down", 22);
+  await checkFocusRing(h, bubbleText, "street-bubble", null);
   const clickProbe = (selector) => page.locator(selector).evaluateHandle((el) => {
     const clicks = { count: 0 };
     el.addEventListener("click", () => { clicks.count++; });
     return clicks;
   });
-  const translated = await clickProbe(bubble);
+  const translated = await clickProbe(bubbleText);
   await press("A");
   await until("A reveals the existing helper translation", () => page.locator(`${bubble} .street-tr`).isVisible());
   await step(12);
