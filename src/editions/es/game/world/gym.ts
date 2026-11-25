@@ -9,5 +9,5 @@ export const GYM_STAGE: typeof BASE = {
   portrait: { x: -6.72, y: 1.55, z: 6.64, fov: 62 },
   desktop: { x: -6.72, y: 1.55, z: 6.40, fov: 44 },
   shiftY: 0,
-  turn: { toes: 0.65, squats: 0.65, lunges: -0.95, pushups: 1.05 },
+  turn: { toes: 0.65, squats: 0.65, lunges: -0.95, pushups: 0.70 },
 };

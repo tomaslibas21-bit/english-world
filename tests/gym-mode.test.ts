@@ -529,16 +529,20 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
   mocks.audio.play.mockResolvedValue(true);
   const viewport = { width: 390, height: 844, top: 0 };
   const header = { bottom: 156 }, dock = { top: 578 };
+  const phone = [390, 844, 156, 578] as const;
+  const compact = [390, 664, 156, 416] as const;
+  const desktop = [1280, 800, 146, 625] as const;
   const element = (bounds: object) => ({ getBoundingClientRect: () => bounds }) as HTMLElement;
   // The PC rooms6 ring and posts form the foreground obstruction on the east side.
   const ring = new Box3(new Vector3(-4.9, 0, -1), new Vector3(-1.1, 1.72, 2.8));
   const ray = new Ray(), intersection = new Vector3();
-  const fitted = () => {
+  const fitted = (press?: "high" | "low") => {
     expect(game.rig.cam.position.z).toBeLessThan(7);
     const faces = [game.player, game.trainer].map((actor) =>
       actor.headPosition(new Vector3()).project(game.rig.cam).x * viewport.width / 2);
     expect(Math.abs(faces[0] - faces[1])).toBeGreaterThan(viewport.width * 0.06);
-    for (const actor of [game.player, game.trainer]) {
+    const outlines = [game.player, game.trainer].map((actor) => {
+      const outline = { left: Infinity, right: -Infinity };
       actor.root.updateMatrixWorld(true);
       actor.root.traverseVisible((node) => {
         if (!(node instanceof SkinnedMesh)) return;
@@ -562,12 +566,28 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
         expect(top, sample).toBeGreaterThanOrEqual(header.bottom + 8);
         expect(bottom, sample).toBeLessThanOrEqual(dock.top - 8);
         expect(bottom - top, sample).toBeGreaterThan(30);
+        outline.left = Math.min(outline.left, left);
+        outline.right = Math.max(outline.right, right);
       });
+      return outline;
+    });
+    if (press) {
+      expect(window.__gym?.state()?.pose).toMatchObject({ player: "pushups", trainer: "pushups" });
+      expect(outlines.every(({ left, right }) => right > left)).toBe(true);
+      expect(outlines[1].left - outlines[0].right, `${viewport.width}x${viewport.height} ${press} push-up gap in CSS px`)
+        .toBeGreaterThanOrEqual(8);
     }
   };
   try {
     await game.open();
     const stop = game.view().observeFrame(element(viewport), element(header), element(dock));
+    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => name === "resize")!;
+    const fitView = ([width, height, top, bottom]: typeof phone | typeof compact | typeof desktop) => {
+      Object.assign(viewport, { width, height });
+      header.bottom = top;
+      dock.top = bottom;
+      (resize as () => void)();
+    };
     fitted();
     game.entry.action("start");
     for (let i = 1; i <= 10; i++) {
@@ -582,7 +602,17 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
       if (i === 7) expect(game.view()).toMatchObject({ helpLevel: 2, highlight: null });
       game.entry.action("pick", game.view().callId!);
       if (i <= 8) {
-        for (let j = 0; j < 5; j++) { await game.step(3); fitted(); }
+        for (let frame = 1; frame <= 15; frame++) {
+          await game.step();
+          if (frame % 3 === 0) fitted();
+          if (pc && i === 8 && (frame === 4 || frame === 9)) {
+            for (const view of [phone, desktop, compact]) {
+              fitView(view);
+              fitted(frame === 4 ? "high" : "low");
+            }
+            fitView(phone);
+          }
+        }
       }
     }
     await game.until("score");
@@ -594,17 +624,10 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
     expect(game.view()).toMatchObject({ phase: "intro", score: { completed: 0, firstTry: 0, wrong: 0, said: 0 } });
     expect(count()).toBe(started + 2);
 
-    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => name === "resize")!;
-    viewport.height = 664;
-    dock.top = 416;
-    (resize as () => void)();
+    fitView(compact);
     fitted();
 
-    viewport.width = 1280;
-    viewport.height = 800;
-    header.bottom = 146;
-    dock.top = 625;
-    (resize as () => void)();
+    fitView(desktop);
     expect(game.rig.cam.fov).toBe(44);
     fitted();
     await game.until("choose");

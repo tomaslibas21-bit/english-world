@@ -590,6 +590,15 @@ function checkProjectedPose(moves, early, peak, description) {
       }
     }
   }
+  if (moves[0] === "pushups" && moves[1] === "pushups") {
+    // The complete painted silhouettes include the learner's hair and both trainer shoes.
+    const clearance = ({ actors: [learner, trainer] }, press) => {
+      const gap = trainer.silhouette.left - learner.silhouette.right;
+      assert(gap >= 8, description + " " + press + " push-up silhouette gap in CSS px: " + gap);
+      return gap;
+    };
+    return { high: clearance(early, "high"), low: clearance(peak, "low") };
+  }
 }
 
 function checkNeutral(neutral, sample, description) {
@@ -1393,6 +1402,7 @@ async function journey(browser, [width, height], audible) {
         const early = await timeAt(Math.round(ms * (called === "run" ? 0.35 : 0.24) / 50) * 50, true);
         if (called === "run" || called === "circles" || called === "pushups") await fit(called + " early", early);
         if (called === "run" && frame) await shot(frame);
+        if (frame === "12-plank") await shot("12-plank-high");
         const peak = await timeAt(Math.round(ms * 0.5 / 50) * 50, true, [picked, called]);
         for (const sample of [early, peak]) {
           assert.equal(sample.pose?.player, picked);
@@ -1401,7 +1411,8 @@ async function journey(browser, [width, height], audible) {
         }
         assert(peak.pose.progress >= 0.40 && peak.pose.progress <= 0.55);
         checkMotion([picked, called], before, early, peak, stepName);
-        checkProjectedPose([picked, called], early, peak, stepName);
+        const pressGap = checkProjectedPose([picked, called], early, peak, stepName);
+        if (pressGap) check("push-up silhouette gap (CSS px)", pressGap);
         await fit(called + " peak", peak);
         if (frame && called !== "run") await shot(frame);
         if (called === "run") {
@@ -1556,7 +1567,8 @@ async function journey(browser, [width, height], audible) {
           1: "04-jacks-peak", 2: "05-toes-peak", 3: "17-squat-peak", 4: "18-circles-peak",
           5: "19-run-stride", 6: "20-reach-peak", 7: "21-lunge-peak", 8: "12-plank",
         };
-        const { peak, timeAt } = await samplePose({ before, called: move, picked: move, ms: poseMs, at, frame: audible ? frames[n] : undefined });
+        const { peak, timeAt } = await samplePose({ before, called: move, picked: move, ms: poseMs, at,
+          frame: audible || move === "pushups" ? frames[n] : undefined });
         const end = await timeAt(poseMs - 50);
         assert(end.pose?.progress > 0.92 && end.pose.progress < 1, "right pose lasts the scheduled time");
         assert(await overlay.locator('.gym-cue[data-line="' + praise + '"]').isVisible(), "praise remains readable through the pose");
@@ -1739,9 +1751,9 @@ async function journey(browser, [width, height], audible) {
       await countIs(baseline + expectedStarts);
       const expectedFrames = audible
         ? ["00-entry", "01-ready", "02-listen", "03-guided", "04-jacks-peak", "05-toes-peak", "06-text-only", "07-wrong", "08-retry",
-          "09-hidden", "10-reveal", "11-mic-hit", "12-plank", "13-score",
+          "09-hidden", "10-reveal", "11-mic-hit", "12-plank", "12-plank-high", "13-score",
           "17-squat-peak", "18-circles-peak", "19-run-stride", "20-reach-peak", "21-lunge-peak"]
-        : ["14-back-in-gym", "15-town", "16-silent-late"];
+        : ["12-plank", "12-plank-high", "14-back-in-gym", "15-town", "16-silent-late"];
       assert.deepEqual([...seenShots].sort(), expectedFrames);
       assert.deepEqual(await page.evaluate(() => window.__gymSynth.filter(({ gym }) => gym)), [], "the gym never calls speech synthesis");
       assert.deepEqual((await audio()).map(({ text }) => text), expectedAudio.map((id) => lines[id].say), "complete trainer request sequence");
