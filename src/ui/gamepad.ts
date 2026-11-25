@@ -225,7 +225,7 @@ export class GamepadView {
       this.observer = new MutationObserver(this.changed);
       this.observer.observe(app, {
         subtree: true, childList: true,
-        attributeFilter: ["data-pad-scope", "data-pad-tools", "data-pad-phase", "data-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled", "open"],
+        attributeFilter: ["data-pad-scope", "data-pad-toolbar", "data-pad-tools", "data-pad-phase", "data-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled", "open"],
       });
       this.observer.observe(document.body, { childList: true });
       for (const node of document.body.children) this.addPortal(node);
@@ -368,6 +368,8 @@ export class GamepadView {
     const previous = this.active;
     let active: HTMLElement | null = null, rank = 0;
     for (const node of this.roots) {
+      // (React can keep an element and drop its marker: the walking toolbar becomes the folding one in a ride)
+      if (!node.matches(ROOTS)) { this.roots.delete(node); continue; }
       if (node.matches(PORTAL) || (node.matches(TOOLBAR) && !this.desktop)) continue;
       const priority = policy(node).rank;
       if (priority < rank || !visible(node)) continue;
@@ -835,7 +837,7 @@ const OBSTACLES = ".toolbar, .toolbar-drawer:not([inert]), .joy, .jump-btn, .act
 const NOTICE_ANCHORS = `${NOTES}, ${OBSTACLES}, ${ROOTS}`;
 type Obstacle = { box: DOMRect; gap: number };
 /** The narrower card for a crowded phone screen (CSS px). */
-const COMPACT = 184;
+const COMPACT = 160;
 
 class PadNotice {
   private app?: HTMLElement;

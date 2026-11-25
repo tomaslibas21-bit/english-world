@@ -202,6 +202,11 @@ function readState() {
     focus: f && { tag: f.tagName, scope: f.closest("[data-pad-scope]")?.dataset.padScope, key: f.dataset.padTool ?? f.dataset.padAnswer ?? f.dataset.sit ?? f.dataset.line ?? f.dataset.chip },
     pad: window.__pad ? { ...window.__pad } : null, polls: window.__padFixture?.polls,
     deviceReads: window.__padFixture?.deviceReads,
+    surface: (() => {
+      const v = g?.pad?.input?.view, root = v?.scope;
+      return root ? { cls: String(root.className), kind: root.dataset.padScope ?? root.tagName, phase: root.dataset.padPhase ?? root.dataset.phase,
+        desktopStacks: window.__desktopStacks } : null;
+    })(),
     latches: g?.pad?.input && {
       buttonsReady: g.pad.input.buttonsReady, held: g.pad.input.held,
       leftReady: g.pad.input.leftReady, rightReady: g.pad.input.rightReady,
@@ -1226,7 +1231,8 @@ async function taxiContract(h) {
     { assisted, released });
   await tap("B");
   await until("B returns from Taxi drive to town", async () => !(await taxi()).phase && !(await h.state()).transition);
-  await assertCount(h, counts, "games", "taxi");
+  // Puerto Colibrí's Taxi counts a play when a ride reaches its result (game/taxi/mode.ts): leaving mid-ride adds none.
+  await assertCounts(h, counts, []);
 }
 
 async function startScene(h, sit) {
@@ -1593,6 +1599,14 @@ async function townHudChoices(h) {
 async function connect(h, held = []) {
   await h.attach("standard", held);
   await h.when("the standard controller connects", (s) => s.pad?.connected, { frames: 1 });
+  if (process.env.PAD_TRACE) await h.page.evaluate(() => {
+    const v = window.__ew.game.pad?.input?.view;
+    if (!v) return;
+    let value = v.desktop;
+    window.__desktopStacks = [];
+    Object.defineProperty(v, "desktop", { configurable: true, get: () => value,
+      set: (x) => { if (x && !value) window.__desktopStacks.push(new Error().stack.split("\n").slice(1, 9).join(" | ")); value = x; } });
+  });
   await h.step(2);
 }
 
@@ -2298,8 +2312,14 @@ async function photoContract(h) {
       if (g.rides.near(side.x, side.z)?.id !== car) continue;
       const rot = Math.atan2(spot.x - side.x, spot.z - side.z);
       g.placeOnFoot(side.x, side.z, rot);
-      g.rig.snap();
-      g.rig.cam.updateMatrixWorld();
+      // (camera follow is off in this harness: turn the camera until the subject is in front of it, then snap it there)
+      for (const yaw of [rot, rot + Math.PI, rot + Math.PI / 2, rot - Math.PI / 2]) {
+        g.rig.yaw = yaw;
+        g.rig.snap();
+        g.rig.cam.updateMatrixWorld();
+        const q = g.player.root.position.clone().set(spot.x, spot.y, spot.z).project(g.rig.cam);
+        if (Math.abs(q.x) < 0.85 && Math.abs(q.y) < 0.85 && Math.abs(q.z) < 1) break;
+      }
       const projections = g.town.photoSpots.map((s) => ({
         id: s.id, distance: Math.hypot(s.x - side.x, s.z - side.z), radius: things.get(s.id)?.near, spot: s === spot,
         visible: s.visible?.() !== false, ndc: g.player.root.position.clone().set(s.x, s.y, s.z).project(g.rig.cam).toArray(),
@@ -2467,6 +2487,19 @@ async function loteriaContract(h) {
   // Choose a real starting square in another row and column, so both axes must move focus.
   const from = ((Math.floor(target / 4) + 1) % 4) * 4 + (target % 4 + 1) % 4;
   await cells.nth(from).focus();
+  if (process.env.PAD_DEBUG) await page.evaluate(() => {
+    const input = window.__ew.game.pad?.input;
+    window.__trace = [];
+    const sample = input.sample.bind(input);
+    input.sample = (pad, dt) => {
+      const before = { ready: input.buttonsReady, rev: input.revision, held: input.held };
+      sample(pad, dt);
+      const b = pad.buttons.map((x, i) => (x.pressed ? i : -1)).filter((i) => i >= 0);
+      if (b.length || window.__trace.length < 4) window.__trace.push({ b, before, after: { ready: input.buttonsReady, rev: input.revision, held: input.held },
+        view: input.view?.scope?.className, last: window.__pad.lastAction });
+      if (window.__trace.length > 40) window.__trace.shift();
+    };
+  });
   const axis = async (end, keyPlus, keyMinus, current, axisValue) => {
     for (let i = 0; i < 4 && axisValue(current) !== end; i++) {
       await tap(axisValue(current) < end ? keyPlus : keyMinus);
@@ -2476,7 +2509,7 @@ async function loteriaContract(h) {
           active: await page.evaluate(() => {
             const v = window.__ew.game.pad?.input?.view, root = v?.scope, items = root ? v.controls(root) : [];
             return { cls: document.activeElement?.className, scope: document.activeElement?.closest("[data-pad-scope]")?.className,
-              root: root?.className, items: items.length, has: items.includes(document.activeElement) };
+              root: root?.className, items: items.length, has: items.includes(document.activeElement), trace: window.__trace };
           }) })}`);
       }
       current = next;
@@ -2823,6 +2856,8 @@ async function roadDecline(h) {
   await h.until("the decline starts departure with its answers removed", async () => (await roadState(h)).phase === "depart" &&
     await h.page.locator(".road-choice").count() === 0, { frames: 1 });
   await h.shot("decline-depart");
+  // (the departure takes the controls over from the answers: a press on that very frame is re-armed, by design)
+  await h.step(3);
   await h.tap("B");
   const immediately = await roadState(h);
   h.check("B interrupts active departure and returns through the real Road entry", immediately.phase === "town" &&
@@ -2847,6 +2882,8 @@ async function roadLiftChoice(h) {
   await h.tap("A");
   const setup = h.page.locator(".road-overlay [data-pad-scope=word-setup]");
   await h.until("choosing the actual lift answer opens the road briefing", () => setup.isVisible(), { timeout: 20000, frames: 1 });
+  // (a new surface re-arms the buttons on its first sampled frame, by design: the thumb arrives a few frames later)
+  await h.step(3);
   await h.tap("B");
   await h.until("B leaves the unstarted lift briefing", async () => (await roadState(h)).phase === "town");
 }

@@ -388,10 +388,8 @@ export class BilliardsMode implements GameMode {
   private meter: { track: HTMLElement | null; value: HTMLElement | null } | null = null;
   private padPower(value: number) {
     this.power = value;
-    const meter = this.meter ??= {
-      track: document.querySelector<HTMLElement>(".billiards .bl-power-track"),
-      value: document.querySelector<HTMLElement>(".billiards .bl-power-value"),
-    };
+    const find = (selector: string) => typeof document?.querySelector === "function" ? document.querySelector<HTMLElement>(selector) : null;
+    const meter = this.meter ??= { track: find(".billiards .bl-power-track"), value: find(".billiards .bl-power-value") };
     meter.track?.style.setProperty("--bl-power", String(value));
     if (meter.value) meter.value.textContent = `${Math.round(value * 100)}%`;
   }
@@ -771,7 +769,8 @@ export class BilliardsMode implements GameMode {
   debug() {
     if (!import.meta.env.DEV) return undefined;
     return {
-      state: () => this.round ? { ...useBilliards.getState(), group: this.round.group, shots: this.round.shots,
+      // (the mode's own power: a pad charge paints the meter without publishing each frame)
+      state: () => this.round ? { ...useBilliards.getState(), power: this.power, group: this.round.group, shots: this.round.shots,
         sayIt: undefined, said: this.round.sayIt.count,
         ai: this.ai?.call, angle: this.angle, layout: this.round.balls.map((ball) => ({ ...ball })),
         table: this.tableBounds(window.innerWidth, window.innerHeight),
