@@ -1622,6 +1622,14 @@ async function townHudChoices(h) {
   const toolsOpen = () => page.evaluate(() => !!window.__ew.game.pad?.input?.ui?.scope);
   for (let i = 0; i < 3 && await toolsOpen(); i++) await tap("B");
   check("the controller is back in the world beside the car", !await toolsOpen(), await state());
+  if (process.env.PAD_DEBUG) console.log("DEBUG before X", JSON.stringify(await page.evaluate(() => {
+    const g = window.__ew.game;
+    const p = g.player.root.position, r = g.rides.near(p.x, p.z), car = g.rides.list.find((q) => q.kind === "car" && Math.hypot(q.m.x - p.x, q.m.z - p.z) < 6);
+    return { near: r?.id ?? null, car: car && { id: car.id, x: car.m.x, z: car.m.z, reach: g.rides.reach(car, p.x, p.z), parked: car.parked, busy: car.busy },
+      pos: [p.x, p.z], air: g.hop.air, aloft: g.aloft, diveK: g.diveK, swimming: g.swimming, interior: !!g.zone.interior,
+      mode: g.modes.active?.id ?? null, engaged: g.modes.engaged, nearest: g.nearest, riding: g.rides.riding?.id ?? null,
+      session: !!g.session?.active, panel: window.__ew.store.getState().hud.panel, transitioning: g.transitioning };
+  })));
   await tap("X");
   await when("physical X still boards the car beside the mailbox", (s) => s.ride?.id === car && s.phase === "on" && s.prompt === "out",
     { timeout: 20000 });
