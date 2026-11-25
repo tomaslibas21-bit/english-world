@@ -136,7 +136,10 @@ it("applies fine aim and releases or cancels only the source that owns the power
     sample(PadButton.A);
     mode.input(space);
     step();
-    expect(useBilliards.getState().power).toBeCloseTo(0.1);
+    // A pad charge paints the meter directly and publishes the store once, when it ends (no React update per frame):
+    // the mode's own power (the debug state) carries it meanwhile.
+    expect(debug.state()!.power).toBeCloseTo(0.1);
+    expect(useBilliards.getState().power).toBe(0);
     expect(mode.release(" ")).toBe(false);
     mode.padCancel();
     sample(0, PadButton.A);
