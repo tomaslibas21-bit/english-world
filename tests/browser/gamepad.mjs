@@ -1562,7 +1562,8 @@ async function townHudChoices(h) {
   const obstacles = `${chip}, ${bubble}, .toolbar-drawer:not([inert])`;
   await inspectHint(h, "connected", "world", obstacles);
   await tap("Menu");
-  await until("Menu focuses the existing scenarios default", () => focused(scenarios));
+  // (Menu opens the tools on their camera chip when a photo subject is in view, else on the scenarios)
+  await until("Menu focuses the existing scenarios default or the camera chip", async () => await focused(scenarios) || await focused(chip));
   await focusWith(bubble, "Down", 22);
   await checkFocusRing(h, bubble, "street-bubble", null);
   const clickProbe = (selector) => page.locator(selector).evaluateHandle((el) => {
@@ -2487,6 +2488,8 @@ async function loteriaContract(h) {
   // Choose a real starting square in another row and column, so both axes must move focus.
   const from = ((Math.floor(target / 4) + 1) % 4) * 4 + (target % 4 + 1) % 4;
   await cells.nth(from).focus();
+  // (a native focus change re-arms the controller's buttons on its next sampled frame, as a new surface does)
+  await h.step(3);
   if (process.env.PAD_DEBUG) await page.evaluate(() => {
     const input = window.__ew.game.pad?.input;
     window.__trace = [];
