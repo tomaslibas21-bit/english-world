@@ -237,6 +237,10 @@ function EndCard({ sit }: { sit: SituationDef }) {
   const close = () => game?.closeConversation();
   const showAll = () => { close(); useStore.getState().setHud({ panel: "scenarios" }); };
   const restart = () => game?.restartScenario();
+  const baristaOffer = modeOffer && modeOffer.id === "barista";
+  const modeAction = modeOffer && (
+    <button className={`btn ${modeOffer.id}-cta${baristaOffer ? " soft" : ""}`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>
+  );
 
   return (
     <div className="yourturn ended-box">
@@ -260,7 +264,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
       </div>}
-      {modeOffer && <button className={`btn ${modeOffer.id}-cta${modeOffer.id === "barista" ? " soft" : ""}`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
+      {!baristaOffer && modeAction}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
@@ -293,6 +297,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
           </div>
         </>
       )}
+      {baristaOffer && modeAction}
       <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> Kopijuoti pokalbį mokytojui</button>
     </div>
   );

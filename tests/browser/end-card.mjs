@@ -159,6 +159,8 @@ try {
     assert(await navigate.evaluate((button) => button.matches(".btn") && !button.matches(".soft, .ghost")));
     assert(await card.locator(".barista-cta").evaluate((button) => button.matches(".btn.soft")));
     const secondary = card.locator(".ended-secondary");
+    assert(await secondary.evaluate((row) => row.nextElementSibling?.matches(".barista-cta")),
+      `${label}: the optional barista button follows the secondary actions`);
     const nextButton = secondary.getByRole("button", { name: "Kita situacija", exact: true });
     assert(await nextButton.isVisible());
     assert(await nextButton.evaluate((el) => el.matches(".btn.small") && el.previousElementSibling?.textContent.trim() === "Tęsti"));
@@ -173,6 +175,15 @@ try {
     assert(rows.length === 1 && rows[0] === 4 || rows.length === 2 && rows.every((n) => n === 2),
       `${label}: the secondary buttons fit on one row or wrap in pairs`);
     if (landscape) {
+      const actionsFit = await card.evaluate((el) => {
+        const { top, bottom } = el.getBoundingClientRect();
+        const buttons = [...el.querySelectorAll(".ended-destination .btn, .ended-secondary > div:first-child .btn")];
+        return el.scrollTop === 0 && buttons.length === 3 && buttons.every((button) => {
+          const bounds = button.getBoundingClientRect();
+          return bounds.top >= top && bounds.bottom <= bottom && bounds.height >= 44;
+        });
+      });
+      assert(actionsFit, `${label}: navigate, continue and next situation fit without scrolling and have 44 px tap targets`);
       await ctx.close();
       console.log("ok", label);
       continue;
