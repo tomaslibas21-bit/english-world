@@ -130,7 +130,7 @@ try {
             });
             // Let the real session seat the guest and hand the line to Marco.
             const answers = {
-              resv: "No, can we get a table for two?", party: "Two people, please.", seatpref: "Inside, please.",
+              resv: "No, we don't have a reservation.", party: "Two people, please.", seatpref: "Inside, please.",
               wait: "Yes, we can wait.", resv_name: "The reservation is under Test.",
             };
             for (let i = 0; i < 5; i++) {

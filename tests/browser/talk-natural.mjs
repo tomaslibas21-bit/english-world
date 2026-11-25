@@ -274,7 +274,7 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
     const wrapped = { id: ++serial, ...fixture, voice, speed, text, run: conv.run, phase: conv.phase,
       owner: owner?.line ?? null, replay: owner?.replay ?? null, npc: line?.npc ?? null, mode, street,
       ownerMatches: line?.npc ? game.talkCast?.some((actor) => actor.id === line.npc && actor.ch === owner.actor) ?? false : null,
-      started: performance.now(), wall: window.__naturalWall() };
+      started: performance.now(), gameTime: game.t, wall: window.__naturalWall() };
     if (owner) owners.set(owner, wrapped);
     requests.push(wrapped);
     const playback = play(voice, speed, text, options);
@@ -287,7 +287,8 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
     for (let node = object; node; node = node.parent) if (node === game.scene) return true;
     return false;
   };
-  let release, tracked;
+  const poseIds = new WeakMap();
+  let poseSerial = 0, release, tracked;
   function pose(ch) {
     const { root, mouth, smile, body, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, iris, browL, browR, eyes, corners } = ch;
     const joint = (bone) => bone && [...bone.rotation.toArray().slice(0, 3), ...bone.position.toArray()];
@@ -297,6 +298,7 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
       return [(1 + p.x) * innerWidth / 2, (1 - p.y) * innerHeight / 2, p.z];
     };
     const controller = ch.talkPose;
+    if (controller && !poseIds.has(controller)) poseIds.set(controller, ++poseSerial);
     const left = ch.leftHand ? world(ch.leftHand)
       : foreL.localToWorld(ch.rightHand.position.clone().setX(-ch.rightHand.position.x)).toArray();
     return {
@@ -305,7 +307,7 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
       headWorld: world(head), headScreen: projected(head),
       pelvis: world(legL), hands: [left, world(ch.rightHand)], elbows: [world(foreL), world(foreR)],
       gazeAim: (controller?.watch ?? ch.watch)?.toArray?.() ?? null, weight: controller?.weight ?? 0,
-      controller: controller?.constructor.name ?? null,
+      controller: controller?.constructor.name ?? null, poseId: poseIds.get(controller) ?? null,
       mouth: mouth.scale.toArray(), closed: smile?.scale.toArray(), skinned: !!ch.skin?.isSkinnedMesh && !!mouth.isBone,
       eyeScale: eyes?.scale.y ?? null,
       joints: { body: joint(body), head: joint(head), upperL: joint(armL), upperR: joint(armR),
@@ -400,7 +402,8 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
       gameTime: game.t, clock: performance.now(), wall: window.__naturalWall(), frame: renderer.info.render.frame, rendered,
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
       p, media, request: request?.id ?? null, audioState: audio.getState(), inputTimes: { ...window.__naturalInput },
-      speech: request && { id: request.id, run: request.run, actor: request.npc, line: request.owner, text: request.text, source: request.source },
+      speech: request && { id: request.id, run: request.run, actor: request.npc, line: request.owner, text: request.text,
+        gameTime: request.gameTime, source: request.source },
       actual: Object.fromEntries([...actors].map(([id, actor]) => [id, pose(actor)])),
       release: release && { mouth: release.actor.mouth.scale.toArray(), closed: release.actor.smile.scale.toArray(),
         skinned: !!release.actor.mouth.isBone, weight: release.controller?.weight ?? 0,
@@ -1275,42 +1278,140 @@ async function taxi(route) {
 const restaurantAnswers = pc ? {
   resv: "Una mesa para dos, por favor.", party: "Somos dos.", seatpref: "En la terraza, por favor.",
 } : {
-  resv: "No, can we get a table for two?", party: "Two people, please.", seatpref: "Inside, please.",
-  wait: "Yes, we can wait.", resv_name: "The reservation is under Test.",
+  resv: "No, we don't have a reservation.", party: "Two people, please.", seatpref: "Inside, please.",
+  wait: "Sure, we can wait.",
 };
-async function restaurant(route) {
-  const entry = await route.start();
-  const host = entry.conv.host;
+const mhServerSteps = ["drinks", "howareyou"];
+
+async function restaurantHandoff(route, entry) {
+  const { host, run } = entry.conv;
   assert(entry.scene.cast.length >= 2, "restaurant has its actual host and server");
-  const outgoing = await voiced(route, (f) => f.p.speakerId === host, route.openingSamples());
-  let incoming;
-  await openingThrough(route, (f) => f.conv.phase === "you", "host completes the opening");
-  for (let turn = 0; turn < 6 && !incoming; turn++) {
-    const step = route.last.conv.step;
-    await route.answer(restaurantAnswers[step]);
-    const passage = await through(route,
-      (f) => (isVoice(f) && f.p?.mouth > 0.12 && f.p.speakerId !== host) || f.conv.phase === "you",
-      "host seats the learner or asks the next question");
-    const candidate = passage.at(-1);
-    if (isVoice(candidate) && candidate.p.speakerId !== host) incoming = candidate;
+  const cast = Object.fromEntries([...entry.scene.cast, "player"].map((id) => [id, actorIs(entry, id).identity]));
+  const trace = route.row.restaurant = { run, cast, turns: [] };
+  const pipeline = route.size.touch ? "buffer" : "html";
+  const server = (id) => pc ? id !== host && entry.scene.cast.includes(id) : id === "marco";
+  const live = (f, id) => {
+    const actor = actorIs(f, id);
+    assert.equal(actor.identity, cast[id], `${id} is the same mounted Character throughout the handoff`);
+    return actor;
+  };
+  const played = (f) => isVoice(f) && f.p?.requestOwned && f.p.mouth > 0.12
+    && (pc && !route.film || f.media.source?.match && f.media.source.key !== transportKey);
+  const sample = (f) => ({
+    frame: f.frame, gameTime: f.gameTime, wall: f.wall, step: f.conv.step,
+    actor: f.conv.npc, identity: f.actual[f.conv.npc]?.identity, line: f.conv.line,
+    text: f.conv.text, request: f.speech, media: f.media,
+  });
+  const transcript = () => route.page.evaluate(() => window.__ew.store.getState().conv.transcript);
+  try {
+    const opening = await openingThrough(route, (f) => f.conv.phase === "you", "host completes the opening");
+    const greeting = opening.find((f) => f.p?.speakerId === host && played(f));
+    crossCheckVoice(greeting, pipeline);
+    live(greeting, host);
+    trace.opening = sample(greeting);
+    let turn = opening.at(-1), waited = false;
+    if (!pc) assert.equal(turn.conv.step, "resv");
+    for (let i = 0; i < 6; i++) {
+      const { step, npc } = turn.conv;
+      const followWait = !pc && step === "wait" && waited;
+      const text = followWait ? "That's fine." : restaurantAnswers[step];
+      const attempt = { step, npc, line: turn.p?.lineId, text, replies: [] };
+      trace.turns.push(attempt);
+      assert.equal(npc, host, "the host owns each turn before seating");
+      if (!pc) assert(text, `unexpected MH restaurant step ${step}`);
+      const answer = attempt.answer = await route.answer(text);
+      assert(answer.via === "typed" && answer.id > attempt.line, "fresh learner transcript ID from the typebox");
+      // Accepting the wait holds that step for one acknowledgement. The next
+      // answer triggers table_ready and seating on the existing authored path.
+      const next = {
+        resv: ["party"], party: ["wait", "seatpref", ...mhServerSteps],
+        wait: followWait ? mhServerSteps : ["wait"], seatpref: mhServerSteps,
+      }[step];
+      const passage = await through(route, (f) => {
+        assert(f.conv.active && f.conv.run === run && f.conv.id === entry.conv.id,
+          "the restaurant reply belongs to the original run");
+        assert(f.conv.phase !== "ended", "the dialogue reaches seating before it ends");
+        const fresh = f.conv.line > answer.id;
+        if (fresh && attempt.replies.at(-1)?.line !== f.conv.line) {
+          attempt.replies.push(sample(f));
+          assert(f.conv.npc === host || server(f.conv.npc), `unexpected restaurant speaker ${f.conv.npc}`);
+        }
+        if (!pc && (fresh || f.conv.phase === "you")) {
+          assert(next.includes(f.conv.step), `unexpected MH restaurant transition ${step} → ${f.conv.step}`);
+          if (f.conv.step === "wait" && step === "wait" && fresh) {
+            assert(f.conv.npc === host && f.conv.text === "Great. It won't take long.", "the authored wait acknowledgement holds this turn");
+          }
+        }
+        return f.conv.phase === "you";
+      }, "host seats the learner or asks the next question");
+      if (step === "wait") waited = true;
+      turn = passage.at(-1);
+      attempt.result = { step: turn.conv.step, npc: turn.conv.npc, line: turn.p?.lineId };
+      assert(attempt.replies.length && attempt.result.line > answer.id, "the answer advances to fresh NPC transcript IDs");
+      const actors = passage.filter((f) => f.rendered && f.conv.line > answer.id && f.p?.speakingLineId === f.conv.line);
+      const handoff = actors.find((f) => server(f.p.speakerId));
+      if (!handoff) {
+        if (!pc) assert(!mhServerSteps.includes(turn.conv.step), "the seating turn contains Marco's entry");
+        continue;
+      }
+
+      const id = handoff.p.speakerId;
+      assert.equal(turn.conv.npc, id, "the learner turn belongs to the new speaker");
+      if (!pc) assert(mhServerSteps.includes(turn.conv.step), "Marco greets the learner or asks about drinks");
+      const swap = handoff.speech;
+      assert(swap?.line === handoff.conv.line && swap.run === run && swap.actor === id && Number.isFinite(swap.gameTime),
+        "the first rendered handoff corresponds to the incoming request");
+      trace.handoff = { first: sample(handoff) };
+      await route.mark("cast-handoff", handoff);
+      const outgoing = actors.findLast((f) => f.frame < handoff.frame && f.p.speakerId === host && played(f));
+      const incoming = actors.find((f) => f.gameTime - handoff.gameTime >= 0.10 && f.p.speakerId === id
+        && (pc || f.conv.line === handoff.conv.line) && played(f));
+      assert(outgoing && incoming, "heard the outgoing seating reply and incoming line on their own playheads");
+      crossCheckVoice(outgoing, pipeline);
+      crossCheckVoice(incoming, pipeline);
+      assert(outgoing.conv.line < incoming.conv.line && outgoing.request !== incoming.request, "the cast voices use distinct transcript and request IDs");
+      live(outgoing, host);
+      live(incoming, id);
+      assert.notEqual(cast[host], cast[id], "the two live speakers are distinct characters");
+      Object.assign(trace.handoff, { outgoing: sample(outgoing), incoming: sample(incoming) });
+      await route.mark("cast-switch", incoming);
+
+      let released = false, aimed = false;
+      for (const f of passage.slice(passage.indexOf(handoff)).filter((f) => f.rendered)) {
+        const old = live(f, host), head = live(f, id).headWorld, player = live(f, "player");
+        const oldPose = f.p?.others?.find((a) => a.actorId === host);
+        assert(f.p?.run === run && f.p.speakerId === id && oldPose, "the live incoming speaker and outgoing cast remain bound");
+        const age = f.gameTime - swap.gameTime;
+        if (!released && age <= 0.24 + 1e-6 && openMouth(old) <= 0.00002 && oldPose.gestureWeight <= 0.001) {
+          silent(old, "outgoing host within 240 ms of the handoff");
+          trace.handoff.release = { frame: f.frame, age, mouth: old.mouth, gestureWeight: oldPose.gestureWeight };
+          released = true;
+        }
+        if (released || age >= 0.24) {
+          silent(old, "outgoing host after speaker switch");
+          assert(oldPose.gestureWeight <= 0.001, "old actor has no delayed stroke");
+        }
+        const dx = head[0] - player.root[0], dz = head[2] - player.root[2];
+        const facing = (player.facing[0] * dx + player.facing[2] * dz) / Math.hypot(dx, dz);
+        if (!aimed && f.p.player?.gaze.target === id && player.gazeAim && distance(player.gazeAim, head) < 0.15 && facing > 0.5) {
+          trace.handoff.aim = { frame: f.frame, age, target: player.gazeAim, head, facing };
+          aimed = true;
+        }
+      }
+      assert(released, "sampled the outgoing host's closed lips and released gesture within 240 ms of the handoff");
+      assert(aimed, "learner's rendered facing and gaze target move to the incoming actor");
+      trace.transcript = await transcript();
+      return;
+    }
+    assert.fail("an authored answer must change the live speaker from host to server within six turns");
+  } catch (error) {
+    trace.transcript = await transcript().catch((failure) => failure.message);
+    throw new Error(`${error.message}\n${JSON.stringify(trace)}\n${route.diagnostic()}`, { cause: error });
   }
-  assert(incoming, "an authored answer changed the live speaker from host to server");
-  crossCheckVoice(incoming, route.size.touch ? "buffer" : "html");
-  assert(entry.scene.cast.includes(incoming.p.speakerId) && incoming.actual[host].identity === outgoing.actual[host].identity);
-  await route.mark("cast-switch", incoming);
-  const listening = await route.series(19);
-  const deadline = incoming.gameTime + 0.24;
-  assert(listening.some((f) => {
-    const player = f.actual.player, head = f.actual[incoming.p.speakerId].headWorld;
-    const dx = head[0] - player.root[0], dz = head[2] - player.root[2];
-    return f.p?.player?.gaze.target === incoming.p.speakerId && player.gazeAim && distance(player.gazeAim, head) < 0.15
-      && (player.facing[0] * dx + player.facing[2] * dz) / Math.hypot(dx, dz) > 0.5;
-  }), "learner's rendered facing and gaze target move to the incoming actor");
-  for (const f of listening.filter((f) => f.gameTime >= deadline)) {
-    silent(actorIs(f, host), "outgoing host after speaker switch");
-    assert((f.p.others.find((a) => a.actorId === host)?.gestureWeight ?? 0) <= 0.001, "old actor has no delayed stroke");
-  }
-  await through(route, (f) => f.conv.phase === "you", "server finishes their own line");
+}
+
+async function restaurant(route) {
+  await restaurantHandoff(route, await route.start());
   await closeSession(route);
 }
 
@@ -1322,6 +1423,30 @@ const ticketAnswers = pc ? {
   travel_day: "Today, please.", cls: "Coach, please.", pay: "Card, please.",
 };
 const ticketText = pc ? /aquí tiene su[s]? boleto/i : /here(?:'s| are) your ticket/i;
+
+async function ticketReturn(route, rows, glance) {
+  const { npc: host, run, line } = glance.conv;
+  const clerk = actorIs(glance, host), learner = actorIs(glance, "player");
+  assert(clerk.poseId != null, "the observed ticket glance uses a live pose binding");
+  const until = glance.gameTime + 0.85;
+  let back;
+  await through(route, (f) => {
+    if (!f.rendered) return false;
+    if (f.gameTime >= until) return true;
+    const current = actorIs(f, host), player = actorIs(f, "player");
+    assert(f.conv.active && f.conv.id === glance.conv.id && f.conv.run === run && f.conv.npc === host
+      && f.p?.scope === "session" && f.p.run === run && f.p.speakerId === host
+      && f.p.lineId === line && (f.conv.line === null || f.conv.line === line) && f.request === glance.request
+      && current.identity === clerk.identity && current.poseId === clerk.poseId && player.identity === learner.identity,
+    "the ticket gaze stays on the original mounted clerk, learner, run and utterance");
+    if (!back && f.p.gaze?.target === "learner" && f.p.speaker?.watching && current.gazeAim
+      && distance(current.gazeAim, player.headWorld) < 0.15) back = f;
+    return false;
+  }, "sample the ticket glance through its original game-time window", undefined, rows.slice(rows.indexOf(glance) + 1));
+  assert(back && back.gameTime - glance.gameTime < 0.85, `brief object glance returns to the learner: ${route.diagnostic()}`);
+  return back;
+}
+
 async function tickets(route) {
   const entry = await route.start();
   const host = entry.conv.host;
@@ -1341,8 +1466,9 @@ async function tickets(route) {
   const forward = (ch.facing[0] * dx + ch.facing[2] * dz) / Math.hypot(dx, dz);
   assert(forward > Math.cos(65 * Math.PI / 180) && Math.abs(Math.atan2(dy, Math.hypot(dx, dz))) <= 35 * Math.PI / 180,
     "anchor is in front and within the source gaze cone");
-  const back = rows.slice(rows.indexOf(gaze) + 1).find((f) => f.p?.speakerId === host && f.p.gaze?.target === "learner");
-  assert(back && back.gameTime - gaze.gameTime < 0.85, "brief object glance returns to the learner");
+  assert(handoff.filter((f) => f.conv.run === gaze.conv.run && f.conv.line === gaze.conv.line && f.request === gaze.request
+    && f.actual[host]?.identity === ch.identity).length >= 3, "three voiced samples belong to the same live ticket handoff");
+  const back = await ticketReturn(route, rows, gaze);
   assert(ch.joints.head[0] - back.actual[host].joints.head[0] > 0.006
     && ch.joints.iris[4] - back.actual[host].joints.iris[4] < -0.0005, "signed motion appears on the rendered joints");
   const [px, py, depth] = ch.headScreen;
@@ -1352,6 +1478,8 @@ async function tickets(route) {
   const resting = actorIs(back, host);
   assert(ch.hands.every((hand, i) => distance(hand, resting.hands[i]) < 0.08 || hand[1] >= anchor[1] + 0.065),
     "hands remain supported or clear the counter before reaching");
+  await route.mark("object-glance", gaze);
+  await route.mark("object-return", back);
   await closeSession(route);
 }
 
@@ -1693,14 +1821,12 @@ async function filmTickets(route) {
     await route.answer(ticketAnswers[route.last.conv.step]);
     rows.push(...await through(route, (f) => f.conv.phase === "you" || f.conv.phase === "ended", "real ticket counter response"));
   }
-  const object = rows.find((f) => ticketText.test(f.conv.text ?? "") && f.p?.speakerId === entry.conv.host
+  const object = rows.find((f) => f.rendered && ticketText.test(f.conv.text ?? "") && f.p?.speakerId === entry.conv.host
     && f.media?.source?.match && f.p.gaze?.target === "handoff" && f.p.gaze.pitch > 0.015);
-  if (object) {
-    await route.mark("object-glance", object);
-    const back = rows.slice(rows.indexOf(object) + 1).find((f) => f.p?.speakerId === entry.conv.host
-      && f.p.gaze?.target === "learner" && f.gameTime - object.gameTime < 0.85);
-    if (back) await route.mark("object-return", back);
-  }
+  assert(object, "matching recording for the filmed ticket glance");
+  await route.mark("object-glance", object);
+  const back = await ticketReturn(route, rows, object);
+  await route.mark("object-return", back);
   if (route.last.conv.phase === "you" && route.last.conv.step === "closing") {
     await route.answer(pc ? "¡Hasta luego!" : "Goodbye!");
     const ending = await through(route, (f) => f.conv.phase === "ended", "Walter's natural sign-off");
@@ -1713,20 +1839,8 @@ async function filmTickets(route) {
 
 async function filmRestaurant(route) {
   const entry = await startFilm(route, "marco_host", "trattoria", "Lucia and Marco · cast switch");
-  await openingThrough(route, (f) => f.conv.phase === "you", "Lucia's opening");
-  let incoming;
-  for (let i = 0; i < 6 && !incoming; i++) {
-    await route.answer(restaurantAnswers[route.last.conv.step]);
-    const rows = await through(route, (f) => f.conv.phase === "you", "the restaurant's next real turn");
-    incoming = rows.find((f) => f.p?.speakerId !== entry.conv.host && f.p?.requestOwned && f.media?.source?.match && isVoice(f));
-    if (incoming) {
-      const handoff = rows.find((f) => f.rendered && f.p?.speakerId === incoming.p.speakerId);
-      await route.mark("cast-handoff", handoff, { image: false });
-      await route.mark("cast-switch", incoming);
-    }
-  }
+  await restaurantHandoff(route, entry);
   await filmExit(route);
-  assert(incoming && entry.scene.cast.includes(incoming.p.speakerId), "a matching recording belongs to the incoming live actor");
 }
 
 async function filmWay(route) {
@@ -1785,6 +1899,12 @@ async function runPage(context, fixture, size, id, action, options = {}) {
       if (options.film) {
         try {
           await route.capture.finish(row.requests ?? []);
+          if (id === "s73-restaurant") {
+            const handoff = row.labels.find((label) => label.label === "cast-handoff");
+            const voiced = row.labels.find((label) => label.label === "cast-switch");
+            assert(handoff?.image && voiced?.image && handoff.filmFrameMs < voiced.filmFrameMs,
+              "the cast handoff and voiced cast switch are distinct compositor frames");
+          }
           assert(row.requests?.every((request) => !request.source.match || !request.npc
             || (request.source.voice === request.voice || request.source.voice === fixture.voices[request.npc])
             && (request.voice === fixture.voices[request.npc] || request.voice === `g_${request.npc}` || pc)),
@@ -1818,7 +1938,7 @@ async function contextFor(browser, size, reducedMotion = "no-preference") {
 
 const requiredLabels = ["entry", "voiced-high", "voiced-low", "object-glance", "object-return", "listen",
   "submit-puzzled+4", "submit-puzzled+10", "submit-puzzled+18", "submit-understood+4", "submit-understood+10", "submit-understood+18",
-  "repeat", "cast-switch", "exit+1", "exit+4", "exit+9"];
+  "repeat", "cast-handoff", "cast-switch", "exit+1", "exit+4", "exit+9"];
 const filmRoutes = [
   ["s72-cafe", filmCafe], ["s66-taxi", filmTaxi], ["s67a-tickets", filmTickets], ["s73-restaurant", filmRestaurant], [directions, filmWay],
 ];
