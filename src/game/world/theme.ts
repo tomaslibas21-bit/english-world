@@ -49,5 +49,5 @@ export const THEME: TownTheme = {
   // an October afternoon (16 Nov 2026): a warmer sun and a little more of it, the fill from above no longer blue, the
   // ground's bounce the colour of dry leaves and not of a lawn, a cream horizon, a warm haze. (Before: sky #e4f3ff,
   // ground #8fbf6a, fill 1.4, sun #fff0d8 at 2.75, dome #5fb0e8 / #a9d8f5 / #fdf0d8, haze #cfe8f5.)
-  light: { sky: "#eef1ee", ground: "#a9ac84", fill: 1.38, sun: "#ffe7c2", sunPower: 2.9, dome: ["#5aa7e3", "#b2d8f2", "#ffebcc"], haze: "#dde8ea" },
+  light: { sky: "#eef1ee", ground: "#a9ac84", fill: 1.38, sun: "#ffe7c2", sunPower: 2.9, dome: ["#67a3d3", "#b9d7e5", "#fcebd2"], haze: "#e3e6e0" },
 };

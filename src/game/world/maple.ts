@@ -15,6 +15,7 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, colourMerge 
 import { STYLED } from "../style";
 import { LIGHTHOUSE_ISLAND } from "./island";
 import { addLighthouse } from "./lighthouseTower";
+import { MAPLE_BLOCKS } from "./styled";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -242,11 +243,14 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
     const S = 256, cv = document.createElement("canvas");
     cv.width = cv.height = S;
     const g2 = cv.getContext("2d")!, br = rand(88);
-    g2.fillStyle = "#a89684"; g2.fillRect(0, 0, S, S); // the joints
-    const tones = ["#b9664c", "#ad5c45", "#c27458", "#b56a52", "#a65843", "#c07a5f"];
+    g2.fillStyle = MAPLE_BLOCKS ? "#a58b76" : "#a89684"; g2.fillRect(0, 0, S, S);
+    const tones = MAPLE_BLOCKS
+      ? ["#a66350", "#af705a", "#b87b63", "#aa6956", "#9e614f", "#b57761"]
+      : ["#b9664c", "#ad5c45", "#c27458", "#b56a52", "#a65843", "#c07a5f"];
+    const inset = MAPLE_BLOCKS ? 1 : 1.5;
     for (let row = 0; row < 8; row++) for (let i = -1; i < 4; i++) {
       g2.fillStyle = tones[Math.floor(br() * tones.length)];
-      g2.fillRect(i * 64 + (row % 2) * 32 + 1.5, row * 32 + 1.5, 61, 29);
+      g2.fillRect(i * 64 + (row % 2) * 32 + inset, row * 32 + inset, 64 - 2 * inset, 32 - 2 * inset);
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;

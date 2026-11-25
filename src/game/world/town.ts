@@ -3,7 +3,7 @@ import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
@@ -20,7 +20,7 @@ import { Track, type RoadOpening } from "../road/track";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
-import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
+import { GROUND_BLOCKS, MAPLE_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
 
@@ -60,10 +60,17 @@ export { buildTownLedges } from "../townCollision";
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
-const OUTER_GRASS = "#7fb85e";
+const OUTER_GRASS = MAPLE_BLOCKS ? "#9fa977" : "#7fb85e";
 const OUTER_GRASS_ORIGIN = { x: 35, z: SEA_Z + 1 + 320 };
 // Keep both surfaces beyond the town haze when the camera looks down the crest's shallow slope.
 const WEST_BACKDROP_EXTENSION = ROAD_EDITION.enabled ? 160 : 0;
+const CROSSING_APPROACH = 1.8;
+const MAIN_CROSSINGS = [-50, 22, 100];
+const MAIN_CROSSING_HALF = 1.6;
+const ROAD_CROWN = [
+  [0, "#424d54"], [0.16, "#535e65"], [0.38, "#5e6870"], [0.5, "#616a70"],
+  [0.62, "#5e6870"], [0.84, "#535e65"], [1, "#424d54"],
+] as const;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
 /** The letters' colour on a building's printed sign: its trim, or a dark one when the trim is too pale to read on the
@@ -133,8 +140,9 @@ export function buildTown(): Town {
   outer.position.set(OUTER_GRASS_ORIGIN.x, EXIT_MEADOW.y, OUTER_GRASS_ORIGIN.z);
   outer.receiveShadow = true;
   group.add(outer);
-  const hillMat = mat("#79ad5a", { flat: true });
-  const westHills: THREE.BufferGeometry[] = [];
+  const hillColors = MAPLE_BLOCKS ? ["#90946e", "#818e78", "#788d8b"] : ["#79ad5a"];
+  const hillMats = hillColors.map((color) => mat(color, { flat: true }));
+  const westHills: [THREE.BufferGeometry, string][] = [];
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 1.2 - 0.1;
     let hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
@@ -152,21 +160,31 @@ export function buildTown(): Town {
     // Low rolling hills leave sky above them in the narrow phone view, rather than a tall flat green face.
     g.scale(1.6, 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
+    const distance = MAPLE_BLOCKS ? Math.hypot(hx - 35, hz - 30) : 0;
+    const band = distance < 235 ? 0 : distance <= 275 ? 1 : 2;
     if (ROAD_EDITION.enabled && hx < WORLD.minX) {
       shapeExitHill(g, hx, hz, 1.6 * s, 1.2 * s);
-      westHills.push(g);
-    } else M.add("hills", hillMat, g, false, true);
+      westHills.push([g, hillColors[band]]);
+    } else M.add("hills", hillMats[band], g, false, true);
   }
-  if (ROAD_EDITION.enabled) westHills.push(makeCoastalRidge());
-  const exitHills = westHills.length ? new THREE.Mesh(mergeGeometries(westHills, false)!, hillMat) : undefined;
-  westHills.forEach((hill) => hill.dispose());
-  if (exitHills) {
+  let exitHills: Town["exitHills"];
+  if (ROAD_EDITION.enabled) {
+    westHills.push([makeCoastalRidge(), hillColors[0]]);
+    // The town and road views share this mesh. Vertex colours keep the hills in one draw call.
+    if (MAPLE_BLOCKS) {
+      exitHills = new THREE.Mesh(colourMerge(westHills), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    } else {
+      const geometries = westHills.map(([hill]) => hill);
+      exitHills = new THREE.Mesh(mergeGeometries(geometries, false)!, hillMats[0]);
+      geometries.forEach((hill) => hill.dispose());
+    }
     exitHills.name = "exit-hills";
     exitHills.receiveShadow = true;
     group.add(exitHills);
   }
 
   // --- sea ------------------------------------------------------------------
+  const mapleBay = ROAD_EDITION.id === "maple-harbor";
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uBayOffset: { value: new THREE.Vector3() }, uFog: { value: new THREE.Color(THEME.light.haze) } },
     vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset;
@@ -176,20 +194,25 @@ export function buildTown(): Town {
     fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset; uniform vec3 uFog;
       ${SAND_GLSL}
       void main(){
-        float shore = smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z);
-        vec3 deep = vec3(0.13,0.47,0.62); vec3 shallow = vec3(0.35,0.78,0.80);
+        float shore = ${mapleBay
+          ? `smoothstep(0.0, 15.0, ${(SEA_Z + 1).toFixed(1)} - vW.z)`
+          : `smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z)`};
+        vec3 deep = ${mapleBay ? "vec3(0.075, 0.375, 0.46)" : "vec3(0.13,0.47,0.62)"};
+        vec3 shallow = ${mapleBay ? "vec3(0.40, 0.69, 0.62)" : "vec3(0.35,0.78,0.80)"};
         vec3 c = mix(shallow, deep, shore);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
-        c += vec3(0.09) * smoothstep(0.5, 1.0, w);
+        c += ${mapleBay ? "vec3(0.065, 0.080, 0.072)" : "vec3(0.09)"} * smoothstep(0.5, 1.0, w);
         c -= vec3(0.05, 0.06, 0.05) * smoothstep(0.45, 1.0, -w);
         float chop = sin(vW.x*1.1 - uTime*1.7 + sin(vW.z*0.9)) * sin(vW.z*1.3 + uTime*1.4);
-        c += vec3(0.04) * chop;
-        float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
-        c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
+        c += ${mapleBay ? "vec3(0.032)" : "vec3(0.04)"} * chop;
+        float glint = ${mapleBay
+          ? "smoothstep(0.70, 0.94, w) * smoothstep(0.32, 0.84, chop)"
+          : "pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0)"};
+        c += ${mapleBay ? "vec3(0.27, 0.25, 0.19)" : "vec3(0.55)"} * glint * (0.4 + 0.6 * shore);
         // the sand under the shallows, the foam along the waterline as it washes up and down the beach (water.ts)
-        ${SHORE_GLSL()}
+        ${mapleBay ? SHORE_GLSL("vec3(0.95, 0.96, 0.89)", "vec3(0.72, 0.62, 0.46)") : SHORE_GLSL()}
         float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
-        c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
+        c = mix(c, uFog, smoothstep(${mapleBay ? "90.0, 255.0" : "160.0, 420.0"}, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900 + WEST_BACKDROP_EXTENSION, 320, 90 + WEST_BACKDROP_EXTENSION / 10, 32), seaMat);
@@ -477,13 +500,14 @@ function addMarkings(group: THREE.Group) {
   const cross: { x0: number; x1: number; z0: number; z1: number }[] = [];
   for (const v of vs) for (const h of hs) {
     if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
-    cross.push({ x0: v.x1 - v.w / 2 - 1.8, x1: v.x1 + v.w / 2 + 1.8, z0: h.z1 - h.w / 2 - 1.8, z1: h.z1 + h.w / 2 + 1.8 });
+    cross.push({ x0: v.x1 - v.w / 2 - CROSSING_APPROACH, x1: v.x1 + v.w / 2 + CROSSING_APPROACH,
+      z0: h.z1 - h.w / 2 - CROSSING_APPROACH, z1: h.z1 + h.w / 2 + CROSSING_APPROACH });
     for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) for (const dz of [-(h.w / 2 + 1.6), h.w / 2 + 0.4]) quad("white", v.x1 + k + 0.275, h.z1 + dz + 0.6, 0.55, 1.2);
     for (let k = -h.w / 2 + 0.6; k < h.w / 2 - 0.4; k += 1.1) for (const dx of [-(v.w / 2 + 1.6), v.w / 2 + 0.4]) quad("white", v.x1 + dx + 0.6, h.z1 + k + 0.275, 1.2, 0.55);
   }
   // the mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
-  for (const cx of [-50, 22, 100]) {
-    cross.push({ x0: cx - 1.6, x1: cx + 1.6, z0: -13, z1: -3 });
+  for (const cx of MAIN_CROSSINGS) {
+    cross.push({ x0: cx - MAIN_CROSSING_HALF, x1: cx + MAIN_CROSSING_HALF, z0: -13, z1: -3 });
     for (let k = -4.4; k < 4.6; k += 1.1) quad("white", cx, -8 + k + 0.275, 3, 0.55);
   }
   const free = (x: number, z: number) => !cross.some((c) => x > c.x0 && x < c.x1 && z > c.z0 && z < c.z1);
@@ -548,7 +572,7 @@ function addMarkings(group: THREE.Group) {
 }
 
 function drawGround(): HTMLCanvasElement {
-  const P = STYLED ? groundPalette() : GROUND_BLOCKS; // trial styles repaint the same map
+  const P = groundPalette();
   const c = document.createElement("canvas");
   c.width = Math.round(GW * PPM); c.height = Math.round(GD * PPM);
   const x = c.getContext("2d")!;
@@ -594,7 +618,16 @@ function drawGround(): HTMLCanvasElement {
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
   // roads
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, P.road);
+  const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
+  const junctions: { v: Road; h: Road }[] = [];
+  for (const v of vs) for (const h of hs) {
+    if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
+    junctions.push({ v, h });
+  }
+  for (const rd of ROADS) {
+    if (MAPLE_BLOCKS) paintRoad(rd);
+    else roadRect(x, rd, rd.w / 2, P.road);
+  }
   // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
   for (const rd of STYLED ? ROADS : []) {
     const horiz = rd.z1 === rd.z2;
@@ -610,9 +643,7 @@ function drawGround(): HTMLCanvasElement {
     }
   }
   // intersections (clear markings) + crosswalks
-  const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
-  for (const v of vs) for (const h of hs) {
-    if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
+  for (const { v, h } of junctions) {
     rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, P.road);
     if (!STYLED) continue;
     x.fillStyle = P.crosswalk;
@@ -624,7 +655,7 @@ function drawGround(): HTMLCanvasElement {
     }
   }
   // mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
-  for (const cx of STYLED ? [-50, 22, 100] : []) {
+  for (const cx of STYLED ? MAIN_CROSSINGS : []) {
     x.fillStyle = P.crosswalk;
     for (let k = -4.4; k < 4.6; k += 1.1) rectFill(x, cx - 1.5, -8 + k, 3, 0.55);
   }
@@ -639,14 +670,61 @@ function drawGround(): HTMLCanvasElement {
   if (STYLED) groundExtras(x, toC, PPM);
   return c;
 
-  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string) {
+  function paintRoad(rd: Road) {
+    const horiz = rd.z1 === rd.z2, half = rd.w / 2;
+    const crown = horiz
+      ? x.createLinearGradient(...toC(rd.x1, rd.z1 - half), ...toC(rd.x1, rd.z1 + half))
+      : x.createLinearGradient(...toC(rd.x1 - half, rd.z1), ...toC(rd.x1 + half, rd.z1));
+    for (const [offset, color] of ROAD_CROWN) crown.addColorStop(offset, color);
+    roadRect(x, rd, half, crown);
+
+    const start = horiz ? Math.min(rd.x1, rd.x2) : Math.min(rd.z1, rd.z2);
+    const end = horiz ? Math.max(rd.x1, rd.x2) : Math.max(rd.z1, rd.z2);
+    const openings: [number, number][] = [];
+    for (const { v, h } of junctions) {
+      if (rd !== v && rd !== h) continue;
+      const center = horiz ? v.x1 : h.z1;
+      const extent = (horiz ? v.w : h.w) / 2 + CROSSING_APPROACH;
+      openings.push([center - extent, center + extent]);
+    }
+    if (rd.name === ROAD_EDITION.edge.street) {
+      for (const center of MAIN_CROSSINGS) openings.push([center - MAIN_CROSSING_HALF, center + MAIN_CROSSING_HALF]);
+      if (ROAD_EDITION.enabled) openings.push([start, ROAD_EDITION.edge.x]);
+    }
+    openings.sort(([a], [b]) => a - b);
+    openings.push([end, end]);
+
+    // Lay base asphalt over the crown at openings and the road ends, fading over the last two metres of each span.
+    const base = horiz
+      ? x.createLinearGradient(...toC(start, rd.z1), ...toC(end, rd.z1))
+      : x.createLinearGradient(...toC(rd.x1, start), ...toC(rd.x1, end));
+    const stop = (at: number, color: string) => base.addColorStop((at - start) / (end - start), color);
+    const clear = P.road + "00";
+    let from = start;
+    stop(start, P.road);
+    for (const [openStart, openEnd] of openings) {
+      const to = Math.min(end, openStart);
+      if (to > from) {
+        const feather = Math.min(2, (to - from) / 2);
+        stop(from, P.road);
+        stop(from + feather, clear);
+        stop(to - feather, clear);
+        stop(to, P.road);
+      }
+      from = Math.max(from, openEnd);
+    }
+    stop(end, P.road);
+    roadRect(x, rd, half, base);
+  }
+
+  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string | CanvasGradient) {
     const [x0, z0] = toC(Math.min(ax, bx), Math.min(az, bz)), [x1, z1] = toC(Math.max(ax, bx), Math.max(az, bz));
     x.fillStyle = col; x.fillRect(x0, z0, x1 - x0, z1 - z0);
   }
   function rectFill(x: CanvasRenderingContext2D, cx: number, cz: number, w: number, d: number) {
     const [x0, z0] = toC(cx, cz); x.fillRect(x0, z0, w * PPM, d * PPM);
   }
-  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string) {
+  function roadRect(x: CanvasRenderingContext2D, rd: Road, half: number, col: string | CanvasGradient) {
     rectW(x, Math.min(rd.x1, rd.x2) - (rd.x1 === rd.x2 ? half : 0), Math.min(rd.z1, rd.z2) - (rd.z1 === rd.z2 ? half : 0),
       Math.max(rd.x1, rd.x2) + (rd.x1 === rd.x2 ? half : 0), Math.max(rd.z1, rd.z2) + (rd.z1 === rd.z2 ? half : 0), col);
   }

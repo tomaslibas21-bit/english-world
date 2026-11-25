@@ -1,13 +1,14 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Box3, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from "three";
+import { Box3, FrontSide, InstancedMesh, Mesh, MeshLambertMaterial, MeshStandardMaterial, Raycaster, Vector3, type Object3D } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { BARISTA_ORDERS } from "../src/content/barista";
 import { cafe } from "../src/content/situations/s72-cafe";
 import { counterShot } from "../src/game/barista/framing";
 import { baristaPieceLine } from "../src/game/barista/menu";
-import { makeServing } from "../src/game/barista/props";
+import { CounterProps, disposeBaristaProps, makeServing } from "../src/game/barista/props";
 import { resetBaristaUi, useBarista } from "../src/game/barista/store";
+import { getInterior } from "../src/game/world/interiors";
 import { BaristaOverlay } from "../src/ui/Barista";
 
 vi.mock("../src/game/barista/store", async (load) => {
@@ -33,6 +34,53 @@ it("shows the complete bilingual transcript only after revealing either back-to-
     }
   } finally {
     resetBaristaUi();
+  }
+});
+
+function meshBudget(root: Object3D) {
+  let meshes = 0, triangles = 0;
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    const geometry = object.geometry;
+    const instances = object instanceof InstancedMesh ? object.count : 1;
+    meshes++;
+    triangles += (geometry.index?.count ?? geometry.getAttribute("position").count) / 3 * instances;
+  });
+  return { meshes, triangles };
+}
+
+it("keeps the Sunny Cup window wall, shift props and ordinary room within their mesh budgets", () => {
+  const draw = () => {};
+  const gradient = () => ({ addColorStop: draw });
+  const canvas = new Proxy({
+    measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
+  }, { get: (target, key) => Reflect.get(target, key) ?? draw });
+  vi.stubGlobal("document", { createElement: () => ({ getContext: () => canvas }) });
+  let props: CounterProps | undefined;
+  try {
+    props = new CounterProps();
+    const windows = props.root.getObjectsByProperty("name", "barista-shop-windows");
+    expect(windows).toHaveLength(1);
+    const wall = windows[0] as Mesh;
+    expect(wall).toBeInstanceOf(Mesh);
+    expect(wall.material).toBeInstanceOf(MeshLambertMaterial);
+    expect(wall.material).toMatchObject({ transparent: false, opacity: 1, side: FrontSide, vertexColors: true });
+    expect(meshBudget(wall).meshes).toBe(1);
+    expect(meshBudget(wall).triangles).toBeLessThanOrEqual(272);
+
+    const shift = meshBudget(props.root);
+    expect(shift.meshes).toBeLessThanOrEqual(33);
+    expect(shift.triangles).toBeLessThanOrEqual(3_314);
+
+    const room = meshBudget(getInterior("sunny-cup")!.group);
+    expect(room.meshes).toBeLessThanOrEqual(11);
+    expect(room.triangles).toBeLessThanOrEqual(1_970);
+  } finally {
+    try {
+      if (props) disposeBaristaProps(props.root);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   }
 });
 
