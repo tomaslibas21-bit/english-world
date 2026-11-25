@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { Box3, Group, Ray, SkinnedMesh, Vector3, type Object3D } from "three";
+import { Box3, Group, Mesh, PlaneGeometry, Raycaster, SkinnedMesh, Vector3, type Object3D } from "three";
 import { GYM_ENTRY } from "../src/content/gym-entry";
 import { NPCS } from "../src/content/npcs";
 import * as catalog from "../src/content/situations/catalog";
@@ -9,7 +9,7 @@ import { variety } from "../src/convo/compose";
 import type { SpeechOptions } from "../src/convo/speech";
 import { EDITION } from "../src/edition";
 import { CameraRig } from "../src/game/camera";
-import { addFarVersion, type CharacterJoint, withBackpack } from "../src/game/characters";
+import { addFarVersion, setBlobShadows, type CharacterJoint, withBackpack } from "../src/game/characters";
 import { Character } from "../src/game/characters/Character";
 import { createGymMode } from "../src/game/gym/entry";
 import { useGym } from "../src/game/gym/store";
@@ -17,6 +17,7 @@ import { FrameFade } from "../src/game/kit/frameFade";
 import type { ModeHost } from "../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../src/game/kit/modes";
 import { GYM_MAT, GYM_STAGE } from "../src/game/world/gym";
+import { getInterior } from "../src/game/world/interiors";
 import { readPlayStats } from "../src/state/playStats";
 import { useStore } from "../src/state/store";
 
@@ -97,11 +98,11 @@ function setup(constructorPhase?: number) {
     },
   });
   registry.register(entry);
-  const step = async (frames = 1) => {
+  const step = async (frames = 1, dt = 0.05) => {
     for (let i = 0; i < frames; i++) {
-      time += 0.05;
-      fade.update(0.05);
-      registry.update({ dt: 0.05, time, blocked: fade.active, x: 0, y: 0, brake: false });
+      time += dt;
+      fade.update(dt);
+      registry.update({ dt, time, blocked: fade.active, x: 0, y: 0, brake: false });
       await Promise.resolve();
     }
   };
@@ -522,20 +523,60 @@ it.skipIf(!pc)("requires a distinctive Spanish command and discards transcripts 
   } finally { game.dispose(); }
 });
 
-it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and scores a muted round before Again and Done (phase %s)", async (phase) => {
+const rigPhases = [0.12, (9 + 0.01) / 21, 0.75];
+const phone = [390, 844, 156, 578] as const;
+const desktop = [1280, 800, 146, 625] as const;
+const compact = [390, 664, 156, 416] as const;
+
+function stageFrame() {
+  const viewport = { width: 390, height: 844, left: 0, top: 0 };
+  const header = { bottom: 156 }, dock = { top: 578 };
+  const element = (bounds: object) => ({ getBoundingClientRect: () => bounds }) as HTMLElement;
+  const observe = (game: ReturnType<typeof setup>) => {
+    const stop = game.view().observeFrame(element(viewport), element(header), element(dock));
+    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => name === "resize")!;
+    const fitView = ([width, height, top, bottom]: typeof phone | typeof compact | typeof desktop) => {
+      Object.assign(viewport, { width, height });
+      header.bottom = top;
+      dock.top = bottom;
+      (resize as () => void)();
+    };
+    return { stop, resize, fitView };
+  };
+  return { viewport, header, dock, observe };
+}
+
+function gymRoomMeshes(cam: CameraRig["cam"]) {
+  const draw = () => {};
+  const gradient = () => ({ addColorStop: draw });
+  const context = new Proxy({
+    measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
+  }, { get: (target, key) => Reflect.get(target, key) ?? draw });
+  class Canvas { getContext() { return context; } }
+  vi.stubGlobal("HTMLCanvasElement", Canvas);
+  vi.stubGlobal("document", { createElement: () => new Canvas() });
+  const room = getInterior("gym")!.group;
+  room.updateMatrixWorld(true);
+  const meshes: Mesh[] = [];
+  room.traverseVisible((node) => {
+    if (node instanceof Mesh && node.layers.test(cam.layers) && !Array.isArray(node.material)
+      && node.material.visible && !node.material.transparent) meshes.push(node);
+  });
+  return meshes;
+}
+
+it.each(rigPhases)("fits the actual rigs in both views and scores a muted round before Again and Done (phase %s)", async (phase) => {
   const game = setup(phase), started = count();
   vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mocks.audio.volume = 0;
   mocks.audio.play.mockResolvedValue(true);
-  const viewport = { width: 390, height: 844, top: 0 };
-  const header = { bottom: 156 }, dock = { top: 578 };
-  const phone = [390, 844, 156, 578] as const;
-  const compact = [390, 664, 156, 416] as const;
-  const desktop = [1280, 800, 146, 625] as const;
-  const element = (bounds: object) => ({ getBoundingClientRect: () => bounds }) as HTMLElement;
-  // The PC rooms6 ring and posts form the foreground obstruction on the east side.
+  const { viewport, header, dock, observe } = stageFrame();
+  // Use the PC boxing ring's bounds to find rays that could hit its platform, pads or ropes.
   const ring = new Box3(new Vector3(-4.9, 0, -1), new Vector3(-1.1, 1.72, 2.8));
-  const ray = new Ray(), intersection = new Vector3();
+  const sightline = new Raycaster(), intersection = new Vector3();
+  const { ray } = sightline;
+  sightline.layers.mask = game.rig.cam.layers.mask;
+  let roomMeshes: Mesh[] = [];
   const fitted = (press?: "high" | "low") => {
     expect(game.rig.cam.position.z).toBeLessThan(7);
     const faces = [game.player, game.trainer].map((actor) =>
@@ -552,8 +593,11 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
           node.getVertexPosition(i, point).applyMatrix4(node.matrixWorld);
           if (pc) {
             ray.origin.copy(game.rig.cam.position);
-            ray.direction.subVectors(point, ray.origin).normalize();
-            if (ray.intersectBox(ring, intersection) && intersection.distanceToSquared(ray.origin) < point.distanceToSquared(ray.origin)) obstructed++;
+            ray.direction.subVectors(point, ray.origin);
+            sightline.far = ray.direction.length();
+            ray.direction.normalize();
+            if (ray.intersectBox(ring, intersection) && intersection.distanceTo(ray.origin) < sightline.far
+              && sightline.intersectObjects(roomMeshes, false).some((hit) => ring.containsPoint(hit.point))) obstructed++;
           }
           point.project(game.rig.cam);
           const x = (1 + point.x) * viewport.width / 2, y = (1 - point.y) * viewport.height / 2;
@@ -579,15 +623,9 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
     }
   };
   try {
+    if (pc) roomMeshes = gymRoomMeshes(game.rig.cam);
     await game.open();
-    const stop = game.view().observeFrame(element(viewport), element(header), element(dock));
-    const [, resize] = vi.mocked(window.addEventListener).mock.calls.find(([name]) => name === "resize")!;
-    const fitView = ([width, height, top, bottom]: typeof phone | typeof compact | typeof desktop) => {
-      Object.assign(viewport, { width, height });
-      header.bottom = top;
-      dock.top = bottom;
-      (resize as () => void)();
-    };
+    const { stop, resize, fitView } = observe(game);
     fitted();
     game.entry.action("start");
     for (let i = 1; i <= 10; i++) {
@@ -655,4 +693,70 @@ it.each([0.12, (9 + 0.01) / 21, 0.75])("fits the actual rigs in both views and s
     expect(poseOf(game.trainer)).toEqual(game.home.trainer);
     expect(count()).toBe(started + 2);
   } finally { game.dispose(); }
+});
+
+it.skipIf(!pc).each(rigPhases)("clears both push-up outlines with low-quality floor shadows (phase %s)", async (phase) => {
+  const game = setup(phase);
+  const { viewport, observe } = stageFrame();
+  const { cam } = game.rig;
+  const previousShadows = Character.blobShadows;
+  vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  mocks.audio.volume = 0;
+  mocks.audio.play.mockResolvedValue(true);
+  setBlobShadows(true);
+  try {
+    await game.open();
+    const { fitView } = observe(game);
+    game.entry.action("start");
+    for (let i = 1; i <= 7; i++) {
+      await game.until("choose");
+      game.entry.action("pick", game.view().callId!);
+    }
+    await game.until("choose");
+    expect(game.view()).toMatchObject({ index: 8, callId: "pushups" });
+    game.entry.action("pick", "pushups");
+
+    const point = new Vector3();
+    const sample = (ms: number) => {
+      const pose = window.__gym?.state()?.pose;
+      expect(pose).toMatchObject({ player: "pushups", trainer: "pushups" });
+      expect(pose?.progress).toBeCloseTo(ms / 900, 6);
+      for (const view of [phone, desktop, compact]) {
+        fitView(view);
+        const label = `${viewport.width}x${viewport.height} at ${ms} ms`;
+        const [learner, trainer] = [game.player, game.trainer].map((actor) => {
+          let left = Infinity, right = -Infinity, floorVertices = 0;
+          actor.root.updateMatrixWorld(true);
+          // Match sampleRigs in tests/browser/gym.mjs, including transparent and rigid meshes.
+          actor.root.traverseVisible((mesh) => {
+            if (!(mesh instanceof Mesh) || Array.isArray(mesh.material) || !mesh.material.visible || !mesh.layers.test(cam.layers)) return;
+            const { count } = mesh.geometry.getAttribute("position");
+            if (mesh.parent === actor.root && mesh.geometry instanceof PlaneGeometry && mesh.material.transparent) floorVertices += count;
+            for (let i = 0; i < count; i++) {
+              mesh.getVertexPosition(i, point).applyMatrix4(mesh.matrixWorld).project(cam);
+              const x = viewport.left + (point.x + 1) * viewport.width / 2;
+              left = Math.min(left, x);
+              right = Math.max(right, x);
+            }
+          });
+          const who = actor === game.player ? "learner" : "trainer";
+          expect(floorVertices, `${label} ${who} projects the floor shadow`).toBeGreaterThan(0);
+          expect(right, `${label} ${who} has a projected outline`).toBeGreaterThan(left);
+          return { left, right };
+        });
+        expect.soft(trainer.left - learner.right, `${label} push-up silhouette gap in CSS px`).toBeGreaterThanOrEqual(8);
+      }
+      fitView(phone);
+    };
+    await game.step(4);
+    sample(200);
+    await game.step(4);
+    await game.step(1, 0.005);
+    sample(405);
+    await game.step(1, 0.045);
+    sample(450);
+  } finally {
+    setBlobShadows(previousShadows);
+    game.dispose();
+  }
 });
