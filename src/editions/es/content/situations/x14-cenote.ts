@@ -72,7 +72,7 @@ const cenote: SituationDef = {
   lines: {
     greet: [t("Soy | Inés. | ¿Quiere | venir | a | hacer | snorkel | un | rato?", "I'm | Inés. | Would-you-like | to-come | to | do | snorkeling | a | bit?", "I'm Inés. Would you like to come snorkeling for a bit?")],
     again: [t("¡Qué | gusto | verle | de nuevo! | ¿Quiere | venir | a | hacer | snorkel?", "How | nice | to-see-you | again! | Would-you-like | to-come | to | do | snorkeling?", "Good to see you again! Would you like to come snorkeling?")],
-    ask_interest: [t("¿Qué | le | gustaría | ver?", "What | to-you | would-be-pleasing | to-see?", "What would you like to see?")],
+    ask_interest: [t("¿Qué | le gustaría | ver?", "What | would-you-like | to-see?", "What would you like to see?")],
     fish_plan: [t("En | la | bahía | nadan | peces | en | grupo.", "In | the | bay | swim | fish | in | a-group.", "Fish swim in groups in the bay.")],
     turtle_plan: [t("En | la | bahía | hay | tortugas | marinas.", "In | the | bay | there-are | turtles | sea.", "There are sea turtles in the bay.")],
     ask_ready: [t("Aquí | tiene | la | máscara. | ¿Quiere | salir | ahora?", "Here | you-have | the | mask. | Do-you-want | to-head-out | now?", "Here's the mask. Would you like to go now?")],

@@ -998,8 +998,7 @@ export const STRINGS: Record<string, string> = {
   "Vietoje „…“ pasakyk savo žodžius.": "Say your own words where you see “…”.",
   "Prie La Ola lentų paplūdimyje bakstelėk „Banglentė“ – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Tap “Surf” by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",
   "Prie La Ola lentų paplūdimyje spausk E – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Press E by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",
-  "Pradėti išvyką su Inés": "Start the snorkel outing with Inés",
   "Baigti išvyką ir grįžti prie trobelės": "Leave the outing and return to the hut",
-  "Stotelė {n} iš {total}": "Stop {n} of {total}",
-  "Išvykos pradėti nepavyko. Gali bandyti dar kartą.": "The outing couldn't start. You can try again.",
+  "Išvykos pradėti nepavyko. Pabandykite dar kartą.": "The outing couldn't start. Please try again.",
+  "Pabandykite dar kartą.": "Try again.",
 };

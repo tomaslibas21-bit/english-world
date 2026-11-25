@@ -41,7 +41,7 @@ export default function CenoteTour({ touch }: { touch: boolean }) {
           <span><GlossLine sentence={sentence} compact gloss /></span>
         </button>)}
       </div>}
-      {mic.status === "unclear" && !!choices.length && <small role="status" lang={HL}>{L("Pabandyk dar kartą")} {mic.heard && <span lang={TL}>{mic.heard}</span>}</small>}
+      {mic.status === "unclear" && !!choices.length && <small role="status" lang={HL}>{L("Pabandykite dar kartą.")} {mic.heard && <span lang={TL}>{mic.heard}</span>}</small>}
     </section>}
   </>;
 }

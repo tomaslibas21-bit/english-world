@@ -745,7 +745,7 @@ export class Game implements GameApi {
         },
         curtain: (opacity) => this.container.parentElement?.style.setProperty("--cenote-tour-fade", opacity ? String(opacity) : ""),
         paused: () => document.hidden || this.wasHidden,
-        failed: () => useStore.getState().toast({ kind: "info", title: L("Išvykos pradėti nepavyko. Gali bandyti dar kartą."), ms: 4200 }),
+        failed: () => useStore.getState().toast({ kind: "info", title: L("Išvykos pradėti nepavyko. Pabandykite dar kartą."), ms: 4200 }),
       }, CENOTE_TOUR.id);
       this.modes.register(tour);
       this.cenoteInspection = { snapshot: () => {

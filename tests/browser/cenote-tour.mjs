@@ -23,7 +23,7 @@ const names = {
   close: local("Close", "Uždaryti"),
   declined: local("Conversation over", "Pokalbis baigtas"),
   completed: local("Task completed!", "Užduotis įvykdyta!"),
-  again: local("Try again", "Pabandyk dar kartą"),
+  again: local("Try again.", "Pabandykite dar kartą."),
   leave: local("Leave the outing and return to the hut", "Baigti išvyką ir grįžti prie trobelės"),
   phrasebook: local("Phrasebook", "Frazių knygelė"),
 };
@@ -579,6 +579,10 @@ async function decline(h) {
 async function positiveChat(h, branch, run, { first = false, speakInterest = false } = {}) {
   await typeAnswer(h, "go_yes");
   await chatTurn(h, "interest", "ask_interest");
+  const question = h.page.locator(".transcript .msg.npc").last();
+  await unitText(question, "ask_interest", true);
+  await question.locator(".nat").scrollIntoViewIfNeeded();
+  await naturalText(question, "ask_interest", false);
   if (speakInterest) {
     // The typed acceptance leaves the mic off. Open it with the ordinary conversation control.
     const control = h.page.locator('.convo[data-phase="you"] .inputbar button.mic');
@@ -900,6 +904,7 @@ async function completeTour(h, branch, aboard) {
   assert.equal(homeLine.tour.stopIndex, -1);
   assert.equal(homeLine.tour.animalCount, 0);
   assert(distance(homeLine.pose, outing.hut) <= 0.35);
+  await unitText(tourLine(page, "ct_home"), "ct_home");
   await naturalText(tourLine(page, "ct_home"), "ct_home", false);
   const home = await wait("normal tour completion", (s) => s.tour?.lastExit === "finished", { frames: 12, sample });
   assert.equal(home.tour.elapsed, outing.elapsed, "authored route seconds");
