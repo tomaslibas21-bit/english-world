@@ -15,7 +15,7 @@ export function poolSave({ pool }: Progress): PoolSave {
 interface PoolUi {
   cue: KitLine | null;
   aside: KitLine | null;
-  help: "long" | "short" | null;
+  help: "long" | "first-pass" | "short" | null;
   notice: "timing" | "wrong" | null;
   canHit: boolean;
   streak: number;

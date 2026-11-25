@@ -167,6 +167,27 @@ try {
       assert.equal(await thread.locator(".text-hint").count(), 0);
       await checkThreadViewport(`${greeting} small`);
       await capture("text-3-translation");
+      if (width === 844 && height === 390) {
+        const last = thread.locator(newest);
+        const before = await last.evaluate((bubble) => {
+          const scroller = bubble.closest(".text-thread-body");
+          // Put the unopened message at the edge of a short thread viewport.
+          scroller.style.maxHeight = `${Math.ceil(bubble.getBoundingClientRect().bottom - scroller.getBoundingClientRect().top)}px`;
+          const bottom = scroller.getBoundingClientRect().top + scroller.clientHeight;
+          scroller.scrollTop += Math.ceil(bubble.getBoundingClientRect().bottom - bottom);
+          return scroller.scrollTop;
+        });
+        await checkThreadViewport(newest);
+        await tap(last);
+        assert.equal(await last.locator(`small[lang="${helperLang}"]`).innerText(), dinner.lines.at(-1).lt);
+        await waitFor(() => last.evaluate((bubble, before) => {
+          const scroller = bubble.closest(".text-thread-body");
+          const top = scroller.getBoundingClientRect().top;
+          const bounds = bubble.getBoundingClientRect();
+          return scroller.scrollTop > before && bounds.top >= top - 1 && bounds.bottom <= top + scroller.clientHeight + 1;
+        }, before), "the expanded message scrolls fully into view in landscape");
+        await thread.locator(".text-thread-body").evaluate((body) => body.style.removeProperty("max-height"));
+      }
       for (const index of dinner.replies.keys()) await scrollToReply(index);
 
       const reply = dinner.replies[0];

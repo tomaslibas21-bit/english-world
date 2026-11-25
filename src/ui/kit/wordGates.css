@@ -96,8 +96,10 @@
   align-items: center;
   font-weight: 800;
   color: #172e3a;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
-.road-gate span { white-space: nowrap; }
+.road-gate > span { flex: none; white-space: nowrap; }
 .road-gate [data-face-probe] { position: absolute; width: 0; height: 0; pointer-events: none; }
 .road-gate [data-face-probe="tl"], .road-gate [data-face-probe="tr"] { top: 0; }
 .road-gate [data-face-probe="bl"], .road-gate [data-face-probe="br"] { bottom: 0; }

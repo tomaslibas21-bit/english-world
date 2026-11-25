@@ -192,6 +192,12 @@ button.surf-move { cursor: pointer; }
   .surf.touch[data-phase="ride"] .surf-balance { margin-top: 5px; }
   .surf.touch[data-phase="ride"] .surf-move { min-height: 40px; padding-block: 6px; }
 }
+/* Keep the cue and move stack above the board, including when the gloss wraps. */
+.surf.touch .surf-say:has(.surf-move) { gap: 4px; }
+.surf.touch .surf-card:has(+ .surf-move) { padding-block: 4px; }
+.surf.touch .surf-card:has(+ .surf-move) .nat { margin-top: 2px; padding-top: 2px; }
+.surf.touch .surf-move { row-gap: 3px; }
+
 @media (max-height: 520px) and (orientation: landscape) {
   .surf.touch { --pad-space: calc(3 * var(--arrow-size) + 2 * var(--pad-gap) + 26px + env(safe-area-inset-right)); }
   .surf.touch .surf-say { top: calc(56px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); transform: none; }
@@ -203,4 +209,8 @@ button.surf-move { cursor: pointer; }
   .surf.touch:has(.surf-choices) .surf-card.has-pic { width: 100%; }
   .surf.touch .surf-choices { align-self: end; width: min(540px, calc(100vw - var(--pad-space) - 12px - env(safe-area-inset-left))); }
   .surf.touch .surf-said { left: calc(12px + env(safe-area-inset-left)); transform: none; bottom: var(--pad-bottom); max-width: calc(100vw - var(--pad-space) - 20px); }
+}
+@media (max-width: 760px) and (max-height: 520px) and (orientation: landscape) {
+  .surf.touch .surf-move { align-self: flex-start; max-width: 26vw; padding-inline: 8px; }
+  .surf.touch .surf-time { min-width: 0; }
 }

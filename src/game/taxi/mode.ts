@@ -46,6 +46,7 @@ class TaxiMode implements GameMode {
   readonly exitLabel = L("Išlipti");
   readonly conversation = { situation, label: L("Vairuoti taksi") };
   private run: Run | null = null;
+  private greetingBlend = 0;
   private scoreAspect = 0;
   private passenger: GameCharacter | null = null;
   readonly car: Ride;
@@ -76,6 +77,7 @@ class TaxiMode implements GameMode {
   }
 
   get active() { return this.run !== null; }
+  get greetingLift() { return THREE.MathUtils.smoothstep(this.greetingBlend, 0, 1); }
   get camera() { return this.run?.phase === "result" && this.host.rig.stage ? "stage" : "follow"; }
   get route() { return this.run?.route; }
 
@@ -151,6 +153,7 @@ class TaxiMode implements GameMode {
       nearTime: 0, spoken: false, pending: false, passTime: 0, help, kept: new Map(), cue: null,
     };
     this.run = run;
+    this.greetingBlend = 1;
     this.host.entered(this.id);
     useStore.getState().setHud({ ride: "taxi" });
     useStore.getState().updateProgress((p) => { p.taxi = { nextRoute: (index + 1) % TAXI_ROUTES.length }; });
@@ -282,6 +285,7 @@ class TaxiMode implements GameMode {
   update({ dt, x, y, brake, blocked }: ModeFrame) {
     const run = this.run;
     if (!run) return;
+    if (this.greetingBlend > 0 && run.phase !== "opening") this.greetingBlend = Math.max(0, this.greetingBlend - dt / 0.45);
     if (run.phase === "result") {
       if (this.scoreAspect !== this.host.rig.cam.aspect) this.frameScore();
       this.host.updatePose(dt, run.door.rot);

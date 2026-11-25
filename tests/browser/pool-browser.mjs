@@ -17,7 +17,7 @@ export async function launchPoolBrowser() {
 }
 
 export async function poolPage(browser, [width, height], { completed = false } = {}) {
-  const phone = width === 390;
+  const phone = Math.min(width, height) === 390;
   const label = `${width}x${height}`;
   const context = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: phone ? 2 : 1, isMobile: phone, hasTouch: phone,

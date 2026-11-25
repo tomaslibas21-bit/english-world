@@ -5,6 +5,7 @@ import { matchesPick, trayRows } from "../game/barista/tray";
 import { game } from "../game/gameRef";
 import { HL, L, TL } from "./i18n";
 import { Icon } from "./icons";
+import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
 import { ScoreCard } from "./kit/ScoreCard";
 import { STRINGS } from "./strings";
@@ -40,9 +41,7 @@ function OrderTray({ touch }: { touch: boolean }) {
         return (
           <div key={kind} className={`barista-row${selected ? " barista-row-active" : ""}`} data-row={kind}>
             <button className="barista-row-label" type="button" onClick={() => act("row", kind)} aria-pressed={selected}>
-              <span className="barista-row-name">{L(words[kind])}<span className="barista-repair-mark" data-repair={marker}>
-                {marker === "add" ? "+" : marker === "remove" ? "−" : null}
-              </span></span>
+              {L(words[kind])}
               {!touch && selected && <span className="barista-row-keys" aria-hidden>↑ ↓{menu[kind].length > 4 && " · ← →"}</span>}
             </button>
             <div className="barista-chips" role="group" aria-label={L(words[kind])}>
@@ -55,6 +54,7 @@ function OrderTray({ touch }: { touch: boolean }) {
                     data-repair={marked ? marker : undefined} aria-pressed={pressed} aria-disabled={!ready}
                     onClick={() => act(kind, id)}>
                     {!touch && selected && Math.floor(i / 4) === page && <kbd>{i % 4 + 1}</kbd>}
+                    {marked && marker && <span className="barista-repair-mark">{marker === "add" ? "+" : "−"}</span>}
                     <span lang={TL}>{en}</span><small lang={HL}>{lt}</small>
                   </button>
                 );
@@ -79,7 +79,8 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
       <ScoreCard title={L(words.title)} ratio={result.firstTime / result.served}
         rows={[
           { label: L(words.orders), value: `${result.served}/${total}` },
-          { label: L(words.firstTime), value: `${result.firstTime}/${total}` },
+          { label: L(words.firstTime), value: <FeedbackBadge correct={result.firstTime === total}
+            label={L(result.firstTime === total ? "Teisingai!" : words.retry)}>{result.firstTime}/{total}</FeedbackBadge> },
         ]}
         phrases={{ label: L(words.cards), count: result.cards }}
         again={{ label: L(words.again), run: () => act("again") }}
@@ -90,10 +91,13 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
 
   const listening = mic.status === "starting" || mic.status === "listening";
   const concealed = hiddenOrder.length > 0 && !repair;
+  const served = step === "handover" || step === "price" || step === "thanks" || step === "reply";
   return (
     <div className="barista-overlay" lang={HL}>
       <header className="barista-header">
-        {customer > 0 && <div className="barista-counter barista-panel">{L(words.customer)} <b>{L(`{n} ${words.of} {of}`, { n: customer, of: total })}</b></div>}
+        {customer > 0 && <div className="barista-counter barista-panel">{L(words.customer)} <b>{L(`{n} ${words.of} {of}`, { n: customer, of: total })}</b>
+          {(repair || served) && <FeedbackBadge correct={served} label={L(served ? "Teisingai!" : words.retry)} />}
+        </div>}
         <button className="barista-exit barista-panel" type="button" onClick={() => game?.modeExit()}>{L(words.exit)}</button>
       </header>
       {!concealed && line && (

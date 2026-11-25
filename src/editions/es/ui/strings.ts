@@ -124,6 +124,8 @@ export const STRINGS: Record<string, string> = {
   "Kaina": "Fare",
   "Arbatpinigiai": "Tip",
   "Posūkiai iš pirmo karto": "Turns right the first time",
+  "Sklandus sustojimas prie durų": "Smooth stop at the door",
+  "Kelionė be susidūrimų": "Collision-free ride",
   "Sustojote": "Stopped",
   "prie durų": "at the door",
   "per toli": "too far",

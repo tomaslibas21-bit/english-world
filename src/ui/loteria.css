@@ -160,6 +160,7 @@
   overflow: hidden;
 }
 .loteria-art { position: relative; display: grid; place-items: center; min-height: 0; border-radius: 3px; overflow: hidden; }
+.loteria-board .loteria-art { container-type: size; }
 .loteria-number { position: absolute; left: 3px; top: 2px; z-index: 1; font-size: 10px; font-weight: 900; }
 .loteria-icon { font-size: clamp(23px, 3.7vw, 52px); line-height: 1; }
 .loteria-art img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
@@ -177,9 +178,9 @@
 .loteria-bean {
   position: absolute;
   z-index: 2;
-  top: 39%;
+  top: 50%;
   left: 70%;
-  width: 34%;
+  width: min(34%, 90cqh);
   aspect-ratio: 1.56;
   border-radius: 47% 53% 45% 55% / 64% 55% 45% 40%;
   background:
@@ -292,7 +293,6 @@
   .loteria-help { min-height: 24px; }
   .loteria-board .loteria-tile { padding: 1px; gap: 0; }
   .loteria-board .loteria-tile strong { padding: 0; }
-  .loteria-board .loteria-art { container-type: size; }
   .loteria-board .loteria-icon { font-size: 19px; font-size: min(19px, 88cqh); }
 }
 @media (orientation: landscape) and (max-height: 560px) {
@@ -323,7 +323,6 @@
   .loteria-help { min-height: 0; font-size: 12px; }
   .loteria-board { padding: 3px; gap: 3px; }
   .loteria-board .loteria-tile { padding: 1px; }
-  .loteria-board .loteria-art { container-type: size; }
   .loteria-board .loteria-icon { font-size: min(32px, 88cqh); }
   .loteria-footer, .loteria-history { align-items: center; }
   .loteria-history { display: flex; gap: 4px; font-size: 11px; }

@@ -125,7 +125,7 @@
   .bl-speech { padding-block: 3px; }
   .bl-chip-heading { margin-block: 4px 2px; }
   .bl-pocket-chips { gap: 3px; }
-  .bl-pocket-chips .bl-choice { --kit-phrase-size: 13px; min-height: 32px; padding: 2px 4px; }
+  .bl-pocket-chips .bl-choice { --kit-phrase-size: 13px; padding: 2px 4px; }
 }
 /* A screen wider than tall (a computer, a phone held sideways): three columns, so the table gets the whole height:
    the score and the exit on the left, the table in the middle, the panel on the right. (Below each other, the table
@@ -180,7 +180,7 @@
   .bl-panel h2 { font-size: 0.82rem; }
   .bl-chip-heading { display: none; }
   .bl-ball-chips { margin-block: 4px; }
-  .bl-choice { min-height: 32px; padding: 2px 5px; }
+  .bl-choice { padding: 2px 5px; }
   .bl-confirm-row { margin-top: 4px; }
 }
 
@@ -197,8 +197,14 @@
     --kit-phrase-size: 15px; --kit-translation-size: 12px; padding-block: 2px;
   }
   .billiards[data-phase="listen"] .bl-pocket-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .billiards[data-phase="listen"] :is(.bl-pocket-chips .bl-choice, .bl-replay) { min-height: 44px; }
   .billiards[data-phase="listen"] .bl-pocket-chips .kit-gloss-compact { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 600px), (max-height: 520px) {
+  .bl-choice, .bl-replay, .bl-nudge, .bl-confirm, .bl-confirm-measure { min-width: 44px; min-height: 44px; }
+}
+@media (380px <= width <= 520px) and (orientation: portrait) {
+  .bl-pocket-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .bl-listen-actions { display: inline-flex; align-items: center; gap: 6px; }

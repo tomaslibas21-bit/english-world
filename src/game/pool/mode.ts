@@ -383,7 +383,7 @@ class PoolMode implements GameMode {
   private updateHelp() {
     const visible = this.phase === "opening" || this.phase === "play";
     const canHit = this.helpLevel === 0 && this.phase === "play" && !!this.round?.canHit;
-    const help = visible && this.helpLevel === 0 && this.firstPass ? "long"
+    const help = visible && this.helpLevel === 0 && this.firstPass ? (this.phase === "opening" ? "long" : "first-pass")
       : visible && this.helpLevel === 1 && (this.round?.elapsed ?? 0) < 5 ? "short" : null;
     const notice = visible && this.clock < this.noticeUntil ? this.notice : null;
     const current = usePool.getState();

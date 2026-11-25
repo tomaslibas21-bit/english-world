@@ -28,7 +28,7 @@ const replies = es
   ? { play: "Un poquito.", name: "Me llamo Ana.", group: "Las lisas, por favor.", ask: "¿Desde cuándo juega?" }
   : { play: "A little.", name: "I'm Ana.", group: "Solids, please.", ask: "How long have you played?" };
 const shots = process.env.SHOTS_DIR || "/tmp/billiards-shots";
-const sizes = process.env.WORLD_SIZES ? process.env.WORLD_SIZES.split(",").map((s) => s.split("x").map(Number)) : [[1280, 800], [390, 844], [390, 664]];
+const sizes = process.env.WORLD_SIZES ? process.env.WORLD_SIZES.split(",").map((s) => s.split("x").map(Number)) : [[1280, 800], [390, 844], [390, 664], [844, 390]];
 const progress = {
   version: 1,
   profile: {
@@ -108,6 +108,15 @@ try {
       };
       const ballChip = (id) => page.locator(`.bl-ball-chips [data-ball="${id}"]`);
       const pocketChip = (id) => page.locator(`.bl-pocket-chips [data-pocket="${id}"]`);
+      const checkTapTargets = async (selector, count) => {
+        if (!phone) return;
+        const targets = await page.locator(selector).evaluateAll((elements) => elements.map((el) => {
+          const { width, height } = el.getBoundingClientRect();
+          return { width, height };
+        }));
+        assert(targets.length === count && targets.every(({ width, height }) => width >= 44 && height >= 44),
+          `${label}: ${selector} has 44×44 CSS px targets ${JSON.stringify(targets)}`);
+      };
       const shoot = (power) => page.evaluate((p) => {
         const debug = window.__ew.billiards;
         debug.shoot(p);
@@ -139,6 +148,7 @@ try {
         assert(panel.top > 0 && panel.bottom <= height && panel.height >= 65, `${label}: whole panel is on screen`);
         assert.equal(!!power, aiming);
         if (power) assert(table.right < power.left && (beside ? power.right <= panel.left && !intersects(power, exit) : power.top >= header.bottom && power.bottom <= panel.top), `${label}: power bar clears table and panels`);
+        if (aiming) await checkTapTargets(".bl-nudge", 2);
       }
 
       const checkBallPicker = async () => {
@@ -168,6 +178,8 @@ try {
         await phase("listen");
         await checkLayout(false);
         await checkBallPicker();
+        await checkTapTargets(".bl-replay", 1);
+        await checkTapTargets(".bl-pocket-chips .bl-choice", 6);
         const { ai, available } = await state();
         const pocket = correct ? ai.pocket : ai.pocket === "fl" ? "nr" : "fl";
         await press(ballChip(available.includes(ai.ball) ? ai.ball : available[0]));

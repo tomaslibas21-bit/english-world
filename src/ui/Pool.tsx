@@ -28,6 +28,10 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
     />
   );
 
+  const firstTouchPass = touch && help === "first-pass";
+  const instruction = help === "first-pass"
+    ? firstTouchPass ? (cue?.key === "pl_tuya" ? "short" : null) : "long"
+    : help;
   const timing = notice ?? (!touch && canHit ? "timing" : null);
   return (
     <div className="pool-overlay">
@@ -39,7 +43,7 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
         </div>
       </div>
       <div className={`pool-help-stack${touch ? " pool-help-touch" : ""}`} lang={HL}>
-        {help && <div className="pool-help pool-instruction" data-help={help}>{helpText[help]}</div>}
+        {instruction && <div className={`pool-help pool-instruction${firstTouchPass ? " pool-pass-help" : ""}`} data-help={instruction}>{helpText[instruction]}</div>}
         <div className="pool-help-slot" aria-live="polite">
           {timing && <div className="pool-help" data-help={timing}>{helpText[timing]}</div>}
         </div>

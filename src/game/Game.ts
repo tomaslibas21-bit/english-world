@@ -279,6 +279,7 @@ export class Game implements GameApi {
   private transitioning = false;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
+  private taxi: ReturnType<typeof createTaxiMode> = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
   private readonly phone = new TownPhone();
   private readonly reactions = new TownReactions(() => this.reactionsBlocked());
@@ -637,7 +638,7 @@ export class Game implements GameApi {
       },
     };
     this.modes.register(createSurfMode(host, (outfit) => this.dressPlayer(outfit)));
-    this.modes.register(createTaxiMode(host));
+    this.modes.register(this.taxi = createTaxiMode(host));
     const colectivoPhoto = new THREE.Vector3();
     this.modes.register(this.quests = new TownQuests(host, {
       spots: this.town.photoSpots.concat(this.ambient.traffic.filter((car) => car.kind === "colectivo").map((car): PhotoSpot => ({
@@ -2954,12 +2955,14 @@ export class Game implements GameApi {
     else p.easy = 0;
   }
 
-  private applyWalkingViewShift(w: number, h: number, talking: boolean) {
+  private applyWalkingViewShift(w: number, h: number, talking: boolean, greetingLift = 0) {
     const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
     const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
-    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+    // (the taxi's greeting lift eases toward a higher shot; 0 keeps the plain walking shift)
+    const viewShift = greetingLift ? THREE.MathUtils.lerp(-shift, this.sidewaysPhone ? 0.09 : 0.14, greetingLift) : -shift;
+    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? viewShift));
   }
 
   private updateViewLights() {
@@ -3105,9 +3108,12 @@ export class Game implements GameApi {
       if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
     }
     this.underWater(this.undersea.on);
+    const sideways = this.sidewaysPhone;
+    const greetingLift = mode === this.taxi && st.hud.showTouch && (sideways || w <= 600) ? this.taxi?.greetingLift ?? 0 : 0;
     // Walking, tree and mode lenses ease through the rig. Actor talk owns its validated lens.
     if (!actorTalk) {
-      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
+      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30)
+        + (this.rig.mode === "follow" ? this.rideFov + greetingLift * (sideways ? 6 : 10) : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
         this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
@@ -3128,7 +3134,6 @@ export class Game implements GameApi {
     CUT.r.value = this.rig.mode === "follow" && !this.zone.interior ? 0.55 : 0;
     // Preserve the tree and mode offsets, and the lower walking composition on phones.
     if (!actorTalk) {
-      const sideways = this.sidewaysPhone;
       if (talking && this.talkTree) {
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
@@ -3143,7 +3148,8 @@ export class Game implements GameApi {
       } else if (mode?.frameStage) {
         mode.frameStage(w, h);
       } else {
-        this.applyWalkingViewShift(w, h, talking);
+        // Place the wider greeting shot between the dialogue and the touch controls.
+        this.applyWalkingViewShift(w, h, talking, greetingLift);
       }
     }
     this.applySeaReturnView(dt, w, h);
