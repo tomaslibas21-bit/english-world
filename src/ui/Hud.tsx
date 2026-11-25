@@ -107,6 +107,9 @@ export function Hud() {
   const surfing = useSurf((s) => s.active);
   const picking = useSurf((s) => s.picking);
   const baristaOffered = useBarista((s) => s.offered);
+  // The surf picker loads on demand. It is mounted (empty) while the lesson's prompt shows, so the level choice opens
+  // on the first press.
+  const surfPrompt = hud.prompt?.kind === "surf";
   const notesVisible = useStore(usesTownNotes);
   const note = notesVisible ? townNote(hud) : null;
   const ride = townRide(hud.ride);
@@ -214,7 +217,7 @@ export function Hud() {
       {hud.showTouch && <TouchControls rideControls={rideControls} />}
       {!hud.panel && baristaOffered && <Suspense><BaristaOffer /></Suspense>}
       {questHud && <PhotoChip />}
-      {picking && <Suspense><SurfPicker /></Suspense>}
+      {(picking || surfPrompt) && <Suspense><SurfPicker /></Suspense>}
       <Fade />
     </div>
   );
