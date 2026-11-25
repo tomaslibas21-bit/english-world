@@ -58,6 +58,8 @@ export const lines = {
 export const outing = {
   id: "x14-cenote",
   guide: "ines",
+  displayName: "Inés Calderón",
+  captionName: "Inés",
   start: { zone: "town", x: -101, z: -7.4, rot: -Math.PI / 2 },
   hut: [-120.65, -1.4],
   actor: [-122.4, -1.4],

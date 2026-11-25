@@ -17,7 +17,8 @@ const local = (en, lt) => learner === "en" ? en : lt;
 const names = {
   picker: local("All situations", "Visos situacijos"),
   walk: local("Take me there", "Nuvesk mane"),
-  talk: local("Talk to Inés", "Kalbėtis: Inés"),
+  talk: local("Talk to Inés Calderón", "Kalbėtis: Inés Calderón"),
+  start: local("Start", "Pradėti"),
   end: local("End conversation", "Baigti pokalbį"),
   close: local("Close", "Uždaryti"),
   declined: local("Conversation over", "Pokalbis baigtas"),
@@ -485,7 +486,7 @@ async function enterChat(h, first, card) {
   else if (phone) await press(page.locator(".act-btn"));
   else await page.keyboard.press("e");
   const opened = await wait(`the ${id} conversation with Inés`, (s) => s.chat?.active && s.chat.sit === id && s.chat.host === guide);
-  const start = page.locator(".scene-intro .btn");
+  const start = page.locator(".scene-intro").getByRole("button", { name: names.start, exact: true });
   if (opened.chat.intro || await start.isVisible()) {
     await visibleText(page.locator(`.scene-intro p[lang="${learner}"]`), outing.intro[learner]);
     await press(start);
@@ -497,7 +498,7 @@ async function enterChat(h, first, card) {
   const msg = page.locator(".transcript .msg.npc").last();
   const speaker = msg.locator(".meta span").first();
   await speaker.scrollIntoViewIfNeeded();
-  await visibleText(speaker, "Inés");
+  await visibleText(speaker, outing.displayName);
   await unitText(msg, greeting, true);
   await msg.locator(".nat").scrollIntoViewIfNeeded();
   await naturalText(msg, greeting, false);
@@ -506,8 +507,10 @@ async function enterChat(h, first, card) {
 
 async function chatTurn(h, step, key) {
   const s = await h.wait(`Inés finishes "${key}" and offers the "${step}" turn`, (s) =>
-    s.chat?.active && s.chat.step === step && s.chat.phase === "you" && s.chat.key === key);
+    s.chat?.active && s.chat.sit === id && s.chat.step === step && s.chat.phase === "you" && s.chat.key === key);
+  assert.equal(s.chat.host, guide);
   assert.equal(s.chat.speaker, guide);
+  assert(s.session && !s.chat.intro);
   assert.equal(s.mode, null);
   return s;
 }
@@ -573,11 +576,30 @@ async function decline(h) {
   assert.deepEqual([...h.monitor.runtime], [], "no production tour runtime before boarding");
 }
 
-async function positiveChat(h, branch, run, first) {
+async function positiveChat(h, branch, run, { first = false, speakInterest = false } = {}) {
   await typeAnswer(h, "go_yes");
   await chatTurn(h, "interest", "ask_interest");
-  await typeAnswer(h, branch.interest);
-  await chatTurn(h, "ready", "ask_ready");
+  if (speakInterest) {
+    // The typed acceptance leaves the mic off. Open it with the ordinary conversation control.
+    const control = h.page.locator('.convo[data-phase="you"] .inputbar button.mic');
+    await control.waitFor({ state: "visible" });
+    await target(control);
+    if (!(await h.read()).listening) await h.press(control);
+    await h.wait("the ordinary interest turn is listening", (s) => s.listening && s.session && s.chat.active
+      && s.chat.run === run && s.chat.step === "interest" && s.chat.phase === "you");
+    assert.equal(await control.getAttribute("aria-pressed"), "true");
+    await say(h, spanish(branch.interest));
+  } else {
+    await typeAnswer(h, branch.interest);
+  }
+  const ready = await chatTurn(h, "ready", "ask_ready");
+  assert.equal(ready.chat.run, run);
+  if (speakInterest) {
+    const spoken = await h.page.evaluate(() => window.__ew.store.getState().conv.transcript
+      .filter((line) => line.who === "you" && line.via === "voice")
+      .map(({ heard, understood }) => ({ heard, understood })));
+    assert.deepEqual(spoken, [{ heard: spanish(branch.interest), understood: true }]);
+  }
   const words = h.page.locator(".transcript .msg.npc").last().locator(".bubble-part").first();
   await words.locator(".nat").scrollIntoViewIfNeeded();
   await naturalText(words, branch.plan, false);
@@ -588,7 +610,7 @@ async function positiveChat(h, branch, run, first) {
 async function board(h, branch, count) {
   h.setPhase(`affirmative chat and boarding ${count}`);
   const run = await enterChat(h, false);
-  const order = await positiveChat(h, branch, run, false);
+  const order = await positiveChat(h, branch, run, { speakInterest: count === 1 });
   const aboard = await h.wait("the final line closes the chat and boards the tour", (s) =>
     s.tour?.state === "deck" && s.camera === "stage" && s.mode === mode && s.curtain === 0 && s.starts === count);
   assert(!aboard.chat.active && aboard.chat.completed && !aboard.session && !aboard.queued);
@@ -778,7 +800,7 @@ async function awaitChoices(h, sample, stop) {
 async function checkTurn(h, { keys, cue }) {
   const { page, press } = h;
   const line = tourLine(page, cue);
-  await visibleText(page.locator('.cenote-tour-heading [data-speaker="ines"][lang="es"]'), "Inés");
+  await visibleText(page.locator('.cenote-tour-heading [data-speaker="ines"][lang="es"]'), outing.captionName);
   await unitText(line, cue);
   for (const key of keys) await naturalText(choice(page, key), key, true);
   const toggle = page.locator('.cenote-tour-card [data-action="natural"]');
@@ -815,7 +837,7 @@ async function holdAt(h, elapsed, cue, sample) {
 }
 
 async function say(h, text) {
-  assert.equal(await h.page.evaluate((text) => window.__speak(text), text), true, `recognizer must hear "${text}"`);
+  assert.equal(await h.page.evaluate((text) => window.__listening() && window.__speak(text), text), true, `recognizer must hear "${text}"`);
 }
 
 async function completeTour(h, branch, aboard) {
@@ -1055,7 +1077,7 @@ async function light(h) {
   assert.equal(initial.tour, undefined);
   const card = await checkPicker(page, "lh");
   const run = await enterChat(h, true, card);
-  await visibleText(page.locator(".lc .lc-name"), "Inés");
+  await visibleText(page.locator(".lc .lc-name"), outing.displayName);
   const avatar = page.locator(".lc-avatar");
   assert(await avatar.isVisible());
   const fallback = await avatar.evaluate((el) => {
@@ -1068,8 +1090,9 @@ async function light(h) {
 
   setPhase("LightHome can finish the affirmative chat");
   const branch = outing.paths[h.phone ? "phone" : "keyboard"];
-  const order = await positiveChat(h, branch, run, true);
-  const ended = await wait("completed LightHome chat", (s) => s.chat?.phase === "ended" && s.chat.completed);
+  const order = await positiveChat(h, branch, run, { first: true });
+  const ended = await wait("completed LightHome chat", (s) => s.chat?.active && s.chat.run === run && s.chat.phase === "ended"
+    && s.chat.key === "meet_deck" && s.chat.completed);
   await visibleText(page.locator(".ended-box .ended-title"), names.completed);
   assert.equal(ended.starts, 0);
   assert.equal(ended.completions, 1);
