@@ -92,7 +92,7 @@ const legacy = new Set(JSON.parse(execFileSync(process.execPath, ["--import", "t
   { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: voiceListMs })).keys);
 const gaps = new Map();
 const dropped = (rows) => {
-  for (const row of rows) if (!allowed.has(row.key) && !legacy.has(row.key)) gaps.set(row.key, `${row.line ?? row.source} “${row.say ?? ""}”`);
+  for (const row of rows) if (!allowed.has(row.key) && !legacy.has(row.key) && !gaps.has(row.key)) gaps.set(row.key, `${row.sit ?? ""}:${row.line ?? row.source} “${row.say ?? ""}”`);
   return rows.filter(({ key }) => !allowed.has(key) && legacy.has(key));
 };
 console.log("voice-reach list", JSON.stringify({ keys: allowed.size, status: list.status, unresolved: list.unresolved.length }));
