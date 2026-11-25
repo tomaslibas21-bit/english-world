@@ -21,6 +21,13 @@
   font-family: var(--ui); font-size: 0.9em; text-align: left; color: var(--ink); line-height: 1.35;
   animation: wpop-in 0.14s ease-out;
 }
+.wpop[data-in-convo] {
+  display: flex; flex-direction: column; padding: 0; animation: none;
+  min-width: min(190px, var(--popover-max-width)); max-width: min(300px, var(--popover-max-width)); max-height: var(--popover-max-height);
+}
+.wpop[data-in-convo] .wpop-body {
+  min-height: 0; padding: 10px 13px 12px; overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere;
+}
 .wpop::before {
   content: ""; position: absolute; left: var(--arrow, 50%); top: -6px; width: 11px; height: 11px;
   background: var(--panel-solid); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
@@ -34,6 +41,7 @@
 .wpop-none { color: var(--ink-soft); font-size: 0.92em; margin-top: 2px; }
 .wpop-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .wpop-acts .btn.small { font-size: 0.9em; min-height: 36px; padding: 0.4em 0.85em 0.4em 0.7em; }
+.wpop[data-in-convo] .wpop-acts .btn.small { min-width: 44px; min-height: 44px; }
 .wpop-in { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 6px 0 2px; font-weight: 800; font-size: 0.9em; color: var(--accent); }
 .wpop-hint { margin-top: 8px; padding-top: 7px; border-top: 1px dashed #eadfcc; font-size: 0.85em; color: var(--ink-soft); }
 

@@ -6,13 +6,13 @@
 // a dotted underline also shows to a mouse: on a phone the asterisk is the only way to them (owner, 14 Nov 2026).
 // Tapping a unit opens a small popover to save it (or the whole sentence) as a card (Cards.tsx);
 // saved units get a tiny dot.
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { ipaForSentence } from "../convo/ipa";
-import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
+import { natMatchesGloss, natSaysMore, placeTip } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
-import { WordPopover, inView } from "./Cards";
+import { WordPopover, trackPopover } from "./Cards";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
 
@@ -87,7 +87,6 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   const [tapped, setTapped] = useState(false); // opened with a tap or a click: stays until closed
   const [hover, setHover] = useState(false); // a mouse over the asterisk or the tooltip
   const [focused, setFocused] = useState(false); // keyboard focus on the asterisk
-  const [spot, setSpot] = useState<TipSpot | null>(null);
   const leaving = useRef(0);
   const open = tapped || hover || focused;
   const close = useCallback(() => { setTapped(false); setHover(false); setFocused(false); }, []);
@@ -99,25 +98,9 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
 
   // follow the asterisk (scrolling, new lines, the toggles), close when it's scrolled out of sight
   useLayoutEffect(() => {
-    if (!open) { setSpot(null); return; }
-    let raf = 0, last = "";
-    const tick = () => {
-      const a = starRef.current, el = boxRef.current;
-      if (!a || !el) return;
-      const r = a.getBoundingClientRect();
-      const p = a.closest(".convo")?.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const sig = [r.left, r.top, r.width, r.height, el.offsetWidth, el.offsetHeight, p?.left, p?.top, p?.right, p?.bottom, vw, vh].join("|");
-      if (sig !== last) {
-        last = sig;
-        if (!inView(a)) { close(); return; }
-        const panel = { left: Math.max(0, p?.left ?? 0), top: Math.max(0, p?.top ?? 0), right: Math.min(vw, p?.right ?? vw), bottom: Math.min(vh, p?.bottom ?? vh) };
-        setSpot(placeTip(r, el.offsetWidth, el.offsetHeight, panel));
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => cancelAnimationFrame(raf);
+    if (!open || !starRef.current || !boxRef.current) return;
+    return trackPopover(starRef.current, boxRef.current, close, "below", (r, w, h) =>
+      placeTip(r, w, h, { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }));
   }, [open, close]);
 
   // a tap elsewhere closes what a tap opened; Esc closes it however it opened (capture: only the tooltip, not the
@@ -127,7 +110,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
     const down = (e: globalThis.PointerEvent) => {
       const t = e.target as Node;
       if (starRef.current?.contains(t) || boxRef.current?.contains(t)) return; // the asterisk itself toggles
-      setTapped(false);
+      close();
     };
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
     document.addEventListener("pointerdown", down, true);
@@ -135,12 +118,16 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [open, close]);
 
-  const tip = (
-    <span ref={boxRef} id={id} role="tooltip" lang={EDITION.helper} className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
-      onPointerEnter={enter} onPointerLeave={leave}
-      style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
+  const contents = (
+    <>
       {text}
       {notes.map((n, i) => <span key={i} className={"nat-tipnote" + (text || i ? " sep" : "")}>{n}</span>)}
+    </>
+  );
+  const tip = (
+    <span ref={boxRef} id={id} role="tooltip" lang={EDITION.helper} className="nat-tipbox" hidden={!open}
+      onPointerEnter={enter} onPointerLeave={leave} style={{ left: 0, top: 0, visibility: "hidden" }}>
+      {typeof document === "undefined" ? contents : <span className="nat-tipbody">{contents}</span>}
     </span>
   );
   return (

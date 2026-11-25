@@ -321,7 +321,8 @@ export class Session {
     const phrase = exact ?? match?.s ?? { en, nat: "", say: en };
     const score = exact ? 1 : match?.score ?? 0;
     st.setConv((c) => ({ bestPhrase: bestPhrase(c.bestPhrase, { ...phrase, spoken: via === "voice", score }) }));
-    this.pushLine({ who: "you", text: en, understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
+    const answerDisplay = out.checking ? "clarify" : out.understood && !out.checkNo ? "matched" : "retry";
+    this.pushLine({ who: "you", text: en, understood: out.understood, answerDisplay, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
     // the one who answers (else the last to speak) shows at once whether they got it
     const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
     this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled");

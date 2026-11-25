@@ -16,7 +16,7 @@ vi.mock("../src/convo/speech", async (importOriginal) => ({
 
 let session: Session;
 // (a conversation's file is loaded before its session starts: src/content/situations/catalog.ts)
-beforeAll(async () => { for (const id of ["s35-gym"]) await loadSituation(id); });
+beforeAll(async () => { for (const id of ["s35-gym", "s72-cafe"]) await loadSituation(id); });
 beforeEach(async () => {
   vi.useFakeTimers();
   vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));
@@ -77,9 +77,11 @@ describe("speech confirmations belong to the learner's current turn", () => {
 
   it("keeps an affirmative answer affirmative when the learner chooses it", async () => {
     await offerChoices();
+    expect(answers()).toHaveLength(0);
+    expect(useStore.getState().conv.speechChoices).toEqual(choices);
     await finishSubmit(session.submit(choices[0], [], "voice", true));
     expect(answers()).toHaveLength(1);
-    expect(answers()[0]).toMatchObject({ text: choices[0], heard: choices[0], via: "voice" });
+    expect(answers()[0]).toMatchObject({ text: choices[0], heard: choices[0], alternatives: [choices[1]], via: "voice" });
   });
 
   it("uses the selected negative reading exactly once and keeps what the recognizer heard", async () => {
@@ -87,7 +89,7 @@ describe("speech confirmations belong to the learner's current turn", () => {
     expect(answers()).toHaveLength(0);
     await finishSubmit(session.submit(choices[1], [], "voice", true));
     expect(answers()).toHaveLength(1);
-    expect(answers()[0]).toMatchObject({ text: choices[1], heard: choices[0], via: "voice" });
+    expect(answers()[0]).toMatchObject({ text: choices[1], heard: choices[0], alternatives: [choices[1]], via: "voice" });
     expect(useStore.getState().conv.speechChoices).toBeUndefined();
     await session.submit(choices[1], [], "voice", true);
     expect(answers()).toHaveLength(1);
@@ -108,6 +110,20 @@ describe("speech confirmations belong to the learner's current turn", () => {
     await session.submit(choices[0], [], "voice", true);
     expect(answers()).toHaveLength(1);
     expect(useStore.getState().conv.speechChoices).toBeUndefined();
+  });
+
+  it("waits for confirmation even when the recognizer already heard a match", async () => {
+    const text = "Hi, I'm new here!";
+    useStore.getState().setSettings({ confirmSpeech: true });
+    vi.mocked(audio.sfx).mockClear();
+    await session.submit(text, [], "voice");
+    expect(answers()).toHaveLength(0);
+    expect(useStore.getState().conv.speechChoices).toEqual([text]);
+    expect(audio.sfx).not.toHaveBeenCalled();
+    await finishSubmit(session.submit(text, [], "voice", true));
+    await session.submit(text, [], "voice", true);
+    expect(answers()).toHaveLength(1);
+    expect(answers()[0]).toMatchObject({ text, heard: text, alternatives: [], via: "voice", answerDisplay: "matched" });
   });
 
   it("rejects typed and confirmed answers during replay and preserves choices for afterward", async () => {
@@ -137,4 +153,34 @@ describe("speech confirmations belong to the learner's current turn", () => {
     expect(listen).not.toHaveBeenCalled();
     listen.mockRestore();
   });
+});
+
+it("records the resolved display outcome even when an NPC line arrives immediately", async () => {
+  session.close();
+  const npcReact = vi.fn();
+  session = new Session("s72-cafe", { npcTalk() {}, npcReact, onEvent() {}, onEnd() {} });
+  const begin = session.begin();
+  useStore.getState().setConv({ introOpen: false, typing: true });
+  await finishSubmit(begin);
+  vi.mocked(audio.sfx).mockClear();
+
+  await finishSubmit(session.submit("zxqvpl zrqv"));
+  expect(answers().at(-1)).toMatchObject({ understood: false, answerDisplay: "retry" });
+
+  await finishSubmit(session.submit("Lata please", [], "voice"));
+  expect(answers().at(-1)).toMatchObject({ understood: true, answerDisplay: "clarify" });
+  expect(useStore.getState().conv.transcript.at(-1)?.sentence?.en).toMatch(/latte\?/i);
+
+  await finishSubmit(session.submit("No."));
+  expect(answers().at(-1)).toMatchObject({ understood: true, answerDisplay: "retry" });
+
+  const heard = "zxqvpl zrqv";
+  const alternatives = ["A latte, please.", "Lata please"];
+  const match = session.submit(heard, alternatives, "voice");
+  expect(useStore.getState().conv.transcript.at(-1)?.who).toBe("npc");
+  expect(answers().at(-1)).toMatchObject({ text: alternatives[0], understood: true, answerDisplay: "matched", via: "voice", heard, alternatives });
+  await finishSubmit(match);
+
+  expect(vi.mocked(audio.sfx).mock.calls).toEqual([["soft"], ["soft"], ["soft"], ["success"]]);
+  expect(npcReact.mock.calls.map(([, reaction]) => reaction)).toEqual(["puzzled", "puzzled", "puzzled", "nod"]);
 });
