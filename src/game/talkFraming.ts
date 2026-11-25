@@ -261,7 +261,7 @@ class TalkMeshes {
 }
 
 interface Candidate extends Framing {
-  kind: "shoulder" | "front" | "close" | "raised" | "counter" | "over" | "near" | "cave";
+  kind: "shoulder" | "front" | "level" | "close" | "raised" | "counter" | "over" | "steep" | "near" | "cave";
   yaw: number;
   clearance: number;
   size: number;
@@ -296,6 +296,32 @@ const boxGap = (a: Box, b: Box) => Math.max(a.x0 - b.x1, b.x0 - a.x1, a.y0 - b.y
 function insideShift(min: number, max: number, lo: number, hi: number) {
   const start = max - hi, end = min - lo;
   return start <= end ? THREE.MathUtils.clamp(0, start, end) : (start + end) / 2;
+}
+
+/** Translate the projected head around painted islands while retaining the panel and viewport margins. */
+function clearShift(head: Box, required: Box, opening: Box, obstacles: readonly Box[]) {
+  const left = required.x1 - opening.x1, right = required.x0 - opening.x0;
+  const up = required.y1 - opening.y1, down = required.y0 - opening.y0;
+  if (left > right || up > down) return null;
+  const xs = [THREE.MathUtils.clamp(0, left, right)], ys = [THREE.MathUtils.clamp(0, up, down)];
+  for (const box of obstacles) {
+    const fromLeft = head.x1 - box.x0, fromRight = head.x0 - box.x1;
+    const fromTop = head.y1 - box.y0, fromBottom = head.y0 - box.y1;
+    if (fromLeft >= left && fromLeft <= right) xs.push(fromLeft);
+    if (fromRight >= left && fromRight <= right) xs.push(fromRight);
+    if (fromTop >= up && fromTop <= down) ys.push(fromTop);
+    if (fromBottom >= up && fromBottom <= down) ys.push(fromBottom);
+  }
+  let best: [number, number] | null = null, distance = Infinity;
+  for (const x of xs) for (const y of ys) {
+    const cost = x * x + y * y;
+    if (cost >= distance) continue;
+    const at = { x0: head.x0 - x, x1: head.x1 - x, y0: head.y0 - y, y1: head.y1 - y };
+    if (obstacles.some((box) => boxGap(at, box) < -0.0001)) continue;
+    best = [x, y];
+    distance = cost;
+  }
+  return best;
 }
 
 export class TalkFraming {
@@ -420,8 +446,25 @@ export class TalkFraming {
         x0 -= dx; x1 -= dx; y0 -= dy; y1 -= dy;
         shift(f.dx, f.dy);
       }
-      const bounds = { x0, x1, y0, y1 };
-      const margin = Math.min(x0 - picture.x0, picture.x1 - x1, y0 - picture.y0, picture.y1 - y1);
+      let bounds = { x0, x1, y0, y1 };
+      if (recenter && obstacles.some((box) => boxGap(bounds, box) < 0)) {
+        const required = { ...bounds };
+        const include = (point: THREE.Vector3) => {
+          project(point);
+          required.x0 = Math.min(required.x0, projected.x); required.x1 = Math.max(required.x1, projected.x);
+          required.y0 = Math.min(required.y0, projected.y); required.y1 = Math.max(required.y1, projected.y);
+        };
+        include(legacyFace);
+        if (wild) include(chest);
+        const move = clearShift(bounds, required, picture, obstacles);
+        if (move) {
+          const [dx, dy] = move;
+          f.dx += dx; f.dy += dy;
+          bounds = { x0: x0 - dx, x1: x1 - dx, y0: y0 - dy, y1: y1 - dy };
+          shift(f.dx, f.dy);
+        }
+      }
+      const margin = Math.min(bounds.x0 - picture.x0, picture.x1 - bounds.x1, bounds.y0 - picture.y0, picture.y1 - bounds.y1);
       f.clearance = obstacles.reduce((gap, box) => Math.min(gap, boxGap(bounds, box)), margin);
       if (f.clearance < -0.0001 || !head.landmarks.every(inPicture) || !inPicture(legacyFace) || (wild && !inPicture(chest))) return false;
       project(head.crown);
@@ -444,7 +487,8 @@ export class TalkFraming {
       if (f.facing < FRONT_LIMIT) return false;
       const showShoulder = project(shoulder) && projected.y > picture.y0 && projected.y < picture.y1 + 48;
       const shoulderAtEdge = showShoulder && (Math.abs(projected.x - picture.x0) < 55 || Math.abs(projected.x - picture.x1) < 55);
-      f.quality = Math.min(f.clearance, 9) - Math.abs(f.size - preferred) * 1.7 + f.angle * 6 + f.facing * 19
+      // Eye-level views leave more of the expression visible under brows, glasses and hat brims.
+      f.quality = Math.min(f.clearance, 9) - Math.abs(f.size - preferred) * 1.7 + f.angle * 6 + f.facing * 19 - Math.abs(offset.y) * 14
         + (shoulderAtEdge ? 5 : showShoulder && projected.x > picture.x0 && projected.x < picture.x1 ? 1 : 0)
         + nearby.filter(inPicture).length - (desktop ? Math.max(0, 230 - f.tall) * 0.24 : 0);
       return true;
@@ -464,7 +508,7 @@ export class TalkFraming {
       if (pos.distanceToSquared(head.middle) > input.max ** 2) return;
       const target = kind === "cave" ? caveSize : short && kind === "counter" ? 10.1 : preferred;
       const focal = screen.viewportHeight * target / 100 * pos.distanceTo(head.middle) / (head.crown.y - head.chin.y);
-      const maxFov = portrait && (kind === "front" || kind === "close" || kind === "near" || kind === "cave") ? 114 : short ? 94 : 80;
+      const maxFov = portrait && (kind === "front" || kind === "level" || kind === "close" || kind === "near" || kind === "cave") ? 114 : short ? 94 : 80;
       const adaptive = short || kind !== "shoulder";
       const fov = old?.fov ?? (adaptive ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
       const f: Candidate = { pos, look, fov, nearPlane: old?.nearPlane ?? TALK_NEAR, dx: 0, dy: 0, kind, yaw,
@@ -488,12 +532,19 @@ export class TalkFraming {
       pose(22 * side, 2.6, 28, "raised");
       pose(48 * side, THREE.MathUtils.clamp(estimate, 2.45, 3.5), 27, "raised");
       pose(22 * side, estimate, 12, "front");
+      if (!wild) {
+        pose(22 * side, 2.2, 7, "level");
+        pose(38 * side, 3.1, 6, "level");
+      }
       if (counterApproach) {
         if (portrait) pose(45 * side, 2.8, 23, "counter", authored);
         else pose(6 * side, 1.7, 29, "counter", authored);
         if (desktop) pose(26 * side, 3.3, 26, "raised");
         // A tall partition can leave space above its customer edge or in the aisle behind it.
         pose(46 * side, 2.65, 31, "over", authored);
+        // A more centred view over a tall pane can expose the far eye past glasses or the nose.
+        pose(24 * side, 2.5, 41, "steep", authored);
+        pose(30 * side, 3.1, 39, "steep", authored);
       }
       if (!room && !wild) {
         // Under an awning, the sightline may open between the speaker and a display on the counter.
@@ -504,6 +555,7 @@ export class TalkFraming {
     }
     pose(0, estimate, 12, "front");
     pose(0, 1.8, 12, "front", authored);
+    if (!wild) pose(0, 2.7, 7, "level");
     pose(0, 2.45, 29, "raised");
     const headAxis = head.forward.clone().setY(0).normalize();
     if (headAxis.lengthSq() && headAxis.dot(basis) < 0.96) {
@@ -552,7 +604,8 @@ export class TalkFraming {
     };
     const compare = (a: Candidate, b: Candidate) =>
       Number(b.facing >= FACE_PREFERENCE) - Number(a.facing >= FACE_PREFERENCE)
-      || (a.facing < FACE_PREFERENCE && b.facing < FACE_PREFERENCE ? b.facing - a.facing : 0) || b.quality - a.quality;
+      || (a.facing < FACE_PREFERENCE && b.facing < FACE_PREFERENCE ? b.facing - a.facing : 0)
+      || Number(a.kind === "steep") - Number(b.kind === "steep") || b.quality - a.quality;
     candidates.sort(compare);
 
     // Save slots for both sides and alternate heights before testing a second variation of a lens.
@@ -566,10 +619,12 @@ export class TalkFraming {
     pick(() => true);
     const first = pick((f) => f.kind === "shoulder" && !f.prior);
     if (first) pick((f) => f.kind === "shoulder" && f.yaw * first.yaw < 0);
+    pick((f) => f.kind === "level" && f.facing >= FACE_PREFERENCE);
     const close = pick((f) => f.kind === "counter" || f.kind === "near" || f.kind === "cave");
     if (close?.kind === "near") pick((f) => f.kind === close.kind && f.yaw * close.yaw < 0);
     const high = pick((f) => f.kind === "over");
     if (room && high) pick((f) => f.kind === "over" && f.yaw * high.yaw < 0);
+    pick((f) => f.kind === "steep");
     pick((f) => f.kind === "front");
     pick((f) => f.kind === "raised");
     pick((f) => f.kind === "close");

@@ -1905,16 +1905,20 @@ export class Game implements GameApi {
       if (isCall(sit)) { this.call(sitId); return; }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
+      const outside = OUTDOOR_NPCS.find((n) => n.npc === npc);
+      const hasRoom = loc?.kind === "interior" || (loc?.kind === "outdoor" && !outside
+        && THEME.roomNpcs[sit.location]?.some((n) => n.npc === npc));
       let spawn: { x: number; z: number; rot: number } | null = null;
       let zone = "town";
-      if (!isTownQuest(sitId) && sit.id !== POOL_SITUATION && loc?.kind === "interior" && getInterior(sit.location)) {
+      if (!isTownQuest(sitId) && sit.id !== POOL_SITUATION && hasRoom && getInterior(sit.location)) {
         zone = sit.location;
         const it = this.getZone(zone)?.interior;
         const sp = it?.npcs.find((n) => n.npc === npc);
         if (sp) spawn = sp.ax !== undefined && sp.az !== undefined ? { x: sp.ax, z: sp.az, rot: Math.atan2(sp.x - sp.ax, sp.z - sp.az) } : inFrontOf(sp.x, sp.z, sp.rot, sp.sit ? 1.9 : 2.3);
-      } else {
-        const o = OUTDOOR_NPCS.find((n) => n.npc === npc);
-        if (o) spawn = o.ax !== undefined && o.az !== undefined ? { x: o.ax, z: o.az, rot: Math.atan2(o.x - o.ax, o.z - o.az) } : inFrontOf(o.x, o.z, o.rot, 2.2);
+      } else if (outside) {
+        spawn = outside.ax !== undefined && outside.az !== undefined
+          ? { x: outside.ax, z: outside.az, rot: Math.atan2(outside.x - outside.ax, outside.z - outside.az) }
+          : inFrontOf(outside.x, outside.z, outside.rot, 2.2);
       }
       this.enterZone(zone, spawn ?? undefined, true);
       // let the NPCs spawn, then talk
