@@ -2,6 +2,7 @@
 // car physics and route checks. Run against Puerto Colibrí on port 8311 (or set WORLD_TEST_URL).
 // WORLD_VARIETY=neutral or spain selects that Spanish instead of the Mexican default.
 // WORLD_SHOTS=<folder> writes the stand, cue, recovery, stop and score screenshots.
+// WORLD_SIZES selects viewports, for example 390x664,844x390.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { tsImport } from "tsx/esm/api";
@@ -20,6 +21,8 @@ const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwr
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8311";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const shots = process.env.WORLD_SHOTS || "";
+const sizes = process.env.WORLD_SIZES ? process.env.WORLD_SIZES.split(",").map((size) => size.split("x").map(Number))
+  : [[1280, 800], ...(process.env.WORLD_PHONE_HEIGHT ? [[390, Number(process.env.WORLD_PHONE_HEIGHT)]] : [[390, 844], [390, 664], [844, 390]])];
 if (shots) await mkdir(shots, { recursive: true });
 
 const progress = {
@@ -171,6 +174,23 @@ function checkSightlines(view, moment) {
     `${moment}: roof, rear corners and road are visible: ${JSON.stringify(view)}`);
 }
 
+function greetingLayout() {
+  const { rig } = window.__ew.game;
+  const { position, heading, width, length, height } = rig.taxiShot.subject;
+  const yaw = heading(), cos = Math.cos(yaw), sin = Math.sin(yaw);
+  const points = [-width / 2, width / 2].flatMap((side) =>
+    [-length / 2, length / 2].flatMap((fore) => [0, height].map((up) => {
+      const p = position.clone().set(position.x + side * cos + fore * sin, position.y + up, position.z - side * sin + fore * cos).project(rig.cam);
+      return { x: (1 + p.x) * innerWidth / 2, y: (1 - p.y) * innerHeight / 2 };
+    })));
+  return {
+    taxi: { left: Math.min(...points.map((p) => p.x)), right: Math.max(...points.map((p) => p.x)),
+      top: Math.min(...points.map((p) => p.y)), bottom: Math.max(...points.map((p) => p.y)) },
+    controls: [...document.querySelectorAll(".joy, .brake-btn")].map((el) => el.getBoundingClientRect().toJSON()),
+    cue: document.querySelector(".taxi-line").getBoundingClientRect().toJSON(),
+  };
+}
+
 function measureGuidance() {
   const { car } = window.__ew.game.modes.get("taxi");
   const { m } = car, { cam } = window.__ew.game.rig;
@@ -202,7 +222,7 @@ function checkGuidance(view, touch, key) {
   const arrowSize = touch ? 40 : 48;
   assert(icon.width >= arrowSize && icon.height >= arrowSize, `the chip has a prominent direction icon: ${measured}`);
   assert(view.fontSize >= 20 && view.fontSize <= 22 && view.fontWeight >= 800, `the chip has large bold text: ${measured}`);
-  assert(cue.width <= (touch ? Math.min(385, viewport.width - 80) : 620) + 1, `the cue stays within its width limit: ${measured}`);
+  assert(cue.width <= (viewport.width <= 600 ? Math.min(385, viewport.width - 80) : 620) + 1, `the cue stays within its width limit: ${measured}`);
   assert(view.label && !/[\u2190-\u21ff]/u.test(view.label), `the chip label has no arrow characters: ${measured}`);
   assert.equal(view.key, touch ? null : key, `the chip has the expected key hint: ${measured}`);
 }
@@ -221,11 +241,10 @@ const browser = await chromium.launch({
 });
 
 try {
-  for (const phone of [false, true]) {
-    const label = phone ? "phone" : "computer";
-    const context = await browser.newContext(phone
-      ? { viewport: { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
-      : { viewport: { width: 1280, height: 800 } });
+  for (const [width, height] of sizes) {
+    const phone = width === 390 || height === 390;
+    const label = `${width}x${height}`;
+    const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: phone ? 2 : 1, isMobile: phone, hasTouch: phone });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (err) => errors.push(err.message));
@@ -301,6 +320,14 @@ try {
     });
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await real(470);
+    await waitFor(() => heard("tx_hello"), "Don Rigo greets the learner");
+    if (phone) {
+      const { taxi, controls, cue } = await page.evaluate(greetingLayout);
+      assert(taxi.left >= 0 && taxi.right <= width && taxi.top >= 0 && taxi.bottom <= height
+        && controls.length === 2 && [...controls, cue].every(({ left, right, top, bottom }) =>
+          taxi.right <= left || taxi.left >= right || taxi.bottom <= top || taxi.top >= bottom),
+      `the whole taxi fits between the greeting and touch controls: ${JSON.stringify({ taxi, controls, cue })}`);
+    }
     await waitFor(() => choice("tx_a_where").count(), "Don Rigo gets in and asks for the learner's turn");
     assert(await page.evaluate(atTaxiStand, "r1"), "the first ride boards the parked taxi at the stand");
     checkSightlines(await page.evaluate(taxiSightlines), "opening pickup");
@@ -408,9 +435,11 @@ try {
     const rows = await card.locator("dl > div").evaluateAll((entries) => entries.map((entry) =>
       [entry.querySelector("dt").textContent, entry.querySelector("dd").textContent]));
     assert.deepEqual(rows, [
+      [uiText("Posūkiai iš pirmo karto"), "4/5"],
+      [uiText("Sklandus sustojimas prie durų"), "1/1"],
+      [uiText("Kelionė be susidūrimų"), "1/1"],
       [uiText("Kaina"), "$120"],
       [uiText("Arbatpinigiai"), "$10"],
-      [uiText("Posūkiai iš pirmo karto"), "4/5"],
       [uiText("Sustojote"), uiText("prie durų")],
       [uiText("Frazių kortelės"), "10"],
     ], `score card rows: ${JSON.stringify(rows)}`);

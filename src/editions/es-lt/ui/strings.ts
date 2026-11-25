@@ -2,6 +2,8 @@
 // and Lx() of src/ui/i18n.ts) as they are, except those that speak of English or Maple Harbor: here, their Spanish
 // edition's Lithuanian. Replaces src/editions/es/ui/strings.ts (English) in this layer.
 export const STRINGS: Record<string, string> = {
+  "Sklandus sustojimas prie durų": "Sklandus sustojimas prie durų",
+  "Kelionė be susidūrimų": "Kelionė be susidūrimų",
   "Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).": "Meksikietiškas ispanų tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).",
   "Anglų kalba atpažįstama šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto.": "Ispanų kalba atpažįstama šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto.",
   "English World – „{title}“ ({en}) · {when}": "Puerto Colibrí – „{title}“ ({en}) · {when}",

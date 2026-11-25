@@ -24,9 +24,11 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
   if (result) return <ScoreCard title={L("Kelionė baigta")} ratio={result.points / result.max}
     score={<><ScoreNumber value={result.points} />/{result.max}</>}
     rows={[
+      { label: L("Posūkiai iš pirmo karto"), value: `${result.first}/${result.total}` },
+      { label: L("Sklandus sustojimas prie durų"), value: `${Number(result.cleanStop)}/1` },
+      { label: L("Kelionė be susidūrimų"), value: `${Number(result.crashes === 0)}/1` },
       { label: L("Kaina"), value: priceEn(result.fare) },
       { label: L("Arbatpinigiai"), value: priceEn(result.tip) },
-      { label: L("Posūkiai iš pirmo karto"), value: `${result.first}/${result.total}` },
       { label: L("Sustojote"), value: result.onTarget ? L("prie durų") : L("per toli") },
     ]}
     phrases={{ label: L("Frazių kortelės"), count: result.cards }}
