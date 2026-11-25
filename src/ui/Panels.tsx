@@ -11,7 +11,7 @@ import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
-import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
+import { speechSupported, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
 import { locIcon } from "./Hud";
 import { SitIcon } from "./SitIcon";
@@ -396,7 +396,7 @@ function Settings({ close }: { close: () => void }) {
   const set = useStore((st) => st.setSettings);
   const profile = useStore((st) => st.progress.profile);
   const [local, setLocal] = useState<LocalAvailability | "…">("…");
-  useEffect(() => { localAvailability().then(setLocal); }, []);
+  useEffect(() => { void refreshLocalState().then(setLocal); }, []);
   return (
     <div className="sheet narrow">
       <SheetHead icon="settings" title="Nustatymai" close={close} />
@@ -413,7 +413,7 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.confirmSpeech} onChange={v=>set({confirmSpeech:v})} label="Patvirtinti atpažintą tekstą" sub="Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį." />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label="Žmonės kalba lėčiau" />
         {(local === "available" || local === "downloadable" || local === "downloading") && (
-          <Toggle on={s.onDevice} onChange={(v) => { set({ onDevice: v }); refreshLocalState(); }} label="Atpažinti kalbą šiame įrenginyje" sub="Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą." />
+          <Toggle on={s.onDevice} onChange={(v) => set({ onDevice: v })} label="Atpažinti kalbą šiame įrenginyje" sub="Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą." />
         )}
         <div className="set-row">
           <div className="txt"><b>Režimas</b><span>Lengvas – be 3D miesto, tik pokalbiai su piešiniais. Pakeitus puslapis persikrauna.</span></div>
@@ -454,7 +454,7 @@ function Settings({ close }: { close: () => void }) {
           {speechSupported() && (s.onDevice && local === "available"
             ? "Anglų kalba atpažįstama šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto."
             : "Kalbą atpažįsta pati naršyklė, dažniausiai savo gamintojo serveriuose (Chrome – Google, Edge – Microsoft, Safari – Apple): taip geriausiai suprantamas akcentas. Tau ir žaidimui tai nieko nekainuoja, bet reikia interneto.")}
-          {s.onDevice && (local === "downloadable" || local === "downloading") && <> Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą. <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? "Įdiegta!" : "Nepavyko įdiegti", body: ok ? "Atpažinimas vyks šiame įrenginyje." : "Bus naudojamas naršyklės internetinis atpažinimas." }); }}>Įdiegti anglų kalbą</button></>}
+          {s.onDevice && (local === "downloadable" || local === "downloading") && <> Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą. <button className="btn small" onClick={async () => { const ok = await installLocal(); setLocal(await refreshLocalState()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? "Įdiegta!" : "Nepavyko įdiegti", body: ok ? "Atpažinimas vyks šiame įrenginyje." : "Bus naudojamas naršyklės internetinis atpažinimas." }); }}>Įdiegti anglų kalbą</button></>}
           <br />Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti <InlineIcon name="keyboard" label="klaviatūra" />.
         </div>
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">Atsisiuntimai ir failų pašalinimas</a></div>}
