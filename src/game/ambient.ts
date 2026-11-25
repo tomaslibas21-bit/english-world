@@ -69,17 +69,18 @@ export class Chatter {
   /** Their eyes on each other (while one talks), or free again (a pause: they may glance at the learner). */
   private face(on: boolean) {
     this.watched ??= [this.a.watch, this.b.watch];
-    [this.a, this.b].forEach((c, i) => {
+    for (let i = 0; i < 2; i++) {
+      const c = i ? this.b : this.a;
       const o = i ? this.a : this.b, p = o.root.position;
       if (on) this.heads[i].set(p.x, p.y + (o.anim === "sit" ? 1.25 : 1.5), p.z);
       c.watch = on ? this.heads[i] : this.watched![i] ?? null;
       c.steady = on;
-    });
+    }
   }
   /** A pause of `s` seconds (one of them is greeted by the player). */
   hold(s: number) { this.t = s; this.talk = 0; this.a.attentive = this.b.attentive = false; this.face(false); }
   update(dt: number) {
-    const [speaker, listener] = this.who ? [this.b, this.a] : [this.a, this.b];
+    const speaker = this.who ? this.b : this.a, listener = this.who ? this.a : this.b;
     if (this.talk > 0) {
       this.talk -= dt;
       this.nod -= dt;
@@ -454,19 +455,15 @@ export class Ambient {
   }
   get walkerRoots() { return this.walkers.map((w) => w.ch.root); }
 
-  /** A townsperson answers the player: a passer-by stops, turns and waves; someone chatting waves (and their friend
-   *  waits); someone sitting nods. */
+  /** Give a greeting time before the passer-by or the chatting pair resumes their route. */
   greet(w: Walker, px: number, pz: number) {
     w.chat?.hold(4);
-    if (w.kind === "sit") { w.ch.react?.("nod"); return { female: w.female }; }
     if (w.kind === "walk") {
       w.path = null;
       w.wait = 3.5;
       w.heading = Math.atan2(px - w.ch.root.position.x, pz - w.ch.root.position.z);
       w.ch.root.rotation.y = w.heading;
     }
-    w.ch.setAnim("wave");
-    setTimeout(() => { if (w.ch.anim === "wave") w.ch.setAnim("idle"); }, 1400);
     return { female: w.female };
   }
 

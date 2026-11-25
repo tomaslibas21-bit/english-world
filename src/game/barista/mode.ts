@@ -91,7 +91,13 @@ class BaristaMode implements GameMode {
     say: (line) => ui({ line }),
     choices: (choices) => ui({ choices }),
     mic: (mic) => ui({ mic }),
-    animate: (seconds) => this.speaker?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.host.acting?.(),
+    actor: (waiting) => {
+      const run = this.run;
+      const actor = waiting && run ? run.customer.ch : this.speaker;
+      if (!actor) return;
+      return { actor, id: run && actor === run.customer.ch ? run.shift.order.npc : npc, motion: "head" };
+    },
   });
 
   constructor(private host: ModeHost, private café: RoomHost) {}
@@ -358,12 +364,13 @@ class BaristaMode implements GameMode {
     run.slide = 0;
     if (run.serving) run.servingFrame = servingDetails(run.customer.ch.height, run.serving);
     if (!await this.delay(run, SERVE_LEAD + SERVE_SLIDE + 0.35) || run.closing) return;
-    run.customer.ch.react?.("nod");
     run.props.price(shift.order.price);
     shift.step = "price";
     ui({ price: shift.order.price });
     this.paint(run);
-    if (!await this.answer(run, shift.order.priceLine)) return;
+    const payment = this.answer(run, shift.order.priceLine);
+    this.playback.feedback("understood");
+    if (!await payment) return;
     shift.step = "thanks";
     this.paint(run);
     if (!await this.sayCustomer(run, baristaThanks(run.cafe, shift.order.gender)) || this.run !== run || run.closing) return;

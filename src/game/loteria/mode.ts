@@ -17,7 +17,7 @@ import { conversationLine, learnerTurn } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { SayItRound, type SayItCue, type SayItTarget } from "../kit/sayIt";
 import { keepPhrases } from "../kit/phrases";
-import { BETO_STAGE_YAW, frameLoteria, loteriaShot, TONA_STAGE_YAW } from "./framing";
+import { BETO_STAGE_YAW, frameLoteria, HOLDER_AT, loteriaShot, TONA_STAGE_YAW } from "./framing";
 import {
   BETOS_STAND, LEARNER_SEAT, LOTERIA_APPROACH, LOTERIA_BULBS, LOTERIA_HOLDER, TABLE_SEAT, TONAS_SEAT,
 } from "./location";
@@ -31,7 +31,7 @@ const prettyCards = new Set(["rosa", "estrella", "colibri", "luna"]);
 const callExtras = ["lt_b_next", "lt_b_ahi_va"];
 const directions: Record<string, [number, number]> = { arrowup: [0, -1], arrowdown: [0, 1], arrowleft: [-1, 0], arrowright: [1, 0] };
 
-type LoteriaHost = Pick<ModeHost, "add" | "canStart" | "entered" | "fade" | "left" | "owns" | "place" | "player" | "prepare"
+type LoteriaHost = Pick<ModeHost, "acting" | "add" | "canStart" | "entered" | "fade" | "left" | "owns" | "place" | "player" | "prepare"
   | "rig" | "updatePose">;
 
 interface LoteriaSceneHost {
@@ -79,7 +79,7 @@ export class LoteriaMode implements GameMode {
   readonly cleanScreen = "menu";
   readonly exitLabel = L(LOTERIA_UI.exit);
   readonly conversation = { situation: SIT, label: L(LOTERIA_UI.start) };
-  private starting = false;
+  private starting: object | null = null;
   private run: Run | null = null;
   private stage: Stage | null = null;
   private labels: Record<string, CardLabel> = {};
@@ -101,36 +101,37 @@ export class LoteriaMode implements GameMode {
     },
     choices: (choices) => loteriaUi({ choices: choices.filter((line) => line.key !== shoutKey) }),
     mic: (mic) => loteriaUi({ mic }),
-    animate: (seconds) => {
-      const speaker = this.speaker;
-      const actor = speaker === TONA ? this.stage?.tona : this.stage?.beto;
-      actor?.talk(seconds, () => this.speaker === speaker ? audio.level() : -1, () => audio.vowel());
+    acting: () => this.host.acting?.(),
+    actor: (waiting, line) => {
+      if (!this.stage) return;
+      const id = !waiting && line?.key.startsWith("lt_t_") ? TONA : BETO;
+      return { actor: id === TONA ? this.stage.tona : this.stage.beto, id, motion: "head" };
     },
   });
 
   constructor(private host: LoteriaHost, private scene: LoteriaSceneHost) {}
 
-  get active() { return this.starting || this.stage !== null; }
+  get active() { return !!this.starting || this.stage !== null; }
   get camera() { return this.stage ? "stage" as const : undefined; }
   controlsNpc(id: string) { return id === TONA && this.stage !== null; }
   event(name: string) { if (name === this.id) return this.id; }
 
   start() {
     if (this.active || !this.host.canStart() || !this.scene.npc(TONA)) return false;
-    this.starting = true;
+    const start = this.starting = {};
     const load = getSituation(SIT);
-    if (load) return this.enter();
+    if (load) return this.enter(start);
     void loadSituation(SIT).then((sit) => {
-      if (!this.starting || !this.host.owns(this.id)) return;
+      if (this.starting !== start || !this.host.owns(this.id)) return;
       if (!sit || !this.host.canStart()) this.exit(true);
-      else this.enter();
-    }, () => this.exit(true));
+      else this.enter(start);
+    }, () => { if (this.starting === start) this.exit(true); });
     return true;
   }
 
-  private enter() {
+  private enter(start: object) {
     const fading = this.host.fade(() => {
-      if (!this.starting || !this.host.owns(this.id)) return;
+      if (this.starting !== start || !this.host.owns(this.id)) return;
       const tona = this.scene.npc(TONA);
       if (!tona) { this.exit(true); return; }
       this.host.prepare();
@@ -164,8 +165,9 @@ export class LoteriaMode implements GameMode {
         if (bulbs) bulbs.visible = false;
         if (unlit) unlit.visible = true;
         if (holder && holderAngle !== undefined) holder.rotation.y = holderAngle;
-        for (const person of [beto, ...guests]) { person.root.removeFromParent(); person.dispose?.(); }
-        tona.talk(0);
+        beto.root.removeFromParent();
+        beto.dispose?.();
+        for (const person of guests) { person.root.removeFromParent(); person.dispose?.(); }
         tona.root.rotation.y = oldRotation;
         tona.watch = oldWatch;
         tona.steady = oldSteady;
@@ -181,7 +183,7 @@ export class LoteriaMode implements GameMode {
       this.roundIndex = 0;
       this.seedForCues = 0;
       this.seed = this.debugSeed ?? Math.floor(Math.random() * 0x100000000);
-      this.starting = false;
+      this.starting = null;
       this.host.entered(this.id);
       this.host.rig.stage = loteriaShot();
       this.host.rig.mode = "stage";
@@ -225,10 +227,10 @@ export class LoteriaMode implements GameMode {
     if (await this.say(run, "lt_b_go")) void this.call(run);
   }
 
-  private async say(run: Run, key: string) {
+  private async say(run: Run, key: string, replay = false) {
     this.speaker = key.startsWith("lt_t_") ? TONA : BETO;
     loteriaUi({ neighbor: null, ...(this.speaker === BETO ? { caller: null } : {}) });
-    const line = await this.dialogue.say(SIT, this.speaker, key, LOTERIA_LINES);
+    const line = await this.dialogue.say(SIT, this.speaker, key, LOTERIA_LINES, replay);
     return line != null && this.run === run;
   }
 
@@ -279,17 +281,18 @@ export class LoteriaMode implements GameMode {
     this.sync(run);
     if (wasHidden) audio.sfx("cardFlip");
     if (round.winner) { void this.finish(run); return; }
-    run.cue = run.speech.open(this.spokenTarget(cardKey(card)), {
+    run.cue = run.speech.open({ ...this.spokenTarget(cardKey(card)), onAward: () => this.dialogue.feedback("understood") }, {
       ...this.spokenTarget(shoutKey),
       available: () => !!round.pattern && !run.shout,
       onAward: () => this.requestShout(run, true),
     });
     this.wait(run);
+    this.dialogue.glance(HOLDER_AT);
   }
 
-  private async sing(run: Run, card: LoteriaCard) {
-    if (card.verse && !await this.say(run, `lt_v_${card.id}`)) return false;
-    return this.say(run, cardKey(card));
+  private async sing(run: Run, card: LoteriaCard, replay = false) {
+    if (card.verse && !await this.say(run, `lt_v_${card.id}`, replay)) return false;
+    return this.say(run, cardKey(card), replay);
   }
 
   private random() {
@@ -304,6 +307,7 @@ export class LoteriaMode implements GameMode {
     if (run.round.covered.has(run.spotlight)) run.coveredAt = run.time;
     run.busy = false;
     this.setPhase(run, "waiting");
+    this.dialogue.attend(true);
   }
 
   private spokenTarget(key: string): SayItTarget {
@@ -323,6 +327,7 @@ export class LoteriaMode implements GameMode {
     loteriaUi({ focus: index });
     const result = run.round.cover(index);
     if (result === "uncalled") {
+      this.dialogue.feedback("puzzled");
       const count = (useLoteria.getState().bounce?.count ?? 0) + 1;
       loteriaUi({ bounce: { index, count }, tip: "tipNotYet" });
       audio.sfx("soft");
@@ -330,7 +335,10 @@ export class LoteriaMode implements GameMode {
     }
     if (result !== "covered") return;
     audio.sfx("beanDrop");
-    if (index === run.spotlight) run.coveredAt = Math.max(run.namedAt, run.time);
+    if (index === run.spotlight) {
+      run.coveredAt = Math.max(run.namedAt, run.time);
+      this.dialogue.feedback("understood");
+    }
     if (run.round.pattern && run.readyAt === Infinity) run.readyAt = run.time;
     this.sync(run);
   }
@@ -350,7 +358,7 @@ export class LoteriaMode implements GameMode {
     run.cue?.cancel();
     loteriaUi({ replay: false, sayIt: undefined, neighbor: null, caller: null, verse: null });
     this.dialogue.cancelTurn();
-    if (await this.sing(run, card)) this.wait(run);
+    if (await this.sing(run, card, true)) this.wait(run);
   }
 
   private coachLine(run: Run) {
@@ -385,6 +393,7 @@ export class LoteriaMode implements GameMode {
     loteriaUi({ neighbor: null });
     run.busy = false;
     this.setPhase(run, "waiting");
+    this.dialogue.attend(true);
   }
 
   private async finish(run: Run) {
@@ -447,7 +456,9 @@ export class LoteriaMode implements GameMode {
     const step = dt * this.speed;
     this.dialogue.update(step, paused);
     this.host.updatePose(dt, LEARNER_SEAT.rot);
-    for (const actor of [stage.beto, stage.tona, ...stage.guests]) actor.update(dt);
+    stage.beto.update(dt);
+    stage.tona.update(dt);
+    for (let i = 0; i < stage.guests.length; i++) stage.guests[i].update(dt);
     if (paused) { run.cue?.cancel(); return; }
     run.time += step;
     if (run.phase !== "waiting" || run.busy) return;
@@ -529,12 +540,13 @@ export class LoteriaMode implements GameMode {
       return;
     }
 
-    this.starting = false;
+    this.starting = null;
     this.run = null;
     this.dialogue.cancel();
     const stage = this.stage;
     this.stage = null;
     if (stage) {
+      stage.tona.talkPose?.interrupt();
       stage.restore();
       this.host.rig.stage = null;
       this.host.rig.cam.zoom = 1;

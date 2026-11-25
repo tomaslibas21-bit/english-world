@@ -16,7 +16,7 @@ export interface GameCharacter {
   readonly headJoint: THREE.Object3D;
   talkPose?: NaturalPoseDriver;
   naturalRig?(): NaturalRig | undefined;
-  beginNaturalPose?(): void;
+  beginNaturalPose?(preserveWork?: boolean): void;
   canNoticeTalk?(): boolean;
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;

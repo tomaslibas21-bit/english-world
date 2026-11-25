@@ -4,8 +4,11 @@ import type { CameraRig } from "../camera";
 import type { Ride, Rides } from "../rides/Rides";
 import type { Controls } from "../rides/drive";
 import type { Door, StandTaxi } from "../world/town";
+import type { ActorTalk } from "../talkNatural/binding";
 
 export interface ModeHost {
+  acting?(): ActorTalk;
+  npc?(id: string): GameCharacter | undefined;
   player(): GameCharacter;
   rig: CameraRig;
   rides: Rides;

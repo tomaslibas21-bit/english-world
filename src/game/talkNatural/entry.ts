@@ -14,6 +14,7 @@ interface JointSnapshot {
 export class PoseEntry {
   private readonly joints: JointSnapshot[];
   private readonly parent: Object3D | null;
+  private occupied = 0;
   seated: boolean;
 
   constructor(readonly actor: GameCharacter, readonly rig: NaturalRig) {
@@ -58,6 +59,14 @@ export class PoseEntry {
       }
       if (rotation) joint.quaternion.slerp(rotation, amount);
       if (scale) joint.scale.lerp(scale, amount);
+    }
+  }
+
+  mixArms(amount: number, blocked: number) {
+    this.occupied |= blocked;
+    for (let i = 0; i < this.joints.length; i++) {
+      const { joint, arm, rotation } = this.joints[i];
+      if (arm && rotation && !(arm & this.occupied)) joint.quaternion.slerp(rotation, amount);
     }
   }
 }

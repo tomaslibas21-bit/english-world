@@ -20,12 +20,14 @@ import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
+import type { ActingTarget, ActorTalk } from "../talkNatural/binding";
 import type { Surf } from "./Surf";
 import { arrowFor, COMMANDS, SurfLogic, type Do, type Level, type SurfArrow, type SurfInput } from "./logic";
 import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
 /** What the lesson needs of the game. */
 export interface SurfGame {
+  acting?(): ActorTalk;
   player(): GameCharacter;
   dressPlayer(outfit: "surf" | null): void;
   rig: CameraRig;
@@ -72,6 +74,7 @@ export class SurfPlay {
   group = new THREE.Group();
   private logic: SurfLogic | null = null;
   private startRequest = 0;
+  private acting?: ActorTalk;
   private leaving = false;
   private level: Level = "beginner";
   private in = { strokes: 0, up: false };
@@ -257,6 +260,7 @@ export class SurfPlay {
     if (this.game.fade(() => {
       if (this.logic === L) { this.finish(); this.launch(level); }
     })) {
+      this.acting?.release(0);
       audio.stop();
       this.stopListening();
     }
@@ -289,6 +293,7 @@ export class SurfPlay {
       this.finish();
       this.stopListening();
       audio.stop();
+      this.acting?.release(0);
       this.leaving = false;
       this.logic = null;
       this.arrows.clear();
@@ -354,7 +359,12 @@ export class SurfPlay {
     const again = !!this.speech;
     this.stopListening();
     const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
-    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then(() => { if (again && this.logic?.choice) this.listen(); });
+    const voice = npcVoice(npc), speed = npc?.speed ?? 1;
+    const presentation = this.coachLine(line.cue, line.s.say, audio.clipDuration(voice, speed, line.s.say) ?? 2, true);
+    void audio.play(voice, speed, line.s.say, { slow, male: npc?.gender === "m", visual: presentation?.owner }).then(() => {
+      this.acting?.finish(presentation);
+      if (again && this.logic === L && L.choice) this.listen();
+    });
   }
 
   // --- the learner's turn to speak ----------------------------------------------------------------------------------
@@ -363,6 +373,16 @@ export class SurfPlay {
   setMic(on: boolean) {
     useSurf.getState().set({ micOn: on });
     if (!on) this.stopListening(); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+  }
+
+  private coachActor(): ActingTarget | undefined {
+    const scene = this.scene, actor = scene?.coach;
+    if (actor && scene.group.visible) return { actor, id: this.content.npc, action: () => scene.demonstrating };
+  }
+
+  private coachLine(key: string, text: string, seconds: number, replay = false) {
+    const target = this.coachActor();
+    if (target) return (this.acting ??= this.game.acting?.())?.speak(target, key, text, seconds, audio.volume > 0, replay);
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -432,12 +452,16 @@ export class SurfPlay {
     if (!this.answered.includes(cue)) this.answered.push(cue);
     const s = this.line(cue);
     useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" } });
-    if (!s || spoken) return 0.15;
+    if (!s || spoken) { this.acting?.react("understood"); return 0.15; }
     const voice = coachVoice(useStore.getState().progress.profile?.gender);
     // (a line with no recording yet is only shown)
     const secs = audio.clipDuration(voice, 1, s.say);
-    if (secs == null) return 0.5;
-    void audio.play(voice, 1, s.say);
+    if (secs == null) { this.acting?.react("understood"); return 0.5; }
+    this.acting?.learner(true);
+    const lesson = this.logic;
+    void audio.play(voice, 1, s.say).then(() => {
+      if (this.logic === lesson) this.acting?.learner(false);
+    });
     return secs;
   }
   /** A key while a lesson is on: true when it was the lesson's. */
@@ -470,8 +494,9 @@ export class SurfPlay {
     if (!s) return 0.8;
     const st = useStore.getState(), npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1, slow = !!st.settings.slowVoice;
     const secs = (audio.clipDuration(voice, speed, s.say) ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
-    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m" });
-    this.scene?.coach?.talk(secs, () => audio.level(), () => audio.vowel());
+    const presentation = this.coachLine(cue, s.say, secs);
+    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m", visual: presentation?.owner })
+      .then(() => this.acting?.finish(presentation));
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
@@ -519,7 +544,11 @@ export class SurfPlay {
     this.in.strokes = paused ? 0 : Math.max(0, this.in.strokes - 1);
     this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
-    if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
+    if (paused !== this.paused) {
+      this.paused = paused;
+      this.acting?.pause(paused);
+      if (paused) this.stopListening(); else if (L.choice) this.listen();
+    }
     this.scene?.update(dt, t, inp, paused);
     this.sync(dt);
   }
@@ -538,6 +567,9 @@ export class SurfPlay {
     const turn = L.choice !== this.lastChoice;
     if (turn) {
       this.lastChoice = L.choice;
+      const actor = L.choice ? this.coachActor() : undefined;
+      if (actor) (this.acting ??= this.game.acting?.())?.listen(actor, true);
+      else this.acting?.listen(undefined, false);
       patch.choice = L.choice ? { id: L.choice.id, options: L.choice.options.map((cue) => ({ cue, s: this.line(cue) })).filter((o): o is SurfLine => !!o.s) } : null;
     }
     // the move she asks for: shown beside her line at once, but a command of the ride the learner has heard often is

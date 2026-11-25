@@ -98,6 +98,9 @@ export class AudioSystem {
   private listeners = new Set<() => void>();
   getState = () => this.state;
   get visualOwner() { return this.request?.visual; }
+  disownVisual(owner: VoiceVisualOwner) {
+    if (this.request?.visual === owner) this.request.visual = undefined;
+  }
   visualState(owner: VoiceVisualOwner): VisualPlaybackState {
     const request = this.request;
     if (request?.visual !== owner) return this.visualEnds?.has(owner) ? "ended" : "interrupt";

@@ -14,6 +14,7 @@ import type { Colliders } from "../world/util";
 import { BAY, SHORE, floorY, waterY } from "../water";
 import { ReactionSchedule, reactionDuration } from "./reacts";
 import { speakTownLine } from "./townVoice";
+import { ActorTalk } from "../talkNatural/binding";
 
 interface Speaker {
   id: string;
@@ -68,6 +69,7 @@ export class TownReactions {
   private pending?: { speaker: Speaker; at: number; force: boolean };
   private active?: { speaker: Speaker; id: number; start: number; end: number; kind: ReactKind };
   private voice?: AbortController;
+  private acting?: ActorTalk;
   private farSwim = false;
   private point = new Vector3();
 
@@ -95,12 +97,13 @@ export class TownReactions {
     const { ch, voice, female } = speaker;
     if (voice) {
       this.voice = new AbortController();
-      speakTownLine(ch, voice, !!female, line.text, duration, this.voice.signal);
+      const target = ch && { actor: ch, id: speaker.id, scope: "town" as const };
+      speakTownLine(target, voice, !!female, line.text, duration, this.voice.signal, target && (this.acting ??= new ActorTalk()));
     }
     return true;
   }
 
-  private clearVoice() { this.voice?.abort(); this.voice = undefined; }
+  private clearVoice() { this.voice?.abort(); this.voice = undefined; this.acting?.release(); }
 
   clear() {
     this.pending = undefined;

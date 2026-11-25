@@ -1,8 +1,18 @@
-// Type-only seams for the character adapters and playback.
+// Seams for the character adapters and playback.
 import type { Object3D, Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 
 export type TalkLineId = string | number;
+export const ENTRY_SECONDS = 0.24;
+
+export function blockedHands(actor: GameCharacter, rig: NaturalRig, idleWorkHands?: boolean) {
+  const busy = actor.busy;
+  if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel" || (!idleWorkHands && (busy === "type" || busy === "wipe"))) return 3;
+  const left = rig.carry === "bag" || busy === "doorL";
+  const right = actor.rightHand.children.length || rig.carry === "coffee" || rig.carry === "cup"
+    || busy === "cup" || busy === "tiller" || busy === "doorR";
+  return (left ? 1 : 0) | (right ? 2 : 0);
+}
 
 /** Create a fresh object per play, including a replay of the same line on the same mounted actor. */
 export interface VoiceVisualOwner {
@@ -36,6 +46,9 @@ export interface NaturalRig {
 export interface NaturalPoseDriver {
   readonly releasing: boolean;
   readonly reduced: boolean;
+  readonly baseGaze?: boolean;
+  readonly baseWork?: boolean;
+  readonly poolHead?: boolean;
   readonly watch?: Vector3 | null;
   readonly watchSpeed?: number;
   readonly mouth: number;

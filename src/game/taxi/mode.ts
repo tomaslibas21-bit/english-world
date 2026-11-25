@@ -63,7 +63,8 @@ class TaxiMode implements GameMode {
     say: (line) => useTaxi.setState({ line }),
     choices: (choices) => useTaxi.setState({ choices }),
     mic: (mic) => useTaxi.setState({ mic }),
-    animate: (seconds) => this.passenger?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.host.acting?.(),
+    actor: () => this.passenger?.root.visible ? { actor: this.passenger, id: npc, motion: "head" } : undefined,
   });
 
   constructor(private host: ModeHost, private stand: StandTaxi) {

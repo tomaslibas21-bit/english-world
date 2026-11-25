@@ -1416,9 +1416,10 @@ export class Character {
     return this.talking <= 0 && !this.reaction && moment !== "phone" && moment !== "sip" && moment !== "type" && moment !== "wipe";
   }
 
-  beginNaturalPose() {
+  beginNaturalPose(preserveWork = false) {
     this.talking = this.gesture.w = this.avertT = 0;
-    this.level = this.vowel = this.moment = this.reaction = this.moodNow = null;
+    this.level = this.vowel = this.reaction = this.moodNow = null;
+    if (!preserveWork) this.moment = null;
     this.face.oh = 0;
     this.clapNext = false;
   }
@@ -1526,7 +1527,7 @@ export class Character {
     const pose = this.talkPose;
     pose?.advance(dt);
     if (pose && this.talkPose !== pose) return;
-    const idle = pose && (pose.reduced || !pose.releasing) ? 0 : 1;
+    const idle = pose && !pose.baseGaze && (pose.reduced || !pose.releasing) ? 0 : 1;
     this.t += dt;
     this.blob.visible = Character.blobShadows && !this.wading;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
@@ -1593,7 +1594,8 @@ export class Character {
     headNod += old * 0.045 - (E - 0.5) * 0.03;
     if (!seated) { lx -= old * 0.07; rx -= old * 0.07; lf -= old * 0.1; rf -= old * 0.1; }
     // the little things people do while they wait (see fidget)
-    const m = pose ? null : this.fidget(dt, seated);
+    const hasWork = pose?.baseWork && (this.handsOccupied || this.busy === "wipe" || this.busy === "type");
+    const m = pose ? (hasWork && (this.moment?.kind === "type" || this.moment?.kind === "wipe") ? this.moment : null) : this.fidget(dt, seated);
     let phoneOut = false, eyesDown = this.busy === "paper" ? 1 : 0;
     if (m) {
       const k = m.w * m.w * (3 - 2 * m.w), s = m.s;
@@ -1729,7 +1731,7 @@ export class Character {
     }
     let gy = 0, gp = 0, ex = sc.x * idle, ey = sc.y * idle - eyesDown * 0.008, looking = false;
     const poseWatch = pose?.watch;
-    const wp = pose?.reduced ? null : poseWatch === undefined ? this.watch : poseWatch;
+    const wp = pose?.reduced && !pose.baseGaze ? null : poseWatch === undefined ? this.watch : poseWatch;
     const steady = this.steady || !!poseWatch;
     if (wp && eyesDown < 0.5) {
       const p = this.root.position, dx = wp.x - p.x, dz = wp.z - p.z, d = Math.hypot(dx, dz);
@@ -1977,7 +1979,7 @@ export class Character {
     vis(this.lids, shut);
     if (this.blinkT < 0) this.blinkT = pose ? 2.2 + Math.random() * 4
       : Math.random() < 0.15 ? 0.36 : (2.2 + Math.random() * 4) * (speaking ? 0.75 : 1);
-    pose?.apply(walking || this.hopShown || sw > 0 || prone > 0 || stand > 0 || sf.straddle > 0 || !!this.poolPose, shut ? 1 : 1 - eye, looking);
+    pose?.apply(walking || this.hopShown || sw > 0 || prone > 0 || stand > 0 || sf.straddle > 0 || !!this.poolPose && !pose.poolHead, shut ? 1 : 1 - eye, looking);
   }
 
   /** A phrase starts: perhaps a gesture for it (the lively gesture more; fewer while sitting or with busy hands), and

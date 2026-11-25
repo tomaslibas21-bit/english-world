@@ -3,6 +3,7 @@ import { STREET_MOMENTS } from "../../content/street";
 import type { Look } from "../../content/npcs";
 import { walkerLook, type Ambient } from "../ambient";
 import { createCharacter, type GameCharacter } from "../characters";
+import { ActorTalk } from "../talkNatural/binding";
 import type { NavGrid } from "../nav";
 import type { OcclusionField } from "../occlusion";
 import { Pigeons } from "../pigeons";
@@ -58,6 +59,8 @@ interface Placement {
 }
 
 export class TownStreet implements StreetWorld {
+  acting() { return new ActorTalk(); }
+  learner() { return this.player(); }
   private group = new THREE.Group();
   private departures = new Map<TownActor, number>();
   private projected = new THREE.Vector3();
@@ -479,7 +482,10 @@ class TownActor implements StreetActor {
     }
     this.person.watch = this.gone || this.drop && sinceAnswer < 0 ? null : player;
     this.person.setAnim(moving ? "walk" : "idle");
-    if (this.twoHanded && this.prop?.visible) this.person.holdMoment?.("type");
+    const twoHanded = this.twoHanded && !!this.prop?.visible;
+    const occupied = twoHanded || !!this.dog;
+    if (this.person.handsOccupied !== occupied) this.person.handsOccupied = occupied;
+    if (twoHanded) this.person.holdMoment?.("type");
     this.person.update(dt);
     this.props(dt);
   }

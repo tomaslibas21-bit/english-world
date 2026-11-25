@@ -116,7 +116,7 @@ export class StyledCharacter {
     const pose = this.talkPose;
     pose?.advance(dt);
     if (pose && this.talkPose !== pose) return;
-    const idle = pose && (pose.reduced || !pose.releasing) ? 0 : 1;
+    const idle = pose && !pose.baseGaze && (pose.reduced || !pose.releasing) ? 0 : 1;
     const t = this.t, b = this.bones, M = this.spec.motion;
     const body = b[BONE.body], head = b[BONE.head];
     const uL = b[BONE.uArmL], fL = b[BONE.fArmL], uR = b[BONE.uArmR], fR = b[BONE.fArmR];
@@ -231,6 +231,6 @@ export class StyledCharacter {
     const blink = pose ? Math.max(0, 1 - Math.abs(this.blinkT - 0.1) / 0.1) : Number(this.blinkT < 0.12);
     b[BONE.eyes].scale.y = 1 - blink * 0.9;
     if (this.blinkT < 0) this.blinkT = pose ? 2.2 + Math.random() * 4 : Math.random() < 0.18 ? 0.28 : 2.5 + Math.random() * 3.5;
-    pose?.apply(walking || this.lift > 0 || !!this.poolPose, blink, watching);
+    pose?.apply(walking || this.lift > 0 || !!this.poolPose && !pose.poolHead, blink, watching);
   }
 }

@@ -11,6 +11,7 @@ import { audio } from "../audio";
 import type { GameCharacter } from "../characters";
 import type { KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
+import type { ActorTalk, ActingTarget } from "../talkNatural/binding";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { keepPhrases } from "../kit/phrases";
@@ -22,7 +23,7 @@ import { poolSave, resetPoolUi, usePool } from "./store";
 type Phase = "entering" | "opening" | "play" | "closing" | "result";
 type CueSlot = "cue" | "aside";
 type Cue = { key: string; speaker: PoolKid; at: number; hold: number; slot: CueSlot };
-type Voice = { voice: string; speed: number; say: string; seconds: number; male: boolean };
+type Voice = { key: string; speaker: PoolKid; voice: string; speed: number; say: string; seconds: number; male: boolean };
 const handY: Record<Receiver, number> = { learner: 0.76, vale: 0.58, diego: 0.70, santi: 0.64 };
 const paddlePhase: Record<Receiver, number> = { learner: 1.5, vale: 0, diego: 2.6, santi: 4.3 };
 const phraseKeys = new Set(["pl_tuya", "pl_mia", "pl_arriba", "pl_cuidado", "pl_otra", "pl_casi", "pl_cayo", "pl_record"]);
@@ -91,6 +92,8 @@ class PoolMode implements GameMode {
   private voices: Voice[] = [];
   private voiceUntil = 0;
   private playingVoice = false;
+  private acting?: ActorTalk;
+  private learnerPose?: Pick<GameCharacter, "poolPose" | "seatY" | "wading"> & { visible: boolean };
   private kept = new Map<string, KitLine>();
   private hitAt = new Map<Receiver, number>();
   private dropAt = -Infinity;
@@ -129,8 +132,11 @@ class PoolMode implements GameMode {
       if (!this.host.owns(this.id) || this.phase !== "entering") return;
       this.host.prepare();
       const learner = POOL_CIRCLE.learner;
+      const player = this.host.player();
+      this.learnerPose = { poolPose: player.poolPose, seatY: player.seatY, wading: player.wading, visible: player.root.visible };
+      player.poolPose = undefined;
       this.host.place(learner.x, learner.z, Math.PI);
-      this.host.player().setBackpack?.(false);
+      player.setBackpack?.(false);
       this.host.entered(this.id);
       this.host.rig.stage = this.stage;
       this.host.rig.mode = "stage";
@@ -181,6 +187,7 @@ class PoolMode implements GameMode {
   }
 
   private clearCues() {
+    this.acting?.release();
     this.cues = [];
     this.cueUntil = { cue: 0, aside: 0 };
     this.voices = [];
@@ -207,14 +214,24 @@ class PoolMode implements GameMode {
       const { slowVoice, volume } = useStore.getState().settings;
       const npc = NPCS[speaker], voice = npcVoice(npc), speed = npc.speed ?? 1;
       const seconds = audio.clipDuration(voice, speed, sentence.say);
-      if (seconds && volume > 0) this.voices.push({ voice, speed, say: sentence.say, seconds: seconds / (slowVoice ? 0.82 : 1), male: npc.gender === "m" });
+      if (seconds && volume > 0) this.voices.push({ key, speaker, voice, speed, say: sentence.say, seconds: seconds / (slowVoice ? 0.82 : 1), male: npc.gender === "m" });
     }
     if (this.clock >= this.voiceUntil) {
       const next = this.voices.shift();
       if (next) {
         this.voiceUntil = this.clock + next.seconds + 0.08;
         this.playingVoice = true;
-        void audio.play(next.voice, next.speed, next.say, { slow: useStore.getState().settings.slowVoice, male: next.male });
+        const actor = this.host.npc?.(next.speaker);
+        let target: ActingTarget | undefined;
+        if (actor && this.host.owns(this.id) && useStore.getState().settings.volume > 0) {
+          target = { actor, id: next.speaker, motion: "head", action: () => this.phase === "play"
+            || (actor.poolPose?.reach ?? 0) > 0.14 || (actor.poolPose?.laugh ?? 0) > 0.1 || (actor.poolPose?.surprise ?? 0) > 0.1 };
+        }
+        const acting = target && (this.acting ??= this.host.acting?.());
+        const line = target && acting?.speak(target, next.key, next.say, next.seconds, true);
+        if (line) acting?.listen(target, this.phase === "opening" || this.phase === "closing");
+        void audio.play(next.voice, next.speed, next.say, { slow: useStore.getState().settings.slowVoice, male: next.male,
+          visual: line?.owner }).then(() => acting?.finish(line));
       }
     }
   }
@@ -341,6 +358,7 @@ class PoolMode implements GameMode {
   update({ dt, time, blocked }: ModeFrame) {
     this.time = time;
     if (this.phase === "entering") return;
+    this.acting?.pause(blocked || !!globalThis.document?.hidden);
     this.frameCamera();
     if (!blocked) {
       this.clock += dt;
@@ -350,6 +368,7 @@ class PoolMode implements GameMode {
           const st = useStore.getState();
           this.round = new PoolRound(st.hud.showTouch, poolSave(st.progress).best);
           this.phase = "play";
+          this.acting?.listen(undefined, false);
           this.serve(this.round);
           this.placeBall(this.round.flight, 0, this.origin);
         } else this.holdBall("vale");
@@ -438,8 +457,8 @@ class PoolMode implements GameMode {
   }
 
   poseKid(ch: GameCharacter, id: string, dt: number, talking: boolean) {
-    const kid = POOL_KIDS.find((who) => who === id);
-    if (!kid) return false;
+    if (!POOL_KIDS.includes(id as PoolKid)) return false;
+    const kid = id as PoolKid;
     const { x, z } = POOL_CIRCLE[kid];
     ch.root.position.y = hotelPoolKidY(kid);
     ch.wading = true;
@@ -495,8 +514,14 @@ class PoolMode implements GameMode {
     resetPoolUi();
     if (placed) {
       const player = this.host.player();
-      player.poolPose = undefined;
-      player.wading = false;
+      const previous = this.learnerPose;
+      if (previous) {
+        player.poolPose = previous.poolPose;
+        player.seatY = previous.seatY;
+        player.wading = previous.wading;
+        player.root.visible = previous.visible;
+      }
+      this.learnerPose = undefined;
       player.setBackpack?.(true);
       this.host.rig.stage = null;
       this.host.rig.mode = "follow";

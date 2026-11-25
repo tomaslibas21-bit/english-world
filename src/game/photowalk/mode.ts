@@ -10,6 +10,7 @@ import { createSpeechAttempt, speechSupported } from "../../convo/speech";
 import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
+import type { GameCharacter } from "../characters";
 import { ModeDialogue } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeInput } from "../kit/modes";
@@ -24,7 +25,7 @@ type World = {
   available(): boolean;
   zone(): string;
   guide(location: string): void;
-  animate(seconds: number): void;
+  actor(): GameCharacter | undefined;
 };
 
 const things = new Map<PhotoThingId, { near: number }>(PHOTO_THINGS.map((thing) => [thing.id, thing]));
@@ -54,10 +55,17 @@ export class TownQuests implements GameMode {
   private arrived = 0;
   private bookLines?: ReturnType<typeof loadSituation>;
   private arrivalTime = 0;
+  private visit?: object;
   private readonly projected = new Vector3();
   private readonly dialogue = new ModeDialogue({
     say: (line) => ui({ line }), choices: (choices) => ui({ choices }), mic: (mic) => ui({ mic }),
-    animate: (seconds) => this.world.animate(seconds), allowBrowserVoice: true, framePlayback: true,
+    acting: () => this.host.acting?.(),
+    actor: () => {
+      const { screen, visit } = useTownQuests.getState();
+      const actor = (visit || screen === "finale") && this.world.actor();
+      return actor ? { actor, id: PHOTO_WALK_NPC, player: this.host.player() } : undefined;
+    },
+    allowBrowserVoice: true, framePlayback: true,
   });
   private readonly replay = new ModeDialogue({
     say() {}, choices() {}, mic() {}, allowBrowserVoice: true, framePlayback: true,
@@ -120,8 +128,9 @@ export class TownQuests implements GameMode {
     ui({ screen: finale ? "finale" : "book", visit: option === "visit" && !finale });
     this.host.entered(this.id);
     if (option === "visit") {
+      const visit = this.visit = {};
       const speak = () => {
-        if (useTownQuests.getState().screen !== (finale ? "finale" : "book")) return;
+        if (this.visit !== visit || useTownQuests.getState().screen !== (finale ? "finale" : "book")) return;
         if (finale) void this.finale();
         else void this.say(status === "done" ? "pw_thanks_again" : "pw_going");
       };
@@ -314,6 +323,7 @@ export class TownQuests implements GameMode {
   }
 
   exit() {
+    this.visit = undefined;
     this.shutter = null;
     this.stopMic();
     this.dialogue.cancel();

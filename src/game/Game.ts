@@ -44,6 +44,7 @@ import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK 
 import { TownPhone } from "./phone/Phone";
 import { inTownRuins, reactionTestSpot, TownReactions } from "./life/townReactions";
 import { speakTownLine } from "./life/townVoice";
+import { ActorTalk } from "./talkNatural/binding";
 import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { FriendMeeting } from "./phone/meeting";
@@ -278,6 +279,7 @@ export class Game implements GameApi {
   private loadMeeting = false;
   private officeRequested = false;
   private modeHost!: ModeHost;
+  private greeting?: ActorTalk;
   private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
@@ -560,6 +562,8 @@ export class Game implements GameApi {
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: L("Čia išlipti nėra kur"), body: L("Pavažiuok truputį toliau.") });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
     const host: ModeHost = this.modeHost = {
+      acting: () => new ActorTalk(),
+      npc: (id) => this.npcs.find((n) => n.id === id)?.ch,
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
       add: (...objects) => this.scene.add(...objects),
       canStart: (indoors) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
@@ -624,7 +628,7 @@ export class Game implements GameApi {
         const door = this.town.doors.find((door) => door.loc === id);
         if (door && this.zone.id === "town") this.walkTo(door.outX, door.outZ, { kind: "point" });
       },
-      animate: (seconds) => this.npcs.find(({ id }) => this.quests.handlesNpc(id))?.ch.talk(seconds, () => audio.level(), () => audio.vowel()),
+      actor: () => this.npcs.find(({ id }) => this.quests.handlesNpc(id))?.ch,
     }));
     this.road = new RoadEntry({
       ...host,
@@ -967,6 +971,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
+      this.greeting?.release(0);
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("surf")) this.modes.exit(true);
       if (this.flight) {
@@ -1456,7 +1461,8 @@ export class Game implements GameApi {
   private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null) {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
-    speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
+    speakTownLine({ actor: ch, id: own ?? voice, scope: "town" }, voice, female, line.en,
+      1.1 + line.en.length * 0.045, undefined, this.greeting ??= new ActorTalk());
     useStore.getState().toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, ms: 3200 });
   }
 
@@ -1627,8 +1633,8 @@ export class Game implements GameApi {
         const pool = w.vendor && VENDOR_LINES.length ? VENDOR_LINES : AMBIENT_LINES;
         const line = pool[Math.floor(Math.random() * pool.length)];
         const voice = ambientVoice(female ? "f" : "m");
-        audio.play(voice, 1, line.en, { male: !female });
-        w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
+        speakTownLine({ actor: w.ch, id: `walker:${w.id}`, scope: "greeting" }, voice, female, line.en,
+          1.2, undefined, this.greeting ??= new ActorTalk(), true);
         st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt });
         return;
       }
@@ -2132,6 +2138,7 @@ export class Game implements GameApi {
   };
 
   private startSession(sit: SituationDef, actor: NpcActor | null, introOverride?: string) {
+    this.greeting?.release(0);
     this.naturalView?.stop();
     this.naturalView = undefined;
     this.modes.exit(true);
@@ -2665,6 +2672,7 @@ export class Game implements GameApi {
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
     const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || !!this.caveLoading || this.modes.modal || !!this.flight;
+    this.greeting?.pause(blocked || document.hidden);
     this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !st.hud.glyph && !mode);
     if (!blocked) this.checkRoadEntry();
 
@@ -3054,6 +3062,7 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    this.greeting?.release(0);
     this.keepsake.clear();
     this.endRide();
     this.stopAutoWalk();
@@ -3831,6 +3840,7 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    this.greeting?.release(0);
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);
