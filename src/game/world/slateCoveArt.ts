@@ -22,7 +22,7 @@ export class SlateCoveArt {
       this.code = code;
       const mesh = code.buildSlateCove();
       mesh.visible = false;
-      this.field = OcclusionField.fromObject(mesh, { minX: -143, maxX: -106, minZ: -72, maxZ: -40 });
+      this.field = OcclusionField.fromObject(mesh, { minX: -160, maxX: -106, minZ: -74, maxZ: -34 });
       this.mesh = mesh;
       parent.add(mesh);
     }).catch(() => { this.retryAt = performance.now() + 2500; }).finally(() => { this.loading = undefined; });

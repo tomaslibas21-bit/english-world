@@ -133,6 +133,23 @@ export function buildSlateCove() {
   }
   box(2.55, 0.35, G.d, G.x, S.rise + 2.06, G.z, rock[2]);
   slab(G.x, S.rise + 2.29, G.z, 1.78, 0.68, G.d, 0);
+  // A slate headland behind the cove (its own seed, after everything else): the caves open at the foot of cliffs, and
+  // the desert road's mesas beyond the town's west edge stay out of the ring's and the trail's view. It stands 4 m and
+  // more beyond the cove's west wall, out of reach; the camera's occlusion field covers it (slateCoveArt.ts).
+  const q = rand(53117);
+  const crag = (x: number, z: number, w: number, h: number, d: number) => {
+    const geo = new THREE.DodecahedronGeometry(1, 0).rotateZ((q() - 0.5) * 0.3);
+    geo.computeBoundingBox();
+    const size = geo.boundingBox!.getSize(new THREE.Vector3());
+    geo.scale(w / size.x, h / size.y, d / size.z).rotateY(q() * 6.28).translate(x, h * 0.42, z);
+    parts.push([geo, rock[Math.floor(q() * rock.length)]]);
+    if (q() < 0.55) slab(x + (q() - 0.5) * w * 0.4, h * 0.88, z, w * 0.62, 0.32, d * 0.55, q() * 6.28, moss[Math.floor(q() * moss.length)]);
+  };
+  for (let z = B.minZ - 4; z <= B.maxZ + 7; z += 2.9) {
+    crag(-144.8 - q() * 1.2, z + (q() - 0.5) * 1.4, 3.4 + q() * 1.6, 2.1 + q() * 1.3, 3 + q() * 1.4);
+    crag(-149.5 - q() * 1.5, z + 1.4 + (q() - 0.5) * 1.4, 4.6 + q() * 2, 4.4 + q() * 2.4, 4.2 + q() * 2);
+    crag(-155 - q() * 2, z + (q() - 0.5) * 2, 6 + q() * 2.5, 7 + q() * 3.5, 5.5 + q() * 2.5);
+  }
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(colourMerge(parts), material);
   mesh.name = "slate-cove";
