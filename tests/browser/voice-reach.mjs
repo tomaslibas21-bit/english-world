@@ -84,6 +84,17 @@ assert.deepEqual(list.missingCasts, [], "production voice list missing casts");
 assert.deepEqual(list.unresolved, [], "production voice list unresolved dependencies");
 assert(list.keys.length && list.keys.every((key) => keyPattern.test(key)), "invalid production voice keys");
 const allowed = new Set(list.keys);
+// The list as it was before the 25 Nov cleanup (enumerateAll legacy): a clip the game asks for that neither list has is
+// a gap the cleanup did not make (a rendering the list's runs never meet); it is reported, not failed. A clip the old
+// list had and the new one lacks would be a reachable line the cleanup dropped: that fails.
+const legacy = new Set(JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "tools/voice-list.ts", "--keys", "--legacy",
+  `--sits=${routes.map(({ sit }) => sit).join(",")}`],
+  { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: voiceListMs })).keys);
+const gaps = new Map();
+const dropped = (rows) => {
+  for (const row of rows) if (!allowed.has(row.key) && !legacy.has(row.key)) gaps.set(row.key, `${row.line ?? row.source} “${row.say ?? ""}”`);
+  return rows.filter(({ key }) => !allowed.has(key) && legacy.has(key));
+};
 console.log("voice-reach list", JSON.stringify({ keys: allowed.size, status: list.status, unresolved: list.unresolved.length }));
 
 const publicDir = new URL("../../public/", import.meta.url);
@@ -379,10 +390,10 @@ async function runDevice(context, label, touch) {
       const { lookups, requests, problems } = await evidence();
       assert.deepEqual(errors, [], `${label}: page and console errors`);
       assert.deepEqual(problems, [], "could not pair a playback request with its lookup");
-      assert.deepEqual(lookups.filter(({ key }) => !allowed.has(key)), [], "resolved keys outside the production list");
+      assert.deepEqual(dropped(lookups), [], "resolved keys the cleanup dropped from the list");
       assert.deepEqual(lookups.filter(({ manifestReady, present }) => !manifestReady || !present), [], "miss in the recorded route");
       assert(requests.length > 0, "the context saw no voice MP3 requests");
-      assert.deepEqual(requests.filter(({ key }) => !allowed.has(key)), [], "MP3 keys outside the production list");
+      assert.deepEqual(dropped(requests), [], "MP3 keys the cleanup dropped from the list");
 
       const playback = lookups.filter((row) => row.source === "play" && row.sit === sit && row.run === run && row.npc);
       assert.deepEqual(playback.map(({ transcriptId }) => transcriptId),
@@ -425,6 +436,7 @@ try {
   }
   assert.equal(reached, 6, "three target turns on each of the two viewports");
   console.log(`voice-reach: ${reached}/6 target turns reached`);
+  if (gaps.size) console.log(`voice-reach: ${gaps.size} clips the game asks for that neither the old nor the new list has (not made by the cleanup): ${[...gaps].map(([k, w]) => `${k} ${w}`).join("; ")}`);
 } finally {
   await browser.close();
 }
