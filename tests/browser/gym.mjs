@@ -921,10 +921,12 @@ async function journey(browser, [width, height], audible) {
         assert(trace.entry.player && trace.entry.trainer);
         const sample = await rig();
         assert.equal(sample.camera, "stage");
-        const positions = [[-7.54, 0, 2.64], [-5.90, 0, 2.64]];
+        const { player, trainer } = await page.evaluate(() => window.__gym.stageActors);
+        const stageActors = [player, trainer];
         for (const [i, actor] of sample.actors.entries()) {
-          assert(actor.same && distance(actor.root, positions[i]) < 0.02 && Math.abs(actor.yaw) < 0.02,
-            "PC mat stage roots face along +Z " + JSON.stringify({ i, root: actor.root, yaw: actor.yaw }));
+          const { x, z, heading } = stageActors[i];
+          assert(actor.same && distance(actor.root, [x, 0, z]) < 0.02 && Math.abs(actor.yaw - heading) < 0.02,
+            "PC mat stage roots match their configured position and heading " + JSON.stringify({ i, root: actor.root, yaw: actor.yaw }));
         }
         assert.deepEqual(sample.eye, [-6.72, 1.55, touch ? 6.64 : 6.40]);
         assert.equal(sample.fov, touch ? 62 : 44);

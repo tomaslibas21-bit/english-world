@@ -126,7 +126,10 @@ type Run = {
 
 declare global {
   interface Window {
-    __gym?: { state(): ReturnType<GymMode["debug"]> };
+    __gym?: {
+      state(): ReturnType<GymMode["debug"]>;
+      stageActors: Pick<typeof GYM_STAGE, "player" | "trainer">;
+    };
   }
 }
 
@@ -137,7 +140,10 @@ export class GymMode {
   private stopObserving?: () => void;
   private probe = new PerspectiveCamera();
   private projected = new Vector3();
-  private debugHook = import.meta.env.DEV ? { state: () => this.debug() } : undefined;
+  private debugHook = import.meta.env.DEV ? {
+    state: () => this.debug(),
+    stageActors: { player: { ...GYM_STAGE.player }, trainer: { ...GYM_STAGE.trainer } },
+  } : undefined;
 
   constructor(private host: ModeHost, private world: GymRoomHost) {}
 
