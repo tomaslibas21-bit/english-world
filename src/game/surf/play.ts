@@ -358,11 +358,8 @@ export class SurfPlay {
     if (!L || !line || L.talking) return;
     const again = !!this.speech;
     this.stopListening();
-    const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
-    const voice = npcVoice(npc), speed = npc?.speed ?? 1;
-    const presentation = this.coachLine(line.cue, line.s.say, audio.clipDuration(voice, speed, line.s.say) ?? 2, true);
-    void audio.play(voice, speed, line.s.say, { slow, male: npc?.gender === "m", visual: presentation?.owner }).then(() => {
-      this.acting?.finish(presentation);
+    const slow = !!useStore.getState().settings.slowVoice;
+    this.voiceCoach(line.cue, line.s.say, slow, undefined, () => {
       if (again && this.logic === L && L.choice) this.listen();
     });
   }
@@ -380,9 +377,18 @@ export class SurfPlay {
     if (actor && scene.group.visible) return { actor, id: this.content.npc, action: () => scene.demonstrating };
   }
 
-  private coachLine(key: string, text: string, seconds: number, replay = false) {
+  private voiceCoach(key: string, text: string, slow: boolean, duration?: number, after?: () => void) {
+    const npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1;
+    const options = { slow, male: npc?.gender === "m" };
     const target = this.coachActor();
-    if (target) return (this.acting ??= this.game.acting?.())?.speak(target, key, text, seconds, audio.volume > 0, replay);
+    const acting = target && (this.acting ??= this.game.acting?.());
+    if (acting && target) {
+      acting.play(target, key, duration ?? audio.clipDuration(voice, speed, text) ?? 2,
+        voice, speed, text, options, duration === undefined, after);
+    } else {
+      const played = audio.play(voice, speed, text, options);
+      if (after) void played.then(after);
+    }
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -457,11 +463,8 @@ export class SurfPlay {
     // (a line with no recording yet is only shown)
     const secs = audio.clipDuration(voice, 1, s.say);
     if (secs == null) { this.acting?.react("understood"); return 0.5; }
-    this.acting?.learner(true);
-    const lesson = this.logic;
-    void audio.play(voice, 1, s.say).then(() => {
-      if (this.logic === lesson) this.acting?.learner(false);
-    });
+    if (this.acting) this.acting.playLearner(voice, s.say);
+    else void audio.play(voice, 1, s.say);
     return secs;
   }
   /** A key while a lesson is on: true when it was the lesson's. */
@@ -494,9 +497,7 @@ export class SurfPlay {
     if (!s) return 0.8;
     const st = useStore.getState(), npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1, slow = !!st.settings.slowVoice;
     const secs = (audio.clipDuration(voice, speed, s.say) ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
-    const presentation = this.coachLine(cue, s.say, secs);
-    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m", visual: presentation?.owner })
-      .then(() => this.acting?.finish(presentation));
+    this.voiceCoach(cue, s.say, slow, secs);
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);

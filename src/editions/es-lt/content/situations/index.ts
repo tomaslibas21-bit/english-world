@@ -3,9 +3,8 @@
 // listed by tools/es-learner/check.ts.
 import { SITUATIONS as ES } from "@/content/situations";
 import type { SituationDef } from "@/content/types";
-import { applyLearner } from "../../../es/learner/walk";
 import { TABLES } from "../../tables/tables.gen";
-import { LOADED, learnerApplied, mergeValueText, setValueText } from "../../tables/loaded";
+import { applyLearner, LOADED, learnerApplied, mergeValueText, setValueText } from "../../tables/loaded";
 
 /** What each conversation found no Lithuanian for (the checker and the tests read it). */
 export const LEARNER_MISSING: Record<string, string[]> = {};

@@ -1,9 +1,23 @@
 import type { Object3D, Vector3 } from "three";
+import { picturesOn, useStore } from "../../state/store";
+import { sceneFor } from "../../ui/scenes";
 import type { GameCharacter } from "../characters";
 import { audio, VOICE_ENVELOPE_GATE, type AudioSystem, type VisualPlaybackState, type VisualVoiceSample } from "../audio";
 import type { NaturalPoseDriver, TalkLineId, VoiceVisualOwner } from "./contract";
-import { blockedHands, ENTRY_SECONDS } from "./contract";
+import { blockedHands, ENTRY_SECONDS, presentTalkVoice } from "./contract";
 import { PoseEntry } from "./entry";
+import type { TalkActor } from "./session";
+
+export function talkVoice<T extends TalkActor>(cast: readonly T[], people: readonly T[], layer: Object3D,
+  id: string, line: number, replay: VoiceVisualOwner["replay"]) {
+  const { conv, hud, settings } = useStore.getState();
+  if (!conv.active || conv.introOpen || hud.panel || hud.glyph || hud.fade || hud.modeScreen || document.hidden ||
+    (picturesOn(settings) && sceneFor(conv.sitId, conv.hostId))) return;
+  const actor = cast.find((speaker) => speaker.id === id);
+  if (actor && people.includes(actor) && actor.ch.root.parent === layer && actor.ch.root.visible) {
+    return presentTalkVoice(actor.ch, line, replay, conv.transcript.at(-1));
+  }
+}
 
 export interface ActingTarget {
   actor: GameCharacter;
@@ -49,6 +63,7 @@ export function mounted(actor: GameCharacter) {
 export class ActorTalk {
   private turn?: ActingTurn;
   private paused = false;
+  private lastKitActor?: { key: string; target: ActingTarget };
 
   constructor(private readonly voice: AudioSystem = audio) {}
 
@@ -142,6 +157,49 @@ export class ActorTalk {
   release(seconds?: number) {
     this.drop(seconds);
     this.paused = false;
+    this.lastKitActor = undefined;
+  }
+
+  /** The kit signals playback edges and continues to own completion, the clock and mic. */
+  kitPlayback(current: ActingTarget | undefined, key: string, text: string, seconds: number,
+    learner: boolean, audible: boolean, replay: boolean) {
+    const previous = replay && this.lastKitActor?.key === key ? this.lastKitActor.target : undefined;
+    const target = previous ? (current?.actor === previous.actor ? previous : undefined) : current;
+    if (target && !previous) this.lastKitActor = { key, target };
+    if (!target && !learner) {
+      this.drop();
+      this.paused = false;
+      return;
+    }
+    let playing: ActingLine | undefined;
+    return {
+      restart: (again: boolean) => {
+        if (learner) this.learner(audible);
+        else if (target) playing = this.speak(target, key, text, seconds, audible, again);
+        return playing?.owner;
+      },
+      finish: () => {
+        this.finish(playing);
+        if (learner) this.learner(false);
+      },
+    };
+  }
+
+  play(target: ActingTarget, key: string, seconds: number, voice: string, speed: number, text: string,
+    options: Parameters<AudioSystem["play"]>[3], replay: boolean, after?: () => void) {
+    const line = this.speak(target, key, text, seconds, this.voice.volume > 0, replay);
+    void this.voice.play(voice, speed, text, { ...options, visual: line?.owner }).then(() => {
+      this.finish(line);
+      after?.();
+    });
+  }
+
+  playLearner(voice: string, text: string) {
+    const turn = this.turn;
+    this.learner(true);
+    void this.voice.play(voice, 1, text).then(() => {
+      if (this.turn === turn) this.learner(false);
+    });
   }
 }
 

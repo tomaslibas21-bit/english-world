@@ -40,8 +40,7 @@ const out = learner
 // (tables/<id>.json) and, with the first one, every table's texts (tables/value-text.gen.json; tables/loaded.ts).
 import type { SituationDef, SituationMeta } from "${types}";
 import { LOAD as EDITION_LOAD } from "@/content/situations/meta.gen";
-import { applyLearner, type LearnerTable } from "../../../${EDITION.id}/learner/walk";
-import { LOADED, learnerApplied, loadValueText } from "../../tables/loaded";
+import { applyLearner, LOADED, learnerApplied, loadValueText, type LearnerTable } from "../../tables/loaded";
 
 ${meta}
 const TABLE: Record<string, () => Promise<{ default: unknown }>> = {

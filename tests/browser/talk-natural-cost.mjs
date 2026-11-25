@@ -445,8 +445,7 @@ function phaseStats(flat) {
     && r[6] === 1 && r[7] === 0 && (!i || r[8] === rows[i - 1][8] + 1)),
   "Expected a single onscreen render per native frame and zero offscreen binds");
   return { rows, durationMs: intervals.reduce((a, b) => a + b, 0),
-    mediaMs: 1000 * (rows.at(-1)[9] - rows[0][9]),
-    calls: metric(rows.map((r) => r[4])), triangles: metric(rows.map((r) => r[5])) };
+    mediaMs: 1000 * (rows.at(-1)[9] - rows[0][9]) };
 }
 
 function costStats(rows) {
@@ -454,6 +453,9 @@ function costStats(rows) {
     interval: metric(rows.map((r) => r[1]).filter((x) => x > 0)),
     updateRenderCpu: metric(rows.map((r) => r[2])),
     renderCpu: metric(rows.map((r) => r[3])),
+    calls: metric(rows.map((r) => r[4])),
+    triangles: metric(rows.map((r) => r[5])),
+    passes: metric(rows.map((r) => r[6])),
   };
 }
 

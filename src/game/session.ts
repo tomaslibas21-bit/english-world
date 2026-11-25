@@ -16,7 +16,7 @@ import { useStore, type ConvUI, type TranscriptLine } from "../state/store";
 import { sitProgress, stars } from "../state/progress";
 import { audio } from "./audio";
 import type { VoiceVisualOwner } from "./talkNatural/contract";
-import { turnReaction } from "./talkNatural/feedback";
+import { notifyTurnReaction, trackNpcVoice, type TalkFeedback } from "./talkNatural/feedback";
 import { displayUtterance } from "../convo/normalize";
 import { addressInformal, compose } from "../convo/compose";
 import { setKnownNames } from "../convo/slots";
@@ -27,12 +27,9 @@ import { answerCandidates, compareRepeat, makeGuess, pickSuggestions, playerVars
 const nluCache = new Map<string, Nlu>();
 let lineId = 1;
 
-export interface SessionHooks {
+export interface SessionHooks extends TalkFeedback {
   /** (`text`: what they say, for the face.) */
   npcTalk(npcId: string, seconds: number, text?: string): void;
-  /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
-  npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap", repeat?: boolean): void;
-  npcVoice?(npcId: string, line: number, replay?: VoiceVisualOwner["replay"]): VoiceVisualOwner | undefined;
   /** Leave unrecorded lines available as text without falling back to browser speech. */
   recordedOnly?: boolean;
   /** Whether the last turn hands off directly to an activity in the town. */
@@ -178,13 +175,13 @@ export class Session {
       const clip = audio.clipDuration(voice, speed, l.sentence.say);
       const dur = clip ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
-      const visual = this.hooks.npcVoice?.(l.npc, id, repeat ? "turn" : undefined);
-      if (this.hooks.recordedOnly && clip === null) {
-        visual?.onUnavailable?.();
+      const skipped = !!this.hooks.recordedOnly && clip === null;
+      const visual = trackNpcVoice(this.hooks, l.npc, id, repeat, skipped);
+      if (skipped) {
         await wait(Math.min(2000, dur * 600));
       } else {
         const played = await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m",
-          ...(optionalVoice ? { optional: true } : {}), ...(visual ? { visual } : {}) });
+          ...(optionalVoice ? { optional: true } : {}), ...visual });
         if (!played && !optionalVoice) return;
       }
       await wait(160);
@@ -330,9 +327,7 @@ export class Session {
     this.pushLine({ who: "you", text: en, understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
     // the one who answers (else the last to speak) shows at once whether they got it
     const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
-    const reaction = turnReaction(out);
-    if (reaction === "repeat" && this.hooks.npcVoice) this.hooks.npcReact?.(who, "nod", true);
-    else this.hooks.npcReact?.(who, reaction === "repeat" ? "nod" : reaction);
+    const repeat = notifyTurnReaction(this.hooks, who, out);
     if (out.understood && out.checkNo) {
       // "No" to "Sorry, did you say a latte?": the person didn't get it, so it counts as a miss (the help comes)
       audio.sfx("soft");
@@ -350,7 +345,7 @@ export class Session {
       st.setConv({ failures: out.failures || this.conv.failures, misses, prefix: !!out.prefix, guess: this.didYouMean(clean, alts, misses >= 2) });
     }
     this.busy = false;
-    if (out.lines.length) await this.play(out, reaction === "repeat");
+    if (out.lines.length) await this.play(out, repeat);
     else if (!out.understood) {
       // first miss: no NPC reaction, just let the learner try again (or type)
       useStore.getState().setConv({ phase: "you" });
@@ -562,7 +557,7 @@ export class Session {
     if (!this.alive || useStore.getState().conv.phase !== "you") return;
     this.stopListening();
     const out = this.conv.repeat(slow);
-    if (this.hooks.npcVoice && out.lines[0]) this.hooks.npcReact?.(out.lines[0].npc, "nod", true);
+    if (out.lines[0]) notifyTurnReaction(this.hooks, out.lines[0].npc);
     this.play(out, true);
   }
 

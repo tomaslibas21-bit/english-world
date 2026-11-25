@@ -6,7 +6,7 @@ import { createSpeechAttempt, speechSupported } from "../../convo/speech";
 import { conversationLine, learnerTurn } from "./lines";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
-import type { ActingFeedback, ActingLine, ActingTarget, ActorTalk } from "../talkNatural/binding";
+import type { ActingFeedback, ActingTarget, ActorTalk } from "../talkNatural/binding";
 import type { Vector3 } from "three";
 
 export interface KitLine { key: string; sentence: Sentence; pieces?: Sentence[] }
@@ -25,7 +25,6 @@ export class ModeDialogue {
   private micHeld = false;
   private generation = 0;
   private acting?: ActorTalk;
-  private lastActor?: { key: string; target: ActingTarget };
   micOn = true;
 
   constructor(private ui: {
@@ -51,16 +50,11 @@ export class ModeDialogue {
   }
 
   attend(waiting: boolean, target = waiting ? this.ui.actor?.(true) : undefined) {
-    if (target) this.presentation()?.listen(target, waiting);
-    else this.acting?.listen(undefined, false);
+    (target ? this.presentation() : this.acting)?.listen(target, waiting);
   }
-
   feedback(kind: ActingFeedback) { this.acting?.react(kind); }
   glance(point: Vector3) { this.acting?.glance(point); }
-  releaseActor(seconds?: number) {
-    this.acting?.release(seconds);
-    this.lastActor = undefined;
-  }
+  releaseActor(seconds?: number) { this.acting?.release(seconds); }
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]> | undefined, learner: boolean): KitLine | null {
     const sentence = conversationLine(situation, npcId, key, fallback, learner);
@@ -74,26 +68,21 @@ export class ModeDialogue {
     // Muted dialogue uses its reading time and never waits for browser audio.
     const audible = volume !== 0 && (clip != null || text !== `[${line.key}]`);
     const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
-    const current = learner ? undefined : this.ui.actor?.(false, line);
-    const target = replay && this.lastActor?.key === line.key
-      ? (current?.actor === this.lastActor.target.actor ? this.lastActor.target : undefined) : current;
-    if (target && (!replay || this.lastActor?.key !== line.key)) this.lastActor = { key: line.key, target };
-    if (!target && !learner) this.acting?.release();
+    const actor = learner ? undefined : this.ui.actor?.(false, line);
+    const presentation = (actor ? this.presentation() : this.acting)?.kitPlayback(actor, line.key, text, est, learner, audible, replay);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
       const duration = audible ? estimate + 2 : estimate;
       let heard = false;
       let playbackId = 0;
-      let actingLine: ActingLine | undefined;
       const playing = {
         key: line.key, left: duration, audible, completed: false,
         restart: (again = replay) => {
           const id = ++playbackId;
           playing.left = duration;
           playing.completed = false;
-          if (learner) this.acting?.learner(audible);
-          else if (target) actingLine = this.presentation()?.speak(target, line.key, text, est, audible, again);
-          if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback, visual: actingLine?.owner }).then((ok) => {
+          const visual = presentation?.restart(again);
+          if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback, visual }).then((ok) => {
             if (!ok || this.playback !== playing || id !== playbackId) return;
             heard = true;
             if (this.ui.framePlayback) playing.completed = true;
@@ -101,8 +90,7 @@ export class ModeDialogue {
           });
         },
         finish: (ok: boolean) => {
-          this.acting?.finish(actingLine);
-          if (learner) this.acting?.learner(false);
+          presentation?.finish();
           onVoiced?.(heard);
           finish(ok);
         },

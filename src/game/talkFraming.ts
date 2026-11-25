@@ -1,4 +1,4 @@
-export { bindNaturalTalk } from "./talkNatural/view";
+export { bindTownTalk } from "./talkNatural/view";
 // Loaded on an actor-backed conversation request.
 import * as THREE from "three";
 import type { CameraRig } from "./camera";

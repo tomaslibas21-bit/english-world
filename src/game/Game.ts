@@ -44,8 +44,7 @@ import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK 
 import { TownPhone } from "./phone/Phone";
 import { inTownRuins, reactionTestSpot, TownReactions } from "./life/townReactions";
 import { speakTownLine } from "./life/townVoice";
-import { ActorTalk } from "./talkNatural/binding";
-import { presentTalkVoice } from "./talkNatural/contract";
+import { ActorTalk, talkVoice } from "./talkNatural/binding";
 import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { FriendMeeting } from "./phone/meeting";
@@ -62,7 +61,7 @@ import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import type { TalkPresentation } from "./talkFraming";
-import type { bindNaturalTalk } from "./talkNatural/view";
+import type { bindTownTalk } from "./talkNatural/view";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance } from "./guidance";
 import { NavGrid } from "./nav";
@@ -239,7 +238,7 @@ export class Game implements GameApi {
   private talkCast: NpcActor[] = [];
   private talkSpeaker: NpcActor | null = null;
   private talkCamera?: TalkPresentation;
-  private naturalView?: ReturnType<typeof bindNaturalTalk>;
+  private naturalView?: ReturnType<typeof bindTownTalk>;
   private get talkLayout() { return this.talkCamera?.layout ?? null; }
 
   private hudBoxCache: TagBox[] = [];
@@ -2172,15 +2171,9 @@ export class Game implements GameApi {
         const speaker = this.talkCast.find((n) => n.id === id);
         if (speaker) this.aimTalk(speaker);
       },
-      npcVoice: actor && !isCall(sit) ? (id, line, replay) => {
-        const { conv, hud, settings } = useStore.getState();
-        if (this.disposed || this.session !== session || !session.active || this.rig.mode !== "talk" ||
-          !conv.active || conv.introOpen || hud.panel || hud.glyph || hud.fade || hud.modeScreen || document.hidden ||
-          (picturesOn(settings) && sceneFor(conv.sitId, conv.hostId))) return;
-        const n = this.talkCast.find((speaker) => speaker.id === id);
-        return n && this.npcs.includes(n) && n.ch.root.parent === this.npcLayer && n.ch.root.visible
-          ? presentTalkVoice(n.ch, line, replay, conv.transcript.at(-1)) : undefined;
-      } : undefined,
+      npcVoice: actor && !isCall(sit) ? (id, line, replay) =>
+        !this.disposed && this.session === session && session.active && this.rig.mode === "talk"
+          ? talkVoice(this.talkCast, this.npcs, this.npcLayer, id, line, replay) : undefined : undefined,
       npcReact: (id, kind, repeat) => { if (this.session === session) this.naturalView?.feedback(id, repeat ? "repeat" : kind); },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
@@ -2210,24 +2203,12 @@ export class Game implements GameApi {
           scene: this.scene, room: zone.interior, wild: zone.interior?.wild?.space,
           field: zone.interior ? undefined : this.field, max: THEME.talkCamera?.max ?? 30,
         }), () => this.transitioning || (hasArt && picturesOn(useStore.getState().settings)));
-      if (!isCall(session.sit)) {
-        this.naturalView = module.bindNaturalTalk({
-          run, zone, host, cast: this.talkCast, people, player: this.player, audio,
-          authoredCast: session.sit.npcs,
-          extras: this.extras.filter((_, i) => {
-            const person = ROOM_PEOPLE[zone.id]?.[i];
-            return person?.chat === undefined && !person?.says;
-          }),
-          free: (n) => !this.modes.active?.controlsNpc?.(n.id),
-          idleWorkHands: (n) => !!AT_WORK[n.id] && n.ch.busy === AT_WORK[n.id],
-        }, {
-          hasArt,
-          valid: () => live() && this.npcs === people && !!this.talkSpeaker &&
-            this.talkSpeaker.ch.root.parent === this.npcLayer && this.talkSpeaker.ch.root.visible,
-          ready: () => !!this.talkCamera?.layout && !!this.rig.talk && !this.covered,
-          blocked: () => this.transitioning || !!this.modes.active,
-        });
-      }
+      if (!isCall(session.sit)) this.naturalView = module.bindTownTalk({
+        run, zone, host, cast: this.talkCast, people, player: this.player, audio,
+        authoredCast: session.sit.npcs, extras: this.extras, layer: this.npcLayer, work: AT_WORK,
+        speaker: () => this.npcs === people && live() ? this.talkSpeaker : null,
+        mode: () => this.modes.active,
+      }, hasArt, () => !!this.talkCamera?.layout && !!this.rig.talk && !this.covered, () => this.transitioning);
     });
   }
 

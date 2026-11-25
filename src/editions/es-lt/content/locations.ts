@@ -1,8 +1,7 @@
 // Puerto Colibrí for Lithuanians (docs/es/LEARNER-LT.md): the Spanish edition's places with their Lithuanian names
 // and meanings (src/editions/es-lt/tables/_shared.json), and the place lines written the Lithuanian way.
 import { LOCATIONS, NAME_MEANING, TOWN_LT as TOWN_ES } from "@/content/locations";
-import { applyLearner } from "../../es/learner/walk";
-import { SHARED } from "../tables/loaded";
+import { applyLearner, SHARED } from "../tables/loaded";
 
 const T = SHARED;
 if (T) {

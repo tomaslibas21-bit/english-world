@@ -4,8 +4,7 @@
 // (tables/<id>.json) and, with the first one, every table's texts (tables/value-text.gen.json; tables/loaded.ts).
 import type { SituationDef, SituationMeta } from "@/content/types";
 import { LOAD as EDITION_LOAD } from "@/content/situations/meta.gen";
-import { applyLearner, type LearnerTable } from "../../../es/learner/walk";
-import { LOADED, learnerApplied, loadValueText } from "../../tables/loaded";
+import { applyLearner, LOADED, learnerApplied, loadValueText, type LearnerTable } from "../../tables/loaded";
 
 export const META: SituationMeta[] = [
   {"id":"p18-startup","song":"P18","songTitle":"Up to My Ears","title":{"en":"Hasta el cuello","lt":"Darbų iki kaklo"},"topic":{"en":"Una semana en una startup","lt":"Savaitė startuolyje"},"chapter":9,"order":1,"location":"sproutly","npc":"tyler","goal":"Pasikalbėk su startuolio įkūrėju, kuris kalba posakiais: paklausk, ką jie reiškia, pasakyk, kad darbų jau turi per akis, ir susitark, kas svarbiausia.","intro":"Trečiadienis, pirmoji tavo savaitė startuolyje „Brotecito“, kuris kuria augalų priežiūros programėlę. Biuras – sename sandėlyje prie krantinės: čiuožykla, sėdmaišiai, lipniais lapeliais nuklijuota siena ir šuo, vardu Wifi. Tavęs jau laukia klaidų ataskaitos ir klientų laiškai. Ateina įkūrėjas Toño: malonus, chaotiškas, o jo kalba pilna meksikietiškų posakių. Kolegos čia vieni kitiems sako „tu“."},

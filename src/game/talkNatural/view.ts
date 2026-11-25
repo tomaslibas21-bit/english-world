@@ -1,6 +1,9 @@
+import type { Object3D } from "three";
 import { picturesOn, useStore, type ConvUI } from "../../state/store";
+import type { GameMode } from "../kit/modes";
+import { ROOM_PEOPLE } from "../world/roomPeople";
 import type { SessionReaction } from "./feedback";
-import type { NaturalOptions, NaturalSession } from "./session";
+import type { NaturalOptions, NaturalSession, TalkActor } from "./session";
 
 const loadSession = () => import("./session");
 interface Visibility {
@@ -8,6 +11,31 @@ interface Visibility {
   valid(): boolean;
   ready(): boolean;
   blocked(): boolean;
+}
+
+interface TownTalk extends Omit<NaturalOptions, "free" | "idleWorkHands"> {
+  layer: Object3D;
+  work: Readonly<Record<string, string>>;
+  speaker(): TalkActor | null;
+  mode(): GameMode | null;
+}
+
+export function bindTownTalk({ layer, work, speaker, mode, ...options }: TownTalk,
+  hasArt: boolean, ready: Visibility["ready"], transitioning: Visibility["blocked"]) {
+  const people = ROOM_PEOPLE[options.zone.id];
+  return bindNaturalTalk({
+    ...options,
+    extras: options.extras.filter((_, i) => people?.[i]?.chat === undefined && !people?.[i]?.says),
+    free: (actor) => !mode()?.controlsNpc?.(actor.id),
+    idleWorkHands: ({ id, ch }) => !!work[id] && ch.busy === work[id],
+  }, {
+    hasArt, ready,
+    valid: () => {
+      const actor = speaker();
+      return !!actor && actor.ch.root.parent === layer && actor.ch.root.visible;
+    },
+    blocked: () => transitioning() || !!mode(),
+  });
 }
 
 /** Listen for presentation edges and hydrate only while the staged view is usable. */

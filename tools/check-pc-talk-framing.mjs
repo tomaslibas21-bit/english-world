@@ -137,6 +137,7 @@ async function fullVerdict(directory, config) {
     newSkips.push(...skips(report).filter((skip) => !skips(baseline).includes(skip)));
     if (baseline.storage !== config.storage || baseline.learner !== config.learner
         || baseline.edition !== "es" || baseline.issues.length || baseline.expectedRows !== 220 || baseline.missing?.length
+        || baseline.failedRows !== 0 || baseline.unsettledRows !== 0
         || !same(baseline.sizes, sizes) || !same(baseline.screens.map(({ size }) => size), sizes)
         || baseline.screens.some(({ lang, targetLanguages }) => lang !== config.learner || !same(targetLanguages ?? [], ["es"]))
         || !same(keys(baseline.rows), matrix) || !same(skips(baseline), skips(report))) {
@@ -186,6 +187,8 @@ async function fullVerdict(directory, config) {
       settled: entry?.settled ?? null,
       checks: Object.fromEntries(CHECKS.map((name) => [name, entry?.checks?.[name]?.status ?? null])),
       drawCalls: Number.isInteger(entry?.shot?.calls) && entry.shot.calls > 0 ? entry.shot.calls : null,
+      face: entry?.face ?? null,
+      shot: entry?.shot ?? null,
     });
     const previous = beforeRows.get(key(row));
     const before = facts(previous), after = facts(row);
@@ -193,6 +196,26 @@ async function fullVerdict(directory, config) {
     if (!previous || !before.actor || !before.name || !before.zone || !before.held || before.settled === null
         || before.openingZone !== before.zone || Object.values(before.checks).some((status) => status === null)) {
       reasons.push("Missing comparable installed held opening");
+    }
+    const beforeFrame = previous?.frame === frame && jpeg?.isFile()
+      ? await info(path.join(path.dirname(config.before), frame)) : null;
+    if (previous?.pass !== true || before.settled !== true || !beforeFrame?.isFile() || !beforeFrame.size
+        || Object.values(before.checks).some((status) => status !== "PASS")) {
+      reasons.push("Installed row lacks a passing settled capture");
+    }
+    const [width, height] = size.split("x").map(Number);
+    for (const [side, facts] of [["installed", before], ["candidate", after]]) {
+      const { shot, face } = facts;
+      const vector = (value, length) => value?.length === length && value.every(Number.isFinite);
+      if (shot?.quality !== "low" || shot?.viewport?.join("x") !== size
+          || shot?.canvas?.[2] !== width || shot?.canvas?.[3] !== height
+          || !vector(shot?.position, 3) || !vector(shot?.look, 3) || !vector(shot?.offset, 2)
+          || !vector(shot?.panel, 4) || ![shot?.fov, shot?.near, shot?.far].every(Number.isFinite)
+          || ![face?.x, face?.y, face?.w, face?.h].every(Number.isFinite)
+          || Object.keys(shot?.landmarks ?? {}).length !== 9) reasons.push(`Missing ${side} camera or face measurements`);
+    }
+    if (before.shot?.near !== after.shot?.near || before.shot?.far !== after.shot?.far) {
+      reasons.push("Installed and candidate clipping planes differ");
     }
     if (before.actor !== after.actor || before.name !== after.name || before.zone !== after.zone || after.zone !== after.openingZone) {
       reasons.push("Speaker ID, name or opening room differs from the installed row");
