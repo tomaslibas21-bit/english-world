@@ -154,8 +154,8 @@ button.surf-move { cursor: pointer; }
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: max-content; gap: 6px;
     width: min(100%, 540px); overflow-y: auto; overscroll-behavior: contain;
   }
-  .surf.touch .surf-choices:has(> .surf-choice:nth-of-type(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .surf-turn, .surf-choice:only-of-type { grid-column: 1 / -1; }
+  .surf.touch .surf-choices:has(> .surf-choice-row ~ .surf-choice-row ~ .surf-choice-row) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .surf-turn, .surf-turn + .surf-choice-row:last-child { grid-column: 1 / -1; }
   .surf-turn { padding-block: 4px; }
   .surf-turn .surf-mic { width: 44px; height: 44px; }
   .surf-choice { min-height: 46px; align-content: center; padding: 5px 7px; overflow-wrap: anywhere; }
@@ -208,4 +208,19 @@ button.surf-move { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .surf-card, .surf-time i, .surf-balance i { transition: none; }
   .surf-said { animation: none; }
+}
+/* Each answer keeps its own save beside it (the said line too). On a phone held upright the answers stand three in a
+   row, too narrow for a save beside each: there it goes under its answer, the saves level at the cells' foot. */
+.surf-choice-row { align-items: stretch; }
+.surf-choice-row > [data-phrase-save] { align-self: center; }
+.surf-said .btn[data-phrase-save] { margin-left: 2px; }
+@media (max-width: 520px) {
+  .surf.touch .surf-choice-row { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; row-gap: 4px; }
+  .surf.touch .surf-choice-row > [data-phrase-save] { justify-self: center; }
+}
+/* A small phone on its side (iPhone SE class) has no room for them beside or under three answers: there the answer
+   is saved from the said line that follows it, and every phrase from the score card. */
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 740px) {
+  .surf.touch .surf-choice-row { grid-template-columns: minmax(0, 1fr); }
+  .surf.touch .surf-choice-row > [data-phrase-save] { display: none; }
 }

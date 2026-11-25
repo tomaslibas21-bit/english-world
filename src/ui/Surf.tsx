@@ -210,16 +210,20 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
     </div>}
     {s.choice && !s.over && <div className="surf-choices">
       <Mic mic={s.mic} on={s.micOn} touch={touch} />
-      {s.choice.options.map((o, i) => <button type="button" key={o.cue} className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
-        {!touch && <kbd>{i + 1}</kbd>}
-        <Answer s={o.s} lt={sayLt} />
-      </button>)}
+      {s.choice.options.map((o, i) => <div className="phrase-save-row surf-choice-row" key={o.cue}>
+        <button type="button" className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
+          {!touch && <kbd>{i + 1}</kbd>}
+          <Answer s={o.s} lt={sayLt} />
+        </button>
+        {situationId && <SurfSave sentence={o.s} situationId={situationId} iconOnly />}
+      </div>)}
     </div>}
     {s.said && !s.choice && !s.over && <div className="surf-said">
       <Icon name="check" size={18} strokeWidth={2.6} />
       <span className="surf-said-words"><span lang="en">{s.said.s.en}</span>
         {sayLt && <small>{s.said.s.nat || s.said.s.units.map((u) => u.lt).join(" ")}</small>}
       </span>
+      {situationId && <SurfSave sentence={s.said.s} situationId={situationId} iconOnly />}
     </div>}
     {touch && !s.over && !panel && <SurfPad todo={s.todo} pressed={s.pressed} />}
     {s.over && <ScoreCard title={R.done.lt} rows={[
