@@ -259,7 +259,6 @@ export class Game implements GameApi {
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
   private placedNametags: PlacedNametag[] = [];
-  private chatterBox: TagBox = { x0: 0, x1: 0, y0: 0, y1: 0 };
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
@@ -994,6 +993,7 @@ export class Game implements GameApi {
         coach.begin();
       }
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
+      if (this.zone !== z) this.clearNametagLayout();
       if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
@@ -1096,7 +1096,6 @@ export class Game implements GameApi {
 
   private spawnNpcs() {
     this.placedNametags.length = 0;
-    if (this.nametagLayout) this.nametagLayout.boxes = this.nametagLayout.rect = undefined;
     for (const n of this.npcs) {
       n.ch.rightHand.getObjectByName("billiards-owner-cue")?.traverse((piece) => {
         if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
@@ -3853,10 +3852,15 @@ export class Game implements GameApi {
     for (const ch of this.extras) ch.update(dt);
   }
 
-  watchNametagLayout(layout: NametagLayout | null) {
-    if (this.nametagLayout) this.nametagLayout.boxes = this.nametagLayout.rect = undefined;
-    this.nametagLayout = layout;
-    return this.tagLayer;
+  watchNametagLayout(create: (layer: HTMLElement) => NametagLayout) {
+    this.clearNametagLayout();
+    const layout = this.nametagLayout = create(this.tagLayer);
+    return () => { if (this.nametagLayout === layout) this.clearNametagLayout(); };
+  }
+
+  private clearNametagLayout() {
+    this.nametagLayout?.dispose();
+    this.nametagLayout = null;
   }
 
   private updateTags() {
@@ -3892,32 +3896,14 @@ export class Game implements GameApi {
     const placed = this.placedNametags;
     placed.length = 0;
     const layout = this.nametagLayout;
-    const rect = layout && shown.length && this.tagLayer.offsetWidth && this.tagLayer.style.visibility !== "hidden"
-      ? this.tagLayer.getBoundingClientRect() : undefined;
-    const scaleX = rect?.width ? rect.width / this.tagLayer.offsetWidth : 1;
-    const scaleY = rect?.height ? rect.height / this.tagLayer.offsetHeight : 1;
-    let avoidChatter = false;
-    if (rect && layout?.bubble.style.visibility === "visible") {
-      const r = layout.bubble.getBoundingClientRect(), tail = 6;
-      if (r.width && r.height) {
-        const box = this.chatterBox;
-        box.x0 = (r.left - rect.left) / scaleX - tail;
-        box.x1 = (r.right - rect.left) / scaleX + tail;
-        box.y0 = (r.top - rect.top) / scaleY - tail;
-        box.y1 = (r.bottom - rect.top) / scaleY + tail;
-        hud.push(box);
-        avoidChatter = true;
-      }
-    }
-    // Text and fonts can change while a bubble is on screen. Read sizes before writing transforms.
-    if (rect) for (const { n } of shown) {
-      const size = n.tagSize ??= [0, 0];
-      size[0] = n.tag.offsetWidth;
-      size[1] = n.tag.offsetHeight;
-    }
+    const chatter = shown.length ? layout?.blocker() : undefined;
+    if (chatter) hud.push(chatter);
     for (const s of shown) {
-      const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
-      if (rect && (!tw || !th)) continue;
+      const { n } = s;
+      const size = layout?.size(n.tag, n.tagSize) ?? n.tagSize ?? [n.tag.offsetWidth, n.tag.offsetHeight];
+      const [tw, th] = size;
+      if (layout && (!tw || !th)) continue;
+      n.tagSize = size;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
       for (const p of hud) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
@@ -3938,13 +3924,8 @@ export class Game implements GameApi {
       placed.push(bounds);
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
     }
-    if (avoidChatter) hud.pop();
-    if (layout) {
-      layout.boxes = placed;
-      layout.rect = rect;
-      layout.scaleX = scaleX;
-      layout.scaleY = scaleY;
-    }
+    if (chatter) hud.pop();
+    layout?.position(placed);
   }
 
   /** Where the task card, the little map and the buttons are in the picture (the tags keep clear of them), read about
@@ -4133,7 +4114,7 @@ export class Game implements GameApi {
   }
 
   dispose() {
-    this.watchNametagLayout(null);
+    this.clearNametagLayout();
     this.placedNametags.length = 0;
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);

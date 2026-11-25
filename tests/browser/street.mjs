@@ -242,23 +242,58 @@ async function checkMovingChatter(page, bubble, viewport) {
       if (cdp) await finger("touchMove", at);
       else await page.mouse.move(at.x, at.y);
       const sample = await bubble.evaluate((el) => {
+        const { game } = window.__ew;
+        const layer = document.querySelector(".tag-layer");
+        const hud = el.parentElement;
+        const alreadyPlaced = new Set(game.nametagLayout.boxes.map(({ tag }) => tag));
         const nativeRect = Element.prototype.getBoundingClientRect;
-        let reads = 0;
+        const updateTags = game.updateTags;
+        const offsets = ["offsetWidth", "offsetHeight"].map((key) =>
+          [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]);
+        let inTags = false, reads = 0, layerRects = 0, groupRects = 0, uiRects = 0;
+        let frameSizes = 0, tagSizes = 0;
+        game.updateTags = function () {
+          inTags = true;
+          try { return updateTags.call(this); }
+          finally { inTags = false; }
+        };
         Element.prototype.getBoundingClientRect = function () {
           if (this.classList.contains("nametag")) reads++;
+          if (this === layer) layerRects++;
+          if (this === el || this === hud) {
+            if (inTags) groupRects++;
+            else uiRects++;
+          }
           return nativeRect.call(this);
         };
+        for (const [key, descriptor] of offsets) Object.defineProperty(HTMLElement.prototype, key, {
+          ...descriptor,
+          get() {
+            if (this === layer || this === el || this === hud) frameSizes++;
+            if (alreadyPlaced.has(this)) tagSizes++;
+            return descriptor.get.call(this);
+          },
+        });
         try { window.__stepStreet(1, 16); }
-        finally { Element.prototype.getBoundingClientRect = nativeRect; }
+        finally {
+          delete game.updateTags;
+          Element.prototype.getBoundingClientRect = nativeRect;
+          for (const [key, descriptor] of offsets) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        }
+        // The test's own clearance reads happen after restoring the native accessors.
         const r = el.getBoundingClientRect();
         const tags = [...document.querySelectorAll(".nametag")].filter((tag) => tag.checkVisibility({ visibilityProperty: true }));
         const clear = tags.every((tag) => {
           const b = tag.getBoundingClientRect();
           return r.left >= b.right || r.right <= b.left || r.top >= b.bottom || r.bottom <= b.top;
         });
-        return { reads, tags: tags.length, clear, visible: getComputedStyle(el).visibility === "visible" };
+        return { reads, layerRects, groupRects, uiRects, frameSizes, tagSizes,
+          tags: tags.length, clear, visible: getComputedStyle(el).visibility === "visible" };
       });
       assert.equal(sample.reads, 0, "live chatter placement reads no nametag DOMRects");
+      assert.deepEqual([sample.layerRects, sample.groupRects, sample.frameSizes, sample.tagSizes], [0, 0, 0, 0],
+        "steady chatter reuses the layer transform, group size and already placed tag sizes");
+      assert.equal(sample.uiRects, 0, "the former UI loop's group and HUD reads do not recur outside tag placement");
       assert(sample.visible && sample.clear, "the moving bubble stays visible and clears the tags");
       await assertSaveSiblings(bubble, ".street-bubble-text");
       if (sample.tags) taggedFrames++;
@@ -272,38 +307,47 @@ async function checkMovingChatter(page, bubble, viewport) {
 }
 
 async function checkResizedTag(bubble, viewport) {
-  const sample = await bubble.evaluate((el) => {
+  const sample = await bubble.evaluate(async (el) => {
     const { nametagLayout: layout } = window.__ew.game;
     const tag = layout.boxes.find(({ tag }) => tag.checkVisibility({ visibilityProperty: true }))?.tag;
     if (!tag) return null;
     const role = tag.querySelector("i, span");
     const layer = tag.parentElement;
-    const { transform, transformOrigin } = layer.style;
+    const { transform, transformOrigin, right, bottom } = layer.style;
     const { fontSize } = role.style;
     const oldHeight = tag.offsetHeight;
+    const oldWidth = layer.offsetWidth, oldLayerHeight = layer.offsetHeight;
     const pool = layout.boxes;
     const oldBox = pool.find((box) => box.tag === tag);
     try {
       role.style.fontSize = "18px";
+      layer.style.right = "8px";
+      layer.style.bottom = "6px";
       layer.style.transformOrigin = "top left";
       layer.style.transform = "translate(5px, 3px) scale(0.98, 0.97)";
+      // The stepped frame replaces native rAF. Give DOM mutations the same microtask checkpoint.
+      await Promise.resolve();
       window.__stepStreet(1, 0);
       const r = tag.getBoundingClientRect(), a = el.getBoundingClientRect();
       const box = layout.boxes.find((box) => box.tag === tag);
       if (!box || !layout.rect) return null;
       const { rect, scaleX, scaleY } = layout;
       return { reused: pool === layout.boxes && oldBox === box, grew: tag.offsetHeight > oldHeight,
+        resized: layer.offsetWidth < oldWidth && layer.offsetHeight < oldLayerHeight,
         clears: a.left >= r.right || a.right <= r.left || a.top >= r.bottom || a.bottom <= r.top,
         error: Math.max(Math.abs(rect.left + scaleX * box.x0 - r.left), Math.abs(rect.left + scaleX * box.x1 - r.right),
           Math.abs(rect.top + scaleY * box.y0 - r.top), Math.abs(rect.top + scaleY * box.y1 - r.bottom)) };
     } finally {
       role.style.fontSize = fontSize;
+      layer.style.right = right;
+      layer.style.bottom = bottom;
       layer.style.transform = transform;
       layer.style.transformOrigin = transformOrigin;
+      await Promise.resolve();
       window.__stepStreet(1, 0);
     }
   });
-  assert(sample?.reused && sample.grew && sample.clears && sample.error <= 0.51,
+  assert(sample?.reused && sample.grew && sample.resized && sample.clears && sample.error <= 0.51,
     `${viewport.join("x")}: the pooled box tracks the resized tag in its offset, scaled layer (${JSON.stringify(sample)})`);
 }
 

@@ -1,122 +1,27 @@
 import { useLayoutEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { game, type NametagLayout } from "../../game/gameRef";
+import { game } from "../../game/gameRef";
 import { useStreet } from "../../game/street/StreetLife";
 import { STREET_WORDS } from "../../game/street/words";
 import { HL } from "../i18n";
 import { GlossLine } from "../kit/GlossLine";
 import { PhraseSave } from "../kit/PhraseSave";
-import { createBubblePlacement } from "./bubblePlacement";
+import { createChatterLayout } from "./chatterLayout";
 import "./street.css";
-
-const MENU_BLOCKERS = ".toolbar-drawer, .toolbar-tools";
-const HUD_BLOCKERS = ".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, .minimap, " +
-  ".toolbar, .toolbar .radio-tool, .joy, .jump-btn, .act-btn, .prompt, " + MENU_BLOCKERS;
-const VISIBLE_BOX = { visibilityProperty: true };
-
-function hasBlocker(nodes: NodeList) {
-  for (const node of nodes) {
-    if (node instanceof Element && (node.matches(HUD_BLOCKERS) || node.querySelector(HUD_BLOCKERS))) return true;
-  }
-  return false;
-}
-
-function readBlockers(hud: HTMLElement, tagCount: number) {
-  const elements = Array.from(hud.querySelectorAll<HTMLElement>(HUD_BLOCKERS), (el) => ({
-    el, menu: el.matches(MENU_BLOCKERS) ? el.closest(".toolbar") : null,
-  }));
-  return { elements, ...createBubblePlacement(elements.length + tagCount) };
-}
 
 export default function StreetBubbles() {
   const [key, id, line, translated, translate] = useStreet(useShallow(({ bubble }) =>
     [bubble?.key, bubble?.id, bubble?.line, bubble?.translated, bubble?.translate] as const));
   const bubbleRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef<(() => void) | null>(null);
 
   useLayoutEffect(() => {
     const group = bubbleRef.current, hud = group?.parentElement;
     if (!group || !hud) return;
-    const town = game;
-    const tags: NametagLayout = { bubble: group, scaleX: 1, scaleY: 1 };
-    const tagLayer = town?.watchNametagLayout?.(tags);
-    let cache = readBlockers(hud, tagLayer?.childElementCount ?? 0);
-    const observer = new MutationObserver((records) => {
-      if (records.some(({ target, addedNodes, removedNodes }) => target === tagLayer || hasBlocker(addedNodes) || hasBlocker(removedNodes))) {
-        cache = readBlockers(hud, tagLayer?.childElementCount ?? 0);
-      }
-    });
-    observer.observe(hud, { childList: true, subtree: true });
-    if (tagLayer) observer.observe(tagLayer, { childList: true });
-
-    const findPlacement = () => {
+    return game?.watchNametagLayout?.((layer) => createChatterLayout(group, hud, layer, () => {
       const bubble = useStreet.getState().bubble;
-      if (!bubble?.anchor || bubble.key !== key || (tagLayer && !tags.boxes)) return;
-      const { anchor } = bubble;
-      const screen = hud.getBoundingClientRect();
-      const { width, height } = group.getBoundingClientRect();
-      const screenWidth = hud.offsetWidth, screenHeight = hud.offsetHeight;
-      if (!width || !height || !screenWidth || !screenHeight || !screen.width || !screen.height) return;
-      const scaleX = screen.width / screenWidth, scaleY = screen.height / screenHeight;
-      const { elements, blockers, place } = cache;
-      let count = 0;
-      for (const { el, menu } of elements) {
-        if (menu && !menu.classList.contains("menu-open")) continue;
-        if (!(el.checkVisibility?.(VISIBLE_BOX) ?? getComputedStyle(el).visibility === "visible")) continue;
-        const rect = el.getBoundingClientRect();
-        if (!rect.width || !rect.height) continue;
-        const bounds = blockers[count++];
-        bounds.left = (rect.left - screen.left) / scaleX;
-        bounds.right = (rect.right - screen.left) / scaleX;
-        bounds.top = (rect.top - screen.top) / scaleY;
-        bounds.bottom = (rect.bottom - screen.top) / scaleY;
-      }
-      const { rect, boxes } = tags;
-      if (rect?.width && rect.height && boxes && tagLayer?.isConnected &&
-        (tagLayer.checkVisibility?.(VISIBLE_BOX) ?? getComputedStyle(tagLayer).visibility === "visible")) {
-        const x = (rect.left - screen.left) / scaleX, y = (rect.top - screen.top) / scaleY;
-        const sx = tags.scaleX / scaleX, sy = tags.scaleY / scaleY;
-        for (const { tag, x0, x1, y0, y1 } of boxes) {
-          if (tag.parentElement !== tagLayer || tag.style.display === "none" || tag.style.visibility === "hidden") continue;
-          const bounds = blockers[count++];
-          // Offset sizes round to whole CSS pixels.
-          bounds.left = x + (x0 - 0.5) * sx;
-          bounds.right = x + (x1 + 0.5) * sx;
-          bounds.top = y + (y0 - 0.5) * sy;
-          bounds.bottom = y + y1 * sy;
-        }
-      }
-      return place(anchor.x * screenWidth / 100, anchor.y * screenHeight / 100,
-        width / scaleX, height / scaleY, screenWidth, screenHeight, count);
-    };
-
-    const position = () => {
-      const placement = findPlacement();
-      if (placement) {
-        const { x, y, tail } = placement;
-        group.style.transform = `translate(${x}px, ${y}px)`;
-        group.style.setProperty("--street-tail-x", `${tail.x}px`);
-        group.style.setProperty("--street-tail-y", `${tail.y}px`);
-        group.style.setProperty("--street-tail-angle", `${tail.angle}deg`);
-      }
-      group.style.visibility = placement ? "visible" : "hidden";
-    };
-    // Keep the existing positioning loop for camera motion and live viewport and HUD sizes.
-    const update = () => {
-      position();
-      frame = requestAnimationFrame(update);
-    };
-    positionRef.current = position;
-    let frame = requestAnimationFrame(update);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      if (tagLayer) town?.watchNametagLayout?.(null);
-      positionRef.current = null;
-    };
+      return bubble && bubble.key === key ? bubble.anchor : null;
+    }));
   }, [key]);
-
-  useLayoutEffect(() => { positionRef.current?.(); }, [key, translated]);
 
   return line ? (
     <div ref={bubbleRef} key={key} role="group" className="street-bubble phrase-save-row" data-chatter={id} aria-expanded={translated}>
