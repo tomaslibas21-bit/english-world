@@ -929,11 +929,17 @@ async function completeTour(h, branch, aboard) {
   await wait("the unrelated utterance leaves the turtle question open", (s) => s.miss !== undefined,
     { frames: 3, maxFrames: 1500, sample });
   await visibleText(status, `${names.again} ${wrong}`);
+  await visibleText(status.locator('[lang="es"]'), wrong);
   const same = await read();
   assert.equal(same.tour.lineKey, turtles.cue);
   assert.equal(same.tour.elapsed, 62);
   assert.deepEqual(same.choices, turtles.keys);
   assert.equal(await answerLine(page, branch.turtle).count(), 0);
+  await unitText(tourLine(page, turtles.cue), turtles.cue);
+  for (const key of turtles.keys) await naturalText(choice(page, key), key, true);
+  await target(page.locator('.cenote-tour-card [data-action="natural"]'));
+  await projectedAnimals(h, 2, 2);
+  await shot("06-pair-retry");
   await wait("the speech stub is listening again", (s) => s.listening, { frames: 6, sample });
   await say(h, branch.speech);
   await checkReply(h, turtles.cue, branch.turtle, branch.turtleReply, sample);
@@ -984,6 +990,7 @@ async function assertDry(h, s, reason, count) {
   assert.equal(s.modeBed, null, "the tour leaves no mode audio playing");
   assert(s.follow && s.camera === "follow" && !s.stage);
   assert(s.hudMode === null && s.hudRide === null && !s.hudFade && !s.curtain);
+  assert.equal(s.miss, undefined, "no retry status on return");
   assert.equal(await h.page.locator(".mode-hud, .cenote-tour-card, .cenote-tour-curtain, .ride-strip, .surf-toolbar").count(), 0);
   assert(await h.page.locator(".toolbar").isVisible());
   assert(await h.page.locator(".minimap").isVisible());

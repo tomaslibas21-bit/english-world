@@ -28,6 +28,9 @@ export default function CenoteTour({ touch }: { touch: boolean }) {
             onClick={() => act("mic", !listening || !micOn)}><Icon name="mic" size={20} /></button>}
         </div>
       </div>
+      {mic.status === "unclear" && !!choices.length && <small role="status" lang={HL}>
+        {L("Pabandykite dar kartą.")} {mic.heard && <span lang={TL}>{mic.heard}</span>}
+      </small>}
       <div data-line={line.key} data-speaker="ines" className="cenote-tour-line" aria-live="polite">
         <GlossLine sentence={line.sentence} compact={natural} gloss interactive={false} />
       </div>
@@ -41,7 +44,6 @@ export default function CenoteTour({ touch }: { touch: boolean }) {
           <span><GlossLine sentence={sentence} compact gloss /></span>
         </button>)}
       </div>}
-      {mic.status === "unclear" && !!choices.length && <small role="status" lang={HL}>{L("Pabandykite dar kartą.")} {mic.heard && <span lang={TL}>{mic.heard}</span>}</small>}
     </section>}
   </>;
 }
