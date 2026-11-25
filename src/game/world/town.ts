@@ -6,20 +6,19 @@ import { EDITION } from "../../edition";
 import { loteriaTables } from "../loteria/scene";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
 import * as THREE from "three";
-import { Ledges } from "../ledges";
-import type { OcclusionField } from "../occlusion";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, OUTDOOR_NPCS, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mergeCarParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
+import { TownMerger } from "./townMerger";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
@@ -41,7 +40,7 @@ export interface Seat {
 
 export interface StandTaxi {
   root: THREE.Group;
-  fallback: THREE.Mesh;
+  fallback?: THREE.Mesh;
   instance?: THREE.Group;
 }
 
@@ -72,17 +71,7 @@ export interface Town {
   portals: { minX: number; maxX: number; minZ: number; maxZ: number; y0: number; y1: number }[];
 }
 
-export function buildTownLedges(town: Town, field: Pick<OcclusionField, "overSolid">, slice?: (next: () => void) => void) {
-  const beside: [number, number][] = OUTDOOR_NPCS.flatMap(({ x, z, ax, az }) => ax !== undefined && az !== undefined ? [[x, z], [ax, az]] : [[x, z]]);
-  const keep: [number, number][] = town.doors.map(({ x, z }) => [x, z]);
-  for (const seat of town.seats) if (seat.table) keep.push([seat.x, seat.z]); // tables and chairs under umbrellas
-  return Ledges.build(town.group, town.colliders, {
-    skip: (o) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || o === town.parkedCars.group,
-    thin: (o) => !!(o.userData.thin || o.userData.roofOnly),
-    tall: (x, z) => field.overSolid(x, z),
-    beside, keep,
-  }, slice);
-}
+export { buildTownLedges } from "../townCollision";
 
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
@@ -119,7 +108,7 @@ export function backgroundHillPosition(x: number, z: number, fx: number, fz: num
   return { x, z };
 }
 
-export function buildTown({ movableParking = false } = {}): Town {
+export function buildTown({ movableParking = false, finalParking = false } = {}): Town {
   const group = new THREE.Group();
   group.name = "town";
   const colliders = new Colliders();
@@ -274,7 +263,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   if (EDITION.id === "en") addMapleQuestProps(M, colliders, group, photo);
   addHarbor(M, colliders, group, r, photo);
   addTransport(M, colliders, group, photo);
-  const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
+  const parkedCars = makeParkedCars(movableParking ? undefined : colliders, finalParking);
   group.add(parkedCars.group);
   const roadSign = makeExitSign(colliders);
   group.add(roadSign.root);
@@ -1803,25 +1792,28 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
 }
 
-function makeParkedCars(staticColliders?: Colliders): ParkedCars {
+export function makeParkedCars(staticColliders?: Colliders, finalParking = false): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
   const fleet = new ParkedFleet(group);
   let standTaxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color, trim } = spot;
-    const { width, length, height } = carModelEntry(model).collisionBox;
-    const taxi = model === "taxi";
-    const fallbackParts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
-    for (const [geometry] of fallbackParts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
     const atStand = spot === TAXI && TAXI_ROUTES.length > 0;
-    const fallback = staticColoured(mergeCarParts(fallbackParts), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    let fallback: THREE.Mesh | undefined;
+    if (!finalParking) {
+      const { width, length, height } = carModelEntry(model).collisionBox;
+      const taxi = model === "taxi";
+      const parts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
+      for (const [geometry] of parts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
+      fallback = staticColoured(mergeCarParts(parts), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    }
     if (atStand) {
       // The mode boards the stand car itself and owns its collision and climbing surfaces.
       const root = new THREE.Group();
       root.position.set(x, 0, z);
       root.rotation.y = rot;
-      root.add(fallback);
+      if (fallback) root.add(fallback);
       group.add(root);
       standTaxi = { root, fallback };
       continue;
@@ -1829,7 +1821,7 @@ function makeParkedCars(staticColliders?: Colliders): ParkedCars {
     staticColliders?.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
     fleet.add(spot, fallback);
   }
-  fleet.refresh();
+  if (!finalParking) fleet.refresh();
   return { group, fleet, placements: PARKED_CARS, taxi: standTaxi };
 }
 
@@ -2556,76 +2548,6 @@ const mx: MX.Part[] = [];
 /** …and the ones that cast no shadow worth drawing (window bars, bougainvillea, roof parapets and tinacos, topes,
  *  sign posts). */
 const mxFlat: MX.Part[] = [];
-/** This edition's town (theme.ts `townMerge`): every plain coloured shape (an opaque Lambert colour with no texture, no
- *  glow, no shader of its own, no polygon offset) goes into a vertex-coloured mesh for its square of the town (`cell`
- *  metres a side, by its middle), one that casts shadows and one that doesn't, instead of a mesh per colour spread over
- *  the whole town: the same look (a flat-shaded colour keeps its facets) in a few draw calls for what is in view, and
- *  no triangles for the squares out of it. The rest (glass, lamps, signs, textured walls) is merged per material as
- *  before. */
-/** What a square's mesh holds: shapes that cast shadows, ones that don't, the overhead lines (thin: the walking camera
- *  looks through them, no shadow) and roofs it looks through that do cast one (the gas station's canopy). */
-type Kind = "cast" | "still" | "thin" | "thinCast";
-class TownMerger extends Merger {
-  private cells = new Map<string, Record<Kind, [THREE.BufferGeometry, THREE.Color][]>>();
-  private box = new THREE.Box3();
-  private c = new THREE.Vector3();
-  constructor(private cell: number) { super(); }
-  /** Each key as Merger has it: its first shape's shadow stands for every shape added under it, and each shape keeps
-   *  its own material's colour (a plain one baked into the squares' meshes, another in Merger's own mesh). */
-  private keys = new Map<string, { cast: boolean; receive: boolean; mats: Map<THREE.Material, { plain: boolean; color: THREE.Color; flat: boolean }> }>();
-  add(key: string, m: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
-    let k = this.keys.get(key);
-    if (!k) { k = { cast, receive, mats: new Map() }; this.keys.set(key, k); }
-    let e = k.mats.get(m);
-    if (!e) {
-      const l = m as THREE.MeshLambertMaterial;
-      const plain = !!l.isMeshLambertMaterial && !l.map && !l.transparent && !l.vertexColors && l.side === THREE.FrontSide && l.emissive.getHex() === 0 && k.receive
-        && !l.polygonOffset && l.depthWrite && !Object.prototype.hasOwnProperty.call(l, "onBeforeCompile");
-      e = { plain, color: plain ? l.color.clone() : new THREE.Color(), flat: plain && l.flatShading };
-      k.mats.set(m, e);
-    }
-    if (!e.plain) return super.add(key, m, geo, k.cast, k.receive);
-    const g = geo.index ? geo.toNonIndexed() : geo;
-    if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
-    else if (!g.attributes.normal) g.computeVertexNormals();
-    // Keep the hotel's canopy and posts, the drop-off's posts and the taxi sign pole in camera-thin meshes.
-    this.put(g, e.color, /^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
-  }
-  /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
-   *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
-  addParts(parts: MX.Part[], kind: Kind) {
-    for (const [geo, col] of parts) {
-      const g = geo.index ? geo.toNonIndexed() : geo;
-      g.deleteAttribute("normal"); g.computeVertexNormals();
-      this.put(g, new THREE.Color(col), kind);
-    }
-  }
-  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: Kind) {
-    this.box.setFromBufferAttribute(g.attributes.position as THREE.BufferAttribute).getCenter(this.c);
-    const k = Math.floor(this.c.x / this.cell) + "," + Math.floor(this.c.z / this.cell);
-    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [], thinCast: [] }).get(k)!;
-    e[kind].push([g, col]);
-  }
-  build(parent: THREE.Object3D) {
-    super.build(parent);
-    const mat = (townMat ??= new THREE.MeshLambertMaterial({ vertexColors: true }));
-    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin", "thinCast"] as const) {
-      if (!e[kind].length) continue;
-      const mesh = new THREE.Mesh(colourMerge(e[kind]), mat);
-      mesh.castShadow = kind === "cast" || kind === "thinCast";
-      if (kind === "thin" || kind === "thinCast") mesh.userData.thin = true;
-      mesh.receiveShadow = true;
-      mesh.name = "town-" + kind + "-" + k;
-      mesh.matrixAutoUpdate = false;
-      mesh.updateMatrix();
-      parent.add(mesh);
-    }
-    this.cells.clear();
-    this.keys.clear();
-  }
-}
-let townMat: THREE.MeshLambertMaterial | null = null;
-
 /** The edition's overhead lines (theme.ts `cables`): a mesh the walking camera looks through (userData.thin). */
 const wires: MX.Part[] = [];
 /** (theme.ts `poleFade`) the overhead lines' poles, in a mesh that dissolves near the camera. */

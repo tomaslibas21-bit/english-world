@@ -25,6 +25,7 @@ export interface OcclusionOptions {
 export interface Bounds { minX: number; maxX: number; minZ: number; maxZ: number }
 
 const EMPTY_LO = Infinity, EMPTY_HI = -Infinity;
+export const OCCLUSION_CELL = 0.5;
 /** How much of each side of a cell a triangle may touch without counting (a fraction of the cell). */
 const EDGE = 0.3;
 /** A roof one walks under (an awning, a stall's, a kiosco's or a bus shelter's) starts below this height (m); a
@@ -44,16 +45,16 @@ export class OcclusionField {
   readonly base: Uint8Array;
   private minTop: number;
 
-  constructor(b: Bounds, opts: OcclusionOptions = {}) {
-    this.cell = opts.cell ?? 0.5;
+  constructor(b: Bounds, opts: OcclusionOptions = {}, arrays?: Pick<OcclusionField, "lo" | "hi" | "base">) {
+    this.cell = opts.cell ?? OCCLUSION_CELL;
     this.minTop = opts.minTop ?? 1.3;
     this.x0 = b.minX;
     this.z0 = b.minZ;
     this.nx = Math.max(1, Math.ceil((b.maxX - b.minX) / this.cell));
     this.nz = Math.max(1, Math.ceil((b.maxZ - b.minZ) / this.cell));
-    this.lo = new Float32Array(this.nx * this.nz).fill(EMPTY_LO);
-    this.hi = new Float32Array(this.nx * this.nz).fill(EMPTY_HI);
-    this.base = new Uint8Array(this.nx * this.nz);
+    this.lo = arrays?.lo ?? new Float32Array(this.nx * this.nz).fill(EMPTY_LO);
+    this.hi = arrays?.hi ?? new Float32Array(this.nx * this.nz).fill(EMPTY_HI);
+    this.base = arrays?.base ?? new Uint8Array(this.nx * this.nz);
   }
 
   /** The field of everything under `root` (its world matrices brought up to date first). */

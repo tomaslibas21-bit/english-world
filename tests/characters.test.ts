@@ -2,9 +2,11 @@
 // the game reaches for them, the expression a line calls for, the voice's sound for the mouth's shape, and Maple
 // Harbor's people dressed as before (no beachwear).
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import * as THREE from "three";
 import { NPCS, type Look } from "../src/content/npcs";
 import { Character, LONG_HAIR, hairStyle, type Mood } from "../src/game/characters/Character";
+import { withBackpack } from "../src/game/characters";
 import { LOOKS } from "../src/ui/Title";
 import { moodOf } from "../src/game/characters/mood";
 import { walkerLook } from "../src/game/ambient";
@@ -23,6 +25,159 @@ const BEACH: Look[] = [
   { skin: "#d9a47e", hair: { style: "long", color: "#2b1d16" }, top: "#e4007c", bottom: "#00a6a6", swim: "suit", skirt: true, flipflops: true, acc: ["sarong", "sunhat"], accColor: "#e4007c", female: true },
   { skin: "#b07a52", hair: { style: "bun", color: "#1f1a17" }, top: "#1f6fd1", bottom: "#1f6fd1", swim: "suit", acc: ["coverup", "bucket"], accColor: "#fbf6ea", female: true },
 ];
+
+// Frozen from the pre-port load/pc bake, including raw attribute bytes, bounds, and the ordered bind inverses.
+// This branch's backpack rig and Mia's braid differ from the Maple Harbor patch's fixtures.
+function rigDigest(skin: THREE.SkinnedMesh) {
+  const { geometry, skeleton } = skin;
+  const hash = createHash("sha256");
+  for (const name of ["index", "position", "normal", "color", "skinIndex", "skinWeight"]) {
+    const attr = (name === "index" ? geometry.index : geometry.getAttribute(name))!;
+    const { array } = attr;
+    hash.update(JSON.stringify([name, array.constructor.name, attr.itemSize, attr.normalized, attr.count]));
+    hash.update(Buffer.from(array.buffer, array.byteOffset, array.byteLength));
+  }
+  hash.update(JSON.stringify([
+    geometry.boundingBox, skin.boundingBox, skin.boundingSphere, skin.bindMatrix.elements,
+    skeleton.boneInverses.map((matrix) => matrix.elements),
+  ]));
+  return hash.digest("hex");
+}
+
+describe("baked character rigs match R1", () => {
+  it("preserves the learner's backpack, Vinnie's face, and both weights on a posed hair vertex", () => {
+    const learner = new Character(withBackpack(LOOKS.find(({ id }) => id === "m1")!.look));
+    const vinnie = new Character({ ...NPCS.vinnie.look, female: false });
+    const longHair = new Character({ ...NPCS.mia.look, female: true });
+    const hairSkin = skins(longHair)[0];
+    expect(rigDigest(skins(learner)[0]), "learner").toBe("82bed95a5899482aa47b7063b3d21a871fd680af2723b20641503e6d8fb21166");
+    expect(rigDigest(skins(vinnie)[0]), "Vinnie").toBe("212193579313389080fd44d6187216a37c4545b9b30dbd67910cc7976b553f4b");
+    expect(rigDigest(hairSkin), "long hair").toBe("f45349b0d3bd697f3d1fd4f4931121e1e6954de80f445869a400a6ae33ca33d2");
+
+    const { mane } = longHair as unknown as { mane: THREE.Bone };
+    const hairBone = hairSkin.skeleton.bones.indexOf(mane);
+    expect(hairBone).toBeGreaterThanOrEqual(0);
+    const { position, skinIndex, skinWeight } = hairSkin.geometry.attributes;
+    let vertex = 0;
+    while (vertex < position.count && (
+      skinIndex.getX(vertex) !== hairBone || skinWeight.getX(vertex) === 0 || skinWeight.getY(vertex) === 0
+    )) vertex++;
+    expect(vertex).toBeLessThan(position.count);
+
+    const head = hairSkin.skeleton.bones[skinIndex.getY(vertex)];
+    expect(head).not.toBe(mane);
+    head.rotation.set(0.18, 0.42, -0.06);
+    mane.rotation.set(0.09, -0.12, 0.04);
+    longHair.root.updateMatrixWorld(true);
+    const posed = hairSkin.getVertexPosition(vertex, new THREE.Vector3());
+    expect(posed.distanceTo(new THREE.Vector3().fromBufferAttribute(position, vertex))).toBeGreaterThan(0.001);
+    expect(vertex).toBe(557);
+    expect(posed.x).toBeCloseTo(0.012287788880620718, 10);
+    expect(posed.y).toBeCloseTo(1.4018648762758423, 10);
+    expect(posed.z).toBeCloseTo(-0.02585695974771289, 10);
+    for (const actor of [learner, vinnie, longHair]) actor.dispose();
+  });
+
+  it("preserves seated rebakes and their buffer ownership with a held prop and a far twin", () => {
+    const look: Look = { ...NPCS.mia.look, female: true, phone: true };
+    const actor = new Character(look), live = new Character(look);
+    const twin = Character.far(look);
+    const prop = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    actor.rightHand.add(prop);
+
+    const original = skins(actor)[0], liveSkin = skins(live)[0], farGeometry = skins(twin)[0].geometry;
+    const liveDigest = rigDigest(liveSkin);
+    for (const name of Object.keys(original.geometry.attributes)) {
+      expect(original.geometry.attributes[name].array.buffer).not.toBe(liveSkin.geometry.attributes[name].array.buffer);
+    }
+    expect(original.geometry.index!.array.buffer).not.toBe(liveSkin.geometry.index!.array.buffer);
+    let liveDisposals = 0, farDisposals = 0;
+    liveSkin.geometry.addEventListener("dispose", () => liveDisposals++);
+    farGeometry.addEventListener("dispose", () => farDisposals++);
+    expect(actor.attachFar(twin)).toBe(true);
+    actor.setFar(true);
+    const far = skins(actor).find((skin) => skin.visible)!;
+    expect(far.geometry).toBe(farGeometry);
+    expect(far.skeleton).toBe(original.skeleton);
+    expect(rigDigest(far)).toBe("af9e6fe98704b9e01ba138cb38274f6197e3932a5f4229272e104577f38c4b52");
+
+    const lowSeat = "09143b52b5263aaf480956bb3d8c42cca64cb183e13abaf9915149b3b249d70d";
+    for (const [height, digest] of [
+      [0.42, lowSeat],
+      [0.63, "007c49d488abb9887118461fb6dbc491b77ebb3f2fa689da863365a54540a77a"],
+    ] as const) {
+      actor.seatY = height;
+      actor.setAnim("sit");
+      const [seated] = skins(actor);
+      expect(skins(actor)).toHaveLength(1);
+      expect(seated.visible).toBe(true);
+      expect(prop.parent).toBe(actor.rightHand);
+      expect(rigDigest(seated), `seat height ${height}`).toBe(digest);
+      actor.setAnim("idle");
+      expect(skins(actor)[0]).toBe(seated);
+      expect(seated.skeleton.bones.slice(-2).every((bone) => bone.scale.x === 1e-5)).toBe(true);
+    }
+    expect(farDisposals).toBe(1);
+    actor.dispose();
+    expect(liveDisposals).toBe(0);
+    expect(rigDigest(liveSkin)).toBe(liveDigest);
+    live.seatY = 0.42;
+    live.setAnim("sit");
+    expect(rigDigest(skins(live)[0])).toBe(lowSeat);
+    live.dispose();
+    prop.geometry.dispose();
+    prop.material.dispose();
+  });
+
+  it("uses the highest referenced index to choose the width, including nonindexed parts", () => {
+    const actor = new Character(NPCS.vinnie.look);
+    const rig = actor as unknown as { body: THREE.Group; bake(): void };
+    const part = (count: number) => {
+      const geometry = new THREE.BufferGeometry();
+      for (const name of ["position", "normal", "color"]) {
+        geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+      }
+      return geometry;
+    };
+    const padding = part(65533 - skins(actor)[0].geometry.attributes.position.count);
+    padding.setIndex([0, 0, 0]);
+    const triangle = part(3);
+    triangle.setIndex([0, 1, 1]);
+    rig.body.add(new THREE.Mesh(padding), new THREE.Mesh(triangle));
+    rig.bake();
+    const narrow = skins(actor)[0].geometry.index!.array;
+    expect(narrow).toBeInstanceOf(Uint16Array);
+    expect(Array.from(narrow.slice(-3))).toEqual([65533, 65534, 65534]);
+
+    triangle.setIndex(null);
+    rig.bake();
+    const wide = skins(actor)[0].geometry.index!.array;
+    expect(wide).toBeInstanceOf(Uint32Array);
+    expect(Array.from(wide.slice(-3))).toEqual([65533, 65534, 65535]);
+    expect(triangle.index).toBeNull();
+    actor.dispose();
+  });
+
+  it("preserves the representation of a source attribute that is already packed", () => {
+    const actor = new Character(NPCS.vinnie.look);
+    const rig = actor as unknown as { parts: { geo: THREE.BufferGeometry | null }[]; bake(): void };
+    const original = skins(actor)[0].geometry;
+    for (const { geo } of rig.parts) {
+      if (!geo) continue;
+      const color = new Uint8Array(geo.attributes.color.count * 3).fill(173);
+      geo.setAttribute("color", new THREE.BufferAttribute(color, 3, true));
+    }
+    rig.bake();
+    const { geometry } = skins(actor)[0];
+    const color = geometry.attributes.color;
+    expect(color.array).toBeInstanceOf(Uint8Array);
+    expect(color.normalized).toBe(true);
+    expect(color.count).toBe(original.attributes.color.count);
+    expect(color.array.every((value) => value === 173)).toBe(true);
+    expect(geometry.boundingBox).toEqual(original.boundingBox);
+    actor.dispose();
+  });
+});
 
 describe("a character is one mesh", () => {
   it("every one of the cast: one skinned mesh, the same bones for everyone standing, no part left out of the skeleton", () => {

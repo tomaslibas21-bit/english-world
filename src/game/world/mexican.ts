@@ -98,8 +98,13 @@ export class SignAtlas {
 function fit(x: CanvasRenderingContext2D, text: string, size: number, max: number, font = FONT, weight = "800") {
   let s = size;
   x.font = `${weight} ${s}px ${font}`;
-  while (x.measureText(text).width > max && s > 8) { s -= 1; x.font = `${weight} ${s}px ${font}`; }
-  return s;
+  let width = x.measureText(text).width;
+  while (width > max && s > 8) {
+    s -= 1;
+    x.font = `${weight} ${s}px ${font}`;
+    width = x.measureText(text).width;
+  }
+  return { size: s, width };
 }
 
 /** A street's name blade: white letters on blue with a white border, the kind of word ("Calle", "Av.") smaller. */
@@ -109,11 +114,11 @@ const drawBlade = (name: string): Draw => (x, w, h) => {
   const [kind, ...rest] = name.split(" ");
   const main = rest.join(" ") || kind, small = rest.length ? kind : "";
   x.fillStyle = "#ffffff"; x.textBaseline = "middle";
-  const sm = small ? fit(x, small, h * 0.3, w * 0.25, FONT, "700") : 0;
-  const smW = small ? x.measureText(small).width + 10 : 0;
-  const big = fit(x, main, h * 0.56, w * 0.86 - smW);
-  const bigW = x.measureText(main).width, x0 = (w - bigW - smW) / 2;
-  if (small) { x.font = `700 ${sm}px ${FONT}`; x.textAlign = "left"; x.fillText(small, x0, h / 2 + 2); }
+  const sm = small ? fit(x, small, h * 0.3, w * 0.25, FONT, "700") : undefined;
+  const smW = sm ? sm.width + 10 : 0;
+  const { size: big, width: bigW } = fit(x, main, h * 0.56, w * 0.86 - smW);
+  const x0 = (w - bigW - smW) / 2;
+  if (sm) { x.font = `700 ${sm.size}px ${FONT}`; x.textAlign = "left"; x.fillText(small, x0, h / 2 + 2); }
   x.font = `800 ${big}px ${FONT}`; x.textAlign = "left"; x.fillText(main, x0 + smW, h / 2 + 2);
 };
 
@@ -125,14 +130,14 @@ const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: s
   const ty = sub ? h * 0.42 : h * 0.52;
   // (the words clear of the flowers in the corners, on a short board too)
   const room = Math.min(w * 0.78, w - h * 0.86);
-  const s = fit(x, title, h * (sub ? 0.46 : 0.58), room, "Georgia, 'Times New Roman', serif", "italic 900");
+  const { size: s } = fit(x, title, h * (sub ? 0.46 : 0.58), room, "Georgia, 'Times New Roman', serif", "italic 900");
   x.textAlign = "center"; x.textBaseline = "middle";
   x.lineJoin = "round"; x.lineWidth = s * 0.16; x.strokeStyle = edge;
   x.fillStyle = edge; x.fillText(title, w / 2 + s * 0.06, ty + s * 0.06);
   x.strokeText(title, w / 2, ty);
   x.fillStyle = fg; x.fillText(title, w / 2, ty);
   if (sub) {
-    const ss = fit(x, sub, h * 0.2, room, FONT, "800");
+    const { size: ss } = fit(x, sub, h * 0.2, room, FONT, "800");
     // (in the edge's colour on a light board, the letters' on a dark one)
     x.font = `800 ${ss}px ${FONT}`; x.fillStyle = luma(bg) < 0.45 ? fg : edge; x.fillText(sub, w / 2, h * 0.8);
   }
@@ -161,16 +166,24 @@ const drawBoard = (title: string, sub: string, bg: string, fg: string, edge: str
   let rows = [title], size = 0, wide = Infinity;
   for (const r of [[title], ...words]) {
     let s = Math.floor((room / r.length) * (r.length > 1 ? 0.86 : 0.74));
+    if (s < size) continue;
     const widest = () => Math.max(...r.map((t) => x.measureText(t).width));
     x.font = `900 ${s}px ${FONT}`;
-    while (widest() > maxW && s > 8) { s -= 1; x.font = `900 ${s}px ${FONT}`; }
-    if (s > size || (s === size && widest() < wide)) { rows = r; size = s; wide = widest(); }
+    let width = widest();
+    while (width > maxW && s > 8 && s > size) {
+      s -= 1;
+      x.font = `900 ${s}px ${FONT}`;
+      width = widest();
+    }
+    // At the floor the scan accepts even an overflowing row. Above it, further steps would lose on size.
+    if (width > maxW && s > 8) continue;
+    if (s > size || (s === size && width < wide)) { rows = r; size = s; wide = width; }
   }
   const top = b + h * 0.03, mid = top + room / 2;
   x.font = `900 ${size}px ${FONT}`; x.fillStyle = fg;
   rows.forEach((r, i) => x.fillText(r, w / 2, mid + (i - (rows.length - 1) / 2) * size * 1.04 + size * 0.04));
   if (sub) {
-    const ss = fit(x, sub, subH * 0.84, maxW, FONT, "800");
+    const { size: ss } = fit(x, sub, subH * 0.84, maxW, FONT, "800");
     x.font = `800 ${ss}px ${FONT}`; x.fillStyle = luma(bg) < 0.45 ? fg : edge;
     x.fillText(sub, w / 2, h - b - subH / 2 - h * 0.02);
   }
@@ -746,9 +759,9 @@ const drawBuzon: Draw = (x, w, h) => {
   x.fillStyle = "#ffffff"; roundRect(x, 2, 2, w - 4, h - 4, h * 0.12); x.fill();
   x.lineWidth = 5; x.strokeStyle = "#e4007c"; roundRect(x, 6, 6, w - 12, h - 12, h * 0.1); x.stroke();
   x.fillStyle = "#e4007c"; x.textAlign = "center"; x.textBaseline = "middle";
-  const s = fit(x, "BUZÓN", h * 0.42, w * 0.8);
+  const { size: s } = fit(x, "BUZÓN", h * 0.42, w * 0.8);
   x.font = `900 ${s}px ${FONT}`; x.fillText("BUZÓN", w / 2, h * 0.4);
-  const s2 = fit(x, "Correos de México", h * 0.2, w * 0.82, FONT, "800");
+  const { size: s2 } = fit(x, "Correos de México", h * 0.2, w * 0.82, FONT, "800");
   x.fillStyle = "#5f6b2d"; x.font = `800 ${s2}px ${FONT}`; x.fillText("Correos de México", w / 2, h * 0.76);
 };
 
@@ -2246,12 +2259,12 @@ const drawChalk = (title: string, lines: string[]): Draw => (x, w, h) => {
   const rows = lines.length + (title ? 1.25 : 0), rowH = (h - 2 * b - h * 0.06) / rows;
   let y = b + h * 0.03;
   if (title) {
-    const s = fit(x, title, rowH * 0.86, w - 2 * b - 16, FONT, "900");
+    const { size: s } = fit(x, title, rowH * 0.86, w - 2 * b - 16, FONT, "900");
     x.font = `900 ${s}px ${FONT}`; x.fillStyle = "#ffd166"; x.fillText(title, w / 2, y + rowH * 0.62);
     x.fillStyle = "#ffd166"; x.fillRect(w * 0.2, y + rowH * 1.16, w * 0.6, Math.max(2, h * 0.008));
     y += rowH * 1.25;
   }
-  const size = Math.min(...lines.map((l) => fit(x, l, rowH * 0.74, w - 2 * b - 18, FONT, "800")));
+  const size = Math.min(...lines.map((l) => fit(x, l, rowH * 0.74, w - 2 * b - 18, FONT, "800").size));
   lines.forEach((l, i) => {
     x.font = `800 ${size}px ${FONT}`; x.fillStyle = i % 2 ? "#f4f1ea" : "#fdfcf7";
     x.fillText(l, w / 2, y + rowH * (i + 0.52));

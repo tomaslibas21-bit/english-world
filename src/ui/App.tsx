@@ -3,6 +3,8 @@ import { useStore, type PlayMode } from "../state/store";
 import type { Game } from "../game/Game";
 import { setGame, game } from "../game/gameRef";
 import { coach } from "../game/coach";
+import { prepareExteriorCars } from "../game/exteriorAssets";
+import { loadStartupModule } from "../game/startupTask";
 import { Title } from "./Title";
 import { GlyphCard } from "./Cave";
 import { Hud } from "./Hud";
@@ -12,7 +14,7 @@ import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { debugBilliardsLink, debugBaristaLink, takeAutoStart, takeLinkedSituation } from "./playMode";
+import { debugBilliardsLink, debugBaristaLink, linkedSituation, takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
@@ -37,54 +39,78 @@ export function App() {
   }, subscribe: (fn) => radio.store.subscribe(fn) }), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts />{EDITION.id === "en" && <AudioDiagnostics />}</>;
-  return <>{mode === "light" ? <LightPlay /> : <Play />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
+  return <>{mode === "light" ? <LightPlay /> : <Play onBack={() => { useStore.getState().setScreen("title"); setMode(null); }} />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
   void screen;
 }
 
-function Play() {
+function Play({ onBack }: { onBack: () => void }) {
   const stage = useRef<HTMLDivElement>(null);
   const tags = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failure, setFailure] = useState<{ retry(): void; back(): void } | null>(null);
   useEffect(() => {
-    // three.js and the town are a separate download, fetched only in town mode
+    // Start all three requests in this effect, before either module is available.
+    useStore.getState().setScreen("loading");
+    const models = prepareExteriorCars();
+    const module = loadStartupModule(import("../game/Game"));
+    const debugStart = debugBilliardsLink ? "billiards" : debugBaristaLink ? "barista" : undefined;
+    const linked = linkedSituation();
     let g: Game | null = null, gone = false;
-    import("../game/Game").then(({ Game }) => {
-      if (gone) return;
-      g = new Game(stage.current!, tags.current!);
-      setGame(g);
-      g.onReady = () => {
-        // (the 3D game opens with the town itself: from the air on a first visit, Game.beginFlight; where the learner
-        // left off on later ones. The list of situations opens from its button; owner, 18 Nov 2026. The pictures-only
-        // mode's home is the list, LightHome.tsx.)
-        setReady(true); useStore.getState().setScreen("play");
-        const sit = takeLinkedSituation();
-        if (debugBilliardsLink) g!.debugBilliards()?.start();
-        else if (debugBaristaLink) g!.debugBarista()?.start();
-        else if (sit) g!.startScenario(sit);
+    const debugWindow = window as Window & { __ew?: { game: Game } };
+    const release = () => {
+      if (g && game === g) setGame(null);
+      if (debugWindow.__ew?.game === g) delete debugWindow.__ew;
+      g?.dispose();
+      g = null;
+    };
+    void module.then(({ Game }) => {
+      if (gone || !stage.current || !tags.current) return;
+      const instance = g = new Game(stage.current, tags.current, models);
+      instance.onExteriorError = (retry, back) => {
+        if (!gone && g === instance) setFailure({ retry, back });
       };
-      g.init();
-      (window as any).__ew = {
-        game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => g!.carStats(),
-        ...(import.meta.env.DEV ? {
-          sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
-          seaTimer: (seconds?: number) => g!.seaTimer(seconds),
-          seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
-          seaWay: (way?: PlayWay) => g!.wordGameWay("sea", way),
-          seaStart: (way?: PlayWay) => g!.wordGameStart("sea", way),
-          seaForceGate: (correct: boolean) => g!.wordGameForceGate("sea", correct),
-        } : {}),
-        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds),
+      instance.onReady = () => {
+        if (gone || g !== instance) return;
+        setGame(instance);
+        const debug = {
+          game: instance, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => instance.carStats(),
           ...(import.meta.env.DEV ? {
-            previewOptions: (options?: readonly string[]) => g!.roadPreviewOptions(options),
-            way: (way?: PlayWay) => g!.wordGameWay("road", way),
-            start: (way?: PlayWay) => g!.wordGameStart("road", way),
-            forceGate: (correct: boolean) => g!.wordGameForceGate("road", correct),
-          } : {}) },
-        billiards: g.debugBilliards(), barista: g.debugBarista(), loteria: g.debugLoteria(),
+            sea: () => instance.seaDebug(), seaSteer: (lane: number) => instance.seaSteer(lane),
+            seaTimer: (seconds?: number) => instance.seaTimer(seconds),
+            seaPlaceBoat: (x: number, z: number, heading?: number) => instance.seaPlaceBoat(x, z, heading),
+            seaWay: (way?: PlayWay) => instance.wordGameWay("sea", way),
+            seaStart: (way?: PlayWay) => instance.wordGameStart("sea", way),
+            seaForceGate: (correct: boolean) => instance.wordGameForceGate("sea", correct),
+          } : {}),
+          road: { state: () => instance.roadDebug(), steer: (lane: number) => instance.roadSteer(lane), jumpTimer: (seconds?: number) => instance.roadJumpTimer(seconds),
+            ...(import.meta.env.DEV ? {
+              previewOptions: (options?: readonly string[]) => instance.roadPreviewOptions(options),
+              way: (way?: PlayWay) => instance.wordGameWay("road", way),
+              start: (way?: PlayWay) => instance.wordGameStart("road", way),
+              forceGate: (correct: boolean) => instance.wordGameForceGate("road", correct),
+            } : {}) },
+          billiards: instance.debugBilliards(), barista: instance.debugBarista(), loteria: instance.debugLoteria(),
+        };
+        debugWindow.__ew = debug;
+        // The initialized game and HUD become visible together after the first draw.
+        useStore.getState().setScreen("play");
+        setReady(true);
+        const sit = takeLinkedSituation();
+        if (debugBilliardsLink) instance.debugBilliards()?.start();
+        else if (debugBaristaLink) instance.debugBarista()?.start();
+        else if (sit) instance.startScenario(sit, sit === linked);
       };
+      return instance.init(linked, debugStart);
+    }).catch((error) => {
+      if (gone) return;
+      release();
+      setReady(false);
+      console.error("Town startup failed", error);
+      setFailure({ retry: () => setAttempt((previous) => previous + 1), back: onBack });
     });
-    return () => { gone = true; g?.dispose(); setGame(null); };
-  }, []);
+    return () => { gone = true; release(); };
+  }, [attempt]);
   return (
     <>
       <div className="stage" ref={stage} />
@@ -92,6 +118,11 @@ function Play() {
       {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
       <Toasts />
       {!ready && <Loading />}
+      {failure && <div className="startup-error" role="alert">
+        <p>{L("Nepavyko įkelti žaidimo")}.</p>
+        <button className="btn" onClick={() => { setFailure(null); failure.retry(); }}>{L("Bandyti dar kartą")}</button>
+        <button className="btn ghost" onClick={() => { setFailure(null); failure.back(); }}>{L("Grįžti")}</button>
+      </div>}
     </>
   );
 }

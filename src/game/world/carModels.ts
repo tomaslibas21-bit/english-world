@@ -72,13 +72,23 @@ export function carModelEntry(name: CarModelName): CarModelEntry { return CAR_MO
  *  (rides/shapes.ts): its people sit in the open. */
 export function carHasRoof(name: CarModelName | undefined) { return !!name && CAR_MODELS[name].roof; }
 
+export type ExteriorCarModels = ReadonlyMap<CarModelName, CarModel>;
+
 const pending = new Map<CarModelName, Promise<CarModel>>();
 const loaded = new Map<CarModelName, CarModel>();
 
+function loadFromChunk(name: CarModelName) {
+  return import("./carModelLoader").then(({ load }) => load(name));
+}
+
 export function loadCarModel(name: CarModelName): Promise<CarModel> {
+  return cacheCarModel(name, loadFromChunk);
+}
+
+export function cacheCarModel(name: CarModelName, load: typeof loadFromChunk): Promise<CarModel> {
   let request = pending.get(name);
   if (!request) {
-    request = import("./carModelLoader").then(({ load }) => load(carModelEntry(name))).then((model) => {
+    request = load(name).then((model) => {
       loaded.set(name, model);
       return model;
     }).catch((error) => {
@@ -90,14 +100,14 @@ export function loadCarModel(name: CarModelName): Promise<CarModel> {
   return request;
 }
 
+export function isCarModelLoaded(name: CarModelName) { return loaded.has(name); }
+export function loadedCarModelCount() { return loaded.size; }
+
 export function spinCarWheels(mesh: Object3D, model: CarModelEntry, distance: number) {
   if (distance === 0) return;
   const radians = distance / (0.3 * model.scale[2]);
   for (const name of model.wheelNodes) mesh.getObjectByName(name)?.rotateX(radians);
 }
-
-export function isCarModelLoaded(name: CarModelName) { return loaded.has(name); }
-export function loadedCarModelCount() { return loaded.size; }
 
 /** The town's collision system uses axis-aligned boxes. */
 function bounds(x: number, z: number, rot: number, width: number, length: number) {

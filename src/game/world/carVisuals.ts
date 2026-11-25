@@ -1,9 +1,8 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Ambient } from "../ambient";
-import { loadCarModel, type CarModel, type CarModelName } from "./carModels";
+import type { CarModel, CarModelName, CarPlacement, ExteriorCarModels } from "./carModels";
 import { TAXI } from "./layout";
-import { ParkedFleet } from "./parkedFleet";
 import type { ParkedCars } from "./town";
 
 type TrafficCar = Ambient["traffic"][number] & { model: CarModelName };
@@ -53,7 +52,6 @@ class TrafficBatch {
         wheelMatrices = wheelNodes.map((name) => instance.getObjectByName(name)!.matrixWorld.clone());
         poses.set(car.model, wheelMatrices);
       }
-      car.batchBody = this.bodies.get(car.model)!.mesh;
       const taxi = car.model === "taxi";
       let wheels = this.wheelBatches.get(taxi);
       if (!wheels) {
@@ -83,6 +81,16 @@ class TrafficBatch {
     return [...Array.from(this.wheelBatches.values()).flatMap(({ meshes }) => meshes), ...Array.from(this.bodies.values(), ({ mesh }) => mesh)];
   }
   get count() { return this.entries.length; }
+
+  attach(group: THREE.Group, beforeReplace?: (mesh: THREE.Mesh) => void) {
+    for (const { car } of this.entries) {
+      beforeReplace?.(car.mesh);
+      car.mesh.removeFromParent();
+      car.mesh.geometry.dispose();
+      car.batchBody = this.bodies.get(car.model)!.mesh;
+    }
+    group.add(...this.meshes);
+  }
 
   update(dt: number) {
     for (const batch of this.bodies.values()) batch.count = 0;
@@ -114,6 +122,7 @@ class TrafficBatch {
   }
 
   dispose() {
+    for (const { car } of this.entries) car.batchBody = undefined;
     for (const { mesh } of this.bodies.values()) mesh.geometry.dispose();
     for (const mesh of this.meshes) {
       mesh.removeFromParent();
@@ -125,66 +134,54 @@ class TrafficBatch {
 export class CarVisuals {
   private disposed = false;
   private traffic?: TrafficBatch;
-  private parked = false;
-  private taxi = false;
-  private staticFleet?: ParkedFleet;
-  ready = false;
+  private initialization?: Promise<void>;
 
-  constructor(private parking: ParkedCars | (Omit<ParkedCars, "fleet"> & { fallback: THREE.Mesh }), private ambient: Ambient,
-    private beforeReplace?: (mesh: THREE.Mesh) => void) {
-    // Each fleet replaces its procedural fallback once all the geometry for its batches is ready.
-    void Promise.all([
-      this.loadTraffic().catch((error) => console.warn("Traffic models unavailable", error)),
-      this.loadParking().catch((error) => console.warn("Parked car models unavailable", error)),
-    ]).then(() => { this.ready = true; });
+  constructor(private parking: ParkedCars, private ambient: Ambient, private beforeReplace?: (mesh: THREE.Mesh) => void) {}
+
+  get ready() { return this.traffic !== undefined; }
+
+  initialize(models: Promise<ExteriorCarModels>) {
+    return this.initialization ??= models.then((loaded) => {
+      if (!this.disposed) this.install(loaded);
+    }).catch((error) => {
+      this.initialization = undefined;
+      throw error;
+    });
   }
 
-  private async loadTraffic() {
-    const cars = this.ambient.traffic.filter((car): car is TrafficCar => car.model !== undefined);
-    if (!cars.length) return;
-    const models = await Promise.all(cars.map(({ model }) => loadCarModel(model)));
-    if (this.disposed) return;
-    const traffic = this.traffic = new TrafficBatch(cars, models);
-    traffic.update(0);
-    this.ambient.group.add(...traffic.meshes);
-    for (const { mesh } of cars) {
-      this.beforeReplace?.(mesh);
-      mesh.removeFromParent();
-      mesh.geometry.dispose();
-    }
-  }
-
-  private async loadParking() {
-    const { placements, group, taxi } = this.parking;
-    const models = await Promise.all(placements.map(({ model }) => loadCarModel(model)));
-    if (this.disposed) return;
-    const fleet = "fleet" in this.parking ? this.parking.fleet : (this.staticFleet = new ParkedFleet(group));
-    placements.forEach((spot, i) => {
-      const { color, trim } = spot;
-      const instance = models[i].createInstance(trim ? { body: color, trim } : color);
-      if (taxi && spot === TAXI) {
-        this.beforeReplace?.(taxi.fallback);
-        taxi.instance = instance;
-        taxi.root.add(instance);
-        taxi.fallback.removeFromParent();
-        taxi.fallback.geometry.dispose();
-        return;
-      }
-      const car = fleet.cars.find((entry) => entry.spot === spot);
+  private install(models: ExteriorCarModels) {
+    const { fleet, taxi } = this.parking;
+    const parkedInstance = ({ model, color, trim }: CarPlacement) =>
+      models.get(model)!.createInstance(trim ? { body: color, trim } : color);
+    const parked = fleet.cars.map((car) => {
+      const instance = parkedInstance(car.spot);
       const mesh = new THREE.Mesh(mergeCar(instance), body(instance).material);
       mesh.castShadow = mesh.receiveShadow = true;
-      if (car) {
-        this.beforeReplace?.(car.visual);
-        fleet.replace(car, mesh);
-      } else fleet.add(spot, mesh);
+      return { car, mesh };
     });
-    fleet.refresh();
-    if ("fallback" in this.parking) {
-      this.parking.fallback.removeFromParent();
-      this.parking.fallback.geometry.dispose();
+    const cab = taxi && parkedInstance(TAXI);
+    const cars = this.ambient.traffic.filter((car): car is TrafficCar => car.model !== undefined);
+    const traffic = new TrafficBatch(cars, cars.map(({ model }) => models.get(model)!));
+    traffic.update(0);
+
+    // Build the whole fleet before changing any scene handles.
+    for (const { car, mesh } of parked) {
+      if (car.visual) this.beforeReplace?.(car.visual);
+      fleet.install(car, mesh);
     }
-    this.parked = true;
-    this.taxi = placements.some(({ model }) => model === "taxi");
+    fleet.refresh();
+    if (taxi && cab) {
+      if (taxi.fallback) {
+        this.beforeReplace?.(taxi.fallback);
+        taxi.fallback.removeFromParent();
+        taxi.fallback.geometry.dispose();
+        taxi.fallback = undefined;
+      }
+      taxi.instance = cab;
+      taxi.root.add(cab);
+    }
+    traffic.attach(this.ambient.group, this.beforeReplace);
+    this.traffic = traffic;
   }
 
   update(dt: number) { this.traffic?.update(dt); }
@@ -192,15 +189,15 @@ export class CarVisuals {
   stats() {
     return {
       trafficModels: this.traffic?.count ?? 0,
-      parkedModels: this.parked ? this.parking.placements.length : 0,
-      taxi: this.taxi,
+      parkedModels: this.ready ? this.parking.placements.length : 0,
+      taxi: this.ready && (this.parking.taxi ? !!this.parking.taxi.instance : this.parking.placements.includes(TAXI)),
     };
   }
 
   dispose() {
     this.disposed = true;
     this.traffic?.dispose();
-    this.staticFleet?.dispose();
+    this.traffic = undefined;
     this.parking.taxi?.instance?.removeFromParent();
   }
 }
