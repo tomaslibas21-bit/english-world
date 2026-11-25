@@ -1,7 +1,6 @@
 import { fernLines, fernModels } from "../cave-fern-lines";
 import { caveHints, cavePass } from "../cave-dialogue";
 import { ent } from "../dsl";
-import { GLOBAL } from "../global";
 import type { Ctx, EntityDef, SituationDef } from "../types";
 
 export const FERN_RIDDLES = [
@@ -156,7 +155,7 @@ const sit: SituationDef = {
   steps: [
     { id: "ready", done: (c) => !!c.s.ready, expects: ["ready_ctx", "later_ctx"],
       ask(c) { c.say(c.s.askedReady ? "ask_ready2" : c.visits ? "ask_ready" : "rule"); c.s.askedReady = true; },
-      hints: ["ready", "ask"], suggest: [{ lt: hints.ready.lt, hint: "ready" }, { lt: hints.ask.lt, hint: "ask" }], yes: ready, no: wait, help: wait },
+      hints: ["ready", "ask"], suggest: [{ lt: "Sutikite žaisti", hint: "ready" }, { lt: "Ko nors paklauskite Fernos", hint: "ask" }], yes: ready, no: wait, help: wait },
     { id: "riddle", done: (c) => !!c.s.passed,
       expects: ["guess_ctx", "not_guess_ctx", "not_guess_unknown_ctx", "repeat_ctx", "unsure_ctx", "hard_ctx", "skip_ctx", "reveal_ctx"],
       ask(c) {
@@ -167,8 +166,8 @@ const sit: SituationDef = {
         const { answer, options } = current(c);
         const hint = `guess_${answer}`;
         return [
-          { lt: guessHints[hint].lt, hint, options: [...options] },
-          { lt: hints.help.lt, hint: "help" }, { lt: hints.ask.lt, hint: "ask" },
+          { lt: "Spėkite atsakymą", hint, options: [...options] },
+          { lt: "Paprašykite pagalbos", hint: "help" }, { lt: "Ko nors paklauskite Fernos", hint: "ask" },
         ];
       },
       no: side("think"), help: unsure },
@@ -184,7 +183,7 @@ const sit: SituationDef = {
   finish(c) {
     const end = (cc: Ctx) => { cc.s.closed = true; close(cc); };
     c.expect({ id: "closing", optional: true, hints: ["g_social"],
-      suggest: [{ lt: GLOBAL.hints.g_social.lt, hint: "g_social" }],
+      suggest: [{ lt: "Padėkokite ir atsisveikinkite", hint: "g_social" }],
       on: { g_thanks: (cc) => { cc.say("welcome"); end(cc); }, g_bye: end }, yes: end, no: end });
   },
   handlers: {
@@ -196,7 +195,7 @@ const sit: SituationDef = {
       if (!playing(c)) return;
       c.say("hard_offer");
       c.expect({ id: "hint_offer", optional: true, hints: ["g_yesno"],
-        suggest: [{ lt: GLOBAL.hints.g_yesno.lt, hint: "g_yesno" }], yes: clue, no: side("think") });
+        suggest: [{ lt: "Atsakykite „taip“ arba „ne“", hint: "g_yesno" }], yes: clue, no: side("think") });
       c.hold();
     },
     skip_ctx(c) { if (playing(c)) { c.say("skip_ok"); finishGuess(c, false); } },

@@ -1,7 +1,6 @@
 import { caveHints } from "../cave-dialogue";
 import { oakLines, oakModels } from "../cave-oak-lines";
 import { CAVE_STONE_HINTS, CAVE_STONE_PATTERNS } from "../cave-stones";
-import { GLOBAL } from "../global";
 import type { Ctx, SituationDef } from "../types";
 
 function tellWho(c: Ctx, guessed = false) {
@@ -69,7 +68,7 @@ const sit: SituationDef = {
   steps: [
     { id: "who", done: (c) => !!c.s.known, expects: ["who", "know", "know_ctx"],
       ask: (c) => c.say("ask_who"), hints: ["who", "ask", "g_yesno"],
-      suggest: [{ lt: hints.who.lt, hint: "who" }, { lt: hints.ask.lt, hint: "ask" }],
+      suggest: [{ lt: "Atsakykite ąžuolui", hint: "who" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
       yes: (c) => tellWho(c, true), no: (c) => tellWho(c), help: (c) => tellWho(c) },
     { id: "home", done: (c) => !!c.s.felt, expects: ["feel_home", "feel_like", "feel_thanks", "feel_new"],
       ask(c) {
@@ -77,14 +76,16 @@ const sit: SituationDef = {
         else { c.s.homeSaid = true; c.say("root"); c.say("home"); }
         c.say("ask_feel");
       },
-      hints: ["feel", "ask"], suggest: [{ lt: hints.feel.lt, hint: "feel" }, { lt: hints.ask.lt, hint: "ask" }], yes: (c) => feel(c, "like_back"), no: (c) => feel(c, "feel_space"), help: (c) => feel(c, "feel_space") },
+      hints: ["feel", "ask"], suggest: [{ lt: "Pasakykite, kaip čia jaučiatės", hint: "feel" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
+      yes: (c) => feel(c, "like_back"), no: (c) => feel(c, "feel_space"), help: (c) => feel(c, "feel_space") },
     { id: "promise", done: (c) => !!c.s.promised, expects: ["promise", "promise_ctx", "rest_ctx"],
       ask(c) {
         if (!c.s.goAsked) c.say("slow");
         c.s.goAsked = true;
         c.say("ask_go");
       },
-      hints: ["promise", "ask"], suggest: [{ lt: hints.promise.lt, hint: "promise" }, { lt: hints.ask.lt, hint: "ask" }], yes: (c) => farewell(c), no: (c) => farewell(c, true), help: (c) => farewell(c, true) },
+      hints: ["promise", "ask"], suggest: [{ lt: "Atsakykite, ar mokysitės toliau", hint: "promise" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
+      yes: (c) => farewell(c), no: (c) => farewell(c, true), help: (c) => farewell(c, true) },
   ],
   init(c) { Object.assign(c.s, { known: c.memory.known === true, felt: false, promised: false, closed: false }); },
   start(c) {
@@ -104,7 +105,7 @@ const sit: SituationDef = {
   },
   finish(c) {
     c.expect({ id: "closing", optional: true, hints: ["g_social"],
-      suggest: [{ lt: GLOBAL.hints.g_social.lt, hint: "g_social" }],
+      suggest: [{ lt: "Padėkokite ir atsisveikinkite", hint: "g_social" }],
       on: { feel_thanks: close, g_thanks: close, g_bye: close }, yes: close, no: close });
   },
   merges: {

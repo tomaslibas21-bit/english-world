@@ -24,7 +24,7 @@ export default function Cave({ phoneToast }: { phoneToast: boolean }) {
 
   const open = expanded && (!phoneToast || duringToast);
   const copy = CAVE_COPY.card;
-  const count = <span className="cave-n">{card.n} / {card.of}</span>;
+  const count = <span className="cave-n" role="img" lang="lt" aria-label={copy.roomCount(card.n).lt}>{card.n} / {card.of}</span>;
   const stones = <span className="cave-stones" role="img" aria-label={copy.litCount(card.lit).lt}>
     {Array.from({ length: card.stones }, (_, index) => <i key={index} className={index < card.lit ? "on" : ""} />)}
   </span>;
