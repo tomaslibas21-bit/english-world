@@ -39,28 +39,32 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   (`support`) and walked off (a fall), the rest (a bench's back) stays a wall (`resolve`).
 - **Higher things have their heights too.** A collider that is not mostly knee-high, but mostly no higher than `CLIMB`
   (2.8 m since 15 Nov: what the high jump reaches; it was 1.75 m, a car's roof), is split into pieces with their own
-  heights: a car (hood, windshield, roof, trunk), a low wall and the posts on it, a fence, a trash can, a hydrant, a
-  mailbox, a table, a crate, a fountain's basin, a van's roof, a tall garden wall. What in it is higher than `CLIMB` is
-  a wall, whatever one jumps from; so is a top with less than 2.3 m of room over it (a market stall's table under its
-  awning) and the flank of something that goes on up higher than a car's roof (a fountain's column, a van's side: a
-  wall as high as the thing, so to someone up on it, no wall).
+  heights for surfaces such as a car hood, a low wall, a bin lid, a table, a crate or a fountain's basin. What in it is
+  higher than `CLIMB` remains a wall. A top with less than 2.3 m of headroom stays blocked too, such as a market
+  stall's table under its awning. A steep flank beside a higher surface blocks the player up to the higher surface's
+  height.
 - **Up to a car's roof (`FIRST`, 1.75 m) every top is read exactly as before there was a high jump.** Above it a top must
   be a place to stand: level, half a metre across one way at least (`SPAN`) and 0.2 m² in all (`PLACE`): a wall's
   top, a gate's pillar, a roof; not a pole's end, a beach umbrella's tip or the edge of a price board (those stay
   walls).
+- **Clearance without a landing.** A narrow rail or small post can become a wall with a finite height. Running jumps
+  can cross it when the feet clear it for long enough, and the feet land on the far side. The builders supply
+  clearance heights for sparse details such as the gym bike rack and instanced shrubs. This is prepared at build time
+  and uses the same collision pieces as the landing surfaces.
 - **Roofs to stand on are listed by the town** (`Colliders.addRoof`: the bus shelter's, Maple Harbor's four market
   stalls', the fountain's top bowl). A listed roof is a floor from above only (a `deck` piece): one walks under it as
   before, jumps up through it and lands on it; what stands under it (the shelter's glass, a stall's table) is a wall
   only as high as the room under the roof. A roof that is not listed is no floor (an awning, a canopy, a palapa).
 - A collider the town tags `"edge"` is the edge of where one walks and never a thing to jump onto, however low the
   scrub on it (the clearing round Puerto Colibrí's cenote).
-- **By someone one talks to nothing changes**: a collider within 1.6 m of a person of a conversation (or of the spot
-  one talks to them from) keeps the old limit, so nobody stands on a counter in front of its clerk or on the car its
-  owner is selling. Café tables and their chairs (`keep`), what the camera's field holds solid over 3.5 m (`tall`: a
-  gazebo, a kiosco) and every person are left out as before; buildings (`"building"`), the invisible bounds and the
-  sea are never candidates.
+- **Conversation and room boundaries.** A collider within 1.6 m of someone you can talk to, or their approach
+  spot, keeps the `LAND` limit. Counters, staff desks, people, buildings, invisible bounds and camera-field solids
+  such as the gazebo stay on the ground plan. Low indoor furniture is sampled when its room is built and capped at
+  the plain jump's peak. The low front walls and exit boundaries of rooms remain solid.
+- **Patio seating.** The umbrellas at Sunny Cup and the Trattoria leave too little headroom to land on their
+  tables or chairs.
 - **The jump** (`Hop`): about a metre up (`PEAK` 1.02 m, 0.58 s; the same on a slow phone's long frames), and it
-  lands on what is under it when it comes down: a bench, a car's hood or trunk, a low wall, a fence a metre high. A
+  lands on what is under it when it comes down: a bench, a car's hood or trunk, or a low wall. A
   top up to 5 cm above the feet is still landed on (`TOE`). **Three presses, three steps** (the owner, 16 Nov:
   "single space is jump, double space is flip, triple space a double flip and jumping higher"; on 15 Nov the second
   press alone was the high jump). **The second press in the air is a flip**: at once a third of a metre more

@@ -396,13 +396,14 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
     return { z: p.z, y: hop.y, on };
   };
 
-  it("the bench and the planter are split into pieces with a height; nothing else is touched", () => {
+  it("low props get a height; narrow barriers offer clearance only", () => {
     expect(led.ready).toBe(true);
     // (the fence, the counter and the car have a height too now: more than a jump from a standstill reaches)
     const split = col.boxes.filter((b) => b.split).map((b) => Math.round((b.minX + b.maxX) / 2));
     expect(split).toEqual([0, 6, 12, 18, 24]);
     expect(col.circles.some((c) => c.split)).toBe(false);
-    expect(led.support(12, 0, 1.1, true)).toBeCloseTo(1, 2);
+    expect(led.support(12, 0, 1.1, true)).toBe(0);
+    expect(led.things.find((t) => t.x === 12)?.vault).toBeCloseTo(1, 2);
     expect(led.support(24, 0, 1.1, true)).toBeCloseTo(1, 2);
     // the seat is the whole seat, wider than its collider; the back stays a wall
     expect(led.support(0, 0.1, 0.6, true)).toBeCloseTo(0.55, 2);
@@ -428,8 +429,8 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
     expect(over.y).toBe(0);
   });
 
-  it("a jump gets onto a fence, a counter and a car's body a metre high; walking doesn't", () => {
-    for (const [x, edge] of [[12, 3], [18, 0.35], [24, 2.2]] as const) {
+  it("a jump gets onto a counter and a car's body a metre high; walking doesn't", () => {
+    for (const [x, edge] of [[18, 0.35], [24, 2.2]] as const) {
       const z0 = edge + 2.6;
       const stopped = walk(x, z0, -1, null);
       expect(stopped.on).toBe(0);
