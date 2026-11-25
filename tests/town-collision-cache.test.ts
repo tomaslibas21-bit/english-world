@@ -97,8 +97,8 @@ describe("Maple Harbor collision asset", () => {
     expect([restored.field.nx, restored.field.nz]).toEqual([684, 496]);
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
-    // Pin the camera field with both the west ridge and the surf school.
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("51a41151d7495a1dd9d36dfbb4e743de29aff79eb111133c7d1fffb81b829f8a");
+    // Pin the camera field with the west ridge, the surf school and Slate Cove's headland, ring and maples (mh-cave).
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("ade894ac3ff4ec33d8ca85e35b0cb5b85df42c98a046a4f81181fe0feb77c652");
     expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
     const { approach, shack } = HARBOR_SURF;
     const ridgeY = sandY(shack.x, shack.z) + shack.ridge;

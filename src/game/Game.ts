@@ -2305,7 +2305,7 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ interaction
 
   interact(repeat = false) {
-    if (this.transitioning || this.caveTravel.pending || useStore.getState().hud.glyph) return;
+    if (this.transitioning || this.caveTravel?.pending || useStore.getState().hud.glyph) return;
 
     if (this.rides.water?.suppressInput || this.rides.water?.owns(this.rides.riding)) {
       const st = useStore.getState();
@@ -4356,7 +4356,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone || this.surf?.active || this.caveTravel.pending) return;
+    if (!this.player || !this.zone || this.surf?.active || this.caveTravel?.pending) return;
     const p = this.player.root.position;
     const safe = this.rides.water?.safeSave();
     if (!safe && (this.rides.water?.wet || this.rides.water?.returning)) return;

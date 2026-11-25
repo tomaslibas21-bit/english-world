@@ -160,7 +160,9 @@ try {
         const { left, top } = getComputedStyle(point);
         return [parseFloat(left) / width * 100, parseFloat(top) / height * 100];
       });
-      check(`${label}: the map pin is at the shack`, Math.abs(pos[0] - (12.2 / 294 * 100)) < 0.05 && Math.abs(pos[1] - (38.4 / 200 * 100)) < 0.05, pos);
+      // (the town map reaches west to Slate Cove's headland when the game has it: mh-cave's townMapWest)
+      const west = await page.evaluate(() => window.__ew.game.townMapWest ?? -112);
+      check(`${label}: the map pin is at the shack`, Math.abs(pos[0] - ((-112 + 12.2 - west) / (182 - west) * 100)) < 0.05 && Math.abs(pos[1] - (38.4 / 200 * 100)) < 0.05, { pos, west });
     };
     const clickSchoolAction = async (name) => {
       assert.equal(await schoolRow.count(), 1, `${label}: one Harbor Surf map row`);
