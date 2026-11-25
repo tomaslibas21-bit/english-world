@@ -48,7 +48,7 @@ import { PHOTO_WALK_SITUATION } from "../../src/content/photo-walk-lines";
 import { BILLIARDS_SITUATION, GROUP_KEYS, REPLY_KEYS } from "../../src/content/billiards-lines";
 import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf, unspoken } from "./reach-es";
 import { sceneSit } from "./casting-es";
-import { itemsFor, referenced } from "../line-reach";
+import { itemsFor, mentioned, referenced } from "../line-reach";
 import type { Unreached } from "../enumerate";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
@@ -86,11 +86,13 @@ export interface LinesResult { utts: EsUtt[]; errors: string[]; warnings: string
 const pluralItem = (e: EntityDef | undefined) => !!(e?.attrs?.plural || e?.attrs?.many);
 /** What the runs showed about one line: who said it (and how they were heard: run, sim, probe), with which item lists,
  *  and how many of each kind of item ("<placeholder>|sg" / "|pl"). */
-interface Said { by: Set<string>; how: Map<string, Set<string>>; lists: Map<string, Set<string>>; qty: Map<string, Set<number>> }
+interface Said { by: Set<string>; how: Map<string, Set<string>>; lists: Map<string, Set<string>>; ids: Map<string, Set<string>>; qty: Map<string, Set<number>> }
 
 /** `part` [k, n]: only every n-th conversation from the k-th (town-wide lines in part 0), for workers running side by
  *  side; their lists merge into the whole one (mergeUtts). */
-export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [number, number]; probes?: boolean; log?: (s: string) => void } = {}): LinesResult {
+/** `legacy`: the list as it was made before the 25 Nov 2026 cleanup (heard item lines with every item of their lists,
+ *  lines no code names voiced too), for the comparison in tests/es/voice-list.test.ts. */
+export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [number, number]; probes?: boolean; log?: (s: string) => void; legacy?: boolean } = {}): LinesResult {
   if (EDITION.id !== "es") throw new Error("the Spanish lines need the Spanish edition: EDITION=es npx tsx --import ./tools/edition-hook.mjs …");
   const out = new Map<string, EsUtt>();
   const errors: string[] = [], warnings: string[] = [];
@@ -142,7 +144,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     for (const [ln, list] of Object.entries(sit.entities || {})) for (const e of list) listOf.set(e.id, ln);
     // 0. what the game says (runs-es.ts), made at once in both Spanishes: the same line, vars and learner
     const said = new Map<string, Said>();
-    const saidOf = (lid: string) => { let s = said.get(lid); if (!s) said.set(lid, (s = { by: new Set(), how: new Map(), lists: new Map(), qty: new Map() })); return s; };
+    const saidOf = (lid: string) => { let s = said.get(lid); if (!s) said.set(lid, (s = { by: new Set(), how: new Map(), lists: new Map(), ids: new Map(), qty: new Map() })); return s; };
     // s84: the date is the learner's choice (Santiago or Camila), and the one chosen says every line
     const anyone = usesPartner(sit) ? cast.map((id) => NPCS[id]) : null;
     const heardBy = new Set<string>();
@@ -183,6 +185,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         const ln = id ? listOf.get(id) : undefined;
         if (!ln) continue;
         addTo(s.lists, ph, ln);
+        addTo(s.ids, ph, id!);
         const qty = typeof v === "object" && v ? Number((v as { qty?: number }).qty ?? 1) : 1;
         addTo(s.qty, `${ph}|${pluralItem(look(id!)) ? "pl" : "sg"}`, qty);
       }
@@ -215,6 +218,9 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     for (const [lid, variants] of Object.entries(sit.lines)) {
       if (modeCoachLine(sit.id, lid)) continue;
       const s = said.get(lid);
+      // a line no run, sim or probe said and no code names (as a string, or by a part it is put together from:
+      // line-reach.ts mentioned) is never said (25 Nov 2026, as tools/enumerate.ts): reported below, not voiced
+      if (!opts.legacy && !s && !code.get(lid)?.size && !mentioned(sit, lid)) continue;
       // everyone heard saying it, and everyone the code makes say it (reach-es.ts codeSpeakers); else a guess
       const known = new Set([...(s?.by ?? []), ...(code.get(lid) ?? [])]);
       const speakers = anyone ?? (known.size ? [...known].map((id) => NPCS[id]).filter(Boolean) : guessed.has(lid) ? [NPCS[guessed.get(lid)!]] : people);
@@ -262,9 +268,16 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           // a line nothing heard (18 Nov 2026): the items its code says it with (../line-reach.ts), instead of every
           // item of every list; read nowhere, every list as before, and reported (its item comes from the state:
           // c.s.win2, retDay(c)…; "g_soundcheck" says whatever item the learner named)
-          const own = lists || lid === "g_soundcheck" ? undefined : itemsFor(sit, lid, P);
+          // 25 Nov 2026 (as tools/enumerate.ts for Maple Harbor): a heard line keeps the items of the lists it was heard
+          // with, narrowed to the items its own code says it with when that reading explains every item it was heard
+          // with (s87's ask_years_field2: customer_service only, not every field); the reading only narrows
+          const own = opts.legacy ? (lists || lid === "g_soundcheck" ? undefined : itemsFor(sit, lid, P))
+            : lid === "g_soundcheck" || (read && !s?.lists.get(P)) ? undefined : itemsFor(sit, lid, P);
           const ownIds = own ? new Set(own.map((e) => e.id)) : null;
-          const allowed = (e: EntityDef, ln: string) => (lists ? lists.has(ln) : ownIds ? ownIds.has(e.id) : true);
+          const heardIds = s?.ids.get(P) ?? new Set<string>();
+          const narrow = !opts.legacy && !!ownIds && !read && [...heardIds].every((id) => ownIds.has(id));
+          const allowed = (e: EntityDef, ln: string) => (lists ? lists.has(ln) && (!narrow || ownIds!.has(e.id) || heardIds.has(e.id))
+            : ownIds ? ownIds.has(e.id) : true);
           if (!ownIds && !lists && lid !== "g_soundcheck") unfilled.push(`${sit.id}:${lid}`);
           // a line and its "_pl" twin heard with the two kinds apart (one for the always-plural items, the other for
           // the rest: s74's sayN, s73's veg_no) keep them apart
@@ -290,7 +303,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         plan.push({ lid, i, binds, speakers, who, tag });
       });
     }
-    for (const lid of Object.keys(sit.lines)) if (!said.has(lid) && !modeCoachLine(sit.id, lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
+    for (const lid of Object.keys(sit.lines)) if (!said.has(lid) && !modeCoachLine(sit.id, lid)) unreached.push({ sit: sit.id, line: lid, named: opts.legacy ? referenced(sit, lid) : mentioned(sit, lid) });
     for (const variety of VARIETIES) {
       setVariety(variety); // the text (neutral or Spain twins) and the voice ids (es_ / esn_ / esp_) of this Spanish
       for (const { lid, i, binds, speakers, who, tag } of plan) {
