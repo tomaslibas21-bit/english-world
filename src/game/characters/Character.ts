@@ -15,6 +15,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { HairStyle, Look } from "../../content/npcs";
+import type { NaturalPoseDriver, NaturalRig } from "../talkNatural/contract";
 import { applyPoolPose, type PoolPose } from "./poolPose";
 
 let gradient: THREE.DataTexture | null = null;
@@ -541,6 +542,9 @@ export class Character {
   seatY = 0.5;
   height: number;
   private blinkT = 2 + Math.random() * 3;
+  declare talkPose?: NaturalPoseDriver;
+  declare handsOccupied?: boolean;
+  declare private disposed?: true;
 
   constructor(public look: Look) {
     const h = look.height ?? 1;
@@ -1389,8 +1393,29 @@ export class Character {
   // ------------------------------------------------------------------ animation
 
   setAnim(a: Anim) {
-    if ((a === "sit") !== (this.anim === "sit")) this.fitLegs(a === "sit");
+    if (a === "wave" && this.talkPose) return;
+    if ((a === "sit") !== (this.anim === "sit")) {
+      this.talkPose?.restoreBase();
+      this.fitLegs(a === "sit");
+    }
     this.anim = a;
+  }
+
+  naturalRig(): NaturalRig | undefined {
+    if (this.disposed) return;
+    return {
+      body: this.body, head: this.head, upperL: this.armL, upperR: this.armR, foreL: this.foreL, foreR: this.foreR,
+      thighL: this.legL, thighR: this.legR, shinL: this.shinL, shinR: this.shinR, eye: this.iris,
+      browL: this.browL, browR: this.browR, corners: this.corners, mouth: this.mouth, hair: this.mane,
+      handLength: HAND * (this.look.height ?? 1), carry: this.look.carry,
+    };
+  }
+
+  beginNaturalPose() {
+    this.talking = this.gesture.w = this.avertT = 0;
+    this.level = this.vowel = this.moment = this.reaction = this.moodNow = null;
+    this.face.oh = 0;
+    this.clapNext = false;
   }
 
   /** Seated, the shins reach down to the floor: on seats built for people the characters' short legs would leave
@@ -1493,6 +1518,10 @@ export class Character {
   }
 
   update(dt: number) {
+    const pose = this.talkPose;
+    pose?.advance(dt);
+    if (pose && this.talkPose !== pose) return;
+    const idle = pose && (pose.reduced || !pose.releasing) ? 0 : 1;
     this.t += dt;
     this.blob.visible = Character.blobShadows && !this.wading;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
@@ -1505,7 +1534,7 @@ export class Character {
     // (sitting: the shins' turn sideways and the right one's forward, for crossed ankles)
     let ankles = 0;
     // breathing, at this person's own pace
-    const breath = Math.sin(t * this.breathRate);
+    const breath = Math.sin(t * this.breathRate) * idle;
     if (walking) {
       const run = this.anim === "run";
       // steps at the pace of the real speed when it is known (4.4 m/s walking, 7.4 running)
@@ -1531,23 +1560,23 @@ export class Character {
       // (the wheel goes round: one hand up over it, the other down)
       if (this.busy === "wheel") { lx += this.steer * 0.3; rx -= this.steer * 0.3; lf -= this.steer * 0.25; rf += this.steer * 0.25; }
       if (this.busy === "tiller") rz -= this.steer * 0.35;
-      headTurn = Math.sin(t * this.swayRate) * 0.06;
+      headTurn = Math.sin(t * this.swayRate) * 0.06 * idle;
       bob = breath * 0.004;
       // a reader looks down at the paper
       if (this.busy === "paper") headNod = 0.22;
       this.stance *= 1 - Math.min(1, dt * 5);
     } else {
       bob = breath * 0.006;
-      headTurn = Math.sin(t * this.swayRate) * 0.07;
+      headTurn = Math.sin(t * this.swayRate) * 0.07 * idle;
       // the weight on one leg, then the other, every few seconds (sooner for the lively)
       if ((this.stanceT -= dt) <= 0) {
         this.stanceTo = (this.stanceTo > 0 ? -1 : 1) * (0.45 + Math.random() * 0.55);
         this.stanceT = (4 + Math.random() * 9) / (0.7 + E * 0.6);
       }
       this.stance += (this.stanceTo - this.stance) * Math.min(1, dt * 1.5);
-      hip = this.stance * 0.028;
-      side = this.stance * 0.014;
-      tilt = -this.stance * 0.02;
+      hip = this.stance * 0.028 * idle;
+      side = this.stance * 0.014 * idle;
+      tilt = -this.stance * 0.02 * idle;
     }
     // the shoulders rise and widen a little with each breath
     lz -= breath * 0.008; rz += breath * 0.008;
@@ -1559,7 +1588,7 @@ export class Character {
     headNod += old * 0.045 - (E - 0.5) * 0.03;
     if (!seated) { lx -= old * 0.07; rx -= old * 0.07; lf -= old * 0.1; rf -= old * 0.1; }
     // the little things people do while they wait (see fidget)
-    const m = this.fidget(dt, seated);
+    const m = pose ? null : this.fidget(dt, seated);
     let phoneOut = false, eyesDown = this.busy === "paper" ? 1 : 0;
     if (m) {
       const k = m.w * m.w * (3 - 2 * m.w), s = m.s;
@@ -1603,9 +1632,9 @@ export class Character {
     // ---- talking: the mouth, the brows, the head and the hands follow the voice
     let browUp = 0, browOne = 0, open = 0, happyEyes = false;
     // with a recording to follow, the talking lasts exactly as long as it plays (it often starts a moment late)
-    const lv = this.level?.() ?? null;
+    const lv = pose ? null : this.level?.() ?? null;
     if (lv !== null) this.talking = lv < 0 ? 0 : Math.max(this.talking, 0.1);
-    const speaking = this.talking > 0;
+    const speaking = !pose && this.talking > 0;
     if (speaking) {
       this.talking -= dt;
       // the mouth follows the recording's loudness (pauses between words and sentences close it); with no recording
@@ -1640,7 +1669,7 @@ export class Character {
     const gs = this.gesture;
     gs.t += dt;
     gs.w = clamp(gs.w + (speaking && gs.kind !== "rest" && this.quietT < 0.5 && gs.t < gs.dur ? dt / 0.3 : -dt / 0.45), 0, 1);
-    if (gs.w > 0) {
+    if (!pose && gs.w > 0) {
       const g = GESTURES[gs.kind], k = gs.w * gs.w * (3 - 2 * gs.w), amp = (seated ? 0.7 : 1) * (0.75 + E * 0.45), bt = this.beat;
       let ux = g.ux * amp - bt * 0.06, out = g.out, fx = g.fx * (seated ? 0.85 : 1) + bt * 0.2;
       if (gs.kind === "explain") { ux += Math.sin(t * 5.2) * 0.07; out += Math.cos(t * 5.2) * 0.07; }
@@ -1653,7 +1682,7 @@ export class Character {
       if (gs.kind === "shrug") { shrug = k; tilt += 0.07 * k * gs.side; browUp += 0.006 * k; }
     }
     // reacting to the learner's answer: two small nods (understood), or the head tilted and a brow up (not)
-    if (this.reaction) {
+    if (!pose && this.reaction) {
       const r = this.reaction;
       r.t += dt;
       if (r.kind === "nod") {
@@ -1679,7 +1708,7 @@ export class Character {
         browOne = 0.016 * e;
       } else this.reaction = null;
     }
-    if (this.anim === "wave") {
+    if (!pose && this.anim === "wave") {
       // the arm up and out, the forearm waving from the elbow
       rx = 0; rz = 2.6; rf = 0; rfy = 0;
       rfz = 0.3 + Math.sin(t * 10) * 0.36;
@@ -1688,24 +1717,26 @@ export class Character {
     // ---- where they look: at the learner when near (steadily if their attention is on them, else a glance now and
     // then), the eyes first and the head after; with no one to look at, the eyes wander a little
     const sc = this.saccade;
-    if ((sc.t -= dt) <= 0) {
+    if (idle && (sc.t -= dt) <= 0) {
       sc.t = 0.7 + Math.random() * 2.8;
       if (Math.random() < 0.45) sc.x = sc.y = 0;
       else { sc.x = (Math.random() - 0.5) * 0.017; sc.y = (Math.random() - 0.5) * 0.007; }
     }
-    let gy = 0, gp = 0, ex = sc.x, ey = sc.y - eyesDown * 0.008, looking = false;
-    const wp = this.watch;
+    let gy = 0, gp = 0, ex = sc.x * idle, ey = sc.y * idle - eyesDown * 0.008, looking = false;
+    const poseWatch = pose?.watch;
+    const wp = pose?.reduced ? null : poseWatch ?? this.watch;
+    const steady = this.steady || !!poseWatch;
     if (wp && eyesDown < 0.5) {
       const p = this.root.position, dx = wp.x - p.x, dz = wp.z - p.z, d = Math.hypot(dx, dz);
-      if (d > 0.35 && (this.steady || this.attentive || d < this.noticeWithin)) {
-        if (!this.steady) {
+      if (d > 0.35 && (steady || this.attentive || d < this.noticeWithin)) {
+        if (!steady) {
           if (this.noticeT > 0) this.noticeT -= dt;
           else if ((this.noticeWait -= dt) <= 0) {
             this.noticeT = (this.attentive ? 2 : 1.2) + Math.random() * 2.4;
             this.noticeWait = this.attentive ? 1.2 + Math.random() * 3 : 3 + Math.random() * 8;
           }
         }
-        if (this.steady || this.noticeT > 0) {
+        if (steady || this.noticeT > 0) {
           let rel = Math.atan2(dx, dz) - this.root.rotation.y;
           rel = Math.atan2(Math.sin(rel), Math.cos(rel));
           if (Math.abs(rel) < 1.9) {
@@ -1722,11 +1753,16 @@ export class Character {
       } else if (this.noticeT <= 0) this.noticeWait = Math.min(this.noticeWait, 0.2 + Math.random() * 1.2);
     }
     // (people blink as their eyes move far)
-    if (looking !== this.looking) { this.looking = looking; if (Math.abs(gy - this.gazeYaw) > 0.35 && this.blinkT > 0.4 && Math.random() < 0.7) this.blinkT = BLINK; }
-    this.gazeYaw += (gy - this.gazeYaw) * Math.min(1, dt * (looking ? 5.5 : 3));
-    this.gazePitch += (gp - this.gazePitch) * Math.min(1, dt * 5);
-    this.eyeX += (ex - this.eyeX) * Math.min(1, dt * 24);
-    this.eyeY += (ey - this.eyeY) * Math.min(1, dt * 24);
+    if (pose?.reduced) {
+      this.looking = false;
+      this.gazeYaw = this.gazePitch = this.eyeX = this.eyeY = 0;
+    } else {
+      if (looking !== this.looking) { this.looking = looking; if (Math.abs(gy - this.gazeYaw) > 0.35 && this.blinkT > 0.4 && Math.random() < 0.7) this.blinkT = BLINK; }
+      this.gazeYaw += (gy - this.gazeYaw) * Math.min(1, dt * (looking ? 5.5 : 3));
+      this.gazePitch += (gp - this.gazePitch) * Math.min(1, dt * 5);
+      this.eyeX += (ex - this.eyeX) * Math.min(1, dt * 24);
+      this.eyeY += (ey - this.eyeY) * Math.min(1, dt * 24);
+    }
     headTurn = headTurn * (looking ? 0.25 : 1) + this.gazeYaw;
     headNod += this.gazePitch;
     this.iris.position.set(this.eyeX, this.eyeY, 0);
@@ -1736,27 +1772,30 @@ export class Character {
     const want = FACES[this.moodNow?.kind ?? this.mood], f = this.face, fk = Math.min(1, dt * 7);
     f.brow += (want.brow - f.brow) * fk; f.tilt += (want.tilt - f.tilt) * fk; f.eye += (want.eye - f.eye) * fk;
     f.smile += (want.smile - f.smile) * fk; f.oh += (want.oh - f.oh) * fk;
-    const by = this.browY + f.brow + browUp;
+    const face = idle ? f : FACES.friendly;
+    const by = this.browY + face.brow + browUp;
     this.browL.position.y = by + browOne;
     this.browR.position.y = by;
-    this.browL.rotation.z = f.tilt + browOne * 8;
-    this.browR.rotation.z = -f.tilt;
-    if (speaking && open > 0.06) {
+    this.browL.rotation.z = face.tilt + browOne * 8;
+    this.browR.rotation.z = -face.tilt;
+    // Cues offset the corners even when hidden by the open mouth.
+    if (pose) this.corners.position.y = face.smile;
+    if (pose ? pose.mouth > 0 : speaking && open > 0.06) {
       // open: narrow and tall for a round sound, wide and flatter for a bright one
-      const rd = this.mouthRound;
-      this.mouth.scale.set(1.06 - 0.46 * rd, (0.2 + 0.8 * open) * (0.9 + 0.22 * rd), 1);
+      const rd = pose?.roundness ?? this.mouthRound;
+      this.mouth.scale.set(1.06 - 0.46 * rd, (0.2 + 0.8 * (pose?.mouth ?? open)) * (0.9 + 0.22 * rd), 1);
       vis(this.smile, false); vis(this.corners, false);
-    } else if (!speaking && f.oh > 0.5) {
+    } else if (!pose && !speaking && f.oh > 0.5) {
       // a small round "oh"
       this.mouth.scale.set(0.42, 0.62 * f.oh, 1);
       vis(this.smile, false); vis(this.corners, false);
     } else {
       // closed: the stroke, its corners up or down with the expression (lips together between words: a smaller smile)
       vis(this.mouth, false);
-      const wide = 1 + Math.max(0, f.smile) * 4.5;
+      const wide = 1 + Math.max(0, face.smile) * 4.5;
       this.smile.scale.set(wide, 1, 1);
       this.corners.scale.set(wide, 1, 1);
-      this.corners.position.y = f.smile * (speaking ? 0.6 : 1);
+      this.corners.position.y = face.smile * (speaking ? 0.6 : 1);
     }
 
     if (seated) {
@@ -1916,7 +1955,7 @@ export class Character {
       // long hair: it swings from side to side with the steps and lifts a little off the back; standing, the slightest
       // sway (small enough that a lock or a braid on the chest never sinks into it)
       const go = walking ? Math.min(1, 0.35 + this.moveSpeed / 4) : 0;
-      this.mane.rotation.z = walking ? Math.sin(this.walkPhase) * 0.045 * go : Math.sin(t * this.swayRate * 1.7 + 1.3) * 0.006;
+      this.mane.rotation.z = walking ? Math.sin(this.walkPhase) * 0.045 * go : Math.sin(t * this.swayRate * 1.7 + 1.3) * 0.006 * idle;
       this.mane.rotation.x = walking ? (0.012 + Math.abs(Math.cos(this.walkPhase)) * 0.014) * go : 0;
     }
     // blinking: the lids shut and open again in a fifth of a second (a curved line while they are shut), now and then
@@ -1928,9 +1967,11 @@ export class Character {
       eye = p < 0.32 ? 1 - p / 0.32 : p < 0.55 ? 0 : (p - 0.55) / 0.45;
     }
     const shut = eye < 0.1 || happyEyes;
-    this.eyes.scale.y = shut ? 1e-4 : (0.12 + 0.88 * eye) * f.eye;
+    this.eyes.scale.y = shut ? 1e-4 : (0.12 + 0.88 * eye) * face.eye;
     vis(this.lids, shut);
-    if (this.blinkT < 0) this.blinkT = Math.random() < 0.15 ? 0.36 : (2.2 + Math.random() * 4) * (speaking ? 0.75 : 1);
+    if (this.blinkT < 0) this.blinkT = pose ? 2.2 + Math.random() * 4
+      : Math.random() < 0.15 ? 0.36 : (2.2 + Math.random() * 4) * (speaking ? 0.75 : 1);
+    pose?.apply(walking || this.hopShown || sw > 0 || prone > 0 || stand > 0 || sf.straddle > 0 || !!this.poolPose, shut ? 1 : 1 - eye, looking);
   }
 
   /** A phrase starts: perhaps a gesture for it (the lively gesture more; fewer while sitting or with busy hands), and
@@ -1997,6 +2038,7 @@ export class Character {
   /** Talk for `seconds`; `level` (optional) tells how loud the voice is right now, for the mouth (-1: it has ended),
    *  and `vowel` how round the sound is (0 wide … 1 round), for its shape. */
   talk(seconds: number, level?: () => number | null, vowel?: () => number | null) {
+    if (this.talkPose) return;
     if (this.talking <= 0) this.phrase(this.anim === "sit");
     this.talking = Math.max(this.talking, seconds);
     this.level = level ?? null;
@@ -2004,11 +2046,12 @@ export class Character {
   }
 
   /** Show an expression for `seconds` (then the person's own again, `mood`). */
-  express(kind: Mood, seconds = 4) { this.moodNow = { kind, t: seconds }; }
+  express(kind: Mood, seconds = 4) { if (!this.talkPose) this.moodNow = { kind, t: seconds }; }
 
   /** React to the learner's answer: a nod when understood, a puzzled look when not; applause when the task is done
    *  (after a nod under way). */
   react(kind: "nod" | "puzzled" | "clap") {
+    if (this.talkPose) return;
     if (kind === "clap" && this.reaction?.kind === "nod") { this.clapNext = true; return; }
     this.reaction = { kind, t: 0 };
   }
@@ -2016,6 +2059,8 @@ export class Character {
   /** Frees the GPU memory only this character uses: its baked mesh and its parts' geometries (built per character;
    *  NPCs are rebuilt on every zone change), and the skeleton's bone texture. The material is shared. */
   dispose() {
+    this.disposed = true;
+    this.talkPose?.interrupt();
     this.farSkin?.geometry.dispose();
     this.skin?.geometry.dispose();
     this.skin?.skeleton.dispose();

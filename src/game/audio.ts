@@ -1,5 +1,6 @@
 // Recorded voices and small synthesized sound effects. Browser speech is used for unrecorded lines,
 // or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
+import type { Object3D } from "three";
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
 import { EDITION } from "../edition";
@@ -11,6 +12,7 @@ import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnos
 import { stretchSpeech } from "./timeStretch";
 import { BED_DUCK, BIRDSONG, LOOPS, SAMPLES, STEPS, isSample, type Bed, type BedLoop, type LoopName, type SampleDef, type SampleName, type Surface, type SynthName } from "./soundscape";
 import { TOWN_SOUNDS } from "./townSounds";
+import type { VoiceVisualOwner } from "./talkNatural/contract";
 
 export type DiagnosticPipeline = "html" | "buffer";
 export interface DiagnosticPlaybackState {
@@ -22,12 +24,16 @@ export interface DiagnosticPlaybackState {
 }
 
 export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
+export type VisualPlaybackState = PlaybackState | "ended" | "interrupt" | "muted";
 interface PlaybackRequest {
   done: boolean;
   optional?: boolean;
+  visual?: VoiceVisualOwner;
+  visualStartedAt?: number;
+  visualVolume?: number;
   fail(state: "blocked" | "unavailable"): void;
   cleanup: () => void;
-  finish(completed: boolean): void;
+  finish(completed: boolean, playedToEnd?: true): void;
   retry?: () => void;
   fallback?: () => void;
 }
@@ -86,10 +92,35 @@ export class AudioSystem {
   private ctx: AudioContext | null = null;
   private player: HTMLAudioElement | null = null;
   private request: PlaybackRequest | null = null;
+  declare private visualEnds?: WeakSet<VoiceVisualOwner>;
   private unlocked = false;
   private state: PlaybackState = "idle";
   private listeners = new Set<() => void>();
   getState = () => this.state;
+  get visualOwner() { return this.request?.visual; }
+  visualState(owner: VoiceVisualOwner): VisualPlaybackState {
+    const request = this.request;
+    if (request?.visual !== owner) return this.visualEnds?.has(owner) ? "ended" : "interrupt";
+    if (this.state !== "playing") return this.state;
+    const root = owner.actor.root;
+    if (globalThis.document?.hidden || !root.parent) return "blocked";
+    for (let node: Object3D | null = root; node; node = node.parent) if (!node.visible) return "blocked";
+    if (request.visualStartedAt === undefined) return "loading";
+    const clip = this.clip;
+    if (clip?.done || clip?.el?.ended) return "ended";
+    if (clip?.el) {
+      if (clip.el.paused) return "blocked";
+      if (clip.el.readyState < 3) return "loading";
+    } else if (clip ? this.ctx?.state !== "running" : speechSynthesis.paused) return "blocked";
+    return this.volume <= 0 || clip?.el?.muted || clip?.el?.volume === 0 || request.visualVolume === 0 ? "muted" : "playing";
+  }
+  /** Real playback seconds for this request, retaining the backend's offset on retry. */
+  visualElapsed(owner: VoiceVisualOwner): number {
+    const start = this.request?.visualStartedAt;
+    if (this.visualOwner !== owner || start === undefined) return 0;
+    const clip = this.clip;
+    return clip?.position?.() ?? (clip?.el ? clip.el.currentTime / clip.el.playbackRate : (performance.now() - start) / 1000);
+  }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private setState(state: PlaybackState) {
     if (state === this.state) return;
@@ -310,7 +341,7 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; fallbackLang?: string; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; fallbackLang?: string; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal; visual?: VoiceVisualOwner } = {}): Promise<boolean> {
     if (opts.signal?.aborted) return Promise.resolve(false);
     this.stopDiagnostic("normal-playback");
     this.stop();
@@ -322,15 +353,17 @@ export class AudioSystem {
       const request: PlaybackRequest = {
         done: false,
         optional: opts.optional,
+        visual: opts.visual,
         fail: (state) => {
           if (request.done) return;
           if (!opts.optional) this.setState(state);
           else if (!opts.recordingOnly && request.fallback) request.fallback();
           else request.finish(false);
         }, cleanup: () => {},
-        finish: (completed) => {
+        finish: (completed, playedToEnd) => {
           if (request.done) return;
           request.done = true;
+          if (playedToEnd && request.visual) (this.visualEnds ??= new WeakSet()).add(request.visual);
           clearTimeout(deadline);
           opts.signal?.removeEventListener("abort", abort);
           request.cleanup();
@@ -540,11 +573,15 @@ export class AudioSystem {
             // stop()/interruption can also produce ended. Only the context's
             // rendered clock reaching this source's end completes the NPC line.
             if (position() + 128 / ctx!.sampleRate < buffer!.duration) { waiting("blocked", "EarlyBufferEnd"); return; }
-            diagnostic("buffer.ended"); request.finish(true);
+            diagnostic("buffer.ended"); request.finish(true, true);
           };
           releaseRoute = holdPlaybackRoute();
           startedAt = ctx.currentTime; playing = true;
           source.start(0, offset);
+          if (request.visual) {
+            request.visualStartedAt = 0;
+            request.visualVolume = gain.gain.value;
+          }
           this.setState("playing"); diagnostic("buffer.playing");
           timer = setTimeout(() => waiting("blocked", "PlaybackTimeout"), (buffer.duration - offset) * 1000 + 5000);
         } catch (error) { waiting("unavailable", error); }
@@ -587,6 +624,8 @@ export class AudioSystem {
       a.playbackRate = opts.slow ? 0.82 : 1;
       const clip = { el: a, key, done: false };
       this.clip = clip;
+      request.visualStartedAt = undefined;
+      request.visualVolume = undefined;
       let disposed = false;
       let started = false;
       let timer: ReturnType<typeof setTimeout> | undefined;
@@ -652,7 +691,7 @@ export class AudioSystem {
         // Only its current playback state can confirm that this line has ended.
         if (!current() || !a.ended) return;
         if (!file) cleanup();
-        request.finish(true);
+        request.finish(true, true);
       };
       a.onerror = failed;
       a.onpause = () => { if (current() && started && a.paused && !a.ended) waiting("blocked"); };
@@ -662,13 +701,20 @@ export class AudioSystem {
         // native audio mid-sentence; recovery is confined to start(), before play().
         releaseRoute ??= holdPlaybackRoute();
         started = true;
+        if (request.visual) request.visualStartedAt = 0;
         this.unlocked = true;
         this.setState("playing");
         clearTimeout(timer);
         // A stalled/backgrounded line must never be counted as successfully spoken.
         const remaining = Math.max(0, ((file ? a.duration : this.manifest[key]) || 4) - a.currentTime);
         timer = setTimeout(() => waiting("blocked"), remaining / a.playbackRate * 1000 + 5000);
-        if (!file) void this.cacheRecording(key);
+        if (!file) {
+          const cached = this.cacheRecording(key);
+          if (request.visual) void cached.then(() => {
+            const data = this.recordings.get(this.cacheKey(key));
+            if (current() && data) void this.loudness(key, data);
+          });
+        }
       };
       start();
     };
@@ -677,14 +723,14 @@ export class AudioSystem {
 
   /** How loud the line playing now is at this moment (0–1), for the speaker's mouth; -1 once it has ended; null when
    *  that isn't known (the browser's own voice, or the clip's loudness could not be worked out). */
-  level(): number | null {
+  level(prepare = true): number | null {
     const c = this.clip;
     if (!c) return null;
     if (c.done || c.el?.ended) return -1;
     const time = c.position?.() ?? c.el?.currentTime ?? 0;
     const key = c.envelopeKey ?? c.key;
     // worked out only for lines someone's mouth follows (not the example answers)
-    if (!this.envelopes.has(key) && c.el) this.loudness(key, c.el.src);
+    if (prepare && !this.envelopes.has(key) && c.el) this.loudness(key, c.el.src);
     const env = this.envelopes.get(key);
     // still being worked out: the mouth stays shut until the voice starts, then keeps a rhythm
     if (env === null) return time < 0.05 ? 0 : null;
@@ -713,9 +759,17 @@ export class AudioSystem {
     try {
       const OAC = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
       if (!OAC) return failed();
-      const r = await fetch(url);
-      if (!r.ok) return failed();
-      const bytes = await r.arrayBuffer();
+      let bytes: ArrayBuffer;
+      if (url.startsWith("data:")) {
+        const data = atob(url.slice(url.indexOf(",") + 1));
+        const decoded = new Uint8Array(data.length);
+        for (let i = 0; i < data.length; i++) decoded[i] = data.charCodeAt(i);
+        bytes = decoded.buffer;
+      } else {
+        const r = await fetch(url);
+        if (!r.ok) return failed();
+        bytes = await r.arrayBuffer();
+      }
       this.decoder ??= new OAC(1, 1, 44100);
       const dec = this.decoder;
       // (the browser also rejects the promise it returns: the error callback has it already, so that one is let go)
@@ -765,6 +819,7 @@ export class AudioSystem {
 
   private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; fallbackLang?: string }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
     this.clip = null;
+    request.visualStartedAt = undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let playAttempt = 0;
     request.cleanup = () => { playAttempt++; clearTimeout(timer); };
@@ -796,11 +851,18 @@ export class AudioSystem {
       if (pick) { u.voice = pick; u.lang = pick.lang; }
       let ended = false;
       const waiting = () => { clearTimeout(timer); request.fail("blocked"); };
-      u.onend = () => { ended = true; request.finish(true); };
+      u.onend = () => { ended = true; request.finish(true, true); };
+      if (request.visual) u.onstart = () => {
+        if (!request.done && run === playAttempt) {
+          request.visualStartedAt = performance.now();
+          request.visualVolume = u.volume;
+        }
+      };
       u.onerror = waiting;
       const releaseRoute = holdPlaybackRoute();
       request.cleanup = () => {
         playAttempt++; clearTimeout(timer); u.onend = u.onerror = null;
+        if (request.visual) { u.onstart = null; request.visualStartedAt = undefined; }
         if (!ended || !request.optional) speechSynthesis.cancel();
         releaseRoute();
       };

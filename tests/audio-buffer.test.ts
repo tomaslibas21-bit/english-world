@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Group } from "three";
 import { AudioSystem, usesBufferRecordings } from "../src/game/audio";
 import { captureAudio } from "../src/convo/audioFocus";
 import { audioKey } from "../src/audio-key";
+import type { GameCharacter } from "../src/game/characters";
+import { VoiceMouth } from "../src/game/talkNatural/mouth";
 
 class PCM {
   numberOfChannels: number; length: number; sampleRate: number; duration: number;
@@ -159,6 +162,57 @@ describe("iOS recorded Web Audio", () => {
     let crossings = 0; for (let i = start; i < end; i++) if (samples[i - 1] <= 0 && samples[i] > 0) crossings++;
     expect(crossings / ((end - start) / 44100)).toBeCloseTo(180, 0);
     ctx.finish(); expect(await done).toBe(true);
+  });
+
+  it.each([30, 60])("follows the stretched clip and keeps the visual owner on buffer retry at %i Hz", async (hz) => {
+    const pcm = new PCM();
+    pcm.channels[0].fill(0, 14000, 30000);
+    decode.mockResolvedValueOnce(pcm);
+    const actor = { root: new Group() } as GameCharacter;
+    new Group().add(actor.root);
+    const owner = { actor, line: 9 }, replay = { actor, line: 9 };
+    const mouth = new VoiceMouth();
+    const read = (seconds: number, request = owner) => {
+      for (let i = 0; i < Math.round(seconds * hz); i++) mouth.read(1 / hz, audio, request);
+    };
+    const done = audio.play(voice, 1, lines[0], { slow: true, visual: owner });
+    expect(audio.visualState(owner)).toBe("loading");
+    await tick();
+    const ctx = contexts[0];
+    expect(audio.visualState(owner)).toBe("playing");
+    ctx.currentTime = 0.14;
+    read(0.25);
+    expect(mouth.mouth).toBeGreaterThan(0.8);
+    ctx.currentTime = 0.55;
+    read(0.24);
+    expect(mouth).toMatchObject({ sample: "quiet", mouth: 0 });
+    ctx.change("interrupted");
+    expect(audio.visualState(owner)).toBe("blocked");
+    expect(audio.visualElapsed(owner)).toBeCloseTo(0.55);
+    audio.retry();
+    await tick();
+    expect(ctx.sources[1].start).toHaveBeenCalledWith(0, 0.55);
+    expect(audio.visualState(owner)).toBe("playing");
+    ctx.currentTime += 0.45;
+    read(0.2);
+    expect(mouth.mouth).toBeGreaterThan(0.8);
+    audio.volume = 0;
+    read(1 / hz);
+    expect(mouth).toMatchObject({ sample: "muted", mouth: 0 });
+    audio.volume = 0.9;
+    const second = audio.play(voice, 1, lines[0], { slow: true, visual: replay });
+    expect(await done).toBe(false);
+    expect(audio.visualState(owner)).toBe("interrupt");
+    await tick();
+    doc.hidden = true;
+    expect(audio.visualState(replay)).toBe("blocked");
+    doc.hidden = false;
+    ctx.finish();
+    expect(await second).toBe(true);
+    expect(audio.visualState(replay)).toBe("ended");
+    expect(decode).toHaveBeenCalledOnce();
+    expect(html).not.toHaveBeenCalled();
+    expect(synth).not.toHaveBeenCalled();
   });
 
   it("decode failure remains visible and never silently switches playback backend or voice", async () => {

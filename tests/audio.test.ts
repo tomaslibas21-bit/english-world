@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Group } from "three";
 import { AudioSystem } from "../src/game/audio";
 import { audioKey } from "../src/audio-key";
 import { captureAudio } from "../src/convo/audioFocus";
+import type { GameCharacter } from "../src/game/characters";
+import { VoiceMouth } from "../src/game/talkNatural/mouth";
 
 const voice = "test-voice", line = "Hello!", key = audioKey(voice, 1, line);
 const players: FakeAudio[] = [];
@@ -14,6 +17,8 @@ class FakeAudio {
   preservesPitch = true;
   playbackRate = 1;
   currentTime = 0;
+  readyState = 4;
+  muted = false;
   ended = false;
   paused = true;
   pause = vi.fn(() => { this.paused = true; });
@@ -492,5 +497,135 @@ describe("mobile media ownership", () => {
     expect(players[0].currentTime).toBe(0.4);
     players[0].emitPlaying(); players[0].emitEnded(); await done;
     expect(settled).toBe(true);
+  });
+});
+
+describe("owned HTML and browser voice playback", () => {
+  function mounted() {
+    const root = new Group();
+    new Group().add(root);
+    return { root } as GameCharacter;
+  }
+
+  it.each([30, 60])("reads the slow clip's cached 30 Hz samples and drops a replaced request at %i Hz", async (hz) => {
+    const actor = mounted(), owner = { actor, line: 4 }, replay = { actor, line: 4 };
+    const mouth = new VoiceMouth();
+    const pcm = Float32Array.from({ length: 30 }, (_, i) => i < 6 || (i >= 15 && i < 18) ? 0.8 : 0);
+    audio["envelopes"].set(key, pcm);
+    audio["vowels"].set(key, Float32Array.from({ length: 30 }, (_, i) => i < 6 ? 0.2 : 0.75));
+    const first = audio.play(voice, 1, line, { slow: true, visual: owner });
+    expect(audio.visualOwner).toBe(owner);
+    await flush();
+    const player = players[0];
+    const read = (seconds: number, request = owner) => {
+      for (let i = 0; i < Math.round(seconds * hz); i++) mouth.read(1 / hz, audio, request);
+    };
+    read(0.3);
+    expect(mouth).toMatchObject({ sample: "loading", mouth: 0 });
+    player.emitPlaying();
+    player.currentTime = 0.1;
+    expect(player.playbackRate).toBe(0.82);
+    expect(audio.visualElapsed(owner)).toBeCloseTo(0.1 / 0.82);
+    read(0.25);
+    expect(mouth.mouth).toBeGreaterThan(0.75);
+    expect(mouth.roundness).toBeCloseTo(0.2, 2);
+
+    player.currentTime = 0.33;
+    read(0.24);
+    expect(mouth).toMatchObject({ sample: "quiet", mouth: 0, level: 0 });
+    player.currentTime = 0.55;
+    read(0.2);
+    expect(mouth.roundness).toBeCloseTo(0.75, 1);
+    player.emitPause();
+    read(1 / hz);
+    expect(mouth).toMatchObject({ sample: "blocked", mouth: 0 });
+    audio.retry();
+    expect(audio.visualElapsed(owner)).toBeCloseTo(0.55 / 0.82);
+    expect(audio.visualState(owner)).toBe("loading");
+    player.emitPlaying();
+    read(0.2);
+    expect(mouth.mouth).toBeGreaterThan(0.75);
+    player.currentTime = 0.75;
+    read(0.24);
+    expect(mouth).toMatchObject({ sample: "quiet", mouth: 0 });
+
+    const second = audio.play(voice, 1, line, { visual: replay });
+    expect(await first).toBe(false);
+    read(1 / hz);
+    expect(mouth).toMatchObject({ sample: "interrupt", mouth: 0 });
+    expect(audio.visualElapsed(replay)).toBe(0);
+    await flush();
+    player.emitPlaying();
+    player.currentTime = 0.1;
+    player.muted = true;
+    read(0.3, replay);
+    expect(mouth).toMatchObject({ sample: "muted", mouth: 0, level: 0 });
+    player.muted = false;
+    player.volume = 0;
+    expect(audio.visualState(replay)).toBe("muted");
+    player.volume = 0.9;
+    player.readyState = 2;
+    expect(audio.visualState(replay)).toBe("loading");
+    player.readyState = 4;
+    actor.root.parent!.visible = false;
+    expect(audio.visualState(replay)).toBe("blocked");
+    actor.root.parent!.visible = true;
+    vi.stubGlobal("document", { hidden: true });
+    expect(audio.visualState(replay)).toBe("blocked");
+    vi.stubGlobal("document", { hidden: false });
+    read(0.25, replay);
+    expect(mouth.mouth).toBeGreaterThan(0.75);
+    player.emitEnded();
+    expect(await second).toBe(true);
+    read(1 / hz, replay);
+    expect(mouth).toMatchObject({ sample: "ended", mouth: 0, level: -1 });
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+
+  it("decodes the existing cache fill for an owned HTML request without another fetch", async () => {
+    audio.ready = true;
+    audio.manifest[key] = 1;
+    const decode = vi.fn((_bytes: ArrayBuffer, done: (pcm: Pick<AudioBuffer, "sampleRate" | "getChannelData">) => void) => {
+      done({ sampleRate: 300, getChannelData: () => Float32Array.from({ length: 300 }, () => 0.4) });
+    });
+    vi.stubGlobal("window", { OfflineAudioContext: class { decodeAudioData = decode; } });
+    const owner = { actor: mounted(), line: 1 };
+    const played = audio.play(voice, 1, line, { visual: owner, recordingOnly: true });
+    await flush();
+    players[0].emitPlaying();
+    await audio.prefetch([{ voice, speed: 1, text: line }]);
+    await flush();
+    expect(decode).toHaveBeenCalledOnce();
+    expect(audio.level(false)).toBeGreaterThan(0.95);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(fetcher.mock.calls[0][0]).toContain(key);
+    players[0].emitEnded();
+    expect(await played).toBe(true);
+  });
+
+  it("requires a browser utterance start and preserves fallback language and recording-only behavior", async () => {
+    audio.ready = true;
+    synth.speak.mockImplementation(() => {});
+    const owner = { actor: mounted(), line: 1 }, mouth = new VoiceMouth();
+    const done = audio.play(voice, 1, line, { visual: owner, fallbackLang: "es-MX" });
+    await flush();
+    const utterance = synth.speak.mock.calls[0][0] as SpeechSynthesisUtterance;
+    expect(utterance.lang).toBe("es-MX");
+    expect(audio.getState()).toBe("playing");
+    expect(audio.visualState(owner)).toBe("loading");
+    mouth.read(0.2, audio, owner);
+    expect(mouth.mouth).toBe(0);
+    (utterance.onstart as () => void)();
+    mouth.read(0.2, audio, owner);
+    expect(mouth.sample).toBe("unknown");
+    expect(mouth.mouth).toBeGreaterThan(0.08);
+    expect(mouth.mouth).toBeLessThanOrEqual(0.36);
+    audio.continueReading();
+    expect(await done).toBe(true);
+    expect(audio.visualState(owner)).toBe("interrupt");
+    const missing = { actor: owner.actor, line: 2 };
+    expect(await audio.play(voice, 1, line, { visual: missing, recordingOnly: true, optional: true })).toBe(false);
+    expect(synth.speak).toHaveBeenCalledOnce();
+    expect(audio.visualState(missing)).toBe("interrupt");
   });
 });
