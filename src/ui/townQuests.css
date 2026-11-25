@@ -238,3 +238,6 @@
   .hud:has(.photo-chip) .objective-notes .coach { overflow-y: auto; }
   .photo-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* batch 5 media: an empty page's round sticker and the book's cover (PhotoWalk.tsx Sticker; the icon stands in) */
+.photo-placeholder img { width: 74%; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 50%; }
+.photo-book-cover { display: block; width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }

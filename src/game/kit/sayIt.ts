@@ -3,6 +3,7 @@ import { foldAccents, tokenizeInput, tokenSimilarity, type Tokens } from "../../
 import { wholeSoundalike } from "../../convo/soundalike";
 import { createSpeechAttempt, hasNegation, speechSupported, type Verdict } from "../../convo/speech";
 import { useStore } from "../../state/store";
+import { audio } from "../audio";
 
 export type SayItTarget = { phrases: string[]; lang?: string; evaluate(text: string): Verdict };
 export type SayItBonus = SayItTarget & { available?(): boolean; onAward?(): void };
@@ -111,6 +112,7 @@ export class SayItCue {
           && accepted.some((heard) => target.evaluate(heard) === "complete"));
         if (hit) {
           this.credited.add(hit);
+          audio.sfx("sparkle"); // the bonus: a bright little chime (recorded; silent until loaded)
           this.award();
           hit.onAward?.();
         }

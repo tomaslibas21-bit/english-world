@@ -44,12 +44,22 @@ export function PhotoBookContact({ close }: { close(): void }) {
   </button>;
 }
 
+/** An empty page's sticker (public/photowalk/<id>.webp, batch 5 media); the icon until it loads, or if it is missing. */
+function Sticker({ id, icon }: { id: string; icon: string }) {
+  const [state, setState] = useState<"loading" | "ok" | "missing">("loading");
+  return <span className="photo-placeholder" aria-hidden data-sticker={state}>
+    {state !== "ok" && icon}
+    {state !== "missing" && <img src={`${import.meta.env.BASE_URL}photowalk/${id}.webp`} alt="" hidden={state !== "ok"}
+      onLoad={() => setState("ok")} onError={() => setState("missing")} />}
+  </span>;
+}
+
 function PhotoPage({ thing, found }: { thing: typeof PHOTO_THINGS[number]; found: boolean }) {
   const [showNote, setShowNote] = useState(false);
   const name = photoLine(`pw_n_${thing.id}`);
   const photo = found ? readPhoto(thing.id) : null;
   return <li className="photo-page" data-thing={thing.id} data-found={found}>
-    {photo ? <img src={photo} alt="" width={160} height={120} /> : <span className="photo-placeholder" aria-hidden>{thing.icon}</span>}
+    {photo ? <img src={photo} alt="" width={160} height={120} /> : <Sticker id={thing.id} icon={thing.icon} />}
     {found
       ? <GlossLine sentence={name} gloss compact />
       : <>
@@ -66,6 +76,8 @@ function PhotoBook() {
   const [confirm, setConfirm] = useState(false);
   const title = status === "done" ? L(words.done) : L(words.book);
   return <section className="photo-sheet photo-book" role="dialog" aria-modal="true" aria-label={title}>
+    <img className="photo-book-cover" src={`${import.meta.env.BASE_URL}photowalk/cover.webp`} alt="" aria-hidden
+      onError={(e) => { e.currentTarget.hidden = true; }} />
     <header>
       <Icon name="camera" size={23} />
       <div><h2>{title}</h2><p>{L(words.found, { n: found.length, of: PHOTO_THINGS.length })}</p></div>
