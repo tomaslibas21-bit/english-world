@@ -138,20 +138,24 @@ function readState() {
   const { game: g, store } = window.__ew ?? {};
   const state = store?.getState();
   const r = g?.rides?.riding;
-  const p = g?.player?.root;
+  const player = g?.player;
+  const p = player?.root;
   const rig = g?.rig;
   const f = document.activeElement;
   const pos = p?.position.toArray() ?? null;
+  const lift = player?.lift;
+  // The root tracks support height and the avatar's body gets the hop's lift.
+  const jumpY = p ? p.position.y + lift : null;
   const view = p && rig ? rig.cam.getWorldDirection(p.position.clone()).toArray() : null;
   return {
     screen: state?.screen, phase: state?.conv.active ? state.conv.phase : g?.rides?.phase,
     mode: state?.hud.modeScreen?.id, modePhase: document.querySelector(".mode-hud [data-pad-phase]")?.dataset.padPhase,
     panel: state?.hud.panel, prompt: state?.hud.prompt?.kind, water: state?.hud.ride, zone: g?.zone?.id,
     introOpen: state?.conv.introOpen, transition: g?.transitioning, waitingForTraffic: g?.rides?.waitingForTraffic,
-    pos, speed: r?.m.speed ?? g?.vel?.length(),
+    pos, jumpY, lift, speed: r?.m.speed ?? g?.vel?.length(),
     ride: r && { id: r.id, x: r.m.x, z: r.m.z, heading: r.m.heading, steer: r.m.steer },
     visible: p?.visible, yaw: rig?.yaw, view, swimming: g?.swimming, cameraY: rig?.cam.position.y,
-    hop: g?.hop && { air: g.hop.air, flipped: g.hop.flipped, doubled: g.hop.doubled },
+    hop: g?.hop && { y: g.hop.y, air: g.hop.air, flipped: g.hop.flipped, doubled: g.hop.doubled },
     focus: f && { tag: f.tagName, scope: f.closest("[data-pad-scope]")?.dataset.padScope, key: f.dataset.padTool ?? f.dataset.padAnswer ?? f.dataset.sit ?? f.dataset.line ?? f.dataset.chip },
     pad: window.__pad ? { ...window.__pad } : null, polls: window.__padFixture?.polls,
     hint: document.querySelector("[data-pad-hint]")?.dataset.padHint,
@@ -497,30 +501,41 @@ async function walkLookJump(h) {
   await press("A");
   await step(4);
   const rise = await state();
-  check("A lifts the player within four frames", rise.hop.air && rise.pos[1] > ground.pos[1] + 0.1, { ground, rise });
+  check("A lifts the player within four frames", rise.hop.air && Number.isFinite(ground.jumpY) &&
+    Number.isFinite(rise.jumpY) && rise.jumpY > ground.jumpY + 0.1, { ground, rise });
   await shot("jump-4");
   await step(2);
-  check("holding A through frame 5 adds no flip", !(await state()).hop.flipped && !(await state()).hop.doubled);
+  const held = await state();
+  check("holding A through frame 5 adds no flip", !held.hop.flipped && !held.hop.doubled &&
+    Number.isFinite(held.jumpY), held);
   await sample();
   await step(1);
   await press("A");
   await step(1);
   const flip = await state();
-  check("the frame 7 edge makes one flip", flip.hop.air && flip.hop.flipped && !flip.hop.doubled, flip);
+  check("the frame 7 edge makes one flip", flip.hop.air && flip.hop.flipped && !flip.hop.doubled &&
+    Number.isFinite(flip.jumpY), flip);
   await shot("jump-flip-7");
   await sample();
   await step(6);
   await press("A");
   await step(1);
   const double = await state();
-  check("the frame 14 edge makes a double", double.hop.air && double.hop.doubled, double);
+  check("the frame 14 edge makes a double", double.hop.air && double.hop.doubled && Number.isFinite(double.jumpY), double);
   await shot("jump-double-14");
   await sample();
-  let peak = double.pos[1];
-  await when("the high jump lands", (s) => { peak = Math.max(peak, s.pos[1]); return !s.hop.air; }, { frames: 2 });
+  let peak = double.jumpY;
+  await when("the high jump lands", (s) => {
+    assert(Number.isFinite(s.jumpY), `the high jump has a finite rendered height: ${JSON.stringify(s)}`);
+    peak = Math.max(peak, s.jumpY);
+    return !s.hop.air;
+  }, { frames: 2 });
   const landed = await state();
   check("the high jump peaks above 1.5 m and lands back on the same ground",
-    peak - ground.pos[1] > 1.5 && Math.abs(landed.pos[1] - ground.pos[1]) < 0.05 &&
+    peak - ground.jumpY > 1.5 && Number.isFinite(landed.jumpY) && Math.abs(landed.jumpY - ground.jumpY) < 0.05,
+    { peak, ground, landed });
+  check("the root lands at its original support height and horizontal position",
+    Math.abs(landed.pos[1] - ground.pos[1]) < 0.05 &&
     horizontal(ground, landed) < 0.05, { peak, ground, landed });
   await shot("jump-landed");
 }
@@ -1024,14 +1039,17 @@ async function detachContract(h, real) {
   const scaled = await inspectHint(h, "connected", "world");
   check("the visible map scales and fits at 130%", scaled.mapSize >= 15.5, scaled);
   await shot("connect-130-percent");
+  const held = await state();
   check("a physically held A on the new pad does not jump",
-    !(await state()).hop.air && Math.abs((await state()).pos[1] - ground.pos[1]) < 0.05, await state());
+    !held.hop.air && Number.isFinite(ground.jumpY) && Number.isFinite(held.jumpY) &&
+    Math.abs(held.jumpY - ground.jumpY) < 0.05 && Math.abs(held.pos[1] - ground.pos[1]) < 0.05, { ground, held });
   await sample();
   await step(2);
   await h.press("A");
   await step(4);
   const fresh = await state();
-  check("a real release and fresh A after reconnect lifts the player", fresh.hop.air && fresh.pos[1] > ground.pos[1] + 0.1,
+  check("a real release and fresh A after reconnect lifts the player",
+    fresh.hop.air && Number.isFinite(fresh.jumpY) && fresh.jumpY > ground.jumpY + 0.1,
     { ground, fresh });
   await sample();
   await when("the reconnect jump lands", (s) => !s.hop.air);
