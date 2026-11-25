@@ -1,0 +1,15 @@
+.rs-phrase-panel {
+  position: absolute;
+  inset-block-start: calc(100% + 4px);
+  inset-inline: 0;
+  z-index: 2;
+  max-height: min(45dvh, 18rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
