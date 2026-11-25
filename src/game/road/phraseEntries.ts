@@ -1,13 +1,13 @@
 import type { PhraseReviewEntry } from "../../ui/kit/phraseLine";
+import type { GateFeedback } from "./store";
 import type { GateWord, Phrase, Prompt, Word } from "./words";
 
 type EntryWord = Omit<GateWord, "situation"> & Partial<Pick<Word, "sentence" | "clip" | "situation">>;
 
-export function gateWordEntry(word: EntryWord, title: string): PhraseReviewEntry {
-  const { en, lt, clip, sentence, situation } = word;
+function gateWordEntry(word: EntryWord, title: string, en = word.sentence?.en ?? word.en): PhraseReviewEntry {
+  const { lt, clip, sentence, situation } = word;
   return {
-    sentence: sentence ? (sentence.nat === lt ? sentence : { ...sentence, nat: lt })
-      : { en, nat: lt, say: clip?.say ?? en, units: [] },
+    sentence: { en, nat: lt, say: sentence?.say || clip?.say || en, units: sentence?.units ?? [] },
     situationId: situation ?? "",
     sourceLabel: situation ? undefined : title,
   };
@@ -18,14 +18,29 @@ export function gatePhraseEntry(phrase: Phrase, title: string): PhraseReviewEntr
 }
 
 export function gateAnswerEntry(prompt: Prompt, title: string): PhraseReviewEntry {
-  const entry = gateWordEntry(prompt.word, title);
-  return prompt.gap ? { ...entry, sentence: prompt.gap.full } : entry;
+  const { word } = prompt;
+  return prompt.gap ? gapWordEntry(word, word.en, title) : gateWordEntry(word, title, word.en);
 }
 
-export function gateOptions(prompt: Prompt, title: string, revealed = false): PhraseReviewEntry[] {
+function gapWordEntry({ lt, situation }: EntryWord, label: string, title: string): PhraseReviewEntry {
+  // A gap's recording may be the full example. The card uses the isolated text.
+  return gateWordEntry({ en: label, lt, situation }, title);
+}
+
+export function gateGapEntry(prompt: Prompt): PhraseReviewEntry | undefined {
+  return prompt.gap && { sentence: prompt.gap.full, situationId: prompt.word.situation };
+}
+
+export function gateOptions(prompt: Prompt, title: string): PhraseReviewEntry[] {
   return prompt.options.flatMap((label, lane) => {
-    if (lane === prompt.right) return prompt.gap && !revealed ? [] : [gateAnswerEntry(prompt, title)];
-    const word = prompt.optionWords?.get(label);
-    return word ? [gateWordEntry(word, title)] : [];
+    const word = lane === prompt.right ? prompt.word : prompt.optionWords?.get(label);
+    return word ? [prompt.gap ? gapWordEntry(word, label, title) : gateWordEntry(word, title)] : [];
   });
+}
+
+export function gateFeedback(prompt: Prompt, title: string, correct: boolean): GateFeedback {
+  return {
+    correct, entry: gateAnswerEntry(prompt, title), saveWord: !prompt.phrase,
+    options: prompt.phrase ? undefined : gateOptions(prompt, title), gapEntry: gateGapEntry(prompt),
+  };
 }

@@ -61,6 +61,17 @@
 .road-cue:has(.road-replay) { padding: 2px 5px 2px 12px; }
 .road-feedback:has(> [data-phrase-save]) { grid-template-columns: minmax(0, 1fr) 44px; column-gap: 6px; }
 .road-feedback > [data-phrase-save] { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.road-gap-review {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.road-gap-review small { display: block; color: var(--lt); }
 .road-cue { position: relative; }
 .road-cue .say-it { position: static; }
 .road-cue .say-it-message { right: 4px; }

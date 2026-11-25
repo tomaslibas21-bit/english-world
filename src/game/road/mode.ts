@@ -23,7 +23,7 @@ import { ghostAt, GhostRecorder, readBest, saveBest } from "./ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "./karaoke";
 import { Lift } from "./lift";
 import { loadPhrasePool } from "./phrasePool";
-import { gateAnswerEntry, gateOptions } from "./phraseEntries";
+import { gateFeedback } from "./phraseEntries";
 import { gatesLeft } from "./review";
 import { DRIVE_SECONDS, FIRST_GATE, gateSayItTarget, gateWord, nextGate, RunScore, keepRunPhrases, loadWordPrompts, practiceResult, rememberRun, runPicker } from "./run";
 import { isPlayWay, playWay, setPlayWay, type PlayWay } from "./save";
@@ -397,10 +397,8 @@ export class RoadMode {
       run.promptIn = prompt.gap ? Math.max(2.5, Math.min(4.8, correction + (audio.clipDuration(prompt.gap.clip.voice, prompt.gap.clip.speed, prompt.gap.clip.say) ?? 2.5))) : run.feedback;
       run.gateAt = nextGate(distance, score.total);
       if (!ended) this.warmNextPrompt(run);
-      useRoad.setState({ sayIt: undefined, stampedLane: correct ? lane : undefined, streak: score.streak, feedback: {
-        correct, word: prompt.word, entry: prompt.phrase ? undefined : gateAnswerEntry(prompt, reviewTitle),
-        options: prompt.phrase ? undefined : gateOptions(prompt, reviewTitle, true),
-      } });
+      useRoad.setState({ sayIt: undefined, stampedLane: correct ? lane : undefined, streak: score.streak,
+        feedback: gateFeedback(prompt, reviewTitle, correct) });
     } else {
       if (run.feedback > 0 && (run.feedback -= dt) <= 0) useRoad.setState({ feedback: undefined });
       if ((run.promptIn -= dt) <= 0 && !ended && !run.gate) this.openGate(run);

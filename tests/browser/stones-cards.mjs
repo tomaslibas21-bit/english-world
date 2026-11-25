@@ -233,7 +233,7 @@ async function stored(run, expected, original) {
   assert.equal(card.box, 1);
   assert.ok(Number.isFinite(card.createdAt) && card.createdAt > 0);
   assert.equal(card.due, await run.page.evaluate((time) => new Date(time).setHours(0, 0, 0, 0), card.createdAt));
-  if (expected.say && expected.say !== expected.en) assert.equal(card.sentence.say, expected.say);
+  if (expected.say !== undefined) assert.equal(card.sentence.say ?? card.sentence.en, expected.say);
   if (card.sentence.say !== undefined) assert.ok(card.sentence.say.trim());
   if (pc) {
     const ipa = await run.page.evaluate(async ({ text, say }) =>
@@ -319,6 +319,14 @@ const coach = "es_coach_f";
 const clipKey = (text) => audioKey(coach, 1, text);
 const manifestFor = (...lines) => Object.fromEntries(lines.map((en) => [clipKey(en), 1.6]));
 const authoredClips = manifestFor(water.en, "La luz entra por el ojo del cenote.", "La ceiba une el cielo y la tierra.");
+// The regular word pool has enough listening turns, then exactly two gaps with different sentences.
+const wordGateClips = {
+  ...manifestFor("Una conferencia.", "Un mes.", "Listo.", "Claro."),
+  ...Object.fromEntries([
+    "Gracias.", "Muchas gracias.", "Muy bien.", "Bien.", "De acuerdo.",
+    "Buenas tardes. ¿Qué tal el vuelo?", "¿Me da su pasaporte?",
+  ].map((say) => [audioKey("es_diaz", 1, say), 1.6])),
+};
 const caveSeed = { cave: { passed: ["kin"], lit: [], heard: [], seen: true }, settings: { lt: true, ltNatural: true, ipa: false } };
 const treeSeed = { settings: { ...caveSeed.settings, ltNatural: false }, cave: {
   ...caveSeed.cave, tree: true, heart: true, passed: ["kin", "nikte"],
@@ -811,18 +819,15 @@ async function scoreReview(run, score, review, item) {
   } finally { await score.evaluate((el) => el.style.removeProperty("font-size")); }
 }
 
-async function checkGateScore(run, mode) {
+async function openGateMenu(run, mode) {
   const road = mode === "road";
-  const { page, phone, waitFor, step, press, mark } = run;
+  const { page, phone, waitFor, step, press } = run;
   const read = () => page.evaluate((road) => road ? window.__ew.road.state() : window.__ew.sea?.(), road);
-  const state = (predicate, description) => waitFor(async () => {
+  const state = (predicate, description, frames = 4) => waitFor(async () => {
     const value = await read();
     return value && predicate(value) && value;
-  }, description, { frames: 4 });
+  }, description, { frames });
   const overlay = page.locator(`.${mode}-overlay`);
-  const score = overlay.locator(".mode-score-card");
-  const choice = overlay.locator('[data-way="phrases"]');
-  const cue = overlay.locator(".road-question strong");
 
   async function throttle(action) {
     if (road && phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
@@ -859,6 +864,16 @@ async function checkGateScore(run, mode) {
     assert.equal(await page.evaluate(([x, z]) => window.__ew.seaPlaceBoat(x, z), [launch.town.x, launch.edge + 34]), true);
   }
   await throttle(() => state((s) => s.phase === "briefing", "physical crossing enters the gate menu"));
+  return { read, state, overlay };
+}
+
+async function checkGateScore(run, mode) {
+  const road = mode === "road";
+  const { page, waitFor, press, mark } = run;
+  const { read, state, overlay } = await openGateMenu(run, mode);
+  const score = overlay.locator(".mode-score-card");
+  const choice = overlay.locator('[data-way="phrases"]');
+  const cue = overlay.locator(".road-question strong");
   await run.visible(choice, "phrase choice", 2);
   await mark("briefing");
 
@@ -978,6 +993,145 @@ async function checkGateScore(run, mode) {
   await checkBook(run, [keptEarned, keptMissed, keptAlternative]);
 }
 
+async function checkGapSaves(run, mode) {
+  const { page, waitFor, press } = run;
+  const { read, state, overlay } = await openGateMenu(run, mode);
+  const choice = overlay.locator('[data-way="words"]');
+  const chooser = overlay.locator(".road-dash .phrase-chooser");
+  const select = chooser.getByRole("combobox");
+  const feedback = overlay.locator(".road-feedback.wrong");
+  const boards = overlay.locator(".road-gates .road-gate");
+  const steer = (lane) => page.evaluate(([mode, lane]) => {
+    if (mode === "road") window.__ew.road.steer(lane);
+    else window.__ew.seaSteer(lane);
+  }, [mode, lane]);
+  const targetOf = async (row, selector, lang) => {
+    const target = row.locator(selector);
+    await run.visible(target, `${selector} in ${mode}`);
+    assert.equal(await target.getAttribute("lang"), lang);
+    return target.textContent();
+  };
+  const asWord = (word) => ({ en: word.en, lt: word.lt, say: word.en, situationId: word.situation });
+  const asSentence = (gap) => ({ en: gap.full.en, lt: gap.full.nat, say: gap.full.say, situationId: gap.word.situation });
+  const invariant = async () => {
+    const { phase, totalGates, rightGates, points, gateDistance } = await read();
+    return { phase, totalGates, rightGates, points, gateDistance };
+  };
+
+  await press(choice, 44);
+  await state((s) => s.phase === "drive" && s.way === "words" && s.gates?.length === 3, "first word gate");
+  await waitFor(() => overlay.locator(".road-question strong").isVisible(), "listening cue", { frames: 2 });
+  assert.equal(await chooser.count(), 0, "listening keeps the Spanish answers concealed");
+  assert.equal(await overlay.locator("[data-phrase-save]").count(), 0, "listening has no answer save");
+  for (let n = 0; n < 7; n++) {
+    const gate = await state((s) => s.totalGates === n && s.gates?.length === 3, `listening gate ${n + 1}`);
+    assert.equal(gate.gap, false);
+    await steer(gate.right);
+    const passed = await state((s) => s.totalGates === n + 1, `passes gate ${n + 1}`, 10);
+    assert.equal(passed.rightGates, n + 1);
+  }
+
+  async function gapGate(n) {
+    const current = await state((s) => s.totalGates === n && s.gates?.length === 3, `gap gate ${n + 1}`);
+    assert.ok(current.gap, `gate ${n + 1} uses the Spanish gap pool`);
+    const wrong = (current.right + 1) % 3;
+    await steer(wrong);
+    await waitFor(() => boards.evaluateAll((nodes) => nodes.length === 3 &&
+      nodes.every((node) => getComputedStyle(node).visibility === "visible")), "three readable gap boards", { frames: 2 });
+    const printed = await boards.evaluateAll((nodes) => nodes.map((node) =>
+      [...node.querySelectorAll(":scope > span")].map((line) => line.textContent).join(" ")));
+    assert.deepEqual(printed, current.gates);
+    assert.match(await overlay.locator(".road-gap").innerText(), /____/);
+    const alternate = printed[(current.right + 2) % 3];
+    const prompt = await page.evaluate(async ({ mode, alternate }) => {
+      const store = mode === "road" ? (await import("/src/game/road/store.ts")).useRoad
+        : (await import("/src/game/sea/store.ts")).useSea;
+      const { prompt } = store.getState();
+      return { word: prompt.word, gap: prompt.gap, alternative: prompt.optionWords.get(alternate) };
+    }, { mode, alternate });
+    assert.equal(prompt.word.clip.say, prompt.gap.full.say, "the gate word borrows the whole recording");
+    return { ...prompt, printed, alternate, wrong };
+  }
+
+  const first = await gapGate(7);
+  await press(chooser.locator("summary"), 44);
+  await run.visible(select, "live gap selector");
+  await cardCentre(select, 44);
+  assert.deepEqual(await select.locator("option").allTextContents(), first.printed, "live selector preserves all three board labels in order");
+  assert.equal(await chooser.locator(".phrase-review-line small").count(), 0, "live choices conceal all helpers");
+  await select.selectOption({ label: first.alternate });
+  const altTarget = await targetOf(chooser, ".phrase-review-value", "es");
+  assert.equal(altTarget, first.alternate);
+  assert.notEqual(first.alternative.situation, "");
+  const beforeSave = await invariant();
+  const keptAlternative = await saveTwice(run, chooser.locator("[data-phrase-save]"),
+    { ...asWord(first.alternative), en: altTarget, say: altTarget }, {
+      invariant: async () => assert.deepEqual(await invariant(), beforeSave),
+      label: "gap-unused-alternative",
+    });
+  await press(chooser.locator("summary"), 44);
+  const missed = await state((s) => s.totalGates === 8, "crosses the wrong lane at gate eight");
+  assert.deepEqual([missed.rightGates, missed.lane], [7, first.wrong]);
+  await press(chooser.locator("summary"), 44);
+  await run.visible(select, "revealed gap selector");
+  await select.selectOption({ label: first.alternate });
+  assert.equal(await targetOf(chooser, ".phrase-review-value", "es"), keptAlternative.en);
+  assert.equal(await targetOf(chooser, ".phrase-review-line small", learner), keptAlternative.lt);
+  await press(chooser.locator("summary"), 44);
+
+  const firstWord = asWord(first.word), firstFull = asSentence(first.gap);
+  const feedbackTarget = await targetOf(feedback, ".road-feedback-word span", "es");
+  assert.equal(feedbackTarget, firstWord.en);
+  assert.equal(await feedback.locator(".road-feedback-word").innerText(), `${feedbackTarget} · ${firstWord.lt}`);
+  const keptWord = await saveTwice(run, feedback.locator(":scope > [data-phrase-save]"),
+    { ...firstWord, en: feedbackTarget }, { label: "gap-feedback-word" });
+  const reveal = feedback.locator(".road-gap-review");
+  const fullTarget = await targetOf(reveal, "strong", "es");
+  const fullHelper = await targetOf(reveal, "small", learner);
+  assert.deepEqual([fullTarget, fullHelper], [firstFull.en, firstFull.lt]);
+  const keptFull = await saveTwice(run, reveal.locator("[data-phrase-save]"),
+    { ...firstFull, en: fullTarget, lt: fullHelper }, { label: "gap-feedback-sentence" });
+
+  const second = await gapGate(8);
+  const secondWord = asWord(second.word), secondFull = asSentence(second.gap);
+  assert.notEqual(normalized(secondWord.en), normalized(firstWord.en));
+  const secondMiss = await state((s) => s.totalGates === 9, "misses a second gap for the score review");
+  assert.deepEqual([secondMiss.rightGates, secondMiss.lane], [7, second.wrong]);
+  await page.evaluate((mode) => {
+    if (mode === "road") window.__ew.road.jumpTimer();
+    else window.__ew.seaTimer();
+  }, mode);
+  const { result: stats } = await state((s) => s.phase === "result", "word-mode score");
+  assert.deepEqual([stats.total, stats.right, stats.missed.length], [9, 7, 2]);
+  assert.equal(stats.cards, 7, "the score counts only the seven automatically earned cards");
+  const score = overlay.locator(".mode-score-card");
+  const missedRows = score.locator(".road-missed:not(.road-practice)");
+  const missedSelect = missedRows.getByRole("combobox");
+  await run.visible(missedSelect, "two missed gap words");
+  assert.deepEqual(await missedSelect.locator("option").allTextContents(),
+    [firstWord, secondWord].map(({ en, lt }) => `${en} · ${lt}`));
+  await missedSelect.selectOption({ label: `${secondWord.en} · ${secondWord.lt}` });
+  const scoreWord = await targetOf(missedRows, ".road-practice-value strong", "es");
+  const scoreHelper = await targetOf(missedRows, ".road-practice-value span", learner);
+  assert.deepEqual([scoreWord, scoreHelper], [secondWord.en, `· ${secondWord.lt}`]);
+  assert.equal(await missedRows.locator("[data-sit]").getAttribute("data-sit"), secondWord.situationId);
+  const checkScore = async () => assert.deepEqual((await read()).result, stats);
+  const keptScoreWord = await saveTwice(run, missedRows.locator("[data-phrase-save]"),
+    { ...secondWord, en: scoreWord, lt: scoreHelper.slice(2) }, { invariant: checkScore, label: "gap-score-word" });
+
+  const review = score.locator(":scope > .phrase-review-row");
+  const reviewSelect = review.getByRole("combobox");
+  await run.visible(reviewSelect, "generic score review");
+  assert.ok((await reviewSelect.locator("option").allTextContents()).includes(firstFull.en));
+  await reviewSelect.selectOption({ label: secondFull.en });
+  const scoreFull = await targetOf(review, ".phrase-review-value", "es");
+  const scoreFullHelper = await targetOf(review, "small", learner);
+  assert.deepEqual([scoreFull, scoreFullHelper], [secondFull.en, secondFull.lt]);
+  const keptScoreFull = await saveTwice(run, review.locator("[data-phrase-save]"),
+    { ...secondFull, en: scoreFull, lt: scoreFullHelper }, { invariant: checkScore, label: "gap-score-sentence" });
+  await checkBook(run, [keptAlternative, keptWord, keptFull, keptScoreWord, keptScoreFull]);
+}
+
 const streetTable = pc && lt ? (await json("../../src/editions/es-lt/tables/street.json")).text : null;
 
 async function checkWallet(run) {
@@ -1063,6 +1217,10 @@ async function main() {
     args: process.platform === "darwin" ? ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"]
       : ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
+  const wordRun = pc && {
+    manifest: wordGateClips,
+    seed: { sits: { "s65a-passport": finished, "s65b-baggage": finished, "s66-taxi": finished } },
+  };
   const cases = [
     ...(pc ? [
       ["glyph", { seed: { ...caveSeed, settings: { ...caveSeed.settings, scenes: true } }, manifest: authoredClips }, (run) => checkGlyph(run, "authored")],
@@ -1072,6 +1230,8 @@ async function main() {
       ["glyph-after-again", { seed: treeSeed, manifest: manifestFor(replayWater.en, "Las raíces beben en silencio.") }, (run) => checkGlyph(run, "again")],
       ["road", { spawn: { x: -88, z: -13.65, rot: 0 } }, (run) => checkGateScore(run, "road")],
       ["sea", { spawn: { x: 42, z: -73.8, rot: Math.PI } }, (run) => checkGateScore(run, "sea")],
+      ["road-gap", { ...wordRun, spawn: { x: -88, z: -13.65, rot: 0 } }, (run) => checkGapSaves(run, "road")],
+      ["sea-gap", { ...wordRun, spawn: { x: 42, z: -73.8, rot: Math.PI } }, (run) => checkGapSaves(run, "sea")],
     ] : []),
     ["wallet", {}, checkWallet],
   ];

@@ -12,7 +12,7 @@ import type { Ride } from "../rides/Rides";
 import { readBest, saveBest } from "../road/ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "../road/karaoke";
 import { loadPhrasePool } from "../road/phrasePool";
-import { gateAnswerEntry, gateOptions } from "../road/phraseEntries";
+import { gateFeedback } from "../road/phraseEntries";
 import { gatesLeft } from "../road/review";
 import { gateSayItTarget, gateWord, keepRunPhrases, loadWordPrompts, practiceResult, rememberRun, runPicker, RunScore } from "../road/run";
 import { isPlayWay, playWay, setPlayWay, type PlayWay } from "../road/save";
@@ -203,10 +203,8 @@ export class SeaMode {
     this.gateAt = nextGate(distance);
     gate.cross(lane, correct);
     this.poseGate(time);
-    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: {
-      correct, word: prompt.word, entry: prompt.phrase ? undefined : gateAnswerEntry(prompt, reviewTitle),
-      options: prompt.phrase ? undefined : gateOptions(prompt, reviewTitle, true),
-    } });
+    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak,
+      feedback: gateFeedback(prompt, reviewTitle, correct) });
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {

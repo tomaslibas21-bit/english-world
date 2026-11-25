@@ -4,7 +4,7 @@ import { audio } from "../audio";
 import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { SayItRound, sayItWords } from "../kit/sayIt";
 import { pickPrompt, updateRecentMisses, type GateAnswer } from "./review";
-import { gateAnswerEntry, gateOptions } from "./phraseEntries";
+import { gateAnswerEntry, gateGapEntry, gateOptions } from "./phraseEntries";
 import { recentMisses, type PlayWay } from "./save";
 import { loadPool, wordPrompts, type Prompt, type PromptPool } from "./words";
 
@@ -67,7 +67,9 @@ export class RunScore {
   }
 
   answer(prompt: Prompt, lane: number) {
-    this.review.entries(gateOptions(prompt, this.title, true));
+    this.show(prompt);
+    const gap = gateGapEntry(prompt);
+    if (gap) this.review.entries([gap]);
     const correct = lane === prompt.right;
     const id = `${prompt.word.situation}|${prompt.word.en.toLowerCase()}`;
     this.history.push({ prompt, correct });

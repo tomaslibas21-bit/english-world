@@ -13,7 +13,10 @@ export type RoadResult = {
   practiceEntries?: readonly PhraseReviewEntry[];
 };
 
-export type GateFeedback = { correct: boolean; word: GateWord; entry?: PhraseReviewEntry; options?: readonly PhraseReviewEntry[] };
+export type GateFeedback = {
+  correct: boolean; entry: PhraseReviewEntry; saveWord: boolean;
+  options?: readonly PhraseReviewEntry[]; gapEntry?: PhraseReviewEntry;
+};
 
 type RoadUi = {
   phase: "briefing" | "loading" | "lift" | "drive" | "result" | "unavailable";
