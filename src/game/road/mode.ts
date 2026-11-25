@@ -136,7 +136,8 @@ export class RoadMode {
       useRoad.setState({ choices });
     },
     mic: (mic) => useRoad.setState({ mic }),
-    animate: (seconds) => this.lift?.talk(seconds),
+    acting: () => this.host.acting?.(),
+    actor: () => this.lift?.driver.root.visible ? { actor: this.lift.driver, id: driver.npc, motion: "head" } : undefined,
     speechFallback: true,
   });
 

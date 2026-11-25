@@ -4,6 +4,7 @@ import type { Look } from "../../content/npcs";
 import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import type { PoolPose } from "./poolPose";
+import type { NaturalPoseDriver, NaturalRig } from "../talkNatural/contract";
 import { STYLED } from "../style";
 
 export type CharacterJoint = "body" | "head" | "armL" | "armR" | "foreL" | "foreR" | "legL" | "legR" | "shinL" | "shinR";
@@ -16,6 +17,10 @@ export interface GameCharacter {
   readonly height: number;
   readonly headJoint: THREE.Object3D;
   joint(name: CharacterJoint): THREE.Object3D;
+  talkPose?: NaturalPoseDriver;
+  naturalRig?(): NaturalRig | undefined;
+  beginNaturalPose?(preserveWork?: boolean): void;
+  canNoticeTalk?(): boolean;
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;
   update(dt: number): void;
@@ -56,6 +61,8 @@ export interface GameCharacter {
   attentive?: boolean;
   fidgets?: boolean;
   busy?: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null;
+  /** The mode is supporting an object with both hands. */
+  handsOccupied?: boolean;
   /** At a car's wheel or a boat's tiller: how far it is turned (−1…1; the original Character). */
   steer?: number;
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */

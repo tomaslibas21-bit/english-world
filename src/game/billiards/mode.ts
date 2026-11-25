@@ -133,7 +133,11 @@ export class BilliardsMode implements GameMode {
       ui({ choices });
     },
     mic: (mic) => ui({ mic }),
-    animate: (seconds) => this.world.tina()?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.host.acting?.(),
+    actor: () => {
+      const actor = this.world.tina();
+      return actor ? { actor, id: BILLIARDS_NPC, motion: "head" } : undefined;
+    },
   });
 
   constructor(private host: ModeHost, private world: {
@@ -324,6 +328,7 @@ export class BilliardsMode implements GameMode {
     if (round !== this.round) return;
     this.revealCall();
     this.setPhase("listen", round.sayIt.open(sayItCall(this.ai.call, call.sentence.en)));
+    this.dialogue.attend(true);
     this.table!.markCall(round.balls, {}, true);
   }
 
@@ -333,7 +338,7 @@ export class BilliardsMode implements GameMode {
     useBilliards.getState().sayIt?.cancel();
     this.replaying = true;
     ui({ replaying: true });
-    const heard = await this.dialogue.sayPieces(callLine(this.ai.call, false), npcVoice(OWNER), OWNER.speed ?? 1, OWNER.gender === "m");
+    const heard = await this.dialogue.sayPieces(callLine(this.ai.call, false), npcVoice(OWNER), OWNER.speed ?? 1, OWNER.gender === "m", true);
     if (round !== this.round) return;
     this.replaying = false;
     this.heardCall ||= heard;
@@ -391,6 +396,8 @@ export class BilliardsMode implements GameMode {
     const { call } = useBilliards.getState();
     if (call) round.review.add(call.sentence);
     this.setPhase("feedback");
+    this.dialogue.attend(false);
+    this.dialogue.feedback(correct ? "understood" : "puzzled");
     this.table!.markCall(round.balls, ai.call, false);
     ui({ correct, reveal: !correct });
     audio.sfx(correct ? "success" : "soft");

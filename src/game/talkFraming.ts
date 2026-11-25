@@ -1,3 +1,4 @@
+export { bindTownTalk } from "./talkNatural/view";
 // Loaded on an actor-backed conversation request.
 import * as THREE from "three";
 import { EDITION } from "../edition";

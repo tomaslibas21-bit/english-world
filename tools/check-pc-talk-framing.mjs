@@ -11,9 +11,10 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const fixedParent = path.join(root, ".b6/audit");
 const sizes = SIZES.map(({ label }) => label);
 const requiredRooms = { "x05-tienda": ["tienda", "gas-station"], "p18-startup": ["tyler", "sproutly"] };
-const skipIds = [
-  "s76-dentist-call", "s80-support-call", "s83-invite-call", "s90-running-late",
-  "p24-flood", "p26-complaint", "s89-video-call", "x04-yaxche",
+const expectedSkips = [
+  ...["s76-dentist-call", "s80-support-call", "s83-invite-call", "s90-running-late",
+    "p24-flood", "p26-complaint"].map((id) => `${id}/phone call`),
+  "s89-video-call/video call", "x04-yaxche/the speaking tree has no character head",
 ];
 const suites = [
   { name: "talk-framing", fixed: "subset", report: "results.json" },
@@ -32,6 +33,24 @@ async function info(file) {
     if (error.code !== "ENOENT") throw error;
     return null;
   });
+}
+
+async function checkOutput(out) {
+  const relative = path.relative(fixedParent, out);
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`)) {
+    throw new Error("--out must be a fresh directory under this worktree's .b6/audit");
+  }
+  const realRoot = await realpath(root);
+  for (let parent = path.dirname(out); parent !== path.resolve(root); parent = path.dirname(parent)) {
+    const actual = await realpath(parent).catch((error) => {
+      if (error.code !== "ENOENT") throw error;
+      return null;
+    });
+    if (actual && actual !== path.join(realRoot, path.relative(root, parent))) {
+      throw new Error(`--out must not traverse a symlink: ${parent}`);
+    }
+  }
+  if (await info(out)) throw new Error(`--out already exists: ${out}`);
 }
 
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
@@ -60,7 +79,7 @@ function command(suite, config, attempt) {
   const directory = path.join(config.out, attempt, suite.name);
   const program = path.join(root, suite.full ? "tools" : "tests/browser", `${suite.name}.mjs`);
   const shots = path.join(directory, "shots");
-  const args = suite.full ? ["--src", root, "--out", directory] : suite.shotFlag ? [`--shots=${shots}`] : [];
+  const args = suite.full ? ["--src", ".", "--out", directory] : suite.shotFlag ? [`--shots=${shots}`] : [];
   const env = { WORLD_SHOTS: suite.fixed === "subset" ? "1" : shots };
   if (suite.name === "end-card") Object.assign(env, { END_CARD_LAYER: config.learner, END_CARD_SHOTS: shots });
   return { directory, program, args, env };
@@ -99,7 +118,8 @@ async function preserveFixed(fixed, scratch, destination, run) {
 async function fullVerdict(directory, config) {
   const report = await readJson(path.join(directory, "results.json"));
   const issues = [...report.issues];
-  const keys = (rows) => rows.map(({ id, size }) => `${id}/${size}`);
+  const key = ({ id, size }) => `${id}/${size}`;
+  const keys = (rows) => rows.map(key);
   const skips = (report) => report.skipped.map(({ id, why }) => `${id}/${why}`);
   const matrix = keys(report.rows);
   const ids = [...new Set(report.rows.map(({ id }) => id))];
@@ -107,16 +127,26 @@ async function fullVerdict(directory, config) {
   if (ids.length !== 55 || matrix.length !== 220 || new Set(matrix).size !== 220
       || sizes.some((size) => counts[size] !== 55) || !same(report.sizes, sizes)
       || report.expectedRows !== 220 || report.missing?.length) issues.push("Expected 220 unique keys, 55 per viewport");
+  const beforeRows = new Map();
+  const missingRows = [];
+  const newSkips = [];
   try {
     const baseline = await readJson(config.before);
+    for (const row of baseline.rows) beforeRows.set(key(row), row);
+    missingRows.push(...keys(baseline.rows).filter((id) => !matrix.includes(id)));
+    newSkips.push(...skips(report).filter((skip) => !skips(baseline).includes(skip)));
     if (baseline.storage !== config.storage || baseline.learner !== config.learner
+        || baseline.edition !== "es" || baseline.issues.length || baseline.expectedRows !== 220 || baseline.missing?.length
+        || baseline.failedRows !== 0 || baseline.unsettledRows !== 0
+        || !same(baseline.sizes, sizes) || !same(baseline.screens.map(({ size }) => size), sizes)
+        || baseline.screens.some(({ lang, targetLanguages }) => lang !== config.learner || !same(targetLanguages ?? [], ["es"]))
         || !same(keys(baseline.rows), matrix) || !same(skips(baseline), skips(report))) {
       issues.push("Full audit keys or skips differ from the matching before report");
     }
   } catch (error) {
     issues.push(`Before report unavailable: ${error.message}`);
   }
-  if (!same(report.skipped.map(({ id }) => id), skipIds)) issues.push("Wrong intrinsic skips");
+  if (!same(skips(report), expectedSkips)) issues.push("Wrong intrinsic skips or reasons");
   if (report.target !== config.url || report.storage !== config.storage || report.learner !== config.learner || report.edition !== "es"
       || !same(report.screens.map(({ size }) => size), sizes)
       || report.screens.some(({ lang, targetLanguages }) => lang !== config.learner || !same(targetLanguages ?? [], ["es"]))) {
@@ -146,10 +176,70 @@ async function fullVerdict(directory, config) {
     const jpeg = frame === `frames/${size}/${id}.jpg` && /^[\w-]+$/.test(id) && sizes.includes(size)
       ? await info(path.join(directory, frame)) : null;
     if (!jpeg?.isFile() || !jpeg.size) reasons.push("Missing held JPEG");
-    return { id, size, frame: jpeg?.isFile() ? frame : null, pass: !reasons.length, reasons };
+    const facts = (entry) => ({
+      actor: entry?.speakerId ?? null, name: entry?.speaker ?? null,
+      zone: entry?.shot?.zone ?? null, openingZone: entry?.opening?.zone ?? null,
+      held: entry?.kind === "measured" && entry.sitId === entry.id && entry.shot?.mode === "talk"
+        && entry.opening?.sitId === entry.id && entry.opening.held === true && entry.opening.liveSpeaker === true
+        && entry.run != null && entry.line != null
+        && entry.opening.speaker === entry.speakerId && entry.opening.lineSpeaker === entry.speakerId
+        && entry.opening.run === entry.run && entry.opening.line === entry.line && !!entry.lineKey,
+      settled: entry?.settled ?? null,
+      checks: Object.fromEntries(CHECKS.map((name) => [name, entry?.checks?.[name]?.status ?? null])),
+      drawCalls: Number.isInteger(entry?.shot?.calls) && entry.shot.calls > 0 ? entry.shot.calls : null,
+      face: entry?.face ?? null,
+      shot: entry?.shot ?? null,
+    });
+    const previous = beforeRows.get(key(row));
+    const before = facts(previous), after = facts(row);
+    const lostChecks = CHECKS.filter((name) => before.checks[name] === "PASS" && after.checks[name] !== "PASS");
+    if (!previous || !before.actor || !before.name || !before.zone || !before.held || before.settled === null
+        || before.openingZone !== before.zone || Object.values(before.checks).some((status) => status === null)) {
+      reasons.push("Missing comparable installed held opening");
+    }
+    const beforeFrame = previous?.frame === frame && jpeg?.isFile()
+      ? await info(path.join(path.dirname(config.before), frame)) : null;
+    if (previous?.pass !== true || before.settled !== true || !beforeFrame?.isFile() || !beforeFrame.size
+        || Object.values(before.checks).some((status) => status !== "PASS")) {
+      reasons.push("Installed row lacks a passing settled capture");
+    }
+    const [width, height] = size.split("x").map(Number);
+    for (const [side, facts] of [["installed", before], ["candidate", after]]) {
+      const { shot, face } = facts;
+      const vector = (value, length) => value?.length === length && value.every(Number.isFinite);
+      if (shot?.quality !== "low" || shot?.viewport?.join("x") !== size
+          || shot?.canvas?.[2] !== width || shot?.canvas?.[3] !== height
+          || !vector(shot?.position, 3) || !vector(shot?.look, 3) || !vector(shot?.offset, 2)
+          || !vector(shot?.panel, 4) || ![shot?.fov, shot?.near, shot?.far].every(Number.isFinite)
+          || ![face?.x, face?.y, face?.w, face?.h].every(Number.isFinite)
+          || Object.keys(shot?.landmarks ?? {}).length !== 9) reasons.push(`Missing ${side} camera or face measurements`);
+    }
+    if (before.shot?.near !== after.shot?.near || before.shot?.far !== after.shot?.far) {
+      reasons.push("Installed and candidate clipping planes differ");
+    }
+    if (before.actor !== after.actor || before.name !== after.name || before.zone !== after.zone || after.zone !== after.openingZone) {
+      reasons.push("Speaker ID, name or opening room differs from the installed row");
+    }
+    if (lostChecks.length || (previous?.pass === true && row.pass !== true)) reasons.push("Lost installed framing pass");
+    if (before.drawCalls === null || after.drawCalls === null) reasons.push("Missing matched draw calls");
+    return { id, size, frame: jpeg?.isFile() ? frame : null, pass: !reasons.length, reasons,
+      before, after, lostChecks, lostPass: previous?.pass === true && row.pass !== true };
+  }));
+  const drawRanges = Object.fromEntries(sizes.map((size) => {
+    const atSize = rows.filter((row) => row.size === size);
+    const range = (side) => {
+      const calls = atSize.map((row) => row[side].drawCalls);
+      return calls.length === 55 && calls.every((value) => value !== null) ? [Math.min(...calls), Math.max(...calls)] : null;
+    };
+    const before = range("before"), after = range("after");
+    if (!before || !after) issues.push(`Missing complete draw range at ${size}`);
+    else if (after[1] > before[1]) issues.push(`Draw-call maximum increased at ${size}`);
+    return [size, { before, after }];
   }));
   const failedRows = rows.filter((row) => !row.pass).length;
-  const verdict = { pass: !issues.length && failedRows === 0, counts, failedRows, issues, rows };
+  const lostPasses = rows.filter((row) => row.lostPass || row.lostChecks.length).length;
+  const verdict = { pass: !issues.length && failedRows === 0, counts, failedRows, lostPasses, missingRows, newSkips,
+    skips: report.skipped, drawRanges, issues, rows };
   await saveJson(path.join(directory, "verdict.json"), verdict);
   return { ...verdict, rows: rows.length };
 }
@@ -225,7 +315,7 @@ async function main() {
   const storage = "puerto-colibri";
   const channel = process.env.WORLD_BROWSER_CHANNEL || "chromium";
   const out = path.resolve(values.out);
-  const before = path.resolve(values.before ?? path.join(root, "../talk-framing/audit", `before-pc-${learner}`, "results.json"));
+  const before = path.resolve(values.before ?? path.join(fixedParent, `before-natural-pc-${learner}`, "results.json"));
   const scratch = path.join(fixedParent, `.pc-${learner}-checker`);
   for (const fixed of [...suites.filter((suite) => suite.fixed).map((suite) => `${suite.fixed}-pc-${learner}`), path.basename(scratch)]) {
     const relative = path.relative(path.join(fixedParent, fixed), out);
@@ -236,14 +326,12 @@ async function main() {
   const env = { WORLD_STORAGE: storage, WORLD_LEARNER: learner, WORLD_TEST_URL: values.url,
     WORLD_PLAYWRIGHT_MODULE: module, WORLD_BROWSER_CHANNEL: channel, PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1", npm_config_offline: "true" };
   const config = { root, out, before, storage, learner, url: values.url, module, channel, env };
+  await checkOutput(out);
   const children = suites.map((suite) => command(suite, config, "original"));
   for (const { program } of children) {
     if (!(await info(program))?.isFile()) throw new Error(`Missing PC child: ${program}`);
   }
   if (values["preflight-only"]) {
-    const output = await info(out);
-    if (output && !output.isDirectory()) throw new Error(`--out must be a directory: ${out}`);
-    if (await info(path.join(out, "original"))) throw new Error(`--out already contains a checker run: ${out}`);
     console.log(JSON.stringify({ ...config, children }, null, 2));
     return;
   }
@@ -251,7 +339,8 @@ async function main() {
   await mkdir(fixedParent, { recursive: true });
   await mkdir(scratch);
   try {
-    await mkdir(out, { recursive: true });
+    await mkdir(path.dirname(out), { recursive: true });
+    await mkdir(out);
     // A fresh original directory prevents overwriting any prior run or retry.
     await mkdir(path.join(out, "original"));
     const summary = { ...config, children: {}, pass: false };

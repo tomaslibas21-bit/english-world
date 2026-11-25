@@ -5,6 +5,8 @@ import type { Sentence } from "../../convo/compose";
 import { cardKey, useCards } from "../../state/cards";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
+import type { GameCharacter } from "../characters";
+import type { ActorTalk } from "../talkNatural/binding";
 import { ModeDialogue, type KitLine, type KitMic } from "../kit/dialogue";
 import { freeToWalk } from "../phone/schedule";
 import { learnerTurn } from "../kit/lines";
@@ -18,13 +20,7 @@ import {
 import type { StreetChatter, StreetLine, StreetMoment } from "./types";
 import { STREET_WORDS } from "./words";
 
-export interface StreetCharacter {
-  gender?: Gender;
-  root: { userData: Record<string, unknown> };
-  height: number;
-  talk(seconds: number, level?: () => number | null, vowel?: () => number | null): void;
-  react?(kind: "nod"): void;
-}
+export type StreetCharacter = GameCharacter & { gender?: Gender };
 
 export interface StreetAnchor { x: number; y: number }
 export interface StreetProjection extends StreetAnchor { onScreen: boolean }
@@ -49,6 +45,8 @@ export interface StreetPair {
 }
 
 export interface StreetWorld {
+  acting?(): ActorTalk;
+  learner?(): GameCharacter;
   near(kind: StreetMoment["near"]): boolean;
   prepare(draw: Omit<MomentDraw, "bag">): (() => StreetActor) | undefined;
   pairs(radius: number): StreetPair[];
@@ -165,9 +163,16 @@ export class StreetLife {
       }
       this.showHint(active, answer);
       this.patchMoment({ step: "answer", line: answer, hint: active.hintKey === answer.key, reward });
-      active.actor?.person.react?.("nod");
     },
-    animate: (seconds) => this.speaking?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.world?.acting?.(),
+    actor: () => {
+      const active = this.active;
+      if (active?.actor) return {
+        actor: active.actor.person, id: active.draw.cast.id, player: this.world?.learner?.(), scope: "street",
+      };
+      if (this.speaking) return { actor: this.speaking, id: this.overheard?.id || "passerby", scope: "town",
+        partner: this.overheard?.pair?.members.find(({ person }) => person !== this.speaking)?.person };
+    },
   });
 
   constructor(private world?: StreetWorld) {
@@ -358,6 +363,7 @@ export class StreetLife {
     if (!known && useCards.getState().keys.has(key)) {
       store.toast({ kind: "success", source: STREET_CARD, title: `${STREET_WORDS.newCard}: ${reward.en}`, ms: 2600 });
     }
+    this.dialogue.releaseActor();
     active.actor?.leave();
     const line = active.lastReply ?? active.view.line;
     this.patchMoment({ step: "done", line, hint: !!line && active.hintKey === line.key });

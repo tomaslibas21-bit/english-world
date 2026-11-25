@@ -1,6 +1,6 @@
 import { STREET_CHATTER as ES_CHATTER, STREET_MOMENTS as ES_MOMENTS } from "@/content/street";
 import { streetLearnerContent } from "../../es/learner/street";
-import { applyLearner } from "../../es/learner/walk";
+import { applyLearner } from "../tables/loaded";
 import table from "../tables/street.json";
 
 export const STREET_CHATTER = structuredClone(ES_CHATTER);

@@ -7,7 +7,7 @@ import { Interlinear } from "./Interlinear";
 import { PhraseSave } from "./kit/PhraseSave";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
-import { coachVoice, npcVoice } from "../content/voices";
+import { coachVoice } from "../content/voices";
 import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
 import { KIND, keepsakeFor } from "../content/keepsakes";
 import { GLOBAL } from "../content/global";
@@ -16,6 +16,7 @@ import { addressInformal, compose, roleSaid, variety, type Sentence } from "../c
 import type { EntityDef, HintGroup, SituationDef, SituationMeta } from "../content/types";
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
+import { replayNpc } from "./replayNpc";
 import { speechSupported } from "../convo/speech";
 import { displayUtterance } from "../convo/normalize";
 import { sitProgress, stars } from "../state/progress";
@@ -535,10 +536,7 @@ function groupLines(lines: TranscriptLine[]): TranscriptLine[][] {
 
 function NpcGroup({ lines, speakingId, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speakingId: number | null; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
   const npc = NPCS[lines[0].npc!];
-  const replay = async (slow: boolean) => {
-    game?.activeSession?.stopListening();
-    for (const l of lines) if (!await playVoice(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
-  };
+  const replay = (slow: boolean) => void replayNpc(lines, slow);
   return (
     <div className="msg npc">
       <div className="meta">
@@ -762,7 +760,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 function Line({ l, speaking, lt, ipa, nat, animateMatch }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean; animateMatch: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
-    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); playVoice(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
+    const replay = (slow: boolean) => void replayNpc([l], slow);
     return (
       <div className="msg npc">
         <div className="meta">

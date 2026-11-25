@@ -76,6 +76,8 @@ export interface TranscriptLine {
   tips?: Tip[];
   lineKey?: string;
   slow?: boolean;
+  /** Presentation and playback share this line's acting status across asynchronous requests. */
+  acting?: { at: number; replay: boolean; unavailable: boolean };
   /** How the learner answered (a tiny mic or keyboard in the bubble); "picked": a "Did you mean…?" suggestion;
    *  "helped": chosen from the never-stuck help after two misses (it earns no phrase). */
   via?: "voice" | "typed" | "picked" | "helped";

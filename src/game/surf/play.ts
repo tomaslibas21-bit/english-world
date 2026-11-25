@@ -20,12 +20,14 @@ import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
+import type { ActingTarget, ActorTalk } from "../talkNatural/binding";
 import type { Surf } from "./Surf";
 import { arrowFor, COMMANDS, SurfLogic, type Do, type Level, type SurfArrow, type SurfInput } from "./logic";
 import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
 /** What the lesson needs of the game. */
 export interface SurfGame {
+  acting?(): ActorTalk;
   player(): GameCharacter;
   dressPlayer(outfit: "surf" | null): void;
   rig: CameraRig;
@@ -72,6 +74,7 @@ export class SurfPlay {
   group = new THREE.Group();
   private logic: SurfLogic | null = null;
   private startRequest = 0;
+  private acting?: ActorTalk;
   private leaving = false;
   private level: Level = "beginner";
   private in = { strokes: 0, up: false };
@@ -257,6 +260,7 @@ export class SurfPlay {
     if (this.game.fade(() => {
       if (this.logic === L) { this.finish(); this.launch(level); }
     })) {
+      this.acting?.release(0);
       audio.stop();
       this.stopListening();
     }
@@ -289,6 +293,7 @@ export class SurfPlay {
       this.finish();
       this.stopListening();
       audio.stop();
+      this.acting?.release(0);
       this.leaving = false;
       this.logic = null;
       this.arrows.clear();
@@ -354,9 +359,10 @@ export class SurfPlay {
     const turn = L.choice;
     const resumeMic = this.speech?.running || this.listenT !== null;
     this.stopListening("replay instructor");
-    const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
-    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then((played) => {
-      if (played && resumeMic && turn && this.logic === L && L.choice === turn && !this.leaving) this.listen();
+    const slow = !!useStore.getState().settings.slowVoice;
+    // (the live mic fix: the microphone comes back for the same turn only, and only if the replay was heard)
+    this.voiceCoach(line.cue, line.s.say, slow, undefined, (played?: boolean) => {
+      if (played !== false && resumeMic && turn && this.logic === L && L.choice === turn && !this.leaving) this.listen();
     });
   }
 
@@ -366,6 +372,25 @@ export class SurfPlay {
   setMic(on: boolean) {
     useSurf.getState().set({ micOn: on });
     if (!on) this.stopListening("mic toggled off"); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+  }
+
+  private coachActor(): ActingTarget | undefined {
+    const scene = this.scene, actor = scene?.coach;
+    if (actor && scene.group.visible) return { actor, id: this.content.npc, action: () => scene.demonstrating };
+  }
+
+  private voiceCoach(key: string, text: string, slow: boolean, duration?: number, after?: () => void) {
+    const npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1;
+    const options = { slow, male: npc?.gender === "m" };
+    const target = this.coachActor();
+    const acting = target && (this.acting ??= this.game.acting?.());
+    if (acting && target) {
+      acting.play(target, key, duration ?? audio.clipDuration(voice, speed, text) ?? 2,
+        voice, speed, text, options, duration === undefined, after);
+    } else {
+      const played = audio.play(voice, speed, text, options);
+      if (after) void played.then(after);
+    }
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -440,12 +465,13 @@ export class SurfPlay {
     if (!this.answered.includes(cue)) this.answered.push(cue);
     const s = this.line(cue);
     useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" } });
-    if (!s || spoken) return 0.15;
+    if (!s || spoken) { this.acting?.react("understood"); return 0.15; }
     const voice = coachVoice(useStore.getState().progress.profile?.gender);
     // (a line with no recording yet is only shown)
     const secs = audio.clipDuration(voice, 1, s.say);
-    if (secs == null) return 0.5;
-    void audio.play(voice, 1, s.say);
+    if (secs == null) { this.acting?.react("understood"); return 0.5; }
+    if (this.acting) this.acting.playLearner(voice, s.say);
+    else void audio.play(voice, 1, s.say);
     return secs;
   }
   /** A key while a lesson is on: true when it was the lesson's. */
@@ -478,8 +504,7 @@ export class SurfPlay {
     if (!s) return 0.8;
     const st = useStore.getState(), npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1, slow = !!st.settings.slowVoice;
     const secs = (audio.clipDuration(voice, speed, s.say) ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
-    void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m" });
-    this.scene?.coach?.talk(secs, () => audio.level(), () => audio.vowel());
+    this.voiceCoach(cue, s.say, slow, secs);
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
@@ -527,7 +552,11 @@ export class SurfPlay {
     this.in.strokes = paused ? 0 : Math.max(0, this.in.strokes - 1);
     this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
-    if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening("lesson paused"); else if (L.choice) this.listen(); }
+    if (paused !== this.paused) {
+      this.paused = paused;
+      this.acting?.pause(paused);
+      if (paused) this.stopListening("lesson paused"); else if (L.choice) this.listen();
+    }
     this.scene?.update(dt, t, inp, paused);
     this.sync(dt);
   }
@@ -546,6 +575,9 @@ export class SurfPlay {
     const turn = L.choice !== this.lastChoice;
     if (turn) {
       this.lastChoice = L.choice;
+      const actor = L.choice ? this.coachActor() : undefined;
+      if (actor) (this.acting ??= this.game.acting?.())?.listen(actor, true);
+      else this.acting?.listen(undefined, false);
       patch.choice = L.choice ? { id: L.choice.id, options: L.choice.options.map((cue) => ({ cue, s: this.line(cue) })).filter((o): o is SurfLine => !!o.s) } : null;
     }
     // the move she asks for: shown beside her line at once, but a command of the ride the learner has heard often is
