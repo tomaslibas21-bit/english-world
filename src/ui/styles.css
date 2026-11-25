@@ -761,7 +761,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @media (max-width: 900px) and (max-height: 700px) and (orientation: portrait) {
   .convo[data-phase="ended"] .transcript { padding-block: 0; }
-  .convo[data-phase="ended"] .ended-box { gap: 3px; padding: 5px 10px calc(5px + env(safe-area-inset-bottom)); }
+  .convo[data-phase="ended"] .ended-box { gap: 2px; padding: 5px 10px calc(5px + env(safe-area-inset-bottom)); }
   .convo .ended-box .ended-phrase { padding-block: 4px; }
 }
 /* the surf school's end card: the lesson first, wide, in the beach's turquoise */

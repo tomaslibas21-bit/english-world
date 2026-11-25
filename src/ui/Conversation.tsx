@@ -66,7 +66,7 @@ export function Conversation() {
   const [typed, setTyped] = useState("");
   const [matchEcho, setMatchEcho] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const focusTyping = useRef(false);
+  const typingFocusRun = useRef<number | null>(null);
   const recoveryRef = useRef<HTMLDivElement>(null);
   const lastAnswer = conv.transcript.findLast((line) => line.who === "you");
   const pendingChoices = conv.speechChoices?.length ? conv.speechChoices : undefined;
@@ -119,9 +119,16 @@ export function Conversation() {
     transcript?.scrollTo({ top: transcript.scrollHeight });
   }, [lastLineId, conv.run, conv.phase]);
   useLayoutEffect(() => {
-    if (focusTyping.current && conv.typing) inputRef.current?.focus({ preventScroll: true });
-    focusTyping.current = false;
-  }, [conv.typing]);
+    if (typingFocusRun.current === null) return;
+    if (!conv.active || !conv.typing || conv.phase === "ended" || typingFocusRun.current !== conv.run) {
+      typingFocusRun.current = null;
+      return;
+    }
+    const input = inputRef.current;
+    if (!input || input.disabled) return;
+    typingFocusRun.current = null;
+    input.focus({ preventScroll: true });
+  }, [conv.active, conv.phase, conv.run, conv.typing]);
   useLayoutEffect(() => {
     const panel = panelRef.current;
     const viewport = window.visualViewport;
@@ -181,7 +188,7 @@ export function Conversation() {
       if (k === "p" && st.settings.play !== "light") { e.preventDefault(); st.setSettings({ scenes: !picturesOn(st.settings) }); return; }
       if (k === "t") {
         e.preventDefault();
-        focusTyping.current = !st.conv.typing;
+        typingFocusRun.current = st.conv.typing ? null : st.conv.run;
         st.setConv({ typing: !st.conv.typing });
         return;
       }
@@ -211,7 +218,7 @@ export function Conversation() {
   const edit = (text: string) => {
     setMatchEcho(null);
     setTyped(text);
-    focusTyping.current = !conv.typing;
+    typingFocusRun.current = conv.typing ? null : conv.run;
     setConv({ typing: true, speechChoices: undefined });
     inputRef.current?.focus({ preventScroll: true });
   };
@@ -312,7 +319,7 @@ export function Conversation() {
             </div>
             <MicStatus capturing={capturing} supported={supported} confirmationQuestion={confirmationQuestion} />
             <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => {
-              focusTyping.current = !conv.typing;
+              typingFocusRun.current = conv.typing ? null : conv.run;
               setConv({ typing: !conv.typing });
             }} title={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-label={keyboardHints ? L("Rašyti (T)") : L("Rašyti")} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
           </div>
