@@ -58,7 +58,7 @@ describe("Puerto Colibrí taxi routes", () => {
     const { rides } = makeRides();
     const drive = vi.fn(), horn = vi.fn();
     const mode = createTaxiMode({
-      rides, drive, horn, add: () => {}, standTaxi: { root: new THREE.Group(), fallback: new THREE.Group() },
+      rides, drive, horn, add: () => {}, dismount: () => {}, left: () => {}, standTaxi: { root: new THREE.Group(), fallback: new THREE.Group() },
     } as unknown as ModeHost)!;
     const route = TAXI_ROUTES[0], decision = route.decisions[0], pose = resetPose(approach(route, 0));
     const run = { route, index: 0, phase: "drive", help: 0, nearTime: 0, spoken: true, pending: true };

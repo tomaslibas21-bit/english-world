@@ -21,6 +21,8 @@ import { replayNpc } from "@/ui/replayNpc";
 vi.mock("@/game/audio", () => ({
   audio: {
     names: [], play: vi.fn(), prefetch: vi.fn(), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn(), hasClip: vi.fn(),
+    // (the live mic fix: a recorded-only session reads the clip list first)
+    init: vi.fn(async () => undefined),
   },
 }));
 

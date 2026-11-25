@@ -66,11 +66,11 @@ class TaxiMode implements GameMode {
   private dialogue = new ModeDialogue({
     say: (line) => {
       this.padCancel();
-      if (line && useTaxi.getState().gloss) this.run?.review.add(line.sentence);
+      if (line && useTaxi.getState().gloss) this.run?.review?.add(line.sentence);
       useTaxi.setState({ line, revealed: null });
     },
     choices: (choices) => {
-      this.run?.review.lines(choices);
+      this.run?.review?.lines(choices);
       useTaxi.setState({ choices });
     },
     mic: (mic) => useTaxi.setState({ mic }),
