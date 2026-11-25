@@ -80,6 +80,134 @@ function compact(g: THREE.BufferGeometry, bones: number): THREE.BufferGeometry {
   return g;
 }
 
+type SkinPart = { bone: THREE.Object3D; geo: THREE.BufferGeometry | null; blend?: { to: THREE.Object3D; w: Float32Array } };
+
+/** Keep Three's transform and merge behavior for parts with other attribute layouts or types. */
+function mergeSkinParts(parts: SkinPart[], toRoot: THREE.Matrix4) {
+  const matrix = new THREE.Matrix4();
+  const geos: THREE.BufferGeometry[] = [];
+  for (const [i, { bone, geo, blend }] of parts.entries()) {
+    if (!geo) continue;
+    const g = geo.clone().applyMatrix4(matrix.multiplyMatrices(toRoot, bone.matrixWorld));
+    const n = g.attributes.position.count;
+    if (!g.index) g.setIndex([...Array(n).keys()]);
+    const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+    const j = blend ? parts.findIndex((p) => p.bone === blend.to) : -1;
+    for (let k = 0; k < n; k++) {
+      const w = j >= 0 ? blend!.w[k] : 0;
+      si[k * 4] = i; sw[k * 4] = 1 - w;
+      if (j >= 0) { si[k * 4 + 1] = j; sw[k * 4 + 1] = w; }
+    }
+    g.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+    g.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+    geos.push(g);
+  }
+  const geometry = compact(mergeGeometries(geos, false)!, parts.length);
+  for (const g of geos) g.dispose();
+  return geometry;
+}
+
+function isFloat3(attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | undefined, count: number) {
+  return attribute instanceof THREE.BufferAttribute && attribute.array instanceof Float32Array &&
+    attribute.itemSize === 3 && attribute.count === count && !attribute.normalized && attribute.gpuType === THREE.FloatType;
+}
+
+const packUnsigned = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 65535);
+const packNormal = (value: number) => Math.round(Math.min(1, Math.max(-1, Math.fround(value))) * 32767);
+
+/** Write the blocks character's standard attributes directly in their final formats. */
+function bakeSkinGeometry(parts: SkinPart[], toRoot: THREE.Matrix4) {
+  let vertexCount = 0, indexCount = 0, needsUint32 = false;
+  for (const { geo } of parts) {
+    if (!geo) continue;
+    const { attributes, index } = geo;
+    const count = attributes.position?.count;
+    if (count === undefined || Object.keys(attributes).length !== 3 || Object.keys(geo.morphAttributes).length ||
+        !isFloat3(attributes.position, count) || !isFloat3(attributes.normal, count) || !isFloat3(attributes.color, count) ||
+        (index && (index.normalized || index.itemSize !== 1 ||
+          !(index.array instanceof Uint16Array || index.array instanceof Uint32Array || index.array instanceof Uint8Array)))) {
+      return mergeSkinParts(parts, toRoot);
+    }
+
+    // Three checks the largest referenced index. 65535 is reserved for primitive restart.
+    if (!needsUint32 && vertexCount + count > 65535) {
+      needsUint32 = index ? index.array.some((value) => value + vertexCount >= 65535) : true;
+    }
+    vertexCount += count;
+    indexCount += index?.count ?? count;
+  }
+
+  const positions = new Float32Array(vertexCount * 3);
+  const normals = new Int16Array(vertexCount * 3);
+  const colors = new Uint16Array(vertexCount * 3);
+  const skinIndices = parts.length <= 256 ? new Uint8Array(vertexCount * 4) : new Uint16Array(vertexCount * 4);
+  const skinWeights = new Uint16Array(vertexCount * 4);
+  const indices = needsUint32 ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
+  const matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), vertex = new THREE.Vector3();
+  let vertexOffset = 0, indexOffset = 0;
+  for (let boneIndex = 0; boneIndex < parts.length; boneIndex++) {
+    const { bone, geo, blend } = parts[boneIndex];
+    if (!geo) continue;
+    const { attributes: { position, normal, color }, index } = geo;
+    const count = position.count;
+    const srcPositions = position.array, srcNormals = normal.array, srcColors = color.array;
+    matrix.multiplyMatrices(toRoot, bone.matrixWorld);
+    normalMatrix.getNormalMatrix(matrix);
+    for (let src = 0, dst = vertexOffset * 3; src < srcPositions.length; src += 3, dst += 3) {
+      vertex.set(srcPositions[src], srcPositions[src + 1], srcPositions[src + 2]).applyMatrix4(matrix);
+      positions[dst] = vertex.x;
+      positions[dst + 1] = vertex.y;
+      positions[dst + 2] = vertex.z;
+      vertex.set(srcNormals[src], srcNormals[src + 1], srcNormals[src + 2]).applyNormalMatrix(normalMatrix);
+      normals[dst] = packNormal(vertex.x);
+      normals[dst + 1] = packNormal(vertex.y);
+      normals[dst + 2] = packNormal(vertex.z);
+      colors[dst] = packUnsigned(srcColors[src]);
+      colors[dst + 1] = packUnsigned(srcColors[src + 1]);
+      colors[dst + 2] = packUnsigned(srcColors[src + 2]);
+    }
+
+    const target = blend ? parts.findIndex((p) => p.bone === blend.to) : -1;
+    const skinOffset = vertexOffset * 4;
+    if (blend && target >= 0) {
+      for (let i = 0, dst = skinOffset; i < count; i++, dst += 4) {
+        const weight = blend.w[i];
+        skinIndices[dst] = boneIndex;
+        skinIndices[dst + 1] = target;
+        // Match the old Float32 attributes before rounding to normalized integers.
+        skinWeights[dst] = packUnsigned(Math.fround(1 - weight));
+        skinWeights[dst + 1] = packUnsigned(weight);
+      }
+    } else {
+      for (let dst = skinOffset; dst < skinOffset + count * 4; dst += 4) {
+        skinIndices[dst] = boneIndex;
+        skinWeights[dst] = 65535;
+      }
+    }
+
+    if (!index) {
+      for (let i = 0; i < count; i++) indices[indexOffset + i] = vertexOffset + i;
+    } else if (vertexOffset === 0) {
+      indices.set(index.array, indexOffset);
+    } else {
+      const source = index.array;
+      for (let i = 0; i < source.length; i++) indices[indexOffset + i] = vertexOffset + source[i];
+    }
+    vertexOffset += count;
+    indexOffset += index?.count ?? count;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3, true));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3, true));
+  geometry.setAttribute("skinIndex", new THREE.BufferAttribute(skinIndices, 4));
+  geometry.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeights, 4, true));
+  geometry.computeBoundingBox();
+  return geometry;
+}
+
 const _c = new THREE.Color();
 /** Simple shapes merged into one vertex-coloured mesh (one draw call). */
 class Parts {
@@ -387,7 +515,7 @@ export class Character {
   private seatShins: THREE.Object3D[] | null = null;
   private seatShinExtra = 0;
   /** Every part's geometry (in its bone's space) and its bone; the baked mesh. */
-  private parts: { bone: THREE.Object3D; geo: THREE.BufferGeometry | null; blend?: { to: THREE.Object3D; w: Float32Array } }[] = [];
+  private parts: SkinPart[] = [];
   private skin: THREE.SkinnedMesh | null = null;
   /** (graphics round 5, theme.ts `farPeople`) The same person in fewer triangles, on the same skeleton: drawn instead
    *  of the full one when far from the camera (setFar). */
@@ -1382,30 +1510,12 @@ export class Character {
     const sizes = this.parts.map((p) => p.bone.scale.clone());
     for (const p of this.parts) p.bone.scale.set(1, 1, 1);
     this.root.updateMatrixWorld(true);
-    const toRoot = this.root.matrixWorld.clone().invert(), m4 = new THREE.Matrix4();
-    const geos: THREE.BufferGeometry[] = [];
-    this.parts.forEach(({ bone, geo, blend }, i) => {
-      if (!geo) return;
-      const g = geo.clone().applyMatrix4(m4.multiplyMatrices(toRoot, bone.matrixWorld));
-      const n = g.attributes.position.count;
-      if (!g.index) g.setIndex([...Array(n).keys()]);
-      const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
-      const j = blend ? this.parts.findIndex((p) => p.bone === blend.to) : -1;
-      for (let k = 0; k < n; k++) {
-        const w = j >= 0 ? blend!.w[k] : 0;
-        si[k * 4] = i; sw[k * 4] = 1 - w;
-        if (j >= 0) { si[k * 4 + 1] = j; sw[k * 4 + 1] = w; }
-      }
-      g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4));
-      g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
-      geos.push(g);
-    });
+    const geometry = bakeSkinGeometry(this.parts, this.root.matrixWorld.clone().invert());
     const castShadow = this.skin?.castShadow ?? true;
     if (this.skin) { this.skin.removeFromParent(); this.skin.geometry.dispose(); this.skin.skeleton.dispose(); }
     // (a far version on the old skeleton no longer fits: gone, until another is attached)
     if (this.farSkin) { this.farSkin.removeFromParent(); this.farSkin.geometry.dispose(); this.farSkin = null; }
-    const skin = new THREE.SkinnedMesh(compact(mergeGeometries(geos, false)!, this.parts.length), charMaterial());
-    for (const g of geos) g.dispose();
+    const skin = new THREE.SkinnedMesh(geometry, charMaterial());
     skin.castShadow = castShadow;
     // a generous fixed bound, as the pose changes every frame (an arm up for a wave still fits)
     skin.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 1.5);

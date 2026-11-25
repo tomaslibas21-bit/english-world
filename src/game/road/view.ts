@@ -59,7 +59,7 @@ const VERGE_FADE_SECONDS = 0.75;
 const LOCAL_ROTATION = exitRotation.clone().invert();
 export type RoadEnvironment = {
   sky: THREE.Mesh; fog: THREE.Fog | null; sun: THREE.DirectionalLight;
-  hemi: THREE.HemisphereLight; environment: THREE.Texture | null; environmentIntensity: number;
+  hemi: THREE.HemisphereLight; environment: THREE.Texture | null; environmentIntensity: number; exitHills?: THREE.Mesh;
 };
 
 function departureFrame(car: THREE.Object3D, rider: THREE.Object3D, camera: THREE.PerspectiveCamera,
@@ -129,7 +129,7 @@ export class RoadView {
   private chaseCenter = new THREE.Vector3();
   private cameraMotion = { distance: 0, lift: 0, pace: 0, time: 0, dt: 0 };
 
-  constructor(mesh: THREE.Object3D, size: { width: number; length: number }, private model: CarModelEntry) {
+  constructor(mesh: THREE.Object3D, size: { width: number; length: number }, private model: CarModelEntry, exitHills?: THREE.Mesh) {
     this.scene.fog = this.fog;
     this.sun.position.set(-40, 62, 34);
     this.burst.frustumCulled = false;
@@ -137,6 +137,12 @@ export class RoadView {
     this.burst.visible = false;
     this.burst.renderOrder = 3;
     this.scene.add(this.sky.mesh, this.ranges.mesh, this.clouds, this.sun, this.fill, this.props.group, this.dust.mesh, this.burst);
+    if (exitHills) {
+      const hills = exitHills.clone(false);
+      hills.applyMatrix4(townToExit);
+      hills.receiveShadow = false;
+      this.scene.add(hills);
+    }
     this.daylight(0);
     const { car, geometry } = copyCar(mesh);
     this.car = car;

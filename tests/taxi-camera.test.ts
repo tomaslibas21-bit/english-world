@@ -1,76 +1,162 @@
-import { expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { CameraRig } from "../src/game/camera";
-import { PropFader } from "../src/game/fade";
-import { OcclusionField } from "../src/game/occlusion";
-import { TAXI, WORLD } from "../src/game/world/layout";
+import { CUT, withCutout } from "../src/game/cutout";
+import { initTownCollision } from "../src/game/townCollisionCache";
+import { OUTDOOR_NPCS, TAXI } from "../src/game/world/layout";
 import { buildTown } from "../src/game/world/town";
+import { townCanvasDocument } from "../tools/town-canvas-stub";
 
-it("keeps the gas canopy out of the walking camera at the taxi prompt", () => {
-  const draw = () => {};
-  const gradient = () => ({ addColorStop: draw });
-  const canvas = new Proxy({
-    measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
-  }, { get: (target, key) => Reflect.get(target, key) ?? draw });
-  vi.stubGlobal("document", { createElement: () => ({ getContext: () => canvas }) });
-  try {
-    const { group, colliders, parkedCars } = buildTown();
-    const skip = (o: THREE.Object3D) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || !!o.userData.thin || o === parkedCars.taxi?.root;
-    const field = OcclusionField.fromObject(group, {
-      minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24,
-    }, { skip });
-    field.fillFootprints(colliders.boxes, colliders.circles);
-    expect(field.solidAt(120.75, 4.6, 4)).toBe(true);
+const vinnie = OUTDOOR_NPCS.find((npc) => npc.npc === "vinnie")!;
+const DT = 1 / 60;
 
-    const canopy = group.getObjectByName("gas-canopy-assembly")!;
-    const fader = new PropFader(group, skip);
-    const materials = canopy.children.map((obj) => (obj as THREE.Mesh).material as THREE.Material);
-    for (const material of materials) expect(material.alphaHash).toBe(true);
-    const ray = new THREE.Raycaster();
-    const sample = new THREE.Vector2();
-    const samples = [-0.9, -0.75, -0.5, 0, 0.5, 0.75, 0.9];
-    let foregroundHits = 0;
-    for (const [w, h] of [[1280, 800], [390, 844]]) {
-      const rig = new CameraRig(w / h);
-      rig.space = { free: (a, b) => field.free(a, b), inside: (p) => field.solidAt(p.x, p.y, p.z, 0.15), overSolid: (x, z) => field.overSolid(x, z) };
-      rig.target.set(TAXI.x, 0, TAXI.z + 2.4);
-      rig.yaw = rig.motion.dir = Math.PI;
-      rig.motion.next.copy(rig.target);
-      rig.cam.fov = rig.fovFor(w, h, false);
-      rig.cam.updateProjectionMatrix();
-      rig.applyViewShift(w, h, 0, w < h ? -h * 0.12 : 0);
-      rig.snap();
-      const chest = rig.target.clone().setY(1.35);
-      const taxi = new THREE.Vector3(TAXI.x, 0.9, TAXI.z);
-      for (let frame = 0; frame < 100; frame++) {
-        rig.update(0.05, Math.PI, false, true, true);
-        rig.cam.updateMatrixWorld();
-        fader.update(0.05, rig.cam.position, chest);
-        const projected = taxi.clone().project(rig.cam);
-        expect(Math.max(Math.abs(projected.x), Math.abs(projected.y), Math.abs(projected.z))).toBeLessThan(1);
-        const taxiDepth = rig.cam.position.distanceTo(taxi);
-        for (const x of samples) {
-          for (const y of samples) {
-            ray.setFromCamera(sample.set(x, y), rig.cam);
-            const hit = ray.intersectObjects(canopy.children, false)[0];
-            if (hit && hit.distance < taxiDepth) {
-              foregroundHits++;
-              const material = (hit.object as THREE.Mesh).material as THREE.Material;
-              expect(material.opacity, `canopy cuts the ${w}×${h} view on frame ${frame}`).toBe(0);
-            }
-          }
-        }
-      }
-      fader.update(0.05, rig.cam.position, chest, false);
-      for (const material of materials) expect(material.opacity).toBe(1);
+describe("Gas & Go follow camera", () => {
+  let field: ReturnType<typeof initTownCollision>["field"];
+  let fader: ReturnType<typeof initTownCollision>["fader"];
+  let canopy: THREE.Mesh<THREE.BufferGeometry, THREE.Material>[];
+  const ray = new THREE.Raycaster();
+  const sample = new THREE.Vector2();
+  const sightline = new THREE.Line3(CUT.a.value, CUT.b.value);
+  const closest = new THREE.Vector3();
+
+  beforeAll(() => {
+    vi.stubGlobal("document", townCanvasDocument());
+    try {
+      const town = buildTown();
+      ({ field, fader } = initTownCollision(town, undefined, () => {}));
+      withCutout(town.group);
+      canopy = town.group.getObjectByName("gas-canopy-assembly")!.children as typeof canopy;
+    } finally {
+      vi.unstubAllGlobals();
     }
-    expect(foregroundHits).toBeGreaterThan(0);
-    const roofBounds = new THREE.Box3().setFromObject(canopy);
-    fader.update(0.05, new THREE.Vector3(TAXI.x, 5, roofBounds.max.z + 6.5), new THREE.Vector3());
-    for (const material of materials) expect(material.opacity).toBeCloseTo(0.5);
-    fader.update(0.05, new THREE.Vector3(TAXI.x, 7, 20), new THREE.Vector3());
-    for (const material of materials) expect(material.opacity).toBe(1);
-  } finally {
-    vi.unstubAllGlobals();
+  });
+
+  function followCamera(w: number, h: number, start: THREE.Vector3, heading: number, running: boolean) {
+    const rig = new CameraRig(w / h);
+    rig.space = {
+      free: (a, b) => field.free(a, b),
+      inside: (p) => field.solidAt(p.x, p.y, p.z, 0.15),
+      overSolid: (x, z) => field.overSolid(x, z),
+    };
+    rig.target.copy(start);
+    rig.yaw = rig.motion.dir = heading;
+    rig.motion.next.copy(start);
+    rig.cam.fov = rig.fovFor(w, h, running);
+    rig.cam.updateProjectionMatrix();
+    rig.applyViewShift(w, h, 0, w < h ? -h * 0.12 : 0);
+    rig.snap();
+    return rig;
   }
+
+  function advance(rig: CameraRig, learner: THREE.Vector3, velocity: THREE.Vector3, heading: number) {
+    const speed = velocity.length();
+    rig.target.lerp(learner, DT * 10);
+    rig.motion.next.copy(learner).addScaledVector(velocity, 0.3);
+    rig.motion.dir = heading;
+    rig.motion.speed = speed;
+    rig.update(DT, heading, speed > 0.7, true, true);
+    const fov = rig.fovFor(rig.cam.aspect, 1, speed * speed > 30);
+    rig.cam.fov = THREE.MathUtils.lerp(rig.cam.fov, fov, DT * 3);
+    rig.cam.updateProjectionMatrix();
+    rig.cam.updateMatrixWorld();
+    CUT.a.value.copy(rig.cam.position);
+    CUT.b.value.copy(learner).y = 1.35;
+    CUT.r.value = 0.55;
+    fader.update(DT, CUT.a.value, CUT.b.value);
+  }
+
+  // Raycasting sees the unmodified geometry. The shader dithers only hits inside this tube.
+  function insideCutout(point: THREE.Vector3) {
+    const t = sightline.closestPointToPointParameter(point, true);
+    sightline.at(t, closest);
+    return t > 0.03 && t < 0.9 && closest.distanceTo(point) < CUT.r.value;
+  }
+
+  function canopyHits(cam: THREE.PerspectiveCamera, x: number, y: number) {
+    ray.setFromCamera(sample.set(x, y), cam);
+    return ray.intersectObjects(canopy, false).filter((hit) => hit.point.clone().project(cam).z >= -1);
+  }
+
+  function expectInView(cam: THREE.PerspectiveCamera, subject: THREE.Vector3, name: string) {
+    const projected = subject.clone().project(cam);
+    expect(Math.max(Math.abs(projected.x), Math.abs(projected.y), Math.abs(projected.z)), name).toBeLessThan(1);
+    const distance = cam.position.distanceTo(subject);
+    const hits = canopyHits(cam, projected.x, projected.y).filter((hit) => hit.distance < distance);
+    expect(hits.every((hit) => insideCutout(hit.point)), name).toBe(true);
+    return hits.length > 0;
+  }
+
+  function hasVisibleRoof(cam: THREE.PerspectiveCamera) {
+    const grid = [-0.85, -0.6, -0.3, 0, 0.3, 0.6, 0.85];
+    return grid.some((x) => grid.some((y) => {
+      const [hit] = canopyHits(cam, x, y);
+      return hit && !insideCutout(hit.point) && (hit.object as typeof canopy[number]).material.opacity === 1;
+    }));
+  }
+
+  it("renders the roof, fascia and sign with the shared sightline shader", () => {
+    expect(canopy.map((mesh) => mesh.name)).toEqual(expect.arrayContaining(["gas-canopy", "gas-canopy-trim", "gas-canopy-sign"]));
+    for (const mesh of canopy) {
+      const { material } = mesh;
+      expect(mesh.visible && mesh.parent?.visible && material.visible).toBe(true);
+      const source = THREE.ShaderLib[material.type === "MeshBasicMaterial" ? "basic" : "lambert"];
+      const shader = { ...source, uniforms: {} } as Parameters<THREE.Material["onBeforeCompile"]>[0];
+      material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+      expect(shader.uniforms.uCutA).toBe(CUT.a);
+      expect(shader.uniforms.uCutB).toBe(CUT.b);
+      expect(shader.uniforms.uCutR).toBe(CUT.r);
+      expect(shader.fragmentShader).toContain("length(vCutW - (uCutA + ab * t)) < uCutR");
+    }
+  });
+
+  it.each([[1280, 800], [390, 844]])("keeps the learner and taxi framed at the %i×%i taxi prompt", (w, h) => {
+    const learner = new THREE.Vector3(TAXI.x, 0, TAXI.z + 2.4);
+    const taxi = new THREE.Vector3(TAXI.x, 0.9, TAXI.z);
+    const heading = Math.PI;
+    const rig = followCamera(w, h, learner, heading, false);
+    const still = new THREE.Vector3();
+    for (let frame = 0; frame < 120; frame++) {
+      advance(rig, learner, still, heading);
+      expectInView(rig.cam, CUT.b.value, "learner at the taxi prompt");
+      expectInView(rig.cam, taxi, "taxi at the prompt");
+      expect(hasVisibleRoof(rig.cam)).toBe(true);
+    }
+  });
+
+  it.each([[1280, 800], [390, 844]])("keeps the %i×%i follow view open from the pumps to Vinnie", (w, h) => {
+    // Last stretch of the spawn-to-Vinnie route, including the two turns by the gas station.
+    const route = [[98, -4.975], [116.5, 1.5], [119.5, 1.5], [123, -1.4]]
+      .map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const learner = route[0].clone();
+    const arrival = route.at(-1)!;
+    const velocity = new THREE.Vector3();
+    const desired = new THREE.Vector3();
+    let heading = Math.atan2(route[1].x - learner.x, route[1].z - learner.z);
+    const rig = followCamera(w, h, learner, heading, true);
+    let waypoint = 1;
+    let sawLocalCutout = false;
+    for (let frame = 0; frame < 360; frame++) {
+      if (waypoint < route.length && learner.distanceTo(route[waypoint]) < 0.35) waypoint++;
+      const speed = learner.distanceTo(arrival) > 12 ? 7.4 : 4.4;
+      if (waypoint < route.length) desired.subVectors(route[waypoint], learner).normalize().multiplyScalar(speed);
+      else desired.set(0, 0, 0);
+      velocity.lerp(desired, DT * 10);
+      learner.addScaledVector(velocity, DT);
+      if (velocity.length() > 0.3) heading = Math.atan2(velocity.x, velocity.z);
+      advance(rig, learner, velocity, heading);
+      expect(rig.cam.position.distanceTo(CUT.b.value), `follow distance at x=${learner.x.toFixed(1)}`).toBeGreaterThan(6);
+      const clipped = expectInView(rig.cam, CUT.b.value, "learner's torso");
+      if (clipped) sawLocalCutout ||= hasVisibleRoof(rig.cam);
+      expectInView(rig.cam, learner.clone().setY(1.95), "learner's head");
+      expectInView(rig.cam, learner.clone().setY(0.15), "learner's feet");
+      if (learner.x >= 104 && learner.x <= 116) {
+        const pathAhead = learner.clone().addScaledVector(velocity, 0.35).setY(0.1);
+        expectInView(rig.cam, pathAhead, "walking surface ahead of the learner");
+        expect(hasVisibleRoof(rig.cam), `roof beside the path at x=${learner.x.toFixed(1)}`).toBe(true);
+      }
+    }
+    expect(learner.distanceTo(arrival)).toBeLessThan(0.4);
+    expect(sawLocalCutout).toBe(true);
+    expectInView(rig.cam, new THREE.Vector3(vinnie.x, 1.65, vinnie.z), "Vinnie at arrival");
+  });
 });

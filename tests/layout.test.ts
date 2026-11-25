@@ -1,12 +1,17 @@
 // The town's buildings stand clear of the roads, the passing cars' lanes, the parked cars and each other; the newest
 // one, Sproutly's warehouse at the east end of Harbor Road, also keeps its distance from the road's end and sidewalks.
-import { describe, expect, it } from "vitest";
+import { Raycaster, Vector3 } from "three";
+import { describe, expect, it, vi } from "vitest";
+import { FIRST_GATE } from "../src/game/road/run";
+import { point } from "../src/game/road/track";
 import { BUILDINGS, PARKED_CARS, PARKING_LOTS, ROADS, SIDEWALK, SPROUTLY_LOT, TRAFFIC_CARS, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
 import { carFootprint, carModelEntry } from "../src/game/world/carModels";
 import { LOCATIONS } from "../src/content/locations";
 
-import { backgroundHillPosition, HILL_MARGIN } from "../src/game/world/town";
+import { exitToTown } from "../src/game/world/roadExit";
+import { backgroundHillPosition, buildTown, HILL_MARGIN } from "../src/game/world/town";
 import { rand } from "../src/game/world/util";
+import { townCanvasDocument } from "../tools/town-canvas-stub";
 
 type Box = { x1: number; x2: number; z1: number; z2: number };
 const gap = (a: Box, b: Box) => Math.max(a.x1 - b.x2, b.x1 - a.x2, a.z1 - b.z2, b.z1 - a.z2); // < 0: they overlap
@@ -87,4 +92,46 @@ describe("background hills leave room for the walking camera", () => {
     }
     expect(checked).toBeGreaterThan(20);
   });
+});
+
+it("keeps the west beach backed by green hills and leaves the Main Street crest open", () => {
+  vi.stubGlobal("document", townCanvasDocument());
+  let town: ReturnType<typeof buildTown>;
+  try { town = buildTown(); } finally { vi.unstubAllGlobals(); }
+  town.group.updateMatrixWorld(true);
+  const meadow = town.group.getObjectByName("outer-grass")!;
+  const preview = town.group.getObjectByName("desert-road-crest")!;
+  const hills = town.exitHills!;
+  const scenery = [meadow, preview, town.sea, hills];
+  const ray = new Raycaster();
+  const sight = (eye: Vector3, target: Vector3) => {
+    ray.set(eye, target.clone().sub(eye).normalize());
+    return ray.intersectObjects(scenery, false).find(({ point }) => point.x < WORLD.minX);
+  };
+
+  for (const [x, z] of [[-72, -66], [-92, -64], [-101.5, -60]]) {
+    const eye = new Vector3(x, 6, z);
+    for (const turn of [-9, 0, 9]) {
+      const ridge = sight(eye, new Vector3(x - 100, 4.8, z + turn));
+      expect(ridge?.object, `ridgeline from (${x}, ${z}), bearing ${turn}`).toBe(hills);
+      expect(sight(eye, new Vector3(x - 100, 11, z + turn))?.object).not.toBe(preview);
+    }
+  }
+  const surface = (x: number, z: number) => sight(new Vector3(x, 20, z), new Vector3(x, -1, z));
+  expect(surface(-150, SEA_Z + 3)?.object).toBe(meadow);
+  expect(surface(-150, SEA_Z - 3)?.object).toBe(town.sea);
+
+  const world = (distance: number, side = 0, lift = 0) => point(distance, side, lift).applyMatrix4(exitToTown);
+  for (const distance of [-20, 0, 4, 16, 40, 104]) {
+    const asphalt = world(distance);
+    const hit = surface(asphalt.x, asphalt.z);
+    expect(hit?.object).toBe(preview);
+    expect(hit!.point.y).toBeCloseTo(asphalt.y, 1);
+  }
+  const marking = world(4, 2);
+  expect(surface(marking.x, marking.z)!.point.y - marking.y).toBeCloseTo(0.026, 2);
+  const gate = world(FIRST_GATE, 0, 4.22);
+  const gateHit = sight(world(-10, 0, 4), gate);
+  expect(gateHit?.object).toBe(preview);
+  expect(gateHit!.point.distanceTo(gate)).toBeLessThan(1);
 });

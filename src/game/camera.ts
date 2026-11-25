@@ -166,6 +166,12 @@ export class CameraRig {
     this.lastMode = this.mode;
   }
 
+  /** Put the camera at the rig's current pose without advancing the simulation. */
+  applyPose() {
+    this.cam.position.copy(this.curPos);
+    this.cam.lookAt(this.curLook);
+  }
+
   /** Resume follow from the camera already presented at a scene handoff. */
   seedFollow() {
     this.curPos.copy(this.cam.position);
@@ -556,8 +562,7 @@ export class CameraRig {
     // camera has come in close); the conversation's and the rooms' as always
     const near = this.mode === "follow" ? THREE.MathUtils.clamp((this.curPos.distanceTo(this.chest) - 0.6) * 0.5, 0.1, 0.5) : 0.1;
     if (near === 0.1 ? this.cam.near !== 0.1 : Math.abs(this.cam.near - near) > 0.02) { this.cam.near = near; this.cam.updateProjectionMatrix(); }
-    this.cam.position.copy(this.curPos);
-    this.cam.lookAt(this.curLook);
+    this.applyPose();
     if (this.joltT < JOLT_TIME) {
       // (a crash: the picture takes a short knock and settles; it never moves what the camera follows)
       this.joltT += dt;

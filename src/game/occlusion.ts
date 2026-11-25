@@ -25,6 +25,7 @@ export interface OcclusionOptions {
 export interface Bounds { minX: number; maxX: number; minZ: number; maxZ: number }
 
 const EMPTY_LO = Infinity, EMPTY_HI = -Infinity;
+export const OCCLUSION_CELL = 0.5;
 /** How much of each side of a cell a triangle may touch without counting (a fraction of the cell). */
 const EDGE = 0.3;
 /** A roof one walks under (an awning, a stall's, a kiosco's or a bus shelter's) starts below this height (m); a
@@ -44,16 +45,16 @@ export class OcclusionField {
   readonly base: Uint8Array;
   private minTop: number;
 
-  constructor(b: Bounds, opts: OcclusionOptions = {}) {
-    this.cell = opts.cell ?? 0.5;
+  constructor(b: Bounds, opts: OcclusionOptions = {}, arrays?: Pick<OcclusionField, "lo" | "hi" | "base">) {
+    this.cell = opts.cell ?? OCCLUSION_CELL;
     this.minTop = opts.minTop ?? 1.3;
     this.x0 = b.minX;
     this.z0 = b.minZ;
     this.nx = Math.max(1, Math.ceil((b.maxX - b.minX) / this.cell));
     this.nz = Math.max(1, Math.ceil((b.maxZ - b.minZ) / this.cell));
-    this.lo = new Float32Array(this.nx * this.nz).fill(EMPTY_LO);
-    this.hi = new Float32Array(this.nx * this.nz).fill(EMPTY_HI);
-    this.base = new Uint8Array(this.nx * this.nz);
+    this.lo = arrays?.lo ?? new Float32Array(this.nx * this.nz).fill(EMPTY_LO);
+    this.hi = arrays?.hi ?? new Float32Array(this.nx * this.nz).fill(EMPTY_HI);
+    this.base = arrays?.base ?? new Uint8Array(this.nx * this.nz);
   }
 
   /** The field of everything under `root` (its world matrices brought up to date first). */
@@ -62,25 +63,15 @@ export class OcclusionField {
     root.updateMatrixWorld(true);
     const v = new THREE.Vector3();
     const m = new THREE.Matrix4();
-    const blocker = new THREE.BoxGeometry();
-    const bounds = new THREE.Box3(), size = new THREE.Vector3(), center = new THREE.Vector3();
     const walk = (o: THREE.Object3D) => {
       if (opts.skip?.(o)) return;
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh && !(o as THREE.InstancedMesh).isInstancedMesh && !(o as THREE.SkinnedMesh).isSkinnedMesh && solidMaterial(mesh.material)) {
-        const clearance = o.userData.cameraClearance as number | undefined;
-        if (clearance) {
-          // A wide roof can cover the lens from the side even when the centre ray just clears its edge.
-          bounds.setFromObject(mesh).getSize(size);
-          bounds.getCenter(center);
-          m.makeScale(size.x + 2 * clearance, size.y, size.z + 2 * clearance).setPosition(center);
-          f.addGeometry(blocker, m, v);
-        } else f.addGeometry(mesh.geometry, m.copy(mesh.matrixWorld), v);
+        f.addGeometry(mesh.geometry, m.copy(mesh.matrixWorld), v);
       }
       for (const c of o.children) walk(c);
     };
     walk(root);
-    blocker.dispose();
     f.dropSmall(opts.minCells ?? 6);
     return f;
   }

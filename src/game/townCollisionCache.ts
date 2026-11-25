@@ -1,0 +1,94 @@
+import { PropFader } from "./fade";
+import { Ledges, type Piece, type Thing } from "./ledges";
+import { OCCLUSION_CELL, OcclusionField } from "./occlusion";
+import { buildTownField, buildTownLedges, sceneryBoatPieces, townCameraSkip, TOWN_FIELD_BOUNDS } from "./townCollision";
+import { hasTownCollisionHeader, LITTLE_ENDIAN, TOWN_COLLISION_HEADER, TOWN_COLLISION_METADATA_OFFSET } from "./townCollisionTransport";
+import type { Town } from "./world/town";
+import type { Colliders } from "./world/util";
+
+const bounds = TOWN_FIELD_BOUNDS;
+export const TOWN_COLLISION_FORMAT = {
+  version: 2, edition: "mh", style: "blocks",
+  minX: bounds.minX, maxX: bounds.maxX, minZ: bounds.minZ, maxZ: bounds.maxZ, cell: OCCLUSION_CELL,
+  nx: Math.ceil((bounds.maxX - bounds.minX) / OCCLUSION_CELL),
+  nz: Math.ceil((bounds.maxZ - bounds.minZ) / OCCLUSION_CELL),
+};
+const cells = TOWN_COLLISION_FORMAT.nx * TOWN_COLLISION_FORMAT.nz;
+
+/** The inputs to positional split replay, in their original order, captured before the ledge pass. */
+export function townColliderLayout({ boxes, circles, roofs }: Colliders) {
+  return JSON.stringify([
+    boxes.map(({ minX, maxX, minZ, maxZ, tag, split }) => [minX, maxX, minZ, maxZ, tag, split]),
+    circles.map(({ x, z, r, split }) => [x, z, r, split]),
+    roofs.map(({ minX, maxX, minZ, maxZ }) => [minX, maxX, minZ, maxZ]),
+  ]);
+}
+
+type Split = boolean | undefined;
+interface Metadata {
+  format: typeof TOWN_COLLISION_FORMAT;
+  layout: string;
+  pieces: Piece[];
+  things: Thing[];
+  splits: (boolean | null)[];
+}
+
+const optionalFlag = (v: unknown): v is Split => v === undefined || typeof v === "boolean";
+const isCount = (v: number) => Number.isSafeInteger(v) && v >= 0;
+const isPiece = (p: Piece) => p && [p.minX, p.maxX, p.minZ, p.maxZ].every(Number.isFinite)
+  && p.minX >= bounds.minX && p.maxX <= bounds.maxX && p.minX < p.maxX
+  && p.minZ >= bounds.minZ && p.maxZ <= bounds.maxZ && p.minZ < p.maxZ
+  && typeof p.top === "number" && p.top > 0 && optionalFlag(p.wall) && optionalFlag(p.deck);
+const isThing = (t: Thing) => t && [t.x, t.z, t.w, t.d, t.cap, t.high].every(Number.isFinite)
+  && (Number.isFinite(t.low) || t.low === Infinity) && [t.walls, t.cells, t.decks].every(isCount)
+  && typeof t.split === "boolean" && (t.tag === undefined || typeof t.tag === "string");
+
+export function restoreTownCollision(town: Town, bytes: ArrayBuffer) {
+  if (!LITTLE_ENDIAN || TOWN_COLLISION_HEADER + cells * 9 !== TOWN_COLLISION_METADATA_OFFSET || !hasTownCollisionHeader(bytes)) return;
+
+  const { boxes, circles } = town.colliders;
+  let data: Metadata;
+  try {
+    const json = new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes, TOWN_COLLISION_METADATA_OFFSET));
+    data = JSON.parse(json, (key, value) => {
+      if (key === "tag") return value;
+      if (value === "+Infinity") return Infinity;
+      if (value === "-Infinity") return -Infinity;
+      return value === "-0" ? -0 : value;
+    });
+  } catch {
+    return;
+  }
+  if (!data?.format || !(Object.keys(TOWN_COLLISION_FORMAT) as (keyof typeof TOWN_COLLISION_FORMAT)[])
+    .every((key) => data.format[key] === TOWN_COLLISION_FORMAT[key])
+    || data.layout !== townColliderLayout(town.colliders)
+    || !Array.isArray(data.pieces) || !data.pieces.every(isPiece)
+    || !Array.isArray(data.things) || !data.things.every(isThing)
+    || !Array.isArray(data.splits) || data.splits.length !== boxes.length + circles.length
+    || !data.splits.every((flag) => flag === null || typeof flag === "boolean")) return;
+
+  const field = new OcclusionField(bounds, { cell: TOWN_COLLISION_FORMAT.cell }, {
+    lo: new Float32Array(bytes, TOWN_COLLISION_HEADER, cells),
+    hi: new Float32Array(bytes, TOWN_COLLISION_HEADER + cells * 4, cells),
+    base: new Uint8Array(bytes, TOWN_COLLISION_HEADER + cells * 8, cells),
+  });
+  const ledges = Ledges.restore([...sceneryBoatPieces(town), ...data.pieces], data.things.map((thing) => ({ tag: undefined, ...thing })));
+  // Commit flags only after both indexes are usable. A rejected cache leaves fresh colliders for the builder.
+  [...boxes, ...circles].forEach((collider, i) => {
+    const split = data.splits[i];
+    if (split === null) delete collider.split;
+    else collider.split = split;
+  });
+  return { field, ledges };
+}
+
+export function initTownCollision(town: Town, bytes: ArrayBuffer | undefined, slice: (next: () => void) => void) {
+  const restored = bytes ? restoreTownCollision(town, bytes) : undefined;
+  const field = restored?.field ?? buildTownField(town);
+  const fader = new PropFader(town.group, townCameraSkip(town));
+  performance.mark(restored ? "town-collision:restored" : "town-collision:fallback");
+  if (restored) return { field, ledges: restored.ledges, fader };
+  const ledges = buildTownLedges(town, field, slice);
+  for (const boat of sceneryBoatPieces(town)) ledges.add(boat);
+  return { field, ledges, fader };
+}

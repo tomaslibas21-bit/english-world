@@ -1,35 +1,107 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import type { CarModel, CarModelEntry } from "./carModels";
+import { carModelEntry, cacheCarModel, type CarModel, type CarModelName, type ExteriorCarModels } from "./carModels";
+import { CAR_PALETTE_FILE, EXTERIOR_CAR_NAMES, FLEET_FILES } from "./carFleet";
+import { decodeFleetPack } from "../fleetPack";
+import { activeFleetTransfer, fetchCarBytes, type FleetTransfer } from "../fleetTransfer";
+import { STARTUP_IO_TIMEOUT } from "../startupTask";
 
+const base = `${import.meta.env.BASE_URL}models/cars/`;
 type Palette = ReturnType<THREE.TextureLoader["load"]>;
 
 class PaletteLoader extends THREE.TextureLoader {
   private texture!: Palette;
-  private ready?: Promise<Palette>;
+  readonly ready: Promise<Palette>;
 
-  override load(...[url, onLoad, onProgress, onError]: Parameters<THREE.TextureLoader["load"]>) {
-    this.ready ??= new Promise<Palette>((resolve, reject) => {
-      this.texture = super.load(url, resolve, onProgress, reject);
-    }).catch((error) => {
-      this.ready = undefined;
-      throw error;
+  constructor(manager: THREE.LoadingManager, png?: ArrayBuffer) {
+    super(manager);
+    const objectURL = png && URL.createObjectURL(new Blob([png], { type: "image/png" }));
+    this.ready = new Promise<Palette>((resolve, reject) => {
+      const deadline = setTimeout(() => reject(new Error("Car palette timed out")), STARTUP_IO_TIMEOUT);
+      const finished = () => {
+        clearTimeout(deadline);
+        if (objectURL) URL.revokeObjectURL(objectURL);
+      };
+      try {
+        this.texture = super.load(objectURL ?? base + CAR_PALETTE_FILE, (texture) => {
+          finished();
+          resolve(texture);
+        }, undefined, (error) => {
+          finished();
+          reject(error);
+        });
+      } catch (error) {
+        finished();
+        reject(error);
+      }
     });
+  }
+
+  override load(...[, onLoad, , onError]: Parameters<THREE.TextureLoader["load"]>) {
     void this.ready.then(onLoad, onError);
     return this.texture;
   }
 }
 
-const manager = new THREE.LoadingManager();
-manager.addHandler(/^Textures\/colormap\.png$/, new PaletteLoader(manager));
-const loader = new GLTFLoader(manager);
-let material: THREE.MeshLambertMaterial | undefined;
+function createLoader(png?: ArrayBuffer) {
+  const manager = new THREE.LoadingManager();
+  const palette = new PaletteLoader(manager, png);
+  manager.addHandler(/^Textures\/colormap\.png$/, palette);
+  const current = { loader: new GLTFLoader(manager), palette };
+  void palette.ready.catch(() => {
+    if (attempt === current) attempt = undefined;
+  });
+  return current;
+}
 
-export async function load(entry: CarModelEntry): Promise<CarModel> {
-  const { scene } = await loader.loadAsync(`${import.meta.env.BASE_URL}models/cars/${entry.file}`);
-  const source = scene.getObjectByName("body") as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
-  const map = source.material.map;
-  if (!map) throw new Error(`Missing car palette for ${entry.file}`);
+let attempt: ReturnType<typeof createLoader> | undefined;
+let material: THREE.MeshLambertMaterial | undefined;
+const packs = new WeakMap<FleetTransfer, Promise<Map<string, ArrayBuffer> | undefined>>();
+
+function unpack(transfer: FleetTransfer) {
+  let pack = packs.get(transfer);
+  if (!pack) {
+    pack = transfer.then((bytes) => bytes && decodeFleetPack(bytes, FLEET_FILES)).catch(() => undefined);
+    packs.set(transfer, pack);
+  }
+  return pack;
+}
+
+export async function prepareCars(transfer: FleetTransfer | undefined): Promise<ExteriorCarModels> {
+  const loadModel = (name: CarModelName) => load(name, transfer);
+  const results = await Promise.allSettled(EXTERIOR_CAR_NAMES.map(async (name) => [
+    name, await cacheCarModel(name, loadModel),
+  ] as const));
+  return new Map(results.map((result) => {
+    if (result.status === "rejected") throw result.reason;
+    return result.value;
+  }));
+}
+
+export async function load(name: CarModelName, transfer = activeFleetTransfer): Promise<CarModel> {
+  const entry = carModelEntry(name);
+  const pack = transfer && await unpack(transfer);
+  const packed = pack?.get(entry.file);
+  if (pack && packed) {
+    try {
+      const source = attempt ??= createLoader(pack.get(CAR_PALETTE_FILE));
+      return await parse(entry, packed, source);
+    } catch {
+      // Recover from a GLB or image error through the original asset URLs.
+    }
+  }
+  const source = attempt ??= createLoader();
+  return parse(entry, await fetchCarBytes(base + entry.file), source);
+}
+
+async function parse(entry: CarModel["entry"], bytes: ArrayBuffer, { loader, palette }: ReturnType<typeof createLoader>): Promise<CarModel> {
+  // The parser uses this same palette attempt even if its image request failed and a retry has started.
+  const [{ scene }, map] = await Promise.all([loader.parseAsync(bytes, base), palette.ready]);
+  const source = scene.getObjectByName("body") as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> | undefined;
+  if (!source?.isMesh || source.material.map !== map) throw new Error(`Missing car body or shared palette for ${entry.file}`);
+  for (const wheel of entry.wheelNodes) {
+    if (!(scene.getObjectByName(wheel) as THREE.Mesh | undefined)?.isMesh) throw new Error(`Missing ${wheel} in ${entry.file}`);
+  }
   material ??= new THREE.MeshLambertMaterial({ map, vertexColors: true, side: THREE.DoubleSide });
   scene.traverse((obj) => {
     const mesh = obj as THREE.Mesh;

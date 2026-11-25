@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { loadingScreen } from "./tools/loading-screen.ts";
+import { townCollisionAsset } from "./tools/town-collision-plugin.ts";
+import { fleetPackAsset } from "./tools/fleet-pack-plugin.ts";
 import { LOADING_ART } from "./src/ui/loadingArt.ts";
 
 // Hosting: GAME_BASE=/game/ builds the game for a sub-path of another site (e.g. https://site/game/).
@@ -10,9 +12,19 @@ import { LOADING_ART } from "./src/ui/loadingArt.ts";
 // The loading screen (the town's logo, src/ui/loadingArt.ts) is put into index.html here: tools/loading-screen.ts.
 export default defineConfig({
   base: process.env.GAME_BASE || "/",
-  plugins: [loadingScreen("Kraunamas „English World“", LOADING_ART), react()],
+  plugins: [loadingScreen("Kraunamas „English World“", LOADING_ART), react(), townCollisionAsset(), fleetPackAsset()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5188, host: true },
-  build: { target: "es2022", chunkSizeWarningLimit: 4000 },
+  build: {
+    target: "es2022",
+    chunkSizeWarningLimit: 4000,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "entry-shared", tags: ["$initial"] }],
+        },
+      },
+    },
+  },
   test: { environment: "node", include: ["tests/**/*.test.ts"] },
 } as any);

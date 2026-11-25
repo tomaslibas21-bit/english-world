@@ -89,7 +89,7 @@ export interface Ride {
   model?: CarModelName;
   parked?: () => void;
   townBoat?: TownBoat;
-  crashParking?: { visual(): THREE.Mesh; solo(): boolean; take(): void; untake(): void };
+  crashParking?: { visual(): THREE.Mesh | undefined; solo(): boolean; take(): void; untake(): void };
   home: { x: number; z: number; rot: number };
   mesh: THREE.Object3D;
   m: Motion;
@@ -409,7 +409,10 @@ export class Rides {
     this.group.add(mesh);
     const m = new Motion(BOAT, "boat");
     m.set(spot.x, spot.z, spot.rot);
-    this.list.push({ id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: i * 2.1 + 0.7, sus: this.springs(), tint: spot.stripe });
+    const ride: Ride = { id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null,
+      awayT: 0, thanked: true, phase: i * 2.1 + 0.7, sus: this.springs(), tint: spot.stripe };
+    this.list.push(ride);
+    this.place(ride, 0, 0);
   }
 
   private addTownBoat(mesh: THREE.Object3D, townBoat: TownBoat) {
@@ -808,23 +811,7 @@ export class Rides {
     // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
     // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
     // frame ago: generously), but near the player, where its shadow may fall into the picture
-    // the boats' marks: for someone not at a wheel, within 60 m of a boat that lies free
-    {
-      let n = 0;
-      if (!r && host.outdoors()) for (const q of this.list) {
-        if (q.kind !== "boat" || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 > 60 * 60) continue;
-        if (q.townBoat) this.at(q, ...q.townBoat.helm, _w, 2.55 + q.townBoat.deck);
-        else _w.set(q.m.x, 2.55, q.m.z);
-        _w.y += Math.sin(t * 2.2 + q.phase) * 0.13;
-        _mark.makeRotationY(t * 1.6 + q.phase).setPosition(_w);
-        this.marks.setMatrixAt(n++, _mark);
-      }
-      if (n || this.marks.count) { this.marks.count = n; this.marks.instanceMatrix.needsUpdate = true; }
-      this.marks.visible = n > 0;
-    }
-    // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
-    this.buoys.visible = r?.kind === "boat" || (pp.z < SHORE.limit + 2 && pp.y < 0.1);
-    if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
+    this.updateBoatMarkers(t);
     const cam = host.cam;
     _frustum.setFromProjectionMatrix(_pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     for (let i = 0; i < this.list.length; i++) {
@@ -895,6 +882,25 @@ export class Rides {
     ch.tuck = Math.sin(Math.PI * k) * 0.8;
   }
 
+  updateBoatMarkers(t: number) {
+    const { host, riding: r } = this, pp = host.player.root.position;
+    // the boats' marks: for someone not at a wheel, within 60 m of a boat that lies free
+    let n = 0;
+    if (!r && host.outdoors()) for (const q of this.list) {
+      if (q.kind !== "boat" || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 > 60 * 60) continue;
+      if (q.townBoat) this.at(q, ...q.townBoat.helm, _w, 2.55 + q.townBoat.deck);
+      else _w.set(q.m.x, 2.55, q.m.z);
+      _w.y += Math.sin(t * 2.2 + q.phase) * 0.13;
+      _mark.makeRotationY(t * 1.6 + q.phase).setPosition(_w);
+      this.marks.setMatrixAt(n++, _mark);
+    }
+    if (n || this.marks.count) { this.marks.count = n; this.marks.instanceMatrix.needsUpdate = true; }
+    this.marks.visible = n > 0;
+    // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
+    this.buoys.visible = r?.kind === "boat" || (pp.z < SHORE.limit + 2 && pp.y < 0.1);
+    if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
+  }
+
   updateParkingKeys(time: number, visible: boolean, underfoot?: Piece) {
     const mesh = this.parkingKeys;
     const { cam, player } = this.host;
@@ -926,7 +932,6 @@ export class Rides {
     this.crashEffects.update(dt, this.phase === "on" && !this.glide && !this.rescuing ? this.riding : null);
   }
 
-  releaseCrashVisual(mesh: THREE.Mesh) { this.crashEffects.releaseVisual(mesh); }
   compileCrashShaders(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
     return this.crashEffects.compileShaders(renderer, scene, this.solidVehicles());
   }

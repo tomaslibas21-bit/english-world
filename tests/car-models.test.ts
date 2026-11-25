@@ -1,5 +1,5 @@
 import { ROAD_CONES } from "../src/content/road";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Ambient } from "../src/game/ambient";
@@ -9,7 +9,9 @@ import { CAR_MODELS, carFootprint, carLedges, carModelEntry, isCarModelLoaded, l
 import { CarVisuals } from "../src/game/world/carVisuals";
 import { BUILDINGS, OUTDOOR_NPCS, PARKED_CARS, TAXI, TRAFFIC_CARS } from "../src/game/world/layout";
 
-const assets = new URL("../public/models/cars/", import.meta.url);
+import { makeParkedCars } from "../src/game/world/town";
+import { prepareExteriorCars } from "../src/game/exteriorAssets";
+import { carAssets as assets, stubCarAssets } from "./fixtures/car-assets";
 const names = Object.keys(CAR_MODELS) as CarModelName[];
 
 afterEach(() => {
@@ -23,28 +25,16 @@ describe("car models", () => {
     expect(readdirSync(assets).filter((name) => name.endsWith(".glb")).sort()).toEqual([...names.map((name) => carModelEntry(name).file), ...ROAD_CONES].sort());
     expect(readdirSync(new URL("Textures/", assets))).toEqual(["colormap.png"]);
 
-    const NativeRequest = Request;
-    vi.stubGlobal("Request", class extends NativeRequest {
-      constructor(url: string, init?: RequestInit) { super(new URL(url, "http://localhost"), init); }
-    });
-    vi.stubGlobal("self", globalThis);
-    vi.stubGlobal("ProgressEvent", Event);
-    const fetchFile = vi.fn(async ({ url }: Request) => {
-      const file = new URL(url).pathname.split("/").at(-1)!;
-      return new Response(readFileSync(new URL(file, assets)));
-    });
-    vi.stubGlobal("fetch", fetchFile);
-    const palette = new THREE.Texture<HTMLImageElement>();
-    const loadPalette = vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation((url, onLoad) => {
-      expect(url).toMatch(/\/models\/cars\/Textures\/colormap\.png$/);
-      queueMicrotask(() => onLoad?.(palette));
-      return palette;
-    });
+    const { fetchFile, loadPalette, palette } = stubCarAssets();
 
     expect(isCarModelLoaded("taxi")).toBe(false);
     const taxi = loadCarModel("taxi");
     expect(loadCarModel("taxi")).toBe(taxi);
+    const prepared = prepareExteriorCars();
+    expect(prepareExteriorCars()).toBe(prepared);
     const models = await Promise.all(names.map(loadCarModel));
+    const all = await prepared;
+    for (const [i, name] of names.entries()) expect(all.get(name)).toBe(models[i]);
     expect(isCarModelLoaded("taxi")).toBe(true);
     expect(await loadCarModel("taxi")).toBe(await taxi);
     expect(loadedCarModelCount()).toBe(names.length);
@@ -86,15 +76,16 @@ describe("car models", () => {
     expect(colors.some((value) => value < 1)).toBe(true);
     expect(colors.some((value) => value === 1)).toBe(true);
 
-    const parking = new THREE.Group(), fallback = new THREE.Mesh();
-    parking.add(fallback);
+    const parking = makeParkedCars();
     const nav = { nearestFree: () => -1 } as unknown as NavGrid;
-    const ambient = new Ambient(nav, [[0, 0]], "low");
-    const visuals = new CarVisuals({ group: parking, fallback, placements: PARKED_CARS }, ambient);
+    const ambient = new Ambient(nav, [[0, 0]], "high", [], undefined, true);
+    const visuals = new CarVisuals(parking, ambient);
     try {
-      await vi.waitFor(() => expect(visuals.stats()).toEqual({ trafficModels: 4, parkedModels: PARKED_CARS.length, taxi: true }));
-      expect(fallback.parent).toBeNull();
-      expect(parking.children).toHaveLength(2);
+      await visuals.initialize(prepared);
+      expect(visuals.stats()).toEqual({ trafficModels: 8, parkedModels: PARKED_CARS.length, taxi: true });
+      expect(parking.group.children).toHaveLength(3);
+      expect(parking.taxi?.instance?.parent).toBe(parking.taxi?.root);
+      expect(parking.fleet.cars.every(({ visual }) => visual?.material === material)).toBe(true);
       const batches = ambient.group.children.filter((mesh) => mesh.name.startsWith("traffic-")) as THREE.InstancedMesh[];
       expect(batches).toHaveLength(6);
       expect(batches.every((mesh) => mesh.isInstancedMesh && mesh.material === material)).toBe(true);

@@ -100,26 +100,26 @@ try {
         localStorage.setItem(key, save);
         sessionStorage.setItem("ew-play-now", "1");
       }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
-      await page.goto(base, { waitUntil: "domcontentloaded" });
+      await Promise.all([
+        page.waitForRequest(assets),
+        page.goto(base, { waitUntil: "domcontentloaded" }),
+      ]);
+      assert(await page.evaluate(() => !window.__ew && !!document.querySelector(".ew-loading")),
+        "startup stays under the logo while the exterior assets are held");
+      releaseAssets();
       await page.waitForFunction(() => {
         const ew = window.__ew;
-        return ew?.store.getState().screen === "play" && ew.game.zone?.id === "town"
-          && ew.game.ledges?.ready && !ew.game.transitioning && ew.carStats().calls > 0;
+        if (ew?.store.getState().screen !== "play" || ew.game.zone?.id !== "town") return false;
+        const stats = ew.carStats();
+        return ew.game.ledges?.ready && !ew.game.transitioning && stats.calls > 0;
       }, null, { timeout: 120000 });
       await page.evaluate(() => {
         window.__ew.coach?.finish?.();
         window.__ew.store.getState().setHud({ panel: null });
       });
-      assert.equal(await page.evaluate(() => window.__ew.carStats().loadedCarModels), 0);
-      await lineUpTraffic(page);
-      const before = await measure(page);
-      releaseAssets();
-
-      await page.waitForFunction(() => {
-        const stats = window.__ew.carStats();
-        return stats.loadedCarModels === 10 && stats.parkedModels === 19 && stats.trafficModels > 0 && stats.taxi;
-      }, null, { timeout: 120000 });
       const stats = await page.evaluate(() => window.__ew.carStats());
+      assert.equal(stats.loadedCarModels, 10);
+      assert.equal(stats.parkedModels, 19);
       assert.equal(stats.trafficModels, quality === "high" ? 8 : 4);
       assert(stats.taxi, "the taxi is rendered at the stand");
       const batching = await page.evaluate(() => {
@@ -130,14 +130,14 @@ try {
       });
       assert.deepEqual(batching, { parked: 2, traffic: 6, materials: 1 });
       await lineUpTraffic(page);
-      const after = await measure(page);
-      assert(before.fps > 0 && after.fps > 0 && before.drawCalls > 0 && after.drawCalls > 0);
+      const rendered = await measure(page);
+      assert(rendered.fps > 0 && rendered.drawCalls > 0);
       const fetched = await Promise.all(downloads);
       assert(fetched.every(({ status, bytes }) => status === 200 && bytes > 0), JSON.stringify(fetched));
       assert.equal(fetched.filter(({ path }) => path.endsWith(".glb")).length, stats.loadedCarModels);
       assert.equal(fetched.filter(({ path }) => path.endsWith("colormap.png")).length, 1);
       const bytes = fetched.reduce((sum, file) => sum + file.bytes, 0);
-      console.log(label, quality, { before, after, bytes, ...stats });
+      console.log(label, quality, { rendered, bytes, ...stats });
 
       await lineUpTraffic(page);
       await page.waitForFunction(() => {

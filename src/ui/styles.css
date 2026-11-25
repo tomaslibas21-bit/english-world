@@ -270,6 +270,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .ride-keys-chip:hover { background: rgba(31, 42, 51, 0.88); }
 
+.startup-error { position: fixed; z-index: 71; inset: auto 16px max(20px, env(safe-area-inset-bottom)); text-align: center; }
+.startup-error .btn { margin: 4px; }
+
 .fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity 0.3s ease; }
 
 /* ---------- toasts ---------- */
