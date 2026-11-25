@@ -10,6 +10,7 @@ import "./taxi.css";
 
 const cash = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const act = (name: string, value?: string | boolean) => game?.modeAction("taxi", name, value);
+const assistKey = (key: string) => key === " " ? "assist-space" : key === "Enter" ? "assist-enter" : null;
 const actionIcons = { left: "arrowLeft", right: "arrowRight", straight: "arrowUp", stop: "stop" } as const;
 const { situation: situationId } = TAXI_CONVERSATION;
 const source = { situationId };
@@ -42,16 +43,22 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
                 <GlossLine sentence={line.sentence} gloss={gloss} source={source} />
                 <PhraseSave sentence={line.sentence} {...source} iconOnly />
               </div>
-            : <button className="taxi-line taxi-reveal" data-line={line.key} onClick={() => useTaxi.setState({ revealed: line })} lang="lt">
+            : <button className="taxi-line taxi-reveal" data-pad-aux data-line={line.key} onClick={() => useTaxi.setState({ revealed: line })} lang="lt">
                 <Icon name="speaker" size={20} /><span>{words.hear}<small>{words.show}</small></span>
               </button>}
           {action && <button key={action} type="button" lang="lt" className="taxi-action" data-action={action}
             onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); act("assist", true); }}
             onPointerUp={() => act("assist", false)} onPointerCancel={() => act("assist", false)}
             onLostPointerCapture={() => act("assist", false)}
-            onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); act("assist", true); } }}
-            onKeyUp={(e) => { if (e.key === " " || e.key === "Enter") act("assist", false); }}
-            onBlur={() => act("assist", false)}
+            onKeyDown={(e) => {
+              const source = assistKey(e.key);
+              if (!source) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (!e.repeat) act(source, true);
+            }}
+            onKeyUp={(e) => { const source = assistKey(e.key); if (source) act(source, false); }}
+            onBlur={() => act("assist-blur")}
           >
             <Icon name={actionIcons[action]} className="taxi-action-icon" size={48} strokeWidth={2.5} />
             <span>{words.actions[action].label}</span>
@@ -60,7 +67,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
         </div>
       )}
       {!!choices.length && (
-        <div className="taxi-choices">
+        <div className="taxi-choices" data-pad-scope="taxi">
           <div className="taxi-turn" lang="lt">
             {speechSupported() && <button className={`mic${listening ? " listening" : ""}`} aria-label={micOn && listening ? words.micOff : words.micOn}
               onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={24} /></button>}

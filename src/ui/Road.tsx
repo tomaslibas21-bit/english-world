@@ -28,7 +28,7 @@ function LiftOffer({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   return <div className="road-lift">
     <LiftLine />
-    {!!choices.length && <div className="road-choices">
+    {!!choices.length && <div className="road-choices" data-pad-scope="road-offer">
       {speechSupported() && <div className="road-mic">
         <button className={`mic${listening ? " listening" : ""}`} type="button" aria-label={micOn && listening ? words.micOff : words.micOn}
           onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={23} /></button>
@@ -77,9 +77,9 @@ export function RoadOverlay({ touch }: { touch: boolean }) {
     {phase === "briefing" && <WordGateStart way={way} start={(choice) => act("start", choice)} done={done} town={words.town} />}
     {phase === "drive" && <DriveOverlay touch={touch} />}
     {phase === "result" && result && <WordGateResult result={result} words={words} actions={scoreActions}><LiftLine /></WordGateResult>}
-    {(phase === "loading" || phase === "unavailable") && <div className="road-lift road-loading">
+    {(phase === "loading" || phase === "unavailable") && <div className="road-lift road-loading" data-pad-scope="road-status">
       <strong>{phase === "loading" ? words.title : words.unavailable}</strong>
-      <button className="btn" onClick={done}>{words.town}</button>
+      <button className="btn" data-pad-back onClick={done}>{words.town}</button>
     </div>}
   </div>;
 }

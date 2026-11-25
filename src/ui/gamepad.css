@@ -1,0 +1,77 @@
+[data-pad-focus]:focus:not(.barista-chip[data-repair]) {
+  outline: 2px solid #087c78 !important;
+  outline-offset: 2px !important;
+}
+
+[data-pad-adjusting]:focus { box-shadow: 0 0 0 5px #087c7833; }
+
+.barista-chip[data-repair][data-pad-focus]:focus::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px solid #087c78;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.pad-hint-layer {
+  position: fixed;
+  z-index: 60;
+  inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  pointer-events: none;
+}
+[data-pad-hint] {
+  position: absolute;
+  left: var(--pad-left, 0px);
+  top: var(--pad-top, 0px);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(268px, var(--pad-width, calc(100% - 24px)));
+  padding: 7px 10px;
+  border-inline-start: 3px solid #087c78;
+  border-radius: 12px;
+  background: #fff7e6;
+  color: #1e3737;
+  box-shadow: 0 3px 12px #1e373723;
+  font: calc(14px * var(--scale, 1))/1.2 var(--ui, system-ui);
+  text-align: start;
+  pointer-events: none !important;
+  overflow-wrap: anywhere;
+}
+[data-pad-hint]:not([data-pad-positioned]) { opacity: 0; }
+
+/* Reserve space under the task or in a crowded surface while the live node stays mounted. */
+[data-pad-slot] {
+  box-sizing: border-box;
+  width: 268px;
+  max-width: calc(100% - 16px);
+  flex: none;
+  pointer-events: none !important;
+}
+[data-pad-slot="notes"] {
+  order: 1;
+  margin-top: 6px;
+  max-width: min(268px, var(--note-width, 100%));
+}
+[data-pad-slot="flow"] { margin: 8px auto; grid-column: 1 / -1; }
+:is(.sheet, .phone) > [data-pad-slot] { margin-inline: 8px auto; }
+:is(.barista-header, .gofish-header, .bl-header):has(> [data-pad-slot]) { flex-wrap: wrap; }
+:is(.barista-header, .gofish-header, .bl-header) > [data-pad-slot] { order: 1; margin-inline: 0; }
+.convo-tools > [data-pad-slot] { margin-inline: 12px; }
+
+.pad-hint-map {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 7px;
+  margin-top: 3px;
+  font-size: calc(12px * var(--scale, 1));
+}
+.pad-hint-map > span { display: inline-flex; align-items: baseline; gap: 4px; }
+.pad-hint-map b {
+  flex: none;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #e2efea;
+  font: 700 0.92em/1.2 var(--ui, system-ui);
+}

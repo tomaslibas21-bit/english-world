@@ -10,6 +10,7 @@ import { coach } from "../coach";
 import type { GameCharacter } from "../characters";
 import type { GameMode, ModeFrame, ModeInput, ModePrompt } from "../kit/modes";
 import { PhraseRun } from "../kit/phrases";
+import { PadButton } from "../padButtons";
 import type { SurfGame, SurfPlay } from "./play";
 import type { Level } from "./logic";
 import { configureSurfReview, useSurf } from "./store";
@@ -18,6 +19,9 @@ export function createSurfMode(host: SurfGame, replacePlayer: (player: GameChara
   if (!SURF_SPOT || !SURF || !NPCS[SURF.npc]) return null;
   return new SurfMode(SURF_SPOT, SURF, host, replacePlayer);
 }
+
+const PAD_ARROWS = [[PadButton.Up, "arrowup"], [PadButton.Left, "arrowleft"], [PadButton.Down, "arrowdown"],
+  [PadButton.Right, "arrowright"]] as const;
 
 interface StartRequest { level?: Level; runtime?: typeof import("./play") }
 
@@ -174,6 +178,26 @@ export class SurfMode implements GameMode {
   }
 
   action(name: string, value?: string | boolean) { this.runtime?.action(name, value); }
+
+  // A controller (a10-pad): Menu reaches the lesson's HUD; A stands up, X paddles, the D-pad is the four arrows
+  // (held while held, like the keys). Her answers and the score card are the controller's own focus surfaces.
+  get padMenu() { return this.active; }
+  get padAction() {
+    const { active, choice, over } = useSurf.getState();
+    return active && !choice && !over;
+  }
+  padTick(_input: unknown, pressed: number, released: number) {
+    const play = this.runtime;
+    if (!play?.active) return;
+    for (const [bit, key] of PAD_ARROWS) if (released & bit) play.action("key-up", key);
+    const { choice, over } = useSurf.getState();
+    if (choice || over) return;
+    if (pressed & PadButton.A) { play.up(); return "jump" as const; }
+    if (pressed & PadButton.X) { play.stroke(); return "interact" as const; }
+    let moved = false;
+    for (const [bit, key] of PAD_ARROWS) if (pressed & bit) moved = play.key(key, false) || moved;
+    if (moved) return "interact" as const;
+  }
 
   exit(immediate: boolean) {
     this.request = null;

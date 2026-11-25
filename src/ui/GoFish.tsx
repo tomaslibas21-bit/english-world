@@ -17,7 +17,7 @@ export function GoFishOffer() {
   const offered = useGoFish((s) => s.offered);
   const line = useGoFish((s) => s.line);
   if (!offered || !line) return null;
-  return <section className="gofish-offer gofish-paper" lang="lt">
+  return <section className="gofish-offer gofish-paper" data-pad-scope="gofish-offer" lang="lt">
     <b lang="en">{NPCS.dan.name}</b>
     <div className="phrase-save-row" data-line={line.key}>
       <GlossLine sentence={line.sentence} gloss source={source} />
@@ -25,7 +25,7 @@ export function GoFishOffer() {
     </div>
     <div className="gofish-offer-actions">
       <button type="button" className="btn" onClick={() => act("start")}>{words.start}</button>
-      <button type="button" className="btn soft" onClick={exit}>{words.done}</button>
+      <button type="button" className="btn soft" data-pad-back onClick={exit}>{words.done}</button>
     </div>
   </section>;
 }

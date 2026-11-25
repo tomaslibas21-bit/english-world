@@ -1,3 +1,5 @@
+import type { PadScope } from "../gamepad";
+
 export type CleanScreen = "menu" | "overlay";
 export interface ModeScreen { kind: CleanScreen; id: string; exitLabel?: string }
 
@@ -21,7 +23,7 @@ export interface ModePrompt {
   kind: "surf" | "taxi" | "barista" | "gofish" | "billiards" | "gym";
 }
 
-export interface GameMode {
+export interface GameMode extends PadScope {
   id: string;
   readonly active: boolean;
   readonly modal?: boolean;

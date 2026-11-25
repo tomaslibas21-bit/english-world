@@ -152,12 +152,12 @@ function Levels({ replay = false, onLevel }: { replay?: boolean; onLevel(level: 
 export function SurfPicker() {
   const best = useSurf((s) => s.best);
   return <div className="surf-pick" role="dialog" aria-label={S.lesson.lt} lang="lt">
-    <div className="surf-pick-card">
+    <div className="surf-pick-card" data-pad-scope="surf-picker">
       <h2>{S.lesson.lt}</h2>
       <p>{S.picker.intro.lt}</p>
       <div className="surf-levels"><Levels onLevel={(level) => game?.modeStart("surf", level)} /></div>
       {best.waves > 0 && <p className="surf-best">{total(best.waves, best.seconds)}</p>}
-      <button type="button" className="surf-later" onClick={() => game?.modeExit()}>{S.picker.later.lt}</button>
+      <button type="button" className="surf-later" data-pad-back onClick={() => game?.modeExit()}>{S.picker.later.lt}</button>
     </div>
   </div>;
 }
@@ -176,7 +176,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
     if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches("button:focus-visible")) e.stopPropagation();
   }}>
     <div className="surf-top">
-      <button type="button" className="surf-x" onClick={() => game?.modeExit()} aria-label={C.exit.lt} title={C.exit.lt}><Icon name="close" size={20} strokeWidth={2.4} /></button>
+      <button type="button" className="surf-x" data-pad-aux data-pad-back onClick={() => game?.modeExit()} aria-label={C.exit.lt} title={C.exit.lt}><Icon name="close" size={20} strokeWidth={2.4} /></button>
       <button type="button" className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow}
         onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>{C.slow.lt}</button>
       <div className="surf-score" aria-label={R.score.lt}>
@@ -202,13 +202,13 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
           {s.phase === "ride" && <div className="surf-balance" role="meter" aria-label={C.balance.lt}
             aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${s.balance * 100}%` }} /></div>}
         </div>
-        <button type="button" className="surf-again" onClick={() => game?.modeAction("surf", "repeat")}
+        <button type="button" className="surf-again" data-pad-aux onClick={() => game?.modeAction("surf", "repeat")}
           title={C.replay.lt} aria-label={C.replay.lt}><Icon name="speaker" size={19} /></button>
       </div>
       <Move todo={s.todo} touch={touch} flash={s.keyFlash} />
       {s.finishedStrokes > 0 && <div className="surf-finished"><Strokes of={s.finishedStrokes} left={0} /></div>}
     </div>}
-    {s.choice && !s.over && <div className="surf-choices">
+    {s.choice && !s.over && <div className="surf-choices" data-pad-scope="surf-choices" data-pad-phase={s.choice.id}>
       <Mic mic={s.mic} on={s.micOn} touch={touch} />
       {s.choice.options.map((o, i) => <div className="phrase-save-row surf-choice-row" key={o.cue}>
         <button type="button" className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
@@ -232,7 +232,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       { label: R.commands.lt, value: <><ScoreNumber value={score.followed} />/{score.asked}</> },
     ]} actions={<>
       <Levels replay onLevel={(level) => game?.surfAgain?.(level)} />
-      <button type="button" className="btn soft surf-later" onClick={() => game?.modeExit()}>{R.shore.lt}</button>
+      <button type="button" className="btn soft surf-later" data-pad-back onClick={() => game?.modeExit()}>{R.shore.lt}</button>
     </>}>
       <p className="surf-best">{total(s.best.waves + score.waves, s.best.seconds + score.seconds)}</p>
       <p>{R.saved.lt}</p>

@@ -75,12 +75,12 @@ export default function GoFishOverlay({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   const coach = step === "ask" && busy ? null : mic.status === "unclear" ? BARISTA_UI.retry : tip;
   const cueName = line?.speaker === "learner" ? learner : line && NPCS[line.speaker].name;
-  return <div className="gofish-overlay" lang="lt" data-deck={deck.id}>
+  return <div className="gofish-overlay" data-pad-scope="gofish" data-pad-phase={step} lang="lt" data-deck={deck.id}>
     <header className="gofish-header">
       <span className="gofish-deck gofish-paper"><CardBack />{deck.lt}</span>
       <div className="gofish-header-actions">
         <PhraseChooser key={`${step}:${drawn ?? ""}`} entries={chooser} />
-        <button type="button" className="gofish-exit gofish-paper" onClick={exit}>
+        <button type="button" className="gofish-exit gofish-paper" data-pad-back onClick={exit}>
           {words.exit}{!touch && <kbd>Esc</kbd>}
         </button>
       </div>

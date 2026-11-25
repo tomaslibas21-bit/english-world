@@ -105,7 +105,7 @@ function LightHome() {
   const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
   const due = useDueCards();
   return (
-    <div className="lh" inert={covered} aria-hidden={covered || undefined}>
+    <div className="lh" data-pad-scope={covered ? undefined : "home"} inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">English World</span><span className="lh-town">Maple Harbor</span><span className="lh-town-lt" lang="lt">{TOWN_LT}</span></div>

@@ -18,15 +18,15 @@ export function SceneIntro({ sit }: { sit: SituationDef }) {
   const authoredIntro = introOverride ?? sit.intro;
   const intro = authoredIntro?.trim() ? authoredIntro : undefined;
   const close = () => useStore.getState().setConv({ introOpen: false });
-  return <div className="scene-intro" role="region" aria-label="Scena">
+  return <div className="scene-intro" data-pad-scope="intro" role="region" aria-label="Scena">
     <div className="scene-intro-head"><b>{intro ? "Scena" : sit.title.lt || sit.title.en}</b>
-      <button className="close-x" onClick={close} aria-label="Uždaryti sceną"><Icon name="close" size={18} /></button>
+      <button className="close-x" data-pad-back onClick={close} aria-label="Uždaryti sceną"><Icon name="close" size={18} /></button>
     </div>
     {intro ? <p>{sceneText(intro, gender)}</p> : <>
       {npc && <p>{npc.name}</p>}
       {sit.goal && <p>{sceneText(sit.goal, gender)}</p>}
     </>}
-    <button ref={start} className="btn small scene-start" onClick={close}>Pradėti</button>
+    <button ref={start} className="btn small scene-start" data-pad-default onClick={close}>Pradėti</button>
   </div>;
 }
 

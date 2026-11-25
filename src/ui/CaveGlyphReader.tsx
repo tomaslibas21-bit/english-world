@@ -24,7 +24,7 @@ export default function CaveGlyphReader({ g, cave }: { g: GlyphQuiz; cave: CaveQ
       <div className="glyph-opts">
         {g.options.map((option, index) => {
           const wrong = g.wrong.includes(index);
-          return <button type="button" key={index} className={"glyph-opt" + (wrong ? " wrong" : "")}
+          return <button type="button" key={index} data-pad-answer={index} className={"glyph-opt" + (wrong ? " wrong" : "")}
             disabled={wrong} lang="lt" aria-label={copy.option(index + 1, option).lt} onClick={() => pick(index)}>
             <kbd aria-hidden="true">{index + 1}</kbd><span>{option}</span>
           </button>;

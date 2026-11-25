@@ -510,12 +510,15 @@ export class StreetLife {
     void this.runBubbles({ id: "", lines: [this.displayLine(line, gender, "say")], speaker: character, ms: opts?.ms, extended: false });
   }
 
-  startLight(snapshot: () => StreetSnapshot) {
+  startLight(snapshot: () => StreetSnapshot, sampleInput?: (dt: number) => void) {
     const tick = (now: number) => {
       const elapsed = this.lightLast === undefined ? 0 : Math.max(0, (now - this.lightLast) / 1000);
       this.lightLast = now;
-      this.tick(Math.min(0.05, elapsed), snapshot(), elapsed);
-      this.lightFrame = requestAnimationFrame(tick);
+      const dt = Math.min(0.05, elapsed);
+      sampleInput?.(dt);
+      if (!this.lightFrame) return;
+      this.tick(dt, snapshot(), elapsed);
+      if (this.lightFrame) this.lightFrame = requestAnimationFrame(tick);
     };
     this.lightFrame = requestAnimationFrame(tick);
   }
@@ -560,6 +563,7 @@ export class StreetLife {
 
   dispose() {
     if (this.lightFrame) cancelAnimationFrame(this.lightFrame);
+    this.lightFrame = 0;
     this.finishMoment(true);
     this.clearChatter();
     this.world?.dispose();

@@ -7,6 +7,8 @@ import taxi from "../src/content/situations/s66-taxi";
 import { Ambient } from "../src/game/ambient";
 import { CameraRig } from "../src/game/camera";
 import { createCharacter } from "../src/game/characters";
+import type { ModeHost } from "../src/game/kit/host";
+import { conversationLine } from "../src/game/kit/lines";
 import { scoreShot } from "../src/game/kit/scoreShot";
 import { NavGrid } from "../src/game/nav";
 import { OcclusionField } from "../src/game/occlusion";
@@ -18,7 +20,10 @@ import { BUILDINGS, PARKED_CARS, ROADS, TAXI, WORLD } from "../src/game/world/la
 import { RIDES } from "../src/game/world/rides";
 import { buildTown } from "../src/game/world/town";
 import { Colliders } from "../src/game/world/util";
+import { PadButton } from "../src/game/padButtons";
+import { createTaxiMode } from "../src/game/taxi/mode";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../src/game/taxi/route";
+import { resetTaxiUi, useTaxi } from "../src/game/taxi/store";
 
 const taxiSize = carModelEntry(TAXI.model).collisionBox;
 
@@ -37,6 +42,100 @@ function makeRides(allowsHints?: () => boolean) {
 }
 
 describe("Maple Harbor taxi routes", () => {
+  it("drives with held assist and releases only the source that ended", () => {
+    const { rides } = makeRides();
+    const drive = vi.fn();
+    const mode = createTaxiMode({
+      rides, drive, add: () => {}, standTaxi: { root: new THREE.Group(), fallback: new THREE.Group() },
+    } as unknown as ModeHost)!;
+    const route = TAXI_ROUTES[0], decision = route.decisions[0], pose = resetPose(approach(route, 0));
+    const run = { route, index: 0, phase: "drive", help: 0, nearTime: 0, spoken: true, pending: true };
+    Object.assign(mode, { run });
+    rides.riding = mode.car;
+    const A = PadButton.A;
+    const sample = (pressed = 0, released = 0) => mode.padTick(null, pressed, released);
+    const step = () => {
+      mode.update({ dt: 0.05, time: 1, x: 0, y: 0, brake: false, blocked: false });
+      return drive.mock.lastCall?.[1];
+    };
+    const assisted = { throttle: 1, steer: -1, brake: false };
+    const neutral = { throttle: 0, steer: 0, brake: false };
+    try {
+      rides.resetPosition(mode.car, pose);
+      const sentence = conversationLine(taxi.id, "vinnie", decision.key, TAXI_LINES, false)!;
+      useTaxi.setState({ line: { key: decision.key, sentence } });
+      sample(A); // Pressed before the help chip appeared.
+      expect(step()).toMatchObject(neutral);
+      expect(useTaxi.getState().action).toBe("left");
+      sample(); // Still held from before the cue.
+      expect(step()).toMatchObject(neutral);
+      sample(0, A);
+      sample(A);
+      expect(step()).toMatchObject(assisted);
+      sample();
+      expect(step()).toMatchObject(assisted);
+      sample(0, A);
+      expect(step()).toMatchObject(neutral);
+
+      mode.action("assist", true);
+      mode.action("assist-space", true);
+      sample(A);
+      mode.action("assist", false);
+      mode.padCancel();
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist-blur");
+      sample();
+      expect(step()).toMatchObject(neutral);
+      sample(0, A);
+
+      sample(A);
+      mode.action("assist-enter", true);
+      mode.action("assist", true);
+      sample(0, A);
+      mode.action("assist-enter", false);
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist", false);
+      expect(step()).toMatchObject(neutral);
+
+      mode.action("assist", true);
+      sample(A);
+      mode.padCancel();
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(neutral);
+      sample(0, A);
+
+      sample(A);
+      mode.action("assist", true);
+      mode.action("assist", false);
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist", true);
+      mode.action("assist-space", true);
+      mode.action("assist-enter", true);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(assisted);
+      sample(0, A);
+      expect(step()).toMatchObject(neutral);
+
+      sample(A);
+      rides.resetPosition(mode.car, { ...pose, x: pose.x + 8 });
+      step();
+      expect(useTaxi.getState().action).toBeNull();
+      rides.resetPosition(mode.car, pose);
+      expect(step()).toMatchObject(neutral);
+      expect(useTaxi.getState().action).toBe("left");
+      sample();
+      expect(step()).toMatchObject(neutral);
+
+      run.phase = "passed";
+      sample(A);
+      expect(step()).toMatchObject(neutral);
+    } finally {
+      mode.dispose();
+      resetTaxiUi();
+    }
+  });
+
   it("keeps the taxi outside the town rides and map while sharing driving and collision physics", () => {
     const { rides, player, ambient } = makeRides();
     const marks = rides.marksForMap();

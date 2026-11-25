@@ -10,7 +10,7 @@ import "./street.css";
 
 const MENU_BLOCKERS = ".toolbar-drawer, .toolbar-tools";
 const BLOCKERS = ".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, .minimap, " +
-  ".toolbar, .radio-tool, .joy, .jump-btn, .act-btn, .prompt, " + MENU_BLOCKERS;
+  ".toolbar, .radio-tool, .joy, .jump-btn, .act-btn, .prompt, [data-pad-hint][data-pad-positioned], " + MENU_BLOCKERS;
 
 function hasBlocker(nodes: NodeList) {
   for (const node of nodes) {
@@ -122,7 +122,7 @@ export function StreetBubbles() {
   return <>
     {marker && <span aria-hidden="true" className="street-marker" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />}
     {line && <div ref={bubbleRef} key={key} role="group" className="street-bubble phrase-save-row" data-chatter={id} aria-expanded={translated}>
-      <button type="button" className="street-bubble-text" aria-expanded={translated} onClick={translate}>
+      <button type="button" className="street-bubble-text" data-pad-aux aria-expanded={translated} onClick={translate}>
         <GlossLine sentence={line.sentence} gloss={false} compact />
         {translated && <small className="street-tr" lang="lt">{line.sentence.nat}</small>}
       </button>

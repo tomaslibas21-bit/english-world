@@ -120,15 +120,15 @@ export function WordGateStart({ way, start, done, town }: {
   way: PlayWay; start(way: PlayWay): void; done(): void; town: string;
 }) {
   return <div className="word-gate-start">
-    <section role="dialog" aria-labelledby="word-gate-start-title">
+    <section data-pad-scope="word-setup" role="dialog" aria-labelledby="word-gate-start-title">
       <h2 id="word-gate-start-title">Kaip žaisime?</h2>
       <div className="word-gate-ways">
         {ways.map(({ id, title, line }) => <button key={id} type="button" data-way={id}
-          aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
+          data-pad-default={id === way || undefined} aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
           <strong>{title}</strong><small>{line}</small>
         </button>)}
       </div>
-      <button className="btn soft" onClick={done}>{town}</button>
+      <button className="btn soft" data-pad-back onClick={done}>{town}</button>
     </section>
   </div>;
 }
@@ -167,9 +167,9 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
   extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
   const options = useMemo(() => prompt?.phrase ? gatePhraseOptions(prompt, words.title) : [], [prompt, words.title]);
-  return <header className="road-header">
+  return <header className="road-header" data-pad-aux>
       <div className="road-dash">
-        <button className="road-icon" aria-label={words.town} title={words.town} onClick={home}><Icon name="home" size={21} /></button>
+        <button className="road-icon" data-pad-back aria-label={words.town} title={words.town} onClick={home}><Icon name="home" size={21} /></button>
         <h1>{words.title}</h1>
         <div className="road-meters">
           <span>{words.time} <b>{clockText(remaining)}</b></span>
@@ -208,7 +208,7 @@ function PracticeItems({ items, entries, recovered, label, title, missed, guide 
   const full = entry.sentence.en !== item.en;
   const pair = <div className="road-pair">
     {items.length === 1 ? <><strong lang="en">{item.en}</strong> · {item.lt}</> :
-      <select aria-label={missed ? undefined : label} aria-labelledby={missed ? "road-missed-title" : undefined}
+      <select data-pad-adjust aria-label={missed ? undefined : label} aria-labelledby={missed ? "road-missed-title" : undefined}
         value={index} onChange={(e) => setIndex(Number(e.target.value))}
         onKeyDown={(e) => { if (e.key !== "Escape" && e.key !== "Tab") e.stopPropagation(); }}
         onKeyUp={(e) => { if (e.key === " ") e.stopPropagation(); }}>

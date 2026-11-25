@@ -142,6 +142,8 @@ export class RoadMode {
 
   constructor(private host: RoadHost) {}
   get active() { return this.phase !== "town"; }
+  get padDriving() { return this.phase === "drive"; }
+  get padMenu() { return this.phase === "approach" || (this.phase === "offer" && !useRoad.getState().choices.length); }
   get lifted() { return !!this.lift; }
 
   start(edge: WalkEdge) {

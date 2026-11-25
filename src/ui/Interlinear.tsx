@@ -12,7 +12,7 @@ import type { Sentence } from "../convo/compose";
 import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
-import { WordPopover, inView } from "./Cards";
+import { WordPopover, inView, type PopoverElement } from "./Cards";
 import type { PhraseSource } from "./kit/PhraseSave";
 
 /** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
@@ -85,7 +85,7 @@ function keyboardFocus(el: Element): boolean {
 function NatTip({ text, notes = [], portalHost }: { text: string; notes?: string[]; portalHost?: HTMLElement }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
-  const boxRef = useRef<HTMLSpanElement>(null);
+  const boxRef = useRef<PopoverElement<HTMLSpanElement>>(null);
   const [tapped, setTapped] = useState(false); // opened with a tap or a click: stays until closed
   const [hover, setHover] = useState(false); // a mouse over the asterisk or the tooltip
   const [focused, setFocused] = useState(false); // keyboard focus on the asterisk
@@ -102,10 +102,12 @@ function NatTip({ text, notes = [], portalHost }: { text: string; notes?: string
   // follow the asterisk (scrolling, new lines, the toggles), close when it's scrolled out of sight
   useLayoutEffect(() => {
     if (!open) { setSpot(null); return; }
+    const a = starRef.current, el = boxRef.current;
+    if (!a || !el) return;
+    el.popoverAnchor = a;
+    el.popoverClose = close;
     let raf = 0, last = "";
     const tick = () => {
-      const a = starRef.current, el = boxRef.current;
-      if (!a || !el) return;
       const r = a.getBoundingClientRect();
       const p = a.closest(".convo")?.getBoundingClientRect();
       const vw = window.innerWidth, vh = window.innerHeight;
@@ -137,8 +139,9 @@ function NatTip({ text, notes = [], portalHost }: { text: string; notes?: string
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [open, close]);
 
+  const placed = open && !!spot;
   const tip = (
-    <span ref={boxRef} id={id} role="tooltip" lang="lt" className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
+    <span ref={boxRef} id={id} role="tooltip" data-pad-scope={placed ? "tooltip" : undefined} lang="lt" className={"nat-tipbox" + (spot?.below ? " below" : "")} hidden={!open}
       onPointerEnter={enter} onPointerLeave={leave}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       {text}
@@ -147,7 +150,7 @@ function NatTip({ text, notes = [], portalHost }: { text: string; notes?: string
   );
   return (
     <>
-      <button ref={starRef} type="button" className="nat-star" aria-label={text ? "Natūralus vertimas" : "Pastabos"} aria-expanded={open} aria-describedby={id}
+      <button ref={starRef} type="button" className="nat-star" data-pad-focus-opens aria-label={text ? "Natūralus vertimas" : "Pastabos"} aria-expanded={open} aria-describedby={id}
         onClick={() => setTapped((v) => !v)} onPointerEnter={enter} onPointerLeave={leave}
         onFocus={(e) => setFocused(keyboardFocus(e.currentTarget))}
         onBlur={(e) => {

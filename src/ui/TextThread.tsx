@@ -96,9 +96,9 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
     timer.current = setTimeout(() => setTyping(false), 1200);
   };
 
-  return <section className="text-thread" data-thread={thread.id}>
+  return <section className="text-thread" data-pad-scope="thread" data-thread={thread.id}>
     <header className="text-thread-head">
-      <button className="phone-close" aria-label={LABELS.back} onClick={() => useStore.getState().setHud({ textThread: null })}><Icon name="arrowLeft" size={20} /></button>
+      <button className="phone-close" data-pad-back aria-label={LABELS.back} onClick={() => useStore.getState().setHud({ textThread: null })}><Icon name="arrowLeft" size={20} /></button>
       <TextFace npc={npc.id} name={npc.name} /><div><strong>{npc.name}</strong><small>{npc.role.lt}</small></div>
     </header>
     <div className="text-thread-body" ref={body}>

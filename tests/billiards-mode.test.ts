@@ -7,6 +7,7 @@ import type { TableView } from "../src/game/billiards/table";
 import { CameraRig } from "../src/game/camera";
 import type { GameCharacter } from "../src/game/characters";
 import type { ModeHost } from "../src/game/kit/host";
+import { PadButton } from "../src/game/padButtons";
 
 function game() {
   const noop = () => {};
@@ -40,6 +41,65 @@ beforeEach(() => {
   vi.spyOn(audio, "sfx").mockImplementation(() => {});
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+it("uses the Shift-arrow aim increment while LB is held", async () => {
+  const { mode, debug, clockUntil } = game();
+  const angle = () => debug.state()!.angle;
+  const degrees = (from: number) => (angle() - from) * 180 / Math.PI;
+  try {
+    mode.start("solids");
+    await clockUntil("break");
+    const start = angle();
+    mode.padTick(null, PadButton.LB, 0, 0, 0, PadButton.LB);
+    expect(angle()).toBe(start);
+    mode.padTick(null, 0, 0, 0, PadButton.Right, PadButton.LB);
+    expect(degrees(start)).toBeCloseTo(-0.1);
+    mode.input({ kind: "key", key: "arrowleft", repeat: false, keys: new Set(), shift: true });
+    expect(angle()).toBeCloseTo(start);
+    mode.padTick(null, 0, PadButton.LB, 0, PadButton.Left, 0);
+    expect(degrees(start)).toBeCloseTo(0.5);
+  } finally {
+    mode.exit();
+  }
+});
+
+it("releases a shot from its own input and cancels only the pad charge on pad loss", async () => {
+  const { mode, clockUntil } = game();
+  const space = () => mode.input({ kind: "key", key: " ", repeat: false, keys: new Set() });
+  const pad = (down: boolean) => mode.padTick(null, down ? PadButton.A : 0, down ? 0 : PadButton.A, 0, 0);
+  const charge = () => mode.update({ dt: 0.35, time: 1, x: 0, y: 0, brake: false, blocked: false });
+  try {
+    mode.start("solids");
+    await clockUntil("break");
+
+    pad(true);
+    charge();
+    expect(useBilliards.getState().power).toBeGreaterThan(0);
+    space();
+    expect(mode.release(" ")).toBe(false);
+    mode.padCancel();
+    pad(false);
+    expect(useBilliards.getState()).toMatchObject({ phase: "break", power: 0 });
+
+    space();
+    charge();
+    pad(true);
+    mode.padCancel();
+    pad(false);
+    expect(useBilliards.getState().phase).toBe("break");
+    expect(useBilliards.getState().power).toBeGreaterThan(0);
+    expect(mode.release(" ", true)).toBe(true);
+
+    pad(true);
+    charge();
+    space();
+    expect(mode.release(" ")).toBe(false);
+    pad(false);
+    expect(useBilliards.getState().phase).toBe("rolling");
+  } finally {
+    mode.exit();
+  }
+});
 
 it("chooses a group by tapping a voiced example and plays Tina's two call pieces in order", async () => {
   const { mode, debug, clockUntil } = game();

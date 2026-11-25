@@ -56,6 +56,12 @@ function keepCaps(word: string): boolean {
   return NAMES.has(w) || (!!p && (w === p.name.trim().toLowerCase() || w === p.surname.trim().toLowerCase()));
 }
 
+/** A body portal keeps its trigger and close action on the node that owns them. */
+export type PopoverElement<T extends HTMLElement = HTMLElement> = T & {
+  popoverAnchor?: HTMLElement;
+  popoverClose?: () => void;
+};
+
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
 function place(r: DOMRect, w: number, h: number): TipSpot {
   const m = 8, gap = 9, vw = window.innerWidth, vh = window.innerHeight;
@@ -90,7 +96,7 @@ export function inView(el: HTMLElement, rect?: DOMRect): boolean {
 export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
   s: Sentence; index: number; anchor: HTMLElement; onClose: () => void; source?: PhraseSource; portalHost?: HTMLElement;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<PopoverElement<HTMLDivElement>>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const sitId = useStore((st) => source?.situationId ?? st.conv.sitId);
@@ -194,10 +200,17 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
     return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key, true); };
   }, [anchor]);
 
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.popoverAnchor = anchor;
+    el.popoverClose = closeRef.current;
+  }, [anchor, onClose]);
+
   if (!u) return null;
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (panel ? " in-convo" : "") + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
+    <div ref={ref} className={"wpop" + (panel ? " in-convo" : "") + (spot && !spot.below ? " above" : "")} role="dialog" data-pad-scope="popover" data-pad-placed={spot ? "" : undefined} aria-label={`Žodis „${shown}“`}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-body">
         <div className="wpop-en" lang="en">{shown}</div>

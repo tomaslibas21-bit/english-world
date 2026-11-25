@@ -15,6 +15,7 @@ import { SITUATION_BY_ID, getSituation, loadSituation } from "../content/situati
 import type { SituationDef, SituationMeta } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
+import { attachPad, type PadLink } from "./padLink";
 
 export class LightGame implements GameApi {
   readonly light = true;
@@ -26,6 +27,7 @@ export class LightGame implements GameApi {
   private opening = false;
   readonly streetLife = new StreetLife();
   private unwatchStreet?: () => void;
+  private pad?: PadLink;
 
   init() {
     audio.stopAmbience();
@@ -33,17 +35,19 @@ export class LightGame implements GameApi {
     audio.volume = useStore.getState().settings.volume;
     audio.sounds = useStore.getState().settings.sounds;
     window.addEventListener("keydown", this.onKeyDown);
+    this.pad = attachPad();
     this.onReady?.();
     this.unwatchStreet = useStore.subscribe((state, previous) => {
       if (state.screen !== previous.screen || state.conv.active !== previous.conv.active || state.hud.panel !== previous.hud.panel) this.observeStreet();
     });
     document.addEventListener("visibilitychange", this.observeStreet);
-    this.streetLife.startLight(() => this.streetSnapshot());
+    this.streetLife.startLight(() => this.streetSnapshot(), this.pad.tick);
     if (import.meta.env.DEV) this.streetLife.devRequest();
   }
 
   dispose() {
     this.disposed = true;
+    this.pad?.dispose();
     this.unwatchStreet?.();
     document.removeEventListener("visibilitychange", this.observeStreet);
     this.streetLife.dispose();
