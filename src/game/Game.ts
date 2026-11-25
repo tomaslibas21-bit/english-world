@@ -537,7 +537,7 @@ export class Game implements GameApi {
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
     const game = this;
     this.rides = new Rides({
-      cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, quality: st.settings.quality,
+      cam: this.rig.cam, colliders: this.town.colliders, ledges: this.ledges, nav, ambient: this.ambient, quality: st.settings.quality,
       get player() { return game.player; },
       people: () => (this.zone.interior ? [] : this.npcs.filter((n) => n.ch.root.visible).map((n) => n.home)),
       say: (line, voice, female, ch) => {

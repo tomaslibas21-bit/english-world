@@ -6,6 +6,9 @@ import type { Piece } from "../ledges";
 const WHEELS = ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"] as const;
 type Scale = readonly [x: number, y: number, z: number];
 type Surface = readonly [startZ: number, endZ: number, width: number, top: number];
+const CONVERTIBLE_SURFACES: readonly Surface[] = [
+  [-1.22, 0.72, 1.7, 0.46], [0.72, 2.12, 1.9, 0.89], [-2.11, -1.22, 1.9, 0.91],
+];
 
 function entry(
   file: string, scale: Scale, source: readonly [width: number, minZ: number, maxZ: number, height: number],
@@ -106,19 +109,34 @@ function bounds(x: number, z: number, rot: number, width: number, length: number
   return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz };
 }
 
-export function carTop(x: number, z: number, rot: number, start: number, end: number, width: number, top: number): Piece {
-  const offset = (start + end) / 2;
-  return { ...bounds(x + Math.sin(rot) * offset, z + Math.cos(rot) * offset, rot, width, end - start), top };
-}
-
 export function carFootprint({ model, x, z, rot }: Pick<CarPlacement, "model" | "x" | "z" | "rot">) {
   const { width, length } = carModelEntry(model).collisionBox;
   return bounds(x, z, rot, width, length);
 }
 
 /** Solid steps with tops at the hood, trunk and roof, measured on the unscaled kit meshes. */
-export function carLedges(model: CarModelName, x: number, z: number, rot: number): Piece[] {
-  const { surfaces, scale: [sx, sy, sz], sourceCenterZ } = carModelEntry(model);
-  return surfaces.map(([start, end, width, top]) =>
-    carTop(x, z, rot, (start - sourceCenterZ) * sz, (end - sourceCenterZ) * sz, width * sx, top * sy));
+export function carLedges(model: CarModelName | undefined, x: number, z: number, rot: number): Piece[] {
+  const out: Piece[] = [];
+  writeCarLedges(model, x, z, rot, out);
+  return out;
+}
+
+/** Fill the caller's pieces for a trial pose. Only the first returned count of pieces are used. */
+export function writeCarLedges(model: CarModelName | undefined, x: number, z: number, rot: number, out: Piece[]) {
+  const entry = model ? carModelEntry(model) : undefined;
+  const surfaces = entry?.surfaces ?? CONVERTIBLE_SURFACES;
+  const sx = entry?.scale[0] ?? 1, sy = entry?.scale[1] ?? 1, sz = entry?.scale[2] ?? 1;
+  const s = Math.sin(rot), c = Math.cos(rot), shift = entry?.sourceCenterZ ?? 0;
+  for (let i = 0; i < surfaces.length; i++) {
+    const [start, end, width, top] = surfaces[i];
+    const offset = ((start + end) / 2 - shift) * sz;
+    const half = (end - start) * sz / 2, wide = width * sx / 2;
+    const cx = x + s * offset, cz = z + c * offset;
+    const hx = Math.abs(c) * wide + Math.abs(s) * half, hz = Math.abs(s) * wide + Math.abs(c) * half;
+    const piece = out[i] ??= { minX: 0, maxX: 0, minZ: 0, maxZ: 0, top: 0 };
+    piece.minX = cx - hx; piece.maxX = cx + hx;
+    piece.minZ = cz - hz; piece.maxZ = cz + hz;
+    piece.top = top * sy;
+  }
+  return surfaces.length;
 }

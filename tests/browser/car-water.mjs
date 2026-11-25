@@ -420,13 +420,31 @@ async function installReads() {
         yaw: q.mesh.rotation.y, pitch: q.mesh.rotation.x, roll: q.mesh.rotation.z })),
     };
   }
+
+  function footSupports(landing, current) {
+    const nearby = b => [landing, current].some(p =>
+      p.x >= b.minX - 0.8 && p.x <= b.maxX + 0.8 && p.z >= b.minZ - 0.8 && p.z <= b.maxZ + 0.8);
+    const ledges = g.ledges;
+    const dynamic = new Set([...(ledges?.dynamic?.(landing.x, landing.z) ?? []),
+      ...(ledges?.dynamic?.(current.x, current.z) ?? [])]);
+    return {
+      boxes: colliders.boxes.filter(nearby),
+      circles: colliders.circles.filter(c => [landing, current].some(p => gap(c, p) <= c.r + 0.8)),
+      ledges: ledges?.pieces.filter(nearby),
+      dynamic: [...dynamic].filter(nearby).map(piece => ({ ...piece, ride: R.carUnder(piece)?.id })),
+      support: ledges?.supportPiece(current.x, current.z, g.hop.y, g.hop.air),
+      gait: { on: g.gaitOn, speed: g.gait.speed }, stepOut: g.stepOut, autoPath: g.autoPath,
+      velocity: point(g.vel), resolvedVelocity: point(g.moveVel),
+    };
+  }
+
   const exitPoint = ({ x, z, outward }) => ({ x, z, outward });
   window.__carWaterTest = { identity: { town: ROAD_EDITION.id, edition: EDITION.id, helper: EDITION.helper, lang: document.documentElement.lang,
     storage: EDITION.storage }, roadExit: exitPoint(ROAD_EDITION.edge), liveRoadExit: exitPoint(window.__ew.road.state().exit),
     world: () => ({ decks: DECKS.length, floors: FLOORS.length, pools: POOLS.length, west, ways: ways.map(w => w.id),
       pier: floorY(-30, -77), hotel: poolAt(HOTEL_POOL.x, HOTEL_POOL.z)?.y ?? null,
       cenote: THEME.cenote && depth(THEME.cenote.x, THEME.cenote.z), fleet: g.carVisuals.stats(), parkedRides: R.modeCars.size }),
-    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids,
+    depth, sample, clearance, controlsFrom, pointAndGo, ways, poolKids, footSupports,
     footprint: id => footprint(pose(R.find(id))).map(p => ({ ...p, depth: depth(p.x, p.z) })),
     boxOverlap: (car, obstacle) => overlap(car, box(obstacle)), footprintDistance,
     support: (x, z) => {
@@ -723,9 +741,13 @@ class Run {
     a.previous = s;
   }
 
-  async frames(count, ms = quantum) {
+  async frames(count, ms = quantum, observe) {
     const samples = [];
-    for (let i = 0; i < count; i++) samples.push(await this.frame(ms));
+    for (let i = 0; i < count; i++) {
+      const sample = await this.frame(ms);
+      samples.push(sample);
+      if (observe) await observe(sample);
+    }
     return samples;
   }
 
@@ -989,13 +1011,32 @@ async function assertDryPair(run, s, { onFoot = false, obstacleTag } = {}) {
 async function finish(run, options) {
   const landing = await run.until(released, "the return handed back control on the original clock", 225, options?.ms);
   await assertDryPair(run, landing, options);
-  const rest = await run.frames(Math.ceil(750 / (options?.ms ?? quantum)), options?.ms);
-  for (const s of rest) assert.ok(released(s) && gap(s.car, landing.car) < 0.02 && gap(s.player, landing.player) < 0.025,
+  const stable = s => released(s) && gap(s.car, landing.car) < 0.02 && gap(s.player, landing.player) < 0.025;
+  let violation;
+  const rest = await run.frames(Math.ceil(750 / (options?.ms ?? quantum)), options?.ms, async s => {
+    if (violation || stable(s)) return;
+    const supports = await run.evaluate(([a, b]) => window.__carWaterTest.footSupports(a, b), [landing.player, s.player]);
+    const position = ({ x, y, z, heading, floor, surface }) => ({ x, y, z, heading, floor, surface });
+    const delta = (a, b) => ({ x: b.x - a.x, y: b.y - a.y, z: b.z - a.z, horizontal: gap(a, b) });
+    const snapshot = t => ({ serial: t.serial, car: position({ ...t.car, y: t.car.mesh.y }), foot: position(t.player),
+      keys: t.keys, stick: t.stick, brake: t.brake, speed: t.player.velocity, air: t.player.air, pose: t.player.pose });
+    violation = { landing: snapshot(landing), firstViolation: snapshot(s), savedPair: landing.water.landingPair,
+      carDelta: delta(landing.car.mesh, s.car.mesh), footDelta: delta(landing.player, s.player), supports };
+    run.log({ stationaryHandback: violation });
+  });
+  for (const s of rest) assert.ok(stable(s),
     "stable car and learner handback for at least 0.75 s");
+  if (options?.stationaryDoor) for (const s of rest) {
+    assert.ok(s.riding === null && s.player.surface === null && s.nearSame && s.reach >= 0.35 && s.reach <= 1.45,
+      `dry learner can reboard the same car at presentation ${s.serial}`);
+    close(s.player.y, s.player.floor, 0.02, `dry supported feet at presentation ${s.serial}`);
+  }
   const { trigger, firstWet, released: end } = run.safety;
   assert.ok(Number.isFinite(trigger) && Number.isFinite(firstWet) && end === landing.now, "sampled trigger, first contact and release");
   run.log({ trigger: landing.water.reason, wetMs: trigger - firstWet, returnMs: end - trigger, wetToReleaseMs: end - firstWet, landing: landing.water.landing,
-    fallbackReason: landing.water.fallbackReason, release: [landing.car.x, landing.car.z] });
+    fallbackReason: landing.water.fallbackReason, release: [landing.car.x, landing.car.z],
+    stationary: { first: landing.serial, last: rest.at(-1).serial, foot: landing.player,
+      carDrift: Math.max(...rest.map(s => gap(s.car, landing.car))), footDrift: Math.max(...rest.map(s => gap(s.player, landing.player))) } });
   return landing;
 }
 
@@ -1803,7 +1844,7 @@ async function cenoteTrip(run, approach = site.cenote.road) {
   await run.act("out");
   const outside = await run.frame();
   assert.ok(outside.riding === null && outside.player.shown && outside.player.inView && outside.water.assistedOnFoot);
-  const landing = await finish(run, { onFoot: true });
+  const landing = await finish(run, { onFoot: true, stationaryDoor: true });
   const clear = await run.clearance();
   assert.ok(clear.westCar && clear.westFoot && gap(landing.car, site.cenote.centre) < 28 && landing.player.surface === null,
     "cenote handback is local dry mainland within the genuine western grounds");

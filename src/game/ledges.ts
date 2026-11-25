@@ -85,9 +85,13 @@ export class Ledges {
   private buckets = new Map<number, Piece[]>();
   private static readonly B = 4;
 
+  private fixedAt(x: number, z: number) {
+    return this.buckets.get(Math.floor(x / Ledges.B) * 4096 + Math.floor(z / Ledges.B)) ?? NONE;
+  }
+
   /** The pieces around (x, z). */
   private near(x: number, z: number): Piece[] {
-    const fixed = this.buckets.get(Math.floor(x / Ledges.B) * 4096 + Math.floor(z / Ledges.B)) ?? NONE;
+    const fixed = this.fixedAt(x, z);
     const more = this.dynamic?.(x, z);
     return more?.length ? (fixed.length ? fixed.concat(more) : more) : fixed;
   }
@@ -95,6 +99,22 @@ export class Ledges {
   /** How much higher than feet at `feet` m a top may be and still be got onto: a toe's reach in the air (a jump that
    *  comes within it of a top lands on it), a kerb from the ground, a gentle slope up on something. */
   private static rise(feet: number, air: boolean) { return air ? TOE : feet < 0.2 ? STEP : SLOPE; }
+
+  /** Check a floor handback against the same wall and support rules as ordinary walking. */
+  static keepsFloor(b: Piece, x: number, z: number, r: number, feet: number) {
+    const reach = feet + Ledges.rise(feet, false);
+    if (!b.deck && b.top > reach) {
+      const cx = Math.max(b.minX, Math.min(x, b.maxX)), cz = Math.max(b.minZ, Math.min(z, b.maxZ));
+      const dx = x - cx, dz = z - cz;
+      return dx * dx + dz * dz >= r * r;
+    }
+    return Math.abs(b.top - feet) <= 0.02 || !Ledges.supports(b, x, z, reach);
+  }
+
+  fixedKeepsFloor(x: number, z: number, r: number, feet: number) {
+    for (const b of this.fixedAt(x, z)) if (!Ledges.keepsFloor(b, x, z, r, feet)) return false;
+    return true;
+  }
 
   add(p: Piece) {
     this.pieces.push(p);
@@ -141,12 +161,17 @@ export class Ledges {
     return this.supportPiece(x, z, feet, air)?.top ?? 0;
   }
 
+  private static supports(b: Piece, x: number, z: number, reach: number) {
+    const m = 0.2;
+    return !b.wall && b.top > 0 && b.top <= reach
+      && x > b.minX - m && x < b.maxX + m && z > b.minZ - m && z < b.maxZ + m;
+  }
+
   supportPiece(x: number, z: number, feet: number, air: boolean) {
-    const reach = feet + Ledges.rise(feet, air), m = 0.2;
+    const reach = feet + Ledges.rise(feet, air);
     let piece: Piece | undefined;
     for (const b of this.near(x, z)) {
-      if (b.wall || b.top > reach || b.top <= (piece?.top ?? 0)) continue;
-      if (x > b.minX - m && x < b.maxX + m && z > b.minZ - m && z < b.maxZ + m) piece = b;
+      if (b.top > (piece?.top ?? 0) && Ledges.supports(b, x, z, reach)) piece = b;
     }
     return piece;
   }

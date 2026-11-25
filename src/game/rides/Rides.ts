@@ -9,8 +9,8 @@ import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, colourMerge, rand } from "../world/util";
 import { PARKED_CARS, WORLD } from "../world/layout";
-import { carHasRoof, carLedges, carModelEntry, carTop, spinCarWheels, type CarModelName, type CarPlacement } from "../world/carModels";
-import { TOE, type Piece } from "../ledges";
+import { carHasRoof, carLedges, carModelEntry, spinCarWheels, type CarModelName, type CarPlacement } from "../world/carModels";
+import { TOE, type Ledges, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { countPlay } from "../../state/playStats";
@@ -30,6 +30,7 @@ export interface RideHost {
   cam: THREE.PerspectiveCamera;
   /** The town's ground plan and its way-finding. */
   colliders: Colliders;
+  ledges?: Ledges | null;
   nav: NavGrid;
   ambient: Ambient;
   player: GameCharacter;
@@ -311,7 +312,7 @@ export class Rides {
       const parked = this.waterFleet = Array.from(this.modeCars.keys());
       const clearance = new CarWaterClearance(plan, {
         colliders: this.host.colliders, ambient: this.host.ambient, rides: this.list, parked,
-        fixedHulls: this.sea.circles, peopleClear: adapter.peopleClear,
+        fixedHulls: this.sea.circles, peopleClear: adapter.peopleClear, ledges: this.host.ledges,
       });
       this.water = new CarWaterRecovery(plan, clearance, {
         ...adapter,
@@ -467,8 +468,7 @@ export class Rides {
     const { x, z, heading } = car.m;
     let tops = this.convertibleTops.get(car);
     if (!tops || tops.x !== x || tops.z !== z || tops.heading !== heading) {
-      const pieces = [carTop(x, z, heading, -1.22, 0.72, 1.7, 0.46),
-        carTop(x, z, heading, 0.72, 2.12, 1.9, 0.89), carTop(x, z, heading, -2.11, -1.22, 1.9, 0.91)];
+      const pieces = carLedges(undefined, x, z, heading);
       tops = { x, z, heading, pieces };
       for (const piece of pieces) this.surfaceCars.set(piece, car);
       this.convertibleTops.set(car, tops);

@@ -1,11 +1,15 @@
-import { Euler, Material, Mesh, PerspectiveCamera, Points, Quaternion, Raycaster, Vector3 } from "three";
+import { Euler, Material, Mesh, type Object3D, PerspectiveCamera, Points, Quaternion, Raycaster, Vector3 } from "three";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NPCS } from "@/content/npcs";
 import { Ambient } from "@/game/ambient";
-import { SALTO, ways } from "@/game/cave/groundsPlan";
+import { groundsBounds, SALTO, ways } from "@/game/cave/groundsPlan";
 import { createCharacter, withBackpack } from "@/game/characters";
 import { BONE } from "@/game/characters/builders";
+import { Game } from "@/game/Game";
+import { Ledges } from "@/game/ledges";
+import { Gait, Hop, Steer } from "@/game/movement";
 import { NavGrid } from "@/game/nav";
+import { OcclusionField } from "@/game/occlusion";
 import { CAR_WATER, carFootprintOverlapsBox, carWaterClearanceY, createCarWaterProbe, probeCarWater,
   sampleCarWater, supportedCarWaterHeight, sweepCarFootprintBox, wetDriveSettings } from "@/game/rides/carWater";
 import { CarWaterEffects } from "@/game/rides/carWaterEffects";
@@ -14,7 +18,7 @@ import { isTownCarDryMainland, settleRoadExit, townAsphalt, townCarWaterGround, 
 import { Rides } from "@/game/rides/Rides";
 import { CarWaterClearance, type CarWaterAdapter } from "@/game/rides/carWaterRecovery";
 import { CONVERTIBLE_BUMPER, convertibleGeometry } from "@/game/rides/shapes";
-import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, Splashes, floorY, poolAt, poolBedY, sandY, seaBedY, waterY } from "@/game/water";
+import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, Splashes, Wading, floorY, poolAt, poolBedY, sandY, seaBedY, waterY } from "@/game/water";
 import { carModelEntry } from "@/game/world/carModels";
 import { OUTDOOR_NPCS, SEA_Z, TRAFFIC_LANES, WORLD } from "@/game/world/layout";
 import { MALECON } from "@/game/world/mexican";
@@ -661,7 +665,7 @@ describe("Puerto Colibrí's built water approaches", () => {
 });
 
 function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<CarWaterAdapter, "drops" | "splash" | "wash"> & { drops: Splashes },
-  look = NPCS.vale.look) {
+  look = NPCS.vale.look, withWalking = false) {
   const fixture = buildTownFixture({ movableParking: true });
   const { town } = fixture, col = town.colliders, dt = 1 / hz;
   const nav = new NavGrid(-156.5, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, col);
@@ -676,8 +680,9 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
   let now = 0, time = 0, left = 0, saves = 0, eligible = true;
   let saved: { x: number; y: number; z: number; rot: number } | undefined;
   const noop = () => {};
+  const ledges = withWalking ? townLedges(town) : undefined;
   const rides = new Rides({
-    cam, colliders: col, nav, ambient, player, quality: "low", people: () => people,
+    cam, colliders: col, ledges, nav, ambient, player, quality: "low", people: () => people,
     say: noop, thud: noop, stuck: noop, aground: noop, waiting: noop, freed: noop, rescue: noop,
     splash: noop, fan: noop, outdoors: () => true, carWaterClock: () => now,
   }, plan, town.group.children.filter(o => o.userData.rideBoat));
@@ -770,13 +775,136 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
     expect(cam.position.y).toBeGreaterThanOrEqual((waterY(cam.position.x, cam.position.z, time) ?? -Infinity) + 0.35 - 1e-5);
   };
   return {
-    rides, player, cars, ambient, col, people, board, frame, stage, inspect, supported, dryPair, fades, events, snaps, adapter, present,
+    town, ledges, rides, player, cars, ambient, col, people, board, frame, stage, inspect, supported, dryPair, fades, events, snaps, adapter, present,
     get car() { return car; }, get now() { return now; }, get time() { return time; }, get left() { return left; },
     get saved() { return saved; }, get saves() { return saves; },
     disable: () => { eligible = false; },
     close: () => { rides.disposeWater(); rides.disposeCrashes(); rides.disposeParkingKeys(); player.dispose?.(); fixture.restore(); },
   };
 }
+
+function townLedges(town: ReturnType<typeof buildTownFixture>["town"]) {
+  const col = town.colliders;
+  const skip = (o: Object3D) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || o === town.parkedCars.group;
+  const field = OcclusionField.fromObject(town.group, {
+    minX: WORLD.minX - 49, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24,
+  }, { skip: o => skip(o) || !!o.userData.thin });
+  field.fillFootprints(col.boxes, col.circles);
+  return Ledges.build(town.group, col, {
+    skip, thin: o => !!(o.userData.thin || o.userData.roofOnly),
+    keep: town.seats.filter(s => s.table).map(s => [s.x, s.z]), tall: (x, z) => field.overSolid(x, z),
+    beside: OUTDOOR_NPCS.flatMap(n => n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]),
+  });
+}
+
+function townWalking(f: ReturnType<typeof occupiedTown>) {
+  const { town, col, ambient, rides, player } = f, ledges = f.ledges!;
+  ledges.dynamic = (x, z) => ambient.carPieces(x, z).concat(rides.townCarPieces(x, z));
+  const noop = () => {};
+  // Use the actual Game foot update with the deterministic town and without a renderer.
+  const game = Object.assign(Object.create(Game.prototype), {
+    town, ambient, rides, player, ledges, zone: { id: "town", colliders: col }, modes: {},
+    keys: new Set<string>(), joy: { x: 0, y: 0 }, rig: { clearTaxiShot: noop, dist: 5, manualTurn: 0, target: new Vector3() },
+    steer: new Steer(), helmSteer: new Steer(0, false), gait: new Gait(), hop: new Hop(), wading: new Wading(),
+    vel: new Vector3(), moveVel: new Vector3(), tmpV: new Vector3(),
+    heading: 0, lastHeading: 0, stepOut: 0, jogT: 0, lastSpeed: 0, rideBack: 0,
+    waterNeutral: false, swimK: 0, diveK: 0, washT: 0, stepN: null, caveHinted: new Set(), caveHints: [],
+    splashes: new Splashes(), dust: { update: noop, puff: noop }, pigeons: { update: noop },
+  });
+  const left = rides.onLeft;
+  rides.onLeft = (...args) => { left?.(...args); game.leftRide(...args); };
+  f.adapter.foot = foot => game.carWaterFoot(foot);
+  return { game, ledges };
+}
+
+describe.each([60, 20])("released cenote walking at %i Hz", hz => {
+  it.each([
+    { route: "northeast", x: -128.726, z: -14.251, heading: -0.72257 },
+    { route: "southeast", x: -128.726, z: 2.251, heading: -2.41903 },
+  ])("keeps the $route pair stationary in ordinary play", async ({ route, x, z, heading }) => {
+    const f = occupiedTown(hz, RIDES, undefined, undefined, true);
+    try {
+      const { game, ledges } = townWalking(f), dt = 1 / hz, car = f.rides.find("park")!;
+      const centre = THEME.cenote!, west = groundsBounds(centre.x, centre.z, WORLD.minX);
+      const insideWest = (p: Point) => p.x > west.minX && p.x < west.maxX && p.z > west.minZ && p.z < west.maxZ;
+      await f.board(car);
+      f.stage(x, z, heading);
+      f.frame();
+      let firstWet = Infinity;
+      for (let i = 0; i < 3 * hz && !f.rides.water!.returning; i++) {
+        f.frame(go);
+        const { wheelDepths, centreDepth } = f.inspect();
+        if (Math.max(centreDepth, ...wheelDepths) > 0.0001) firstWet = Math.min(firstWet, f.now);
+      }
+      expect(f.inspect()).toMatchObject({ phase: "float", reason: "depth", region: "cenote" });
+      const trigger = f.now;
+      expect(f.rides.leave()).toBe(true);
+      expect(f.player.root.visible && f.inspect().assistedOnFoot).toBe(true);
+      for (let i = 0; i < 3.5 * hz && f.inspect().active; i++) f.frame();
+      const landing = f.inspect(), released = f.now;
+      expect(landing).toMatchObject({ active: false, landing: "trail" });
+      expect(released - trigger).toBeLessThanOrEqual(3500);
+      expect(Number.isFinite(firstWet) && released - firstWet <= 7000).toBe(true);
+      f.dryPair();
+      const foot = f.player.root.position, start = foot.clone(), body = car.mesh.position.clone();
+      const { x: cx, z: cz, heading: parkedHeading } = car.m;
+      expect(landing.landingPair).toEqual({ pose: { x: cx, z: cz, heading: parkedHeading },
+        foot: { x: start.x, y: start.y, z: start.z, rot: game.heading, swim: 0 } });
+      expect(insideWest(body) && insideWest(start)).toBe(true);
+      const radial = new Vector3(cx - centre.x, 0, cz - centre.z);
+      expect(radial.length()).toBeLessThan(28);
+      radial.normalize();
+      const reach = () => Reflect.get(f.rides, "reach").call(f.rides, car, foot.x, foot.z) as number;
+      const trial = start.clone();
+      f.col.resolve(trial, 0.38, true);
+      expect(trial.distanceTo(start), "ordinary Colliders").toBeLessThan(1e-6);
+      ledges.resolve(trial, 0.38, game.hop.y, false);
+      expect(trial.distanceTo(start), "ordinary Ledges after dynamic car restore").toBeLessThan(1e-6);
+      f.ambient.resolvePlayer(trial, 0.38);
+      expect(trial.distanceTo(start), "ordinary traffic").toBeLessThan(1e-6);
+      f.ambient.resolvePeople(trial, 0.38, true);
+      expect(trial.distanceTo(start), "ordinary ambient people").toBeLessThan(1e-6);
+      f.rides.resolvePlayer(trial, 0.38, false, game.hop.y);
+      expect(trial.distanceTo(start), "ordinary rides").toBeLessThan(1e-6);
+
+      let footDrift = 0, carDrift = 0;
+      for (let i = 0; i < Math.ceil(0.75 * hz); i++) {
+        game.t = f.time + dt;
+        game.updatePlayer(dt, false);
+        f.frame();
+        footDrift = Math.max(footDrift, Math.hypot(foot.x - start.x, foot.z - start.z));
+        carDrift = Math.max(carDrift, car.mesh.position.distanceTo(body));
+        expect(f.rides.near(foot.x, foot.z)).toBe(car);
+        expect(reach()).toBeGreaterThanOrEqual(0.35);
+        expect(reach()).toBeLessThanOrEqual(1.45);
+        expect(Math.abs(foot.y - floorY(foot.x, foot.z))).toBeLessThanOrEqual(0.02);
+        expect(waterY(foot.x, foot.z, f.time)).toBeNull();
+      }
+      expect(game.vel.lengthSq()).toBe(0);
+      expect(game.gait.speed).toBe(0);
+      expect(game.stepOut).toBe(0);
+      expect(carDrift).toBeLessThan(0.02);
+      expect(footDrift).toBeLessThan(0.025);
+
+      expect(f.rides.board(f.rides.near(foot.x, foot.z)!, false)).toBe(true);
+      f.rides.prefetchWater(car, f.adapter);
+      for (let i = 0; i < hz && f.rides.phase !== "on"; i++) f.frame();
+      expect(f.rides.riding).toBe(car);
+      expect(f.rides.phase).toBe("on");
+      const projection = Math.sin(parkedHeading) * radial.x + Math.cos(parkedHeading) * radial.z;
+      expect(Math.abs(projection)).toBeGreaterThan(0.5);
+      const throttle = Math.sign(projection);
+      let inland = 0;
+      for (let i = 0; i < 2 * hz && inland < 2; i++) {
+        f.frame({ ...go, throttle });
+        inland = (car.m.x - cx) * radial.x + (car.m.z - cz) * radial.z;
+      }
+      expect(inland, route).toBeGreaterThanOrEqual(2);
+      expect(car.m.pace).toBeGreaterThan(1.5);
+      expect(f.inspect().band).toBe("dry");
+    } finally { f.close(); }
+  }, 20_000);
+});
 
 it.each([60, 20])("brakes, gets out and boards the same convertible on the dry western grounds at %i Hz", async hz => {
   const f = occupiedTown(hz);

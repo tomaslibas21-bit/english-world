@@ -2,7 +2,9 @@ import { Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 import type { Ambient } from "../ambient";
 import { ways } from "../cave/groundsPlan";
+import { Ledges, type Piece } from "../ledges";
 import { DECKS, FLOORS, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
+import { writeCarLedges } from "../world/carModels";
 import { TRAFFIC_LANES, WORLD } from "../world/layout";
 import type { CarWaterArea, CarWaterPlan } from "../world/rides";
 import type { Colliders } from "../world/util";
@@ -21,7 +23,7 @@ type Pose = Point & { heading: number };
 type Door = -2 | -1 | 1 | 2;
 type Side = -1 | 1;
 export type CarWaterFoot = Point & { y: number; rot: number; swim: number };
-type Pair = { pose: Pose; foot: CarWaterFoot; door: Side; valid: boolean };
+type Pair = { pose: Pose; foot: CarWaterFoot; door: Side; offset: number; valid: boolean };
 type Box = Ambient["rideBoxes"][number];
 type Reason = "depth" | "exit" | "wet-limit" | "invalid" | "driver-lost" | "suspended";
 type ClearPerson = (x: number, z: number, radius: number) => boolean;
@@ -31,6 +33,7 @@ const WET_LIMIT = W.maxWetSeconds * 1000, RETURN_LIMIT = 3500;
 const FLOAT = 0.5, TOW_END = 2.35, DRAIN = 0.65, FADE = 0.18, TOW_SPEED = 8;
 const FOOT_STEP = 0.22, EXIT_START = W.footRadius + 0.06;
 const PADDING = 0.04, STEP = 0.12, SEPARATION = 9;
+const DOOR_STEP = 0.1, DOOR_EXTRA_STEPS = 6, WALK_RADIUS = 0.38;
 const FOOT_RISE = 0.32;
 const DISC_ANGLES = Array.from({ length: 16 }, (_, i) => ({
   x: Math.cos(i * Math.PI / 8), z: Math.sin(i * Math.PI / 8),
@@ -51,7 +54,7 @@ const WEST_DOOR_OFFSETS = [0, -0.55, 0.5];
 const NO_BOXES: readonly Box[] = [];
 const emptyPose = (): Pose => ({ x: 0, z: 0, heading: 0 });
 const emptyFoot = (): CarWaterFoot => ({ x: 0, z: 0, y: 0, rot: 0, swim: 0 });
-const emptyPair = (): Pair => ({ pose: emptyPose(), foot: emptyFoot(), door: 1, valid: false });
+const emptyPair = (): Pair => ({ pose: emptyPose(), foot: emptyFoot(), door: 1, offset: W.footOffset, valid: false });
 const emptyBox = (): Box => ({ ...emptyPose(), hl: 0, hw: 0 });
 const clamp = (v: number, low: number, high: number) => Math.max(low, Math.min(high, v));
 const angle = (v: number) => Math.atan2(Math.sin(v), Math.cos(v));
@@ -66,7 +69,7 @@ const mixPose = (out: Pose, a: Pose, b: Pose, k: number) => {
 const copyPair = (out: Pair, pair: Pair) => {
   copyPose(out.pose, pair.pose);
   Object.assign(out.foot, pair.foot);
-  out.door = pair.door; out.valid = true;
+  out.door = pair.door; out.offset = pair.offset; out.valid = true;
 };
 
 function reach(p: Pose, half: number, wide: number, x: number, z: number) {
@@ -76,6 +79,7 @@ function reach(p: Pose, half: number, wide: number, x: number, z: number) {
 
 export interface CarWaterScene {
   colliders: Colliders;
+  ledges?: Ledges | null;
   ambient: Pick<Ambient, "carWaterPeopleClear" | "carWaterTrafficClear">;
   rides: readonly Ride[];
   parked: readonly Ride[];
@@ -88,6 +92,7 @@ export class CarWaterClearance {
   private readonly drop;
   private readonly shape = emptyBox();
   private readonly home = emptyPose();
+  private readonly walkPieces: Piece[] = [];
   private readonly poolBox = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
   readonly rails;
   private readonly hit: MotionImpact = { into: 0, nx: 0, nz: 0, x: 0, z: 0, circle: 1 };
@@ -363,6 +368,27 @@ export class CarWaterClearance {
     return this.clear(r, true, true);
   }
 
+  private carKeepsFloor(r: Ride, pose: Pose, f: CarWaterFoot) {
+    const n = writeCarLedges(r.model, pose.x, pose.z, pose.heading, this.walkPieces);
+    for (let i = 0; i < n; i++) if (!Ledges.keepsFloor(this.walkPieces[i], f.x, f.z, WALK_RADIUS, f.y)) return false;
+    return true;
+  }
+
+  private ridesKeepFloor(r: Ride, fleet: readonly Ride[], f: CarWaterFoot, doorReach: number) {
+    for (const q of fleet) {
+      if (q === r || Math.abs(q.m.x - f.x) >= 5 || Math.abs(q.m.z - f.z) >= 5) continue;
+      if (reach(q.m, q.m.spec.half, q.m.spec.wide, f.x, f.z) < doorReach) return false;
+      if (q.kind === "car" && !this.carKeepsFloor(q, q.m, f)) return false;
+    }
+    return true;
+  }
+
+  private walkableDoor(r: Ride, p: Pose, f: CarWaterFoot, offset: number) {
+    const { ledges, rides, parked } = this.scene;
+    return (!ledges || ledges.fixedKeepsFloor(f.x, f.z, WALK_RADIUS, f.y)) && this.carKeepsFloor(r, p, f)
+      && this.ridesKeepFloor(r, rides, f, offset) && this.ridesKeepFloor(r, parked, f, offset);
+  }
+
   pair(r: Ride, p: Pose, side: Side, out: Pair, reserve?: Box) {
     const { half, wide } = r.m.spec, s = Math.sin(p.heading), c = Math.cos(p.heading), height = floorY(p.x, p.z);
     this.body(p, r, PADDING);
@@ -371,18 +397,28 @@ export class CarWaterClearance {
       const d = side * (wide + W.footOffset * i / 5), x = p.x + c * d, z = p.z - s * d;
       if (!this.dryPerson(x, z, height) || !this.foot(r, x, z, PADDING, true) || !this.landingSiteClear()) return false;
     }
-    if (reserve) {
-      reserve.x = p.x + side * c * 0.68; reserve.z = p.z - side * s * 0.68;
-      reserve.heading = p.heading; reserve.hl = half + 0.2; reserve.hw = wide + 0.98;
-      if (!this.reservation(r, reserve)) return false;
-    }
-    const f = out.foot, d = side * (wide + W.footOffset);
-    f.x = p.x + c * d; f.z = p.z - s * d; f.y = floorY(f.x, f.z);
+    const f = out.foot, west = this.plan.westGrounds;
+    const inWest = !!west && p.x >= west.minX && p.x < west.maxX && p.z >= west.minZ && p.z <= west.maxZ;
     f.rot = p.heading + side * Math.PI / 2; f.swim = 0;
-    if (!this.exterior(r, p, f, 0, 0)) return false;
-    copyPose(out.pose, p);
-    out.door = side; out.valid = true;
-    return true;
+    // The parked car's ledges are world-aligned. At a slant they can extend past the usual door step.
+    const extraSteps = inWest ? DOOR_EXTRA_STEPS : 0;
+    for (let i = 0; i <= extraSteps; i++) {
+      const extra = i * DOOR_STEP, offset = W.footOffset + extra, d = side * (wide + offset);
+      f.x = p.x + c * d; f.z = p.z - s * d; f.y = floorY(f.x, f.z);
+      if (i && (!this.dryPerson(f.x, f.z, height) || !this.foot(r, f.x, f.z, PADDING, true) || !this.landingSiteClear())) return false;
+      if (inWest && !this.walkableDoor(r, p, f, offset)) continue;
+      if (!this.exterior(r, p, f, 0, 0)) continue;
+      if (reserve) {
+        const centre = side * (0.68 + extra / 2);
+        reserve.x = p.x + c * centre; reserve.z = p.z - s * centre;
+        reserve.heading = p.heading; reserve.hl = half + 0.2; reserve.hw = wide + 0.98 + extra / 2;
+        if (!this.reservation(r, reserve)) return false;
+      }
+      copyPose(out.pose, p);
+      out.door = side; out.offset = offset; out.valid = true;
+      return true;
+    }
+    return false;
   }
 
   /** Match the first town frame, on which the stock car is back at its logical home. */
@@ -1007,19 +1043,22 @@ export class CarWaterRecovery {
     return true;
   }
 
-  private swept(r: Ride, a: Pose, b: Pose, door: Door | 0, step?: ExitStep, startY?: number) {
+  private swept(r: Ride, a: Pose, b: Pose, door: Door | 0, step?: ExitStep, startY?: number,
+    fromOffset: number = W.footOffset, toOffset = fromOffset) {
     const turn = Math.abs(angle(b.heading - a.heading));
-    const length = distance(a, b) + turn * (r.m.spec.half + W.footOffset + (door ? 0.75 : 0));
+    const length = distance(a, b) + Math.abs(toOffset - fromOffset)
+      + turn * (r.m.spec.half + Math.max(fromOffset, toOffset) + (door ? 0.75 : 0));
     const n = Math.max(1, Math.ceil(length / STEP)), halfStep = length / (2 * n);
     if (n > 128 || Math.abs(floorY(a.x, a.z) - floorY(b.x, b.z)) > 1) return false;
     let y = startY;
     for (let i = 0; i <= n; i++) {
       const p = this.sweepPose;
-      mixPose(p, a, b, i / n);
+      const k = i / n;
+      mixPose(p, a, b, k);
       if (!this.clearance.car(r, p)) return false;
       if (door) {
         if (step) this.exitFoot(r, p, door, step, 1, this.sideFoot);
-        else this.beside(r, p, door, W.footOffset, this.sideFoot);
+        else this.beside(r, p, door, fromOffset + (toOffset - fromOffset) * k, this.sideFoot);
         if ((y !== undefined && Math.abs(this.sideFoot.y - y) > FOOT_RISE)
           || !this.clearance.exterior(r, p, this.sideFoot, this.time, halfStep)) return false;
         y = this.sideFoot.y;
@@ -1144,8 +1183,7 @@ export class CarWaterRecovery {
     if (Math.abs(turn) > 0.1) {
       copyPose(this.trial, r.m);
       this.trial.heading = inland;
-      if (this.clearance.pair(r, this.trial, this.landing.door, this.candidate)
-        && this.swept(r, r.m, this.trial, this.landing.door)) {
+      if (this.turnClear(r)) {
         copyPose(this.turnFrom, r.m);
         this.inlandTurn = turn;
       }
@@ -1193,14 +1231,19 @@ export class CarWaterRecovery {
     const u = clamp(age / (DRAIN - 0.04), 0, 1);
     copyPose(this.trial, this.turnFrom);
     this.trial.heading += this.inlandTurn * u * u * (3 - 2 * u);
-    if (!this.swept(r, r.m, this.trial, this.landing.door)
-      || !this.clearance.pair(r, this.trial, this.landing.door, this.candidate)) {
+    if (!this.turnClear(r)) {
       this.inlandTurn = 0;
       return;
     }
     copyPose(r.m, this.trial);
     copyPair(this.landing, this.candidate);
     if (this.assisted) this.host.foot(this.landing.foot);
+  }
+
+  private turnClear(r: Ride) {
+    const { door, foot, offset } = this.landing;
+    return this.clearance.pair(r, this.trial, door, this.candidate)
+      && this.swept(r, r.m, this.trial, door, undefined, foot.y, offset, this.candidate.offset);
   }
 
   private finish(r: Ride, transfer = false) {
