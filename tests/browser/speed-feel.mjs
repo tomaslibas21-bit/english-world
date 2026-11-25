@@ -1,8 +1,9 @@
 // Run once per Puerto Colibrí server. The page supplies the learner; WORLD_LEARNER can assert it.
 import assert from "node:assert/strict";
+import { existsSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { isAbsolute, join } from "node:path";
 import { sampleBoardRegistration } from "./board-registration.mjs";
 import { assertCameraSettle, assertRoadContinuity } from "./road-handoff.mjs";
 
@@ -14,7 +15,13 @@ assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && /^https?
   "Use a local Puerto Colibrí server");
 assert.equal(storage, "puerto-colibri");
 assert.ok(requested === undefined || requested === "en" || requested === "lt");
-const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
+const configuredPlaywright = process.env.WORLD_PLAYWRIGHT_MODULE;
+const sharedPlaywright = join(homedir(), "claude-work", "_h-tools", "node_modules", "playwright-core", "index.mjs");
+// The chain can pass the PC worktree directory in place of the shared module file.
+const configuredDirectory = configuredPlaywright && isAbsolute(configuredPlaywright)
+  && statSync(configuredPlaywright, { throwIfNoEntry: false })?.isDirectory();
+const defaultPlaywright = existsSync(sharedPlaywright) ? sharedPlaywright : "playwright";
+const { chromium } = await import(configuredDirectory ? sharedPlaywright : configuredPlaywright || defaultPlaywright);
 
 const tick = 1000 / 60, max = 15.5, seed = 20261122;
 const straight = { x: 110, z: 76, rot: -Math.PI / 2 };
