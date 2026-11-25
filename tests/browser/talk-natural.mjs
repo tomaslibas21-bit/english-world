@@ -1636,7 +1636,9 @@ async function street(route) {
     route.row.turns.push({ exchange, picked, reply: compact(reply) });
   }
   await route.pin("street", "a");
-  const gone = await route.wait((f) => !f.street && !f.actual.a?.live, "same passer-by departs and unmounts", 18000);
+  // On a wide screen the walker stays in view (and mounted) for a long while: released and well on the way counts as gone.
+  const gone = await route.wait((f) => !f.street && (!f.actual.a?.live
+    || (f.actual.a.weight <= 0.001 && distance(f.actual.a.root, person.root) > 2.5)), "same passer-by departs", 18000);
   assert(!["playing", "loading"].includes(gone.pinned.street.voice));
   assert(gone.pinned.street.weight <= 0.001);
   const departure = route.frames.filter((f) => f.street?.step === "done" && f.actual.a?.identity === person.identity);
