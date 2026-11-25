@@ -117,6 +117,9 @@ export class RoadView {
   private ghostMaterials: THREE.Material[] = [];
   readonly models: Promise<void>;
   private readonly chase = new RoadChase();
+  private readonly roofHeight: number;
+  private readonly carHalfWidth: number;
+  private readonly roofWorld = new THREE.Vector3();
   private readonly carCorners: THREE.Vector3[];
   private readonly worldCorners: THREE.Vector3[];
   private town?: RoadEnvironment;
@@ -148,6 +151,8 @@ export class RoadView {
     car.position.set(0, 0, 0);
     car.rotation.set(0, 0, 0);
     const { min, max } = new THREE.Box3().setFromObject(car);
+    this.roofHeight = max.y;
+    this.carHalfWidth = (max.x - min.x) / 2;
     this.carCorners = [min.x, max.x].flatMap((x) => [min.y, max.y].flatMap((y) => [min.z, max.z]
       .map((z) => new THREE.Vector3(x, y, z))));
     this.worldCorners = this.carCorners.map((corner) => corner.clone());
@@ -211,8 +216,9 @@ export class RoadView {
       if (current && road) road.quaternion.copy(current.quaternion);
     });
     this.chaseCenter.copy(this.car.position);
+    this.chase.openingRoadRoom = this.roofHeight >= 1.6;
     this.car.updateMatrixWorld(true);
-    const reference = departureFrame(source, rider, townCamera, this.roof(source), this.asphalt(source), width, height, true);
+    const reference = departureFrame(source, rider, townCamera, this.roof(source), this.asphalt(), width, height, true);
     const position = this.car.worldToLocal(rider.getWorldPosition(new THREE.Vector3()).applyMatrix4(townToExit));
     const rotation = rider.getWorldQuaternion(new THREE.Quaternion()).premultiply(LOCAL_ROTATION)
       .premultiply(this.car.quaternion.clone().invert());
@@ -241,13 +247,14 @@ export class RoadView {
     return rider && { position: rider.position.clone(), rotation: rider.quaternion.clone() };
   }
 
-  private roof(car: THREE.Object3D) {
-    return car.localToWorld(new THREE.Vector3(0, Math.max(...this.carCorners.map((p) => p.y)), 0));
+  private roof(car: THREE.Object3D, out = new THREE.Vector3()) {
+    return car.localToWorld(out.set(0, this.roofHeight, 0));
   }
 
-  private asphalt(source?: THREE.Object3D) {
-    const x = source ? source.getWorldPosition(new THREE.Vector3()).applyMatrix4(townToExit).x : this.chaseCenter.x;
-    return point(this.cameraMotion.distance + 1.5, x > 0 ? -2.8 : 2.8, 0.02);
+  private asphalt() {
+    // At the crest, both worlds share the same road cross-section beside the car.
+    const x = this.chaseCenter.x, side = x > 0 ? -1 : 1;
+    return point(0, x + side * (this.carHalfWidth + 0.65));
   }
 
   get hasSeatedPlayer() { return !!this.rider; }
@@ -509,7 +516,7 @@ export class RoadView {
         const inheritedStrength = seam.speedSuppressed ? 0 : strength;
         const inheritedDelta = seam.fovDelta * inheritedStrength;
         const startFov = seam.camera.fov - (seam.fovDelta - inheritedDelta);
-        this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car), this.worldCorners, mix, width, height, startFov);
+        this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car, this.roofWorld), this.worldCorners, mix, width, height, startFov);
         this.speedFovDelta = THREE.MathUtils.lerp(inheritedDelta, this.speedFovDelta, mix);
         this.shakeAmplitude *= mix;
         vibration = THREE.MathUtils.lerp(seam.vibration * inheritedStrength, vibration, mix);

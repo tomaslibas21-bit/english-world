@@ -1,23 +1,30 @@
-import { MathUtils, PerspectiveCamera, Vector3 } from "three";
+import { MathUtils, PerspectiveCamera, Quaternion, Vector3 } from "three";
 import { point } from "./track";
 
 const { clamp, lerp, smoothstep, degToRad } = MathUtils;
 
 type GateFrame = { distance: number; frame: readonly Vector3[] };
-type ProjectedCar = ReturnType<typeof projectedCar>;
+type ProjectedCar = { roof: Vector3; width: number; horizonY: number };
 
-export function projectedCar(camera: PerspectiveCamera, roof: Vector3, corners: readonly Vector3[]) {
-  const p = new Vector3();
+const OPENING_CAR_WIDTH = 0.285;
+const OPENING_VERGE_FULL = 28;
+const OPENING_VERGE_END = 43;
+
+export function projectedCar(camera: PerspectiveCamera, roof: Vector3, corners: readonly Vector3[],
+  result: ProjectedCar = { roof: new Vector3(), width: 0, horizonY: 0 }) {
+  const p = result.roof;
   let left = Infinity, right = -Infinity;
   for (const corner of corners) {
     p.copy(corner).project(camera);
     left = Math.min(left, p.x);
     right = Math.max(right, p.x);
   }
-  const horizon = camera.getWorldDirection(p).setY(0).applyQuaternion(camera.quaternion.clone().invert());
+  const horizon = camera.getWorldDirection(p).setY(0).transformDirection(camera.matrixWorldInverse);
   const projection = camera.projectionMatrix.elements;
-  const horizonY = -projection[5] * horizon.y / horizon.z - projection[9];
-  return { roof: roof.clone().project(camera), width: right - left, horizonY };
+  result.horizonY = -projection[5] * horizon.y / horizon.z - projection[9];
+  result.width = right - left;
+  result.roof.copy(roof).project(camera);
+  return result;
 }
 
 export class RoadChase {
@@ -28,20 +35,30 @@ export class RoadChase {
   private lens = 1;
   private focus = new Vector3();
   private target = new Vector3();
+  openingRoadRoom = false;
+  private readonly localCorners = Array.from({ length: 8 }, () => new Vector3());
+  private readonly inverse = new Quaternion();
+  private readonly live: ProjectedCar = { roof: new Vector3(), width: 0, horizonY: 0 };
+
   speedFovDelta = 0;
   shakeAmplitude = 0;
   shakeY = 0;
 
   settle(camera: PerspectiveCamera, start: PerspectiveCamera, inherited: ProjectedCar, roof: Vector3,
     corners: readonly Vector3[], mix: number, width: number, height: number, startFov: number) {
-    const live = projectedCar(camera, roof, corners);
+    const live = projectedCar(camera, roof, corners, this.live);
     // Scale the inherited registration around its principal point when reducing its speed lens.
     const scale = startFov === start.fov ? 1 : Math.tan(degToRad(start.fov / 2)) / Math.tan(degToRad(startFov / 2));
     const startProjection = start.projectionMatrix.elements;
     const shiftX = startProjection[8], shiftY = startProjection[9];
     const targetX = lerp((inherited.roof.x + shiftX) * scale - shiftX, live.roof.x, mix);
     const targetY = lerp((inherited.roof.y + shiftY) * scale - shiftY, live.roof.y, mix);
-    const targetWidth = lerp(inherited.width * scale, live.width, mix);
+    const portrait = height > width * 1.15;
+    // A turning car can look narrower before the chase lines up with the first gate.
+    // Carry the inherited size further in portrait, where that swing takes up more of the picture.
+    // The wider opening shot for a tall body has a stable width, so it can ease out sooner.
+    const widthMix = portrait && this.openingRoadRoom ? 1 - (1 - mix) ** 14 : mix ** (portrait ? 16 : 6);
+    const targetWidth = lerp(inherited.width * scale, live.width, widthMix);
     const horizonY = lerp((inherited.horizonY + shiftY) * scale - shiftY, live.horizonY, mix);
     camera.quaternion.slerp(start.quaternion, 1 - mix);
     camera.fov = lerp(startFov, camera.fov, mix);
@@ -54,32 +71,41 @@ export class RoadChase {
 
     const projection = camera.projectionMatrix.elements;
     const screenRight = projection[0], screenUp = projection[5];
-    const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const horizontal = forward.setY(0).applyQuaternion(camera.quaternion.clone().invert());
+    const horizontal = this.target.set(0, 0, -1).applyQuaternion(camera.quaternion)
+      .setY(0).applyQuaternion(this.inverse.copy(camera.quaternion).invert());
     camera.rotateX(Math.atan2(horizontal.y, -horizontal.z) - Math.atan((horizonY + projection[9]) / screenUp));
-    const inverse = camera.quaternion.clone().invert();
-    const local = corners.map((corner) => corner.clone().sub(roof).applyQuaternion(inverse));
+    const inverse = this.inverse.copy(camera.quaternion).invert();
     const roofX = targetX + projection[8], roofY = targetY + projection[9];
 
     // At depth d, the roof's screen position fixes its x and y in camera space.
     // Only depth is left to solve, using all eight corners for the chassis width.
-    let near = Math.max(...local.map((corner) => corner.z)) + camera.near;
-    let far = camera.far * 0.5;
-    for (let i = 0; i < 22; i++) {
-      const depth = (near + far) / 2;
-      let left = Infinity, right = -Infinity;
-      for (const corner of local) {
-        const x = (roofX * depth + corner.x * screenRight) / (depth - corner.z);
-        left = Math.min(left, x);
-        right = Math.max(right, x);
-      }
-      if (right - left > targetWidth) near = depth;
-      else far = depth;
+    let near = 0;
+    for (let i = 0; i < corners.length; i++) {
+      const local = this.localCorners[i].copy(corners[i]).sub(roof).applyQuaternion(inverse);
+      near = Math.max(near, local.z);
+      // Express each projected corner relative to the screen position of the roof.
+      local.x = local.x * screenRight + roofX * local.z;
     }
-    const depth = (near + far) / 2;
+    const depth = this.fitDepth(corners.length, near + camera.near, camera.far * 0.5, targetWidth);
     this.target.set(roofX * depth / screenRight, roofY * depth / screenUp, -depth).applyQuaternion(camera.quaternion);
     camera.position.copy(roof).sub(this.target);
     camera.updateMatrixWorld(true);
+  }
+
+  private fitDepth(count: number, near: number, far: number, span: number) {
+    for (let step = 0; step < 22; step++) {
+      const depth = (near + far) / 2;
+      let left = Infinity, right = -Infinity;
+      for (let i = 0; i < count; i++) {
+        const corner = this.localCorners[i];
+        const x = corner.x / (depth - corner.z);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+      if (right - left > span) near = depth;
+      else far = depth;
+    }
+    return far;
   }
 
   private fitCorners(corners: readonly Vector3[], back: number, eyeY: number, dx: number, dz: number,
@@ -105,6 +131,26 @@ export class RoadChase {
     if (!gate || gateBlend <= 0) return carFit;
     const gateFit = this.fitCorners(gate.frame, carFit, eyeY, dx, dz, vertical, aspect, 0.93, upper, 0.44);
     return lerp(carFit, gateFit, gateBlend);
+  }
+
+  private fitOpeningWidth(corners: readonly Vector3[], back: number, eyeY: number, dx: number, dz: number,
+    sin: number, cos: number, horizontal: number) {
+    // Solve for the full projected width. A fit against either edge alone would
+    // change the size as the car steers within the frame.
+    const span = OPENING_CAR_WIDTH * 2 * horizontal;
+    let minSide = Infinity, maxSide = -Infinity, minDepth = Infinity;
+    for (let i = 0; i < corners.length; i++) {
+      const corner = corners[i];
+      const x = corner.x - this.focus.x, z = corner.z - this.focus.z;
+      const side = -dz * x + dx * z;
+      const depth = cos * (dx * x + dz * z) - sin * (corner.y - eyeY);
+      this.localCorners[i].set(side, 0, -depth);
+      minSide = Math.min(minSide, side);
+      maxSide = Math.max(maxSide, side);
+      minDepth = Math.min(minDepth, depth);
+    }
+    const near = back * cos, far = (maxSide - minSide) / span - minDepth;
+    return far > near ? this.fitDepth(corners.length, near, far, span) / cos : back;
   }
 
   update(cam: PerspectiveCamera, car: Vector3, distance: number, lift: number, visualPace: number, time: number,
@@ -155,7 +201,13 @@ export class RoadChase {
       eyeY, dx, dz, vertical, aspect, upper, gateBlend, gate) : baseFit;
     // Keep the gate's back easing independent of the speed contribution.
     this.back = Math.max(baseFit, lerp(this.back, baseFit, ease));
-    const back = fit + (this.back - baseFit);
+    let back = fit + (this.back - baseFit);
+    // Give the tall silhouette breathing room through the shared road opening.
+    // Return to the ordinary chase as the gate fills the shot.
+    if (portrait && this.openingRoadRoom && distance < OPENING_VERGE_END) {
+      const openingBack = this.fitOpeningWidth(carCorners, back, eyeY, dx, dz, sin, cos, vertical * aspect);
+      back = lerp(openingBack, back, smoothstep(distance, OPENING_VERGE_FULL, OPENING_VERGE_END));
+    }
     cam.aspect = aspect;
     cam.fov = fov;
     cam.position.set(this.focus.x - dx * back, eyeY, this.focus.z - dz * back);
