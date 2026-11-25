@@ -63,7 +63,8 @@ export function Conversation() {
   const confirmationQuestion = pendingChoices && (pendingChoices.length > 1
     ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?"
     : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.");
-  const showMiss = !pendingChoices && conv.failures > 0 && conv.phase === "you" && !!conv.lastHeard;
+  const retry = lastAnswer?.answerDisplay === undefined ? conv.failures > 0 : lastAnswer.answerDisplay === "retry";
+  const showMiss = !pendingChoices && retry && conv.phase === "you" && !!conv.lastHeard;
   const missKey = showMiss ? lastAnswer?.id ?? conv.lastHeard : null;
   const revealed = useRef<{ run: number; miss: typeof missKey; choices?: string[] }>({ run: conv.run, miss: null });
 

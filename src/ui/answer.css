@@ -90,7 +90,7 @@
 .convo .gx .rp-btn.listening { background: #1f6f78; border-color: #1f6f78; color: #fff; }
 
 /* Each control owns its box inside the scrolling area, including its keyboard outline. */
-.convo .yt-scroll :is(button, summary) {
+.convo .yt-scroll :is(button, summary):where(:not(.nat-star)) {
   max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;
   transition: background-color 100ms, border-color 100ms, box-shadow 100ms, color 100ms;
 }
@@ -105,7 +105,7 @@
 }
 @media (any-pointer: coarse), (max-width: 900px) {
   .convo .yt-scroll { --answer-gap: 6px; }
-  .convo .yt-scroll :is(button, summary), .convo .chips .chip, .convo .say-toggles .toggle { min-width: 44px; min-height: 44px; }
+  .convo .yt-scroll :is(button, summary):where(:not(.nat-star)), .convo .chips .chip, .convo .say-toggles .toggle { min-width: 44px; min-height: 44px; }
   .convo .gx-btns .play, .convo .gx .rp-btn, .convo .hints .hint-row .play { width: 44px; height: 44px; }
 }
 .convo .rp-res { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 5px; }

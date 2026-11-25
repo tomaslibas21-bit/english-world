@@ -67,9 +67,9 @@ function place(r: DOMRect, w: number, h: number): TipSpot {
 
 /** Is the word still visible (not scrolled out of the transcript or the hints)? Also the asterisk's tooltip
  *  (Interlinear.tsx NatTip). */
-export function inView(el: HTMLElement): boolean {
+export function inView(el: HTMLElement, rect?: DOMRect): boolean {
   if (!el.isConnected) return false;
-  const r = el.getBoundingClientRect();
+  const r = rect ?? el.getBoundingClientRect();
   if (!r.width && !r.height) return false;
   let top = 0, bottom = window.innerHeight, left = 0, right = window.innerWidth;
   for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
@@ -101,15 +101,17 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
 
   // follow the word (scrolling, new lines, the LT/IPA toggles), close when it's gone
   useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
     const inset = 8, gap = 9;
+    const viewport = window.visualViewport;
     let raf = 0, last = "", lastSize = "";
-    const tick = () => {
-      const el = ref.current;
-      if (!el) return;
+    const update = () => {
+      raf = 0;
       const r = anchor.getBoundingClientRect();
+      if (!inView(anchor, r)) { closeRef.current(); return; }
       const p = panel?.getBoundingClientRect();
       const vw = window.innerWidth, vh = window.innerHeight;
-      const viewport = window.visualViewport;
       const vx = viewport?.offsetLeft ?? 0, vy = viewport?.offsetTop ?? 0;
       const box = p && {
         left: Math.max(0, p.left, vx), top: Math.max(0, p.top, vy),
@@ -136,13 +138,42 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
       const sig = [r.left, r.top, r.width, r.height, w, h, box?.left, box?.top, box?.right, box?.bottom, vw, vh].join("|");
       if (sig !== last) {
         last = sig;
-        if (!inView(anchor)) { closeRef.current(); return; }
         setSpot(box ? placeTip(r, w, h, box, inset, gap) : place(r, w, h));
       }
-      raf = requestAnimationFrame(tick);
     };
-    tick();
-    return () => cancelAnimationFrame(raf);
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      if (target === document || target === window || (target instanceof Element && target.contains(anchor))) schedule();
+    };
+    const resizeObserver = new ResizeObserver(schedule);
+    const contentObserver = new MutationObserver(schedule);
+    const scope = panel ?? anchor.parentElement ?? anchor;
+    const attributes = { attributes: true, attributeFilter: ["class", "style", "hidden", "open"] };
+    // Content can move the anchor without resizing it or its scroller.
+    contentObserver.observe(scope, { ...attributes, subtree: true, childList: true, characterData: true });
+    resizeObserver.observe(el);
+    for (let node: HTMLElement | null = anchor; node && node !== document.body; node = node.parentElement) {
+      resizeObserver.observe(node);
+      if (node === panel) break;
+      if (!panel && node !== scope && node !== anchor) contentObserver.observe(node, attributes);
+    }
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    viewport?.addEventListener("resize", schedule);
+    viewport?.addEventListener("scroll", schedule);
+    panel?.addEventListener("animationend", schedule);
+    update();
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+      contentObserver.disconnect();
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("scroll", schedule);
+      panel?.removeEventListener("animationend", schedule);
+    };
   }, [anchor, panel]);
 
   useEffect(() => {

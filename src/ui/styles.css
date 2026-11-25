@@ -594,11 +594,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .convo :is(.gx, .hint-row) .u > :is(.en, .lt, .ipa) { max-inline-size: 100%; overflow-wrap: anywhere; }
 .convo :is(.gx, .hint-row) .u .lt { font: 600 calc(14px * var(--scale))/1.28 var(--ui); color: #465563; }
 .convo :is(.gx, .hint-row) .u .ipa { font: 400 calc(13px * var(--scale))/1.25 var(--ipa-font); color: #565878; }
-/* Reserve space for the asterisk beside the last word, including its touch target. */
-.convo :is(.gx, .hint-row) .nat-pin { inline-size: auto; block-size: auto; vertical-align: middle; margin-inline-start: 4px; }
-.convo :is(.gx, .hint-row) .nat-star { position: static; display: grid; place-items: center; inline-size: 1em; block-size: 1em; }
-.convo :is(.gx, .hint-row) .nat-star::before { content: none; }
-.convo :is(.gx, .hint-row) .u-dot:has(+ .nat-pin) { position: static; display: inline-block; vertical-align: super; margin-inline-start: 2px; }
 
 .convo .inputbar { display: flex; gap: 8px; align-items: center; }
 .convo .mic {
