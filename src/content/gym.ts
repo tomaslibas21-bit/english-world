@@ -3,8 +3,8 @@ export const learnerLang = "lt";
 
 export const GYM_UI = {
   readyTitle: "Treniruotė su Jordan",
-  readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
-  readyKeys: "Klausykite. Judesį pasirinkite spausdami rodyklę arba skaičių nuo 1 iki 4.",
+  readyTouch: "Klausyk ir bakstelėk tinkamą paveikslėlį.",
+  readyKeys: "Klausyk. Judesiui pasirinkti paspausk rodyklę arba skaičių nuo 1 iki 4.",
   start: "Pradėti",
   progress: (current: number, total: number) => `Judesys ${current} iš ${total}`,
   exit: "Išeiti iš treniruotės",
@@ -16,6 +16,11 @@ export const GYM_UI = {
   firstTry: "Teisingai iš pirmo karto",
   again: "Dar kartą",
   done: "Grįžti į sporto klubą",
+} as const;
+
+export const GYM_SAY_IT_MESSAGES = {
+  tip: "Pasakyk garsiai – gausi +1",
+  miss: "Beveik! Gali bandyti dar",
 } as const;
 
 export const GYM_MOVE_LABELS = {

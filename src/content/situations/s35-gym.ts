@@ -160,7 +160,7 @@ export const gym: SituationDef = {
     "jumping jacks": { reason: "lexical_expression", split: "Both words name the exercise. The gloss šuoliukai išskečiant kojas describes the jumps with the legs spreading.", minimal: "Two words form the exercise name." },
     "arm circles": { reason: "lexical_expression", split: "In this exercise, the arms trace circles. The gloss ratus rankomis expresses what makes the circles through the instrumental rankomis.", minimal: "Two words form the exercise name. The command “make” has its own gloss." },
     "that's it": { reason: "lexical_expression", split: "Jordan confirms the learner got the move right. Štai taip expresses that encouragement as a whole.", minimal: "Both words form the confirmation." },
-    "nice work": { reason: "lexical_expression", split: "Jordan praises the learner for a correct move. Puikiai padirbėjote conveys the whole expression as polite praise.", minimal: "Both words form the praise." },
+    "nice work": { reason: "lexical_expression", split: "Jordan praises the learner for a correct move. Puikiai padirbėjai conveys the whole expression as informal praise.", minimal: "Both words form the praise." },
   },
 
   grammar: {

@@ -41,8 +41,8 @@ const mh = {
   sceneStart: "Pradėti", taskComplete: "Užduotis įvykdyta!",
   entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Prie kilimėlio galite pradėti treniruotę su Jordan.", listAction: "Rasti treniruočių kilimėlį" },
   ui: {
-    readyTitle: "Treniruotė su Jordan", readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
-    readyKeys: "Klausykite. Judesį pasirinkite spausdami rodyklę arba skaičių nuo 1 iki 4.", start: "Pradėti",
+    readyTitle: "Treniruotė su Jordan", readyTouch: "Klausyk ir bakstelėk tinkamą paveikslėlį.",
+    readyKeys: "Klausyk. Judesiui pasirinkti paspausk rodyklę arba skaičių nuo 1 iki 4.", start: "Pradėti",
     progress: (i) => `Judesys ${i} iš 10`, exit: "Išeiti iš treniruotės", replay: "Klausyti dar kartą",
     reveal: "Rodyti žodžius", choices: "Pasirinkti judesį", scoreTitle: "Treniruotė baigta",
     completed: "Atlikti judesiai", firstTry: "Teisingai iš pirmo karto", again: "Dar kartą", done: "Grįžti į sporto klubą",
@@ -53,7 +53,7 @@ const mh = {
   },
   speech: {
     mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1",
-    miss: "Beveik! Galite bandyti dar", stat: "Pasakyta garsiai",
+    miss: "Beveik! Gali bandyti dar", stat: "Pasakyta garsiai",
   },
   dialogue: {
     howareyou: "Good, thanks. And you?", new: "Hi, I'm new here!", plan: "A day pass, please.",
@@ -63,17 +63,17 @@ const mh = {
     next: "See you tomorrow!", closing: "Thanks, bye!",
   },
   lines: {
-    gy_jacks: ["Jumping jacks!", "Šuoliukai išskečiant kojas!", "Pašokite, išskėskite kojas ir pakelkite rankas!"],
-    gy_toes: ["Touch | your | toes!", "Palieskite | savo | kojų pirštus!", "Pasilenkite ir palieskite kojų pirštus!"],
-    gy_squats: ["Do | a | squat!", "Padarykite | — | pritūpimą!", "Pritūpkite!"],
-    gy_circles: ["Do | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!"],
-    gy_run: ["Run | in place!", "Bėkite | vietoje!", "Bėkite vietoje!"],
-    gy_reach: ["Reach | up!", "Tieskitės | aukštyn!", "Ištieskite rankas virš galvos!"],
-    gy_lunges: ["Do | a | lunge!", "Padarykite | — | įtūpstą!", "Ženkite pirmyn ir padarykite įtūpstą!"],
-    gy_pushups: ["Do | a | push-up!", "Padarykite | — | atsispaudimą!", "Padarykite atsispaudimą!"],
-    gy_intro: ["Move | with | me!", "Judėkite | su | manimi!", "Pajudėkime kartu!"],
+    gy_jacks: ["Jumping jacks!", "Šuoliukai išskečiant kojas!", "Pašok, išskėsk kojas ir pakelk rankas!"],
+    gy_toes: ["Touch | your | toes!", "Paliesk | savo | kojų pirštus!", "Pasilenk ir paliesk kojų pirštus!"],
+    gy_squats: ["Do | a | squat!", "Padaryk | — | pritūpimą!", "Pritūpk!"],
+    gy_circles: ["Do | arm circles!", "Daryk | ratus rankomis!", "Ištiesk rankas į šonus ir suk jas ratu!"],
+    gy_run: ["Run | in place!", "Bėk | vietoje!", "Bėk vietoje!"],
+    gy_reach: ["Reach | up!", "Tieskis | aukštyn!", "Ištiesk rankas virš galvos!"],
+    gy_lunges: ["Do | a | lunge!", "Padaryk | — | įtūpstą!", "Ženk pirmyn ir padaryk įtūpstą!"],
+    gy_pushups: ["Do | a | push-up!", "Padaryk | — | atsispaudimą!", "Padaryk atsispaudimą!"],
+    gy_intro: ["Move | with | me!", "Judėk | su | manimi!", "Pajudėk kartu su manimi!"],
     gy_right_a: ["That's it!", "Štai taip!", "Štai taip!"],
-    gy_right_b: ["Nice work!", "Puikiai padirbėjote!", "Puikiai!"],
+    gy_right_b: ["Nice work!", "Puikiai padirbėjai!", "Puikiai!"],
     gy_retry: ["Let's try | again.", "Pabandykime | dar kartą.", "Pabandykime dar kartą."],
     gy_end: ["We | did | it!", "Mes | padarėme | tai!", "Mums pavyko!"],
   },
@@ -122,7 +122,7 @@ async function fixtureFor(page, manifests) {
     sceneStart: learner === "lt" ? mh.sceneStart : "Start",
     taskComplete: learner === "lt" ? mh.taskComplete : "Task completed!",
     ui: { ...source.ui, progress: (i) => source.progressPattern.replace("{current}", i).replace("{total}", "10") },
-    speech: learner === "lt" ? mh.speech : {
+    speech: learner === "lt" ? { ...mh.speech, miss: "Beveik! Galite bandyti dar" } : {
       mic: "Say it aloud", micStop: "Stop listening", hit: "Well said! +1", miss: "Almost! You can try again", stat: "Said aloud",
     },
     dialogue: {
