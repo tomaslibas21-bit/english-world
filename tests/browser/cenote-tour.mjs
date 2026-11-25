@@ -280,8 +280,18 @@ async function visibleText(locator, expected, { settle = false } = {}) {
     `expected the full text to be visible in ${locator}: ${JSON.stringify(actual)}`);
 }
 
+// Tour captions use the kit GlossLine, which leaves out the natural row when the word meanings already read as the same sentence.
+const bare = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const glossIsNatural = (key) => bare(gloss(key).join(" ")) === bare(natural(key) ?? "");
+
 async function naturalText(line, key, compact, options) {
   if (compact) await visibleText(line.locator('.kit-gloss-compact > [lang="es"]'), spanish(key));
+  if (!compact && options?.glossLine && glossIsNatural(key)) {
+    await unitText(line, key);
+    assert.equal(await line.locator(`.nat[lang="${learner}"]`).count(), 0, `${key}: no repeated natural row`);
+    assert.equal(await line.locator(`[lang="${local("lt", "en")}"]`).count(), 0, `${key} has no other helper language`);
+    return;
+  }
   await visibleText(line.locator(`${compact ? ".kit-gloss-compact > small" : ".nat"}[lang="${learner}"]`), natural(key), options);
   assert.equal(await line.locator(`[lang="${local("lt", "en")}"]`).count(), 0, `${key} has no other helper language`);
 }
@@ -899,12 +909,12 @@ async function completeTour(h, branch, aboard) {
   assert.equal(deck.tour.animalCount, 0);
   assert.equal(deck.tour.lineKey, "ct_fresh");
   await unitText(tourLine(page, "ct_fresh"), "ct_fresh");
-  await naturalText(tourLine(page, "ct_fresh"), "ct_fresh", false);
+  await naturalText(tourLine(page, "ct_fresh"), "ct_fresh", false, { glossLine: true });
   await shot("04-fresh");
   const walk = await wait("the walk-to-bay line while still at the cenote", (s) => s.tour?.lineKey === "ct_walk",
     { frames: 24, maxFrames: 500, ms: 120000, sample });
   assert(walk.tour.state === "transit" && walk.tour.stopIndex === -1 && distance(walk.pose, outing.deck) < 0.05 && walk.tour.animalCount === 0);
-  await naturalText(tourLine(page, "ct_walk"), "ct_walk", false);
+  await naturalText(tourLine(page, "ct_walk"), "ct_walk", false, { glossLine: true });
 
   setPhase("stop 1, fish school and a real choice");
   const fish = await awaitChoices(h, sample, 1);
@@ -952,7 +962,7 @@ async function completeTour(h, branch, aboard) {
   assert.equal(homeLine.tour.animalCount, 0);
   assert(distance(homeLine.pose, outing.hut) <= 0.35);
   await unitText(tourLine(page, "ct_home"), "ct_home");
-  await naturalText(tourLine(page, "ct_home"), "ct_home", false);
+  await naturalText(tourLine(page, "ct_home"), "ct_home", false, { glossLine: true });
   const home = await wait("normal tour completion", (s) => s.tour?.lastExit === "finished", { frames: 12, sample });
   assert.equal(home.tour.elapsed, outing.elapsed, "authored route seconds");
   const measured = samples.finish(branch);
