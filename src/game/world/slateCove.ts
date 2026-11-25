@@ -148,7 +148,8 @@ export function buildSlateCove() {
   for (let z = B.minZ - 4; z <= B.maxZ + 7; z += 2.9) {
     crag(-144.8 - q() * 1.2, z + (q() - 0.5) * 1.4, 3.4 + q() * 1.6, 2.1 + q() * 1.3, 3 + q() * 1.4);
     crag(-149.5 - q() * 1.5, z + 1.4 + (q() - 0.5) * 1.4, 4.6 + q() * 2, 4.4 + q() * 2.4, 4.2 + q() * 2);
-    crag(-155 - q() * 2, z + (q() - 0.5) * 2, 6 + q() * 2.5, 7 + q() * 3.5, 5.5 + q() * 2.5);
+    crag(-155 - q() * 2, z + (q() - 0.5) * 2, 6 + q() * 2.5, 9 + q() * 4, 5.5 + q() * 2.5);
+    crag(-162 - q() * 2, z + 1.4 + (q() - 0.5) * 2, 8 + q() * 3, 12 + q() * 4.5, 7 + q() * 3);
   }
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(colourMerge(parts), material);
