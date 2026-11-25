@@ -169,6 +169,8 @@ export class Ledges {
     const besideTop = Math.min(maxTop, LAND);
     const boxes = col.boxes.filter((b) => {
       if (b.split || b.tag === "building" || b.tag === "edge" || b.tag === "town-edge" || b.tag === "sea" || b.tag === "counter") return false;
+      // Slate Cove's rock, walls and stair sides (mh-cave) are shaped by their own colliders and floors: nothing to climb.
+      if (b.tag === "cove-edge" || b.tag === "cove-rock" || b.tag === "ring-wall" || b.tag === "ring-edge") return false;
       const w = b.maxX - b.minX, d = b.maxZ - b.minZ;
       return Math.min(w, d) <= 4 && w * d <= 60;
     });
