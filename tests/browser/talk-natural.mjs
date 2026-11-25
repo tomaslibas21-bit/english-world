@@ -899,6 +899,17 @@ async function cafe(route) {
   assert(early?.p.speaker.listening && early.actual[host].weight > 0.12, "barista adopts the listening turn at the counter");
   assert(listen.slice(12).every((f) => f.actual[host].hands.every((hand, i) => distance(hand, listen[12].actual[host].hands[i]) < 0.08)),
     "supported barista hands settle at the counter");
+  const onsetPitch = actorIs(timeline.at(-1), host).joints.head[0];
+  const settledPitch = listen.slice(19, 32).filter((f) => f.rendered).map((f) => {
+    const pitch = actorIs(f, host).joints.head[0];
+    const { headPitch, deltas } = f.p.speaker;
+    assert(Math.abs(pitch - headPitch) < 1e-5 && deltas.headPitch >= 0.020 && deltas.headPitch <= 0.028,
+      "supported barista inclination reaches the live head joint");
+    return pitch;
+  });
+  route.row.listeningPitch = { onset: onsetPitch, settled: settledPitch };
+  assert(settledPitch.length >= 3 && settledPitch.every((pitch) => pitch - onsetPitch > 0.012),
+    "the rendered local head pitch changes from choice onset and stays inclined");
   await route.mark("listen");
   const mic = route.page.locator(".inputbar .mic");
   assert(await mic.isDisabled(), "recognition unsupported and typing still available");

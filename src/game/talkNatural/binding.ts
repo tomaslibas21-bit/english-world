@@ -2,6 +2,7 @@ import type { Object3D } from "three";
 import type { GameCharacter } from "../characters";
 import { audio } from "../audio";
 import type { NaturalPoseDriver, NaturalRig, TalkLineId, VoiceVisualOwner } from "./contract";
+import { ArmEntry, blockedHands, ease, ENTRY_SECONDS } from "./contract";
 import { VoiceMouth } from "./mouth";
 
 export interface ActingTarget {
@@ -46,15 +47,18 @@ export class ActorTalk {
     this.turn = undefined;
     const actor = target?.actor;
     if (!target || !actor?.naturalRig || !actor.root?.parent || !actor.root.visible) return;
-    if (actor.talkPose?.releasing) actor.talkPose.interrupt();
-    if (actor.talkPose) return;
+    if (actor.talkPose && !actor.talkPose.releasing) return;
     const turn: ActingTurn = { target, waiting: false, paused: this.paused };
     this.turn = turn;
-    const pending = new PendingMouth(actor, actor.naturalRig(), turn);
+    const rig = actor.naturalRig();
+    rig.entry = new ArmEntry(rig);
+    actor.talkPose?.interrupt();
+    const pending = new PendingMouth(actor, rig, rig.entry, turn);
     turn.close = pending.interrupt;
     turn.refresh = () => actor.update(0);
     if (actor.anim === "wave") actor.setAnim("idle");
     actor.talkPose = pending;
+    if (pending.reduced) actor.update(0);
     void import("./session").then(({ presentExchange }) => {
       if (actor.talkPose !== pending) return;
       pending.detach();
@@ -103,30 +107,56 @@ class PendingMouth implements NaturalPoseDriver {
   get mouth() { return this.mouthState.mouth; }
   get roundness() { return this.mouthState.roundness; }
   get reduced() { return this.motion?.matches ?? false; }
-  get weight() { return this.reduced ? 1 : 0; }
+  get weight() { return ease(this.entry.progress); }
 
-  constructor(private actor: GameCharacter, readonly rig: NaturalRig, private turn: ActingTurn) {
+  constructor(private actor: GameCharacter, readonly rig: NaturalRig, private entry: ArmEntry, private turn: ActingTurn) {
+    this.motion?.addEventListener("change", this.motionChanged);
+    this.motionChanged();
     for (let node: Object3D | null = actor.root; node; node = node.parent) {
       node.addEventListener("removed", this.interrupt);
       this.mount.push(node);
     }
   }
 
+  private readonly motionChanged = () => {
+    if (this.reduced) {
+      this.entry.progress = 1;
+      this.entry.active = false;
+    }
+  };
+
   advance(dt: number) {
     const { line, waiting, paused } = this.turn;
     const owner = line?.owner;
-    this.mouthState.read(dt, audio, owner, paused || !!globalThis.document?.hidden);
+    const held = paused || !!globalThis.document?.hidden;
+    if (!held) this.entry.progress = Math.min(1, this.entry.progress + dt / ENTRY_SECONDS);
+    this.mouthState.read(dt, audio, owner, held);
     if (waiting || owner && audio.visualOwner === owner) this.age = 0;
-    else if ((this.age += dt) >= (line ? Math.min(line.seconds, 0.24) : 0.24)) this.interrupt();
+    else if ((this.age += dt) >= (line ? Math.min(line.seconds, 0.24) : 0.24)) this.cancel();
   }
 
-  apply() {}
-  restoreBody() {}
+  apply(_dt: number, moving: boolean) {
+    if (moving || this.actor.anim === "sit") this.entry.active = false;
+    if (this.entry.active && this.entry.progress < 1) this.entry.apply(this.weight, blockedHands(this.actor, this.rig));
+  }
+  restoreBase() {}
   detach() {
+    this.motion?.removeEventListener("change", this.motionChanged);
     for (const node of this.mount) node.removeEventListener("removed", this.interrupt);
     this.mount.length = 0;
     if (this.actor.talkPose === this) this.actor.talkPose = undefined;
     this.turn.close = this.turn.refresh = undefined;
   }
-  readonly interrupt = () => { this.mouthState.reset(); this.detach(); };
+  private cancel() {
+    this.entry.active = false;
+    this.entry.progress = 0;
+    this.mouthState.reset();
+    this.detach();
+  }
+
+  readonly interrupt = () => {
+    if (this.actor.talkPose !== this) return;
+    this.cancel();
+    this.actor.update(0);
+  };
 }

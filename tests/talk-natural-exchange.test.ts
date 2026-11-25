@@ -4,6 +4,7 @@ import { NPCS } from "../src/content/npcs";
 import { createCharacter } from "../src/game/characters";
 import { ActorTalk } from "../src/game/talkNatural/binding";
 import type { VoiceVisualOwner } from "../src/game/talkNatural/contract";
+import { bindConversationPose } from "../src/game/talkNatural/pose";
 
 const voice = vi.hoisted(() => ({
   visualOwner: undefined as VoiceVisualOwner | undefined,
@@ -17,7 +18,76 @@ vi.mock("../src/game/audio", () => ({ audio: voice }));
 afterEach(() => {
   voice.visualOwner = undefined;
   voice.level.mockReset().mockReturnValue(0.8);
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+it("continues the same walk-up arm blend when the lazy mixer takes over", async () => {
+  vi.spyOn(Math, "random").mockReturnValue(0.5);
+  const world = new Group();
+  const ch = createCharacter(NPCS.vinnie.look), direct = createCharacter(NPCS.vinnie.look);
+  world.add(ch.root, direct.root);
+  const rig = ch.naturalRig!(), reference = direct.naturalRig!();
+  ch.setAnim("wave"); direct.setAnim("wave");
+  ch.update(1 / 60); direct.update(1 / 60);
+  const incoming = rig.upperR.rotation.z;
+  expect(incoming).toBeGreaterThan(2);
+  bindConversationPose(direct);
+  const talk = new ActorTalk();
+  const line = talk.speak({ actor: ch, id: "vinnie" }, "open", "Hi!", 2, true)!;
+  voice.visualOwner = line.owner;
+  const pending = ch.talkPose;
+  ch.update(0);
+  expect(rig.upperR.rotation.z).toBeCloseTo(incoming, 6);
+
+  function compare() {
+    expect(ch.talkPose!.weight).toBeCloseTo(direct.talkPose!.weight, 9);
+    expect(rig.upperR.rotation.z).toBeCloseTo(reference.upperR.rotation.z, 9);
+    expect(rig.foreR.quaternion.angleTo(reference.foreR.quaternion)).toBeLessThan(1e-6);
+  }
+  for (let i = 0; i < 3; i++) {
+    ch.update(1 / 30); direct.update(1 / 30);
+    compare();
+  }
+  expect(rig.upperR.rotation.z).toBeLessThan(incoming - 0.5);
+  const before = rig.upperR.rotation.z;
+  await vi.dynamicImportSettled();
+  expect(ch.talkPose).not.toBe(pending);
+  ch.update(0);
+  expect(rig.upperR.rotation.z).toBeCloseTo(before, 9);
+  for (let i = 0; i < 5; i++) {
+    ch.update(1 / 30); direct.update(1 / 30);
+    compare();
+  }
+  expect(ch.talkPose?.weight).toBe(1);
+  expect(Math.abs(rig.upperR.rotation.z)).toBeLessThan(0.012);
+  world.clear();
+});
+
+it("discards an in-flight pending wave when reduced motion is enabled", async () => {
+  const query = Object.assign(new EventTarget(), { matches: false });
+  vi.stubGlobal("matchMedia", () => query);
+  const world = new Group(), ch = createCharacter(NPCS.vinnie.look);
+  world.add(ch.root);
+  const rig = ch.naturalRig!();
+  ch.setAnim("wave");
+  ch.update(1 / 60);
+  const talk = new ActorTalk();
+  talk.listen({ actor: ch, id: "vinnie" }, true);
+  ch.update(1 / 30);
+  expect(rig.upperR.rotation.z).toBeGreaterThan(2);
+  query.matches = true;
+  query.dispatchEvent(new Event("change"));
+  ch.update(0);
+  expect(ch.talkPose?.weight).toBe(1);
+  expect(Math.abs(rig.upperR.rotation.z)).toBeLessThan(0.012);
+  query.matches = false;
+  query.dispatchEvent(new Event("change"));
+  await vi.dynamicImportSettled();
+  ch.update(1 / 30);
+  expect(ch.talkPose?.weight).toBe(1);
+  expect(Math.abs(rig.upperR.rotation.z)).toBeLessThan(0.012);
+  world.clear();
 });
 
 it("follows a pending request before hydration and keeps its pause and learner turn after hydration", async () => {

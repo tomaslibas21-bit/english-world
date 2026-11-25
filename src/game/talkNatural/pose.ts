@@ -4,7 +4,7 @@ import type { Object3D } from "three";
 import type { AudioSystem } from "../audio";
 import type { GameCharacter } from "../characters";
 import type { NaturalPoseDriver, NaturalRig, TalkLineId, VoiceVisualOwner } from "./contract";
-
+import { ArmEntry, blockedHands, ease, ENTRY_SECONDS } from "./contract";
 import { VoiceMouth } from "./mouth";
 
 export type { TalkLineId, VoiceVisualOwner } from "./contract";
@@ -34,7 +34,6 @@ export interface PoseOptions {
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 const mix = (base: number, target: number, weight: number) => base + (target - base) * weight;
-const ease = (t: number) => { const u = clamp(t, 0, 1); return u * u * (3 - 2 * u); };
 
 /** All arguments are seconds. The hold can be zero for a single nod or other short accent. */
 export function oneShot(t: number, rise: number, hold: number, release: number): number {
@@ -132,11 +131,13 @@ class ConversationPose implements NaturalPoseDriver {
   private engaged = true;
   get releasing() { return !this.engaged && !this.closed; }
   private closed = false;
-  private blend = 0;
+  private blend: number;
+  private armEntry?: ArmEntry;
   private releaseFrom = 0;
   private releaseAge = 0;
   private releaseSeconds = 0.30;
   private listenWeight = 0;
+  private inclination = 0;
   private time = 0;
   private listenAt = Infinity;
   private listenAge = Infinity;
@@ -174,12 +175,16 @@ class ConversationPose implements NaturalPoseDriver {
   private readonly leftThigh: Thigh;
   private readonly rightThigh: Thigh;
   private torsoMixed = false;
+  private shouldersMixed = false;
   private readonly motion: MediaQueryList | undefined;
   private readonly mount: Object3D[] = [];
   private eyeBaseX = 0;
   private eyeBaseY = 0;
 
-  constructor(private readonly actor: GameCharacter, private readonly rig: NaturalRig, private readonly audio: VoiceSource | undefined, private readonly options: PoseOptions) {
+  constructor(private readonly actor: GameCharacter, private readonly rig: NaturalRig, private readonly audio: VoiceSource | undefined, private readonly options: PoseOptions, entry: ArmEntry) {
+    this.blend = entry.progress;
+    this.weight = ease(this.blend);
+    if (entry.active && this.blend < 1) this.armEntry = entry;
     this.lips = options.mouth ?? new VoiceMouth();
     this.role = options.role ?? "cast";
     this.counterY = options.counterY;
@@ -203,6 +208,8 @@ class ConversationPose implements NaturalPoseDriver {
     this.reduced = reduced;
     if (reduced) {
       if (this.engaged) this.weight = this.blend = 1;
+      this.armEntry = undefined;
+      this.inclination = 0;
       this.cue.kind = this.fading.kind = this.response.kind = null;
       this.gazeAge = this.phraseAge = this.listenAge = Infinity;
     } else this.scheduleListener();
@@ -287,6 +294,7 @@ class ConversationPose implements NaturalPoseDriver {
   /** Restore the current underlying idle over 300 ms. Call interrupt for removal or a hard cut. */
   release(seconds = 0.30) {
     if (!this.engaged) return;
+    this.armEntry?.capture();
     this.releaseSeconds = seconds;
     this.engaged = false;
     this.releaseFrom = this.blend;
@@ -295,7 +303,7 @@ class ConversationPose implements NaturalPoseDriver {
 
   readonly interrupt = () => {
     if (this.closed) return;
-    this.restoreBody();
+    this.restoreBase();
     this.rig.eye.position.x = this.eyeBaseX;
     this.rig.eye.position.y = this.eyeBaseY;
     this.detach();
@@ -347,12 +355,7 @@ class ConversationPose implements NaturalPoseDriver {
   }
 
   private get blockedHands() {
-    const { actor, rig } = this, busy = actor.busy;
-    if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel" || busy === "type" || busy === "wipe") return 3;
-    const left = rig.carry === "bag" || busy === "doorL";
-    const right = actor.rightHand.children.length || rig.carry === "coffee" || rig.carry === "cup" ||
-      busy === "cup" || busy === "tiller" || busy === "doorR";
-    return (left ? 1 : 0) | (right ? 2 : 0);
+    return blockedHands(this.actor, this.rig);
   }
 
   get armOpportunity() {
@@ -382,11 +385,11 @@ class ConversationPose implements NaturalPoseDriver {
   }
 
   advance(dt: number) {
-    this.restoreBody();
+    this.restoreBase();
     const paused = this.options.beforeAdvance?.(dt) ?? false;
     if (paused) dt = 0;
     this.time += dt;
-    if (this.engaged) this.blend = this.reduced ? 1 : Math.min(1, this.blend + dt / 0.24);
+    if (this.engaged) this.blend = this.reduced ? 1 : Math.min(1, this.blend + dt / ENTRY_SECONDS);
     else this.blend = this.releaseFrom * Math.max(0, 1 - (this.releaseAge += dt) / this.releaseSeconds);
     if (this.blend < 1e-8) this.blend = 0;
     this.weight = ease(this.blend);
@@ -405,6 +408,11 @@ class ConversationPose implements NaturalPoseDriver {
       this.listenAge = 0;
       this.learnerHip = !this.learnerHip;
       this.listenAt = this.time + (listening ? 4 : 5) + Math.random() * 3;
+    }
+    if (!this.reduced) {
+      const { kind, age } = this.response;
+      const incline = listening && !(kind && cueTime(kind, age) > 0);
+      this.inclination = clamp(this.inclination + dt * (incline ? 1 / 0.26 : -1 / 0.20), 0, 1);
     }
     this.sampleVoice(dt, paused);
   }
@@ -462,7 +470,12 @@ class ConversationPose implements NaturalPoseDriver {
     t.joint.quaternion.premultiply(this.bodyDelta);
   }
 
-  restoreBody() {
+  restoreBase() {
+    if (this.shouldersMixed) {
+      this.shouldersMixed = false;
+      this.rig.upperL.position.y = this.base.shoulderL;
+      this.rig.upperR.position.y = this.base.shoulderR;
+    }
     if (!this.torsoMixed) return;
     this.torsoMixed = false;
     this.rig.body.quaternion.copy(this.bodyBase);
@@ -522,7 +535,11 @@ class ConversationPose implements NaturalPoseDriver {
     const r = REACH[kind];
     if (!r) return;
     if (kind === "shrug") {
-      if (!supported) { upperL.position.y += 0.015 * weight; upperR.position.y += 0.015 * weight; }
+      if (!supported) {
+        this.shouldersMixed = true;
+        upperL.position.y = this.base.shoulderL + 0.015 * weight;
+        upperR.position.y = this.base.shoulderR + 0.015 * weight;
+      }
       head.rotation.z += 0.04 * c.side * weight;
     }
     const side = c.directional ? c.side : c.side < 0 ? (left ? -1 : 1) : (right ? 1 : -1);
@@ -560,10 +577,10 @@ class ConversationPose implements NaturalPoseDriver {
       const listen = ease(this.listenWeight) * this.weight;
       a.listeningWeight = listen;
       const learner = this.role === "learner";
-      const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * this.weight * (1 - cueWeight);
+      const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * this.weight * (1 - Math.max(cueWeight, responseWeight));
       const hip = learner && this.learnerHip && !supported;
       if (!supported) this.mixTorso(0.035 * listen, hip ? 0.012 * listenBeat : 0);
-      if (!seated && this.counterY === undefined) {
+      if (!supported) {
         if (left) r.foreL.rotation.x -= 0.13 * listen;
         if (right) r.foreR.rotation.x -= 0.13 * listen;
       }
@@ -583,6 +600,19 @@ class ConversationPose implements NaturalPoseDriver {
       this.applyCue(this.response, responseWeight, seated, left, right, supported);
       a.reactionWeight = responseWeight;
       this.applyGaze(r.head, r.eye);
+      if (supported && this.inclination > 0) {
+        // Leave room for the listening nod and give speech, glances and reactions their pitch.
+        const limit = responseWeight > 0 ? 0.08 : a.gazeTarget ? 0.07 : this.role === "speaking" ? 0.045 : 0.08;
+        const room = Math.max(0, limit - (r.head.rotation.x - this.base.headPitch));
+        const pitch = Math.min(room, 0.024 * ease(this.inclination) * this.weight);
+        r.head.rotation.x += pitch;
+        if (watching && !a.gazeTarget) r.eye.position.y += pitch * 0.012;
+      }
+    }
+    if (this.armEntry) {
+      const weight = this.engaged ? this.weight : ease(this.releaseAge / this.releaseSeconds);
+      if (weight === 1 || seated || moving) this.armEntry = undefined;
+      else this.armEntry.apply(weight, blocked);
     }
     a.role = this.role; a.weight = this.weight; a.reduced = this.reduced; a.watching = watching && !this.reduced;
     const appliedCue = moving || this.reduced ? 0 : cueWeight * addResponse;
@@ -594,20 +624,21 @@ class ConversationPose implements NaturalPoseDriver {
       const joint = joints[i];
       a.deltas[joint] = a[joint] - this.base[joint];
     }
-    if (!this.engaged && this.weight === 0) this.detach();
+    if (!this.engaged && this.weight === 0 && !this.armEntry) this.detach();
   }
 }
 
 /** One controller per participating rig. Import this module only when starting actor-side conversation. */
 export function bindConversationPose(actor: GameCharacter, options: PoseOptions = {}): ConversationPose | undefined {
-  if (actor.talkPose instanceof ConversationPose) {
-    if (!actor.talkPose.releasing) return actor.talkPose;
-    actor.talkPose.interrupt();
-  }
-  if (actor.talkPose || !actor.naturalRig) return;
+  const prior = actor.talkPose;
+  if (prior instanceof ConversationPose && !prior.releasing) return prior;
+  if ((prior && !(prior instanceof ConversationPose)) || !actor.naturalRig) return;
   const rig = options.rig ?? actor.naturalRig();
+  const entry = rig.entry ?? new ArmEntry(rig);
+  delete rig.entry;
+  prior?.interrupt();
   if (actor.anim === "wave") actor.setAnim("idle");
-  const binding = new ConversationPose(actor, rig, options.audio, options);
+  const binding = new ConversationPose(actor, rig, options.audio, options, entry);
   actor.talkPose = binding;
   if (!options.rig) actor.update(0);
   return binding;

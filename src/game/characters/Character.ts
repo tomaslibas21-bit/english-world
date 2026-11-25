@@ -1333,7 +1333,7 @@ export class Character {
   setAnim(a: Anim) {
     if (a === "wave" && this.talkPose) return;
     if ((a === "sit") !== (this.anim === "sit")) {
-      this.talkPose?.restoreBody();
+      this.talkPose?.restoreBase();
       this.fitLegs(a === "sit");
     }
     this.anim = a;

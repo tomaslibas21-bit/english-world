@@ -20,6 +20,73 @@ class MotionPreference extends EventTarget {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("natural conversation on the baked rig", () => {
+  it.each([30, 60])("joins the presented wave and tracks the live target at %i Hz", (hz) => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const actor = new Character(NPCS.vinnie.look), target = new Character(NPCS.vinnie.look);
+    const rig = actor.naturalRig(), base = target.naturalRig();
+    actor.setAnim("wave");
+    actor.update(1 / 60);
+    target.update(1 / 60);
+    const upper = rig.upperR.quaternion.clone(), fore = rig.foreR.quaternion.clone();
+    const incoming = rig.upperR.rotation.z;
+    expect(incoming).toBeGreaterThan(2);
+    // Losing the animation flag between frames leaves the presented rotations in place.
+    if (hz === 30) actor.setAnim("idle");
+    const pose = bindConversationPose(actor)!;
+    const rest = bindConversationPose(target)!;
+    // Let locomotion clear the reference's incoming arm blend at the same time.
+    target.setAnim("walk");
+    target.update(0);
+    target.setAnim("idle");
+    expect(rig.upperR.rotation.z).toBeCloseTo(incoming, 6);
+    expect(rig.foreR.quaternion.angleTo(fore)).toBeLessThan(0.002);
+    expect(pose.weight).toBe(0);
+    pose.speak("hi", null, { kind: "greeting" });
+    rest.speak("hi", null, { kind: "greeting" });
+    let last = incoming;
+    for (let frame = 1; frame <= 0.3 * hz; frame++) {
+      actor.update(1 / hz);
+      target.update(1 / hz);
+      const u = Math.min(1, frame / hz / 0.24);
+      const w = u * u * (3 - 2 * u);
+      expect(rig.upperR.quaternion.angleTo(upper.clone().slerp(base.upperR.quaternion, w))).toBeLessThan(1e-6);
+      expect(rig.foreR.quaternion.angleTo(fore.clone().slerp(base.foreR.quaternion, w))).toBeLessThan(1e-6);
+      if (frame / hz <= 0.2) {
+        expect(rig.upperR.rotation.z).toBeLessThan(last);
+        expect(last - rig.upperR.rotation.z).toBeLessThan(0.55);
+      }
+      last = rig.upperR.rotation.z;
+    }
+    actor.dispose(); target.dispose();
+  });
+
+  it("releases an interrupted entry from the current arm and gives locomotion control immediately", () => {
+    const actor = new Character(NPCS.vinnie.look), rig = actor.naturalRig();
+    actor.setAnim("wave");
+    actor.update(1 / 60);
+    const pose = bindConversationPose(actor)!;
+    step(actor, 0.1);
+    const before = rig.upperR.rotation.z;
+    pose.release(0.16);
+    actor.update(0);
+    expect(rig.upperR.rotation.z).toBeCloseTo(before, 6);
+    step(actor, 0.08);
+    expect(rig.upperR.rotation.z).toBeLessThan(before);
+    step(actor, 0.08);
+    expect(actor.talkPose).toBeUndefined();
+
+    actor.setAnim("wave");
+    actor.update(1 / 60);
+    bindConversationPose(actor);
+    actor.setAnim("walk");
+    actor.update(1 / 60);
+    expect(Math.abs(rig.upperR.rotation.z)).toBeLessThan(0.012);
+    actor.setAnim("idle");
+    actor.update(1 / 60);
+    expect(Math.abs(rig.upperR.rotation.z)).toBeLessThan(0.012);
+    actor.dispose();
+  });
+
   it.each([30, 60])("samples only the owner and shuts on quiet, stop and end at %i Hz", (hz) => {
     const speaker = new Character(NPCS.mia.look), other = new Character(NPCS.chloe.look);
     const first = { actor: speaker, line: 1 };
@@ -234,6 +301,101 @@ describe("natural conversation on the baked rig", () => {
     expect(actor.talkPose).toBeUndefined();
     expect(Math.abs(actor.headJoint.rotation.y - yaw)).toBeLessThan(0.07);
     actor.dispose();
+  });
+
+  it.each([
+    ["counter", 30], ["counter", 60], ["seat", 60], ["prop", 60],
+  ] as const)("adds and releases sustained head pitch with %s support at %i Hz", (support, hz) => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const actor = new Character(NPCS.mia.look), rig = actor.naturalRig();
+    if (support === "seat") actor.setAnim("sit");
+    if (support === "prop") actor.rightHand.add(new Group());
+    const pose = bindConversationPose(actor, { role: "cast", counterY: support === "counter" ? 1.08 : undefined })!;
+    pose.watch = new Vector3(0.3, 1.7, 2);
+    step(actor, 1, hz);
+    const { applied: a } = pose;
+    const arms = [rig.upperL, rig.foreL, rig.upperR, rig.foreR];
+    const holds = arms.map((joint) => joint.quaternion.toArray());
+    const body = rig.body.quaternion.toArray();
+    const pitch = rig.head.rotation.x;
+    pose.setRole("listening");
+    actor.update(0);
+    expect(rig.head.rotation.x).toBe(pitch);
+    step(actor, 8 / 60, hz);
+    expect(a.deltas.headPitch).toBeGreaterThan(0.010);
+    expect(a.deltas.headPitch).toBeLessThan(0.014);
+    step(actor, 11 / 60, hz);
+    expect(a.listeningWeight).toBe(1);
+    expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
+    expect(rig.head.rotation.x - pitch).toBeCloseTo(0.024, 3);
+    expect(a.deltas.headYaw).toBe(0);
+    expect(a.watching).toBe(true);
+    expect(a.mouth).toBe(0);
+    expect(arms.map((joint) => joint.quaternion.toArray())).toEqual(holds);
+    expect(rig.body.quaternion.toArray()).toEqual(body);
+
+    // First nod is separate from the held inclination.
+    step(actor, 2.67, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0.059, 3);
+    step(actor, 0.4, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
+    pose.react("repeat");
+    step(actor, 0.1, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0.012, 8);
+    step(actor, 0.1, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0, 8);
+    step(actor, 0.8, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
+    pose.speak("reply", null);
+    step(actor, 0.1, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0.012, 8);
+    step(actor, 0.1, hz);
+    expect(a.deltas.headPitch).toBeCloseTo(0, 8);
+    expect(arms.map((joint) => joint.quaternion.toArray())).toEqual(holds);
+    actor.dispose();
+  });
+
+  it.each([30, 60])("restores styled shoulder bases after repeated and interrupted shrugs at %i Hz", async (hz) => {
+    vi.stubGlobal("location", { search: "?style=toon" });
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const { StyledCharacter } = await import("../src/game/characters/StyledCharacter");
+    const world = new Group(), actor = new StyledCharacter(NPCS.chloe.look), rig = actor.naturalRig();
+    world.add(actor.root);
+    const pose = bindConversationPose(actor)!;
+    step(actor, 1, hz);
+    const shoulders = [rig.upperL, rig.upperR];
+    const base = shoulders.map((joint) => joint.position.y);
+    for (const line of [1, 2]) {
+      pose.speak(line, null, { kind: "shrug" });
+      let peak = 0;
+      for (let i = 0; i < 2 * hz; i++) {
+        actor.update(1 / hz);
+        shoulders.forEach((joint, side) => {
+          const rise = joint.position.y - base[side];
+          peak = Math.max(peak, rise);
+          expect(rise).toBeGreaterThanOrEqual(0);
+          expect(rise).toBeLessThanOrEqual(0.015 + 1e-9);
+        });
+      }
+      expect(peak).toBeCloseTo(0.015, 8);
+      expect(shoulders.map((joint) => joint.position.y)).toEqual(base);
+    }
+    pose.speak(3, null, { kind: "shrug" });
+    step(actor, 0.25, hz);
+    expect(rig.upperR.position.y - base[1]).toBeCloseTo(0.015, 8);
+    pose.release();
+    step(actor, 0.3, hz);
+    expect(shoulders.map((joint) => joint.position.y)).toEqual(base);
+    expect(actor.talkPose).toBeUndefined();
+
+    const rebound = bindConversationPose(actor)!;
+    step(actor, 0.3, hz);
+    rebound.speak(4, null, { kind: "shrug" });
+    step(actor, 0.25, hz);
+    expect(rig.upperR.position.y - base[1]).toBeCloseTo(0.015, 8);
+    world.remove(actor.root);
+    expect(shoulders.map((joint) => joint.position.y)).toEqual(base);
+    expect(actor.talkPose).toBeUndefined();
   });
 
   it("adapts the trial skeleton and neutralizes a late legacy wave before the first bound frame", async () => {
