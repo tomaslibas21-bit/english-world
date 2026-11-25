@@ -167,7 +167,7 @@ const browser = await chromium.launch({
 });
 
 try {
-  for (const phone of [false, true]) {
+  for (const phone of [true, false]) {
     const label = phone ? "phone" : "computer";
     const context = await browser.newContext(phone
       ? { viewport: { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
@@ -253,8 +253,8 @@ try {
     }), "boarding finishes and the taxi is ready to drive");
     assert(await page.evaluate(() => !window.__ew.game.player.root.visible), "the learner at the taxi's wheel is out of sight under its roof");
 
-    if (phone) {
-      const cdp = await context.newCDPSession(page);
+    const cdp = phone ? await context.newCDPSession(page) : null;
+    if (cdp) {
       const stick = await page.locator(".joy").boundingBox();
       assert(stick);
       const x = stick.x + stick.width / 2, y = stick.y + stick.height / 2;
@@ -276,7 +276,8 @@ try {
     }
 
     await page.evaluate(installSteering, { wrong: true });
-    await waitFor(() => page.locator('.taxi-action[data-action="left"]').count(), "first turn chip", { steer: true, attempts: 180 });
+    const chip = page.locator('.taxi-action[data-action="left"]');
+    await waitFor(() => chip.count(), "first turn chip", { steer: true, attempts: 180 });
     await real(210);
     const guidance = await page.evaluate(() => {
       const game = window.__ew.game, { car } = game.modes.get("taxi"), { m } = car;
@@ -299,6 +300,46 @@ try {
       assert.equal(guidance.key, "←");
     }
     await shot("cue");
+
+    const box = await chip.boundingBox();
+    assert(box);
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    if (!cdp) await page.mouse.move(point.x, point.y);
+    const down = () => cdp ? cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] }) : page.mouse.down();
+    const up = () => cdp ? cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : page.mouse.up();
+    const held = () => page.evaluate(() => Boolean(window.__ew.game.modes.get("taxi").assist));
+    const focused = () => chip.evaluate((button) => document.activeElement === button);
+    const capture = await chip.evaluateHandle((button) => {
+      let pointerId = -1;
+      button.addEventListener("pointerdown", (event) => { pointerId = event.pointerId; }, { once: true });
+      return () => button.hasPointerCapture(pointerId);
+    });
+    assert(await page.evaluate(() => !window.__pad?.connected), "the Taxi cue uses physical input alone");
+    await chip.focus();
+    await down();
+    assert(await focused() && await capture.evaluate((captured) => captured()) && await held(),
+      "the focused Taxi cue captures the pointer and holds assist");
+    await capture.dispose();
+    await chip.evaluate((button) => button.blur());
+    assert(!await focused() && !await held(), "the cue releases assist on blur while the pointer is still down");
+    await up();
+    assert(!await held(), "the late pointer-up leaves assist released");
+
+    if (!phone) {
+      await chip.focus();
+      await page.keyboard.down("Space");
+    }
+    await down();
+    assert(await held(), "a fresh press can hold assist again");
+    if (phone) assert(!await focused(), "touch leaves the cue unfocused");
+    await up();
+    assert.equal(await held(), !phone, "pointer-up releases the pointer hold and leaves any held Space active");
+    if (!phone) {
+      await page.keyboard.up("Space");
+      assert(!await held(), "Space keyup releases the remaining assist hold");
+      await chip.evaluate((button) => button.blur());
+    }
+
     await waitFor(() => heard("tx_wrong"), "Vinnie catches the wrong turn", { steer: true, attempts: 150 });
     await shot("wrong-turn");
     await page.evaluate(() => window.__ew.game.setJoystick(0, 0));

@@ -83,8 +83,10 @@ describe("Maple Harbor taxi routes", () => {
       mode.action("assist", false);
       mode.padCancel();
       expect(step()).toMatchObject(assisted);
-      mode.action("assist-keys", false);
+      mode.action("assist-blur");
+      sample();
       expect(step()).toMatchObject(neutral);
+      sample(0, A);
 
       sample(A);
       mode.action("assist-enter", true);
@@ -93,6 +95,26 @@ describe("Maple Harbor taxi routes", () => {
       mode.action("assist-enter", false);
       expect(step()).toMatchObject(assisted);
       mode.action("assist", false);
+      expect(step()).toMatchObject(neutral);
+
+      mode.action("assist", true);
+      sample(A);
+      mode.padCancel();
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(neutral);
+      sample(0, A);
+
+      sample(A);
+      mode.action("assist", true);
+      mode.action("assist", false);
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist", true);
+      mode.action("assist-space", true);
+      mode.action("assist-enter", true);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(assisted);
+      sample(0, A);
       expect(step()).toMatchObject(neutral);
 
       sample(A);

@@ -409,7 +409,7 @@ class TaxiMode implements GameMode {
     } else if (name === "assist") this.setAssist(Assist.pointer, !!value);
     else if (name === "assist-space") this.setAssist(Assist.space, !!value);
     else if (name === "assist-enter") this.setAssist(Assist.enter, !!value);
-    else if (name === "assist-keys") this.setAssist(Assist.space | Assist.enter, false);
+    else if (name === "assist-blur") this.setAssist(Assist.pointer | Assist.space | Assist.enter, false);
     else if (name === "again" && this.run?.phase === "result") {
       this.host.fade(() => { if (this.active) { this.dialogue.cancel(); this.launch(); } });
     }

@@ -51,7 +51,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
               if (!e.repeat) act(source, true);
             }}
             onKeyUp={(e) => { const source = assistKey(e.key); if (source) act(source, false); }}
-            onBlur={() => act("assist-keys", false)}
+            onBlur={() => act("assist-blur")}
           >
             <Icon name={actionIcons[action]} className="taxi-action-icon" size={48} strokeWidth={2.5} />
             <span>{words.actions[action].label}</span>
