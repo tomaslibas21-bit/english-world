@@ -9,6 +9,8 @@ import { useStore } from "../state/store";
 import type { TextProgress } from "../state/progress";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
+import { resolvePhrase } from "./kit/phraseLine";
+import { PhraseSave } from "./kit/PhraseSave";
 import { usePortrait } from "./usePortrait";
 
 const LABELS = {
@@ -49,8 +51,13 @@ export function TextList({ got }: { got: TextProgress["got"] | undefined }) {
   </section>;
 }
 
-function Bubble({ line, mine = false, onTranslation }: {
-  line: TextLine; mine?: boolean; onTranslation: (text: string, mine: boolean, visible: boolean) => void;
+function TextSave({ text, helper, situationId }: { text: string; helper: string; situationId: string }) {
+  const sentence = resolvePhrase({ targetText: text, helperText: helper });
+  return sentence && <PhraseSave sentence={sentence} situationId={situationId} />;
+}
+
+function Bubble({ line, situationId, mine = false, onTranslation }: {
+  line: TextLine; situationId: string; mine?: boolean; onTranslation: (text: string, mine: boolean, visible: boolean) => void;
 }) {
   const [translated, show] = useState(false);
   const text = townLineText(line);
@@ -61,10 +68,13 @@ function Bubble({ line, mine = false, onTranslation }: {
     if (!st.progress.texts?.translated) st.updateProgress((p) => { if (p.texts) p.texts.translated = true; });
   };
   return <div className={"text-message" + (mine ? " mine" : "")}>
-    <button type="button" className="text-bubble" onClick={toggle} aria-expanded={translated}>
-      <span lang={TL}>{text}</span>
-      {translated && <small lang={HL}>{line.lt}</small>}
-    </button>
+    <div className="text-bubble-row">
+      <button type="button" className="text-bubble" onClick={toggle} aria-expanded={translated}>
+        <span lang={TL}>{text}</span>
+        {translated && <small lang={HL}>{line.lt}</small>}
+      </button>
+      <TextSave text={text} helper={line.lt} situationId={situationId} />
+    </div>
     {mine && <small className="text-sent">{LABELS.sent}</small>}
   </div>;
 }
@@ -108,14 +118,20 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
     </header>
     <div className="text-thread-body" ref={body}>
       {!translated && <p className="text-hint">{LABELS.hint}</p>}
-      {thread.lines.map((line, i) => <Bubble key={i} line={line} onTranslation={read} />)}
+      {thread.lines.map((line, i) => <Bubble key={i} line={line} situationId={thread.after} onTranslation={read} />)}
       {reply ? <>
-        <Bubble line={reply} mine onTranslation={read} />
+        <Bubble line={reply} situationId={thread.after} mine onTranslation={read} />
         {typing ? <div className="text-typing" aria-hidden><i /><i /><i /></div>
-          : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} onTranslation={read} />)}
+          : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} situationId={thread.after} onTranslation={read} />)}
       </> : <div className="text-replies">
         <strong>{LABELS.reply}</strong>
-        {thread.replies.map((choice, i) => <button type="button" key={i} onClick={() => send(i)}><span lang={TL}>{townLineText(choice)}</span><small lang={HL}>{choice.lt}</small></button>)}
+        {thread.replies.map((choice, i) => {
+          const text = townLineText(choice);
+          return <div className="phrase-save-row" key={i}>
+            <button type="button" className="text-reply" onClick={() => send(i)}><span lang={TL}>{text}</span><small lang={HL}>{choice.lt}</small></button>
+            <TextSave text={text} helper={choice.lt} situationId={thread.after} />
+          </div>;
+        })}
       </div>}
     </div>
   </section>;
