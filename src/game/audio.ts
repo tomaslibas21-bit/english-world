@@ -7,6 +7,7 @@ import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnos
 import { stretchSpeech } from "./timeStretch";
 import { BED_DUCK, BIRDSONG, LOOPS, SAMPLES, STEPS, isSample, type Bed, type BedLoop, type LoopName, type SampleDef, type SampleName, type Surface, type SynthName } from "./soundscape";
 import { TOWN_SOUNDS } from "./townSounds";
+import type { VoiceVisualOwner } from "./talkNatural/contract";
 
 export type DiagnosticPipeline = "html" | "buffer";
 export interface DiagnosticPlaybackState {
@@ -18,13 +19,17 @@ export interface DiagnosticPlaybackState {
 }
 
 export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
+export type VisualPlaybackState = PlaybackState | "ended" | "interrupt";
 interface PlaybackRequest {
   done: boolean;
   optional?: boolean;
   recordingOnly?: boolean;
+  visual?: VoiceVisualOwner;
+  browserVoiceStarted?: boolean;
+  visualStartedAt?: number;
   fail(state: "blocked" | "unavailable"): void;
   cleanup: () => void;
-  finish(completed: boolean): void;
+  finish(completed: boolean, playedToEnd?: true): void;
   retry?: () => void;
   fallback?: () => void;
 }
@@ -83,10 +88,35 @@ export class AudioSystem {
   private ctx: AudioContext | null = null;
   private player: HTMLAudioElement | null = null;
   private request: PlaybackRequest | null = null;
+  declare private visualEnds?: WeakSet<VoiceVisualOwner>;
   private unlocked = false;
   private state: PlaybackState = "idle";
   private listeners = new Set<() => void>();
   getState = () => this.state;
+  get visualOwner(): VoiceVisualOwner | undefined { return this.request?.visual; }
+  /** Elapsed audible seconds for the current request, including its playback rate. */
+  visualElapsed(owner: VoiceVisualOwner): number {
+    if (this.request?.visual !== owner) return 0;
+    const clip = this.clip;
+    const start = this.request.visualStartedAt;
+    return clip?.position?.() ?? (clip?.el ? clip.el.currentTime / clip.el.playbackRate
+      : start === undefined ? 0 : (performance.now() - start) / 1000);
+  }
+  visualState(owner: VoiceVisualOwner): VisualPlaybackState {
+    if (this.request?.visual !== owner) return this.visualEnds?.has(owner) ? "ended" : "interrupt";
+    if (this.state !== "playing") return this.state;
+    const clip = this.clip;
+    if (!clip) {
+      if (!this.request.browserVoiceStarted) return "loading";
+      return speechSynthesis.paused ? "blocked" : "playing";
+    }
+    if (clip.done || clip.el?.ended) return "ended";
+    if (clip.el) {
+      if (clip.el.paused) return "blocked";
+      if (clip.el.readyState < 3 && clip.el.currentTime < clip.el.duration) return "loading";
+    } else if (this.ctx?.state !== "running") return "blocked";
+    return "playing";
+  }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private setState(state: PlaybackState) {
     if (state === this.state) return;
@@ -313,7 +343,7 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal; onUnavailable?: () => void } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal; onUnavailable?: () => void; visual?: VoiceVisualOwner } = {}): Promise<boolean> {
     if (opts.signal?.aborted) return Promise.resolve(false);
     if (this.recordedDialogue) opts = { ...opts, optional: true, recordingOnly: true };
     this.stopDiagnostic("normal-playback");
@@ -327,6 +357,7 @@ export class AudioSystem {
         done: false,
         optional: opts.optional,
         recordingOnly: opts.recordingOnly,
+        visual: opts.visual,
         fail: (state) => {
           if (request.done) return;
           if (state === "unavailable") opts.onUnavailable?.();
@@ -334,9 +365,10 @@ export class AudioSystem {
           else if (!opts.recordingOnly && request.fallback) request.fallback();
           else request.finish(false);
         }, cleanup: () => {},
-        finish: (completed) => {
+        finish: (completed, playedToEnd) => {
           if (request.done) return;
           request.done = true;
+          if (playedToEnd && request.visual) (this.visualEnds ??= new WeakSet()).add(request.visual);
           clearTimeout(deadline);
           opts.signal?.removeEventListener("abort", abort);
           request.cleanup();
@@ -546,7 +578,7 @@ export class AudioSystem {
             // stop()/interruption can also produce ended. Only the context's
             // rendered clock reaching this source's end completes the NPC line.
             if (position() + 128 / ctx!.sampleRate < buffer!.duration) { waiting("blocked", "EarlyBufferEnd"); return; }
-            diagnostic("buffer.ended"); request.finish(true);
+            diagnostic("buffer.ended"); request.finish(true, true);
           };
           releaseRoute = holdPlaybackRoute();
           startedAt = ctx.currentTime; playing = true;
@@ -658,7 +690,7 @@ export class AudioSystem {
         // Only its current playback state can confirm that this line has ended.
         if (!current() || !a.ended) return;
         if (!file) cleanup();
-        request.finish(true);
+        request.finish(true, true);
       };
       a.onerror = failed;
       a.onpause = () => { if (current() && started && a.paused && !a.ended) waiting("blocked"); };
@@ -674,7 +706,13 @@ export class AudioSystem {
         // A stalled/backgrounded line must never be counted as successfully spoken.
         const remaining = Math.max(0, ((file ? a.duration : this.manifest[key]) || 4) - a.currentTime);
         timer = setTimeout(() => waiting("blocked"), remaining / a.playbackRate * 1000 + 5000);
-        if (!file) void this.cacheRecording(key);
+        if (!file) {
+          const warming = this.cacheRecording(key);
+          if (request.visual) void warming.then(() => {
+            const data = this.recordings.get(this.cacheKey(key));
+            if (current() && data) void this.loudness(key, data);
+          });
+        }
       };
       start();
     };
@@ -683,14 +721,14 @@ export class AudioSystem {
 
   /** How loud the line playing now is at this moment (0–1), for the speaker's mouth; -1 once it has ended; null when
    *  that isn't known (the browser's own voice, or the clip's loudness could not be worked out). */
-  level(): number | null {
+  level(prepare = true): number | null {
     const c = this.clip;
     if (!c) return null;
     if (c.done || c.el?.ended) return -1;
     const time = c.position?.() ?? c.el?.currentTime ?? 0;
     const key = c.envelopeKey ?? c.key;
     // worked out only for lines someone's mouth follows (not the example answers)
-    if (!this.envelopes.has(key) && c.el) this.loudness(key, c.el.src);
+    if (prepare && !this.envelopes.has(key) && c.el) this.loudness(key, c.el.src);
     const env = this.envelopes.get(key);
     // still being worked out: the mouth stays shut until the voice starts, then keeps a rhythm
     if (env === null) return time < 0.05 ? 0 : null;
@@ -798,11 +836,16 @@ export class AudioSystem {
       if (pick) { u.voice = pick; u.lang = pick.lang; }
       let ended = false;
       const waiting = () => { clearTimeout(timer); request.fail("blocked"); };
-      u.onend = () => { ended = true; request.finish(true); };
+      u.onend = () => { ended = true; request.finish(true, true); };
+      if (request.visual) {
+        request.browserVoiceStarted = false;
+        u.onstart = () => { request.browserVoiceStarted = true; request.visualStartedAt = performance.now(); };
+      }
       u.onerror = waiting;
       const releaseRoute = holdPlaybackRoute();
       request.cleanup = () => {
         playAttempt++; clearTimeout(timer); u.onend = u.onerror = null;
+        if (request.visual) { u.onstart = null; request.browserVoiceStarted = false; request.visualStartedAt = undefined; }
         if (!ended || !request.optional) speechSynthesis.cancel();
         releaseRoute();
       };

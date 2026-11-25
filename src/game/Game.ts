@@ -21,7 +21,6 @@ import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_
 import { HARBOR_SURF } from "./world/surf";
 import { HARBOR_SURF_PLATE } from "./world/harborSurf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
-import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig, FOLLOW } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
@@ -54,6 +53,7 @@ import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK 
 import { TownPhone } from "./phone/Phone";
 import { reactionTestSpot, TownReactions } from "./life/townReactions";
 import { speakTownLine } from "./life/townVoice";
+import { ActorTalk } from "./talkNatural/binding";
 import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { LizzieMeeting } from "./phone/meeting";
@@ -77,6 +77,8 @@ import { prepareTownCollision } from "./townCollisionPreparation";
 import type { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import type { TalkPresentation } from "./talkFraming";
+import { bindNaturalTalk } from "./talkNatural/view";
+import type { VoiceVisualOwner } from "./talkNatural/contract";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance, guideVisualTarget } from "./guidance";
 import { NavGrid, openIslandNav } from "./nav";
@@ -242,6 +244,8 @@ export class Game implements GameApi {
   private talkCast: TalkActor[] = [];
   private talkSpeaker: TalkActor | null = null;
   private talkCamera?: TalkPresentation;
+  private naturalView?: ReturnType<typeof bindNaturalTalk>;
+  private get naturalTalk() { return this.naturalView?.presentation; }
   private get talkLayout() { return this.talkCamera?.layout ?? null; }
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
@@ -258,6 +262,7 @@ export class Game implements GameApi {
   private readonly reactions = new TownReactions(() => this.reactionsBlocked());
   streetLife!: StreetLife;
   private streetWorld!: TownStreet;
+  private townTalk?: ActorTalk;
   private phoneWatch: (() => void)[] = [];
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
@@ -593,6 +598,7 @@ export class Game implements GameApi {
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
     const host: ModeHost = this.modeHost = {
+      acting: () => new ActorTalk(),
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
       add: (...objects) => this.scene.add(...objects),
       canStart: (indoors, duringTransition) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
@@ -645,10 +651,8 @@ export class Game implements GameApi {
       available: () => this.questAvailable(),
       zone: () => this.zone.id,
       guide: (id) => this.guideToPlace(id, useTownQuests.getState().directions),
-      animate: (seconds) => {
-        const hana = this.npcs.find(({ id }) => this.quests.handlesNpc(id));
-        hana?.ch.talk(seconds, () => audio.level(), () => audio.vowel());
-      },
+      actor: () => this.npcs.find(({ id, ch }) =>
+        this.quests.handlesNpc(id) && ch.root.visible && ch.root.position.distanceTo(this.player.root.position) < 8)?.ch,
     }));
     const stageHost: ModeHost = {
       ...host,
@@ -1097,7 +1101,9 @@ export class Game implements GameApi {
       const departing = this.wild;
       const wild = z.interior?.wild;
       this.caveTravel.cancel();
+      this.townTalk?.release(0);
       if (this.talkNpc) this.stopTalkLayout();
+      else this.stopNaturalTalk(false);
       const shore = this.rides.water?.wet || this.rides.water?.returning;
       if (shore) this.endRide();
       this.keeperRequest = undefined;
@@ -1695,7 +1701,8 @@ export class Game implements GameApi {
   private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null, source?: "keeper-greeting") {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
-    speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
+    speakTownLine({ actor: ch, id: ch.root.name || voice, scope: "town" }, voice, female, line.en, 1.1 + line.en.length * 0.045,
+      undefined, this.townTalk ??= new ActorTalk());
     useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200, phrase: line, ...(source && { source }) });
   }
 
@@ -2134,8 +2141,8 @@ export class Game implements GameApi {
         const { female } = this.ambient.greet(w, p.x, p.z);
         const line = AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)];
         const voice = ambientVoice(female ? "f" : "m");
-        audio.play(voice, 1, line.en, { male: !female });
-        w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
+        speakTownLine({ actor: w.ch, id: `walker:${w.id}`, scope: "greeting" }, voice, female, line.en,
+          audio.clipDuration(voice, 1, line.en) ?? 1.2, undefined, this.townTalk ??= new ActorTalk());
         st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt, phrase: line });
         return;
       }
@@ -2676,6 +2683,8 @@ export class Game implements GameApi {
   }
 
   private startSession(sit: SituationDef, actor: TalkActor | null, introOverride?: string) {
+    this.townTalk?.release();
+    this.stopNaturalTalk(false);
     this.modes.exit(true);
     this.keepsake.clear();
     if (this.cave) {
@@ -2704,18 +2713,20 @@ export class Game implements GameApi {
       this.player.setAnim("idle");
     }
     const speaker = (id: string) => actor?.id === id ? actor : this.npcs.find((n) => n.id === id);
+    const people = this.npcs, acting = !!actor && !isCall(sit);
+    const voice = (n: TalkActor | undefined, line: number, replay?: VoiceVisualOwner["replay"]) =>
+      acting && n && this.npcs === people && !this.disposed && this.session === session && session.active ? { actor: n.ch, line, replay } : undefined;
     const session: Session = new Session(sit.id, {
-      npcTalk: (npcId, secs, text) => {
+      npcTalk: (npcId, line, replay) => {
         const n = speaker(npcId);
-        if (!n) return;
-        // the mouth follows the recording while the line is this person's (its loudness and its sound), and the face
-        // what the line says
-        n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1), () => audio.vowel());
         // the camera follows changes of speaker
-        if (this.rig.mode === "talk" && this.talkCast.includes(n)) this.aimTalk(n);
-        if (text) n.ch.express?.(moodOf(text), secs + 1.2);
+        if (n && this.rig.mode === "talk" && this.talkCast.includes(n)) this.aimTalk(n);
+        return voice(n, line, replay);
       },
-      npcReact: (npcId, kind) => { speaker(npcId)?.ch.react?.(kind); },
+      npcVoice: (id, line, replay) => voice(speaker(id), line, replay),
+      npcReact: (id, kind) => {
+        if (this.session === session && session.active) this.naturalView?.feedback(id, kind);
+      },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
@@ -2736,6 +2747,11 @@ export class Game implements GameApi {
         && this.zone === zone && this.talkNpc === actor && this.rig.mode === "talk"
         && !!this.talkSpeaker && this.talkCast.includes(this.talkSpeaker);
     };
+    if (!isCall(session.sit)) this.naturalView = bindNaturalTalk({
+      run, zone, host: actor, cast: this.talkCast, people: this.npcs,
+      extras: this.extras.filter((_, i) => ROOM_PEOPLE[zone.id]?.[i]?.chat === undefined),
+      authoredCast: session.sit.npcs, player: this.player, audio, free: (n) => !this.modes.active?.ownsNpc?.(n.id),
+    }, hasArt, valid, () => this.transitioning || !!this.modes.active);
     void loadTalkFraming().then((module) => {
       if (!module || !valid() || !this.talkSpeaker) return;
       this.talkCamera = new module.TalkPresentation(this.renderer.domElement, this.rig, this.talkSpeaker, valid, hasArt, () => {
@@ -2760,7 +2776,12 @@ export class Game implements GameApi {
     });
   }
 
-  private stopTalkLayout() {
+  private stopNaturalTalk(release: boolean) {
+    if (!this.naturalView?.stop(release)) this.naturalView = undefined;
+  }
+
+  private stopTalkLayout(release = false) {
+    this.stopNaturalTalk(release);
     this.talkCamera?.dispose();
     this.talkCamera = undefined;
     this.talkSpeaker = null;
@@ -2801,7 +2822,7 @@ export class Game implements GameApi {
   private endSession(sit: SituationDef, completed: boolean) {
     const reduceMotion = this.talkCamera?.reducedMotion;
     this.session = null;
-    this.stopTalkLayout();
+    this.stopTalkLayout(true);
     audio.recordedDialogue = false;
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
@@ -3256,6 +3277,13 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const talking = !!this.session?.active;
     const mode = this.modes.active;
+    if (this.naturalView && !this.naturalView.update(st.conv, dt)) this.naturalView = undefined;
+    const speaker = this.naturalTalk?.speaker;
+    if (speaker) {
+      speaker.headJoint.getWorldPosition(this.talkAt);
+      this.player.watch = this.talkAt;
+      this.player.steady = true;
+    }
     this.reactions.observe(talking || st.conv.active);
     if (this.flight && this.rig.stage) {
       // the first visit's flight over the town: the camera along its path, and down to the airport at its end
@@ -3665,6 +3693,7 @@ export class Game implements GameApi {
     if (this.modes.owns("surf")) this.setJoystick(0, 0);
     // A key the workout takes over must be released before its repeats can move the player again.
     if (this.modes.owns("gym")) for (const key of this.keys) this.gymHeldKeys.add(key);
+    this.townTalk?.release();
     this.keepsake.clear();
     useStore.getState().dismissRideToasts();
     this.endRide();
@@ -4045,7 +4074,7 @@ export class Game implements GameApi {
     // the people look at the learner's head; the player at the one they talk with
     this.learnerAt.set(p.x, p.y + (this.player.lift ?? 0) + 1.5, p.z);
     const partner = talking ? this.talkNpc : null;
-    if (partner) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
+    if (partner && !this.naturalTalk?.speaker) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
     this.player.watch = partner ? this.talkAt : null;
     this.player.steady = !!partner;
     for (const n of this.npcs) {
@@ -4403,6 +4432,7 @@ export class Game implements GameApi {
     this.zoneTimers.clear();
     this.keepsake.dispose();
     this.streetLife?.dispose();
+    this.townTalk?.release(0);
     this.rides?.disposeWater();
     this.stopTalkLayout();
     this.speedFeel?.dispose();
@@ -4433,7 +4463,8 @@ export class Game implements GameApi {
     audio.motor(null);
     audio.stop();
     radio.shutdown();
-    for (const n of this.npcs) n.tag.remove();
+    for (const n of this.npcs) { n.ch.talkPose?.interrupt(); n.tag.remove(); }
+    this.player?.talkPose?.interrupt();
     this.npcs = [];
     this.renderer.domElement.remove();
     this.renderer.dispose();

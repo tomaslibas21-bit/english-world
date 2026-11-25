@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { Look } from "../../content/npcs";
 import type { Anim } from "./Character";
 import type { CharacterJoint } from "./index";
+import type { NaturalPoseDriver, NaturalRig } from "../talkNatural/contract";
 import { OUTLINE_LAYER, outlineMaterial, addOutlineNormals, vertexColorMaterial } from "../style";
 import { buildCharacter, BONE, BONE_COUNT, type CharSpec } from "./builders";
 
@@ -31,6 +32,7 @@ export class StyledCharacter {
   private gestureSide = 1;
   private gestureT = 0;
   private browY = 0;
+  declare talkPose?: NaturalPoseDriver;
 
   constructor(public look: Look) {
     const spec = (this.spec = buildCharacter(look));
@@ -87,8 +89,18 @@ export class StyledCharacter {
 
   joint(name: CharacterJoint): THREE.Object3D { return this.bones[JOINT[name]]; }
 
-  setAnim(a: Anim) { this.anim = a; }
-  talk(seconds: number) { this.talking = Math.max(this.talking, seconds); }
+  setAnim(a: Anim) { if (a !== "wave" || !this.talkPose) this.anim = a; }
+  talk(seconds: number) { if (!this.talkPose) this.talking = Math.max(this.talking, seconds); }
+
+  naturalRig(): NaturalRig {
+    this.talking = 0;
+    const b = this.bones;
+    return {
+      body: b[BONE.body], head: b[BONE.head], upperL: b[BONE.uArmL], upperR: b[BONE.uArmR],
+      foreL: b[BONE.fArmL], foreR: b[BONE.fArmR], thighL: b[BONE.thighL], thighR: b[BONE.thighR],
+      eye: b[BONE.eyes], browL: b[BONE.brows], mouth: b[BONE.mouth], handLength: this.spec.joints.hand, carry: this.look.carry,
+    };
+  }
 
   update(dt: number) {
     this.t += dt;
@@ -96,6 +108,9 @@ export class StyledCharacter {
   }
 
   private pose(dt: number) {
+    const pose = this.talkPose;
+    pose?.advance(dt);
+    const idle = pose?.reduced ? 0 : pose ? 1 - pose.weight : 1;
     const t = this.t, b = this.bones, M = this.spec.motion;
     const body = b[BONE.body], head = b[BONE.head];
     const uL = b[BONE.uArmL], fL = b[BONE.fArmL], uR = b[BONE.uArmR], fR = b[BONE.fArmR];
@@ -118,20 +133,20 @@ export class StyledCharacter {
       elbowL = elbowR = run ? -1.25 : -0.38;
       sway = s * 0.025;
     } else if (!sitting) {
-      bob = Math.sin(t * 1.9) * 0.006;
-      squash = Math.sin(t * 1.9) * M.squash * 0.15;
-      sway = Math.sin(t * 0.7) * 0.018;
+      bob = Math.sin(t * 1.9) * 0.006 * idle;
+      squash = Math.sin(t * 1.9) * M.squash * 0.15 * idle;
+      sway = Math.sin(t * 0.7) * 0.018 * idle;
       // look around now and then
       this.glanceT -= dt;
-      if (this.glanceT <= 0) {
+      if (this.glanceT <= 0 && idle > 0) {
         this.glanceTarget = this.glanceTarget ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.3 + Math.random() * 0.35);
         this.glanceT = this.glanceTarget ? 1.2 + Math.random() : 3 + Math.random() * 5;
       }
-      turn = Math.sin(t * 0.5) * 0.08;
+      turn = Math.sin(t * 0.5) * 0.08 * idle;
     }
     if (walking || sitting) this.glanceTarget = 0;
     this.glance += (this.glanceTarget - this.glance) * Math.min(1, dt * 4);
-    turn += this.glance;
+    turn += this.glance * idle;
 
     // arms at rest hang slightly away from the body
     uL.rotation.set(armA, 0, -M.armOut);
@@ -141,7 +156,10 @@ export class StyledCharacter {
 
     // talking: nods, eyebrows, the mouth moves and one hand gestures
     const mouth = b[BONE.mouth], brows = b[BONE.brows];
-    if (this.talking > 0) {
+    if (pose) {
+      mouth.scale.set(pose.mouth > 0 ? 1.06 - 0.46 * pose.roundness : 1, M.mouthIdle + pose.mouth * M.mouthOpen, 1);
+      brows.position.y = this.browY;
+    } else if (this.talking > 0) {
       this.talking -= dt;
       this.gestureT -= dt;
       if (this.gestureT <= 0) { this.gestureT = 2 + Math.random() * 2.5; this.gestureSide = Math.random() < 0.7 ? 1 : -1; }
@@ -156,7 +174,7 @@ export class StyledCharacter {
       mouth.scale.y = M.mouthIdle;
       brows.position.y = this.browY;
     }
-    if (this.anim === "wave") {
+    if (!pose && this.anim === "wave") {
       uR.rotation.set(-0.1, 0, 2.55);
       fR.rotation.set(0, 0, 0.35 + Math.sin(t * 10) * 0.42);
     }
@@ -186,7 +204,16 @@ export class StyledCharacter {
     tail.rotation.set(0.12 + lean * 1.5 + (walking ? Math.abs(Math.sin(t * f)) * 0.18 : Math.sin(t * 1.4) * 0.03), 0, walking ? Math.sin(t * f) * 0.16 : 0);
     // blinking (now and then twice)
     this.blinkT -= dt;
-    b[BONE.eyes].scale.y = this.blinkT < 0.12 ? 0.1 : 1;
-    if (this.blinkT < 0) this.blinkT = Math.random() < 0.18 ? 0.28 : 2.5 + Math.random() * 3.5;
+    const eyes = b[BONE.eyes];
+    const blink = pose ? Math.max(0, 1 - Math.abs(this.blinkT - 0.1) / 0.1) : Number(this.blinkT < 0.12);
+    eyes.scale.y = 1 - blink * 0.9;
+    if (this.blinkT < 0) this.blinkT = Math.random() < 0.18 ? (pose ? 0.36 : 0.28) : 2.5 + Math.random() * 3.5;
+    if (pose) {
+      const j = this.spec.joints;
+      eyes.position.set(0, j.eyes[0] - j.neckTop, j.eyes[1]);
+      tail.rotation.x = 0.12 + (tail.rotation.x - 0.12) * idle;
+      tail.rotation.z *= idle;
+      pose.apply(dt, walking || this.lift > 0, blink);
+    } else mouth.scale.x = 1;
   }
 }

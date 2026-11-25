@@ -24,7 +24,9 @@ export function GoFishOffer() {
       <PhraseSave sentence={line.sentence} {...source} iconOnly />
     </div>
     <div className="gofish-offer-actions">
-      <button type="button" className="btn" onClick={() => act("start")}>{words.start}</button>
+      <button type="button" className="btn" onClick={() => act("start")} onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && e.currentTarget.matches(":focus-visible")) e.stopPropagation();
+      }}>{words.start}</button>
       <button type="button" className="btn soft" data-pad-back onClick={exit}>{words.done}</button>
     </div>
   </section>;

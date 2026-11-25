@@ -1,9 +1,14 @@
 import { audio } from "../audio";
-import type { GameCharacter } from "../characters";
+import { ActorTalk, type ActingTarget } from "../talkNatural/binding";
 
-export function speakTownLine(ch: GameCharacter | undefined, voice: string, female: boolean, text: string, seconds: number, signal?: AbortSignal) {
-  if (!ch || audio.hasClip(voice, 1, text)) {
-    void audio.play(voice, 1, text, { male: !female, ...(signal ? { optional: true, recordingOnly: !!ch, signal } : {}) });
-    ch?.talk(audio.clipDuration(voice, 1, text) ?? seconds, () => audio.level(), () => audio.vowel());
-  } else ch.talk(seconds);
+export function speakTownLine(target: ActingTarget | undefined, voice: string, female: boolean, text: string, seconds: number,
+  signal?: AbortSignal, talk?: ActorTalk) {
+  if (signal?.aborted) return;
+  const voiced = !target || target.scope === "greeting" || audio.hasClip(voice, 1, text);
+  const acting = target && (talk ?? new ActorTalk()).speak(target, text, text, seconds, voiced);
+  if (voiced) {
+    void audio.play(voice, 1, text, { male: !female, visual: acting?.owner,
+      ...(signal ? { optional: true, recordingOnly: !!target, signal } : {}) })
+      .then(() => { if (acting) acting.finished = true; });
+  }
 }

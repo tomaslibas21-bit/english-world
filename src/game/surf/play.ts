@@ -11,6 +11,7 @@ import { keepPhrases } from "../kit/phrases";
 import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { ModeHost } from "../kit/host";
+import type { ActorTalk } from "../talkNatural/binding";
 import type { GameCharacter } from "../characters";
 import { Surf } from "./Surf";
 import { SurfOutfit, surfLook } from "./outfit";
@@ -19,7 +20,10 @@ import { COMMANDS, SurfLogic, type Do, type Level, type SurfInput } from "./logi
 import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine, type SurfUi } from "./store";
 
 export type SurfGame = Pick<ModeHost, "player" | "rig" | "time" | "add" | "canStart" | "fade" | "hideNpc"
-  | "entered" | "left" | "owns" | "splash" | "prepare" | "place" | "updatePose">;
+  | "entered" | "left" | "owns" | "splash" | "prepare" | "place" | "updatePose"> & {
+  /** The natural acting of conversations (batch 6): Maren speaks, listens and reacts with it. */
+  acting?(): ActorTalk;
+};
 
 /** The lines that become phrase cards once heard: the commands one acts on, the questions, the rewards. */
 const CARDS = new Set([
@@ -40,6 +44,7 @@ export class SurfPlay {
   readonly outfit: SurfOutfit;
   readonly loaded: HTMLImageElement[] = [];
   logic: SurfLogic | null = null;
+  private acting?: ActorTalk;
   private level: Level = "beginner";
   private roundReady = false;
   private closing = false;
@@ -152,6 +157,7 @@ export class SurfPlay {
     this.replaying = true;
     this.clearInput();
     audio.stop();
+    this.acting?.release();
     this.stopListening();
   }
 
@@ -176,6 +182,7 @@ export class SurfPlay {
     const out = () => {
       if (this.logic !== round) return;
       try { this.finish(); } finally {
+        this.acting?.release(0);
         this.logic = null;
         this.scene.end();
         this.outfit.restore();
@@ -288,7 +295,8 @@ export class SurfPlay {
     const resumeMic = this.speech?.running || this.listenT !== null;
     this.stopListening("replay instructor");
     const slow = !!useStore.getState().settings.slowVoice;
-    void audio.play(voice, speed, say, { slow, male: npc?.gender === "m" }).then((played) => {
+    const visual = this.coachLine(ui.line.cue, say, audio.clipDuration(voice, speed, say) ?? 2, true);
+    void audio.play(voice, speed, say, { slow, male: npc?.gender === "m", visual }).then((played) => {
       if (played && resumeMic && turn && this.logic === L && L.choice === turn) this.listen();
     });
   }
@@ -299,6 +307,16 @@ export class SurfPlay {
   setMic(on: boolean) {
     useSurf.getState().set({ micOn: on });
     if (!on) this.stopListening("mic toggled off"); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+  }
+
+  private coachActor() {
+    const actor = this.scene.coach;
+    return actor && this.scene.group.visible ? { actor, id: this.content.npc, player: this.game.player() } : undefined;
+  }
+
+  private coachLine(cue: string, text: string, seconds: number, repeat = false) {
+    const target = this.coachActor();
+    if (target) return (this.acting ??= this.game.acting?.())?.speak(target, cue, text, seconds, true, repeat)?.owner;
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -362,6 +380,7 @@ export class SurfPlay {
    *  them first, in the voice the learner's examples have. */
   private answer(cue: string, spoken: boolean): number {
     this.stopListening("answer selected");
+    this.acting?.react("understood");
     if (!this.answered.includes(cue)) this.answered.push(cue);
     const s = this.line(cue);
     useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : UNSUPPORTED });
@@ -403,8 +422,10 @@ export class SurfPlay {
     const duration = audio.clipDuration(voice, speed, s.say);
     const seconds = (duration ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
     if (duration !== null) {
-      void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m" });
-      this.scene.coach?.talk(seconds, voiceLevel, voiceVowel);
+      // (her face and head act the line with the natural acting; without it, the mouth as before)
+      const visual = this.coachLine(cue, s.say, seconds);
+      void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m", visual });
+      if (!visual) this.scene.coach?.talk(seconds, voiceLevel, voiceVowel);
     }
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
@@ -445,6 +466,7 @@ export class SurfPlay {
     const L = this.logic!;
     L.setSlow(!!useStore.getState().settings.slowVoice);
     const paused = blocked || this.closing || this.replaying;
+    this.acting?.pause(paused);
     if (paused !== this.paused) {
       this.paused = paused;
       if (paused) { this.clearInput(); this.stopListening("lesson paused"); }
@@ -480,6 +502,7 @@ export class SurfPlay {
     const turn = L.choice !== this.lastChoice;
     if (turn) {
       this.lastChoice = L.choice;
+      this.acting?.listen(L.choice ? this.coachActor() : undefined, !!L.choice);
       (patch ??= {}).choice = L.choice ? { id: L.choice.id, options: L.choice.options.flatMap((cue) => {
         const s = this.line(cue);
         return s ? [{ cue, s }] : [];

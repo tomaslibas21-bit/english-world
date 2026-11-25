@@ -101,6 +101,8 @@ class GoFishMode implements GameMode {
   private starting = false;
   private debugSeed?: number;
   private speaker: Player = "dan";
+  private listener: Npc = "dan";
+  private addressee: Player = "learner";
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
@@ -118,10 +120,15 @@ class GoFishMode implements GameMode {
       this.speaker = "learner";
       ui({ line: { ...line, speaker: "learner" }, busy: true });
     },
-    animate: (seconds) => {
-      const speaker = this.speaker;
-      if (speaker === "learner") return;
-      this.room.npc(speaker)?.talk(seconds, () => this.speaker === speaker ? audio.level() : -1, () => audio.vowel());
+    acting: () => this.host.acting?.(),
+    actor: (listening) => {
+      const id = listening ? this.listener : this.speaker;
+      if (id === "learner") return;
+      const actor = this.run?.actors[id].ch ?? this.room.npc(id);
+      if (!actor) return;
+      const to = listening ? "learner" : this.addressee;
+      return { actor, id, player: to === "learner" && this.run ? this.host.player() : undefined,
+        partner: to === "learner" ? undefined : this.run?.actors[to].ch };
     },
   });
 
@@ -146,6 +153,7 @@ class GoFishMode implements GameMode {
     if (!view().offered) {
       ui({ offered: true });
       this.speaker = "dan";
+    this.addressee = "learner";
       void this.playback.say(situation, "dan", "gf_offer", GOFISH_LINES);
     }
     return true;
@@ -214,6 +222,7 @@ class GoFishMode implements GameMode {
   private async say(run: Run, speaker: Npc, key: string, to: Player = "learner") {
     if (!this.live(run)) return false;
     this.speaker = speaker;
+    this.addressee = to;
     run.actors[speaker].ch.watch = to === "learner" ? run.playerFace : run.actors[to].face;
     const line = await this.playback.say(situation, speaker, key, GOFISH_LINES);
     if (!this.live(run)) return false;
@@ -222,6 +231,7 @@ class GoFishMode implements GameMode {
   }
 
   private async expect(run: Run, npc: Npc, keys: string[], names?: Npc[]) {
+    this.listener = npc;
     const line = await this.playback.expect(situation, npc, keys, GOFISH_LINES, GOFISH_ACCEPT,
       names && { names, select: (name) => this.selectTarget(run, name as Npc) });
     if (!this.live(run)) return null;
@@ -454,6 +464,8 @@ class GoFishMode implements GameMode {
   private selectTarget(run: Run, target: Npc) {
     if (!targets(run.round).includes(target)) return;
     run.actors[target].ch.watch = run.playerFace;
+    this.listener = target;
+    this.playback.attend(true);
     ui({ target });
   }
 
@@ -594,7 +606,6 @@ class GoFishMode implements GameMode {
       ch.watch = home.watch;
       ch.steady = home.steady;
       ch.attentive = home.attentive;
-      ch.talk(0, () => -1);
       ch.setAnim(home.anim === "wave" ? "idle" : home.anim);
     }
     const player = this.host.player();

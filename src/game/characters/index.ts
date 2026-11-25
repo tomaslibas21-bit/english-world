@@ -4,6 +4,7 @@ import type { Look } from "../../content/npcs";
 import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import { STYLED } from "../style";
+import type { NaturalPoseDriver, NaturalRig } from "../talkNatural/contract";
 
 export type CharacterJoint = "body" | "head" | "armL" | "armR" | "foreL" | "foreR" | "legL" | "legR" | "shinL" | "shinR";
 
@@ -15,6 +16,8 @@ export interface GameCharacter {
   anim: Anim;
   readonly height: number;
   joint(name: CharacterJoint): THREE.Object3D;
+  talkPose?: NaturalPoseDriver;
+  naturalRig?(): NaturalRig;
   setAnim(a: Anim): void;
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
@@ -55,6 +58,8 @@ export interface GameCharacter {
   busy?: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null;
   /** At a car's wheel or a boat's tiller: how far it is turned (−1…1; the original Character). */
   steer?: number;
+  /** An authored two-handed hold, such as a street actor carrying a box. */
+  handsOccupied?: boolean;
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
   swim?: number;
   dive?: number;

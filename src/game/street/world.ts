@@ -5,6 +5,7 @@ import { walkerLook, type Ambient } from "../ambient";
 import { createCharacter, type GameCharacter } from "../characters";
 import type { NavGrid } from "../nav";
 import type { OcclusionField } from "../occlusion";
+import { ActorTalk } from "../talkNatural/binding";
 import { Pigeons } from "../pigeons";
 import { floorY, poolAt, SEA_LEVEL, SHORE } from "../water";
 import { PARK, ROADS, SIDEWALK, SQUARE } from "../world/layout";
@@ -72,6 +73,9 @@ export class TownStreet implements StreetWorld {
       if (walker) this.women.set(walker.ch, walker.female);
     }
   }
+
+  acting() { return new ActorTalk(); }
+  learner() { return this.player(); }
 
   private nearWater(x: number, z: number) {
     return z - SHORE.top <= 40 || !!poolAt(x, z);
@@ -472,7 +476,8 @@ class TownActor implements StreetActor {
     }
     this.person.watch = this.gone || this.drop && sinceAnswer < 0 ? null : player;
     this.person.setAnim(moving ? "walk" : "idle");
-    if (this.twoHanded && this.prop?.visible) this.person.holdMoment?.("type");
+    this.person.handsOccupied = this.twoHanded && !!this.prop?.visible;
+    if (this.person.handsOccupied) this.person.holdMoment?.("type");
     this.person.update(dt);
     this.props(dt);
   }

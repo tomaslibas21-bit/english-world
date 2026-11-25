@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { NPCS } from "../../content/npcs";
 import { MEETING_LINES } from "../../content/phoneMeeting";
 import { useStore } from "../../state/store";
-import { audio } from "../audio";
 import { createCharacter, type GameCharacter } from "../characters";
 import { ModeDialogue, type KitLine, type KitMic } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
@@ -31,7 +30,8 @@ export class LizzieMeeting implements GameMode {
     say: (line) => useMeeting.setState({ line }),
     choices: (choices) => useMeeting.setState({ choices }),
     mic: (mic) => useMeeting.setState({ mic }),
-    animate: (seconds) => this.actor?.talk(seconds, () => audio.level(), () => audio.vowel()),
+    acting: () => this.host.acting?.(),
+    actor: () => this.actor ? { actor: this.actor, id: "lizzie", player: this.host.player() } : undefined,
   });
 
   constructor(private host: ModeHost, private town: Town, private done: () => void) {
