@@ -9,4 +9,5 @@ applyLearner({ npcs: NPCS }, SHARED);
 NPCS.memo.bio = "Laiko barą „La Buchaca“, kurį atidarė jo tėvas, ir vis dar kasvakar žaidžia biliardą.";
 NPCS.tona.bio = "Nepraleidžia nė vieno penktadienio loterijos vakaro centrinėje aikštėje ir visada atsineša atliekamą lentelę.";
 NPCS.beto.bio = "Jau dvidešimt metų šaukia kortas aikštės loterijoje – beveik kiekvienai turi eilėraštuką.";
+NPCS.ines.bio = "Užaugo Puerto Colibrí miestelyje ir mėgsta palaukti, kol kas nors pastebės antrą vėžlį.";
 export * from "@/content/npcs";

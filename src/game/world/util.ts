@@ -208,7 +208,7 @@ export function rand(seed: number) {
  *  supplied by its builder when the height sampler cannot reliably read it. It gives clearance only.
  *  `deckRail` and `carRim` mark barriers for the car-water collision sweep. */
 export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean; vault?: number; deckRail?: boolean; carRim?: boolean }
-export interface CircleCollider { x: number; z: number; r: number; tag?: string; split?: boolean; vault?: number; npc?: string }
+export interface CircleCollider { x: number; z: number; r: number; tag?: string; split?: boolean; vault?: number; npc?: string; extra?: boolean }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {

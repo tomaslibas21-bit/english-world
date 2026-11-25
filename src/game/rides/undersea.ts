@@ -195,7 +195,7 @@ export class Undersea {
   }
 
   /** Every frame someone is in the water. `under`: the camera is below its surface; `at`: where the diver is. */
-  update(dt: number, t: number, under: boolean, at: THREE.Vector3, moving: number) {
+  update(dt: number, t: number, under: boolean, at: THREE.Vector3, moving: number, guidedSurface?: number) {
     if (under && !this.built) this.build();
     this.on = under && this.built;
     this.group.visible = this.on;
@@ -203,11 +203,13 @@ export class Undersea {
     this.underU.uTime.value = t;
     this.bedU.uTime.value = t;
     // (a pool's surface is its own: the plane moves over the diver's water)
-    const pool = POOLS.find((p): p is Pool => "r" in p && (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2);
-    this.under!.position.set(at.x, (pool ? pool.y : SEA_LEVEL) - 0.3, at.z);
+    const pool = guidedSurface === undefined ? POOLS.find((p): p is Pool => "r" in p && (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2) : undefined;
+    this.under!.position.set(at.x, guidedSurface ?? ((pool ? pool.y : SEA_LEVEL) - 0.3), at.z);
     this.far!.position.set(at.x, -3, at.z);
     // (a pool is small: its water closes in sooner, and only two little schools live in it)
     this.fog.far = pool ? 13 : 32;
+    this.fish!.visible = this.bubbles!.visible = guidedSurface === undefined;
+    if (guidedSurface !== undefined) return;
     this.s.setScalar(pool ? 0.55 : 1);
     // the schools circle; one that is left far behind turns up again ahead of the diver
     const fish = this.fish!;
@@ -248,4 +250,16 @@ export class Undersea {
     }
     (this.bubbles!.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
   }
+  dispose() {
+    for (const child of this.group.children) {
+      if (child instanceof THREE.InstancedMesh) child.dispose();
+      if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+        child.geometry.dispose();
+        child.material.dispose();
+      }
+    }
+    this.group.clear();
+    this.group.removeFromParent();
+  }
+
 }

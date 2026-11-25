@@ -1,5 +1,7 @@
-// Written by tools/situation-icons.mjs from lucide-static 1.77.0 (ISC license, docs/licenses/lucide.txt): the shapes of
-// the conversations' icons (src/content/situationIcons.ts), each a list of SVG elements on a 24×24 grid.
+// Written by tools/situation-icons.mjs from the registry in src/content/situationIcons.ts.
+// Lucide shapes: lucide-static 1.77.0 (ISC license, docs/licenses/lucide.txt). The seashell is the game's own glyph.
+import { SEASHELL_PATH } from "./icons";
+
 export type IconNode = [tag: string, attrs: Record<string, string | number>];
 export const SITUATION_ICON_NODES: Record<string, IconNode[]> = {
   "alarm-clock": [["circle",{"cx":"12","cy":"13","r":"8"}],["path",{"d":"M12 9v4l2 2"}],["path",{"d":"M5 3 2 6"}],["path",{"d":"m22 6-3-3"}],["path",{"d":"M6.38 18.7 4 21"}],["path",{"d":"M17.64 18.67 20 21"}]],
@@ -66,4 +68,5 @@ export const SITUATION_ICON_NODES: Record<string, IconNode[]> = {
   "wifi-off": [["path",{"d":"M12 20h.01"}],["path",{"d":"M8.5 16.429a5 5 0 0 1 7 0"}],["path",{"d":"M5 12.859a10 10 0 0 1 5.17-2.69"}],["path",{"d":"M19 12.859a10 10 0 0 0-2.007-1.523"}],["path",{"d":"M2 8.82a15 15 0 0 1 4.177-2.643"}],["path",{"d":"M22 8.82a15 15 0 0 0-11.288-3.764"}],["path",{"d":"m2 2 20 20"}]],
   "wine": [["path",{"d":"M8 22h8"}],["path",{"d":"M7 10h10"}],["path",{"d":"M12 15v7"}],["path",{"d":"M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"}]],
   "wrench": [["path",{"d":"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"}]],
+  "seashell": [["path",{"d":SEASHELL_PATH}]],
 };

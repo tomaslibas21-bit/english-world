@@ -7,6 +7,8 @@
 import type { TownTheme } from "../../../../game/world/theme";
 export type { BuildingLook, FloorKind, OutdoorSpot, RoomLook, TianguisGoods, TownTheme } from "../../../../game/world/theme";
 
+const cenoteGuide = { npc: "ines", x: -122.4, z: -1.4, rot: Math.PI / 2, ax: -120.65, az: -1.4 };
+
 export const THEME: TownTheme = {
   // The first visit's flight (game/flyover.ts): in from the Caribbean over the beach and the malecón, along the shore
   // with the zócalo and its kiosco below, and down to the airport
@@ -141,7 +143,8 @@ export const THEME: TownTheme = {
     // at the west wall, the iguana's stone to her left
     { npc: "custodio", x: -116.8, z: -63.7, rot: Math.PI, ax: -116.8, az: -65.5 },
     { npc: "pintora", x: -129.9, z: -66.0, rot: Math.PI / 2, ax: -128.1, az: -66.0 },
-    { npc: "rosario", x: -135.7, z: -64.8, rot: Math.PI / 2, ax: -133.9, az: -64.8 }],
+    { npc: "rosario", x: -135.7, z: -64.8, rot: Math.PI / 2, ax: -133.9, az: -64.8 },
+    cenoteGuide],
   // x05-tienda: the store's own cashier, Paco, behind its counter where Maple Harbor's Dot stands (she is outdoors here)
   roomNpcs: { "gas-station": [{ npc: "tienda", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }] },
   // s71b: the pump has no door to find it by, so Doña Chela's talk spot is marked all the time (the owner, 17 Nov 2026)
@@ -325,7 +328,7 @@ export const THEME: TownTheme = {
   // conversations still take a colectivo to "a cenote" further off: s62, s69)
   // (15 Nov: and through the cave's mouth at its far side into the aluxes' grotto, src/game/cave)
   // (15 Nov, later: its grounds open to explore from every side, src/game/cave/grounds.ts)
-  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true, open: true },
+  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true, open: true, guide: cenoteGuide },
   // (18 Nov: one walks in: a gateway where the beach ends, a walled lawn with a few people to chat with (x06–x08),
   // the castillo's stairs up to the temple's doorways; mexican.ts ruins / ruinsWalk)
   ruins: { x: -124, z: -74, walk: true },

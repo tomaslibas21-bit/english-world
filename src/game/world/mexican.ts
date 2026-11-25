@@ -13,7 +13,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { colourMerge, rand, roundRect, type Colliders } from "./util";
 import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
-import type { TianguisGoods } from "./theme";
+import type { TianguisGoods, TownTheme } from "./theme";
 
 export type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 type Face = "n" | "s" | "e" | "w";
@@ -872,7 +872,7 @@ function farPalm(parts: Part[], r: () => number, x: number, z: number, h: number
  *  taquilla's palapa with its painted sign facing the town; a sacbé (a white limestone path with an edge of stones) out
  *  across the meadow from the mirador to the deck. One part of the town's merged meshes (the one that casts no shadow:
  *  it is seen from afar, beyond the town's edge); nothing to walk on. */
-export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string, open = false) {
+export function cenote(parts: Part[], atlas: SignAtlas, { x, z, sign, open, guide }: NonNullable<TownTheme["cenote"]>) {
   const r = rand(808);
   const R = 6.0;
   // the water: dark at the edge, turquoise, light over the white sand in the middle
@@ -948,6 +948,18 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   // the taquilla's palapa where the entrance is paid, and the sign on two posts facing the town
   const hx = x + R + 4.8, hz = z + 4.6;
   for (const [px, pz] of [[1.4, 1.2], [1.4, -1.2], [-1.4, 1.2], [-1.4, -1.2]]) parts.push([cyl(0.09, 0.11, 2.6, hx + px, 1.3, hz + pz, 6), WOOD]);
+  if (guide) {
+    // The east post's fish board and the dry talk mark share the cenote's scenery mesh.
+    const east = (g: THREE.BufferGeometry) => place(g, hx + 1.5, hz + 1.2, Math.PI / 2);
+    const cream = "#fff4dc", teal = "#137d79";
+    parts.push(
+      [east(box(0.50, 0.34, 0.04, 0, 1.38, 0)), cream],
+      [east(new THREE.CircleGeometry(1, 12).scale(0.135, 0.08, 1).translate(0.034, 1.38, 0.025)), teal],
+      [east(new THREE.CircleGeometry(0.095, 3).translate(-0.135, 1.38, 0.025)), teal],
+      [east(new THREE.CircleGeometry(0.013, 8).translate(0.1, 1.40, 0.026)), cream],
+      [new THREE.RingGeometry(0.31, 0.39, 16).rotateX(-Math.PI / 2).translate(guide.ax, 0.02, guide.az), teal],
+    );
+  }
   parts.push([box(2.2, 1.0, 0.55, hx + 0.6, 0.5, hz), "#2a9d8f"], [box(2.3, 0.06, 0.65, hx + 0.6, 1.03, hz), "#c08a52"]);
   parts.push([new THREE.ConeGeometry(2.7, 1.6, 4).rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 3.35, hz), THATCH]);
   parts.push([new THREE.ConeGeometry(0.6, 0.6, 4).rotateY(Math.PI / 4).translate(hx, 4.25, hz), THATCH_DARK]);

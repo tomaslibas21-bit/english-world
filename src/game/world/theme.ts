@@ -267,7 +267,10 @@ export interface TownTheme {
     grotto?: boolean;
     /** Its grounds are open to explore (src/game/cave/grounds.ts): the meadow's whole edge, more ways down to the
      *  water, a trail round its jungle side, and more ways into the grotto. */
-    open?: boolean } | null;
+    open?: boolean;
+    /** The guide by the taquilla and the dry approach used for the return. */
+    guide?: OutdoorSpot & { ax: number; az: number };
+  } | null;
   /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). `walk`: one walks
    *  in through a gateway where the beach ends, round its lawn and up the castillo's stairs (mexican.ts ruinsWalk;
    *  needs `cenote.walk`, whose opening of the town's west edge it shares). */

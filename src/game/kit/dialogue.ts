@@ -35,6 +35,8 @@ export class ModeDialogue {
     /** Give an unrecorded learner line time for browser speech. */
     allowBrowserVoice?: boolean;
     framePlayback?: boolean;
+    /** Advance on the frame clock when there is no installed recording. */
+    recordingOnly?: boolean;
   }) {}
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]> | undefined, learner: boolean): KitLine | null {
@@ -47,7 +49,7 @@ export class ModeDialogue {
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
     // Muted dialogue uses its reading time and never waits for browser audio.
-    const audible = volume !== 0 && (clip != null || text !== `[${line.key}]`);
+    const audible = volume !== 0 && (clip != null || (!this.ui.recordingOnly && text !== `[${line.key}]`));
     const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
@@ -61,7 +63,7 @@ export class ModeDialogue {
           playing.left = duration;
           playing.completed = false;
           if (!learner) this.ui.animate?.(est);
-          if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
+          if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback, ...(this.ui.recordingOnly && { optional: true, recordingOnly: true }) }).then((ok) => {
             if (!ok || this.playback !== playing || id !== playbackId) return;
             heard = true;
             if (this.ui.framePlayback) playing.completed = true;

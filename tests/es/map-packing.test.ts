@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { LOCATIONS } from "../../src/content/locations";
-import { ROUTE } from "../../src/content/route";
+import { CENOTE_TOUR, ROUTE } from "../../src/content/route";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations/catalog";
 import { isTownQuest } from "../../src/content/townQuests";
 import { Game } from "../../src/game/Game";
@@ -13,7 +13,8 @@ import { isPhone } from "../../src/ui/objective";
 import { mapPoint, townBounds } from "../../src/ui/worldMap";
 
 const data: MapContent = {
-  locations: LOCATIONS, route: ROUTE, catalog: SITUATIONS, outdoor: OUTDOOR_NPCS, airport: AIRPORT_EXIT,
+  locations: LOCATIONS, route: ROUTE.concat(CENOTE_TOUR ?? []), cenoteTour: CENOTE_TOUR,
+  catalog: SITUATIONS, outdoor: OUTDOOR_NPCS, airport: AIRPORT_EXIT,
   caveZone: CAVE_ZONE, caveEntry: preferredCaveEntry, isTownQuest, isPhone, mapPoint, townBounds,
 };
 const aspect = (townBounds.maxX - townBounds.minX) / (townBounds.maxZ - townBounds.minZ);
@@ -41,12 +42,13 @@ function checkPacking<T extends MapPlacePoint>(points: readonly T[], width: numb
   expect(pins.flatMap(({ members }) => members.map(({ id }) => id)).sort()).toEqual([...order].sort());
   expect(packMapPlaces(points, width, height, size)).toEqual(pins);
   for (const [i, pin] of pins.entries()) {
-    expect(pin.x - size / 2).toBeGreaterThanOrEqual(0);
-    expect(pin.y - size / 2).toBeGreaterThanOrEqual(0);
-    expect(pin.x + size / 2).toBeLessThanOrEqual(width);
-    expect(pin.y + size / 2).toBeLessThanOrEqual(height);
+    expect(pin.x - pin.size / 2).toBeGreaterThanOrEqual(0);
+    expect(pin.y - pin.size / 2).toBeGreaterThanOrEqual(0);
+    expect(pin.x + pin.size / 2).toBeLessThanOrEqual(width);
+    expect(pin.y + pin.size / 2).toBeLessThanOrEqual(height);
     for (const other of pins.slice(i + 1)) {
-      expect(Math.max(Math.abs(pin.x - other.x), Math.abs(pin.y - other.y)) - size).toBeGreaterThanOrEqual(4);
+      const gap = Math.max(Math.abs(pin.x - other.x), Math.abs(pin.y - other.y)) - (pin.size + other.size) / 2;
+      expect(gap).toBeGreaterThanOrEqual(4);
     }
     const ids = pin.members.map(({ id }) => id);
     expect(ids).toEqual(order.filter((id) => ids.includes(id)));
@@ -69,11 +71,12 @@ describe.each([30, 44])("%i px map targets", (size) => {
         const inner = Math.min(1060, w - 32) - (w <= 480 ? 28 : 36) - gutter;
         const width = w <= 700 ? inner : h <= 520 ? Math.min(inner * 0.54, (h - 150) * aspect) : (inner - 16) * 1.35 / 2.35;
         const height = width / aspect;
-        const points = places.map((place) => ({ ...place, x: place.x * width, y: place.y * height }));
+        const points = places.map((place) => ({ ...place, minSize: place.tour ? 44 : undefined, x: place.x * width, y: place.y * height }));
         const pins = checkPacking(points, width, height, size);
-        for (const id of ["airport", "gruta", "pool-hall"]) {
+        for (const id of ["airport", "gruta", "pool-hall", "cenote-tour"]) {
           expect(mapPinForPlace(pins, id)?.members.map((place) => place.id)).toEqual([id]);
         }
+        expect(mapPinForPlace(pins, "cenote-tour")?.size).toBe(44);
         const shape = (boxes: typeof pins) => boxes.map(({ x, y, members }) => ({ x, y, ids: members.map(({ id }) => id) }));
         expect(shape(packMapPlaces(points.map((p) => ({ ...p, lt: p.lt.repeat(12) })), width, height, size))).toEqual(shape(pins));
         if (size === 44 && w <= 390) {
@@ -104,6 +107,7 @@ it("keeps the PC situations and geographic points for the reserved places", () =
   const places = resolveMapPlaces(doors, false, data);
   const airport = places.find(({ id }) => id === "airport")!;
   const cave = places.find(({ id }) => id === "gruta")!;
+  const tour = places.find(({ id }) => id === "cenote-tour")!;
   expect(airport.name).toBe("Aeropuerto de Puerto Colibrí");
   expect(cave.name).toBe("Gruta de los Aluxes");
   expect([airport.x, airport.y]).toEqual(mapPoint(townBounds, AIRPORT_EXIT.x + 12, AIRPORT_EXIT.z));
@@ -112,6 +116,9 @@ it("keeps the PC situations and geographic points for the reserved places", () =
   expect([cave.x, cave.y]).toEqual(mapPoint(townBounds, way.x, way.z));
   expect(airport.sits).toEqual(ROUTE.filter(({ location }) => location === "airport"));
   expect(cave.sits.map(({ id }) => id)).toEqual(["x02-alux-kin", "x03-alux-nikte"]);
+  expect(tour.sits.map(({ id }) => id)).toEqual(["x14-cenote"]);
+  const guide = OUTDOOR_NPCS.find(({ npc }) => npc === "ines")!;
+  expect([tour.x, tour.y]).toEqual(mapPoint(townBounds, guide.x, guide.z));
   expect(places.find(({ id }) => id === "pool-hall")!.sits).toHaveLength(1);
   expect(places.some(({ id }) => id === "phone" || id === "lighthouse")).toBe(false);
   expect(places.flatMap(({ sits }) => sits).some(isPhone)).toBe(false);

@@ -53,6 +53,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   // one chats with on their lawn; mexican.ts ruinsWalk)
   L("ruinas", "Zona Arqueológica · Templo del Mar", "The Maya ruins", "harbor", "outdoor", "🏛️"),
   L("phone", "Llamada", "Phone call", "phone", "phone", "📱"),
+  L("cenote-tour", "Cenote Ka'an", "The hut at Cenote Ka'an", "harbor", "outdoor", "🤿"),
 ].map((l) => [l.id, l]));
 
 /** The town's name for beginners: how it sounds and what it means. */

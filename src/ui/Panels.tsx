@@ -8,7 +8,7 @@ import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 // The route is the town's tasks. Off-route conversations appear in the journal once completed.
 import { SITUATION_BY_ID, SITUATIONS as CATALOG } from "../content/situations/catalog";
-import { ROUTE as SITUATIONS } from "../content/route";
+import { CENOTE_TOUR, LIGHT_ROUTE, pickerSituations, ROUTE as SITUATIONS } from "../content/route";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
@@ -223,16 +223,16 @@ function Scenarios({ close }: { close: () => void }) {
   const light = useStore((s) => s.settings.play === "light");
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
-      if (light && isTownQuest(s.id)) continue;
+    for (const s of pickerSituations(light)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, [light]);
-  const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const route = light ? LIGHT_ROUTE : SITUATIONS;
+  const done = route.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   return (
     <div className="sheet scenarios">
-      <SheetHead icon="clapper" title={L("Pasirink situaciją · {done}/{total}", { done, total: SITUATIONS.length })} close={close} />
+      <SheetHead icon="clapper" title={L("Pasirink situaciją · {done}/{total}", { done, total: route.length })} close={close} />
       <div className="sheet-body">
         <p className="scn-lead">{L("Paspausk situaciją – iškart atsidursi vietoje ir kalbėsi su žmogumi. Po pokalbio galėsi pakartoti arba rinktis kitą.")}</p>
         <HowToPlay />
@@ -323,6 +323,8 @@ function Journal({ close }: { close: () => void }) {
 
 const MapPlaces = lazy(() => import("./MapPlaces"));
 
+const mapSituations = CENOTE_TOUR ? [...SITUATIONS, CENOTE_TOUR] : SITUATIONS;
+
 function MapPanel({ close }: { close: () => void }) {
   const sheet = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -371,7 +373,8 @@ function MapPanel({ close }: { close: () => void }) {
   }, []);
   // Keep the map's shared game and UI dependencies in their existing chunks.
   const data = useMemo(() => ({
-    locations: LOCATIONS, route: SITUATIONS, catalog: CATALOG, outdoor: OUTDOOR_NPCS, airport: AIRPORT_EXIT,
+    locations: LOCATIONS, route: mapSituations, catalog: CATALOG, outdoor: OUTDOOR_NPCS, airport: AIRPORT_EXIT,
+    cenoteTour: CENOTE_TOUR,
     caveZone: CAVE_ZONE, caveEntry: preferredCaveEntry, isTownQuest, isPhone, townBounds, mapPoint,
   }), []);
   const showPins = () => {
@@ -391,7 +394,7 @@ function MapPanel({ close }: { close: () => void }) {
       } />
       <Suspense fallback={null}>
         <MapPlaces close={close} town={game} townName={TOWN_LT} data={data} groundBounds={groundBounds} drawTownMap={drawTownMap}
-          SitCard={SitCard} SitActions={SitActions} Icon={Icon} InlineIcon={InlineIcon} locIcon={locIcon} placeLt={placeLt} />
+          SitCard={SitCard} SitActions={SitActions} SitIcon={SitIcon} Icon={Icon} InlineIcon={InlineIcon} locIcon={locIcon} placeLt={placeLt} />
       </Suspense>
     </div>
   );

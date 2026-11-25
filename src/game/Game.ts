@@ -12,7 +12,7 @@ import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
 import { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { loadStartupModule, startupTask } from "./startupTask";
-import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
+import { getInterior, INTERIOR_IDS, type Interior, type NpcSpot } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, surfLook, withBackpack, type GameCharacter } from "./characters";
 import { Character } from "./characters/Character";
@@ -26,6 +26,7 @@ import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY 
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
+import { cenoteGuide, registerCenoteTown, townNpcs } from "./cenoteTour/town";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -107,7 +108,7 @@ import { emptyCave, gateState, GATES, SPAWNS, TREE_SIT as CAVE_TREE, TREES } fro
 import type { caveGateGrid } from "./cave/routing";
 import type { CaveQuest } from "./cave/quest";
 import type { CaveView } from "./cave/Cave";
-import { ROUTE } from "../content/route";
+import { CENOTE_TOUR, ORDERED_ROUTE, pickerSituations, ROUTE } from "../content/route";
 export type { GameApi } from "./gameRef";
 
 const CAVE_TREE_AT = TREES[1];
@@ -309,6 +310,7 @@ export class Game implements GameApi {
   private loadMeeting = false;
   private officeRequested = false;
   private modeHost!: ModeHost;
+  private cenoteTour: ReturnType<typeof registerCenoteTown<NpcActor>>;
   private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
@@ -753,6 +755,13 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       save: () => this.savePlace(),
     }));
+    this.cenoteTour = registerCenoteTown(this.modes, host, {
+      container: this.container, undersea: this.undersea, inTown: () => !this.disposed && this.zone?.id === "town",
+      wasHidden: () => this.wasHidden, cancelRide: () => this.cancelRide(), resetFootInput: () => this.resetFootInput(),
+      save: () => this.savePlace(), drawStats: () => this.drawStats(),
+      actors: () => this.npcs, colliders: () => this.zone.colliders, ambient: this.ambient,
+      spawnNpc: (spot) => this.spawnNpc(spot), disposeNpc: (actor) => this.disposeNpc(actor),
+    });
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -1093,6 +1102,7 @@ export class Game implements GameApi {
         coach.begin();
       }
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
+      this.clearActorColliders();
       if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
@@ -1262,24 +1272,15 @@ export class Game implements GameApi {
   }
 
   private spawnNpcs() {
-    for (const n of this.npcs) {
-      n.ch.rightHand.getObjectByName("billiards-owner-cue")?.traverse((piece) => {
-        if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
-      });
-      n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove();
-    }
-    this.npcs = [];
-    const spots = this.zone.interior ? this.zone.interior.npcs : OUTDOOR_NPCS;
+    this.clearNpcs();
+    const spots = this.zone.interior ? this.zone.interior.npcs : townNpcs;
     const partner = this.chosenDatePartner();
     for (const sp of spots) {
       if ((sp.npc === "sam" || sp.npc === "emma") && sp.npc !== partner) continue;
-      const def = NPCS[sp.npc];
-      if (!def) continue;
-      const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
-      ch.watch = this.learnerAt;
       const poolKid = !this.zone.interior && HOTEL_POOL_ENABLED ? POOL_KIDS.find((kid) => kid === sp.npc) : undefined;
-      ch.root.position.set(sp.x, poolKid ? hotelPoolKidY(poolKid) : 0, sp.z);
-      ch.root.rotation.y = sp.rot;
+      const actor = this.spawnNpc(sp, poolKid ? hotelPoolKidY(poolKid) : 0);
+      if (!actor) continue;
+      const { ch } = actor;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       ch.busy = AT_WORK[sp.npc] ?? null;
       if (sp.npc === BILLIARDS_NPC) {
@@ -1289,34 +1290,62 @@ export class Game implements GameApi {
         cue.rotation.z = 0.12;
         ch.rightHand.add(cue);
       }
-      this.npcLayer.add(ch.root);
-      const tag = document.createElement("div");
-      tag.className = "nametag";
-      tag.innerHTML = nameTagHtml(def);
-      this.tagLayer.appendChild(tag);
-      const ap = sp as { ax?: number; az?: number };
-      this.npcs.push({
-        id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
-        approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined,
-        alux: this.zone.cave ? { next: 6 + Math.random() * 6, hop: 0 } : undefined,
-      });
-      this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).npc || (c as any).npc !== sp.npc);
-      const c = { x: sp.x, z: sp.z, r: 0.45, npc: sp.npc } as any;
-      this.zone.colliders.circles.push(c);
+      if (this.zone.cave) actor.alux = { next: 6 + Math.random() * 6, hop: 0 };
+      this.npcs.push(actor);
+      this.zone.colliders.circles.push({ x: sp.x, z: sp.z, r: 0.45, npc: sp.npc });
     }
     // passers-by step round the people standing in town
     if (!this.zone.interior) this.ambient.obstacles = this.npcs.map((n) => [n.home.x, n.home.z]);
     this.spawnRoomPeople();
   }
 
-  /** The room's townspeople: guests, customers, colleagues (roomPeople.ts), with looks drawn per room. Outdoors the
-   *  passers-by are Ambient's. */
-  private spawnRoomPeople() {
+  private spawnNpc(sp: NpcSpot, y = 0): NpcActor | undefined {
+    const def = NPCS[sp.npc];
+    if (!def) return;
+    const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
+    ch.watch = this.learnerAt;
+    ch.root.position.set(sp.x, y, sp.z);
+    ch.root.rotation.y = sp.rot;
+    this.npcLayer.add(ch.root);
+    const tag = document.createElement("div");
+    tag.className = "nametag";
+    tag.innerHTML = nameTagHtml(def);
+    this.tagLayer.appendChild(tag);
+    return {
+      id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
+      approach: sp.ax !== undefined && sp.az !== undefined ? new THREE.Vector3(sp.ax, 0, sp.az) : undefined,
+    };
+  }
+
+  private disposeNpc(n: NpcActor) {
+    n.ch.rightHand.getObjectByName("billiards-owner-cue")?.traverse((piece) => {
+      if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
+    });
+    n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove();
+  }
+
+  private clearNpcs() {
+    for (const n of this.npcs) this.disposeNpc(n);
+    this.npcs = [];
+  }
+
+  private clearRoomPeople() {
     for (const ch of this.extras) { ch.dispose?.(); this.npcLayer.remove(ch.root); }
     this.extras = [];
     this.extraChats = [];
     this.staff = [];
-    this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).extra);
+  }
+
+  private clearActorColliders() {
+    this.cenoteTour?.removeGuide();
+    // The rooms and the cave keep their collider sets when cached.
+    if (this.zone) this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !c.npc && !c.extra);
+  }
+
+  /** The room's townspeople: guests, customers, colleagues (roomPeople.ts), with looks drawn per room. Outdoors the
+   *  passers-by are Ambient's. */
+  private spawnRoomPeople() {
+    this.clearRoomPeople();
     const people = this.zone.interior ? ROOM_PEOPLE[this.zone.id] ?? [] : [];
     const r = rand([...this.zone.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 100000, 17));
     const talking = new Map<number, GameCharacter>();
@@ -1337,7 +1366,7 @@ export class Game implements GameApi {
       // nobody walks through them, sitting or standing (and the way-finding goes round them)
       if (p.run === undefined) {
         const r = p.sit !== undefined ? 0.3 : 0.38;
-        this.zone.colliders.circles.push({ x: p.x, z: p.z, r, extra: true } as any);
+        this.zone.colliders.circles.push({ x: p.x, z: p.z, r, extra: true });
         blockNav(this.zone.nav, p.x, p.z, r);
       }
       if (p.chat !== undefined) {
@@ -2045,7 +2074,7 @@ export class Game implements GameApi {
     const followUp = mode === "objective" && this.phoneTask();
     const throughGrotto = mode === "cave" || this.cave || (!followUp && this.currentObjective()?.location === CAVE_ZONE);
     if (this.caveLoading || (this.transitioning && throughGrotto)) return;
-    if (throughGrotto || followUp) {
+    if (throughGrotto || followUp || (this.zone.interior && this.currentObjective() === CENOTE_TOUR)) {
       this.stopAutoWalk();
       this.guidedWalk = mode;
     }
@@ -2226,7 +2255,10 @@ export class Game implements GameApi {
         this.call(sitId);
         return;
       }
-      const talk = () => this.afterSceneDelay(() => this.talkTo(arrival.npc, sitId), 150);
+      const talk = () => {
+        if (sitId === CENOTE_TOUR?.id) this.cenoteTour?.updateGuide();
+        this.afterSceneDelay(() => this.talkTo(arrival.npc, sitId), 150);
+      };
       if (alreadyPlaced) talk();
       else this.enterZone(arrival.zone, arrival.spawn, true, undefined, talk);
     };
@@ -2254,7 +2286,7 @@ export class Game implements GameApi {
 
   /** The next situation in the recommended order. */
   nextScenarioId(after?: string): string | null {
-    const list = this.orderedSituations();
+    const list = ORDERED_ROUTE;
     const i = list.findIndex((s) => s.id === (after ?? this.lastScenario));
     return list[(i + 1) % list.length]?.id ?? null;
   }
@@ -2429,7 +2461,7 @@ export class Game implements GameApi {
 
   private phonePageHide = () => {
     this.reactions.clear();
-    if (this.rides?.riding?.kind === "boat" || this.rides?.water?.safeSave()) this.savePlace();
+    if (this.rides?.riding?.kind === "boat" || this.rides?.water?.safeSave() || this.cenoteTour?.active) this.savePlace();
     this.phone.dismiss();
     if (useStore.getState().progress.phone) {
       useStore.getState().updateProgress((p) => this.phone.saveClock(p));
@@ -2461,9 +2493,10 @@ export class Game implements GameApi {
       this.rig.mode = "talk";
       this.player.setAnim("idle");
     }
+    const autoHandoff = sit.id === POOL_SITUATION || this.cenoteTour?.chat(sit.id);
     const session: Session = new Session(sit.id, {
-      recordedOnly: sit.id === POOL_SITUATION,
-      autoClose: sit.id === POOL_SITUATION ? () => this.modes.hasQueued : undefined,
+      recordedOnly: autoHandoff,
+      autoClose: autoHandoff ? () => this.modes.hasQueued : undefined,
       npcTalk: (npcId, secs, text) => {
         const n = this.npcs.find((x) => x.id === npcId);
         if (!n) return;
@@ -2948,6 +2981,7 @@ export class Game implements GameApi {
       return { x: door.outX + dx, z: door.outZ + dz, rot: door.rot };
     }
     if (DROPOFF[loc]) return DROPOFF[loc];
+    if (this.cenoteTour && loc === CENOTE_TOUR?.location) return this.cenoteTour.home;
     const o = OUTDOOR_NPCS.find((n) => this.sitsForNpc(n.npc).some((s) => s.location === loc));
     return o ? { x: o.ax ?? o.x, z: (o.az ?? o.z) + 2.5, rot: Math.PI } : null;
   }
@@ -2960,7 +2994,7 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ objectives
 
   orderedSituations(): SituationMeta[] {
-    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return pickerSituations();
   }
 
   guideToPoolHall() {
@@ -2988,7 +3022,7 @@ export class Game implements GameApi {
   private advanceObjective(done: SituationDef) {
     const pr = useStore.getState().progress;
     if (pr.objective && pr.objective !== done.id) return;
-    const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
+    const next = ORDERED_ROUTE.find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
     // (in the situation picker flow the end-of-conversation buttons offer the next one instead)
     if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", sitId: next.id, title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
@@ -2997,7 +3031,7 @@ export class Game implements GameApi {
   currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
     if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
-    const first = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;
+    const first = ORDERED_ROUTE.find((s) => !sitProgress(pr, s.id).completions) ?? null;
     return first;
   }
 
@@ -3343,13 +3377,16 @@ export class Game implements GameApi {
       this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
       this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;
     }
-    // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
-    {
+    // The snorkel rig sees the same bay below its surface without putting the character in free-swim state.
+    const tourSurface = this.cenoteTour?.surface;
+    if (tourSurface != null) {
+      this.undersea.update(dt, this.t, true, this.rig.cam.position, 0, tourSurface);
+    } else {
       const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
       const under = sur !== null && this.diveK > 0.2 && cp.y < sur - 0.1;
       if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
-      this.underWater(this.undersea.on);
     }
+    this.underWater(this.undersea.on);
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
@@ -3658,6 +3695,13 @@ export class Game implements GameApi {
     this.keys.clear();
     this.nearest = null;
     this.guidance.setPath(null);
+  }
+
+  private resetFootInput() {
+    this.wet = this.brake = this.pointer.down = false;
+    this.rideGoal = null;
+    this.wading.depth = 0;
+    this.setJoystick(0, 0);
   }
 
   private placeOnFoot(x: number, z: number, rot: number, stayInside = false) {
@@ -4135,7 +4179,8 @@ export class Game implements GameApi {
       return;
     }
     this.guidedWalk = null;
-    if (t.kind === "npc" && t.id) this.talkTo(t.id);
+    // The walk to Inés ends at her hut prompt so the learner opens the invitation.
+    if (t.kind === "npc" && t.id && t.id !== cenoteGuide?.npc) this.talkTo(t.id);
     else if (t.kind === "glyph" && t.id && this.cave?.near(this.player.root.position)?.id === t.id) this.cave.open(t.id);
     else if (t.kind === "tree") this.talkToTree();
   }
@@ -4275,6 +4320,8 @@ export class Game implements GameApi {
   }
 
   private updateHud() {
+    this.cenoteTour?.updateGuide();
+    if (this.cenoteTour?.active) { this.saveAtHudTick(); return; }
     const st = useStore.getState();
     const p = this.player.root.position;
     // nearest interactable
@@ -4375,6 +4422,10 @@ export class Game implements GameApi {
       mm.questX !== quest?.x || mm.questZ !== quest?.z || mm.gates !== gates) {
       st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: marker?.x, targetZ: marker?.z, zone, gates, questX: quest?.x, questZ: quest?.z } });
     }
+    this.saveAtHudTick();
+  }
+
+  private saveAtHudTick() {
     this.saveT -= 0.12;
     if (this.saveT <= 0) { this.saveT = 5; this.savePlace(); }
   }
@@ -4385,7 +4436,8 @@ export class Game implements GameApi {
     const safe = this.zone.id === "town" ? this.rides.water?.safeSave() : undefined;
     const p = safe ?? this.player.root.position;
     useStore.getState().updateProgress((pr) => {
-      pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +(safe?.rot ?? this.heading).toFixed(2) };
+      pr.place = this.cenoteTour?.savedPlace()
+        ?? { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +(safe?.rot ?? this.heading).toFixed(2) };
       const boat = this.rides.riding;
       const atSea = this.modes.owns("sea");
       if (this.zone.id === "town" && boat?.kind === "boat" && this.rides.phase !== "out") {
@@ -4463,6 +4515,8 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.streetLife?.dispose();
     this.modes.dispose();
+    this.cenoteTour?.removeInspection();
+    this.undersea?.dispose();
     this.player?.root.removeFromParent();
     this.normalPlayer?.dispose?.();
     this.surfPlayer?.dispose?.();
@@ -4489,8 +4543,9 @@ export class Game implements GameApi {
     audio.motor(null);
     audio.stop();
     radio.shutdown();
-    for (const n of this.npcs) n.tag.remove();
-    this.npcs = [];
+    this.clearActorColliders();
+    this.clearNpcs();
+    this.clearRoomPeople();
     this.cave?.dispose();
     this.cave = null;
     this.renderer.domElement.remove();

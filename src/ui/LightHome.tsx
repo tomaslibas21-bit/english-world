@@ -5,9 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
-// (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
 import { SITUATION_BY_ID } from "../content/situations/catalog";
-import { ROUTE as SITUATIONS } from "../content/route";
+import { LIGHT_ROUTE as SITUATIONS, pickerSituations } from "../content/route";
 import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
@@ -96,7 +95,7 @@ function LightHome() {
   const covered = useStore((s) => s.conv.active || !!s.hud.panel);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+    for (const s of pickerSituations(true)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
@@ -148,12 +147,13 @@ function LightHome() {
           <h2 className="start-here"><Icon name="star" size={18} /> {L("Pradėk nuo šių")}</h2>
           <div className="lh-grid">{START_WITH.map((id) => SITUATION_BY_ID[id]).filter(Boolean).map((s) => <SitCard key={s.id} s={s} />)}</div>
         </section>
-        {byCh.map(([ch, list]) => (
-          <section className="lh-sec" key={ch}>
-            <h2>{ch}. {CHAPTERS[ch] ?? ""}<span className="n">{list.filter(isDone).length}/{list.length}</span></h2>
+        {byCh.map(([ch, list]) => {
+          const route = list.filter((s) => !s.bonus);
+          return <section className="lh-sec" key={ch}>
+            <h2>{ch}. {CHAPTERS[ch] ?? ""}<span className="n">{route.filter(isDone).length}/{route.length}</span></h2>
             <div className="lh-grid">{list.map((s) => <SitCard key={s.id} s={s} />)}</div>
-          </section>
-        ))}
+          </section>;
+        })}
 
         <footer className="lh-foot">
           <button className="btn ghost" onClick={() => switchPlayMode("town")}><Icon name="map" size={19} /> {L("Atidaryti 3D miestą")}</button>

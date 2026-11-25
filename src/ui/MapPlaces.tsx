@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from "react";
+import { Fragment, useId, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from "react";
 import type { LOCATIONS, placeLt } from "../content/locations";
 import type { ROUTE } from "../content/route";
 import type { SITUATIONS as CATALOG } from "../content/situations/catalog";
@@ -13,6 +13,7 @@ import { HL, L, TL } from "./i18n";
 import type { Icon, InlineIcon } from "./icons";
 import { mapPinForPlace, packMapPlaces, type MapPoint } from "./mapPacking";
 import type { isPhone, locIcon } from "./objective";
+import type { SitIcon } from "./SitIcon";
 import type { drawTownMap, groundBounds, mapPoint, townBounds } from "./worldMap";
 import "./MapPlaces.css";
 
@@ -22,6 +23,7 @@ type Bounds = { width: number; height: number; size: number };
 export type MapContent = {
   locations: typeof LOCATIONS;
   route: typeof ROUTE;
+  cenoteTour?: SituationMeta;
   catalog: typeof CATALOG;
   outdoor: typeof OUTDOOR_NPCS;
   airport: typeof AIRPORT_EXIT;
@@ -53,7 +55,7 @@ function locationPoint(loc: string, doors: readonly Pick<Door, "loc" | "x" | "z"
 }
 
 export function resolveMapPlaces(doors: Parameters<typeof locationPoint>[1], light: boolean, data: MapContent) {
-  const { locations, route, catalog, caveZone, isPhone, isTownQuest } = data;
+  const { locations, route, catalog, caveZone, cenoteTour, isPhone, isTownQuest } = data;
   return Object.values(locations).flatMap((loc) => {
     if (loc.kind === "phone") return [];
     const { id } = loc;
@@ -63,9 +65,9 @@ export function resolveMapPlaces(doors: Parameters<typeof locationPoint>[1], lig
     ));
     const point = sits.length && locationPoint(id, doors, data);
     if (!point) return [];
-    // The pool hall's game also opens from its own pin.
-    const reserved = id === "airport" || id === caveZone || id === "pool-hall";
-    return [{ ...loc, ...project(point, data), sits, reserved }];
+    const tour = id === cenoteTour?.location ? cenoteTour : undefined;
+    const reserved = id === "airport" || id === caveZone || id === "pool-hall" || !!tour;
+    return [{ ...loc, ...project(point, data), sits, reserved, tour }];
   });
 }
 
@@ -112,6 +114,7 @@ type MapPlacesProps = {
   drawTownMap: typeof drawTownMap;
   Icon: typeof Icon;
   InlineIcon: typeof InlineIcon;
+  SitIcon: typeof SitIcon;
   locIcon: typeof locIcon;
   placeLt: typeof placeLt;
   SitCard: ComponentType<{ s: SituationMeta; open: boolean; onClick: () => void }>;
@@ -129,7 +132,7 @@ export function resolveMapObjective(town: Pick<GameApi, "objectiveTarget" | "cur
 }
 
 export default function MapPlaces({ close, town, townName, data, groundBounds, drawTownMap, SitCard, SitActions,
-  Icon, InlineIcon, locIcon, placeLt }: MapPlacesProps) {
+  Icon, InlineIcon, SitIcon, locIcon, placeLt }: MapPlacesProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
@@ -183,7 +186,9 @@ export default function MapPlaces({ close, town, townName, data, groundBounds, d
   const pins = useMemo(() => {
     if (!bounds) return [];
     const { width, height, size } = bounds;
-    return packMapPlaces(places.map((p) => ({ id: p.id, place: p, reserved: p.reserved, x: p.x * width, y: p.y * height })), width, height, size)
+    return packMapPlaces(places.map((p) => ({
+      id: p.id, place: p, reserved: p.reserved, minSize: p.tour ? 44 : undefined, x: p.x * width, y: p.y * height,
+    })), width, height, size)
       .map((pin) => ({ ...pin, key: pin.members.map(({ id }) => id).join(":") }));
   }, [bounds, places]);
 
@@ -238,30 +243,39 @@ export default function MapPlaces({ close, town, townName, data, groundBounds, d
             const done = pin.members.every(({ id }) => completed.has(id));
             const selected = chosenPin === pin;
             const expanded = active === pin;
-            const face = pinFace(pin, bounds, [player, objective, selectedPoint]);
+            const tour = place.tour;
+            const face = pinFace(pin, { ...bounds, size: pin.size }, [player, objective, selectedPoint]);
+            const dx = pin.x - place.x * bounds.width, dy = pin.y - place.y * bounds.height;
             return (
-              <button key={pin.key} id={pinId(pin.key)} type="button"
-                className={"map-pin" + (selected ? " sel" : "") + (done ? " done" : "")}
-                data-place={group ? undefined : place.id} style={{ left: pin.x, top: pin.y, width: bounds.size, height: bounds.size, ...face }}
-                lang={TL} title={name} aria-label={name} aria-describedby={done ? doneId : undefined} aria-pressed={group ? undefined : selected}
-                aria-expanded={group ? expanded : undefined} aria-controls={group ? listId(pin.key) : undefined}
-                onFocus={(e) => { lastFocus.current = { el: e.currentTarget, place: selected ? chosen!.id : place.id }; }}
-                onClick={() => {
-                  if (group) {
-                    if (!expanded) pendingFocus.current = "members";
-                    setOpenPlace(expanded ? null : selected ? chosen!.id : place.id);
-                  } else {
-                    setOpenPlace(null);
-                    select(place.id);
-                  }
-                }}>
-                <span className="map-pin-face" aria-hidden />
-                <span className={"map-pin-icon" + (face ? " offset" : "")} aria-hidden>
-                  <Icon name={locIcon(place.id)} size={group && bounds.size === 30 ? 13 : 18} />
-                  {group && <span className="map-pin-count">{pin.members.length}</span>}
-                </span>
-                {done && <span className="pin-done">{check}</span>}
-              </button>
+              <Fragment key={pin.key}>
+                {tour && <span className="map-tour-marker" aria-hidden style={{
+                  ...position(place), width: Math.hypot(dx, dy), rotate: `${Math.atan2(dy, dx)}rad`,
+                }} />}
+                <button id={pinId(pin.key)} type="button"
+                  className={"map-pin" + (tour ? " taquilla" : "") + (selected ? " sel" : "") + (done ? " done" : "")}
+                  data-place={group ? undefined : place.id} data-location={group ? undefined : place.id}
+                  style={{ left: pin.x, top: pin.y, width: pin.size, height: pin.size, ...face }}
+                  lang={TL} title={name} aria-label={name} aria-describedby={done ? doneId : undefined} aria-pressed={group ? undefined : selected}
+                  aria-description={tour ? place.lt : undefined}
+                  aria-expanded={group ? expanded : undefined} aria-controls={group ? listId(pin.key) : undefined}
+                  onFocus={(e) => { lastFocus.current = { el: e.currentTarget, place: selected ? chosen!.id : place.id }; }}
+                  onClick={() => {
+                    if (group) {
+                      if (!expanded) pendingFocus.current = "members";
+                      setOpenPlace(expanded ? null : selected ? chosen!.id : place.id);
+                    } else {
+                      setOpenPlace(null);
+                      select(place.id);
+                    }
+                  }}>
+                  <span className="map-pin-face" aria-hidden />
+                  <span className={"map-pin-icon" + (face ? " offset" : "")} aria-hidden>
+                    {tour ? <SitIcon id={tour.id} size={18} /> : <Icon name={locIcon(place.id)} size={group && pin.size === 30 ? 13 : 18} />}
+                    {group && <span className="map-pin-count">{pin.members.length}</span>}
+                  </span>
+                  {done && <span className="pin-done">{check}</span>}
+                </button>
+              </Fragment>
             );
           })}
         </div>

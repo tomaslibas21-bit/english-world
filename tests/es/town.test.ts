@@ -54,7 +54,8 @@ it("keeps the model footprints clear of the generated town props", () => {
     }
     expect(meshes.filter(({ name }) => /^town-(cast|still|thin|thinCast)-/.test(name))).toHaveLength(77);
     expect(meshes).toHaveLength(274);
-    expect(meshes.reduce((sum, mesh) => sum + triangles(mesh), 0)).toBe(268702);
+    // The cenote guide's fish sign and dry talk marker add 67 triangles to the existing scenery meshes.
+    expect(meshes.reduce((sum, mesh) => sum + triangles(mesh), 0)).toBe(268769);
   } finally {
     restore();
   }

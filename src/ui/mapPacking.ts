@@ -1,33 +1,39 @@
 export type MapPoint = { x: number; y: number };
-export type MapPlacePoint = MapPoint & { id: string; reserved?: boolean };
-type MapPin<T> = MapPoint & { members: T[]; reserved?: boolean };
+export type MapPlacePoint = MapPoint & { id: string; reserved?: boolean; minSize?: number };
+type SizedPoint = MapPoint & { size: number };
+type MapPin<T> = SizedPoint & { members: T[]; reserved?: boolean };
 
 /** Pack square hit boxes, keeping isolated points in place and giving the named landmarks priority. */
 export function packMapPlaces<T extends MapPlacePoint>(places: readonly T[], width: number, height: number, size: number) {
   if (width < size || height < size) return [];
-  const half = size / 2;
   // Leave a fraction of a pixel for layout rounding at fractional canvas widths.
   const spacing = size + 4.03125;
-  const step = size + 4.0625;
-  const clamp = (value: number, extent: number) => Math.max(half, Math.min(extent - half, value));
-  const center = ({ x, y }: MapPoint) => ({ x: clamp(x, width), y: clamp(y, height) });
-  const overlaps = (a: MapPoint, b: MapPoint) => Math.abs(a.x - b.x) < spacing && Math.abs(a.y - b.y) < spacing;
+  const clamp = (value: number, extent: number, half: number) => Math.max(half, Math.min(extent - half, value));
+  const center = ({ x, y }: MapPoint, pinSize = size): SizedPoint => ({
+    x: clamp(x, width, pinSize / 2), y: clamp(y, height, pinSize / 2), size: pinSize,
+  });
+  const overlaps = (a: SizedPoint, b: SizedPoint) => {
+    const gap = (a.size + b.size) / 2 + 4.03125;
+    return Math.abs(a.x - b.x) < gap && Math.abs(a.y - b.y) < gap;
+  };
   const distance = (a: MapPoint, b: MapPoint) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
   const pins: MapPin<T>[] = [];
 
   // A nearest free box can sit against an occupied box's edge on either axis.
-  const nearestFree = (point: MapPoint) => {
+  const nearestFree = (point: SizedPoint) => {
+    const half = point.size / 2;
     const xs = [point.x, half, width - half];
     const ys = [point.y, half, height - half];
     for (const pin of pins) {
+      const step = (pin.size + point.size) / 2 + 4.0625;
       xs.push(pin.x - step, pin.x + step);
       ys.push(pin.y - step, pin.y + step);
     }
-    let best: MapPoint | undefined;
+    let best: SizedPoint | undefined;
     let score = Infinity;
     for (const x of xs) for (const y of ys) {
       if (x < half || x > width - half || y < half || y > height - half) continue;
-      const candidate = { x, y };
+      const candidate = { x, y, size: point.size };
       const d = distance(point, candidate);
       if (d >= score || pins.some((pin) => overlaps(pin, candidate))) continue;
       best = candidate;
@@ -38,7 +44,8 @@ export function packMapPlaces<T extends MapPlacePoint>(places: readonly T[], wid
 
   for (const place of places) {
     if (!place.reserved) continue;
-    const point = center(place);
+    const pinSize = Math.min(width, height, Math.max(size, place.minSize ?? size));
+    const point = center(place, pinSize);
     const at = pins.some((pin) => overlaps(point, pin)) ? nearestFree(point) : point;
     if (at) pins.push({ ...at, members: [place], reserved: true });
   }

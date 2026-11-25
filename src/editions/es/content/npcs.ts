@@ -122,6 +122,7 @@ const LOOK: Record<string, Partial<Look>> = {
   // the Yaxché, the great tree of the grotto's heart (x04): it speaks, but nobody stands for it (its conversation has
   // no figure in the grotto: src/game/cave). The look is only what a person's record must have.
   yaxche: { skin: "#8f7f66", hair: { style: "long", color: "#3f8a3a" }, top: "#4f9a3e", bottom: "#857560" },
+  ines: { skin: "#a9704e", hair: { style: "braid", color: "#372820", tie: "#e9ab4b" }, top: "#287e79", bottom: "#bf965f", shorts: true, sleeves: "short", acc: [] },
 };
 
 /** Who is who. Roles are neutral Spanish (a role label isn't a line: no Mexican-only words in them). */
@@ -228,6 +229,8 @@ const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
     bio: "Has called the cards at the zócalo's lotería for twenty years, with a verse for almost every one." }],
   surf: ["jordan", "Nayeli", "Instructora de surf", "Surf instructor", { informal: true, informalSpain: true,
     bio: "Grew up surfing in Puerto Escondido, on the Pacific. Here she teaches beginners on the Caribbean's gentle waves." }],
+  ines: ["jordan", "Inés Calderón", "Guía de snorkel", "Snorkel guide", { gender: "f", informal: false, informalSpain: false, speed: 1,
+    bio: "Grew up in Puerto Colibrí and loves waiting for someone to spot the second turtle." }],
 };
 
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);

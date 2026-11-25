@@ -1,0 +1,52 @@
+.hud > .cenote-tour-curtain { position: absolute; inset: 0; z-index: 41; pointer-events: none; background: #0e1419; opacity: var(--cenote-tour-fade, 0); }
+
+.cenote-tour-card {
+  position: absolute;
+  z-index: 30;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 24px));
+  max-height: 36dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-radius: 16px;
+  color: #203735;
+  background: #fff9ed;
+  box-shadow: 0 6px 24px #14292840;
+}
+.cenote-tour-heading, .cenote-tour-heading > div { display: flex; align-items: center; gap: 6px; }
+.cenote-tour-heading { justify-content: space-between; }
+.cenote-tour-card button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #117e79;
+  border-radius: 12px;
+  background: transparent;
+  color: #203735;
+}
+.cenote-tour-heading button { display: inline-grid; place-items: center; color: #117e79; }
+.cenote-tour-heading button[aria-pressed="true"] { background: #117e79; color: #fff9ed; }
+.cenote-tour-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.cenote-tour-choices button { display: flex; gap: 6px; text-align: left; align-items: center; padding: 5px 9px; }
+.cenote-tour-choices button:hover { background: #e6f3ec; }
+.cenote-tour-answer { padding: 4px 8px; border-inline-start: 2px solid #117e79; }
+.cenote-tour-card :is(.nat, .kit-gloss-compact small) { color: #385650; }
+.cenote-tour-card:has(> [role="status"]) {
+  max-height: 46dvh;
+  grid-auto-rows: max-content;
+  overflow-anchor: none;
+}
+.cenote-tour-card > [role="status"] {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #e6f3ec;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .cenote-tour-choices { grid-template-columns: 1fr; }
+}

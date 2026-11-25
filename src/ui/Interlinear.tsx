@@ -21,7 +21,7 @@ const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".
 
 /** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
  *  wording behind an asterisk on every screen size and no separate translation row. */
-export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean }) {
+export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, interactive = true }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean; interactive?: boolean }) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
   const [open, setOpen] = useState<{ i: number; el: HTMLElement } | null>(null);
@@ -35,7 +35,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
   const natStar = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
   /** the line's word notes, each once */
   const notes = useMemo(() => (lt ? [...new Set(s.units.map((u) => u.flag?.trim()).filter((f): f is string => !!f))] : []), [s, lt]);
-  const star = natStar || notes.length > 0;
+  const star = interactive && (natStar || notes.length > 0);
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = unitOf(e.target), from = down.current;
@@ -47,7 +47,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
   };
   return (
     <div>
-      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={TL} onPointerDown={(e) => { down.current = unitOf(e.target); }} onClick={onClick}>
+      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={TL} onPointerDown={interactive ? (e) => { down.current = unitOf(e.target); } : undefined} onClick={interactive ? onClick : undefined}>
         {s.units.map((u, i) => {
           const dash = u.lt.startsWith("—");
           const isSaved = !dash && saved.has(cardKey(u.en));
@@ -56,7 +56,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
           // it never wraps the word); a tap on it is not a tap on the word (unitOf)
           const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span>;
           return (
-            <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
+            <span className={(interactive ? "u tap" : "u") + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
               {ipa && <span className="ipa">{ipas[i] || " "}</span>}
               {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang={EDITION.helper}>{u.lt}</span>}

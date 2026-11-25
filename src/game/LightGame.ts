@@ -12,7 +12,7 @@ import { POOL_SITUATION } from "./world/pool";
 import { audio } from "./audio";
 import { givenItem } from "./given";
 import { SITUATION_BY_ID, getSituation, loadSituation } from "../content/situations/catalog";
-import { ROUTE } from "../content/route";
+import { CENOTE_TOUR, ORDERED_ROUTE, pickerSituations } from "../content/route";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
@@ -106,7 +106,7 @@ export class LightGame implements GameApi {
 
   /** The next situation in the recommended order. */
   nextScenarioId(after?: string): string | null {
-    const list = this.orderedSituations();
+    const list = ORDERED_ROUTE;
     const i = list.findIndex((s) => s.id === (after ?? this.lastScenario));
     return list[(i + 1) % list.length]?.id ?? null;
   }
@@ -120,13 +120,13 @@ export class LightGame implements GameApi {
   closeConversation() { this.session?.close(); }
 
   orderedSituations(): SituationMeta[] {
-    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return pickerSituations(true);
   }
 
   currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
     if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
-    return this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;
+    return ORDERED_ROUTE.find((s) => !sitProgress(pr, s.id).completions) ?? null;
   }
 
   setObjective(sitId: string | null) {
@@ -195,7 +195,7 @@ export class LightGame implements GameApi {
 
   private begin(sit: SituationDef) {
     const session: Session = new Session(sit.id, {
-      recordedOnly: sit.id === POOL_SITUATION,
+      recordedOnly: sit.id === POOL_SITUATION || sit.id === CENOTE_TOUR?.id,
       npcTalk: () => { /* no characters to animate */ },
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
       onEnd: (s, completed) => {
@@ -226,7 +226,7 @@ export class LightGame implements GameApi {
   private advanceObjective(done: SituationDef) {
     const pr = useStore.getState().progress;
     if (pr.objective && pr.objective !== done.id) return;
-    const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
+    const next = ORDERED_ROUTE.find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
   }
 }

@@ -300,6 +300,11 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .startup-error .btn { margin: 4px; }
 
 .fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity var(--scene-fade-time, 0.3s) ease; }
+.cenote-tour-leave {
+  position: absolute; z-index: 42; top: calc(12px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right));
+  min-width: 44px; min-height: 44px; padding: 0 14px; border: 1px solid #117e79; border-radius: 16px;
+  color: #203735; background: #fff9ed; font-weight: 700;
+}
 
 /* ---------- toasts ---------- */
 .toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 10px; width: min(560px, calc(100vw - 32px)); pointer-events: none; }
@@ -843,6 +848,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   box-shadow: 0 0 0 1px rgba(31, 42, 51, 0.05), 0 26px 70px -24px rgba(10, 20, 30, 0.6); animation: sheetin 0.25s cubic-bezier(.2,.9,.3,1.1);
 }
 @keyframes sheetin { from { transform: translateY(10px) scale(0.99); opacity: 0; } }
+/* Keep the map's hit targets at full size throughout the entrance. */
+.sheet:where(:has(> .sheet-body > .map-wrap)) { animation-name: map-sheet-in; }
+@keyframes map-sheet-in { from { transform: translateY(10px); opacity: 0; } }
 .sheet.narrow { width: min(620px, 100%); }
 .sheet-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px 14px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #fffefb, rgba(255, 253, 248, 0)); }
 .sheet-ico { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
@@ -851,6 +859,17 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .head-stars .ui-icon { color: var(--gold); }
 .sheet-body { overflow-y: auto; padding: 16px 18px 22px; }
 .map-sheet .map-return { display: none; }
+.map-canvas .map-pin.taquilla { color: #137d79; }
+.map-pin.taquilla .map-pin-face { background: #fff4dc; }
+.map-pin.taquilla:is(:hover, .sel) .map-pin-face { background: var(--accent-soft); }
+.map-tour-marker {
+  position: absolute; z-index: 1; height: 2px; background: #fff4dc; pointer-events: none;
+  transform-origin: left center; translate: 0 -50%;
+}
+.map-tour-marker::before {
+  content: ""; position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%);
+  width: 8px; height: 8px; border: 1px solid #fff4dc; border-radius: 50%; background: #137d79;
+}
 .sit-list { display: flex; flex-direction: column; gap: 8px; }
 .chapter h3 { margin: 18px 0 10px; font-size: 0.95em; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; display: flex; align-items: center; gap: 8px; }
 .chapter h3::after { content: ""; flex: 1; height: 1px; background: var(--line); margin-left: 4px; }

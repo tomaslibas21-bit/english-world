@@ -224,6 +224,7 @@ const PUERTO_COLIBRI = {
   "x11-billar": cueChalk,
   "x12-album": photoNote,
   "x13-por-donde": directionsMap,
+  "x14-cenote": "seashell",
 } satisfies Record<string, KeepsakeKind>;
 
 export const KEEPSAKES: Record<string, KeepsakeKind> = EDITION.id === "es" ? PUERTO_COLIBRI : MAPLE_HARBOR;
