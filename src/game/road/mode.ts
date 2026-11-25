@@ -10,6 +10,7 @@ import { boardFaces, preloadBoardFont } from "../kit/boardFaces";
 import { audio } from "../audio";
 import { ModeDialogue } from "../kit/dialogue";
 import type { ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
 import { carHasRoof, carModelEntry } from "../world/carModels";
@@ -130,6 +131,25 @@ export class RoadMode {
 
   constructor(private host: RoadHost) {}
   get active() { return this.phase !== "town"; }
+  get padPhase() { return this.phase; }
+  get padDriving() { return this.phase === "drive"; }
+  get padAction() {
+    return this.phase === "approach" || this.phase === "depart" ||
+      (this.phase === "offer" && !useRoad.getState().choices.length);
+  }
+
+  padBack() {
+    if (!this.padDriving && !this.padAction) return false;
+    this.exit(false);
+    return true;
+  }
+
+  padTick(_input: unknown, pressed: number) {
+    if (this.padDriving && (pressed & PadButton.X)) {
+      this.action("horn");
+      return "horn" as const;
+    }
+  }
   get lifted() { return !!this.lift; }
 
   start(edge: WalkEdge) {

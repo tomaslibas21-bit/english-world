@@ -19,7 +19,7 @@ export function BaristaOffer() {
   const line = useBarista((s) => s.line);
   if (!offered || !line) return null;
   return (
-    <section className="barista-offer barista-panel" lang={HL}>
+    <section className="barista-offer barista-panel" data-pad-scope="choice" lang={HL}>
       <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
       <button type="button" className="btn" onClick={() => act("start")}>{L(words.start)}</button>
     </section>
@@ -50,7 +50,7 @@ function OrderTray({ touch }: { touch: boolean }) {
                 const marked = highlight?.row === kind && highlight.id === id;
                 const pressed = matchesPick(built, { row: kind, id });
                 return (
-                  <button key={id} type="button" data-chip={id}
+                  <button key={id} type="button" data-chip={id} data-pad-answer
                     className={`barista-chip${marked ? " barista-chip-glow" : ""}`}
                     data-repair={marked ? marker : undefined} aria-pressed={pressed} aria-disabled={!ready}
                     onClick={() => act(kind, id)}>
@@ -91,10 +91,10 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   const concealed = hiddenOrder.length > 0 && !repair;
   return (
-    <div className="barista-overlay" lang={HL}>
+    <div className="barista-overlay" data-pad-scope="choice" data-pad-phase={step} lang={HL}>
       <header className="barista-header">
         {customer > 0 && <div className="barista-counter barista-panel">{L(words.customer)} <b>{L(`{n} ${words.of} {of}`, { n: customer, of: total })}</b></div>}
-        <button className="barista-exit barista-panel" type="button" onClick={() => game?.modeExit()}>{L(words.exit)}</button>
+        <button className="barista-exit barista-panel" type="button" data-pad-back onClick={() => game?.modeExit()}>{L(words.exit)}</button>
       </header>
       {!concealed && line && (
         <div className="barista-cue" data-line={line.key} aria-live="polite">
@@ -133,7 +133,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
               </div>
             </div>
             {choices.map(({ key, sentence }, i) => (
-              <button className="barista-choice" type="button" key={key} data-line={key} onClick={() => act("choose", key)}>
+              <button className="barista-choice" type="button" key={key} data-line={key} data-pad-answer={key} onClick={() => act("choose", key)}>
                 {!touch && <kbd>{i + 1}</kbd>}
                 <span lang={TL}>{sentence.en}</span><small lang={HL}>{sentence.nat}</small>
               </button>

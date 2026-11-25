@@ -7,9 +7,12 @@ import taxi from "../../src/content/situations/s66-taxi";
 import { Ambient } from "../../src/game/ambient";
 import { CameraRig } from "../../src/game/camera";
 import { createCharacter } from "../../src/game/characters";
+import type { ModeHost } from "../../src/game/kit/host";
+import { conversationLine } from "../../src/game/kit/lines";
 import { scoreShot } from "../../src/game/kit/scoreShot";
 import { NavGrid } from "../../src/game/nav";
 import { OcclusionField } from "../../src/game/occlusion";
+import { PadButton } from "../../src/game/padButtons";
 import { Rides } from "../../src/game/rides/Rides";
 import { CAR, pushOutOfBox } from "../../src/game/rides/drive";
 import { carFootprint, carLedges, carModelEntry } from "../../src/game/world/carModels";
@@ -19,7 +22,9 @@ import { buildTown } from "../../src/game/world/town";
 import { floorY } from "../../src/game/water";
 import { Colliders } from "../../src/game/world/util";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../../src/game/taxi/route";
+import { createTaxiMode } from "../../src/game/taxi/mode";
 import { createStopBay } from "../../src/game/taxi/stopBay";
+import { resetTaxiUi, useTaxi } from "../../src/game/taxi/store";
 
 function withTown<T>(check: (town: ReturnType<typeof buildTown>) => T): T {
   const draw = () => {};
@@ -49,6 +54,70 @@ const taxiBox = carModelEntry(TAXI.model).collisionBox;
 const taxiSurfaces = carLedges(TAXI.model, TAXI.x, TAXI.z, TAXI.rot);
 
 describe("Puerto Colibrí taxi routes", () => {
+  it("keeps physical and pad cue holds independent through release, loss of focus and unplug", () => {
+    const { rides } = makeRides();
+    const drive = vi.fn(), horn = vi.fn();
+    const mode = createTaxiMode({
+      rides, drive, horn, add: () => {}, standTaxi: { root: new THREE.Group(), fallback: new THREE.Group() },
+    } as unknown as ModeHost)!;
+    const route = TAXI_ROUTES[0], decision = route.decisions[0], pose = resetPose(approach(route, 0));
+    const run = { route, index: 0, phase: "drive", help: 0, nearTime: 0, spoken: true, pending: true };
+    Object.assign(mode, { run });
+    rides.riding = mode.car;
+    const sample = (pressed = 0, released = 0) => mode.padTick(null, pressed, released);
+    const step = () => {
+      mode.update({ dt: 0.05, time: 1, x: 0, y: 0, brake: false, blocked: false });
+      return drive.mock.lastCall?.[1];
+    };
+    const neutral = { throttle: 0, steer: 0, brake: false };
+    const assisted = { throttle: 1, steer: -1, brake: false };
+    try {
+      rides.resetPosition(mode.car, pose);
+      const sentence = conversationLine(taxi.id, "vinnie", decision.key, TAXI_LINES, false)!;
+      useTaxi.setState({ line: { key: decision.key, sentence } });
+      sample(PadButton.A);
+      expect(step()).toMatchObject(neutral);
+      expect(useTaxi.getState().action).toBe("left");
+      sample();
+      expect(step()).toMatchObject(neutral);
+      sample(0, PadButton.A);
+      sample(PadButton.A | PadButton.RB);
+      expect(horn).toHaveBeenCalledOnce();
+      expect(step()).toMatchObject(assisted);
+      sample(0, PadButton.A);
+      expect(step()).toMatchObject(neutral);
+
+      mode.action("assist", true);
+      mode.action("assist-space", true);
+      mode.action("assist-enter", true);
+      sample(PadButton.A);
+      mode.padCancel();
+      mode.action("assist", false);
+      mode.action("assist-space", false);
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist-enter", false);
+      expect(step()).toMatchObject(neutral);
+
+      mode.action("assist", true);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(neutral);
+      mode.action("assist", false);
+      expect(step()).toMatchObject(neutral);
+
+      sample(PadButton.A);
+      mode.action("assist", true);
+      mode.action("assist-space", true);
+      mode.action("assist-blur");
+      expect(step()).toMatchObject(assisted);
+      mode.action("assist-enter", true);
+      mode.blur();
+      expect(step()).toMatchObject(neutral);
+    } finally {
+      mode.dispose();
+      resetTaxiUi();
+    }
+  });
+
   it("paints two meshes alongside the curb at each stop and clears the hotel's parked van", () => {
     for (const route of TAXI_ROUTES) {
       const bay = createStopBay(route), stop = route.decisions.at(-1)!.at;

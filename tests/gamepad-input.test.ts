@@ -265,6 +265,54 @@ describe("pad samples", () => {
     expect(mode.padCancel).toHaveBeenCalledExactlyOnceWith(PadButton.A);
   });
 
+  it("cancels held actions across phases of the same mode and window blur without delivering a release", async () => {
+    const first = controller(), b = browser([first]);
+    let phase = "aim";
+    const tick = vi.fn<NonNullable<PadScope["padTick"]>>((_input, pressed) => {
+      if (pressed & PadButton.X) phase = "next";
+    });
+    const cancel = vi.fn();
+    const mode: PadScope = { get padPhase() { return phase; }, padTick: tick, padCancel: cancel };
+    const pad = b.attach({ scope: () => mode });
+    await Promise.resolve();
+
+    const sample = () => pad.tick(0.016);
+    const a = first.buttons[0], x = first.buttons[2];
+    sample();
+    a.pressed = true;
+    first.axes[0] = 0.9;
+    sample();
+    x.pressed = true;
+    sample();
+    expect(cancel).toHaveBeenCalledExactlyOnceWith(PadButton.A | PadButton.X);
+    expect(pad.input?.x).toBe(0);
+
+    sample();
+    expect(tick.mock.lastCall?.slice(1)).toEqual([0, 0, 0.016, 0, 0]);
+    a.pressed = x.pressed = false;
+    first.axes[0] = 0;
+    sample();
+    a.pressed = true;
+    sample();
+    b.win.dispatchEvent(new Event("blur"));
+    expect(cancel).toHaveBeenLastCalledWith(PadButton.A);
+    const calls = tick.mock.calls.length;
+    sample();
+    expect(tick).toHaveBeenCalledTimes(calls);
+    b.win.dispatchEvent(new Event("focus"));
+    sample();
+    expect(tick.mock.lastCall?.[1]).toBe(0);
+    a.pressed = false;
+    sample();
+    expect(tick.mock.calls.every(([, , released]) => !released)).toBe(true);
+
+    a.pressed = true;
+    sample();
+    a.pressed = false;
+    sample();
+    expect(tick.mock.lastCall?.[2]).toBe(PadButton.A);
+  });
+
   it("captures a drawer opened by touch and rearms movement after it closes", async () => {
     const first = controller(), b = browser([first]);
     let open = false;

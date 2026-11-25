@@ -74,7 +74,7 @@ function GateLabel({ mode, id, lane, text, layout, steer }: {
     {["tl", "tr", "bl", "br", "center", "em"].map((probe) => <i key={probe} aria-hidden data-face-probe={probe} />)}
   </>;
   const props = { ref, className: "road-gate", "data-lane": lane, "aria-label": text, style };
-  return steer ? <button type="button" {...props} onClick={() => steer(lane)}>{content}</button> : <div {...props}>{content}</div>;
+  return steer ? <button type="button" data-pad-aux data-pad-answer={lane} {...props} onClick={() => steer(lane)}>{content}</button> : <div {...props}>{content}</div>;
 }
 
 export function GateLabels({ mode, prompt, gateId, steer, answeredLane, stampedLane }: {
@@ -119,9 +119,9 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
   extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
-  return <header className="road-header">
+  return <header className="road-header" data-pad-aux>
       <div className="road-dash">
-        <button className="road-icon" aria-label={L(words.town)} title={L(words.town)} onClick={home}><Icon name="home" size={21} /></button>
+        <button className="road-icon" data-pad-back aria-label={L(words.town)} title={L(words.town)} onClick={home}><Icon name="home" size={21} /></button>
         <h1>{L(words.title)}</h1>
         <div className="road-meters">
           <span>{L(words.time)} <b>{clockText(remaining)}</b></span>

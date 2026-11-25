@@ -12,6 +12,7 @@ import { ModeDialogue, type KitLine } from "../kit/dialogue";
 import { actionHelp, updateHelp, type HelpLevel } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import { keepPhrases } from "../kit/phrases";
 import { controlsFrom } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
@@ -32,6 +33,7 @@ type Run = {
 
 const { situation, npc } = TAXI_CONVERSATION;
 const drivingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", " "]);
+const Assist = { pointer: 1, space: 2, enter: 4, pad: 8 } as const;
 const taxiModel = carModelEntry(TAXI_CAR.model);
 const wheelRadius = 0.3 * taxiModel.scale[2];
 
@@ -50,7 +52,7 @@ class TaxiMode implements GameMode {
   private passenger: GameCharacter | null = null;
   readonly car: Ride;
   private wheels?: THREE.Object3D[];
-  private assist = false;
+  private assist = 0;
   private marker = new THREE.Group();
   private ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.84, 36).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.85, depthWrite: false }));
@@ -60,7 +62,7 @@ class TaxiMode implements GameMode {
   private stopBay?: ReturnType<typeof createStopBay>;
   private markerTime = 0;
   private dialogue = new ModeDialogue({
-    say: (line) => useTaxi.setState({ line }),
+    say: (line) => { this.padCancel(); useTaxi.setState({ line }); },
     choices: (choices) => useTaxi.setState({ choices }),
     mic: (mic) => useTaxi.setState({ mic }),
     animate: (seconds) => this.passenger?.talk(seconds, () => audio.level(), () => audio.vowel()),
@@ -78,6 +80,32 @@ class TaxiMode implements GameMode {
   get active() { return this.run !== null; }
   get camera() { return this.run?.phase === "result" && this.host.rig.stage ? "stage" : "follow"; }
   get route() { return this.run?.route; }
+  get padDriving() { return this.run?.phase === "drive" || this.run?.phase === "passed"; }
+  get padAction() { return this.active && this.run?.phase !== "result" && !useTaxi.getState().choices.length; }
+  get padPhase() { return this.run?.phase; }
+
+  padBack() { this.exit(false); return true; }
+
+  padTick(_input: unknown, pressed: number, released: number) {
+    if (released & PadButton.A) this.padCancel();
+    if (!this.padDriving) return;
+    const { action, line } = useTaxi.getState();
+    const assist = !!(pressed & PadButton.A) && action && line;
+    if (assist) this.setAssist(Assist.pad, true);
+    if (pressed & PadButton.RB) {
+      this.host.horn?.();
+      return "horn" as const;
+    }
+    if (assist) return "confirm" as const;
+  }
+
+  private setAssist(source: number, held: boolean) {
+    if (held) this.assist |= source;
+    else this.assist &= ~source;
+  }
+
+  padCancel() { this.setAssist(Assist.pad, false); }
+  blur() { this.assist = 0; }
 
   allowsRideHints() {
     return this.run?.phase === "drive" && !inStopZone(this.run.route, this.car.m);
@@ -142,7 +170,7 @@ class TaxiMode implements GameMode {
     this.passenger.root.position.set(-0.43, CAR_SEATS.floor, -0.91);
     // (in the back, under the taxi's roof: heard, not seen, as the learner at the wheel is)
     this.passenger.root.visible = !carHasRoof(TAXI_CAR.model);
-    this.assist = false;
+    this.assist = 0;
     const help = progress.miniGameHelp?.[this.id]?.level ?? 0;
     resetTaxiUi();
     useTaxi.setState({ micOn: this.dialogue.micOn, gloss: help === 0 });
@@ -216,7 +244,7 @@ class TaxiMode implements GameMode {
       if (this.run !== run) return;
       this.host.rides.resetPosition(this.car, resetPose(approach(run.route, run.index)));
       this.host.snapTaxi(this.car, taxiModel.collisionBox);
-      this.assist = false;
+      this.assist = 0;
       run.phase = "drive";
       run.spoken = false;
       run.cue = null;
@@ -340,7 +368,7 @@ class TaxiMode implements GameMode {
       if (!run.missed) { run.first++; this.train(run, true); }
       run.index++;
       run.missed = run.spoken = false;
-      this.assist = false;
+      this.assist = 0;
       this.showHelp(run, false);
     }
   }
@@ -350,6 +378,7 @@ class TaxiMode implements GameMode {
     const step = run.route.decisions[run.index];
     const action = near && help.action ? step.action : null;
     const ui = useTaxi.getState();
+    if (ui.action !== action) this.padCancel();
     if (ui.action !== action || ui.gloss !== help.gloss) useTaxi.setState({ action, gloss: help.gloss });
     const stop = action === "stop";
     if (this.stopBay) {
@@ -385,7 +414,10 @@ class TaxiMode implements GameMode {
     else if (name === "mic") {
       this.dialogue.setMic(!!value);
       useTaxi.setState({ micOn: this.dialogue.micOn });
-    } else if (name === "assist") this.assist = !!value;
+    } else if (name === "assist") this.setAssist(Assist.pointer, !!value);
+    else if (name === "assist-space") this.setAssist(Assist.space, !!value);
+    else if (name === "assist-enter") this.setAssist(Assist.enter, !!value);
+    else if (name === "assist-blur") this.setAssist(Assist.pointer | Assist.space | Assist.enter, false);
     else if (name === "again" && this.run?.phase === "result") {
       this.host.fade(() => { if (this.active) { this.dialogue.cancel(); this.launch(); } });
     }
@@ -404,7 +436,7 @@ class TaxiMode implements GameMode {
         this.host.rig.snap();
       } else this.host.dismount();
       this.run = null;
-      this.assist = false;
+      this.assist = 0;
       this.highlight.visible = false;
       this.stopBay?.dispose();
       this.stopBay = undefined;

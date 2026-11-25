@@ -1,12 +1,8 @@
 import { GamepadView } from "../ui/gamepad";
-
-export const PadButton = {
-  A: 1 << 0, B: 1 << 1, X: 1 << 2, LB: 1 << 4, RB: 1 << 5, LT: 1 << 6, RT: 1 << 7, Menu: 1 << 9,
-  Up: 1 << 12, Down: 1 << 13, Left: 1 << 14, Right: 1 << 15,
-} as const;
-const DIRECTIONS = PadButton.Up | PadButton.Down | PadButton.Left | PadButton.Right;
+import { PadButton, PAD_DIRECTIONS } from "./padButtons";
+export { PadButton } from "./padButtons";
 const BUTTONS = PadButton.A | PadButton.B | PadButton.X | PadButton.LB | PadButton.RB | PadButton.LT | PadButton.RT
-  | PadButton.Menu | DIRECTIONS;
+  | PadButton.Menu | PAD_DIRECTIONS;
 
 export interface PadDebug {
   connected: boolean;
@@ -27,6 +23,8 @@ export interface PadScalars {
 export interface PadScope {
   readonly padDriving?: boolean;
   readonly padNavigate?: boolean;
+  readonly padPhase?: string;
+  padBack?(): boolean;
   padTick?(input: PadScalars, pressed: number, released: number, dt: number, direction: number, held: number): PadDebug["lastAction"] | void;
   padCancel?(held: number): void;
 }
@@ -35,6 +33,7 @@ type Scope = "foot" | "car" | "boat" | PadScope | null;
 
 export interface PadHost {
   scope(): Scope;
+  blocked?(): boolean;
   canLook?(): boolean;
   orbit?(dx: number, dy: number): void;
   manual?(brake: boolean): void;
@@ -75,7 +74,7 @@ export class PadDirection {
       this.stick = Math.abs(rawY) >= Math.abs(x) ? (rawY < 0 ? PadButton.Up : PadButton.Down)
         : (x < 0 ? PadButton.Left : PadButton.Right);
     }
-    const dpad = buttons & DIRECTIONS, allowed = dpad & armed;
+    const dpad = buttons & PAD_DIRECTIONS, allowed = dpad & armed;
     const direction = dpad ? allowed & -allowed : this.stick;
     if (direction !== this.held) {
       this.held = direction;
@@ -98,6 +97,7 @@ export class GamepadInput implements PadScalars {
   brake = false;
   private connected = false;
   private scope: Scope = null;
+  private phase?: PadScope["padPhase"];
   private revision = 0;
   private previous = 0;
   private held = 0;
@@ -193,6 +193,7 @@ export class GamepadInput implements PadScalars {
     const scope = this.scope, held = this.held;
     this.revision++;
     this.scope = null;
+    this.phase = undefined;
     this.x = this.y = this.rx = this.ry = this.throttle = 0;
     this.running = this.brake = false;
     this.held = this.previous = 0;
@@ -211,7 +212,8 @@ export class GamepadInput implements PadScalars {
     if (this.observer) this.surfaceChanged(this.observer.takeRecords());
     this.view?.sync();
     if (revision !== this.revision) return false;
-    if (this.readScope() === scope) return true;
+    const mode = typeof scope === "object" ? scope : null;
+    if (!this.host?.blocked?.() && this.readScope() === scope && mode?.padPhase === this.phase) return true;
     this.cancel();
     return false;
   }
@@ -225,8 +227,18 @@ export class GamepadInput implements PadScalars {
         this.view.connect(app);
       } else this.watchSurface();
     }
+    if (this.host?.blocked?.()) {
+      if (this.buttonsReady) this.cancel();
+      return;
+    }
     const scope = this.readScope(), view = this.view;
-    if (scope !== this.scope) { this.cancel(false); this.scope = scope; }
+    const mode = typeof scope === "object" ? scope : null;
+    const phase = mode?.padPhase;
+    if (scope !== this.scope || phase !== this.phase) {
+      this.cancel(false);
+      this.scope = scope;
+      this.phase = phase;
+    }
     const revision = this.revision;
     const dt = Math.max(0, Math.min(0.05, elapsed || 0));
     const x = axis(pad, 0), y = axis(pad, 1);
@@ -242,12 +254,12 @@ export class GamepadInput implements PadScalars {
     this.buttonsReady = true;
     this.held = (this.held | pressed) & buttons;
 
-    const mode = typeof scope === "object" ? scope : null;
     const direction = view?.scope || mode?.padNavigate ? this.nav.step(x, y, buttons, this.held, dt) : 0;
     if (view && (pressed || direction || released)) {
       view.sync();
       if (revision !== this.revision) return;
-      if ((pressed & PadButton.Menu) && view.menu()) {
+      if ((pressed & PadButton.Menu) && view.menu(scope !== null)) {
+        if (revision === this.revision) this.cancel(false);
         this.debug.lastAction = "focus";
         return;
       }
@@ -262,6 +274,11 @@ export class GamepadInput implements PadScalars {
       }
     }
     if (!scope) return;
+    if ((pressed & PadButton.B) && mode?.padBack?.()) {
+      if (this.connected) this.debug.lastAction = "back";
+      this.stillIn(scope, revision);
+      return;
+    }
     const driving = scope === "car" || scope === "boat" || !!mode?.padDriving;
     const moving = this.x || this.y || this.throttle;
     const looking = this.rx || this.ry;

@@ -31,7 +31,7 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
   const listening = status === "listening";
   const message = status === "hit" ? L(words.hit) : status === "miss" ? L(words.miss) : tip && !listening ? L(words.tip) : null;
   return <span className="say-it" data-status={status}>
-    <button type="button" className="say-it-mic" aria-label={listening ? L(words.micStop) : L(words.mic)}
+    <button type="button" className="say-it-mic" data-pad-aux aria-label={listening ? L(words.micStop) : L(words.mic)}
       aria-pressed={listening} aria-disabled={cue.awarded} onClick={() => { setTip(false); cue.toggle(); }}>
       <Icon name="mic" size={19} />
       <Icon name="star" size={11} className="say-it-badge" />

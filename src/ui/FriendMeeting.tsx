@@ -12,7 +12,7 @@ export default function FriendMeeting() {
   const gloss = useStore((s) => s.settings.lt);
   const answerGloss = useStore((s) => s.settings.sayLt);
   return (
-    <section className="friend-meeting" data-pad-scope="meeting" aria-label={NPCS.lizzie.name}>
+    <section className="friend-meeting" data-pad-scope="meeting" data-pad-phase={choices[0]?.key} aria-label={NPCS.lizzie.name}>
       <header>
         <b>{NPCS.lizzie.name}</b>
         {choices.length > 0 && speechSupported() && (

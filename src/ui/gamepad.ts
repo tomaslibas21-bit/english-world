@@ -18,6 +18,8 @@ const OPENER = ".toolbar .ride-menu";
 const PORTAL = ".wpop, .nat-tipbox";
 const GRID = "[data-pad-grid], .scn-grid, .lh-grid, .lh-tools, .map-canvas, .guide-chips, .barista-chips, .surf-levels, .word-gate-ways";
 const AUX = "[data-pad-tool], .objective-card button, .cave-card button, .directions-card button, .text-arrival button";
+const MODE_TOOLS = "[data-pad-tools]";
+const AUXILIARY = "[data-pad-aux], [data-pad-aux] button";
 const TYPING = 'textarea, input:not([type=range]), select:not([data-pad-adjust]), [contenteditable]:not([contenteditable=false])';
 
 type Direction = "up" | "down" | "left" | "right";
@@ -59,8 +61,6 @@ const POLICIES: Record<string, Policy> = {
 
 const EXISTING: Record<string, string> = {
   "dialog[open]": "native-modal",
-  ".photo-sheet, .surf-pick-card": "modal",
-  ".barista-offer, .barista-overlay, .taxi-choices, .road-choices, .surf-choices, .loteria-score": "choice",
 };
 const ROOTS = ["[data-pad-scope]", TOOLBAR, ...Object.keys(EXISTING)].join(", ");
 
@@ -73,6 +73,7 @@ function kind(root: HTMLElement) {
 }
 
 function policy(root: HTMLElement) { return POLICIES[kind(root)] ?? POLICIES.choice; }
+function phaseOf(root: HTMLElement | null) { return root?.dataset.padPhase ?? root?.dataset.phase; }
 
 function visible(el: HTMLElement) {
   return el.isConnected && !el.closest(BLOCKED) && el.getClientRects().length > 0 &&
@@ -138,7 +139,7 @@ function neighbor(from: HTMLElement, items: HTMLElement[], direction: Direction)
 
 function identity(target: HTMLElement) {
   const d = target.dataset;
-  return target.id || d.sit || d.line || d.padAnswer || d.padTool || d.thread || d.chip || d.ball ||
+  return target.id || d.sit || d.line || d.meetingAnswer || d.padAnswer || d.padTool || d.thread || d.card || d.chip || d.ball ||
     d.pocket || d.word || d.target || d.choice || d.way || target.classList[0] || target.localName;
 }
 
@@ -199,6 +200,7 @@ export class GamepadView {
   private last = new WeakMap<HTMLElement, HTMLElement>();
   private pending?: Restore;
   private toolbarReturn?: string;
+  private auxiliary?: { root: HTMLElement; under: HTMLElement | null; phase?: string; underPhase?: string };
   private edit?: { target: Widget; value: string };
   private notice: PadNotice;
 
@@ -217,7 +219,7 @@ export class GamepadView {
       this.observer = new MutationObserver(this.changed);
       this.observer.observe(app, {
         subtree: true, childList: true,
-        attributeFilter: ["data-pad-scope", "data-pad-phase", "data-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled", "open"],
+        attributeFilter: ["data-pad-scope", "data-pad-tools", "data-pad-phase", "data-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled", "open"],
       });
       this.observer.observe(document.body, { childList: true });
       for (const node of document.body.children) this.addPortal(node);
@@ -259,6 +261,7 @@ export class GamepadView {
     this.connected = this.desktop = this.opening = this.composing = this.lastField = false;
     this.pending = this.launch = undefined;
     this.toolbarReturn = undefined;
+    this.auxiliary = undefined;
     this.bubble = undefined;
     this.returns = new WeakMap();
     this.last = new WeakMap();
@@ -346,6 +349,7 @@ export class GamepadView {
       this.bubble = undefined;
       this.leaveTools();
     }
+    if (this.auxiliary && !this.auxiliary.root.isConnected) refresh = true;
     if (this.focused && (!this.focused.isConnected || (focus && !available(this.focused)))) this.clearRing();
     if (refresh) this.refresh();
     else if (layout) this.notice.layout();
@@ -363,6 +367,11 @@ export class GamepadView {
       active = node;
       rank = priority;
     }
+    const tools = this.auxiliary;
+    if (tools && tools.under === active && tools.underPhase === phaseOf(active) && tools.phase === phaseOf(tools.root) &&
+        tools.root.matches(MODE_TOOLS) && visible(tools.root)) {
+      active = tools.root;
+    } else this.auxiliary = undefined;
     const under = active;
     for (const node of this.portals) {
       const anchor = node.popoverAnchor;
@@ -370,7 +379,7 @@ export class GamepadView {
           anchor.closest(BLOCKED) || (under && !under.contains(anchor))) continue;
       if (active === under || (active!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) active = node;
     }
-    const phase = active?.dataset.padPhase ?? active?.dataset.phase;
+    const phase = phaseOf(active);
     if (active !== previous || phase !== this.phase) {
       this.active = active;
       this.phase = phase;
@@ -395,7 +404,7 @@ export class GamepadView {
       this.opening = false;
       const key = this.toolbarReturn;
       this.toolbarReturn = undefined;
-      const target = key && this.controls(active).find((item) => identity(item) === key);
+      const target = this.toolbarTarget(active, key);
       if (!target || !this.focus(active, target)) this.focusFirst(active);
     }
     this.notice.layout();
@@ -417,6 +426,7 @@ export class GamepadView {
     if (!event.isTrusted) return;
     this.clearRing();
     this.launch = this.pending = undefined;
+    if (this.auxiliary?.root === this.active) this.leaveAuxiliary(false);
     if (this.desktop && this.active?.matches(TOOLBAR)) {
       this.desktop = false;
       this.refresh();
@@ -460,6 +470,7 @@ export class GamepadView {
 
   private owns(root: HTMLElement, item: HTMLElement) {
     if (root.matches(PORTAL)) return root.contains(item);
+    if (root.matches(MODE_TOOLS)) return root.contains(item) && item.matches(AUXILIARY);
     if (root.dataset.padScope === "convo" && item.closest(".view-chip")) return true;
     const nearest = item.closest(ROOTS);
     if (nearest === root) return true;
@@ -506,7 +517,7 @@ export class GamepadView {
   private default(root: HTMLElement, items: HTMLElement[]) {
     const safe = items.filter((item) => !item.matches(NOT_DEFAULT));
     const selector = policy(root).first;
-    return safe.find((item) => item.matches(DEFAULT)) ?? (selector && safe.find((item) => item.matches(selector))) ??
+    return items.find((item) => item.matches(DEFAULT)) ?? (selector && safe.find((item) => item.matches(selector))) ??
       safe.find((item) => item.matches(ANSWER)) ?? safe[0];
   }
 
@@ -549,6 +560,21 @@ export class GamepadView {
     const backwards = direction === "up" || direction === "left";
     const step = backwards ? -1 : 1;
     const grid = this.isTools(root) ? root : items[index].closest(GRID);
+    if (grid?.matches('[data-pad-grid="loteria"]')) {
+      const cells = Array.from(grid.querySelectorAll<HTMLElement>(".loteria-cell[data-card]"));
+      const cell = cells.indexOf(items[index]);
+      const horizontal = direction === "left" || direction === "right";
+      const row = Math.floor(cell / 4);
+      for (let i = cell + (horizontal ? step : step * 4); i >= 0 && i < cells.length; i += horizontal ? step : step * 4) {
+        if (horizontal && Math.floor(i / 4) !== row) break;
+        if (items.includes(cells[i]) && this.focus(root, cells[i])) return true;
+      }
+      if (horizontal) return false;
+      for (let i = index + step; i >= 0 && i < items.length; i += step) {
+        if (!grid.contains(items[i]) && this.focus(root, items[i])) return true;
+      }
+      return false;
+    }
     const geometric = grid && neighbor(items[index], this.isTools(root) ? items : items.filter((item) => item.closest(GRID) === grid), direction);
     if (geometric && this.focus(root, geometric)) return true;
     const adjacent = items[index + step];
@@ -623,6 +649,11 @@ export class GamepadView {
       return;
     }
     if (this.lastField && kind(root) !== "info" && kind(root) !== "native-modal") return;
+    if (this.auxiliary?.root === root) {
+      this.leaveAuxiliary();
+      this.debug.lastAction = "back";
+      return;
+    }
     let target: Element | null | undefined;
     if (kind(root) === "drawer") target = this.menuButton();
     else {
@@ -664,6 +695,16 @@ export class GamepadView {
     }
   }
 
+  private leaveAuxiliary(restoreFocus = true) {
+    const tools = this.auxiliary;
+    if (!tools) return;
+    this.auxiliary = undefined;
+    const target = document.activeElement;
+    if (target instanceof HTMLElement && this.owns(tools.root, target)) target.blur();
+    this.refresh();
+    if (restoreFocus && this.active) this.restore({ from: tools.root });
+  }
+
   private prepareReturn(root: HTMLElement, target?: HTMLElement) {
     const name = kind(root);
     const parent = name === "ended" ? root.closest<HTMLElement>(".convo") ?? root : root;
@@ -681,7 +722,7 @@ export class GamepadView {
   private closePortal(root: PopoverElement, direction?: Direction) {
     const anchor = root.popoverAnchor;
     if (!anchor || !root.popoverClose) return false;
-    const owner = anchor.closest<HTMLElement>(ROOTS);
+    const owner = this.auxiliary?.root.contains(anchor) ? this.auxiliary.root : anchor.closest<HTMLElement>(ROOTS);
     const target = anchor.closest<HTMLElement>(CONTROL) ?? anchor;
     this.pending = { from: root, origin: this.origin(target, owner), direction };
     this.launch = undefined;
@@ -706,16 +747,31 @@ export class GamepadView {
     if (!toolbar || !visible(toolbar)) return false;
     this.desktop = true;
     this.refresh();
-    const target = restoreKey && this.controls(toolbar).find((item) => identity(item) === restoreKey);
-    if (target) this.focus(toolbar, target);
-    else this.focusFirst(toolbar);
+    const target = this.toolbarTarget(toolbar, restoreKey);
+    if (!target || !this.focus(toolbar, target)) this.focusFirst(toolbar);
     return true;
   }
 
-  menu() {
+  private toolbarTarget(root: HTMLElement, key?: string) {
+    const items = this.controls(root);
+    return key ? items.find((item) => identity(item) === key) :
+      items.find((item) => item.matches(".photo-chip[data-near], .cave-guide [data-guide]")) ??
+      items.find((item) => item.matches(".cave-toggle"));
+  }
+
+  menu(playable: boolean) {
     if (this.editingText) return false;
     const root = this.active;
-    if (!root) return this.openToolbar();
+    if (root && this.auxiliary?.root === root) { this.leaveAuxiliary(); return true; }
+    const tools = root ? root.hasAttribute("data-pad-menu") && root.closest<HTMLElement>(MODE_TOOLS) :
+      playable ? this.app?.querySelector<HTMLElement>(MODE_TOOLS) : null;
+    if (tools && this.controls(tools).length) {
+      this.auxiliary = { root: tools, under: root, phase: phaseOf(tools), underPhase: phaseOf(root) };
+      this.refresh();
+      this.focusFirst(tools);
+      return true;
+    }
+    if (!root) return playable && this.openToolbar();
     if (this.isTools(root)) { this.back(); return true; }
     if (kind(root) === "home") {
       const tool = this.controls(root).find((item) => item.closest(".lh-tools"));
@@ -726,7 +782,7 @@ export class GamepadView {
   }
 
   interact() {
-    const chip = this.app?.querySelector<HTMLButtonElement>(".photo-chip");
+    const chip = this.app?.querySelector<HTMLButtonElement>(".photo-chip[data-near]");
     if (!available(chip || null) || !chip) return false;
     const box = visibleBox(chip);
     if (!box || !hit(chip, box)) return false;

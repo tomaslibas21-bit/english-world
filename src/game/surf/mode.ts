@@ -5,6 +5,7 @@ import { SURF_SPOT } from "../world/surf";
 import { coach } from "../coach";
 import type { ModeHost } from "../kit/host";
 import type { GameMode } from "../kit/modes";
+import { PadButton, PAD_DIRECTIONS } from "../padButtons";
 import { SurfPlay, type SurfGame } from "./play";
 import { useSurf } from "./store";
 
@@ -19,11 +20,27 @@ export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlaye
     left: (x, z, rot) => { host.place(x, z, rot); host.left(id); },
   });
   host.add(play.group, play.marker);
+  let padDirection = 0;
   return {
     id, play, cleanScreen: "overlay", camera: "stage",
     conversation: { situation: play.situation, label: L("Banglenčių pamoka") },
     get active() { return play.active; },
     get modal() { return useSurf.getState().picking; },
+    get padAction() {
+      const { active, choice, over } = useSurf.getState();
+      return active && !choice && !over;
+    },
+    get padPhase() { return useSurf.getState().phase ?? undefined; },
+    padBack() { play.stop(); return true; },
+    padCancel() { padDirection = 0; },
+    padTick(_, pressed, _released, _dt, _direction, held) {
+      const { choice, over, phase, todo } = useSurf.getState();
+      if (choice || over || (!todo && phase !== "out" && phase !== "wait" && phase !== "catch" && phase !== "ride")) return;
+      const dpad = held & PAD_DIRECTIONS;
+      padDirection = dpad & -dpad;
+      if (pressed & PadButton.A) { this.input({ kind: "jump" }); return "jump"; }
+      if (pressed & PadButton.X) { this.input({ kind: "interact" }); return "interact"; }
+    },
     start(level) {
       if (!host.canStart() || play.active) return false;
       if (level === "beginner" || level === "advanced") play.start(level);
@@ -35,6 +52,12 @@ export function createSurfMode(host: ModeHost, dressPlayer: SurfGame["dressPlaye
     },
     tick: (dt, outdoors) => play.tick(dt, outdoors),
     update({ dt, time, x, y, blocked }) {
+      if (padDirection) {
+        const turning = useSurf.getState().todo?.do === "turn";
+        // The physical arrows can turn either way. The pad cue uses Right.
+        x = padDirection === PadButton.Right ? 1 : padDirection === PadButton.Left && !turning ? -1 : 0;
+        y = padDirection === PadButton.Up ? 1 : padDirection === PadButton.Down ? -1 : 0;
+      }
       play.update(dt, time, x, y, blocked);
       if (play.active) host.updatePose(dt, play.heading);
     },

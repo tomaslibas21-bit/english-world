@@ -210,7 +210,7 @@ export function SurfPicker() {
   if (!picking) return null;
   return (
     <div className="surf-pick" role="dialog" aria-label={L("Banglenčių pamoka")}>
-      <div className="surf-pick-card">
+      <div className="surf-pick-card" data-pad-scope="modal">
         <h2>{SURF && <SitIcon id={SURF.situation} size="1em" />} {L("Banglenčių pamoka")}</h2>
         <p>{L("Pokalbis ant bangų: instruktorė sako, tu atsakai balsu ir darai, ko ji prašo.")}</p>
         <div className="surf-levels">
@@ -224,7 +224,7 @@ export function SurfPicker() {
           </button>
         </div>
         {best.waves > 0 && <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: best.waves, seconds: best.seconds })}</p>}
-        <button className="surf-later" onClick={() => game?.surfStop()}>{L("Ne dabar")}</button>
+        <button className="surf-later" data-pad-back onClick={() => game?.surfStop()}>{L("Ne dabar")}</button>
       </div>
     </div>
   );
@@ -242,10 +242,10 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   const riding = s.phase === "ride";
   const pic = s.line?.pic;
   return (
-    <div className={"surf" + (touch ? " touch" : "")}>
+    <div className={"surf" + (touch ? " touch" : "")} data-pad-tools>
       <div className="surf-top">
-        <button className="surf-x" onClick={() => game?.surfStop()} aria-label={L("Baigti pamoką")} title={L("Baigti pamoką")}><Icon name="close" size={20} strokeWidth={2.4} /></button>
-        <button className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow} onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>{L("Lėčiau")}</button>
+        <button className="surf-x" data-pad-aux data-pad-back onClick={() => game?.surfStop()} aria-label={L("Baigti pamoką")} title={L("Baigti pamoką")}><Icon name="close" size={20} strokeWidth={2.4} /></button>
+        <button className={"surf-slow" + (slow ? " on" : "")} data-pad-aux aria-pressed={slow} onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>{L("Lėčiau")}</button>
         <div className="surf-score" aria-label={L("Rezultatas")}>
           <span title={L("Bangos")}><i aria-hidden>🌊</i>{sc.waves}</span>
           <span title={L("Sekundės ant bangos")}><i aria-hidden>⏱</i>{sc.seconds}</span>
@@ -258,7 +258,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
           <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
             {pic && <Picture src={pic} />}
             <div className="surf-words">
-              <div className="surf-cue-line">
+              <div className="surf-cue-line" data-pad-aux>
                 <div className="surf-feedback" aria-live="polite" lang={EDITION.helper}>
                   {s.mark === "ok" && <FeedbackBadge correct label={L("Teisingai!")} />}
                   {s.mark === "no" && <FeedbackBadge correct={false} label={L("Pabandyk dar kartą")} />}
@@ -267,7 +267,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
               </div>
               {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>
-            <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
+            <button className="surf-again" data-pad-aux onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
           </div>
           {/* her line asks for a move: the move and its key, large, right under it */}
           <Move todo={s.todo} touch={touch} />
@@ -275,10 +275,10 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       )}
       {/* the learner's turn to speak: the microphone listens for one of these lines; a tap answers too */}
       {s.choice && !s.over && (
-        <div className="surf-choices">
+        <div className="surf-choices" data-pad-scope="choice" data-pad-menu data-pad-phase={s.choice.id}>
           <Mic mic={s.mic} on={s.micOn} />
           {s.choice.options.map((o, i) => (
-            <button key={o.cue} className="surf-choice" onClick={() => game?.surfChoose(o.cue)}>
+            <button key={o.cue} className="surf-choice" data-pad-answer={o.cue} onClick={() => game?.surfChoose(o.cue)}>
               {!touch && <kbd>{i + 1}</kbd>}
               <Answer s={o.s} lt={sayLt} />
             </button>
@@ -296,7 +296,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
         ]} actions={<>
           <button className="btn surf-level" onClick={() => game?.surfAgain("beginner")}><b>{L("Dar viena pamoka")}</b><span>{L("Pradedantiems")}</span></button>
           <button className="btn surf-level adv" onClick={() => game?.surfAgain("advanced")}><b>{L("Dar viena pamoka")}</b><span>{L("Pažengusiems")}</span></button>
-          <button className="btn soft surf-later" onClick={() => game?.surfStop()}>{L("Į krantą")}</button>
+          <button className="btn soft surf-later" data-pad-back onClick={() => game?.surfStop()}>{L("Į krantą")}</button>
         </>}>
           <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: s.best.waves + sc.waves, seconds: s.best.seconds + sc.seconds })}</p>
           <p>{L("Frazės, kurias girdėjai, jau tavo kortelėse.")}</p>

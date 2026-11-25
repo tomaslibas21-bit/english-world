@@ -69,6 +69,13 @@ export class RoadEntry implements GameMode {
 
   constructor(private host: RoadHost) {}
   get active() { return !!this.pending || !!this.mode?.active; }
+  get padDriving() { return !this.pending && !!this.mode?.padDriving; }
+  get padAction() { return !this.pending && !!this.mode?.padAction; }
+  get padPhase() { return this.mode?.padPhase; }
+  padBack() { return !this.pending && (this.mode?.padBack() ?? false); }
+  padTick(input: unknown, pressed: number) {
+    if (this.padDriving) return this.mode?.padTick(input, pressed);
+  }
   get inStrip() { return this.onStrip; }
   leaveStrip() { this.cancelPreparation(); }
   get modal() { return !!this.pending; }

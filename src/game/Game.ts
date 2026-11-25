@@ -595,6 +595,7 @@ export class Game implements GameApi {
       updatePose: (dt, heading) => this.updateModePose(dt, heading),
       board: (ride) => this.boardRide(ride, true),
       drive: (dt, controls) => this.updateRide(dt, controls),
+      horn: () => this.horn(),
       dismount: (x, z, rot, keepParked) => {
         const point = this.rides.riding && this.rides.carExit(this.rides.riding)?.clone();
         this.endRide(keepParked);
@@ -1197,11 +1198,14 @@ export class Game implements GameApi {
 
   private bindInput() {
     this.pad = attachPad({
+      blocked: () => {
+        const { hud } = useStore.getState();
+        return !!(hud.fade || this.transitioning || this.rideTimer !== undefined || this.seaReturnView || this.sea?.padHandoff);
+      },
       scope: () => {
         const { screen, conv, hud } = useStore.getState();
         if (screen !== "play" || conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
-            hud.panel || hud.glyph || hud.fade || hud.phoneCard || this.caveLoading || this.flight ||
-            this.transitioning || this.rideTimer !== undefined || this.seaReturnView || this.modes.modal ||
+            hud.panel || hud.glyph || hud.phoneCard || this.caveLoading || this.flight || this.modes.modal ||
             radio.store.getState().open || useStreet.getState().moment || useSurf.getState().picking) return null;
         const mode = this.modes.active;
         if (this.modes.engaged || hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : null;
@@ -1231,7 +1235,7 @@ export class Game implements GameApi {
       },
       jump: () => this.jump(),
       interact: () => {
-        if (!this.nearest || !useStore.getState().hud.prompt) return false;
+        if (!this.rides.riding && (!this.nearest || !useStore.getState().hud.prompt)) return false;
         this.interact();
         return true;
       },
@@ -1322,7 +1326,7 @@ export class Game implements GameApi {
     this.keys.delete(key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
+  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); this.modes.blur(); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;

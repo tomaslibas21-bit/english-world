@@ -33,7 +33,7 @@ export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ 
   return (
     <div className="cave-card" role="status">
       <div className="cave-top">{name}{count}</div>
-      <button className="collapse-btn objective-summary cave-toggle" aria-expanded={expanded} aria-controls="cave-details" onClick={toggle}>
+      <button className="collapse-btn objective-summary cave-toggle" data-pad-tool="cave-toggle" aria-expanded={expanded} aria-controls="cave-details" onClick={toggle}>
         <span className="cave-summary-name">
           {name} {!expanded && <span className="cave-stones" role="img" aria-label={stonesLabel}>{stones}</span>}
         </span>
@@ -52,14 +52,14 @@ export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ 
           <div className="cave-guide">
             <Arrow angle={Math.atan2(map.questX - map.px, map.questZ - map.pz)} />
             <p id="cave-quest-label">{nextIcon}{cave.next}</p>
-            <button className="btn small" data-guide="cave" aria-describedby="cave-quest-label" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+            <button className="btn small" data-pad-tool="cave-guide" data-guide="cave" aria-describedby="cave-quest-label" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           </div>
         ) : <p>{nextIcon}{cave.next}</p>}
         {objective?.angle != null && objectiveLabel && (
           <div className="cave-guide">
             <Arrow angle={objective.angle} />
             <small id="cave-objective-label">{objectiveLabel}</small>
-            <button className="btn small" data-guide="objective" aria-describedby="cave-objective-label" onClick={() => game?.autoWalkToObjective("objective")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+            <button className="btn small" data-pad-tool="objective-guide" data-guide="objective" aria-describedby="cave-objective-label" onClick={() => game?.autoWalkToObjective("objective")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           </div>
         )}
       </div>
@@ -93,7 +93,7 @@ export function GlyphCard() {
   return (
     <div className="glyph-veil" onClick={(e) => { if (e.target === e.currentTarget) cave.close(); }}>
       <div className={"glyph-card" + (g.solved ? " solved" : "")} data-pad-scope="glyph" role="dialog" aria-label={L("Kalbantis akmuo")}>
-        <button className="glyph-x" onClick={() => cave.close()} title={L("Uždaryti")} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
+        <button className="glyph-x" data-pad-back onClick={() => cave.close()} title={L("Uždaryti")} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
         <div className="glyph-head">
           <span className="glyph-rune" aria-hidden><i /><i /><i /></span>
           <h2>{g.solved ? L("Akmuo užsidegė!") : L("Akmuo kalba. Ką jis sako?")}</h2>
@@ -111,7 +111,7 @@ export function GlyphCard() {
             <p className="glyph-q">{L("Pasirink, ką tai reiškia:")}</p>
             <div className="glyph-opts">
               {g.options.map((o, i) => (
-                <button key={i} className={"glyph-opt" + (g.wrong.includes(i) ? " wrong" : "")} disabled={g.wrong.includes(i)} lang={EDITION.helper} onClick={() => cave.pick(i)}>
+                <button key={i} data-pad-answer={i} className={"glyph-opt" + (g.wrong.includes(i) ? " wrong" : "")} disabled={g.wrong.includes(i)} lang={EDITION.helper} onClick={() => cave.pick(i)}>
                   <kbd>{i + 1}</kbd><span>{o}</span>
                 </button>
               ))}

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
@@ -55,6 +55,13 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
     phase, kind, next, labels, board, covered, current, called, faceDown, caller, verse, neighbor,
     focus, glow, bounce, tip, ready, winningCells, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
+  const grid = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const current = document.activeElement;
+    if (!current?.matches(".loteria-cell") || !grid.current?.contains(current)) return;
+    const target = grid.current.children[focus];
+    if (target instanceof HTMLButtonElement && target !== current && !target.disabled) target.focus({ preventScroll: true });
+  }, [focus]);
 
   if (result) return (
     <div className="loteria-score" lang={HL}>
@@ -80,10 +87,10 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const showCard = current && !reading && phase !== "leaving";
   const visibleCaller = faceDown && caller?.key.startsWith("lt_c_") ? null : caller;
   return (
-    <main className="loteria-play" data-phase={phase} lang={HL}>
+    <main className="loteria-play" data-phase={phase} data-pad-scope="choice" lang={HL}>
       <div className="loteria-stage">
         <div className="loteria-scene" aria-hidden="true" />
-        <button type="button" className="loteria-exit" onClick={() => act("exit")}>
+        <button type="button" className="loteria-exit" data-pad-back onClick={() => act("exit")}>
           <Icon name="walk" size={17} /> {L(words.exit)} <Shortcut touch={touch}>Esc</Shortcut>
         </button>
       </div>
@@ -98,7 +105,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
             <div className="loteria-read">
               {read.map((card) => {
                 const i = choices.findIndex((choice) => choice.key === `lt_c_${card.id}`);
-                return <button type="button" key={card.id} className="loteria-read-chip"
+                return <button type="button" key={card.id} className="loteria-read-chip" data-pad-answer
                   data-line={`lt_c_${card.id}`} disabled={i < 0} onClick={() => act("read", `lt_c_${card.id}`)}>
                   <Icon name="speaker" size={15} /><span lang={TL}>{labels[card.id].name}</span>
                   {i >= 0 && <Shortcut touch={touch}>{i + 1}</Shortcut>}
@@ -128,10 +135,11 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
         <p className="loteria-help" role="status">
           {phase === "opening" ? L(words.roundHelp[kind]) : hint}
         </p>
-        <div className="loteria-board" role="group" aria-label={L(words.board)}>
+        <div ref={grid} className="loteria-board" data-pad-grid="loteria" role="group" aria-label={L(words.board)}>
           {board.map((card, index) => {
             const marked = covered.includes(index);
             return <button type="button" key={card.id} className="loteria-cell" data-card={card.id}
+              data-pad-default={playable && focus === index || undefined} onFocus={() => act("focus", String(index))}
               data-focus={!touch && focus === index} data-glow={glow === index} data-winning={ready && winningCells.includes(index)} data-corner={kind === "esquinas" && isCorner(index)}
               aria-pressed={marked} disabled={!playable} onClick={() => act("cover", String(index))}>
               <LoteriaTile card={card} label={labels[card.id]} pictureUrl={picture(card)} />

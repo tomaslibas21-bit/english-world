@@ -18,6 +18,7 @@
 }
 .bl-panel, .bl-stage { width: min(100%, 670px); min-width: 0; }
 .bl-header { grid-area: header; width: 100%; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.bl-header .bl-mic { width: 44px; height: 44px; flex: none; margin-inline-start: auto; pointer-events: auto; }
 .bl-status, .bl-exit, .bl-panel, .bl-power {
   background: var(--bl-bg);
   border: 1px solid var(--bl-line);

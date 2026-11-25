@@ -41,6 +41,7 @@ export interface GameMode extends PadScope {
   controlsNpc?(id: string): boolean;
   tick?(dt: number, outdoors: boolean): void;
   input(input: ModeInput): boolean;
+  blur?(): void;
   prompt?(x: number, z: number): ModePrompt | null;
   event?(name: string, data: unknown): string | undefined;
   action?(name: string, value?: string | boolean): void;
@@ -94,6 +95,7 @@ export class ModeRegistry {
   }
 
   input(input: ModeInput) { return this.selected?.input(input) ?? false; }
+  blur() { this.selected?.blur?.(); }
   update(frame: ModeFrame) { this.active?.update(frame); }
   tick(dt: number, outdoors: boolean) {
     for (const mode of this.modes.values()) mode.tick?.(dt, outdoors && !this.active);

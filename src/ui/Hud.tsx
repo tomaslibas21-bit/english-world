@@ -9,7 +9,6 @@ import { useTownQuests } from "../game/photowalk/store";
 import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { TaxiOverlay } from "./Taxi";
 import { PoolOverlay } from "./Pool";
-import { LoteriaOverlay } from "./Loteria";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
@@ -71,6 +70,7 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
+const LoteriaOverlay = lazy(() => import("./Loteria").then(({ LoteriaOverlay }) => ({ default: LoteriaOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
 
 export function Hud() {

@@ -503,6 +503,10 @@ export class LoteriaMode implements GameMode {
       this.begin();
     }
     if (name === "cover" && typeof value === "string" && /^\d+$/.test(value) && run.round.board[Number(value)]) this.cover(run, Number(value));
+    if (name === "focus" && (run.phase === "waiting" || run.phase === "calling") && typeof value === "string") {
+      const focus = Number(value);
+      if (run.round.board[focus] && useLoteria.getState().focus !== focus) loteriaUi({ focus });
+    }
     if (name === "replay") void this.repeat(run);
     if (name === "shout") this.requestShout(run);
     if (name === "read" && run.phase === "reading" && typeof value === "string") this.dialogue.choose(value);

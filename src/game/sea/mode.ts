@@ -7,6 +7,7 @@ import { preloadSeaOverlay } from "../../ui/seaOverlay";
 import { boardFaces, preloadBoardFont } from "../kit/boardFaces";
 import { audio } from "../audio";
 import type { ModeFrame, ModeInput } from "../kit/modes";
+import type { PadScalars } from "../gamepad";
 import type { Ride } from "../rides/Rides";
 import { readBest, saveBest } from "../road/ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "../road/karaoke";
@@ -38,6 +39,7 @@ export type PreparedSea = Awaited<ReturnType<typeof prepareSea>>;
 
 export class SeaMode {
   private phase: "town" | "briefing" | "loading" | "drive" | "turn" | "result" | "unavailable" = "town";
+  private padBrake = false;
   private readonly view: SeaView;
   private boat: SeaBoat;
   private score = new RunScore(SEA_SECONDS);
@@ -69,6 +71,17 @@ export class SeaMode {
   get active() { return this.phase !== "town"; }
   get handingOff() { return !!this.returning?.presented; }
   get guiding() { return this.guideAge !== undefined; }
+  get padHandoff() { return this.phase === "turn" || !!this.returning || this.guiding; }
+  get padDriving() { return this.phase === "drive" && !this.padHandoff; }
+
+  padBack() {
+    if (!this.padDriving) return false;
+    this.exit(false);
+    return true;
+  }
+
+  padTick(input: PadScalars) { this.padBrake = this.padDriving && input.brake; }
+  padCancel() { this.padBrake = false; }
 
   start() {
     this.host.entered("sea");
@@ -236,7 +249,7 @@ export class SeaMode {
     }
     dt = step;
     const { distance: oldDistance, x: oldX } = this.boat;
-    const turn = this.boat.drive(dt, x, y);
+    const turn = this.boat.drive(dt, x, this.padBrake ? -1 : y);
     this.sailed += Math.hypot(this.boat.distance - oldDistance, this.boat.x - oldX);
     const ended = this.score.advance(dt);
     this.pose(time, dt);

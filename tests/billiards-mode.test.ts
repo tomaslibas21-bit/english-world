@@ -7,6 +7,7 @@ import type { TableView } from "../src/game/billiards/table";
 import { CameraRig } from "../src/game/camera";
 import type { GameCharacter } from "../src/game/characters";
 import type { ModeHost } from "../src/game/kit/host";
+import { PadButton } from "../src/game/padButtons";
 
 function game() {
   const noop = () => {};
@@ -113,6 +114,58 @@ it("publishes the current Space charge on both sides of the peak and fires on re
     expect(step(12)).toBeCloseTo(0.5);
     expect(mode.release(" ")).toBe(true);
     expect(debug.state()?.phase).toBe("rolling");
+  } finally {
+    mode.exit();
+  }
+});
+
+it("applies fine aim and releases or cancels only the source that owns the power", async () => {
+  const { mode, debug, clockUntil } = game();
+  const sample = (pressed = 0, released = 0, direction = 0, held = pressed) => mode.padTick(null, pressed, released, 0.05, direction, held);
+  const space = { kind: "key", key: " ", repeat: false, keys: new Set<string>() } as const;
+  const step = () => mode.update({ dt: 0.12, time: 1, x: 0, y: 0, brake: false, blocked: false });
+  try {
+    mode.start("solids");
+    await clockUntil("break");
+    const angle = debug.state()!.angle;
+    sample(0, 0, PadButton.Right, PadButton.LB);
+    expect(debug.state()!.angle).toBeCloseTo(angle - 0.1 * Math.PI / 180, 8);
+    sample(0, 0, PadButton.Left);
+    expect(debug.state()!.angle).toBeCloseTo(angle + 0.4 * Math.PI / 180, 8);
+
+    sample(PadButton.A);
+    mode.input(space);
+    step();
+    expect(useBilliards.getState().power).toBeCloseTo(0.1);
+    expect(mode.release(" ")).toBe(false);
+    mode.padCancel();
+    sample(0, PadButton.A);
+    expect(useBilliards.getState()).toMatchObject({ phase: "break", power: 0 });
+
+    mode.input(space);
+    sample(PadButton.A);
+    step();
+    mode.padCancel();
+    sample(0, PadButton.A);
+    expect(useBilliards.getState()).toMatchObject({ phase: "break" });
+    expect(useBilliards.getState().power).toBeCloseTo(0.1);
+    expect(mode.release(" ", true)).toBe(true);
+
+    mode.action("power-start");
+    mode.action("power", "0.5");
+    sample(PadButton.A);
+    step();
+    mode.padCancel();
+    sample(0, PadButton.A);
+    expect(useBilliards.getState()).toMatchObject({ phase: "break", power: 0.5 });
+    mode.action("power", "0");
+    mode.action("power-end");
+
+    sample(PadButton.A);
+    step();
+    sample(0, PadButton.A);
+    expect(useBilliards.getState().phase).toBe("rolling");
+    expect(sample(0, PadButton.A)).toBeUndefined();
   } finally {
     mode.exit();
   }
