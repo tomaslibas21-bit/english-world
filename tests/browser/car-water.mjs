@@ -253,6 +253,9 @@ async function installReads() {
     const r = R.find(id), rails = colliders.boxes.filter(b => b.deckRail);
     let tightest = null;
     for (const [i, to] of path.entries()) {
+      if (!Number.isFinite(to.half) || !Number.isFinite(to.wide)) {
+        throw new Error(`Pier rail sweep for ${id} at frame ${to.serial} needs finite half-length and half-width (half=${to.half}, wide=${to.wide})`);
+      }
       const from = path[i - 1] ?? to, delta = to.heading - from.heading;
       const angle = Math.atan2(Math.sin(delta), Math.cos(delta));
       const car = body(r, to);
@@ -407,11 +410,12 @@ async function installReads() {
 
   function effects(r, car, w) {
     const foam = g.scene.getObjectByName("car-water-foam"), drops = g.scene.getObjectByName("water-drops");
-    const result = { bow: [], wake: null, spray: 0, streams: [0, 0] };
+    const bumperHalf = body(r, car).half;
+    const result = { bow: [], bumperHalf, wake: null, spray: 0, streams: [0, 0] };
     if (foam && visible(foam) && foam.geometry.drawRange.count > 0) {
       const { index, attributes, drawRange } = foam.geometry;
       const vertices = new Set(Array.from({ length: drawRange.count }, (_, i) => index.getX(drawRange.start + i)));
-      const front = project(point(r.mesh.localToWorld(v.set(0, 0.12, car.half))));
+      const front = project(point(r.mesh.localToWorld(v.set(0, 0.12, bumperHalf))));
       const ribbon = [];
       for (const i of vertices) {
         if (attributes.color.getW(i) < 0.025) continue;
@@ -1309,8 +1313,8 @@ async function mainTrip(run) {
         await run.coastShot("02-trail", s);
       }
     }
-    const bow = c.effects?.bow ?? [];
-    if (!firstBow && bow.some(p => p.visible && p.above >= 0.065 && Math.abs(p.along - c.half - 0.12) < 0.09 && Math.abs(p.across) < 0.12
+    const { bow = [], bumperHalf } = c.effects ?? {};
+    if (!firstBow && bow.some(p => p.visible && p.above >= 0.065 && Math.abs(p.along - bumperHalf - 0.12) < 0.09 && Math.abs(p.across) < 0.12
       && p.nosePixels < 70) && bow.some(p => p.visible && p.across > c.wide) && bow.some(p => p.visible && p.across < -c.wide)) {
       assert.equal(w.band, "body-deep", "raised bow appears at body depth");
       firstBow = s.now;
@@ -1637,7 +1641,7 @@ async function pierRail(run) {
   const retreat = held.car.x - end.car.x, yaw = turn(end.car.heading, held.car.heading);
   let approachClearance, reverseClearance;
   if (pc) {
-    const path = samples => samples.map(({ serial, car: { x, z, heading } }) => ({ serial, x, z, heading }));
+    const path = samples => samples.map(({ serial, car: { x, z, heading, half, wide } }) => ({ serial, x, z, heading, half, wide }));
     [approachClearance, reverseClearance] = await run.evaluate(({ id, approach, reverse }) => {
       const { pierRailSweep } = window.__carWaterTest;
       return [pierRailSweep(id, approach), pierRailSweep(id, reverse)];
