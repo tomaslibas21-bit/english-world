@@ -256,8 +256,9 @@ try {
     await cta.waitFor();
     const actionOrder = await ended.locator("button").evaluateAll((buttons) => {
       const ctaIndex = buttons.findIndex((b) => b.matches(".surf-cta"));
-      return { firstNavigation: buttons.find((b) => b.matches(".btn"))?.classList.contains("surf-cta"),
-        onlyReplayBefore: buttons.slice(0, ctaIndex).every((b) => b.matches(".ended-phrase button.play")) };
+      // (the phrase row's replay and save-to-cards buttons may come first: they act on the phrase, not on where to go)
+      return { firstNavigation: buttons.find((b) => b.matches(".btn:not([data-phrase-save])"))?.classList.contains("surf-cta"),
+        onlyReplayBefore: buttons.slice(0, ctaIndex).every((b) => b.matches(".ended-phrase :is(button.play, [data-phrase-save])")) };
     });
     check(`${label}: the real rental completion leads with the surf navigation action`, actionOrder.firstNavigation && actionOrder.onlyReplayBefore, actionOrder);
     assert.deepEqual(await page.evaluate(() => {
