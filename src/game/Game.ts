@@ -3750,18 +3750,32 @@ export class Game implements GameApi {
       ? this.surfSignBox(w, h, v) : undefined;
     const placed: TagBox[] = [];
     for (const s of shown) {
-      const obstacles = surfSign && s.n.id === surfNpc ? [...hud, surfSign] : hud;
+      const sign = s.n.id === surfNpc ? surfSign : undefined;
+      const obstacles = sign ? [...hud, sign] : hud;
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
       const hits = (x: number, y: number, p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
       const spots: [number, number, number][] = [[s.x, s.y, 0]];
       for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
       for (const p of obstacles) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
-      let best: [number, number] | null = null, bestD = Infinity;
+      const signOnRight = sign && s.x <= (sign.x0 + sign.x1) / 2;
+      if (sign) {
+        // Keep Maren's tag above the plate or beside it on her side. Combine those offsets with HUD clearance on short screens.
+        const side = signOnRight ? sign.x0 - tw / 2 - 6 : sign.x1 + tw / 2 + 6;
+        for (const [x, y, extra] of spots.slice()) {
+          spots.push([signOnRight ? Math.min(x, side) : Math.max(x, side), y, extra], [x, Math.min(y, sign.y0 - 6), extra]);
+        }
+      }
+      let best: [number, number] | null = null, bestD = Infinity, bestBySign = false;
       for (const [sx, sy, extra] of spots) {
         const x = Math.min(w - m - tw / 2, Math.max(m + tw / 2, sx)), y = Math.min(h - m, Math.max(m + th, sy));
         if (obstacles.some((p) => hits(x, y, p)) || placed.some((p) => hits(x, y, p))) continue;
+        const bySign = !sign || y <= sign.y0 || (signOnRight ? x + tw / 2 <= sign.x0 : x - tw / 2 >= sign.x1);
         const d = Math.hypot(x - s.x, y - s.y) + extra;
-        if (d < bestD) { bestD = d; best = [x, y]; }
+        if (bySign === bestBySign ? d < bestD : bySign) {
+          bestD = d;
+          best = [x, y];
+          bestBySign = bySign;
+        }
       }
       const [x, y] = best ?? [Math.min(w - m - tw / 2, Math.max(m + tw / 2, s.x)), Math.min(h - m, Math.max(m + th, s.y))];
       if (!best && bubbleBox && hits(x, y, bubbleBox)) {
