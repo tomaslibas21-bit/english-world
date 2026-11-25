@@ -17,12 +17,13 @@ const ReviewBody = lazy(() => import("./PhraseReviewBody"));
 const ReviewRow = /* @__PURE__ */ lazy(() => import("./PhraseReviewBody").then(({ ReviewRow }) => ({ default: ReviewRow })));
 
 // Keep card-store dependencies on the caller side of the lazy boundary. The body handles selection and layout.
-export function reviewLine(entry: PhraseReviewEntry, labels?: PhraseSaveLabels) {
+export function reviewLine(entry: PhraseReviewEntry, labels?: PhraseSaveLabels, stableLabel?: boolean) {
   const sentence = resolvePhrase(entry);
   if (!sentence) return null;
   return {
     key: cardKey(sentence.en), target: sentence.en, helper: phraseHelper(sentence),
-    save: <PhraseSave sentence={sentence} situationId={entry.situationId} sourceLabel={entry.sourceLabel} labels={labels} />,
+    save: <PhraseSave sentence={sentence} situationId={entry.situationId} sourceLabel={entry.sourceLabel} labels={labels}
+      stableLabel={stableLabel} />,
   };
 }
 
@@ -35,10 +36,10 @@ export function PhraseReviewRow({ entry, children, labels, ...languages }: Revie
   return <Suspense fallback={children ?? null}><ReviewRow line={line} {...languages}>{children}</ReviewRow></Suspense>;
 }
 
-export default function PhraseReview({ entries, labels = PHRASE_CARD_UI, targetOnly, ...languages }: ReviewOptions & {
-  entries: readonly PhraseReviewEntry[]; targetOnly?: boolean;
+export default function PhraseReview({ entries, labels = PHRASE_CARD_UI, ...options }: ReviewOptions & {
+  entries: readonly PhraseReviewEntry[]; targetOnly?: boolean; compact?: boolean;
 }) {
   return entries.length > 0 && <Suspense fallback={null}>
-    <ReviewBody entries={entries} labels={labels} prepare={reviewLine} targetOnly={targetOnly} {...languages} />
+    <ReviewBody entries={entries} labels={labels} prepare={reviewLine} {...options} />
   </Suspense>;
 }

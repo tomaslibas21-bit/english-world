@@ -18,6 +18,6 @@ export function PhraseChooser({ entries, bilingual = false }: { entries: readonl
   return entries.length > 0 && <details className="phrase-chooser" onToggle={(event) => setOpen(event.currentTarget.open)}
     onKeyDown={key} onKeyUp={(event) => { if (event.key === " ") event.stopPropagation(); }}>
     <summary className="btn soft" title={label} aria-label={label}><Icon name="bookOpen" size={19} /></summary>
-    {open && <div className="phrase-chooser-panel"><PhraseReview entries={entries} targetOnly={!bilingual} /></div>}
+    {open && <div className="phrase-chooser-panel"><PhraseReview entries={entries} targetOnly={!bilingual} compact /></div>}
   </details>;
 }

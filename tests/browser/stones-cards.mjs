@@ -321,6 +321,57 @@ async function checkBook(run, pairs) {
   await run.mark("post-reload-cards");
 }
 
+async function checkLongScoreReview(run, score, select, alternative) {
+  const reader = score.locator(":scope > .phrase-review-row .phrase-review-value");
+  await run.visible(reader, "the score shows the selected phrase in full", { frames: 0 });
+  assert.equal(await reader.getAttribute("aria-hidden"), "true", "the native select announces the value");
+
+  const checkFit = async () => {
+    const phrase = await select.locator("option:checked").textContent();
+    assert.equal(await reader.textContent(), phrase);
+    await run.layout(() => reader.scrollIntoViewIfNeeded());
+    const fit = await reader.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const card = node.closest(".mode-score-card").getBoundingClientRect();
+      const style = getComputedStyle(node);
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const lines = [...range.getClientRects()];
+      const textLeft = box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+      const textRight = box.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight);
+      const inside = (item, outer) => item.left >= outer.left - 1 && item.right <= outer.right + 1
+        && item.top >= outer.top - 1 && item.bottom <= outer.bottom + 1;
+      return {
+        visible: style.visibility === "visible" && Number(style.opacity) > 0 && inside(box, card)
+          && inside(box, { left: 0, right: innerWidth, top: 0, bottom: innerHeight }),
+        textFits: lines.length > 0 && lines.every((line) => line.width > 0
+          && inside(line, { left: textLeft, right: textRight, top: box.top, bottom: box.bottom })),
+      };
+    });
+    assert.deepEqual(fit, { visible: true, textFits: true }, `complete selected phrase fits: ${phrase}`);
+    await hitBox(select, 44);
+    await noOverflow(score);
+  };
+
+  await checkFit();
+  await select.selectOption({ label: alternative });
+  assert.equal(await select.inputValue(), cardKey(alternative));
+  assert.equal(await select.locator("option:checked").textContent(), alternative);
+  await checkFit();
+  await score.evaluate((card) => { card.style.fontSize = "200%"; });
+  try {
+    await checkFit();
+    const actions = await score.locator(".mode-score-actions button").all();
+    assert.equal(actions.length, 2);
+    for (const action of actions) {
+      await run.layout(() => action.scrollIntoViewIfNeeded());
+      await hitBox(action, 44);
+    }
+  } finally {
+    await score.evaluate((card) => card.style.removeProperty("font-size"));
+  }
+}
+
 async function checkScore(run, correct) {
   const { page, phone, step, wait, press } = run;
   const read = () => page.evaluate(() => window.__ew.road.state());
@@ -399,6 +450,11 @@ async function checkScore(run, correct) {
       await run.mark(phase);
     },
   });
+  if (correct) {
+    const alternative = gate.gates.filter((phrase) => phrase !== expected.en).sort((a, b) => b.length - a.length)[0];
+    assert.ok(alternative, "the score has a board alternative with no practiced row");
+    await checkLongScoreReview(run, score, selected, alternative);
+  }
   await checkBook(run, [[expected, saved]]);
 }
 

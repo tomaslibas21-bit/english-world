@@ -14,6 +14,7 @@ export type PhraseSaveProps = PhraseSource & {
   popover?: "primary" | "soft";
   labels?: PhraseSaveLabels;
   iconOnly?: boolean;
+  stableLabel?: boolean;
   describedBy?: string;
 };
 
@@ -21,7 +22,7 @@ function saveKey(event: KeyboardEvent) {
   if (event.key === " " || event.key === "Enter") event.stopPropagation();
 }
 
-export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, labels, iconOnly, describedBy }: PhraseSaveProps) {
+export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, labels, iconOnly, stableLabel, describedBy }: PhraseSaveProps) {
   const key = cardKey(sentence.en);
   const saved = useCards((cards) => cards.keys.has(key));
   const words = labels ?? PHRASE_CARD_UI;
@@ -39,5 +40,8 @@ export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popove
       const cards = useCards.getState();
       const alreadySaved = cards.keys.has(key);
       if (cards.add({ ...sentenceInput(sentence, situationId), sourceLabel }) && !alreadySaved) onSaved?.();
-    }}>{icon}{!iconOnly && (" " + label)}</button>;
+    }}>{icon}{!iconOnly && (stableLabel ? <span className="phrase-save-label">
+      <span>{label}</span>
+      <span aria-hidden="true">{saved ? words.add : words.inCards}</span>
+    </span> : " " + label)}</button>;
 }

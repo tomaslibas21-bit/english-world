@@ -11,3 +11,32 @@
   width: 100%; min-height: 44px; padding: 4px 8px; border: 1px solid var(--line);
   border-radius: 10px; background: var(--panel-solid); color: var(--ink); font: inherit;
 }
+.phrase-review-picker { position: relative; }
+/* The native control takes focus and covers the full wrapped value. */
+.phrase-review-picker select {
+  position: absolute; inset: 0; height: 100%; opacity: 0; cursor: pointer;
+}
+.phrase-review-value {
+  display: grid; align-content: center; min-height: 44px;
+  padding-block: 4px; padding-inline: 8px calc(8px + 1.2em);
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel-solid); color: var(--ink);
+}
+.phrase-review-picker::after {
+  content: ""; position: absolute; inset-inline-end: 10px; top: 50%;
+  width: .45em; height: .45em; border: solid var(--accent); border-width: 0 2px 2px 0;
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+.phrase-review-picker select:focus-visible + .phrase-review-value {
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+.phrase-review-row:has(> .btn > .phrase-save-label) {
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
+}
+/* Size the save button for either label in the same grid cell. */
+.phrase-save-label { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.phrase-save-label > span { grid-area: 1 / 1; }
+.phrase-save-label > [aria-hidden] { visibility: hidden; }
+@media (max-width: 600px), (max-height: 520px) {
+  .phrase-save-label { display: none; }
+}
