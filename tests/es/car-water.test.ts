@@ -863,22 +863,31 @@ it("uses only the first valid boarding to index the fleet and guards an inland b
   const plan = await RIDES.loadCarWater!();
   let resolve!: (plan: CarWaterPlan) => void;
   const pending = new Promise<CarWaterPlan>(r => { resolve = r; });
-  const f = occupiedTown(20, { ...RIDES, loadCarWater: () => pending });
+  const load = vi.fn(() => pending);
+  const f = occupiedTown(20, { ...RIDES, loadCarWater: load });
   try {
+    const car = f.rides.find("east")!;
+    f.rides.prefetchWater(car, f.adapter);
+    await Promise.resolve();
+    expect(load).not.toHaveBeenCalled();
     expect(f.rides.water).toBeUndefined();
     expect(Reflect.get(f.rides, "waterFleet")).toBeUndefined();
-    await f.board(f.rides.find("east"), false);
+    await f.board(car, false);
+    expect(load).toHaveBeenCalledTimes(1);
     f.stage(-104.65, -20, Math.PI);
     for (let i = 0; i < 4 * 20; i++) f.frame(go);
     expect(f.car.m.z).toBeGreaterThan(-27 + f.car.m.spec.half - 0.1);
     expect(read(f.car.m.x, f.car.m.z, f.car.m.heading).band).toBe("dry");
     f.rides.abandon();
+    f.rides.prefetchWater(car, f.adapter);
     resolve(plan);
     await pending;
     await new Promise(r => setTimeout(r, 10));
     expect(f.rides.water).toBeUndefined();
     expect(Reflect.get(f.rides, "waterFleet")).toBeUndefined();
-    await f.board(f.rides.find("east"));
+    expect(load).toHaveBeenCalledTimes(1);
+    await f.board(car);
+    expect(load).toHaveBeenCalledTimes(2);
     expect(Reflect.get(f.rides, "waterFleet")).toHaveLength(f.cars.length);
     expect(f.inspect().enabled).toBe(true);
   } finally { f.close(); }
