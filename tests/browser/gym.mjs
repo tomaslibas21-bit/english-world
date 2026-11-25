@@ -1325,12 +1325,52 @@ async function journey(browser, [width, height], audible) {
         assert.equal(await mic.getAttribute("aria-label"), speech.micStop);
         assert.equal(await bonus.getAttribute("data-status"), "listening");
       };
-      const speak = async (text, status) => {
+      const speak = async (text, status, { prefixPause = false } = {}) => {
         const before = await read();
         const requests = (await audio()).length;
         await startMic();
-        await page.evaluate((text) => window.__sayItHear(text), text);
-        await waitNative("shared SayIt shows " + status, async () => await bonus.getAttribute("data-status") === status);
+        if (prefixPause) {
+          const allowanceMs = 15_000;
+          const latestMissMs = allowanceMs + 5_000;
+          const open = await micState();
+          stepName = "shared SayIt keeps listening after the Spanish prefix";
+          const injectedAt = await page.evaluate((text) => {
+            const at = Date.now(); // The fake dispatches the final result and speechend synchronously.
+            window.__sayItHear(text);
+            return at;
+          }, text);
+          let checkedPause = false;
+          let sample;
+          for (;;) {
+            sample = await bonus.evaluate((el, at) => ({
+              status: el.getAttribute("data-status"), elapsedMs: Date.now() - at,
+            }), injectedAt);
+            if (!checkedPause && sample.elapsedMs >= 5_000) {
+              assert(sample.elapsedMs < allowanceMs, "the listening checkpoint is within the prefix allowance");
+              assert.equal(sample.status, "listening", "the mic is still listening after five seconds");
+              assert.equal(await mic.getAttribute("aria-pressed"), "true");
+              assert.equal(await mic.getAttribute("aria-disabled"), "false");
+              assert.equal(await enabled.count(), 4, "all four choices stay enabled while listening");
+              const paused = await read();
+              assert.equal(paused.score.said, 0, "the unfinished answer earns no spoken bonus");
+              assert.deepEqual(paused, before, "the pause leaves the call and score unchanged");
+              assert.deepEqual(await counts(), { live: count, saved: count }, "the pause adds no plays");
+              assert.deepEqual(await micState(), open, "the same recognizer stays active without a restart or abort");
+              check("Spanish prefix is still listening", { elapsedMs: sample.elapsedMs });
+              checkedPause = true;
+              stepName = "shared SayIt shows " + status;
+            }
+            if (sample.status !== "listening" || sample.elapsedMs >= latestMissMs) break;
+            await new Promise((resolve) => setTimeout(resolve, 20));
+          }
+          assert.equal(sample.status, status, stepName);
+          assert(sample.elapsedMs >= allowanceMs && sample.elapsedMs <= latestMissMs,
+            `the Spanish prefix must settle in ${allowanceMs}–${latestMissMs} native ms, saw ${sample.elapsedMs}`);
+          check("Spanish prefix settled", sample);
+        } else {
+          await page.evaluate((text) => window.__sayItHear(text), text);
+          await waitNative("shared SayIt shows " + status, async () => await bonus.getAttribute("data-status") === status);
+        }
         assert.equal(await bonus.locator('[role="status"]').innerText(), speech[status]);
         assert.deepEqual(await read(), { ...before, score: { ...before.score, said: before.score.said + Number(status === "hit") } });
         assert.equal((await audio()).length, requests, "speech adds no trainer request");
@@ -1416,7 +1456,7 @@ async function journey(browser, [width, height], audible) {
         }
         if (audible && n === 3) {
           assert.deepEqual((await micState()).starts, [], "the mic only starts on demand");
-          await speak("haga una", "miss");
+          await speak("haga una", "miss", { prefixPause: true });
           await speak(lines.gy_pushups.target, "miss");
           assert.deepEqual((await read()).score, result, "partial or competing exercise leaves the choice open");
         }
