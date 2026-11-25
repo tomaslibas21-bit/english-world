@@ -124,7 +124,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const showCall = !!call && (phase === "feedback" || (phase === "listen" || waitingForTina) && reveal);
   const shotOk = phase === "feedback" && correct;
   const scoreTitle = result?.winner === "learner" ? "Laimėjai!" : result?.winner === "tina" ? "Laimėjo Tina" : "Lygiosios";
-  return <div className="billiards" data-phase={phase} lang="lt">
+  return <div className="billiards" data-pad-scope={!aiming && phase !== "result" ? "billiards" : undefined} data-pad-phase={phase} data-phase={phase} lang="lt">
     <header className="bl-header">
       <section className="bl-status">
         <div className="bl-turn" aria-live="polite"><i />{side === "learner" ? "Tavo eilė" : "Tinos eilė"}</div>
@@ -133,7 +133,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
           <BallRow name="Tina" balls={state.balls.tina} active={side === "tina"} />
         </div>
       </section>
-      <button className="bl-exit" onClick={() => game?.modeExit()}><Icon name="close" size={15} />Baigti partiją</button>
+      <button className="bl-exit" data-pad-back onClick={() => game?.modeExit()}><Icon name="close" size={15} />Baigti partiją</button>
     </header>
     <div className="bl-stage">
       <TablePad aiming={aiming} usable={picking || aiming} />

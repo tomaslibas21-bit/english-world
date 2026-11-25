@@ -68,6 +68,7 @@ export class SeaMode {
   get active() { return this.phase !== "town"; }
   get handingOff() { return !!this.returning?.presented; }
   get guiding() { return this.guideAge !== undefined; }
+  get padHandoff() { return this.phase === "turn" || !!this.returning || this.guiding; }
   get padDriving() { return this.phase === "drive" && !this.returning && !this.guiding; }
 
   start() {

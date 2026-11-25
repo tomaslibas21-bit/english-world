@@ -112,7 +112,7 @@ export function SurfPicker() {
   if (!picking) return null;
   return (
     <div className="surf-pick" role="dialog" aria-label="Banglenčių pamoka">
-      <div className="surf-pick-card">
+      <div className="surf-pick-card" data-pad-scope="surf-picker">
         <h2><span aria-hidden>🏄</span> Banglenčių pamoka</h2>
         <p>Pokalbis ant bangų: instruktorė sako, tu atsakai balsu ir darai, ko ji prašo.</p>
         <div className="surf-levels">
@@ -126,7 +126,7 @@ export function SurfPicker() {
           </button>
         </div>
         {best.waves > 0 && <p className="surf-best">{`Iš viso: bangų – ${best.waves}, sekundžių ant bangos – ${best.seconds}`}</p>}
-        <button className="surf-later" onClick={() => game?.modeExit()}>Ne dabar</button>
+        <button className="surf-later" data-pad-back onClick={() => game?.modeExit()}>Ne dabar</button>
       </div>
     </div>
   );
@@ -175,7 +175,7 @@ export function SurfOverlay() {
       )}
       {/* the learner's turn to speak: the microphone listens for one of these lines; a tap answers too */}
       {s.choice && !s.over && (
-        <div className="surf-choices">
+        <div className="surf-choices" data-pad-scope="surf-choices" data-pad-phase={s.choice.id}>
           <Mic mic={s.mic} on={s.micOn} />
           {s.choice.options.map((o, i) => (
             <button key={o.cue} className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
@@ -190,7 +190,7 @@ export function SurfOverlay() {
       {s.said && !s.choice && !s.over && <div className="surf-said" lang="en"><Icon name="check" size={18} strokeWidth={2.6} /> <span>{s.said.s.en}</span></div>}
       {s.over && (
         <div className="surf-pick">
-          <div className="surf-pick-card">
+          <div className="surf-pick-card" data-pad-scope="surf-picker">
             <h2><span aria-hidden>🏄</span> Pamoka baigta</h2>
             <div className="surf-result">
               <div><b>{sc.waves}</b><span>Bangos</span></div>
@@ -203,7 +203,7 @@ export function SurfOverlay() {
               <button className="surf-level" onClick={() => game?.modeAction("surf", "again", "beginner")}><b>Dar viena pamoka</b><span>Pradedantiems</span></button>
               <button className="surf-level adv" onClick={() => game?.modeAction("surf", "again", "advanced")}><b>Dar viena pamoka</b><span>Pažengusiems</span></button>
             </div>
-            <button className="surf-later" onClick={() => game?.modeExit()}>Į krantą</button>
+            <button className="surf-later" data-pad-back onClick={() => game?.modeExit()}>Į krantą</button>
           </div>
         </div>
       )}

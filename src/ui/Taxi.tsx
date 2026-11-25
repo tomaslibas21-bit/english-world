@@ -53,7 +53,7 @@ export function TaxiOverlay({ touch }: { touch: boolean }) {
         </div>
       )}
       {!!choices.length && (
-        <div className="taxi-choices">
+        <div className="taxi-choices" data-pad-scope="taxi">
           <div className="taxi-turn" lang="lt">
             {speechSupported() && <button className={`mic${listening ? " listening" : ""}`} aria-label={micOn && listening ? words.micOff : words.micOn}
               onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={24} /></button>}

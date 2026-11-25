@@ -16,7 +16,7 @@ export function BaristaOffer() {
   const line = useBarista((s) => s.line);
   if (!offered || !line) return null;
   return (
-    <section className="barista-offer barista-panel">
+    <section className="barista-offer barista-panel" data-pad-scope="barista-offer">
       <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
       <button type="button" className="btn" onClick={() => act("start")}>{words.start}</button>
     </section>
@@ -89,10 +89,10 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   const concealed = hiddenOrder.length > 0 && !repair;
   return (
-    <div className="barista-overlay" lang="lt">
+    <div className="barista-overlay" data-pad-scope="barista" data-pad-phase={step} lang="lt">
       <header className="barista-header">
         {customer > 0 && <div className="barista-counter barista-panel">{words.customer} <b>{customer} {words.of} {total}</b></div>}
-        <button className="barista-exit barista-panel" type="button" onClick={() => game?.modeExit()}>{words.exit}</button>
+        <button className="barista-exit barista-panel" data-pad-back type="button" onClick={() => game?.modeExit()}>{words.exit}</button>
       </header>
       {!concealed && line && (
         <div className="barista-cue" data-line={line.key} aria-live="polite">

@@ -97,15 +97,15 @@ export function WordGateStart({ way, start, done, town }: {
   way: PlayWay; start(way: PlayWay): void; done(): void; town: string;
 }) {
   return <div className="word-gate-start">
-    <section role="dialog" aria-labelledby="word-gate-start-title">
+    <section data-pad-scope="word-setup" role="dialog" aria-labelledby="word-gate-start-title">
       <h2 id="word-gate-start-title">Kaip žaisime?</h2>
       <div className="word-gate-ways">
         {ways.map(({ id, title, line }) => <button key={id} type="button" data-way={id}
-          aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
+          data-pad-default={id === way || undefined} aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
           <strong>{title}</strong><small>{line}</small>
         </button>)}
       </div>
-      <button className="btn soft" onClick={done}>{town}</button>
+      <button className="btn soft" data-pad-back onClick={done}>{town}</button>
     </section>
   </div>;
 }

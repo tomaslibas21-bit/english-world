@@ -77,6 +77,7 @@ export class SeaEntry implements GameMode {
   constructor(private host: SeaHost) {}
   get active() { return !!this.mode?.active; }
   get handingOff() { return !!this.mode?.handingOff; }
+  get padHandoff() { return !!this.mode?.padHandoff; }
   get padDriving() { return this.mode?.padDriving ?? false; }
 
   tick(dt: number) { this.mode?.tickGuide(dt); }

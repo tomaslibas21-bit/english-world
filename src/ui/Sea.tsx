@@ -34,9 +34,9 @@ export function SeaOverlay({ touch }: { touch: boolean }) {
       {showHint && <p className="road-controls">{touch ? words.touchControls : words.controls}</p>}
     </>}
     {(phase === "result" || phase === "guide") && result && <WordGateResult result={result} words={words} actions={scoreActions} />}
-    {(phase === "loading" || phase === "unavailable") && <div className="sea-unavailable">
+    {(phase === "loading" || phase === "unavailable") && <div className="sea-unavailable" data-pad-scope="sea-status">
       <strong>{phase === "loading" ? words.title : words.unavailable}</strong>
-      <button className="btn" onClick={done}>{words.town}</button>
+      <button className="btn" data-pad-back onClick={done}>{words.town}</button>
     </div>}
   </div>;
 }

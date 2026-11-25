@@ -11,6 +11,7 @@ import { updateHelp, type HelpProgress } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import { keepPhrases } from "../kit/phrases";
 import { rand } from "../world/util";
 import { chooseShot } from "./ai";
@@ -93,6 +94,7 @@ export class BilliardsMode implements GameMode {
   private angle = Math.PI;
   private power = 0;
   private charge: number | null = null;
+  private chargeOwner: "key" | "pad" | null = null;
   private accumulator = 0;
   /** The shot being fired is the break (its recording plays once with the strike). */
   private breaking = false;
@@ -174,7 +176,7 @@ export class BilliardsMode implements GameMode {
     this.ownCall = this.ai = this.shot = null;
     this.afterFeedback = null;
     this.answerDelay = this.replyDelay = 0;
-    this.charge = null;
+    this.charge = this.chargeOwner = null;
     this.power = 0;
     this.angle = Math.PI;
     this.scoreFraming = false;
@@ -371,12 +373,14 @@ export class BilliardsMode implements GameMode {
   }
 
   private get aiming() { return this.phase === "aim" || this.phase === "break"; }
+  get padAction() { return this.aiming; }
+  readonly padNavigate = true;
 
   private fire(power: number, call: Call | null) {
     if (!this.round || this.shot || !Number.isFinite(power)) return;
     const { balls, side } = this.round;
     if (side === "learner" && call) this.round.shots++;
-    this.charge = null;
+    this.charge = this.chargeOwner = null;
     this.shot = {
       power: clamp(power, 0.055, 1), windup: 0.17, rest: 0, call,
       eightAllowed: !!call && call.ball === 8 && !remaining(balls, this.group(side)).length,
@@ -543,7 +547,7 @@ export class BilliardsMode implements GameMode {
     if (key === "escape") { this.exit(); return true; }
     if (this.aiming) {
       if (key === " ") {
-        if (!repeat && this.charge === null) this.charge = 0;
+        if (!repeat) this.startCharge("key");
         return true;
       }
       if (key === "arrowleft" || key === "arrowright") {
@@ -558,14 +562,30 @@ export class BilliardsMode implements GameMode {
     return (this.phase === "group" || this.phase === "reply") && this.dialogue.key(key);
   }
 
-  release(key: string, cancel = false) {
-    if (key !== " " || this.charge === null) return false;
-    this.charge = null;
+  private startCharge(owner: "key" | "pad") {
+    if (!this.aiming || this.chargeOwner !== null) return;
+    this.chargeOwner = owner;
+    this.charge = 0;
+  }
+
+  release(key: string, cancel = false, owner: "key" | "pad" = "key") {
+    if (key !== " " || this.chargeOwner !== owner) return false;
+    this.charge = this.chargeOwner = null;
     const power = this.power;
     if (!cancel && this.aiming && power >= 0.04) this.fire(power, this.ownCall);
     else this.setPower(0);
     return true;
   }
+
+  padTick(_input: unknown, pressed: number, released: number, _dt: number, direction: number) {
+    const nudge = direction === PadButton.Left || direction === PadButton.Right;
+    if (nudge) this.nudge(direction === PadButton.Left ? -0.5 : 0.5);
+    if (pressed & PadButton.A) this.startCharge("pad");
+    if ((released & PadButton.A) && this.release(" ", false, "pad")) return "confirm" as const;
+    if (nudge) return "interact" as const;
+  }
+
+  padCancel() { this.release(" ", true, "pad"); }
 
   private nudge(degrees: number) {
     if (this.aiming && Number.isFinite(degrees)) this.angle -= degrees * Math.PI / 180;
@@ -672,7 +692,7 @@ export class BilliardsMode implements GameMode {
     this.round?.sayIt.close();
     this.round = null;
     this.shot = null;
-    this.charge = null;
+    this.charge = this.chargeOwner = null;
     this.replaying = false;
     this.dialogue.cancel();
     this.table!.setRack(rack(401));

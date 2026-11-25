@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GamepadInput, PadButton, type PadHost, type PadScope } from "../src/game/gamepad";
+import { GamepadInput, PadButton, PadDirection, type PadHost, type PadScope } from "../src/game/gamepad";
 import { attachPad, effectiveStick } from "../src/game/padLink";
 
 function controller(index = 0, mapping: GamepadMappingType = "standard") {
@@ -42,6 +42,28 @@ function browser(initial: (Gamepad | null)[] = []) {
 }
 
 describe("standard controller sampling", () => {
+  it("uses a neutral latch, dominant-axis hysteresis and one timed step per sample", () => {
+    const nav = new PadDirection();
+    const { Up, Down, Left, Right } = PadButton;
+    expect(nav.step(1, 0, 0, 0, 0)).toBe(0);
+    expect(nav.step(0.34, 0, 0, 0, 1)).toBe(0);
+    expect(nav.step(0.54, 0, 0, 0, 2)).toBe(0);
+    expect(nav.step(0.55, -0.55, 0, 0, 3)).toBe(Up);
+    expect(nav.step(0.35, -0.37, 0, 0, 352)).toBe(0);
+    expect(nav.step(0.35, -0.37, 0, 0, 353)).toBe(Up);
+    expect(nav.step(0.35, -0.37, 0, 0, 492)).toBe(0);
+    expect(nav.step(0.35, -0.37, 0, 0, 700)).toBe(Up);
+    expect(nav.step(0.35, -0.37, 0, 0, 701)).toBe(0);
+    expect(nav.step(0.7, -0.55, Left | Down, Left | Down, 702)).toBe(Down);
+    expect(nav.step(0.7, -0.55, Left, Left, 703)).toBe(Left);
+    expect(nav.step(0.7, -0.55, 0, 0, 704)).toBe(Right);
+    expect(nav.step(0.34, 0, 0, 0, 705)).toBe(0);
+    expect(nav.step(0.44, 0, 0, 0, 1100)).toBe(0);
+    nav.reset();
+    expect(nav.step(0.8, 0, Left, 0, 1101)).toBe(0);
+    expect(nav.step(0.8, 0, 0, 0, 1102)).toBe(0);
+  });
+
   it("remaps radial dead zones and raw Y, clamps magnitude and handles absent or bad data", async () => {
     const pad = controller();
     const b = browser([pad]);

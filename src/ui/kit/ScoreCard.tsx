@@ -47,7 +47,7 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, action
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang="lt">
-      <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
+      <section className="mode-score-card" data-pad-scope="score" role="dialog" aria-labelledby="mode-score-title">
         {ratio != null && Number.isFinite(ratio) && <ScoreStars ratio={ratio} />}
         <h2 id="mode-score-title" ref={heading}>{title}</h2>
         {celebrate && <Confetti from={heading} />}
@@ -60,10 +60,10 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, action
         {children}
         <div className="mode-score-actions">
           {again && done ? <>
-            <button className="btn" onClick={again.run}>{again.label}
+            <button className="btn" data-pad-default onClick={again.run}>{again.label}
               {again.subtitle && <small className="mode-score-subtitle">{again.subtitle}</small>}
             </button>
-            <button className="btn soft" onClick={done.run}>{done.label}</button>
+            <button className="btn soft" data-pad-back onClick={done.run}>{done.label}</button>
           </> : actions}
         </div>
       </section>

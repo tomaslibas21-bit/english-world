@@ -32,7 +32,6 @@ export interface GameApi {
   guideToPlace?(loc: string): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
-  setPadDrawer?(open: boolean): void;
   /** A jump (Space, the phone's button); again in the air: a flip; a third time: the high jump, twice head over heels. */
   jump(): void;
   /** The jump button held down or let go (at a wheel it is the brake). */

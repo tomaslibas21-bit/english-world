@@ -7,6 +7,11 @@ export function effectiveStick(touch: Stick, pad: Readonly<PadScalars> | undefin
 }
 
 const debug: PadDebug = { connected: false, lastAction: null, focusTarget: null };
+const diagnostics: Readonly<PadDebug> = Object.freeze({
+  get connected() { return debug.connected; },
+  get lastAction() { return debug.lastAction; },
+  get focusTarget() { return debug.focusTarget; },
+});
 declare global {
   interface Window { __pad?: Readonly<PadDebug> }
 }
@@ -24,7 +29,7 @@ let detach: (() => void) | undefined;
 
 export function attachPad(host?: PadHost, load: () => Promise<{ GamepadInput: typeof GamepadInput }> = () => import("./gamepad")) {
   detach?.();
-  window.__pad = debug;
+  window.__pad = diagnostics;
   let runtime: GamepadInput | undefined;
   let index = -1, generation = 0;
   let blurred = false, paused = document.hidden;

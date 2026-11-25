@@ -5,7 +5,6 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { useTownQuests } from "../game/photowalk/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
-import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { GoFishOffer, GoFishOverlay } from "./GoFish";
 import { ROAD_UI } from "../content/road";
@@ -50,7 +49,7 @@ function unreadTextSuffix(unread = 0) {
 
 function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
+    <button className="icon-btn" data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -63,6 +62,7 @@ export function useDueCards(): number {
   return dueCards(cards, Date.now()).length;
 }
 
+const TaxiOverlay = lazy(() => import("./Taxi").then(({ TaxiOverlay }) => ({ default: TaxiOverlay })));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
   photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay,
@@ -261,11 +261,6 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
 
   const [menuOpen, setMenuOpen] = useState(false);
   const open = folds && !panel && !(phone && radioOpen) && (menuOpen || listHint);
-  useLayoutEffect(() => {
-    const owner = game;
-    owner?.setPadDrawer?.(open);
-    return () => owner?.setPadDrawer?.(false);
-  }, [open]);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
@@ -286,13 +281,16 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
       else closeMenu();
     };
     const escape = (e: globalThis.KeyboardEvent) => { if (e.key === "Escape") closeMenu(); };
+    const drawer = toolbar.current;
+    drawer?.addEventListener("padfocus", keepOpen);
     document.addEventListener("pointerdown", outside, true);
     window.addEventListener("keydown", escape, true);
     return () => {
+      drawer?.removeEventListener("padfocus", keepOpen);
       document.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("keydown", escape, true);
     };
-  }, [open, closeMenu]);
+  }, [open, closeMenu, keepOpen]);
   useEffect(() => {
     if (open) keepOpen();
     return () => clearTimeout(timer.current);
@@ -325,7 +323,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   );
   const className = "toolbar" + (hasRadio ? " has-radio" : "");
   if (!folds) return (
-    <div className={className} onKeyDown={activateHudButton}>
+    <div className={className} data-pad-toolbar onKeyDown={activateHudButton}>
       <div className="toolbar-tools">{course}{actions}</div>
       <div className="toolbar-extra"><RadioTool />{lightMode}</div>
     </div>
@@ -351,7 +349,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>
       <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
-      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
+      <div className="toolbar-drawer" id="town-tools" data-pad-scope={open ? "drawer" : undefined} inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
         <div className="toolbar-tools">
           <div className="toolbar-actions">{actions.map(slot)}</div>
           {radioInDrawer && slot(<RadioTool phone />, actions.length)}

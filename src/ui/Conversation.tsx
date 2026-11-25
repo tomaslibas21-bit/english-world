@@ -123,7 +123,7 @@ export function Conversation() {
   const livePhone = townPhone && conv.phase !== "ended";
   return (
     <>
-    <div className="convo" data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
+    <div className="convo" data-pad-scope="convo" data-pad-phase={conv.phase} data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
       <div className="convo-tools">
       {townPhone && <PhoneCallHeader key={conv.run} />}
       <div className="convo-head">
@@ -139,7 +139,7 @@ export function Conversation() {
         <div className="head-actions">
           <button className="close-x" onClick={() => game?.restartScenario()} title="Pradėti šį pokalbį iš naujo" aria-label="Pradėti iš naujo"><Icon name="restart" /></button>
           <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title="Visos situacijos" aria-label="Visos situacijos"><Icon name="list" /></button>
-          <button className={"close-x" + (livePhone ? " hang-up" : "")} onClick={() => game?.closeConversation()} title={keyboardHints ? "Baigti pokalbį (Esc)" : "Baigti pokalbį"} aria-label="Baigti pokalbį"><Icon name={livePhone ? "phoneCall" : "close"} /></button>
+          <button className={"close-x" + (livePhone ? " hang-up" : "")} data-pad-back onClick={() => game?.closeConversation()} title={keyboardHints ? "Baigti pokalbį (Esc)" : "Baigti pokalbį"} aria-label="Baigti pokalbį"><Icon name={livePhone ? "phoneCall" : "close"} /></button>
         </div>
       </div>
 
@@ -177,7 +177,7 @@ export function Conversation() {
 
           {!!conv.speechChoices?.length && <div className="miss-box">
             <p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>
-            {conv.speechChoices.map(text => <button className="btn soft small" key={text} lang="en" disabled={conv.phase !== "you"}
+            {conv.speechChoices.map(text => <button className="btn soft small" data-pad-answer={text} key={text} lang="en" disabled={conv.phase !== "you"}
               onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
               onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>Pataisyti tekstą</button>
@@ -236,7 +236,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
   const restart = () => game?.restartScenario();
 
   return (
-    <div className="yourturn ended-box">
+    <div className="yourturn ended-box" data-pad-scope="ended">
       <div className="ended-heading">
         {completed && <span className="ended-badge"><Icon name="check" size={17} strokeWidth={2.5} /></span>}
         <h2 className="ended-title">{completed ? "Užduotis įvykdyta!" : "Pokalbis baigtas"}</h2>
@@ -345,11 +345,11 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
       <span aria-hidden="true">i</span>
     </button>
     <SectionHelpButton className="npc-info-button" onOpen={close} />
-    {open && <div className="npc-info-card" id="npc-info-card" role="region" aria-label="Apie pašnekovą">
+    {open && <div className="npc-info-card" data-pad-scope="info" id="npc-info-card" role="region" aria-label="Apie pašnekovą">
       <div className="npc-identity">
         <div className="avatar" style={{ background: avatarColor(npcId) }}>{(npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who"><b>{npc?.name}</b><span className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</span></div>
-        <button className="close-x" onClick={close} aria-label="Uždaryti informaciją"><Icon name="close" size={20} /></button>
+        <button className="close-x" data-pad-default data-pad-back onClick={close} aria-label="Uždaryti informaciją"><Icon name="close" size={20} /></button>
       </div>
       <p className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</p>
       {intro && <p className="scene-intro-text" lang="lt">{sceneText(intro, useStore.getState().progress.profile?.gender ?? "m")}</p>}

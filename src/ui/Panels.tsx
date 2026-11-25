@@ -56,7 +56,7 @@ export function Panels() {
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   return (
-    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+    <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}
       {panel === "journal" && <Journal close={close} />}
       {panel === "phone" && <Phone close={close} />}
@@ -106,7 +106,7 @@ function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; c
     <div className="sheet-head">
       <span className="sheet-ico" aria-hidden><Icon name={icon} size={24} /></span>
       <h2>{title}</h2>
-      <button className="close-x" onClick={close} aria-label="Uždaryti"><Icon name="close" /></button>
+      <button className="close-x" data-pad-back onClick={close} aria-label="Uždaryti"><Icon name="close" /></button>
     </div>
   );
 }
@@ -395,7 +395,7 @@ function Phone({ close }: { close: () => void }) {
   return (
     <div className={"phone" + (thread ? " thread-open" : "")} role="dialog" aria-label="Telefonas">
       <div className="phone-status">
-        <span>9:41</span><button className="phone-close" onClick={close} aria-label="Uždaryti"><Icon name="close" size={20} /></button>
+        <span>9:41</span><button className="phone-close" data-pad-back onClick={close} aria-label="Uždaryti"><Icon name="close" size={20} /></button>
       </div>
       {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <>
       <TextList got={progress.texts?.got} />

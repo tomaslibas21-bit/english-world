@@ -24,12 +24,12 @@ export function GoFishOffer() {
   const offered = useGoFish((s) => s.offered);
   const line = useGoFish((s) => s.line);
   if (!offered || !line) return null;
-  return <section className="gofish-offer gofish-paper" lang="lt">
+  return <section className="gofish-offer gofish-paper" data-pad-scope="gofish-offer" lang="lt">
     <b lang="en">{NPCS.dan.name}</b>
     <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>
     <div className="gofish-offer-actions">
       <button type="button" className="btn" onClick={() => act("start")}>{words.start}</button>
-      <button type="button" className="btn soft" onClick={exit}>{words.done}</button>
+      <button type="button" className="btn soft" data-pad-back onClick={exit}>{words.done}</button>
     </div>
   </section>;
 }
@@ -82,10 +82,10 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   const coach = mic.status === "unclear" ? BARISTA_UI.retry : tip;
   const cueName = line?.speaker === "learner" ? learner : line && NPCS[line.speaker].name;
-  return <div className="gofish-overlay" lang="lt" data-deck={deck.id}>
+  return <div className="gofish-overlay" data-pad-scope="gofish" data-pad-phase={step} lang="lt" data-deck={deck.id}>
     <header className="gofish-header">
       <span className="gofish-deck gofish-paper"><CardBack />{deck.lt}</span>
-      <button type="button" className="gofish-exit gofish-paper" onClick={exit}>
+      <button type="button" className="gofish-exit gofish-paper" data-pad-back onClick={exit}>
         {words.exit}{!touch && <kbd>Esc</kbd>}
       </button>
     </header>

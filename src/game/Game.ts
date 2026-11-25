@@ -316,7 +316,6 @@ export class Game implements GameApi {
 
   private brake = false;
   private pad?: PadLink;
-  private padDrawer = false;
   /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
    *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
    *  still to back up with the wheel the other way round (a turn in three: a tap behind a parked car), how many times
@@ -1064,12 +1063,12 @@ export class Game implements GameApi {
     this.pad = attachPad({
       scope: () => {
         const st = useStore.getState();
-        if (st.screen !== "play" || st.conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
-            st.hud.panel || st.hud.fade || useStreet.getState().moment ||
-            st.hud.phoneCard || this.padDrawer || radio.store.getState().open || this.transitioning ||
-            this.flight || this.rideTimer !== undefined || this.modes.modal) return null;
+        if (st.screen !== "play" || st.hud.fade || this.transitioning || this.flight || this.rideTimer !== undefined ||
+            this.sea?.padHandoff) return false;
+        if (st.conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
+            st.hud.panel || useStreet.getState().moment || st.hud.phoneCard || radio.store.getState().open) return null;
         const mode = this.modes.active;
-        if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving ? mode : null;
+        if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : null;
         if (useSurf.getState().picking) return null;
         const ride = this.rides.riding;
         return ride ? (this.rides.phase === "on" ? ride.kind : null) : "foot";
@@ -1080,7 +1079,11 @@ export class Game implements GameApi {
         this.rig.drag(dx, dy);
       },
       jump: () => this.jump(),
-      interact: () => this.interact(),
+      interact: () => {
+        if (!this.nearest && !this.rides.riding) return false;
+        this.interact();
+      },
+      back: () => this.modes.exit(),
       manual: (brake) => {
         if (brake) this.rideGoal = null;
         if (this.inputStick(true) === this.pad?.input) this.cancelManualPath();
@@ -1300,11 +1303,6 @@ export class Game implements GameApi {
   private cancelManualPath() { this.autoPath = null; this.autoTarget = null; this.rideGoal = null; }
   private inputStick(driving = false) { return effectiveStick(this.joy, this.pad?.input, driving); }
   private get braking() { return this.keys.has(" ") || this.brake || !!this.pad?.input?.brake; }
-
-  setPadDrawer(open: boolean) {
-    this.padDrawer = open;
-    if (open) this.pad?.cancel();
-  }
 
   /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
    *  boards or a bench (ledges.ts). */

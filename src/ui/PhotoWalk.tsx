@@ -73,23 +73,23 @@ function PhotoBook() {
   const { visit, line } = useTownQuests();
   const [confirm, setConfirm] = useState(false);
   const title = status === "done" ? words.done : words.book;
-  return <section className="photo-sheet photo-book" role="dialog" aria-modal="true" aria-label={title}>
+  return <section className="photo-sheet photo-book" data-pad-scope="photo" role="dialog" aria-modal="true" aria-label={title}>
     <img className="photo-book-cover" src={`${import.meta.env.BASE_URL}photowalk/cover.webp`} alt="" aria-hidden
       onError={(e) => { e.currentTarget.hidden = true; }} />
     <header>
       <Icon name="camera" size={23} />
       <div><h2>{title}</h2><p>{words.found(found.length, PHOTO_THINGS.length)}</p></div>
-      <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+      <button type="button" className="quest-close" data-pad-back aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
     {visit && line && <div className="photo-visit" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
     <ol className="photo-pages">
       {PHOTO_THINGS.map((thing) => <PhotoPage key={thing.id} thing={thing} found={found.includes(thing.id)} />)}
     </ol>
-    <footer>
+    <footer data-pad-scope={confirm ? "photo-confirm" : undefined}>
       {confirm ? <>
         <div className="photo-confirm">{words.quitAsk}</div>
         <button className="btn small" type="button" onClick={() => act("quit")}>{words.quitYes}</button>
-        <button className="btn soft small" type="button" onClick={() => setConfirm(false)}>{words.quitNo}</button>
+        <button className="btn soft small" data-pad-default data-pad-back type="button" onClick={() => setConfirm(false)}>{words.quitNo}</button>
       </> : <>
         {status === "on" && <button className="btn soft small" type="button" onClick={() => act("pause")}>{words.pause}</button>}
         {status === "paused" && <button className="btn small" type="button" onClick={() => act("resume")}>{words.resume}</button>}
@@ -115,12 +115,12 @@ function PhotoQuiz() {
   const pick = (id: PhotoThingId) => act("pick", id);
   return <>
     <div className="photo-flash" aria-hidden />
-    <section className="photo-sheet photo-quiz" role="dialog" aria-modal="true" aria-label={title} data-thing={quiz.id}>
+    <section className="photo-sheet photo-quiz" data-pad-scope="photo" data-pad-phase={quiz.got ? "found" : "quiz"} role="dialog" aria-modal="true" aria-label={title} data-thing={quiz.id}>
       <header>
         {!quiz.got && quiz.jpeg && <img className="photo-quiz-preview" src={quiz.jpeg} alt="" width={160} height={120} />}
         {quiz.got && <Icon name="sparkles" className="quest-sparkle" size={23} />}
         <div aria-live="polite"><h2>{title}</h2>{!quiz.got && <p>{words.sayOrPick}</p>}</div>
-        <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+        <button type="button" className="quest-close" data-pad-back aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
       </header>
       {quiz.got ? <>
         {line && <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
@@ -139,10 +139,10 @@ function PhotoQuiz() {
 
 function PhotoFinale() {
   const { line, choices, mic } = useTownQuests();
-  return <section className="photo-sheet photo-finale" role="dialog" aria-modal="true" aria-label={words.book}>
+  return <section className="photo-sheet photo-finale" data-pad-scope="photo" role="dialog" aria-modal="true" aria-label={words.book}>
     <header>
       <h2>{words.book}</h2>
-      <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+      <button type="button" className="quest-close" data-pad-back aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
     {line && <div aria-live="polite" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
     {choices.length > 0 && <div className="photo-choices">

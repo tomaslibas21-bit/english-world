@@ -1,7 +1,8 @@
-export const PadButton = {
-  A: 1 << 0, B: 1 << 1, X: 1 << 2, LT: 1 << 6, RT: 1 << 7, Menu: 1 << 9,
-  Up: 1 << 12, Down: 1 << 13, Left: 1 << 14, Right: 1 << 15,
-} as const;
+import { GamepadView, textEntry } from "../ui/gamepad";
+import { PadButton } from "./padButtons";
+
+export { PadButton } from "./padButtons";
+
 const BUTTONS = PadButton.A | PadButton.B | PadButton.X | PadButton.LT | PadButton.RT | PadButton.Menu
   | PadButton.Up | PadButton.Down | PadButton.Left | PadButton.Right;
 
@@ -23,17 +24,22 @@ export interface PadScalars {
 /** A stable scope can opt into continuous driving, button handling or both. */
 export interface PadScope {
   readonly padDriving?: boolean;
-  padTick?(input: Readonly<PadScalars>, pressed: number, released: number, dt: number): void;
+  readonly padAction?: boolean;
+  readonly padNavigate?: boolean;
+  padTick?(input: Readonly<PadScalars>, pressed: number, released: number, dt: number, direction: number): PadDebug["lastAction"] | void;
   padCancel?(held: number): void;
 }
 
 export interface PadHost {
-  scope?(): "foot" | "car" | "boat" | PadScope | null;
+  /** False pauses the whole controller. Null lets the view own input while gameplay is blocked. */
+  scope?(): "foot" | "car" | "boat" | PadScope | null | false;
   canLook?(): boolean;
   orbit?(dx: number, dy: number): void;
   manual?(brake: boolean): void;
   jump?(): void;
-  interact?(): void;
+  /** False means there was no world interaction, so the camera shortcut may take the press. */
+  interact?(): void | boolean;
+  back?: () => void;
   connection?(connected: boolean | null): void;
 }
 
@@ -52,7 +58,38 @@ function trigger(pad: Gamepad, index: number) {
   return Number.isFinite(n) ? Math.min(1, n) : 0;
 }
 
-type Scope = ReturnType<NonNullable<PadHost["scope"]>>;
+const DIRECTIONS = PadButton.Up | PadButton.Down | PadButton.Left | PadButton.Right;
+
+export class PadDirection {
+  private ready = false;
+  private stick = 0;
+  private held = 0;
+  private next = 0;
+
+  reset() { this.ready = false; this.held = this.stick = 0; }
+
+  step(x: number, y: number, buttons: number, armed: number, now: number) {
+    const magnitude = Math.max(Math.abs(x), Math.abs(y));
+    if (magnitude < 0.35) { this.ready = true; this.stick = 0; }
+    else if (this.ready && magnitude >= 0.55) {
+      this.stick = Math.abs(y) >= Math.abs(x) ? (y < 0 ? PadButton.Up : PadButton.Down)
+        : (x < 0 ? PadButton.Left : PadButton.Right);
+    }
+    // The physical D-pad masks the stick even while its initial held buttons are disarmed.
+    const dpad = buttons & DIRECTIONS, allowed = dpad & armed;
+    const direction = dpad ? allowed & -allowed : this.stick;
+    if (direction !== this.held) {
+      this.held = direction;
+      this.next = now + 350;
+      return direction;
+    }
+    if (!direction || now < this.next) return 0;
+    this.next = now + 140;
+    return direction;
+  }
+}
+
+type Scope = Exclude<ReturnType<NonNullable<PadHost["scope"]>>, false> | "ui";
 
 export class GamepadInput implements PadScalars {
   x = 0; y = 0; rx = 0; ry = 0;
@@ -68,14 +105,19 @@ export class GamepadInput implements PadScalars {
   private rightReady = false;
   private ltReady = false;
   private rtReady = false;
+  private readonly nav = new PadDirection();
+  private readonly ui: GamepadView;
 
-  constructor(private debug: PadDebug, private host?: PadHost) {}
+  constructor(private debug: PadDebug, private host?: PadHost) {
+    this.ui = new GamepadView(debug, () => this.cancel());
+  }
 
   disconnect() {
     if (!this.connected) return;
     this.cancel();
     this.connected = this.debug.connected = false;
     this.debug.lastAction = "disconnect";
+    this.ui.disconnect();
     this.host?.connection?.(false);
   }
 
@@ -83,10 +125,11 @@ export class GamepadInput implements PadScalars {
     this.cancel();
     this.connected = this.debug.connected = false;
     this.debug.lastAction = null;
+    this.ui.dispose();
     this.host?.connection?.(null);
   }
 
-  cancel() {
+  cancel(clearFocus = true) {
     const scope = this.scope, held = this.held;
     this.revision++;
     this.scope = null;
@@ -94,17 +137,21 @@ export class GamepadInput implements PadScalars {
     this.brake = false;
     this.held = this.previous = 0;
     this.buttonsReady = this.leftReady = this.rightReady = this.ltReady = this.rtReady = false;
+    this.nav.reset();
     this.debug.focusTarget = null;
+    if (clearFocus) this.ui.clearFocus();
     if (scope && typeof scope === "object" && held) scope.padCancel?.(held);
   }
 
   private readScope(): Scope {
-    const field = document.activeElement as HTMLElement | null;
-    if (field && (field.isContentEditable || field.tagName === "INPUT" || field.tagName === "TEXTAREA" || field.tagName === "SELECT")) return null;
-    return this.host?.scope?.() ?? null;
+    const base = this.host?.scope?.();
+    if (base === false) return null;
+    if (this.ui.scope) return "ui";
+    return textEntry(document.activeElement) ? null : base ?? null;
   }
 
   private stillIn(scope: Scope, revision: number) {
+    this.ui.sync();
     if (revision !== this.revision) return false;
     if (this.readScope() === scope) return true;
     this.cancel();
@@ -114,20 +161,22 @@ export class GamepadInput implements PadScalars {
   sample(pad: Gamepad, dt: number) {
     if (!this.connected) {
       this.connected = this.debug.connected = true;
+      this.ui.connect();
       const revision = this.revision;
       this.host?.connection?.(true);
       if (revision !== this.revision) return;
     }
     const scope = this.readScope();
     if (this.scope !== scope) {
-      this.cancel();
+      this.cancel(false);
       this.scope = scope;
+      if (scope === "ui") this.ui.updateFocus();
     }
     if (!scope) return;
     const revision = this.revision;
     const custom = typeof scope === "object" ? scope : null;
     const driving = scope === "car" || scope === "boat" || !!custom?.padDriving;
-    const canLook = (!custom || driving) && !!this.host?.canLook?.();
+    const canLook = scope !== "ui" && (!custom || driving) && !!this.host?.canLook?.();
     const wasMoving = this.x || this.y || this.throttle;
     const wasLooking = this.rx || this.ry;
     const wasThrottle = this.throttle;
@@ -135,8 +184,8 @@ export class GamepadInput implements PadScalars {
 
     const x = axis(pad, 0), y = axis(pad, 1), leftScale = scale(x, y, 0.18);
     this.leftReady ||= leftScale === 0;
-    this.x = this.leftReady && leftScale ? x * leftScale : 0;
-    this.y = this.leftReady && leftScale ? -y * leftScale : 0;
+    this.x = scope !== "ui" && this.leftReady && leftScale ? x * leftScale : 0;
+    this.y = scope !== "ui" && this.leftReady && leftScale ? -y * leftScale : 0;
 
     const rx = axis(pad, 2), ry = axis(pad, 3), rightScale = scale(rx, ry, 0.20);
     this.rightReady = canLook && (this.rightReady || rightScale === 0);
@@ -160,6 +209,32 @@ export class GamepadInput implements PadScalars {
     this.buttonsReady = true;
     this.held = (this.held | pressed) & buttons;
 
+    if (scope === "ui") {
+      const direction = this.nav.step(x, y, buttons, this.held, performance.now());
+      if (!(pressed & (PadButton.B | PadButton.Menu | PadButton.A)) && !direction) return;
+      if (!this.stillIn(scope, revision)) return;
+      // A close or confirm consumes the sample, including a simultaneous direction.
+      if (pressed & PadButton.B) this.ui.back(this.host?.back);
+      else if (pressed & PadButton.Menu) this.ui.menu();
+      else if (pressed & PadButton.A) this.ui.confirm();
+      else this.ui.navigate(direction === PadButton.Up ? "up" : direction === PadButton.Down ? "down" :
+        direction === PadButton.Left ? "left" : "right");
+      return;
+    }
+    if ((pressed & PadButton.Menu) && (typeof scope !== "object" || driving)) {
+      if (!this.stillIn(scope, revision)) return;
+      if (this.ui.menu()) {
+        if (revision === this.revision) this.cancel(false);
+        return;
+      }
+    }
+    if (custom && (pressed & PadButton.B) && this.host?.back) {
+      if (!this.stillIn(scope, revision)) return;
+      this.debug.lastAction = "back";
+      this.host.back();
+      if (this.stillIn(scope, revision)) this.cancel();
+      return;
+    }
     if (scope === "foot" || driving) {
       const moving = this.x || this.y || this.throttle;
       if (moving || this.brake) this.host?.manual?.(this.brake);
@@ -168,16 +243,21 @@ export class GamepadInput implements PadScalars {
     }
     if (custom) {
       if (custom.padTick) {
-        custom.padTick(this, pressed, released, dt);
-        if (!this.stillIn(scope, revision)) return;
+        const direction = custom.padNavigate ? this.nav.step(x, y, buttons, this.held, performance.now()) : 0;
+        if ((pressed || released || direction) && !this.stillIn(scope, revision)) return;
+        const action = custom.padTick(this, pressed, released, dt, direction);
+        if (action) this.debug.lastAction = action;
+        if ((pressed || released || direction) && !this.stillIn(scope, revision)) return;
       }
     } else {
       if ((pressed & PadButton.X) && this.host?.interact) {
+        if (!this.stillIn(scope, revision)) return;
         this.debug.lastAction = "interact";
-        this.host.interact();
+        if (this.host.interact() === false && scope === "foot") this.ui.photo();
         if (!this.stillIn(scope, revision)) return;
       }
       if (scope === "foot" && (pressed & PadButton.A) && this.host?.jump) {
+        if (!this.stillIn(scope, revision)) return;
         this.debug.lastAction = "jump";
         this.host.jump();
         if (!this.stillIn(scope, revision)) return;

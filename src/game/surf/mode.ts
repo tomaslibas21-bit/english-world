@@ -4,6 +4,7 @@ import { SURF_SPOT } from "../world/surf";
 import { coach } from "../coach";
 import type { ModeHost } from "../kit/host";
 import type { GameMode } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import { SurfPlay } from "./play";
 import { useSurf } from "./store";
 
@@ -22,6 +23,10 @@ export function createSurfMode(host: ModeHost): (GameMode & { play: SurfPlay }) 
     conversation: { situation: play.situation, label: "Banglenčių pamoka" },
     get active() { return play.active; },
     get modal() { return useSurf.getState().picking; },
+    get padAction() {
+      const { active, choice, over, phase, todo } = useSurf.getState();
+      return active && !choice && !over && (!!todo || phase === "out" || phase === "catch" || phase === "ride");
+    },
     start(level) {
       if (!host.canStart() || play.active) return false;
       if (level === "beginner" || level === "advanced") play.start(level);
@@ -46,6 +51,21 @@ export function createSurfMode(host: ModeHost): (GameMode & { play: SurfPlay }) 
       if (input.kind === "key") return play.key(input.key, input.repeat, input.keys);
       if (input.kind === "jump") play.up(); else play.stroke();
       return true;
+    },
+    padTick(_, pressed) {
+      const { todo, choice, over } = useSurf.getState();
+      if (choice || over) return;
+      if (pressed & PadButton.A) { play.up(); return "jump"; }
+      if (pressed & PadButton.X) { play.stroke(); return "interact"; }
+      const dpad = pressed & (PadButton.Up | PadButton.Down | PadButton.Left | PadButton.Right);
+      const direction = dpad & -dpad, action = todo?.do;
+      if ((direction === PadButton.Up && action === "fwd") ||
+          (direction === PadButton.Down && (action === "duck" || action === "down")) ||
+          (direction === PadButton.Left && action === "left") ||
+          (direction === PadButton.Right && (action === "turn" || action === "right"))) {
+        play.act(action);
+        return "interact";
+      }
     },
     prompt(x, z) {
       if (play.distance(x, z) < (spot.hintWithin ?? 15)) coach.cue("surf");
