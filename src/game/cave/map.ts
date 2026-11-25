@@ -1,7 +1,9 @@
 import { CHAMBERS, GATES } from "../world/slateCave";
-import { BOUNDS, PASSAGES } from "./plan";
+import { BOUNDS, PASSAGES, PATH, POOLS } from "./plan";
 
 let background: HTMLCanvasElement | undefined;
+let overlay: HTMLCanvasElement | undefined;
+let displayedMask = -1;
 const SCALE = 2;
 const W = (BOUNDS.maxX - BOUNDS.minX) * SCALE, H = (BOUNDS.maxZ - BOUNDS.minZ) * SCALE;
 const x = (m: number) => (m - BOUNDS.minX) * SCALE, z = (m: number) => (m - BOUNDS.minZ) * SCALE;
@@ -27,16 +29,29 @@ function backing() {
     ctx.ellipse(x(room.x), z(room.z), room.rx * SCALE, room.rz * SCALE, 0, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.fillStyle = "#406f77";
+  for (const pool of POOLS) {
+    ctx.beginPath();
+    ctx.ellipse(x(pool.x), z(pool.z), pool.rx * SCALE, pool.rz * SCALE, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "#a9a69a";
+  ctx.lineWidth = 1.5 * SCALE;
+  ctx.beginPath();
+  ctx.moveTo(x(PATH[0][0]), z(PATH[0][1]));
+  for (let i = 1; i < PATH.length; i++) ctx.lineTo(x(PATH[i][0]), z(PATH[i][1]));
+  ctx.stroke();
   background = c;
   return c;
 }
 
-export function drawCaveMap(ctx: CanvasRenderingContext2D, west: number, north: number, scale: number, open: number) {
-  ctx.save();
-  ctx.fillStyle = "#243944";
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  ctx.translate((BOUNDS.minX - west) * scale, (BOUNDS.minZ - north) * scale);
-  ctx.scale(scale / SCALE, scale / SCALE);
+function marked(open: number) {
+  overlay ??= document.createElement("canvas");
+  if (displayedMask === open) return overlay;
+  displayedMask = open;
+  overlay.width = W;
+  overlay.height = H;
+  const ctx = overlay.getContext("2d")!;
   ctx.drawImage(backing(), 0, 0);
   ctx.lineWidth = 1.5;
   for (let i = 0; i < GATES.length; i++) {
@@ -47,5 +62,13 @@ export function drawCaveMap(ctx: CanvasRenderingContext2D, west: number, north: 
     ctx.lineTo(x(gate.x) + a, z(gate.z) - b);
     ctx.stroke();
   }
+  return overlay;
+}
+
+export function drawCaveMap(ctx: CanvasRenderingContext2D, west: number, north: number, scale: number, open: number) {
+  ctx.save();
+  ctx.fillStyle = "#243944";
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.drawImage(marked(open), (BOUNDS.minX - west) * scale, (BOUNDS.minZ - north) * scale, W * scale / SCALE, H * scale / SCALE);
   ctx.restore();
 }

@@ -1,0 +1,82 @@
+.cave-card {
+  position: relative;
+  width: min(100%, 390px);
+  pointer-events: auto;
+  border-radius: 14px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.cave-toggle {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--accent);
+  text-align: left;
+}
+.cave-toggle b { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cave-n { flex: none; font-size: .82em; }
+.cave-stones { display: inline-flex; gap: 4px; flex: none; }
+.cave-stones i { width: 8px; height: 8px; border: 1px solid var(--accent); border-radius: 100%; }
+.cave-stones i.on { background: var(--accent); }
+#cave-details {
+  padding: 0 10px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: min(58dvh, 340px);
+}
+.cave-description { display: flex; gap: 10px; align-items: center; }
+#cave-details p { margin: 5px 0; font-size: .81em; }
+.cave-guide { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--accent-soft-2); }
+.cave-guide div { display: flex; align-items: center; gap: 5px; color: var(--accent); font-size: .85em; }
+.cave-guide small { margin-left: auto; white-space: nowrap; }
+.cave-guide button, .cave-landmarks button, .sit-actions[data-place="gruta"] button { min-height: 44px; }
+.cave-guide button { margin-top: 4px; }
+.cave-notes .town-toasts .toast p { max-height: 3lh; overflow-y: auto; overscroll-behavior: contain; }
+.cave-notes .town-toasts .x { width: 44px; height: 44px; }
+.cave-landmarks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.cave-landmarks button { white-space: normal; }
+.glyph-opts { display: grid; gap: 6px; }
+.glyph-q { margin: 0 0 5px; }
+.glyph-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+.glyph-opt:not(:disabled):hover { background: var(--accent-soft-2); }
+.glyph-opt.wrong { text-decoration: line-through; opacity: .55; }
+.glyph-opt kbd { color: var(--accent); }
+.glyph-show, .glyph-mic button { min-height: 44px; }
+.glyph-mic { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.glyph-heard { flex-basis: 100%; }
+.glyph-loading { border: none; background: transparent; }
+.glyph-loading::backdrop { background: rgb(8 30 42 / 45%); }
+@media (max-width: 600px) {
+  .objective-notes.cave-notes { width: min(390px, calc(100vw - 130px)); }
+  .cave-notes .town-toasts .toast { max-height: calc(30dvh - var(--card-top, 10px) - 50px); }
+}
+.map-canvas.cave-atlas { margin-inline: auto; width: min(100%, 16dvh); background: #243944; }
+.map-waypoint {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #249b9e;
+}
+.map-waypoint.town { background: #ffb703; }

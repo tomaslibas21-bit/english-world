@@ -18,7 +18,11 @@ export interface NametagLayout {
 
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
+export type GuideKind = "cave" | "objective";
+
 export interface GameApi {
+  readonly cave?: import("./cave/quest").CaveQuest | null;
+  readonly caveMapBounds?: { minX: number; maxX: number; minZ: number; maxZ: number };
   /** The light mode: no town to walk on in, so its end box leads to the next conversation. */
   readonly light: boolean;
   readonly activeSession: Session | null;
@@ -39,9 +43,9 @@ export interface GameApi {
   setObjective(sitId: string | null): void;
   // the 3D world
   interact(): void;
-  autoWalkToObjective(): void;
+  autoWalkToObjective(kind?: GuideKind): void;
   guideToLighthouse?(): void;
-  guideToPlace?(loc: string): void;
+  guideToPlace?(loc: string, npc?: string): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
   /** A jump (Space, the phone's button); again in the air: a flip; a third time: the high jump, twice head over heels. */

@@ -8,6 +8,8 @@ import { CAVE_ZONE } from "../world/slateCovePlan";
 import { buildCave } from "./Cave";
 import * as P from "./plan";
 import { CaveQuest, type CaveSave } from "./quest";
+import { TREE_SIT, type StonePhrase } from "./stonePhrases";
+import { useStore } from "../../state/store";
 import { caveGateGrid } from "./routing";
 
 const noProps = new Colliders();
@@ -22,7 +24,16 @@ export function caveWaterLevel(x: number, z: number) {
   return level;
 }
 
-export function buildCaveZone(initial: CaveSave | undefined, persist: (save: CaveSave) => void) {
+export function saveCaveProgress(save: CaveSave, phrase?: StonePhrase) {
+  useStore.getState().updateProgress((progress) => {
+    progress.cave = save;
+    if (!phrase) return;
+    const key = TREE_SIT + ":" + phrase.id;
+    progress.phrases[key] = { en: phrase.en, lt: phrase.lt, sitId: TREE_SIT, count: (progress.phrases[key]?.count ?? 0) + 1, last: Date.now() };
+  });
+}
+
+export function buildCaveZone(initial: CaveSave | undefined, persist = saveCaveProgress) {
   const view = buildCave(), bounds = P.BOUNDS;
   const { colliders, group } = view;
   for (const keeper of KEEPERS) colliders.addCircle(keeper.x, keeper.z, 0.36);
@@ -36,9 +47,6 @@ export function buildCaveZone(initial: CaveSave | undefined, persist: (save: Cav
     permanentCells = nav.blocked.slice();
   }
   const quest = new CaveQuest(view, initial, persist, caveGateGrid(nav));
-  for (const room of CHAMBERS) for (const stone of room.stones) {
-    if (quest.save.lit.includes(stone.id)) view.setStone(stone.id, true);
-  }
   const interior: Interior = {
     id: CAVE_ZONE, group, colliders, w: bounds.maxX - bounds.minX, d: bounds.maxZ - bounds.minZ,
     exit: P.EXIT, spawn: P.ENTRY, npcs: KEEPERS,
@@ -53,7 +61,7 @@ export function buildCaveZone(initial: CaveSave | undefined, persist: (save: Cav
   }
   const resolveStep = (at: Vector3, previous: Vector3, radius: number) => colliders.resolveStep(at, previous, radius);
   const oak = P.TREES[1];
-  const nearOak = (at: { x: number; z: number }, r = 4.7) => quest.mask === (1 << P.GATES.length) - 1 && Math.hypot(oak.x - at.x, oak.z - at.z) < r;
+  const nearOak = (at: { x: number; z: number }) => quest.treeNear(at);
   return { id: CAVE_ZONE, oak, nearOak, group, interior, colliders, nav, view, quest, safeSpawn, resolveStep };
 }
 
@@ -69,6 +77,7 @@ export function countCaveVisit() {
   countPlay("games", "slate-cove-cave");
 }
 
+export { BOUNDS } from "./plan";
 export { drawCaveMap } from "./map";
 
 export { updateKeeper } from "./keepers";
@@ -76,5 +85,6 @@ const exitLabel = CAVE_COPY.door.dryExit.en;
 export const CAVE_PROMPTS = {
   main: { kind: "exit", id: "main", label: exitLabel, prompt: { kind: "exit", label: exitLabel, lt: CAVE_COPY.action.exit.lt } },
   cleft: { kind: "exit", id: "cleft", label: exitLabel, prompt: { kind: "exit", label: exitLabel, lt: CAVE_COPY.action.exit.lt } },
+  stone: { label: CAVE_COPY.action.stone.en, lt: CAVE_COPY.action.stone.lt, kind: "listen" },
   oak: { kind: "tree", id: SLATE_CAVE.treeNpc, label: CAVE_COPY.action.oak.lt, prompt: { kind: "talk", label: CAVE_COPY.action.oak.lt } },
 } as const;

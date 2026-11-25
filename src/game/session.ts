@@ -111,7 +111,8 @@ export class Session {
     return new Promise((resolve) => {
       let unsub = () => {};
       const done = () => { clearTimeout(timer); unsub(); if (useStore.getState().conv.introOpen) useStore.getState().setConv({ introOpen: false }); resolve(); };
-      const timer = setTimeout(done, INTRO_MS);
+      // Cave encounters wait for the learner to close the scene card.
+      const timer = this.sit.location === "gruta" ? undefined : setTimeout(done, INTRO_MS);
       unsub = useStore.subscribe((st) => { if (!st.conv.introOpen || !this.alive) done(); });
     });
   }

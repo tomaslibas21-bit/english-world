@@ -3,27 +3,24 @@ import { clearPhotos } from "../game/photowalk/photos";
 import { PhotoBookContact } from "./PhotoWalk";
 import { ROUTE } from "../content/route";
 import { useKeyboardHints } from "./keyboardHints";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
-import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
+import { LOCATIONS, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { TEXT_THREADS } from "../content/texts";
 import { TextList, TextThread } from "./TextThread";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
-import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
-import { LIGHTHOUSE_ISLAND } from "../game/world/island";
-import { drawIslandMap } from "./mapMarks";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
-import { isPhone, locIcon, walkToSituation } from "./objective";
+import { isPhone, walkToSituation } from "./objective";
 import { SitIcon } from "./SitIcon";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
@@ -35,6 +32,8 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
+
+const WorldMapPanel = lazy(() => import("./worldMap"));
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -57,7 +56,7 @@ export function Panels() {
   const close = () => useStore.getState().setHud({ panel: null });
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-      {panel === "map" && <MapPanel close={close} />}
+      {panel === "map" && <Suspense><WorldMapPanel close={close} {...{ SheetHead, SitCard, SitActions }} /></Suspense>}
       {panel === "journal" && <Journal close={close} />}
       {panel === "phone" && <Phone close={close} />}
       {panel === "settings" && <Settings close={close} />}
@@ -115,6 +114,13 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const light = useStore((st) => st.settings.play === "light");
   const current = progress.objective === s.id;
+  if (!light && s.location === "gruta") {
+    const guide = () => { close(); game?.guideToPlace?.(s.location, s.npc); };
+    return <div className="sit-actions" data-place={s.location}>
+      <button type="button" className="btn ghost small" onClick={guide}><Icon name="target" size={17} /> Rodyti kelią</button>
+      <button type="button" className="btn soft small" onClick={() => { guide(); game?.autoWalkToObjective("cave"); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+    </div>;
+  }
   return (
     <div className="sit-actions">
       <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> Pradėti dabar</button>
@@ -207,7 +213,7 @@ function Scenarios({ close }: { close: () => void }) {
   }, []);
   const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   const light = useStore((s) => s.settings.play === "light");
-  const bonus = SITUATIONS.filter((s) => s.bonus && !(light && isTownQuest(s.id)) && sitProgress(progress, s.id).completions > 0);
+  const bonus = SITUATIONS.filter((s) => s.bonus && !(light && isTownQuest(s.id)) && (s.location === "gruta" || sitProgress(progress, s.id).completions > 0));
   return (
     <div className="sheet scenarios">
       <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${ROUTE.length}`} close={close} />
@@ -239,15 +245,15 @@ function Scenarios({ close }: { close: () => void }) {
 function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const loc = LOCATIONS[s.location];
-  const n = mainNpc(s);
+  const n = mainNpc(s), cave = s.npc === "cave_bram";
   const st = stars(sitProgress(progress, s.id));
   return (
     <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
       <span className="ico"><SitIcon id={s.id} size={24} /></span>
       <span className="txt">
-        <b lang="lt">{s.title.lt}</b>
-        <i lang="en">{s.title.en}</i>
-        <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
+        <b lang="lt">{cave ? loc.lt : s.title.lt}</b>
+        <i lang="en">{cave ? loc.name : s.title.en}</i>
+        <span>{n?.name}{!cave && " · "}{cave ? null : isPhone(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
       </span>
       <Stars n={st} />
     </button>
@@ -297,98 +303,6 @@ function Journal({ close }: { close: () => void }) {
   );
 }
 
-function locationPoint(loc: string): { x: number; z: number } | null {
-  if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
-  const d = game?.doors.find((dd) => dd.loc === loc);
-  if (d) return { x: d.x, z: d.z };
-  const s = SITUATIONS.find((x) => x.location === loc);
-  const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
-  return o ? { x: o.x, z: o.z } : null;
-}
-
-function MapPanel({ close }: { close: () => void }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const [sel, setSel] = useState<string | null>(null);
-  const progress = useStore((s) => s.progress);
-  const mm = useStore((s) => s.hud.minimap);
-  const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
-  const north = island ? WORLD.minZ : SEA_Z - 2;
-  const west = game?.townMapWest ?? WORLD.minX;
-  const W = WORLD.maxX - west, D = WORLD.maxZ - north;
-  useEffect(() => {
-    const g = game?.groundCanvas, c = ref.current;
-    if (!g || !c) return;
-    const ppm = g.width / (WORLD.maxX - WORLD.minX), sea = (SEA_Z - 2 - north) * ppm;
-    c.width = W * ppm; c.height = g.height + sea;
-    const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#3f8fb5";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#86b866";
-    ctx.fillRect(0, (SEA_Z + 1 - north) * ppm, (WORLD.minX - west) * ppm, c.height);
-    ctx.drawImage(g, (WORLD.minX - west) * ppm, sea);
-    game?.drawRegionMap?.(ctx, west, north, ppm, true);
-    if (island) drawIslandMap(ctx, island, west, north, ppm);
-  }, [W, island, north, west]);
-  const pct = (x: number, z: number) => ({ left: `${((x - west) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
-  const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
-  return (
-    <div className="sheet">
-      <SheetHead icon="map" title="Maple Harbor" close={close} />
-      <div className="sheet-body">
-        <div className="town-lt" lang="lt">{TOWN_LT}</div>
-        <div className="map-wrap">
-          <div className="map-canvas" style={island ? { aspectRatio: W / D } : undefined}>
-            <canvas ref={ref} />
-            {mm.zone === "town" && <div className="map-me" style={pct(mm.px, mm.pz)} title="Tu esi čia" />}
-            {island && <button className={"map-pin map-place-label" + (sel === "lighthouse" ? " sel" : "")}
-              style={pct(island.center.x, island.center.z)} aria-pressed={sel === "lighthouse"} onClick={() => setSel("lighthouse")}>
-              <span>{island.name} <span lang="lt">· {island.lt}</span></span>
-            </button>}
-            {locs.map((l) => {
-              const p = locationPoint(l.id);
-              if (!p) return null;
-              const sits = SITUATIONS.filter((s) => s.location === l.id && !isTownQuest(s.id));
-              const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
-              return (
-                <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
-                  <Icon name={locIcon(l.id)} size={18} />
-                  {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label="įveikta" /></span>}
-                </button>
-              );
-            })}
-          </div>
-          <div>
-            {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
-            {island && sel === "lighthouse" && (
-              <div>
-                <h3 className="place-title">{island.name}</h3>
-                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
-                <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
-              </div>
-            )}
-            {sel && LOCATIONS[sel] && (
-              <div>
-                <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
-                <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
-                {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
-                <div className="sit-list">
-                  {selSits.map((s) => (
-                    <div key={s.id}>
-                      <SitCard s={s} open onClick={() => {}} />
-                      <div style={{ padding: "6px 4px" }}><div style={{ color: "var(--ink-soft)", fontSize: "0.9em" }}>{s.goal}</div><SitActions s={s} close={close} /></div>
-                    </div>
-                  ))}
-                  {!selSits.length && <div className="info-box">Čia kol kas nėra užduočių.</div>}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function Phone({ close }: { close: () => void }) {
   const calls = ROUTE.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);

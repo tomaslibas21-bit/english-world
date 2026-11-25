@@ -27,16 +27,27 @@ function nextStone(room: number, from: Point, save: CaveSave, waiting?: (id: str
   return best;
 }
 
-export function caveQuestTarget(from: Point, save: CaveSave, all = false, replayWaiting?: (id: string) => boolean): CaveTarget | null {
-  if (replayWaiting) return nextStone(chamberAt(from.x, from.z), from, save, replayWaiting);
-  if (!all && !save.passed.includes(KEEPERS[0].gate)) return keepers[0];
+export function caveQuestTarget(from: Point, save: CaveSave, all = false, replayWaiting?: (id: string) => boolean, npc?: string): CaveTarget | null {
+  if (npc === keepers[0].id || (!all && !save.passed.includes(KEEPERS[0].gate))) return keepers[0];
   const tide = nextStone(0, from, save);
   if (!all && tide) return tide;
   const count = save.lit.length;
   if (!all && count < SLATE_CAVE.goals.riverEntry) return nextStone(1, from, save);
-  if (!all && !save.passed.includes(KEEPERS[1].gate)) return keepers[1];
+  if (npc === keepers[1].id || (!all && !save.passed.includes(KEEPERS[1].gate))) return keepers[1];
   if (!all && count < SLATE_CAVE.goals.oak) return nextStone(2, from, save);
-  return save.tree ? null : oak;
+  if (npc === oak.id || !save.tree) return oak;
+  if (!replayWaiting) return null;
+  const here = chamberAt(from.x, from.z);
+  const local = nextStone(here, from, save, replayWaiting);
+  if (local) return local;
+  let best: CaveTarget | null = null, nearest = Infinity;
+  for (let i = 0; i < stones.length; i++) {
+    const candidate = nextStone(i, from, save, replayWaiting);
+    if (!candidate) continue;
+    const distance = Math.hypot(candidate.x - from.x, candidate.z - from.z);
+    if (distance < nearest) { best = candidate; nearest = distance; }
+  }
+  return best;
 }
 
 function gateSide(g: Gate, i: number, p: Point) {

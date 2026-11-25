@@ -21,6 +21,7 @@ export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavai
 interface PlaybackRequest {
   done: boolean;
   optional?: boolean;
+  recordingOnly?: boolean;
   fail(state: "blocked" | "unavailable"): void;
   cleanup: () => void;
   finish(completed: boolean): void;
@@ -106,6 +107,8 @@ export class AudioSystem {
   }
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
   base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
+  /** During a text-capable story, use the recorded voices when available. */
+  recordedDialogue = false;
   ready = false;
   private initializing: Promise<void> | null = null;
   private retryInitAt = 0;
@@ -192,6 +195,14 @@ export class AudioSystem {
 
   hasClip(voice: string, speed: number, text: string) { return !!this.manifest[audioKey(voice, speed, text)]; }
   clipDuration(voice: string, speed: number, text: string) { return this.manifest[audioKey(voice, speed, text)] ?? null; }
+
+  /** A world emitter uses the same bounded recording cache as dialogue. */
+  async positionalRecording(voice: string, text: string) {
+    const ctx = this.ctx, key = this.recordingKey(voice, 1, text);
+    if (!ctx || ctx.state !== "running" || !this.manifest[key]) return;
+    const buffer = await this.recordingBuffer(key, false);
+    return { ctx, buffer, output: this.out(ctx) };
+  }
 
   /** The player's names (lines that address the player by name are voiced without it). */
   names: string[] = [];
@@ -302,8 +313,9 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal; onUnavailable?: () => void } = {}): Promise<boolean> {
     if (opts.signal?.aborted) return Promise.resolve(false);
+    if (this.recordedDialogue) opts = { ...opts, optional: true, recordingOnly: true };
     this.stopDiagnostic("normal-playback");
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
@@ -314,8 +326,10 @@ export class AudioSystem {
       const request: PlaybackRequest = {
         done: false,
         optional: opts.optional,
+        recordingOnly: opts.recordingOnly,
         fail: (state) => {
           if (request.done) return;
+          if (state === "unavailable") opts.onUnavailable?.();
           if (!opts.optional) this.setState(state);
           else if (!opts.recordingOnly && request.fallback) request.fallback();
           else request.finish(false);
@@ -360,7 +374,7 @@ export class AudioSystem {
       };
       const start = () => { void begin().catch(() => request.fail("unavailable")); };
       request.retry = () => { this.retryInitAt = 0; start(); };
-      request.fallback = () => this.speakFallback(request, text, opts);
+      if (!opts.recordingOnly) request.fallback = () => this.speakFallback(request, text, opts);
       start();
     });
   }
@@ -606,7 +620,7 @@ export class AudioSystem {
         if (!current()) return;
         if (file) { waiting("unavailable"); return; }
         if (cached) this.recordings.delete(this.cacheKey(key));
-        if (!retry && !started) { cleanup(true); attempt(true); return; }
+        if (!request.recordingOnly && !retry && !started) { cleanup(true); attempt(true); return; }
         // A network error is visible. Keep the NPC's recorded voice unless the learner chooses otherwise.
         request.retry = () => { cleanup(true); attempt(false); };
         waiting("unavailable");
@@ -634,7 +648,7 @@ export class AudioSystem {
         });
       };
       request.retry = start;
-      if (!file) request.fallback = () => {
+      if (!file && !request.recordingOnly) request.fallback = () => {
         if (!current()) return;
         cleanup(true);
         this.speakFallback(request, text, opts);
