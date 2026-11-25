@@ -82,16 +82,18 @@ function installPage({ key, save, speech, seed, film }) {
   const seedDate = Math.floor(nowDate() / period) * period + seed;
   Date.now = () => window.__ew?.game?.conversationLoads ? seedDate : nowDate();
   window.__naturalWall = nowDate;
+  window.__naturalInput = {};
+  addEventListener("click", (event) => {
+    if (event.isTrusted && event.target.closest?.(".convo-head .head-actions .close-x:last-child")) {
+      window.__naturalInput.close = nowDate();
+    }
+  }, true);
   if (film) {
     // Let Chromium present frames on its own clock during film. The contract
     // uses the explicit stepping clock below, with the same native media clocks.
     window.__step = () => performance.now();
-    window.__naturalInput = {};
     addEventListener("submit", (event) => {
       if (event.target.matches?.(".typebox")) window.__naturalInput.submit = nowDate();
-    }, true);
-    addEventListener("click", (event) => {
-      if (event.target.closest?.(".convo-head .head-actions .close-x:last-child")) window.__naturalInput.close = nowDate();
     }, true);
     return;
   }
@@ -311,8 +313,46 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
         shinL: joint(shinL), shinR: joint(shinR), iris: joint(iris), browL: joint(browL), browR: joint(browR), smile: joint(corners) },
     };
   }
-  let lastFrame = 0;
-  function frame() {
+  const { renderer, rig } = game;
+  const { cam } = rig;
+  const panelIds = new WeakMap();
+  let panelSerial = 0, opening, exit, lastFrame = 0;
+  function painted(node) {
+    if (!node || getComputedStyle(node).visibility !== "visible") return false;
+    for (let el = node; el; el = el.parentElement) if (Number(getComputedStyle(el).opacity) === 0) return false;
+    return true;
+  }
+
+  function lens() {
+    const { screenW: w, screenH: h } = game;
+    const { x, z } = game.player.root.position;
+    const { aspect, fov, view, zoom, projectionMatrix: { elements } } = cam;
+    const walking = rig.mode === "follow" || rig.mode === "interior";
+    const running = rig.mode === "follow" && game.vel.lengthSq() > 30;
+    return {
+      mode: rig.mode, zone: game.zone.id, interior: !!game.zone.interior, size: [w, h], viewport: [innerWidth, innerHeight],
+      sideways: game.sidewaysPhone, running, at: [x, z], heading: game.heading, aspect, fov, zoom,
+      targetFov: walking ? rig.fovFor(w, h, running) + (rig.mode === "follow" ? game.rideFov : 0) : null,
+      view: view && { ...view }, projection: [elements[0], elements[5], elements[8], elements[9]],
+    };
+  }
+
+  // Observe the real synchronous clear before the next draw can set the ordinary
+  // portrait offset. The wrapper leaves the camera call and its result intact.
+  const clearViewOffset = cam.clearViewOffset;
+  cam.clearViewOffset = function (...args) {
+    const { conv } = store.getState();
+    const closing = exit && !exit.clear && !conv.active && exit.run === conv.run;
+    const before = closing ? lens() : null;
+    const result = clearViewOffset.apply(this, args);
+    if (closing) exit.clear = {
+      before, after: lens(), wall: window.__naturalWall(), gameTime: game.t, frame: renderer.info.render.frame,
+      talk: !!rig.talk,
+    };
+    return result;
+  };
+
+  function frame(rendered, checkPanel = false) {
     const p = window.__talkNatural?.sample() ?? null;
     const { conv, hud, settings, progress } = store.getState();
     const clip = audio.clip, owner = audio.visualOwner;
@@ -339,17 +379,28 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
       nativeState: clip.el ? (clip.el.ended ? "ended" : clip.el.paused ? "paused" : "playing") : audio.ctx?.state,
       envelope: audio.level(false), owner: request?.id ?? null, source: request?.source ?? null,
     };
-    const frame = game.renderer.info.render.frame;
-    const rendered = frame !== lastFrame;
-    lastFrame = frame;
-    const panel = document.querySelector(".convo")?.getBoundingClientRect();
+    const node = document.querySelector(".convo");
+    const panel = node?.getBoundingClientRect();
+    if (node && !panelIds.has(node)) panelIds.set(node, ++panelSerial);
+    const layout = checkPanel && {
+      panelAnimating: node?.getAnimations().some((animation) => {
+        if (animation.effect?.target !== node) return false;
+        const slide = /^(slideup|slidein)$/.test(animation.animationName);
+        return animation.pending || (slide ? ["running", "paused"].includes(animation.playState)
+          : animation.playState === "running" && Number.isFinite(animation.effect.getComputedTiming().endTime));
+      }),
+      panelVisible: painted(node),
+      intro: !!document.querySelector(".scene-intro, .intro-card"),
+      fontsReady: document.fonts.status === "loaded",
+      layoutReady: !("talkLayout" in game) || !!game.talkLayout,
+    };
     const person = street?.actor?.projection?.().person ?? null;
     const line = conv.transcript.find((row) => row.id === conv.speaking);
     return {
-      gameTime: game.t, clock: performance.now(), wall: window.__naturalWall(), frame, rendered,
+      gameTime: game.t, clock: performance.now(), wall: window.__naturalWall(), frame: renderer.info.render.frame, rendered,
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
-      p, media, request: request?.id ?? null, audioState: audio.getState(), inputTimes: window.__naturalInput,
-      speech: request && { id: request.id, actor: request.npc, line: request.owner, text: request.text, source: request.source },
+      p, media, request: request?.id ?? null, audioState: audio.getState(), inputTimes: { ...window.__naturalInput },
+      speech: request && { id: request.id, run: request.run, actor: request.npc, line: request.owner, text: request.text, source: request.source },
       actual: Object.fromEntries([...actors].map(([id, actor]) => [id, pose(actor)])),
       release: release && { mouth: release.actor.mouth.scale.toArray(), closed: release.actor.smile.scale.toArray(),
         skinned: !!release.actor.mouth.isBone, weight: release.controller?.weight ?? 0,
@@ -362,19 +413,69 @@ function observeAudio({ catalogue, voices, transportKey, pc, id, subcase, film, 
         host: game.talkNpc?.id, speaker: game.talkSpeaker?.id, cast: game.talkCast?.map((n) => n.id),
         heading: game.heading, transition: game.transitioning, quality: settings.quality, view: !!game.rig.cam.view?.enabled,
         pendingRide: game.pendingRide ?? null, ride: !!game.rideTimer || !!game.rides?.riding,
-        picture: !!document.querySelector(".scene-backdrop"), panel: panel && [panel.left, panel.top, panel.right, panel.bottom] },
+        picture: !!document.querySelector(".scene-backdrop"), panel: panel && [panel.left, panel.top, panel.right, panel.bottom],
+        panelId: panelIds.get(node), layout, lens: lens() },
       street: street && { id: street.draw.moment.id, cast: street.draw.cast.id, script: street.draw.scriptName,
         step: street.view.step, line: street.view.line?.key, person },
       table: { gf: window.__ew.gofish?.state()?.step, lot: window.__ew.loteria?.state()?.phase },
     };
   }
+
+  // Polling from Node can miss the first bound draw on a film page, especially
+  // while a trusted Start input is in flight. Keep those draws in render order.
+  const render = renderer.render;
+  renderer.render = function (scene, camera) {
+    const result = render.call(this, scene, camera);
+    if ((!opening && !exit) || scene !== game.scene || camera !== cam) return result;
+    const { conv } = store.getState();
+    if (opening) {
+      if (conv.active) {
+        if (opening.frames.length < 700) opening.frames.push(frame(true));
+        else opening.overflow = true;
+      } else if (!game.transitioning && ["follow", "interior"].includes(rig.mode)) {
+        opening.gameplay = lens();
+        if (film && tracked === "vinnie" && !opening.wave
+          && game.npcs.find((n) => n.id === tracked)?.ch.anim === "wave") {
+          opening.wave = true;
+          opening.frames.push(frame(true));
+        }
+      }
+    }
+    if (exit?.clear && !conv.active && !game.transitioning && exit.frames.length < 120) {
+      exit.frames.push({ frame: renderer.info.render.frame, gameTime: game.t, lens: lens() });
+    }
+    return result;
+  };
+
+  function openingFrames() {
+    if (opening?.overflow) throw new Error("opening frame buffer exceeded its limit");
+    return opening ? opening.frames.splice(0) : [];
+  }
+
   window.__naturalTest = {
-    frame, requests, files, stop: () => { active = false; },
+    requests, files, stop: () => { active = false; opening = exit = undefined; },
+    frame(checkPanel) {
+      const rendered = renderer.info.render.frame !== lastFrame;
+      lastFrame = renderer.info.render.frame;
+      return { current: frame(rendered, checkPanel), early: openingFrames() };
+    },
+    beginOpening() { opening = { frames: [] }; },
+    finishOpening() {
+      const result = { early: openingFrames(), gameplay: opening?.gameplay };
+      opening = undefined;
+      return result;
+    },
     track: (id) => { tracked = id; },
     pinRelease(id) {
       const actor = actors.get(id);
       if (!actor) throw new Error(`missing closing actor ${id}`);
       release = { actor, controller: actor.talkPose, playerController: game.player.talkPose, owner: audio.visualOwner };
+      exit = { run: store.getState().conv.run, frames: [] };
+    },
+    finishExit() {
+      const result = exit;
+      exit = undefined;
+      return result;
     },
   };
 }
@@ -395,6 +496,40 @@ const actorIs = (frame, id) => {
   return actor;
 };
 
+const near = (actual, expected) => Math.abs(actual - expected) <= 1e-6;
+const sameViewport = (a, b) => a.size.every((value, i) => value === b.size[i] && a.viewport[i] === b.viewport[i]);
+const gameplayMode = (lens) => lens.interior ? "interior" : "follow";
+
+function assertGameplayLens(lens, { width, height }, label, baseline) {
+  const { mode, view, fov, targetFov, zoom, projection } = lens;
+  assert.equal(mode, gameplayMode(lens), `${label} gameplay camera mode in ${lens.zone}`);
+  assert.deepEqual(lens.size, [width, height], `${label} projection dimensions`);
+  assert.deepEqual(lens.viewport, [width, height], `${label} CSS viewport`);
+  assert(near(lens.aspect, width / height) && lens.at.every(Number.isFinite)
+    && [lens.heading, fov, targetFov, zoom].every(Number.isFinite), `${label} camera parameters`);
+  const shift = lens.sideways ? 0.1 : height > width * 1.15 ? (mode === "follow" ? 0.12 : 0.1) : 0;
+  const offsetY = -height * shift;
+  if (shift) {
+    assert(view?.enabled && near(view.offsetX, 0) && near(view.offsetY, offsetY),
+      `${label} gameplay view offset ${JSON.stringify(view)} (expected [0,${offsetY}])`);
+    assert.deepEqual([view.fullWidth, view.fullHeight, view.width, view.height], [width, height, width, height],
+      `${label} view dimensions`);
+  } else {
+    assert(!view?.enabled, `${label} unshifted gameplay view`);
+  }
+  const scale = zoom / Math.tan(fov * Math.PI / 360);
+  assert(near(projection[0], scale / lens.aspect) && near(projection[1], scale)
+    && near(projection[2], 0) && near(projection[3], -2 * offsetY / height),
+    `${label} rendered gameplay projection ${JSON.stringify(projection)}`);
+  if (baseline && lens.zone === baseline.zone && sameViewport(lens, baseline) && distance(lens.at, baseline.at) < 0.5) {
+    assert.equal(mode, baseline.mode, `${label} original mode at the same location`);
+    assert.equal(!!view?.enabled, !!baseline.view?.enabled, `${label} original offset state`);
+    if (view?.enabled) assert(near(view.offsetX, baseline.view.offsetX) && near(view.offsetY, baseline.view.offsetY),
+      `${label} original numeric offset`);
+    if (lens.running === baseline.running) assert(near(targetFov, baseline.targetFov), `${label} original gameplay FOV target`);
+  }
+}
+
 class Route {
   constructor(page, context, row, fixture, options) {
     Object.assign(this, { page, context, row, fixture, ...options });
@@ -403,6 +538,7 @@ class Route {
     this.labels = new Set();
     this.missingUrls = new Set();
     this.playheads = new Map();
+    this.openingFrames = [];
     this.lastRecorded = null;
     this.deadline = Math.min(Date.now() + 105_000, this.by);
   }
@@ -518,30 +654,41 @@ class Route {
     }
   }
 
-  async tick(n = 1, dt = stepMs) {
-    return this.page.evaluate(([n, dt]) => {
+  async tick(n = 1, dt = stepMs, checkPanel = false) {
+    const { current, early } = await this.page.evaluate(([n, dt, checkPanel]) => {
       window.__step(n, dt);
-      return window.__naturalTest.frame();
-    }, [n, dt]).then((frame) => {
-      this.last = frame;
-      this.capture?.sample(frame);
-      if (isVoice(frame) && frame.media.owner != null) {
-        const { owner, key, time, envelope, pipeline } = frame.media;
-        const sample = this.playheads.get(owner) ?? { id: owner, key, pipeline, first: time, last: time, peakEnvelope: 0, frames: 0 };
-        sample.last = Math.max(time, sample.last);
-        sample.peakEnvelope = Math.max(envelope, sample.peakEnvelope);
-        sample.frames++;
-        this.playheads.set(owner, sample);
-      }
-      // Keep a bounded, diverse selection. Phase/owner/cue changes survive decimation.
-      const signature = JSON.stringify([frame.conv.run, frame.conv.phase, frame.conv.mic, frame.request, frame.media?.state,
-        frame.p?.gesture, frame.p?.gaze?.target, frame.p?.reaction?.sequence, frame.scene.mode, frame.street?.step]);
-      if (this.frames.length < 1000 && (signature !== this.lastRecorded || frame.frame % 6 === 0)) {
-        this.frames.push(frame);
-        this.lastRecorded = signature;
-      }
-      return frame;
-    });
+      return window.__naturalTest.frame(checkPanel);
+    }, [n, dt, checkPanel]);
+    this.collectOpening(early);
+    if (current.frame !== early.at(-1)?.frame) this.record(current);
+    this.last = current;
+    return current;
+  }
+
+  collectOpening(frames) {
+    for (const frame of frames) {
+      this.openingFrames.push(frame);
+      this.record(frame, true);
+    }
+  }
+
+  record(frame, early = false) {
+    this.capture?.sample(frame);
+    if (isVoice(frame) && frame.media.owner != null) {
+      const { owner, key, time, envelope, pipeline } = frame.media;
+      const sample = this.playheads.get(owner) ?? { id: owner, key, pipeline, first: time, last: time, peakEnvelope: 0, frames: 0 };
+      sample.last = Math.max(time, sample.last);
+      sample.peakEnvelope = Math.max(envelope, sample.peakEnvelope);
+      sample.frames++;
+      this.playheads.set(owner, sample);
+    }
+    // Keep early draws and phase/owner/cue changes in the bounded route trace.
+    const signature = JSON.stringify([frame.conv.run, frame.conv.phase, frame.conv.mic, frame.request, frame.media?.state,
+      frame.p?.gesture, frame.p?.gaze?.target, frame.p?.reaction?.sequence, frame.scene.mode, frame.street?.step]);
+    if (this.frames.length < 1000 && (early || signature !== this.lastRecorded || frame.frame % 6 === 0)) {
+      this.frames.push(frame);
+      this.lastRecorded = signature;
+    }
   }
 
   async until(poll, label, ms = 14_000) {
@@ -564,9 +711,9 @@ class Route {
       media: f.media, scene: f.scene, table: f.table, street: f.street });
   }
 
-  async wait(predicate, label, ms) {
+  async wait(predicate, label, ms, checkPanel = false) {
     return this.until(async () => {
-      const frame = await this.tick();
+      const frame = await this.tick(1, stepMs, checkPanel);
       await this.filmFrame(frame);
       return predicate(frame) ? frame : null;
     }, label, ms);
@@ -615,6 +762,9 @@ class Route {
       return button.evaluate((el) => {
         el.scrollIntoView({ block: "nearest", inline: "nearest" });
         const r = el.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+        if (el.closest(".scene-intro, .intro-card")) {
+          for (let node = el; node; node = node.parentElement) if (Number(getComputedStyle(node).opacity) === 0) return null;
+        }
         if (!el.contains(document.elementFromPoint(x, y))) return null;
         return { x, y };
       });
@@ -641,7 +791,8 @@ class Route {
     if (this.film) {
       await this.wait((f) => f.scene.nearest === actor && !f.conv.phone, `physical interaction prompt at ${actor}'s approach`);
       if (this.row.id === "s66-taxi") {
-        const wave = await this.wait((f) => f.actual[actor]?.anim === "wave" && !f.actual[actor].controller, "native approach wave before binding");
+        const waving = (f) => f.actual[actor]?.anim === "wave" && !f.actual[actor].controller;
+        const wave = this.openingFrames.find(waving) ?? await this.wait(waving, "native approach wave before binding");
         await this.mark("approach-wave", wave, { image: false });
         await this.series(3);
       }
@@ -659,6 +810,28 @@ class Route {
     else await this.page.keyboard.press("e");
   }
 
+  async beginOpening() {
+    this.openingFrames = [];
+    await this.page.evaluate(() => window.__naturalTest.beginOpening());
+  }
+
+  async finishOpening(entry) {
+    const { early, gameplay } = await this.page.evaluate(() => window.__naturalTest.finishOpening());
+    this.collectOpening(early);
+    assert(this.openingFrames.every((f) => !f.conv.active || f.conv.run === entry.conv.run && f.conv.id === entry.conv.id),
+      "the observed opening belongs to one live conversation run");
+    assert(this.openingFrames.every((f) => f.frame <= entry.frame || f.scene.panelId === entry.scene.panelId),
+      "the opening panel stayed mounted through layout");
+    assert(gameplay && gameplay.zone === entry.scene.zone, "rendered gameplay lens at the conversation location before entry");
+    assertGameplayLens(gameplay, this.size, "before dialogue");
+    this.gameplay = gameplay;
+    (this.row.gameplay ??= []).push({ run: entry.conv.run, lens: gameplay });
+  }
+
+  openingSamples() {
+    return this.openingFrames.filter((f) => f.conv.active && !f.conv.intro);
+  }
+
   async start(id = this.row.id, actor, walk = false, launch = true) {
     const expected = await this.page.evaluate((id) => {
       const { game, store } = window.__ew;
@@ -672,6 +845,7 @@ class Route {
     assert(expected.id && (!actor || actor === expected.id), `runtime host for ${id}: ${JSON.stringify(expected)}`);
     this.row.runtime ??= expected;
     if (launch) {
+      await this.beginOpening();
       if (walk) await this.walkUp(expected.id);
       else await this.page.evaluate((id) => window.__ew.game.startScenario(id), id);
     }
@@ -686,19 +860,53 @@ class Route {
     } else if (id === "s72-cafe" && this.subcase !== "interrupted") {
       assert.fail("the café's real Start button was not exercised");
     }
-    const bound = await this.wait((f) => f.p?.scope === "session" && f.p.run === entry.conv.run && f.scene.mode === "talk", "lazy presentation attached to the live run");
+    const isBound = (f) => f.rendered && f.conv.active && f.conv.run === entry.conv.run
+      && f.p?.scope === "session" && f.p.run === entry.conv.run && f.scene.mode === "talk";
+    await this.wait(() => this.openingFrames.some(isBound), "lazy presentation attached to the live run");
+    const bound = this.openingFrames.find(isBound);
     actorIs(bound, expected.id);
     actorIs(bound, "player");
     assert(bound.scene.cast.includes(expected.id) && bound.scene.mountedZone && !bound.scene.picture);
-    this.panel(bound);
     await this.mark("entry", bound);
+    const settled = await this.panel(entry);
+    (this.row.panels ??= []).push({ run: entry.conv.run, frame: settled.frame, wall: settled.wall, rect: settled.scene.panel });
+    const sampled = () => {
+      const last = this.openingFrames.at(-1);
+      return last?.p?.run === bound.conv.run && last.gameTime >= bound.gameTime + 0.24
+        && this.openingFrames.some((f) => !f.conv.intro && (f.conv.phase !== "npc"
+          || (f.speech?.run === bound.conv.run && (mediaPlaying(f) || f.audioState === "unavailable"))));
+    };
+    if (!sampled()) await this.wait((f) => {
+      assert(f.conv.active && f.conv.run === bound.conv.run && f.scene.panelId === settled.scene.panelId,
+        "the same live conversation continues through the opening blend");
+      return sampled();
+    }, "render the opening blend and playback onset");
+    await this.finishOpening(entry);
     return bound;
   }
 
-  panel(frame) {
-    const rect = frame.scene.panel;
-    assert(rect && rect[0] >= -1 && rect[1] >= -1 && rect[2] <= this.size.width + 1 && rect[3] <= this.size.height + 1
-      && rect[2] > rect[0] && rect[3] > rect[1] && frame.scene.quality === "low", `scene/panel viewport: ${JSON.stringify(rect)}`);
+  async panel(entry) {
+    let previous;
+    return this.wait((f) => {
+      const { panel: rect, panelId, layout, quality } = f.scene;
+      assert(f.conv.active && f.conv.run === entry.conv.run && f.conv.id === entry.conv.id
+        && panelId === entry.scene.panelId, "the original conversation panel stayed mounted through layout");
+      if (f.conv.intro || layout.intro || layout.panelAnimating || !layout.panelVisible || !layout.fontsReady || !layout.layoutReady) {
+        previous = undefined;
+        return false;
+      }
+      if (!f.rendered) return false;
+      if (previous && previous.frame !== f.frame && rect.every((edge, i) => edge === previous.scene.panel[i])) {
+        assert(rect.every(Number.isFinite) && rect[0] >= -1 && rect[1] >= -1
+          && rect[2] <= this.size.width + 1 && rect[3] <= this.size.height + 1
+          && rect[2] > rect[0] && rect[3] > rect[1] && quality === "low", `scene/panel viewport: ${JSON.stringify(rect)}`);
+        assert(f.scene.mountedZone && !f.scene.picture && f.scene.mode === "talk" && f.p?.run === entry.conv.run,
+          "settled panel belongs to the live rendered conversation");
+        return true;
+      }
+      previous = f;
+      return false;
+    }, "settled conversation panel", 4500, true);
   }
 
   async yourTurn() {
@@ -791,14 +999,17 @@ function crossCheckVoice(f, pipeline) {
   }
 }
 
-async function voiced(route, predicate = () => true) {
-  const frame = await route.wait((f) => isVoice(f) && f.p?.mouth > 0.12 && predicate(f), "native voice, actual speaker and open bone");
+async function voiced(route, predicate = () => true, initial = []) {
+  const speaking = (f) => isVoice(f) && f.p?.mouth > 0.12 && predicate(f);
+  const frame = initial.find(speaking) ?? await route.wait(speaking, "native voice, actual speaker and open bone");
   crossCheckVoice(frame, route.size.touch ? "buffer" : "html");
   return frame;
 }
 
-async function through(route, predicate, label, ms) {
-  const rows = [];
+async function through(route, predicate, label, ms, initial = []) {
+  const end = initial.findIndex(predicate);
+  if (end !== -1) return initial.slice(0, end + 1);
+  const rows = [...initial];
   await route.until(async () => {
     const started = Date.now();
     const f = await route.tick();
@@ -811,6 +1022,8 @@ async function through(route, predicate, label, ms) {
   return rows;
 }
 
+const openingThrough = (route, predicate, label) => through(route, predicate, label, undefined, route.openingSamples());
+
 async function quietTurn(route, actor, count = 36) {
   const rows = await route.series(count);
   const settled = rows.slice(4);
@@ -822,20 +1035,7 @@ async function quietTurn(route, actor, count = 36) {
   return rows;
 }
 
-async function closeSession(route, { reopen = false } = {}) {
-  const old = route.last;
-  const who = old.p?.speakerId ?? old.conv.npc;
-  await route.page.evaluate((id) => window.__naturalTest.pinRelease(id), who);
-  const button = route.page.locator(".convo-head .head-actions .close-x").last();
-  await route.press(button, "close through the original conversation button");
-  if (reopen) await route.page.evaluate((id) => window.__ew.game.startScenario(id), old.conv.id);
-  const rows = [];
-  for (let i = 1; i <= 9; i++) {
-    const [f] = await route.series(1, 1000 / 30);
-    rows.push(f);
-    if ([1, 4, 9].includes(i)) await route.mark(`exit+${i}`, f);
-  }
-  const at240 = rows[6], rest = rows[8];
+function checkRelease(old, at240, rest, reopen = false) {
   assert(!at240.conv.active || at240.conv.run !== old.conv.run, "old conversation run ended");
   assert(at240.media?.owner !== old.request || !["playing", "loading"].includes(at240.media?.state), "old request released");
   assert(!["playing", "loading"].includes(at240.release.voice), "pinned voice owner releases across cut");
@@ -843,12 +1043,60 @@ async function closeSession(route, { reopen = false } = {}) {
   silent(at240.release, "mouth within 240 ms after close");
   assert(rest.release.weight <= 0.001 && rest.release.playerWeight <= 0.001, "pinned pose releases within 300 ms");
   if (!rest.conv.active) {
+    const who = old.p?.speakerId ?? old.conv.npc;
     assert(rest.actual[who]?.weight <= 0.001 && rest.actual.player.weight <= 0.001, "pose release within 300 ms");
-    assert(["follow", "interior"].includes(rest.scene.mode) && !rest.scene.view, "original camera return and cleared view offset");
-    assert(Number.isFinite(rest.scene.heading), "restored town heading");
   } else {
     assert(rest.conv.run > old.conv.run && rest.p?.run !== old.conv.run, "reopen owns a fresh binding");
   }
+}
+
+async function checkExitLens(route, old, closedAt) {
+  const trace = await route.page.evaluate(() => window.__naturalTest.finishExit());
+  (route.row.exits ??= []).push(trace);
+  const { clear, frames, run } = trace;
+  assert.equal(run, old.conv.run, "exit observation belongs to the outgoing run");
+  assert(clear && Number.isFinite(closedAt) && clear.wall >= closedAt && clear.wall <= closedAt + 240,
+    "the trusted close clears the outgoing talk projection within 240 ms");
+  const { after } = clear;
+  assert(!clear.talk && after.mode === gameplayMode(after) && !after.view?.enabled
+    && after.projection.slice(2).every((value) => near(value, 0)), "actual clear removed the talk composition before gameplay rendered");
+  assert(frames.length >= 2, "at least two rendered gameplay frames follow the clear");
+  let previous = { frame: clear.frame, gameTime: clear.gameTime, lens: after };
+  for (const current of frames) {
+    const { frame, gameTime, lens } = current;
+    assert(frame > previous.frame && gameTime >= previous.gameTime, "gameplay lens was drawn after the explicit clear");
+    assertGameplayLens(lens, route.size, `exit frame ${frame}`, route.gameplay);
+    const prior = previous.lens;
+    if (lens.mode === prior.mode && lens.zone === prior.zone && sameViewport(lens, prior) && near(lens.targetFov, prior.targetFov)) {
+      // Gameplay eases FOV at rate 3 per second and snaps within 0.05 degrees.
+      const remaining = Math.abs(prior.fov - lens.targetFov) * Math.exp(-3 * (gameTime - previous.gameTime));
+      assert(Math.abs(lens.fov - lens.targetFov) <= Math.max(0.05, remaining) + 1e-6,
+        "FOV returns toward the gameplay lens on rendered frames");
+    }
+    previous = current;
+  }
+  return clear;
+}
+
+async function closeSession(route, { reopen = false } = {}) {
+  const old = route.last;
+  const who = old.p?.speakerId ?? old.conv.npc;
+  await route.page.evaluate((id) => window.__naturalTest.pinRelease(id), who);
+  const button = route.page.locator(".convo-head .head-actions .close-x").last();
+  await route.press(button, "close through the original conversation button");
+  if (reopen) {
+    await route.beginOpening();
+    await route.page.evaluate((id) => window.__ew.game.startScenario(id), old.conv.id);
+  }
+  const rows = [];
+  for (let i = 1; i <= 9; i++) {
+    const [f] = await route.series(1, 1000 / 30);
+    rows.push(f);
+    if ([1, 4, 9].includes(i)) await route.mark(`exit+${i}`, f);
+  }
+  const at240 = rows[6], rest = rows[8];
+  await checkExitLens(route, old, rest.inputTimes.close);
+  checkRelease(old, at240, rest, reopen);
   return { old, rest };
 }
 
@@ -892,7 +1140,7 @@ const cafeOrder = pc ? "¿Me puede dar un latte grande con leche de avena para l
 async function cafe(route) {
   const entry = await route.start();
   const host = entry.conv.host;
-  const timeline = await through(route, (f) => f.conv.phase === "you", "let the café opening play through");
+  const timeline = await openingThrough(route, (f) => f.conv.phase === "you", "let the café opening play through");
   if (!route.film) route.row.transport = transportWindows(timeline, route.size.touch ? "buffer" : "html");
   const listen = await quietTurn(route, host);
   const early = listen.slice(0, 19).find((f) => f.p?.listeningWeight > 0.12);
@@ -946,7 +1194,7 @@ async function cafe(route) {
   await route.press(chipView, "return to 3D");
   const returned = await route.wait((f) => !f.scene.picture && f.p?.run === entry.conv.run && f.scene.mode === "talk", "same run and camera after picture");
   assert(Math.abs(returned.scene.heading - heading) < 0.02);
-  route.panel(returned);
+  await route.panel(returned);
   await closeSession(route);
 }
 
@@ -954,9 +1202,9 @@ async function local(route) {
   const entry = await route.start(route.row.id, undefined, true);
   assert.equal(entry.scene.zone, "town");
   const host = entry.conv.host;
-  const speaking = await voiced(route);
+  const speaking = await voiced(route, undefined, route.openingSamples());
   assert(speaking.p.player?.mouth === 0 && speaking.p.player.gaze.target === host);
-  const wait = await through(route, (f) => f.conv.phase === "you", "local opening ends");
+  const wait = await openingThrough(route, (f) => f.conv.phase === "you", "local opening ends");
   const selected = speaking.p.bystander?.actorId;
   if (selected) {
     const observer = actorIs(speaking, selected);
@@ -977,7 +1225,7 @@ async function taxi(route) {
   const entry = await route.start();
   const host = entry.conv.host;
   assert.notEqual(entry.actual[host].anim, "sit", "driver is at the stand");
-  const opening = await through(route, (f) => f.conv.phase === "you", "driver greets the learner");
+  const opening = await openingThrough(route, (f) => f.conv.phase === "you", "driver greets the learner");
   if (!pc) {
     assert(opening.some((f) => f.conv.text === taxiText && isVoice(f)), "authored Vinnie recording for the film");
     const beat = motionPeak(opening, /Hey! Where can I take you\?/, ["greeting"]);
@@ -993,7 +1241,7 @@ async function taxi(route) {
   assert(!rest.scene.pendingRide && !rest.scene.ride, "interrupted dialogue does not enqueue or start a ride");
   const reopened = await route.start(route.row.id, host, false, false);
   assert(reopened.conv.run > old.conv.run && reopened.conv.host === host);
-  const fresh = await voiced(route);
+  const fresh = await voiced(route, undefined, route.openingSamples());
   assert(fresh.p.requestId !== old.p.requestId && fresh.request !== old.request);
   await through(route, (f) => f.conv.phase === "you", "reopened driver reaches a turn");
   const answers = pc ? {
@@ -1018,9 +1266,10 @@ async function taxi(route) {
   assert(dropOff, "the original ride has a world destination");
   await closeSession(route);
   assert(!route.last.scene.pendingRide && route.last.scene.ride, "conversation exit launches the authored ride");
-  const arrived = await route.wait((f) => !f.scene.ride && f.scene.zone === "town" && !f.conv.active, "normal taxi arrival");
+  const arrived = await route.wait((f) => f.rendered && !f.scene.ride && f.scene.zone === "town" && !f.conv.active, "normal taxi arrival");
   assert(Math.hypot(arrived.actual.player.root[0] - dropOff[0], arrived.actual.player.root[2] - dropOff[1]) < 0.5,
     "taxi brought the learner to the authored drop-off");
+  for (const f of [arrived, ...await route.series(2)]) assertGameplayLens(f.scene.lens, route.size, "taxi destination");
 }
 
 const restaurantAnswers = pc ? {
@@ -1033,9 +1282,9 @@ async function restaurant(route) {
   const entry = await route.start();
   const host = entry.conv.host;
   assert(entry.scene.cast.length >= 2, "restaurant has its actual host and server");
-  const outgoing = await voiced(route, (f) => f.p.speakerId === host);
+  const outgoing = await voiced(route, (f) => f.p.speakerId === host, route.openingSamples());
   let incoming;
-  await through(route, (f) => f.conv.phase === "you", "host completes the opening");
+  await openingThrough(route, (f) => f.conv.phase === "you", "host completes the opening");
   for (let turn = 0; turn < 6 && !incoming; turn++) {
     const step = route.last.conv.step;
     await route.answer(restaurantAnswers[step]);
@@ -1077,7 +1326,7 @@ async function tickets(route) {
   const entry = await route.start();
   const host = entry.conv.host;
   assert.equal(entry.scene.zone, "station");
-  const rows = await through(route, (f) => f.conv.phase === "you", "ticket clerk's opening");
+  const rows = await openingThrough(route, (f) => f.conv.phase === "you", "ticket clerk's opening");
   for (let turn = 0; turn < 7 && !rows.some((f) => ticketText.test(f.conv.text ?? "")); turn++) {
     await route.answer(ticketAnswers[route.last.conv.step]);
     rows.push(...await through(route, (f) => f.conv.phase === "you" || f.conv.phase === "ended", "authored ticket counter response"));
@@ -1109,7 +1358,7 @@ async function tickets(route) {
 async function way(route) {
   const entry = await route.start(directions, directionActor, true);
   assert(!entry.conv.phone && entry.scene.zone === "town");
-  await through(route, (f) => f.conv.phase === "you", "directions opening");
+  await openingThrough(route, (f) => f.conv.phase === "you", "directions opening");
   // Leave the opening arm cue outside the cooldown without changing any random source.
   await route.series(42, 1000 / 30);
   await route.answer(pc ? "Disculpe, ¿cómo llego al correo?" : "Excuse me, how do I get to the post office?");
@@ -1159,7 +1408,7 @@ async function tableGame(route) {
   if (pc) {
     assert(await route.page.evaluate(() => window.__ew.loteria.stage(2, 1)), "seed the existing lotería deck at normal speed");
     await route.start(dinner, "tona", true);
-    await voiced(route);
+    await voiced(route, undefined, route.openingSamples());
     for (const answer of ["Sí, claro", "No. ¿Me explica?", "¿Juega seguido?"]) await route.answer(answer);
     await through(route, (f) => f.conv.phase === "ended", "Toña's natural lotería offer");
     await route.press(route.page.locator(".loteria-cta"), "accept Doña Toña's lotería offer");
@@ -1233,7 +1482,7 @@ async function street(route) {
 
 async function missingRecording(route) {
   await route.start(directions, directionActor, true);
-  const rows = await through(route, (f) => f.conv.phase === "you", "optional missing voice leaves the text and the turn usable");
+  const rows = await openingThrough(route, (f) => f.conv.phase === "you", "optional missing voice leaves the text and the turn usable");
   assert(rows.some((f) => f.conv.text && f.p?.mouth === 0), "missing line shown silently");
   assert(await route.page.locator(".transcript .msg.npc .bubble").first().isVisible());
   const quiet = await quietTurn(route, directionActor);
@@ -1247,7 +1496,7 @@ async function missingRecording(route) {
 
 async function micExample(route) {
   const entry = await route.start();
-  await through(route, (f) => f.conv.phase === "you", "standing driver's voice ends before recognition");
+  await openingThrough(route, (f) => f.conv.phase === "you", "standing driver's voice ends before recognition");
   const on = await route.wait((f) => f.conv.mic === "listening" && f.p?.listening, "real mic status redraw");
   const settled = await quietTurn(route, entry.conv.host);
   assert(settled.every((f) => f.conv.mic === "listening"), "native callback shape keeps recognition active");
@@ -1288,7 +1537,7 @@ async function reducedMotion(route) {
   const first = await route.start();
   assert(first.reduced && first.p.reduced && first.p.bystander, "fresh reduced context binds the actual cast, learner and café bystander");
   const ids = [first.conv.host, "player", first.p.bystander.actorId, ...first.p.others.map(({ actorId }) => actorId)];
-  const opening = await through(route, (f) => f.conv.phase === "you", "the reduced opening recording plays to the learner turn");
+  const opening = await openingThrough(route, (f) => f.conv.phase === "you", "the reduced opening recording plays to the learner turn");
   const speech = opening.filter((f) => isVoice(f) && f.p?.requestOwned);
   assert(speech.length >= 3 && spread(speech.map((f) => f.p.mouth)) > 0.18
     && spread(speech.map((f) => openMouth(f.actual[first.conv.host]))) > 0.18, "reduced mode still follows voiced amplitude");
@@ -1316,19 +1565,21 @@ async function reducedMotion(route) {
 
   const warm = await route.start();
   assert(warm.p.reduced && warm.conv.run > first.conv.run, "cached presentation respects reduced motion on reopen");
-  await voiced(route);
+  await voiced(route, undefined, route.openingSamples());
   await closeSession(route);
 }
 
 async function interruptEntry(route) {
+  await route.beginOpening();
   await route.page.evaluate(() => window.__ew.game.startScenario("s72-cafe"));
   const entry = await route.wait((f) => f.conv.intro && f.conv.active && !!f.scene.panel, "early café intro before speech");
+  await route.finishOpening(entry);
   await closeSession(route);
   const closed = await route.series(24);
   assert(closed.every((f) => !f.conv.active && !f.p && !f.media?.owner), "early exit never leaks a late binding or playback");
   const warm = await route.start();
   assert(warm.conv.run > entry.conv.run);
-  await voiced(route);
+  await voiced(route, undefined, route.openingSamples());
   await closeSession(route);
 }
 
@@ -1372,17 +1623,25 @@ async function filmExit(route) {
   await route.mark("release", closed, { image: false });
   const closedAt = closed.inputTimes?.close;
   assert(Number.isFinite(closedAt), "trusted close button timestamp");
+  const returned = [closed, ...await through(route, (f) => f.rendered && f.wall >= closedAt + 300
+    && f.gameTime >= closed.gameTime + 0.3, "filmed release through 300 ms of game time", 2500)];
   for (const offset of [1, 4, 9]) {
-    const f = await route.wait((f) => f.rendered && f.wall >= closedAt + offset * 1000 / 30, `release +${offset}/30 s`);
+    const f = returned.find((f) => f.rendered && f.wall >= closedAt + offset * 1000 / 30);
+    assert(f, `rendered release +${offset}/30 s`);
     await route.mark(`exit+${offset}`, f);
   }
   await route.series(5);
+  const clear = await checkExitLens(route, f, closedAt);
+  const releasedAt = (ms) => returned.find((frame) => frame.rendered && frame.gameTime >= clear.gameTime + ms / 1000 - 1e-6);
+  const at240 = releasedAt(240), at300 = releasedAt(300);
+  assert(at240 && at300, "rendered release at the 240 ms and 300 ms checks");
+  checkRelease(f, at240, at300);
 }
 
 async function filmCafe(route) {
   const reduced = route.subcase === "reduced";
   const entry = await startFilm(route, "mia", "sunny-cup", reduced ? "Mia · reduced motion" : "Mia · counter, miss, yes and slow replay");
-  const opening = await through(route, (f) => f.conv.phase === "you", "Mia's real opening to learner turn");
+  const opening = await openingThrough(route, (f) => f.conv.phase === "you", "Mia's real opening to learner turn");
   const spoken = opening.find((f) => isVoice(f) && f.p?.requestOwned && f.p.mouth > 0.22
     && f.media.envelope > 0.45 && f.media.source?.match);
   const quiet = opening.find((f, i) => f.request === spoken?.request && f.media?.state === "playing"
@@ -1394,7 +1653,7 @@ async function filmCafe(route) {
   if (!spoken || (!pc && spoken.media.source.key !== transportKey) || !quiet) {
     route.row.errors.push("Mia's matching opening did not supply voiced and internal quiet frames on the same playhead");
   }
-  const listening = await route.yourTurn();
+  const listening = opening.at(-1).p?.listening ? opening.at(-1) : await route.yourTurn();
   await route.mark("listen-start", listening, { image: false });
   for (const seconds of [0.32, 2]) {
     const f = await route.wait((f) => f.rendered && f.p?.listening && f.clock >= listening.clock + seconds * 1000,
@@ -1418,10 +1677,10 @@ async function filmCafe(route) {
 
 async function filmTaxi(route) {
   const entry = await startFilm(route, "vinnie", "town", "Vinnie · approach wave and sociable opening");
-  const after = await route.wait((f) => f.rendered && f.p?.run === entry.conv.run && f.gameTime >= entry.gameTime + 0.24,
-    "continuous approach and bind through +0.24 s");
+  const after = route.openingFrames.find((f) => f.p?.run === entry.conv.run && f.gameTime >= entry.gameTime + 0.24);
+  assert(after, "continuous approach and bind through +0.24 s");
   await route.mark("bind+0.24s", after);
-  const opening = await through(route, (f) => f.conv.phase === "you", "Vinnie's real greeting completes");
+  const opening = await openingThrough(route, (f) => f.conv.phase === "you", "Vinnie's real greeting completes");
   if (!pc) assert(opening.some((f) => f.media?.source?.key === taxiKey && f.conv.text === taxiText && isVoice(f)),
     "Vinnie's greeting must use the exact recording");
   await filmExit(route);
@@ -1429,7 +1688,7 @@ async function filmTaxi(route) {
 
 async function filmTickets(route) {
   const entry = await startFilm(route, "walter", "station", "Walter · reserved counter and ticket handoff");
-  const rows = await through(route, (f) => f.conv.phase === "you", "Walter's opening");
+  const rows = await openingThrough(route, (f) => f.conv.phase === "you", "Walter's opening");
   for (let i = 0; i < 7 && !rows.some((f) => ticketText.test(f.conv.text ?? "")); i++) {
     await route.answer(ticketAnswers[route.last.conv.step]);
     rows.push(...await through(route, (f) => f.conv.phase === "you" || f.conv.phase === "ended", "real ticket counter response"));
@@ -1454,7 +1713,7 @@ async function filmTickets(route) {
 
 async function filmRestaurant(route) {
   const entry = await startFilm(route, "marco_host", "trattoria", "Lucia and Marco · cast switch");
-  await through(route, (f) => f.conv.phase === "you", "Lucia's opening");
+  await openingThrough(route, (f) => f.conv.phase === "you", "Lucia's opening");
   let incoming;
   for (let i = 0; i < 6 && !incoming; i++) {
     await route.answer(restaurantAnswers[route.last.conv.step]);
