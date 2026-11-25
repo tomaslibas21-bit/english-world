@@ -13,7 +13,7 @@ import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
-import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
+import { speechSupported, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
 import { locIcon } from "./Hud";
 import { SitIcon } from "./SitIcon";
@@ -419,7 +419,7 @@ function Settings({ close }: { close: () => void }) {
   const set = useStore((st) => st.setSettings);
   const profile = useStore((st) => st.progress.profile);
   const [local, setLocal] = useState<LocalAvailability | "…">("…");
-  useEffect(() => { localAvailability().then(setLocal); }, []);
+  useEffect(() => { void refreshLocalState().then(setLocal); }, []);
   return (
     <div className="sheet narrow">
       <SheetHead icon="settings" title={L("Nustatymai")} close={close} />
@@ -437,7 +437,7 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label={L("Žmonės kalba lėčiau")} />
         {EDITION.id === "es" && <VarietyToggle />}
         {(local === "available" || local === "downloadable" || local === "downloading") && (
-          <Toggle on={s.onDevice} onChange={(v) => { set({ onDevice: v }); refreshLocalState(); }} label={L("Atpažinti kalbą šiame įrenginyje")} sub={L("Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą.")} />
+          <Toggle on={s.onDevice} onChange={(v) => set({ onDevice: v })} label={L("Atpažinti kalbą šiame įrenginyje")} sub={L("Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą.")} />
         )}
         <div className="set-row">
           <div className="txt"><b>{L("Režimas")}</b><span>{L("Lengvas – be 3D miesto, tik pokalbiai su piešiniais. Pakeitus puslapis persikrauna.")}</span></div>
@@ -478,7 +478,7 @@ function Settings({ close }: { close: () => void }) {
           {speechSupported() && (s.onDevice && local === "available"
             ? L("Anglų kalba atpažįstama šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto.")
             : L("Kalbą atpažįsta pati naršyklė, dažniausiai savo gamintojo serveriuose (Chrome – Google, Edge – Microsoft, Safari – Apple): taip geriausiai suprantamas akcentas. Tau ir žaidimui tai nieko nekainuoja, bet reikia interneto."))}
-          {s.onDevice && (local === "downloadable" || local === "downloading") && <> {L("Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą.")} <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? L("Įdiegta!") : L("Nepavyko įdiegti"), body: ok ? L("Atpažinimas vyks šiame įrenginyje.") : L("Bus naudojamas naršyklės internetinis atpažinimas.") }); }}>{L("Įdiegti anglų kalbą")}</button></>}
+          {s.onDevice && (local === "downloadable" || local === "downloading") && <> {L("Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą.")} <button className="btn small" onClick={async () => { const ok = await installLocal(); setLocal(await refreshLocalState()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? L("Įdiegta!") : L("Nepavyko įdiegti"), body: ok ? L("Atpažinimas vyks šiame įrenginyje.") : L("Bus naudojamas naršyklės internetinis atpažinimas.") }); }}>{L("Įdiegti anglų kalbą")}</button></>}
           <br />{Lx("Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti {keyboard}.", { keyboard: <InlineIcon name="keyboard" label={L("klaviatūra")} /> })}
         </div>
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">{L("Atsisiuntimai ir failų pašalinimas")}</a></div>}

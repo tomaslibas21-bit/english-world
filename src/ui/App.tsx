@@ -31,7 +31,11 @@ export function App() {
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
   useEffect(() => audio.bindGestures(), []);
   useEffect(() => startPlayStats({ playing: () => radio.store.getState().playing, subscribe: (fn) => radio.store.subscribe(fn) }), []);
-  useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
+  useEffect(() => {
+    const state = useStore.getState();
+    if (!mode) state.setScreen("title");
+    if (state.settings.onDevice) void refreshLocalState();
+  }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts />{EDITION.id === "en" && <AudioDiagnostics />}</>;
   return <>{mode === "light" ? <LightPlay /> : <Play />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
   void screen;
