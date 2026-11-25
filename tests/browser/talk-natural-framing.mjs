@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { mkdir, open, readFile, realpath, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { CHECKS, SIZES } from "../../tools/talk-framing-measure.mjs";
@@ -12,20 +13,36 @@ const key = ({ id, size }) => `${id}/${size}`;
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
 const save = (file, value) => writeFile(file, JSON.stringify(value, null, 2) + "\n");
 const exists = (file) => stat(file).catch((error) => {
-  if (error.code === "ENOENT") return null;
+  if (["ENOENT", "ENOTDIR"].includes(error.code)) return null;
   throw error;
 });
 
-export async function localPlaywright(specifier) {
-  assert(specifier, "WORLD_PLAYWRIGHT_MODULE must name an installed Playwright entry");
+async function localEntry(specifier) {
   const local = path.resolve(specifier);
   const explicitPath = path.isAbsolute(specifier) || specifier.startsWith(".") || await exists(local);
-  const resolved = specifier.startsWith("file:") ? specifier : explicitPath ? pathToFileURL(local).href : import.meta.resolve(specifier);
-  assert(resolved.startsWith("file:"), "Playwright must be an installed local module");
+  const resolved = explicitPath ? pathToFileURL(local).href : import.meta.resolve(specifier);
+  if (!resolved.startsWith("file:")) return null;
   let file = fileURLToPath(resolved);
-  if ((await stat(file)).isDirectory()) file = path.join(file, "index.mjs");
-  assert((await stat(file)).isFile(), `Playwright entry file missing at ${file}`);
+  const info = await exists(file);
+  if (info?.isDirectory()) {
+    file = path.join(file, "index.mjs");
+    if (!(await exists(file))?.isFile()) return null;
+  } else if (!info?.isFile()) return null;
   return pathToFileURL(await realpath(file)).href;
+}
+
+export async function localPlaywright(specifier) {
+  const installed = path.join(homedir(), "claude-work/_h-tools/node_modules/playwright-core/index.mjs");
+  for (const candidate of new Set([specifier, "playwright", "playwright-core", installed])) {
+    if (!candidate) continue;
+    const entry = await localEntry(candidate).catch((error) => {
+      if (["ERR_MODULE_NOT_FOUND", "ERR_INVALID_MODULE_SPECIFIER", "ERR_PACKAGE_PATH_NOT_EXPORTED",
+        "ERR_INVALID_FILE_URL_PATH", "ERR_INVALID_FILE_URL_HOST", "ERR_INVALID_URL"].includes(error.code)) return null;
+      throw error;
+    });
+    if (entry) return entry;
+  }
+  throw new Error(`No installed Playwright entry for WORLD_PLAYWRIGHT_MODULE=${JSON.stringify(specifier)}. Checked project packages and ${installed}`);
 }
 
 export function assertGameplayLens(lens, { width, height }, label, baseline) {

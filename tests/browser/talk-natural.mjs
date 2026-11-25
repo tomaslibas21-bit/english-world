@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { link, mkdir, mkdtemp, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -318,43 +318,40 @@ function observe({ hash, shorten }) {
   };
 }
 
-async function localRecordings() {
-  const roots = [path.join(root, "public/audio-es"), process.env.WORLD_AUDIO_ROOT,
-    path.join(homedir(), "puerto-colibri-voicing/audio-es")].filter(Boolean).map((base) => path.resolve(base));
+export async function localRecordings() {
+  const archives = ["", "-clerks", "-b14", "-b5", "-gruta", "-rides", "-ruins", "-stones", "-surf", "-x04"];
+  const roots = [...new Set([path.join(root, "public/audio-es"), process.env.WORLD_AUDIO_ROOT,
+    ...archives.map((suffix) => path.join(homedir(), `puerto-colibri-voicing${suffix}/audio-es`))]
+    .filter(Boolean).map((base) => path.resolve(base)))];
   const manifestPath = path.join(root, "public/audio-es/manifest.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const repairs = JSON.parse(await readFile(path.join(root, "public/audio-es/repair-versions.json"), "utf8"));
-  const files = new Map();
   async function find(key) {
-    if (files.has(key)) return files.get(key);
     assert(/^[0-9a-f]{12}$/.test(key), `Invalid audio key ${key}`);
-    let source = null;
+    const duration = manifest[key];
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    const repair = repairs[key]?.slice(0, 12) ?? null;
     for (const base of roots) {
       const file = path.join(base, `${key}.mp3`);
-      const info = await stat(file).catch((error) => {
-        if (error.code === "ENOENT") return null;
+      const bytes = await readFile(file).catch((error) => {
+        if (["ENOENT", "ENOTDIR", "EISDIR"].includes(error.code)) return null;
         throw error;
       });
-      if (info?.isFile() && info.size) {
-        const repair = repairs[key]?.slice(0, 12) ?? null;
-        const hash = createHash("sha256").update(await readFile(file)).digest("hex");
-        if (repair && hash.slice(0, 12) !== repair) continue;
-        source = { file, bytes: info.size, duration: manifest[key] ?? null, repair, hash };
-        break;
-      }
+      if (!bytes?.length) continue;
+      const hash = createHash("sha256").update(bytes).digest("hex");
+      if (repair && !hash.startsWith(repair)) continue;
+      return { bytes, source: { file, bytes: bytes.length, duration, repair, hash } };
     }
-    files.set(key, source);
-    return source;
+    return null;
   }
   for (const [actor, fixture] of Object.entries(fixtures)) {
     assert.equal(audioKey(`es_${actor}`, 1, fixture.text), fixture.key);
     assert(Math.abs(manifest[fixture.key] - fixture.duration) < 0.15, `Manifest duration for ${fixture.key}`);
   }
-  return { find, roots, manifestPath, manifest, files };
+  return { find, roots, manifestPath, manifest };
 }
 
-async function serveRecording(route, file, cors) {
-  const bytes = await readFile(file);
+async function serveRecording(route, bytes, cors) {
   const headers = { ...cors, "accept-ranges": "bytes", "cache-control": "no-store" };
   const match = /^bytes=(\d+)-(\d*)$/.exec(route.request().headers().range ?? "");
   if (!match) return route.fulfill({ contentType: "audio/mpeg", headers, body: bytes });
@@ -419,11 +416,12 @@ class Route {
       if (match && Object.hasOwn(this.recordings.manifest, match[1])) {
         const key = match[1];
         try {
-          const source = key === this.omit ? null : await this.recordings.find(key);
-          row.audioUrls.push({ key, url: url.href, local: source?.file ?? null, omitted: key === this.omit });
-          if (source) {
-            this.fulfilled.set(key, source);
-            return await serveRecording(route, source.file, cors);
+          const recording = key === this.omit ? null : this.fulfilled.get(key) ?? await this.recordings.find(key);
+          row.audioUrls.push({ key, url: url.href, local: recording?.source.file ?? null, omitted: key === this.omit });
+          if (recording) {
+            await serveRecording(route, recording.bytes, cors);
+            this.fulfilled.set(key, recording);
+            return;
           }
         } catch (error) {
           row.errors.push(errorText(error));
@@ -945,6 +943,10 @@ async function pictureRoundTrip(route) {
   assert.equal(covered.pinned["picture-npc"].actor.identity, live(talking, "mia").identity);
   const art = route.page.locator(".scene-backdrop img.on");
   assert(await art.count() && await art.evaluate((img) => img.complete && img.naturalWidth > 0), "actual local picture covers the same panel");
+  const priorities = await route.page.locator(".scene-backdrop img").evaluateAll((images) => images.map((img) =>
+    ({ active: img.classList.contains("on"), priority: img.getAttribute("fetchpriority") })));
+  assert(priorities.some(({ active }) => active) && priorities.every(({ active, priority }) => priority === (active ? null : "low")),
+    "only inactive pictures have low fetch priority");
   silent(covered.pinned["picture-npc"].actor, "picture released Mariana");
   await route.press(chip, "return from picture to 3D", { key: true });
   const back = await route.wait((f) => !f.scene.picture && f.p?.run === turn.conv.run && f.scene.mode === "talk" && f.p.listening,
@@ -954,7 +956,7 @@ async function pictureRoundTrip(route) {
   assert(Math.abs(back.scene.lens.heading - turn.scene.lens.heading) < 0.02);
   assert((back.p.gestureWeight ?? 0) <= 0.001, "return cannot restart an old gesture behind the picture");
   await route.wait((f) => f.voiceOwner !== talking.request && isSilent(f.actual.mia), "prior playback releases after picture return");
-  route.row.picture = { before: compact(turn), covered: compact(covered), back: compact(back) };
+  route.row.picture = { before: compact(turn), covered: compact(covered), back: compact(back), priorities };
 }
 
 async function cafe(route) {
@@ -1635,8 +1637,9 @@ async function collectRoute(route) {
     const opening = !seen.has(id);
     if (request.actor && !request.replay) seen.add(id);
     const intendedCue = request.actor && classifyTalk(request.text, request.zone, opening, request.step === "closing", !!request.replay);
-    const source = request.key === route.omit ? null : await route.recordings.find(request.key);
-    return { ...request, intendedCue, source, delivered: route.fulfilled.has(request.key), audible: route.playheads.get(request.id) ?? null };
+    const fulfilled = route.fulfilled.get(request.key);
+    const recording = request.key === route.omit ? null : fulfilled ?? await route.recordings.find(request.key);
+    return { ...request, intendedCue, source: recording?.source ?? null, delivered: !!fulfilled, audible: route.playheads.get(request.id) ?? null };
   }));
   if (route.film && row.id !== "x13-por-donde") route.require("first-voiced");
   row.labels = route.labels;
@@ -1657,7 +1660,10 @@ async function collectRoute(route) {
       if (r.knownActor && !["a", "yaxche"].includes(r.actor)) assert.equal(r.voice, `es_${r.actor}`, r.text);
     }
     if (r.delivered) {
+      assert.equal(r.asked, audioKey(r.voice, r.speed, r.text));
       assert.equal(r.key, audioKey(r.voice, r.speed, r.recordedText));
+      assert.equal(r.nameFallback, r.asked !== r.key);
+      assert.equal(r.duration, r.source.duration, "live manifest duration");
       assert.equal(r.repair, r.source.repair, "live repair inventory");
       assert(row.audioUrls.some((event) => event.key === r.key && event.local === r.source.file
         && (!r.repair || new URL(event.url).searchParams.get("v") === r.repair)), "actual normal recording URL");
@@ -1732,62 +1738,96 @@ async function runRoute(browser, options, list, size, id, action, { subcase = nu
   await options.persist();
 }
 
-async function compareLayers(report, parent, out) {
-  const peer = report.layer === "en" ? "lt" : "en";
-  const other = path.join(parent, `talk-natural-pc-${peer}`);
-  const folders = await readdir(other).catch((error) => {
-    if (error.code === "ENOENT") return [];
-    throw error;
-  });
-  let previous, previousFile;
-  for (const folder of folders.sort().reverse()) {
-    const file = path.join(other, folder, "results.json");
-    const candidate = await readFile(file, "utf8").then(JSON.parse).catch((error) => {
-      if (error.code === "ENOENT" || error instanceof SyntaxError) return null;
-      throw error;
-    });
-    if (candidate?.revision !== report.revision || candidate.layer !== peer || candidate.rows?.length !== 16) continue;
-    previous = candidate;
-    previousFile = file;
-    break;
-  }
-  const comparison = { peer, source: previousFile ?? null, status: "awaiting matching learner invocation", rows: [], issues: [] };
-  if (previous) {
-    const cases = new Map(previous.rows.map((row) => [`${row.size}/${row.id}`, row]));
-    for (const row of report.rows) {
-      const id = `${row.size}/${row.id}`, otherRow = cases.get(id), issues = [];
-      try {
-        assert(otherRow, "matching input and route are present");
-        if (!row.pass || !otherRow.pass) issues.push("One or both routes failed their local assertions");
-        assert.equal(row.seed, otherRow.seed);
-        assert.notEqual(row.identity.lang, otherRow.identity.lang);
-        assert.deepEqual(row.identity.targetLanguages, otherRow.identity.targetLanguages);
-        const delivery = (r) => r.utterances.map(({ actor, line, text, voice, speed, key, intendedCue }) =>
-          [actor, line, text, voice, speed, key, intendedCue]);
-        assert.deepEqual(delivery(row), delivery(otherRow), "same authored Spanish, voice keys and mounted roles at the same seed");
-        const helper = (r) => r.ui?.filter(([lang]) => lang === r.layer).map(([, text]) => text).filter(Boolean);
-        assert(helper(row)?.length && helper(otherRow)?.length && JSON.stringify(helper(row)) !== JSON.stringify(helper(otherRow)),
-          "learner gloss or interface changes with the layer");
-        for (const [i, f] of row.peaks.entries()) {
-          const p = otherRow.peaks[i];
-          assert(p && f.actor === p.actor && f.cue === p.cue && f.line === p.line && Math.abs(f.relative - p.relative) < 0.40,
-            `same intended cue and tolerant timing for ${f.cue}`);
-          for (const joint of ["head", "body", "upperL", "upperR", "foreL", "foreR"]) {
-            assert(distance(f.joints[joint], p.joints[joint]) < 0.35, `${f.actor} ${joint} comparable posed range`);
-          }
+function compareLayerRows(en, lt) {
+  const key = (row) => `${row.size}/${row.id}`;
+  const cases = new Map(lt.rows.map((row) => [key(row), row]));
+  return en.rows.map((row) => {
+    const id = key(row), otherRow = cases.get(id), issues = [];
+    try {
+      assert(otherRow, "matching input and route are present");
+      if (!row.pass || !otherRow.pass) issues.push("One or both routes failed their local assertions");
+      assert.equal(row.seed, otherRow.seed);
+      assert.equal(row.input, otherRow.input);
+      assert.deepEqual([row.identity.lang, otherRow.identity.lang], ["en", "lt"]);
+      assert.deepEqual(row.identity.targetLanguages, otherRow.identity.targetLanguages);
+      const delivery = (r) => r.utterances.map(({ actor, line, text, voice, speed, key, intendedCue }) =>
+        [actor, line, text, voice, speed, key, intendedCue]);
+      assert.deepEqual(delivery(row), delivery(otherRow), "same authored Spanish, voice keys and mounted roles at the same seed");
+      const helper = (r) => r.ui?.filter(([lang]) => lang === r.layer).map(([, text]) => text).filter(Boolean);
+      assert(helper(row)?.length && helper(otherRow)?.length && JSON.stringify(helper(row)) !== JSON.stringify(helper(otherRow)),
+        "learner gloss or interface changes with the layer");
+      assert.equal(row.peaks.length, otherRow.peaks.length, "same number of measured peaks");
+      for (const [i, f] of row.peaks.entries()) {
+        const p = otherRow.peaks[i];
+        assert(p && f.actor === p.actor && f.cue === p.cue && f.line === p.line && Math.abs(f.relative - p.relative) < 0.40,
+          `same intended cue and tolerant timing for ${f.cue}`);
+        for (const joint of ["head", "body", "upperL", "upperR", "foreL", "foreR"]) {
+          assert(distance(f.joints[joint], p.joints[joint]) < 0.35, `${f.actor} ${joint} comparable posed range`);
         }
-        if (row.gap) {
-          assert.equal(row.gap.key, otherRow.gap?.key);
-          assert(Math.abs(row.gap.closed.media.time - otherRow.gap.closed.media.time) < 0.13, "same measured internal pause");
-        }
-      } catch (error) {
-        issues.push(error.message);
       }
-      comparison.rows.push({ id, pass: !issues.length, issues });
+      assert.equal(!!row.gap, !!otherRow.gap, "same measured pause evidence");
+      if (row.gap) {
+        assert.equal(row.gap.key, otherRow.gap.key);
+        assert(Math.abs(row.gap.closed.media.time - otherRow.gap.closed.media.time) < 0.13, "same measured internal pause");
+      }
+    } catch (error) {
+      issues.push(error.message);
     }
-    comparison.status = comparison.rows.length === 16 && comparison.rows.every((row) => row.pass) ? "pass" : "fail";
+    return { id, pass: !issues.length, issues };
+  });
+}
+
+const readReport = (file) => readFile(file, "utf8").then(JSON.parse).catch((error) => {
+  if (error.code === "ENOENT") return null;
+  throw error;
+});
+const linkOnce = (from, to) => link(from, to).then(() => true).catch((error) => {
+  if (error.code === "EEXIST") return false;
+  throw error;
+});
+const complete = (report) => report?.finished && report.inventoryComplete && report.rows.length === 16;
+
+export async function compareLayers(file, parent) {
+  const current = await readReport(file);
+  const { out, pair, revision, candidate, film, layer } = current;
+  const localFile = path.join(out, "layers.json");
+  const peer = layer === "en" ? "lt" : "en";
+  const comparison = { pair, revision, candidate, film, peer, source: null, signOff: false,
+    status: "awaiting matching learner invocation", rows: [], issues: [] };
+  if (!complete(current)) comparison.status = "incomplete";
+  else if (!pair) comparison.status = "no paired run id";
+  else {
+    const directory = path.join(parent, "talk-natural-pc-pairs", pair, revision, film ? "film" : "plain");
+    const snapshot = (name) => path.join(directory, `${name}.json`);
+    comparison.pairedFile = path.join(directory, "layers.json");
+    await mkdir(directory, { recursive: true });
+    // Freeze the completed report before results.json is replaced with the invocation verdict.
+    if (!await linkOnce(file, snapshot(layer))) {
+      comparison.status = "fail";
+      comparison.issues.push(`The ${layer} slot is already in use. Use a fresh pair id for another attempt.`);
+    } else {
+      const previous = await readReport(snapshot(peer));
+      if (previous) {
+        if (!complete(previous) || previous.layer !== peer || previous.pair !== pair || previous.revision !== revision
+            || previous.candidate !== candidate || previous.film !== film) {
+          comparison.status = "fail";
+          comparison.issues.push("Peer evidence is incomplete or from a different candidate or run.");
+        } else {
+          const [en, lt] = layer === "en" ? [current, previous] : [previous, current];
+          const rows = compareLayerRows(en, lt);
+          const status = rows.length === 16 && rows.every((row) => row.pass) ? "pass" : "fail";
+          const signOff = status === "pass" && en.pass === true && lt.pass === true;
+          const paired = { pair, revision, candidate, film, status, signOff, rows,
+            sources: { en: snapshot("en"), lt: snapshot("lt") }, localPass: { en: en.pass, lt: lt.pass } };
+          const pending = path.join(out, "paired-layers.json");
+          await json(pending, paired);
+          await linkOnce(pending, comparison.pairedFile);
+          Object.assign(comparison, { source: snapshot(peer), status, signOff, rows });
+        }
+      }
+    }
   }
-  await json(path.join(out, "layers.json"), comparison);
+  await json(localFile, comparison);
   return comparison;
 }
 
@@ -1800,7 +1840,10 @@ async function main() {
   const args = new Set(process.argv.slice(2));
   assert([...args].every((arg) => ["--film", "--plain"].includes(arg)) && args.size <= 1,
     "Usage: node tests/browser/talk-natural.mjs [--film | --plain]");
-  const film = !args.has("--plain");
+  const pair = process.env.WORLD_TALK_PAIR || null;
+  assert(!pair || /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(pair), "WORLD_TALK_PAIR must be a run id without path separators");
+  // The chain invokes the same entry without flags, with SHOTS_OUT only on the first pass.
+  const film = args.has("--film") || !args.has("--plain") && (!pair || !!process.env.SHOTS_OUT);
   const parent = path.join(root, ".b6/audit");
   const home = path.join(parent, `talk-natural-pc-${layer}`);
   await mkdir(home, { recursive: true });
@@ -1808,16 +1851,28 @@ async function main() {
   await mkdir(path.join(out, "traces"));
   const shots = process.env.WORLD_SHOTS ? path.resolve(process.env.WORLD_SHOTS) : null;
   const baseline = path.resolve(process.env.WORLD_FRAMING_BASELINE ?? path.join(parent, `before-natural-pc-${layer}`, "results.json"));
-  const report = { pass: false, rc: null, storage, layer, edition: "es", targetLanguage: "es", url: config.url.href, out, film, shots, baseline,
-    revision: null, module: null, started: new Date().toISOString(), budgets, sizes, rows: [], subcases: [], films: [], errors: [] };
-  const persist = () => json(path.join(out, "results.json"), report);
+  const report = { pass: false, rc: null, storage, layer, edition: "es", targetLanguage: "es", url: config.url.href, out, film, shots, baseline, pair,
+    revision: null, candidate: null, module: null, started: new Date().toISOString(), budgets, sizes, rows: [], subcases: [], films: [], errors: [],
+    requestedModule: process.env.WORLD_PLAYWRIGHT_REQUESTED_MODULE ?? process.env.WORLD_PLAYWRIGHT_MODULE ?? null };
+  const file = path.join(out, "results.json");
+  const persist = async () => {
+    const pending = path.join(out, "results.pending.json");
+    await json(pending, report);
+    await rename(pending, file);
+  };
   await persist();
   console.log(`PC ${layer} natural talk evidence · ${out}`);
 
   let browser, module;
   try {
-    report.revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-    report.workingTree = execFileSync("git", ["status", "--short"], { cwd: root, encoding: "utf8" }).trim();
+    const git = (...args) => execFileSync("git", args, { cwd: root });
+    report.revision = git("rev-parse", "HEAD").toString().trim();
+    report.workingTree = git("status", "--short").toString().trim();
+    const changes = createHash("sha256").update(git("diff", "--binary", "--no-ext-diff", "HEAD", "--"));
+    const untracked = git("ls-files", "--others", "--exclude-standard", "-z").toString().split("\0").filter(Boolean).sort();
+    changes.update(JSON.stringify(untracked));
+    for (const name of untracked) changes.update(createHash("sha256").update(await readFile(path.join(root, name))).digest());
+    report.candidate = changes.digest("hex");
     module = report.module = await localPlaywright(process.env.WORLD_PLAYWRIGHT_MODULE);
     process.env.WORLD_PLAYWRIGHT_MODULE = module;
     const recordings = await localRecordings();
@@ -1851,12 +1906,6 @@ async function main() {
   if (film) {
     await writeFilmIndex(out, report.films).catch((error) => report.errors.push(errorText(error)));
   }
-  try {
-    report.comparison = await compareLayers(report, parent, out);
-    if (report.comparison.status === "fail") report.errors.push("Matching EN and LT route evidence differs. See layers.json.");
-  } catch (error) {
-    report.errors.push(errorText(error));
-  }
   if (module) {
     try {
       console.log(`START PC ${layer} full framing audit · 55 × 4 + 8 skips`);
@@ -1870,21 +1919,32 @@ async function main() {
   }
 
   const inventories = [[report.rows, 16], [report.subcases, 19], [report.films, film ? 14 : 0]];
+  report.inventoryComplete = true;
   for (const [rows, expected] of inventories) {
     if (rows.length !== expected || new Set(rows.map((r) => `${r.size}/${r.id}/${r.subcase}`)).size !== expected) {
       report.errors.push(`Expected ${expected} unique rows, got ${rows.length}`);
+      report.inventoryComplete = false;
     }
   }
   report.pass = !report.errors.length && report.framing?.pass === true
     && inventories.every(([rows]) => rows.every((row) => row.pass));
-  report.rc = report.pass ? 0 : 1;
   report.finished = new Date().toISOString();
+  report.rc = report.pass ? 0 : 1;
+  await persist();
+  try {
+    report.comparison = await compareLayers(file, parent);
+    if (report.comparison.status === "fail") report.errors.push("EN/LT parity failed. See layers.json.");
+  } catch (error) {
+    report.errors.push(errorText(error));
+  }
+  report.pass &&= !report.errors.length;
+  report.rc = report.pass ? 0 : 1;
   process.exitCode = report.rc;
   await Promise.all([persist(), writeFile(path.join(out, "rc"), `${report.rc}\n`)]);
   console.log(`${report.pass ? "PASS" : "FAIL"} PC ${layer} · ${report.rows.filter((row) => row.pass).length}/16 core · ${out}`);
 }
 
-main().catch((error) => {
+if (import.meta.main) main().catch((error) => {
   console.error(errorText(error));
   process.exitCode = 1;
 });

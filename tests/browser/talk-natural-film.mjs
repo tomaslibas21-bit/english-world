@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const json = (file, value) => writeFile(file, JSON.stringify(value, null, 2) + "\n");
@@ -90,9 +90,10 @@ export class ActingFilm {
       try {
         await mkdir(path.join(this.out, "film/audio"), { recursive: true });
         const retained = path.join(dir, file);
-        if (!recordings.has(request.key)) throw new Error("No locally fulfilled recording for this request");
-        await copyFile(request.source.file, retained);
-        if (!(await stat(retained)).size) throw new Error("Empty recording");
+        const recording = recordings.get(request.key);
+        if (!recording || recording.source.hash !== request.source.hash) throw new Error("No locally fulfilled recording for this request");
+        if (!recording.bytes.length) throw new Error("Empty recording");
+        await writeFile(retained, recording.bytes);
         clips.push({ file, startMs, stopMs, rate, pipeline, request: request.id, speaker: request.actor,
           identity: request.identity, line: request.line, lineKey: request.lineKey, key: request.key, voice: request.voice,
           speed: request.speed, text: request.text, recordedText: request.recordedText,

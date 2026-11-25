@@ -33,7 +33,7 @@ export function SceneBackdrop() {
   return (
     <div className="scene-backdrop" aria-hidden="true">
       {art.images.map((k) => (
-        <img key={k} src={sceneUrl(k)} alt="" draggable={false} className={stem === k ? "on" : ""} {...(stem === k ? {} : { fetchpriority: "low" })}
+        <img key={k} src={sceneUrl(k)} alt="" draggable={false} className={stem === k ? "on" : ""} {...(stem === k ? {} : { fetchPriority: "low" })}
           style={{ objectPosition: pos, transformOrigin: pos }} />
       ))}
     </div>

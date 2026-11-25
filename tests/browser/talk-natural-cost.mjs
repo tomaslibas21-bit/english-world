@@ -536,6 +536,7 @@ async function main() {
   const channel = process.env.WORLD_BROWSER_CHANNEL || "chromium";
   const report = {
     layer, urls, baselineRevision, profile: phone, cpuRate, channel, args, scene, save, warmMs, listeningMs, columns, turns, voicePlan,
+    requestedModule: process.env.WORLD_PLAYWRIGHT_REQUESTED_MODULE ?? process.env.WORLD_PLAYWRIGHT_MODULE ?? null,
     timeBasis: "Native RAF timestamp of the Game canvas render submission and sync performance.now() around Game.loop and renderer.render",
     frameCap: "Native Chromium RAF, no checker or app frame limiter in this route",
     host: { platform: platform(), release: release(), cpu: cpus()[0]?.model, logicalCores: cpus().length },
@@ -550,7 +551,8 @@ async function main() {
     report.candidateRevision = bundle.revision;
     const local = await recordings();
     report.recordings = Object.fromEntries([...local].map(([key, { evidence }]) => [key, evidence]));
-    const { chromium } = await import(await localPlaywright(process.env.WORLD_PLAYWRIGHT_MODULE));
+    report.module = await localPlaywright(process.env.WORLD_PLAYWRIGHT_MODULE);
+    const { chromium } = await import(report.module);
     browser = await chromium.launch({ channel, headless: true, args, timeout: 60000 });
     report.browserVersion = browser.version();
     for (let index = 0; index < 3; index++) {
