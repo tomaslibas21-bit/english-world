@@ -6,7 +6,7 @@ const LIFE = 0.55;
 
 export class Dust {
   group = new THREE.Group();
-  private puffs: { s: THREE.Sprite; m: THREE.SpriteMaterial; life: number; vx: number; vz: number }[] = [];
+  private puffs: { s: THREE.Sprite; m: THREE.SpriteMaterial; life: number; vx: number; vz: number; rolling: boolean }[] = [];
 
   constructor() {
     const c = document.createElement("canvas");
@@ -24,15 +24,18 @@ export class Dust {
       const s = new THREE.Sprite(m);
       s.visible = false;
       this.group.add(s);
-      this.puffs.push({ s, m, life: 0, vx: 0, vz: 0 });
+      this.puffs.push({ s, m, life: 0, vx: 0, vz: 0, rolling: false });
     }
   }
 
   /** A puff behind a foot at (x, z), the player moving along (dx, dz). */
-  puff(x: number, z: number, dx: number, dz: number, size = 1) {
-    const p = this.puffs.find((q) => q.life <= 0);
+  puff(x: number, z: number, dx: number, dz: number, size = 1, rolling = false) {
+    let i = 0;
+    while (i < this.puffs.length && this.puffs[i].life > 0) i++;
+    const p = this.puffs[i];
     if (!p) return;
     p.life = LIFE;
+    p.rolling = rolling;
     p.vx = -dx * 0.6 + (Math.random() - 0.5) * 0.5;
     p.vz = -dz * 0.6 + (Math.random() - 0.5) * 0.5;
     p.s.position.set(x - dx * 0.25 + (Math.random() - 0.5) * 0.25, 0.12, z - dz * 0.25 + (Math.random() - 0.5) * 0.25);
@@ -45,10 +48,17 @@ export class Dust {
     for (const p of this.puffs) { p.life = 0; p.s.visible = false; }
   }
 
-  update(dt: number) {
+  clearRolling() {
+    for (const p of this.puffs) if (p.rolling && p.life > 0) {
+      p.life = 0;
+      p.s.visible = false;
+    }
+  }
+
+  update(dt: number, reduced = false) {
     for (const p of this.puffs) {
       if (p.life <= 0) continue;
-      p.life -= dt;
+      p.life = reduced && p.rolling ? 0 : p.life - dt;
       if (p.life <= 0) { p.s.visible = false; continue; }
       const t = 1 - p.life / LIFE;
       p.s.position.x += p.vx * dt;

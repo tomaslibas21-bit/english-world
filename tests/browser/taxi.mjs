@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { tsImport } from "tsx/esm/api";
 import { assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
+import { atTaxiStand, checkSightlines, taxiSightlines, taxiStandStart } from "./taxi-stand.mjs";
 
 const { TAXI_ACCEPT, TAXI_LINES } = await tsImport("../../src/editions/es/content/taxi-lines.ts", import.meta.url);
 const variety = process.env.WORLD_VARIETY || "default";
@@ -29,7 +30,7 @@ const progress = {
   version: 1,
   profile: { name: "Test", surname: "Tester", gender: "f", lookId: "f1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
   settings: { v: 6, play: "town", quality: "low", scenes: false, volume: 0, sounds: 0, cameraFollow: true },
-  sits: {}, phrases: {}, seenIntro: {}, started: 1, place: { zone: "town", x: 121, z: -2.4, rot: Math.PI },
+  sits: {}, phrases: {}, seenIntro: {}, started: 1, place: taxiStandStart,
   coach: { done: true, run: true, view: true },
 };
 
@@ -119,19 +120,6 @@ function installSteering({ wrong = false }) {
   };
 }
 
-function atTaxiStand(routeId) {
-  const game = window.__ew.game, mode = game.modes.get("taxi");
-  const stand = game.town.parkedCars.taxi;
-  const spot = routeId ? mode.route?.start : mode.car.home;
-  if (!spot) return false;
-  const { m, mesh } = mode.car;
-  const sameHeading = Math.cos(m.heading - spot.rot) > 0.999;
-  return mesh === stand?.root && stand.instance?.parent === mesh && mesh.parent === game.rides.group
-    && Math.hypot(m.x - spot.x, m.z - spot.z) < 0.01 && sameHeading
-    && Math.hypot(mesh.position.x - spot.x, mesh.position.z - spot.z) < 0.01
-    && (routeId ? game.rides.riding === mode.car && mode.route.id === routeId : !game.rides.riding);
-}
-
 function taxiStandView() {
   const game = window.__ew.game, camera = game.rig.cam, ray = game.raycaster;
   const taxi = game.modes.get("taxi").car.mesh.position.clone().setY(0.9);
@@ -151,27 +139,6 @@ function taxiStandView() {
     }
   }
   return { taxiInFrame, canopyClear: true };
-}
-
-function taxiSightlines() {
-  const { rig } = window.__ew.game;
-  const shot = rig.taxiShot;
-  if (!shot) return { active: false };
-  return {
-    active: true, rays: rig.taxiSnapRays,
-    points: rig.taxiSightPoints(shot.subject).map((point) => ({
-      clear: shot.clear(rig.cam.position, point),
-      visible: point.clone().project(rig.cam).toArray().every((n) => Math.abs(n) < 1),
-    })),
-  };
-}
-
-function checkSightlines(view, moment) {
-  assert(view.active && view.rays >= 4 && view.rays <= 20 && view.rays % 4 === 0,
-    `${moment} uses a taxi shot selected with at most 20 rays: ${JSON.stringify(view)}`);
-  assert.equal(view.points.length, 4);
-  assert(view.points.every(({ clear, visible }) => clear && visible),
-    `${moment}: roof, rear corners and road are visible: ${JSON.stringify(view)}`);
 }
 
 function greetingLayout() {

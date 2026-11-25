@@ -1,3 +1,5 @@
+import type { Ride } from "../rides/Rides";
+
 export type CleanScreen = "menu" | "overlay";
 export interface ModeScreen { kind: CleanScreen; id: string; exitLabel?: string }
 
@@ -29,6 +31,8 @@ export interface GameMode {
   readonly cleanScreen: CleanScreen;
   readonly exitLabel?: string;
   readonly camera?: "stage" | "talk" | "follow";
+  /** The car the learner can drive in town during this mode's current phase. */
+  readonly townDrive?: Ride;
   readonly conversation?: { situation: string; label: string; option?: string };
   available?(): boolean;
   allowsRideHints?(): boolean;

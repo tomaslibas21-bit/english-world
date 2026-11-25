@@ -73,6 +73,7 @@ export class CameraRig {
     last: THREE.Vector3;
   } | null = null;
   taxiSnapRays = 0;
+  get hasTaxiShot() { return this.taxiShot !== null; }
   private manualT = 0;
   interiorBounds = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;

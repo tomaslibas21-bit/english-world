@@ -2890,7 +2890,8 @@ function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
 
 function makeClouds(group: THREE.Group, r: () => number) {
   const clouds: THREE.Group[] = [];
-  const cm = STYLED ? cloudMaterial() : new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#bcc9d4", flatShading: true });
+  // Detail-zero icosahedra already carry face normals. PC can use its plain Lambert program and keep the facets.
+  const cm = STYLED ? cloudMaterial() : new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#bcc9d4", flatShading: EDITION.id !== "es" });
   for (let i = 0; i < 14; i++) {
     const g = new THREE.Group();
     for (let k = 0; k < 4; k++) {

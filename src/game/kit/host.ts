@@ -25,6 +25,7 @@ export interface ModeHost {
   place(x: number, z: number, rot: number): void;
   updatePose(dt: number, heading: number): void;
   board(ride: Ride): boolean;
+  startTownDrive(ride: Ride): void;
   drive(dt: number, controls: Controls | null): void;
   dismount(x?: number, z?: number, rot?: number, keepParked?: boolean): void;
   snapTaxi(ride: Ride, dimensions: { width: number; length: number; height: number }): void;

@@ -1570,17 +1570,6 @@ body.scene-on .tag-layer { display: none; }
 }
 .hud:has(.brake-btn.beside) .drive-horn { right: calc(134px + env(safe-area-inset-right)); bottom: calc(107px + env(safe-area-inset-bottom)); }
 .drive-horn:active { background: #59686e; }
-.hud .drive-wind {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: .38;
-  background: repeating-conic-gradient(from 14deg at 50% 45%, transparent 0deg 24deg, #fff9 25deg 25.28deg, transparent 25.7deg 38deg);
-  mask-image: radial-gradient(ellipse 55% 55% at 50% 45%, transparent 70%, #000 98%);
-  animation: drive-wind .3s alternate infinite ease-in-out;
-}
-@keyframes drive-wind { from { opacity: .19; } to { opacity: .38; } }
-@media (prefers-reduced-motion: reduce) { .hud .drive-wind { animation: none; } }
 .cave-guide { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
 .cave-guide .arrow { width: 16px; height: 16px; flex: none; }
 .cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }

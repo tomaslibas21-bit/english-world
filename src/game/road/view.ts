@@ -12,7 +12,8 @@ import { ROAD_LOOK } from "./look";
 import { Props } from "./props";
 import { Ranges } from "./ranges";
 import { DRIVE_SECONDS, FIRST_GATE } from "./run";
-import { projectedCar, RoadChase } from "./chase";
+import { projectedCar, ROAD_CAMERA_SECONDS, RoadChase } from "./chase";
+import type { SpeedFeel } from "../rides/speedFeel";
 import type { Pose } from "./ghost";
 
 const dummy = new THREE.Object3D();
@@ -54,7 +55,6 @@ function makeClouds() {
 const DUST = 28;
 const BURST = 44;
 const CONFETTI = ["#ffd166", "#76ffda", "#ff8a5c"];
-const ROAD_CAMERA_SECONDS = 1.6;
 const VERGE_FADE_SECONDS = 0.75;
 const LOCAL_ROTATION = exitRotation.clone().invert();
 export type RoadEnvironment = {
@@ -115,6 +115,10 @@ export class RoadView {
   private ghostMaterials: THREE.Material[] = [];
   readonly models: Promise<void>;
   private readonly chase = new RoadChase();
+  private readonly roofHeight: number;
+  private readonly carHalfWidth: number;
+  private readonly roofWorld = new THREE.Vector3();
+  private readonly townLight = new THREE.Vector3();
   private readonly carCorners: THREE.Vector3[];
   private readonly worldCorners: THREE.Vector3[];
   private town?: RoadEnvironment;
@@ -122,12 +126,16 @@ export class RoadView {
   private returnRider?: () => void;
   private seam?: {
     age: number; camera: THREE.PerspectiveCamera; carRotation: THREE.Quaternion;
-    carY: number; rider: THREE.Object3D; reference?: DepartureFrame; framing?: ReturnType<typeof projectedCar>;
+    carY: number; rider: THREE.Object3D; reference?: DepartureFrame;
+    framing: ReturnType<typeof projectedCar>; cleanFraming: ReturnType<typeof projectedCar>;
+    fovDelta: number; offsetY: number; amplitude: number; presented?: boolean; reduced?: boolean;
   };
   private continuity?: { town: DepartureFrame; road: DepartureFrame };
   private vergeFade?: { color: THREE.BufferAttribute; original: Float32Array; count: number };
-  private chaseCenter = new THREE.Vector3();
-  private cameraMotion = { distance: 0, lift: 0, pace: 0, time: 0, dt: 0 };
+  private readonly chaseCenter = new THREE.Vector3();
+  private readonly cameraMotion = { distance: 0, lift: 0, time: 0, dt: 0 };
+  speedFovDelta = 0;
+  shakeAmplitude = 0;
 
   constructor(mesh: THREE.Object3D, size: { width: number; length: number }, private model: CarModelEntry) {
     this.scene.fog = this.fog;
@@ -143,6 +151,8 @@ export class RoadView {
     car.position.set(0, 0, 0);
     car.rotation.set(0, 0, 0);
     const { min, max } = new THREE.Box3().setFromObject(car);
+    this.roofHeight = max.y;
+    this.carHalfWidth = (max.x - min.x) / 2;
     this.carCorners = [min.x, max.x].flatMap((x) => [min.y, max.y].flatMap((y) => [min.z, max.z]
       .map((z) => new THREE.Vector3(x, y, z))));
     this.worldCorners = this.carCorners.map((corner) => corner.clone());
@@ -189,7 +199,7 @@ export class RoadView {
     this.blendTownLight(1);
   }
 
-  depart(source: THREE.Object3D, rider: THREE.Object3D, camera: THREE.PerspectiveCamera, width: number, height: number) {
+  depart(source: THREE.Object3D, rider: THREE.Object3D, camera: THREE.PerspectiveCamera, width: number, height: number, feel?: SpeedFeel) {
     camera.updateMatrixWorld(true);
     source.updateWorldMatrix(true, true);
     rider.updateWorldMatrix(true, false);
@@ -206,14 +216,32 @@ export class RoadView {
       if (current && road) road.quaternion.copy(current.quaternion);
     });
     this.chaseCenter.copy(this.car.position);
+    this.chase.tallBody = this.roofHeight >= 1.6;
     this.car.updateMatrixWorld(true);
-    const reference = departureFrame(source, rider, townCamera, this.roof(source), this.asphalt(source), width, height, true);
+    const reference = departureFrame(source, rider, townCamera, this.roof(source), this.asphalt(), width, height, true);
+    const baseFov = feel?.baseFov ?? camera.fov;
+    const fovDelta = camera.fov - baseFov, offsetY = feel?.townOffsetY ?? 0;
+    this.updateCorners();
+    const roof = this.roof(this.car, this.roofWorld);
+    // The solver works from an unshaken shot. The final draw adds the inherited vertical offset once.
+    const presentedY = localCamera.position.y;
+    localCamera.position.y -= offsetY;
+    localCamera.updateMatrixWorld(true);
+    const framing = projectedCar(localCamera, roof, this.worldCorners);
+    localCamera.fov = baseFov;
+    localCamera.updateProjectionMatrix();
+    const cleanFraming = fovDelta ? projectedCar(localCamera, roof, this.worldCorners) : framing;
+    localCamera.fov = camera.fov;
+    localCamera.position.y = presentedY;
+    localCamera.updateProjectionMatrix();
+    localCamera.updateMatrixWorld(true);
     const position = this.car.worldToLocal(rider.getWorldPosition(new THREE.Vector3()).applyMatrix4(townToExit));
     const rotation = rider.getWorldQuaternion(new THREE.Quaternion()).premultiply(LOCAL_ROTATION)
       .premultiply(this.car.quaternion.clone().invert());
     this.seatPlayer(rider, position, rotation);
     this.seam = { age: 0, camera: localCamera,
-      carRotation: this.car.quaternion.clone(), carY: this.car.position.y, rider, reference };
+      carRotation: this.car.quaternion.clone(), carY: this.car.position.y, rider, reference,
+      framing, cleanFraming, fovDelta, offsetY, amplitude: feel?.townAmplitude ?? 0 };
   }
 
   seatPlayer(rider: THREE.Object3D, position: THREE.Vector3, rotation: THREE.Quaternion) {
@@ -235,13 +263,21 @@ export class RoadView {
     return rider && { position: rider.position.clone(), rotation: rider.quaternion.clone() };
   }
 
-  private roof(car: THREE.Object3D) {
-    return car.localToWorld(new THREE.Vector3(0, Math.max(...this.carCorners.map((p) => p.y)), 0));
+  private roof(car: THREE.Object3D, out = new THREE.Vector3()) {
+    return car.localToWorld(out.set(0, this.roofHeight, 0));
   }
 
-  private asphalt(source?: THREE.Object3D) {
-    const x = source ? source.getWorldPosition(new THREE.Vector3()).applyMatrix4(townToExit).x : this.chaseCenter.x;
-    return point(this.cameraMotion.distance + 1.5, x > 0 ? -2.8 : 2.8, 0.02);
+  private asphalt() {
+    // Both terrains share this cross-section. Sample beside the body, toward the middle of the road.
+    const x = this.chaseCenter.x, side = x > 0 ? -1 : 1;
+    return point(0, x + side * (this.carHalfWidth + 0.65));
+  }
+
+  private updateCorners() {
+    this.car.updateMatrix();
+    for (let i = 0; i < this.carCorners.length; i++) {
+      this.worldCorners[i].copy(this.carCorners[i]).applyMatrix4(this.car.matrix);
+    }
   }
 
   get hasSeatedPlayer() { return !!this.rider; }
@@ -286,7 +322,7 @@ export class RoadView {
       if (town.fog) this.fog.color.lerp(town.fog.color, mix);
       this.sun.color.lerp(town.sun.color, mix);
       this.sun.intensity = THREE.MathUtils.lerp(this.sun.intensity, town.sun.intensity, mix);
-      this.sun.position.set(-40, 62, 34).lerp(town.sun.position.clone().sub(town.sun.target.position).applyQuaternion(LOCAL_ROTATION), mix);
+      this.sun.position.set(-40, 62, 34).lerp(this.townLight.copy(town.sun.position).sub(town.sun.target.position).applyQuaternion(LOCAL_ROTATION), mix);
       this.fill.color.lerp(town.hemi.color, mix);
       this.fill.groundColor.lerp(town.hemi.groundColor, mix);
       this.fill.intensity = THREE.MathUtils.lerp(this.fill.intensity, town.hemi.intensity, mix);
@@ -377,10 +413,9 @@ export class RoadView {
 
   passenger(root: THREE.Object3D) { this.car.add(root); }
 
-  pose(pose: Pose, ghost: Pose | undefined, pace: number, drift: boolean, wobble: number, time: number, dt: number, boost = false, speed = 0) {
+  pose(pose: Pose, ghost: Pose | undefined, drift: boolean, wobble: number, time: number, dt: number, boost = false, speed = 0) {
     const [s, lateral, lift, steer] = pose;
-    const fraction = Math.min(1.2, pace);
-    this.chaseCenter.copy(point(s, lateral, lift));
+    point(s, lateral, lift, this.chaseCenter);
     this.car.position.copy(this.chaseCenter);
     this.car.position.x += Math.sin(time * 29) * wobble * 0.23;
     this.car.rotation.set(lift * -0.095, course(s) + steer, steer * 0.13 + Math.sin(time * 27) * wobble * 0.11);
@@ -389,15 +424,15 @@ export class RoadView {
       seam.age += dt;
       const mix = THREE.MathUtils.smoothstep(seam.age, 0, ROAD_CAMERA_SECONDS);
       this.car.position.y += seam.carY * (1 - mix);
-      this.car.quaternion.copy(seam.carRotation.clone().slerp(this.car.quaternion, mix));
+      this.car.quaternion.slerp(seam.carRotation, 1 - mix);
     }
-    this.shadow.position.copy(point(s, lateral, 0.045));
+    point(s, lateral, 0.045, this.shadow.position);
     this.shadow.rotation.y = this.car.rotation.y;
     this.shadow.material.opacity = 0.27 / (1 + lift);
 
     this.ghost.visible = !!ghost && Math.abs(ghost[0] - s) < 105;
     if (ghost && this.ghost.visible) {
-      this.ghost.position.copy(point(ghost[0], ghost[1], ghost[2] + 0.06));
+      point(ghost[0], ghost[1], ghost[2] + 0.06, this.ghost.position);
       this.ghost.rotation.y = course(ghost[0]) + ghost[3];
     }
     this.sparks.count = drift || boost ? 22 : 0;
@@ -427,7 +462,10 @@ export class RoadView {
     this.sky.update(dt, this.camera.position);
     this.ranges.update(s);
     spinCarWheels(this.car, this.model, speed * dt);
-    this.cameraMotion = { distance: s, lift, pace: fraction, time, dt };
+    this.cameraMotion.distance = s;
+    this.cameraMotion.lift = lift;
+    this.cameraMotion.time = time;
+    this.cameraMotion.dt += dt;
     // The clouds keep their place in the sky and drift a little.
     this.clouds.position.set(Math.sin(time * 0.02) * 14, 0, -s);
   }
@@ -460,25 +498,55 @@ export class RoadView {
     if (mix === 1) this.vergeFade = undefined;
   }
 
-  render(renderer: Pick<THREE.WebGLRenderer, "render">, width: number, height: number, gate: Gate | undefined) {
-    const { distance, lift, pace, time, dt } = this.cameraMotion;
-    this.car.updateMatrix();
-    this.worldCorners.forEach((corner, i) => corner.copy(this.carCorners[i]).applyMatrix4(this.car.matrix));
-    if (this.camera.view?.enabled) this.camera.clearViewOffset();
-    this.chase.update(this.camera, this.chaseCenter, distance, lift, pace, time, dt, width, height, this.worldCorners, gate?.crossed ? undefined : gate);
+  render(renderer: Pick<THREE.WebGLRenderer, "render">, width: number, height: number, gate: Gate | undefined, feel?: SpeedFeel) {
+    const { distance, lift, time, dt } = this.cameraMotion;
+    this.cameraMotion.dt = 0;
+    this.updateCorners();
     const seam = this.seam;
+    if (feel?.reducedMotion) feel.restoreTownPose();
+    const mix = seam ? THREE.MathUtils.smoothstep(seam.age, 0, ROAD_CAMERA_SECONDS) : 1;
+    if (mix > 0 || !seam?.presented) {
+      if (this.camera.view?.enabled) this.camera.clearViewOffset();
+      this.chase.update(this.camera, this.chaseCenter, distance, lift, feel?.visualPace ?? 0, time, dt,
+        width, height, this.worldCorners, gate?.crossed ? undefined : gate, feel?.visualAmplitude);
+    }
+    let offsetY = this.chase.shakeY;
+    this.speedFovDelta = this.chase.speedFovDelta;
+    this.shakeAmplitude = this.chase.shakeAmplitude;
     if (seam) {
-      const mix = THREE.MathUtils.smoothstep(seam.age, 0, ROAD_CAMERA_SECONDS);
+      const reduced = !feel?.townPoseHeld;
+      const inheritedFov = reduced ? 0 : seam.fovDelta;
+      const inheritedY = reduced ? 0 : seam.offsetY;
+      const inheritedAmplitude = reduced ? 0 : seam.amplitude;
+      const startFov = seam.camera.fov - (seam.fovDelta - inheritedFov);
       if (mix === 0) {
-        this.camera.copy(seam.camera, false);
-        this.camera.updateMatrixWorld(true);
-        seam.framing = projectedCar(this.camera, this.roof(this.car), this.worldCorners);
-      } else if (mix < 1 && seam.framing) {
-        this.chase.settle(this.camera, seam.camera, seam.framing, this.roof(this.car), this.worldCorners, mix, width, height);
+        if (!seam.presented) this.camera.copy(seam.camera, false);
+        if (!seam.presented || seam.reduced !== reduced) {
+          this.camera.fov = startFov;
+          this.camera.position.y = seam.camera.position.y - (seam.offsetY - inheritedY);
+          this.camera.updateProjectionMatrix();
+          this.camera.updateMatrixWorld(true);
+        }
+        seam.presented = true;
+        seam.reduced = reduced;
+        offsetY = 0;
+        this.speedFovDelta = inheritedFov;
+        this.shakeAmplitude = inheritedAmplitude;
+      } else if (mix < 1) {
+        const framing = reduced ? seam.cleanFraming : seam.framing;
+        this.chase.settle(this.camera, seam.camera, framing, this.roof(this.car, this.roofWorld),
+          this.worldCorners, mix, seam.age, width, height, startFov);
+        offsetY = THREE.MathUtils.lerp(inheritedY, offsetY, mix);
+        this.speedFovDelta = THREE.MathUtils.lerp(inheritedFov, this.speedFovDelta, mix);
+        this.shakeAmplitude = THREE.MathUtils.lerp(inheritedAmplitude, this.shakeAmplitude, mix);
       }
       this.blendTownLight(1 - THREE.MathUtils.smoothstep(seam.age, 0, 3));
       this.fadeVerge(seam.age);
       if (seam.age >= 3) this.seam = undefined;
+    }
+    if (offsetY) {
+      this.camera.position.y += offsetY;
+      this.camera.updateMatrixWorld(true);
     }
     this.throwPaper(time, width, height);
     this.sky.mesh.position.copy(this.camera.position);

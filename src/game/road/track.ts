@@ -100,8 +100,8 @@ function wire(s0: number) {
   return g;
 }
 
-export function point(s: number, x = 0, y = 0) {
-  return new THREE.Vector3(center(s) + x, height(s) + y, -s);
+export function point(s: number, x = 0, y = 0, out = new THREE.Vector3()) {
+  return out.set(center(s) + x, height(s) + y, -s);
 }
 
 export function ribbon(s0: number, length: number, lo: number, hi: number, y: number, steps: number) {

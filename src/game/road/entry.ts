@@ -4,21 +4,26 @@ import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import type { Controls } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
+import type { SpeedFeel } from "../rides/speedFeel";
 import { SIDEWALK, WORLD } from "../world/layout";
-import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
+import { CREST_DISTANCE, exitCoordinates, roadCenter } from "../world/roadExit";
 import type { RoadEnvironment } from "./view";
 import type { PreparedRoad, RoadMode } from "./mode";
 import type { PlayWay } from "./save";
 import type { RoadOpening } from "./track";
 
 export type WalkEdge = { x: number; z: number; inward: number };
+/** Where the town camera looks on the way out: the road's bend this far past the crest (m). */
+const CREST_AIM = 40;
 export interface RoadHost extends ModeHost {
   environment(): RoadEnvironment;
   roadOpening(): RoadOpening | undefined;
   roadSign(): Object3D | undefined;
   viewport(): { width: number; height: number };
   approach(approaching: boolean): void;
+  holdTownPose(): void;
   clearTownHud(): void;
+  speedFeel(acquire?: () => boolean): SpeedFeel | undefined;
   returnCar(car: Ride, onFoot: boolean): void;
   deferLift(): void;
 }
@@ -66,10 +71,13 @@ export class RoadEntry implements GameMode {
   private onStrip = false;
   private outwardIntent = false;
   private warm = false;
+  private aim = 0;
 
   constructor(private host: RoadHost) {}
   get active() { return !!this.pending || !!this.mode?.active; }
   get inStrip() { return this.onStrip; }
+  /** Town yaw (rad) toward the bend past the crest while the car heads out, 0 elsewhere (Game eases it, phones only). */
+  get crestAim() { return this.aim; }
   leaveStrip() { this.cancelPreparation(); }
   get modal() { return !!this.pending; }
 
@@ -107,6 +115,7 @@ export class RoadEntry implements GameMode {
     this.prepared?.dispose();
     this.prepared = undefined;
     this.failed = this.onStrip = this.outwardIntent = this.warm = false;
+    this.aim = 0;
     this.host.approach(false);
   }
 
@@ -125,14 +134,18 @@ export class RoadEntry implements GameMode {
   }
 
   openEdge(car: Ride, controls: Controls) {
-    if (car !== this.aboard || this.active) return;
+    if (car !== this.aboard || this.active) { this.aim = 0; return; }
     const m = car.m, { s, x } = exitCoordinates(m.x, m.z);
     const facingOut = Math.cos(m.heading - ROAD_EDITION.edge.outward) > 0.75;
     const reversing = controls.throttle < -0.05 || m.speed < -0.1;
     if (s < -CREST_DISTANCE - m.spec.half - 0.5) this.onStrip = this.outwardIntent = false;
     const headingOut = facingOut && !reversing;
-    this.host.approach(headingOut && (this.onStrip || (m.speed > 1 && s > -CREST_DISTANCE - 30
-      && Math.abs(x) < ROAD_EDITION.edge.width / 2 - m.spec.wide)));
+    const approaching = headingOut && (this.onStrip || (m.speed > 1 && s > -CREST_DISTANCE - 30
+      && Math.abs(x) < ROAD_EDITION.edge.width / 2 - m.spec.wide));
+    this.host.approach(approaching);
+    // Exit +x is a smaller town yaw. Turn in over the strip so the crest frame shows the far side of the bend.
+    const k = Math.min(1, Math.max(0, (s + CREST_DISTANCE + 10) / (CREST_DISTANCE - 4)));
+    this.aim = approaching ? -Math.atan2(roadCenter(CREST_AIM) - x, CREST_AIM - s) * k * k * (3 - 2 * k) : 0;
     if (headingOut && this.host.canStart() && leavingByRoad(car)) {
       if (!this.onStrip && (this.failed || this.prepared?.failed)) this.prefetch(car);
       this.onStrip = this.outwardIntent = true;
