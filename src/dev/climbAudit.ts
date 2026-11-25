@@ -8,6 +8,7 @@
 import type { Colliders } from "../game/world/util";
 import { Ledges, CLIMB, STEP, SLOPE, TOE } from "../game/ledges";
 import { Hop } from "../game/movement";
+import { SLATE_COVE, inSlateCove } from "../game/world/slateCovePlan";
 import { floorY, SHORE } from "../game/water";
 
 export interface FreshGround { x0: number; z0: number; x1: number; z1: number; area: number; out: "jump" | "flip" | "stuck" }
@@ -31,7 +32,8 @@ export interface ClimbReport {
 type Area = { minX: number; maxX: number; minZ: number; maxZ: number };
 /** `open`: what the town opens beyond its bounds (Puerto Colibrí's clearing round the cenote): inside as well. */
 export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [number, number], c = 0.25, open: Area[] = []): ClimbReport {
-  const pad = Math.max(8, ...open.map((o) => Math.max(bounds.minX - o.minX, o.maxX - bounds.maxX, bounds.minZ - o.minZ, o.maxZ - bounds.maxZ) + 8));
+  const cove = col.boxes.some((wall) => wall.tag === "cove-edge");
+  const pad = Math.max(cove ? bounds.minX - SLATE_COVE.minX + 8 : 8, ...open.map((o) => Math.max(bounds.minX - o.minX, o.maxX - bounds.maxX, bounds.minZ - o.minZ, o.maxZ - bounds.maxZ) + 8));
   const x0 = bounds.minX - pad, z0 = bounds.minZ - pad;
   const nx = Math.ceil((bounds.maxX + pad - x0) / c), nz = Math.ceil((bounds.maxZ + pad - z0) / c), N = nx * nz;
   const WALL = 1e9;
@@ -113,7 +115,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
   const best = Hop.TOP + TOE;
   // with every move, and with none (walking only: the pieces are in the way)
   const whole = flood(s, best, 6), all = whole.seen;
-  const out = (x: number, z: number) => (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) && !open.some((o) => x >= o.minX && x <= o.maxX && z >= o.minZ && z <= o.maxZ);
+  const out = (x: number, z: number) => (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) && !(cove && inSlateCove(x, z)) && !open.some((o) => x >= o.minX && x <= o.maxX && z >= o.minZ && z <= o.maxZ);
   const plain = (() => {
     const seen = new Uint8Array(N), queue = new Int32Array(N);
     let head = 0, tail = 0;

@@ -497,10 +497,9 @@ function Minimap({ w, h }: Screen) {
   const card = useRef<HTMLDivElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
-  // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
-  // many lines as it needs) and unfolds again at the door. The frame glides between the two shapes, so indoors it
-  // takes the card's own size, measured here (styles.css ".minimap").
-  const inside = mm.zone !== "town";
+  // Town rooms fold the round map into a place label. The cave has its own ground plan.
+  const region = mm.zone === "gruta" ? mm.zone : game?.mapRegion?.(mm.px, mm.pz);
+  const inside = mm.zone !== "town" && region !== "gruta";
   const place = useRef("");
   if (inside) place.current = zoneName;
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
@@ -531,21 +530,22 @@ function Minimap({ w, h }: Screen) {
     const c = ref.current;
     const g = game?.groundCanvas;
     // indoors the last picture of the town stays on the canvas while it fades out
-    if (!c || !g || mm.zone !== "town") return;
+    if (!c || !g || inside) return;
     const x = c.getContext("2d")!;
     const S = 220;
     c.width = S; c.height = S;
     x.clearRect(0, 0, S, S);
     const PPM = g.width / (WORLD.maxX - WORLD.minX);
-    const view = 90; // metres across
+    const view = region === "gruta" ? 52 : region === "slate-cove" ? 42 : 90;
     const sx = (mm.px - WORLD.minX) * PPM - (view / 2) * PPM;
     const sz = (mm.pz - (SEA_Z - 2)) * PPM - (view / 2) * PPM;
     x.fillStyle = "#3f8fb5"; x.fillRect(0, 0, S, S);
     // (beyond the town's own picture: the sea to the north, grass everywhere else)
     { const shore = ((SEA_Z + 1 - mm.pz) / view + 0.5) * S; if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); } }
-    x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    if (mm.zone === "town") x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    game?.drawRegionMap?.(x, mm.px - view / 2, mm.pz - view / 2, S / view);
     const island = LIGHTHOUSE_ISLAND;
-    if (island && Math.abs(island.center.x - mm.px) < view / 2 + 20 && Math.abs(island.center.z - mm.pz) < view / 2 + 12) {
+    if (mm.zone === "town" && island && Math.abs(island.center.x - mm.px) < view / 2 + 20 && Math.abs(island.center.z - mm.pz) < view / 2 + 12) {
       drawIslandMap(x, island, mm.px - view / 2, mm.pz - view / 2, S / view);
     }
     // target
@@ -557,15 +557,15 @@ function Minimap({ w, h }: Screen) {
       x.beginPath(); x.arc(cx, cz, inside ? 9 : 7, 0, Math.PI * 2); x.fill(); x.stroke();
     }
     // what one can take: the boats and the convertibles, where they are now
-    if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
+    if (mm.zone === "town" && game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
     // player arrow
     x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(0, -12); x.lineTo(9, 10); x.lineTo(0, 5); x.lineTo(-9, 10); x.closePath(); x.stroke(); x.fill();
     x.restore();
-  }, [mm]);
+  }, [mm, inside, region]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <div data-map={region} data-gates={mm.gates} className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
       onClick={() => useStore.getState().setHud({ panel: "map" })}
       title="Žemėlapis (M)">

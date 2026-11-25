@@ -56,6 +56,7 @@ export class CameraRig {
   mode: CamMode = "follow";
   yaw = Math.PI;            // camera behind the player looking north by default
   pitch = FOLLOW.pitch;
+  homePitch = FOLLOW.pitch;
   dist = FOLLOW.dist;
   target = new THREE.Vector3();
   private curPos = new THREE.Vector3();
@@ -490,10 +491,10 @@ export class CameraRig {
           if (this.standYaw !== null && Math.abs(angleDiff(this.standYaw, this.yaw)) < 0.06) this.standYaw = null;
           if (this.standYaw === null) {
             const b = this.bestArm(this.yaw);
-            if (b.l < 4 || b.p > FOLLOW.pitch + 0.4) {
+            if (b.l < 4 || b.p > this.homePitch + 0.4) {
               for (const o of STAND_TRIES) {
                 const c = this.bestArm(this.yaw + o);
-                if (c.l >= 6 && c.p <= FOLLOW.pitch + 0.25) { this.standYaw = angleDiff(this.yaw + o, 0); break; }
+                if (c.l >= 6 && c.p <= this.homePitch + 0.25) { this.standYaw = angleDiff(this.yaw + o, 0); break; }
               }
             }
           }
@@ -513,7 +514,7 @@ export class CameraRig {
         this.yawVel = THREE.MathUtils.clamp(v, -2.3, 2.3);
         this.yaw = angleDiff(this.yaw + step, 0);
         // and back to the usual lean, if a drag changed it
-        if (swinging) this.pitch = ease(this.pitch, FOLLOW.pitch, 1.1, dt);
+        if (swinging) this.pitch = ease(this.pitch, this.homePitch, 1.1, dt);
       } else {
         this.yawVel *= Math.exp(-8 * dt);
         this.yaw = angleDiff(this.yaw + this.yawVel * dt, 0);

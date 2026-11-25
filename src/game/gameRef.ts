@@ -55,6 +55,9 @@ export interface GameApi {
   modeOffer(sitId: string): { id: string; label: string } | null;
   modeFromConversation(id: string): void;
   setQuality(q: "high" | "low"): void;
+  readonly townMapWest?: number;
+  mapRegion?(x: number, z: number): string | undefined;
+  drawRegionMap?(ctx: CanvasRenderingContext2D, west: number, north: number, scale: number, town?: boolean): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   /** What one can take (the boats, the convertibles) and where it is, for the round map. */
   rideMarks?(): import("../ui/mapMarks").RideMark[];

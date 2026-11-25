@@ -6,6 +6,10 @@ import { ROUTE } from "../content/route";
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
+import { CAVE_ZONE, COVE_DOORS, COVE_REACH, PREFERRED_COVE_DOOR, RING_TARGET, SLATE_COVE, drawSlateCoveMap, filterSlateCoveNav, inSlateCove, type CoveDoor } from "./world/slateCovePlan";
+import { SlateCoveArt } from "./world/slateCoveArt";
+import { CaveLoader, coveDoorNear } from "./cave/travel";
+import type { CaveZone } from "./cave/zone";
 import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
@@ -88,7 +92,7 @@ import type { GameApi, NametagLayout, PlacedNametag, TagBox } from "./gameRef";
 import { THEME } from "./world/theme";
 export type { GameApi } from "./gameRef";
 
-interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
+interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3; spirit?: { next: number; hop: number } }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -197,7 +201,7 @@ export class Game implements GameApi {
   private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
-  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string } | null = null;
+  private autoTarget: { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "cave-exit"; id?: string; onward?: boolean } | null = null;
   private walkCheck = { time: 0, remaining: Infinity };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
@@ -231,7 +235,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -262,6 +266,20 @@ export class Game implements GameApi {
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
   private disposed = false;
+  private coveArt = new SlateCoveArt();
+  private get caveCode() { return this.caveTravel.code; }
+  private caveZone?: CaveZone;
+  private caveTravel = new CaveLoader();
+  private caveStickHeld = false;
+  private caveKeys = new Set<string>();
+  private caveHome?: { pitch: number; dist: number; sky: number; ground: number; sun: number };
+  private talkTree = false;
+  private walkFrom = new THREE.Vector3();
+  private walkWant = new THREE.Vector3();
+
+  get cave() { return this.caveZone?.quest ?? null; }
+  private get wild() { return this.zone?.interior?.wild; }
+  private get walkCamera() { return this.zone.interior && !this.wild ? "interior" : "follow"; }
   private screenW = 0;
   private screenH = 0;
   /** A phone held sideways, by the size the picture has now (useScreen's SIDEWAYS_PHONE, without waiting for the
@@ -444,7 +462,8 @@ export class Game implements GameApi {
       this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
     }
     withCutout(this.town.group);
-    const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
+    const nav = new NavGrid(SLATE_COVE.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
+    filterSlateCoveNav(nav, this.town.colliders);
     const island = LIGHTHOUSE_ISLAND;
     if (island) openIslandNav(island, nav, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
@@ -644,9 +663,9 @@ export class Game implements GameApi {
     }
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
-      free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
-      inside: (q) => !this.zone?.interior && this.field.solidAt(q.x, q.y, q.z, 0.15),
-      overSolid: (x, z) => !this.zone?.interior && this.field.overSolid(x, z),
+      free: (a, b) => this.wild?.space.free(a, b) ?? (this.zone?.interior ? 1 : Math.min(this.field.free(a, b), this.coveArt.cameraField(a.x, a.z)?.free(a, b) ?? 1)),
+      inside: (q) => this.wild?.space.inside(q) ?? (!this.zone?.interior && (this.field.solidAt(q.x, q.y, q.z, 0.15) || !!this.coveArt.field?.solidAt(q.x, q.y, q.z, 0.15))),
+      overSolid: (x, z) => !this.zone?.interior && (this.field.overSolid(x, z) || !!this.coveArt.field?.overSolid(x, z)),
     };
     const prof = st.progress.profile!;
     this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
@@ -662,7 +681,13 @@ export class Game implements GameApi {
     });
     // start where the player left off, or in the airport on the very first visit
     const place = st.progress.place;
-    if (place && (place.zone === "town" || getInterior(place.zone))) {
+    if (place?.zone === CAVE_ZONE) {
+      this.enterZone("town", COVE_DOORS.cleft.out, true, undefined, undefined, true);
+      st.setHud({ fade: 1 });
+      void this.openCave(PREFERRED_COVE_DOOR, place, true)?.finally(() => {
+        if (!this.disposed) useStore.getState().setHud({ fade: 0 });
+      });
+    } else if (place && (place.zone === "town" || getInterior(place.zone))) {
       if (place.zone === "town" && island && islandGroundY(island, place.x, place.z) !== undefined) this.rides.restoreIslandBoat(st.progress.lighthouse?.boat);
       this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
       if (place.zone === "town" && place.boat) {
@@ -853,7 +878,59 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ zones
 
+  private openCave(door: CoveDoor, saved?: { x: number; z: number; rot: number }, instant = false, dry = false, onEntered?: () => void) {
+    if (this.disposed || this.transitioning || this.caveZone || (!instant && this.zone.id !== "town")) return;
+    const origin = this.zone, mouth = COVE_DOORS[door];
+    return this.caveTravel.open(instant, () => !this.disposed && this.zone === origin && !this.transitioning,
+      (commit) => this.fadeThen(commit), (code) => {
+        const state = useStore.getState(), p = this.player.root.position;
+        if (this.disposed || this.zone !== origin || (dry && (this.session?.active || state.hud.panel ||
+          this.rides.riding || this.swimming || this.hop.air || this.modes.active || this.modes.modal || Math.hypot(p.x - mouth.x, p.z - mouth.z) >= COVE_REACH))) return false;
+        let zone: CaveZone;
+        try {
+          zone = code.buildCaveZone(state.progress.cave, (save) => useStore.getState().updateProgress((pr) => { pr.cave = save; }));
+        } catch { return false; }
+        this.caveZone = zone;
+        this.enterZone(CAVE_ZONE, zone.safeSpawn(saved ?? zone.interior.wild!.spawns[door]), true);
+        if (this.zone !== zone) return false;
+        onEntered?.();
+        return true;
+      }, dry);
+  }
+
+  private caveExit(id?: string) {
+    const exits = this.wild?.exits;
+    if (exits) for (const exit of exits) if (exit.id === id) return exit;
+    return exits?.[1];
+  }
+
+  private caveObjective: { kind: "exit"; x: number; z: number; label: string } | null = null;
+
+  private leaveCave(id?: string, onEntered?: () => void) {
+    const exit = this.caveExit(id);
+    if (!exit || this.transitioning) return;
+    this.coveArt.load(this.town.group);
+    this.enterZone("town", COVE_DOORS[exit.id as CoveDoor].out, false, undefined, onEntered);
+  }
+
+  private checkCoveDoor(p: THREE.Vector3, blocked: boolean) {
+    if (blocked || this.hop.air || this.swimming) return;
+    if (this.wild) {
+      for (const exit of this.wild.exits) {
+        if (Math.hypot(p.x - exit.x, p.z - exit.z) < exit.push && this.vel.x * exit.dir[0] + this.vel.z * exit.dir[1] > 0.5) {
+          this.leaveCave(exit.id);
+          return;
+        }
+      }
+    } else if (this.coveArt.ready && inSlateCove(p.x, p.z) && this.vel.lengthSq() > 0.3) {
+      const speed = Math.hypot(this.vel.x, this.vel.z);
+      const door = coveDoorNear(p, this.vel.x / speed, this.vel.z / speed);
+      if (door) void this.openCave(door, undefined, false, true);
+    }
+  }
+
   private getZone(id: string): ZoneState | null {
+    if (id === CAVE_ZONE) return this.caveZone ?? null;
     if (this.zones.has(id)) return this.zones.get(id)!;
     const it = getInterior(id);
     if (!it) return null;
@@ -873,10 +950,15 @@ export class Game implements GameApi {
 
   /** `via`: through a door ("in" or "out"): the camera starts near the player and settles; out into the street, with
    *  nothing held, the player takes two steps out of the doorway. */
-  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void) {
+  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void, skipSave = false) {
+    if (id === CAVE_ZONE && !this.caveZone) return this.openCave(PREFERRED_COVE_DOOR, spawn, instant, false, onEntered);
     const z = this.getZone(id);
-    if (!z) return;
+    if (!z || (!instant && this.transitioning)) return;
+    if (id !== CAVE_ZONE) this.caveTravel.cancel();
     const doIt = () => {
+      const departing = this.wild;
+      const wild = z.interior?.wild;
+      this.caveTravel.cancel();
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
@@ -888,7 +970,21 @@ export class Game implements GameApi {
       }
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
       if (this.zone) this.scene.remove(this.zone.group);
+      if (departing && !wild) {
+        this.caveZone?.view.dispose();
+        this.caveZone = undefined;
+      }
+      if (departing || wild) {
+        this.caveStickHeld ||= !!(this.joy.x || this.joy.y);
+        for (const key of this.keys) this.caveKeys.add(key);
+        this.keys.clear();
+        this.joy.x = this.joy.y = 0;
+        this.steer.reset();
+        audio.stopAmbience();
+      }
       this.zone = z;
+      const exit = this.caveExit();
+      this.caveObjective = exit ? { kind: "exit", x: exit.x, z: exit.z, label: this.caveCode!.CAVE_COPY.door.dryExit.en } : null;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
       const indoor = !!z.interior;
@@ -899,7 +995,7 @@ export class Game implements GameApi {
       this.surface(true);
       const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
       // (on the sand where it slopes under the sea, if that is where they were)
-      const floor = indoor ? 0 : floorY(sp.x, sp.z);
+      const floor = wild?.floor(sp.x, sp.z) ?? (indoor ? 0 : floorY(sp.x, sp.z));
       this.player.root.position.set(sp.x, floor, sp.z);
       this.heading = sp.rot;
       this.player.root.rotation.y = sp.rot;
@@ -927,8 +1023,32 @@ export class Game implements GameApi {
       this.hemi.intensity = indoor ? (poolHall ? 1.23 : 1.9) : THEME.light.fill;
       this.sun.intensity = indoor ? (poolHall ? 0.92 : 1.6) : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
-      this.rig.mode = indoor ? "interior" : "follow";
-      if (indoor) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (wild) {
+        this.caveHome ??= { pitch: this.rig.pitch, dist: this.rig.dist, sky: this.hemi.color.getHex(),
+          ground: this.hemi.groundColor.getHex(), sun: this.sun.color.getHex() };
+        this.scene.fog = wild.fog;
+        this.scene.background = wild.fog.color;
+        this.hemi.color.set(wild.hemi[0]);
+        this.hemi.groundColor.set(wild.hemi[1]);
+        this.hemi.intensity = wild.hemi[2];
+        this.sun.color.set(wild.sun[0]);
+        this.sun.intensity = wild.sun[1];
+        if (wild.camera) {
+          this.rig.homePitch = this.rig.pitch = wild.camera.pitch;
+          this.rig.dist = wild.camera.dist;
+        }
+      } else if (departing && this.caveHome) {
+        const home = this.caveHome;
+        this.hemi.color.setHex(home.sky);
+        this.hemi.groundColor.setHex(home.ground);
+        this.sun.color.setHex(home.sun);
+        this.rig.homePitch = FOLLOW.pitch;
+        this.rig.pitch = home.pitch;
+        this.rig.dist = home.dist;
+        this.caveHome = undefined;
+      }
+      this.rig.mode = this.walkCamera;
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -936,10 +1056,12 @@ export class Game implements GameApi {
       const st = useStore.getState();
       const loc = LOCATIONS[id];
       const name = id === "town" ? "Maple Harbor" : loc?.name ?? id;
+      if (wild || departing) st.setHud({ minimap: { px: sp.x, pz: sp.z, heading: sp.rot, zone: id, gates: this.cave?.mask } });
       st.setHud({ zoneName: name, zoneBanner: { title: name, sub: id === "town" ? "Maple Harbor" : loc?.lt }, prompt: null });
       setTimeout(() => { if (useStore.getState().hud.zoneBanner?.title === name) useStore.getState().setHud({ zoneBanner: null }); }, 2600);
       this.refreshObjective();
-      this.savePlace();
+      if (!skipSave) this.savePlace();
+      if (!skipSave && !indoor && inSlateCove(sp.x, sp.z)) this.coveArt.load(this.town.group);
       onEntered?.();
     };
     if (instant) { doIt(); return; }
@@ -953,8 +1075,14 @@ export class Game implements GameApi {
     st.setHud({ fade: 1 });
     audio.sfx("door");
     setTimeout(() => {
-      fn();
-      setTimeout(() => { useStore.getState().setHud({ fade: 0 }); this.transitioning = false; }, 120);
+      if (this.disposed) return;
+      try { fn(); }
+      finally {
+        setTimeout(() => {
+          if (!this.disposed) useStore.getState().setHud({ fade: 0 });
+          this.transitioning = false;
+        }, 120);
+      }
     }, 320);
   }
 
@@ -978,7 +1106,8 @@ export class Game implements GameApi {
       if ((sp.npc === "sam" || sp.npc === "emma") && sp.npc !== partner) continue;
       const def = NPCS[sp.npc];
       if (!def) continue;
-      const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
+      const caveLook: Partial<Look> | undefined = this.wild ? this.caveCode?.SLATE_CAVE.keeperLooks[sp.npc as "cave_bram" | "cave_fern"] : undefined;
+      const ch = createCharacter({ ...def.look, ...caveLook, female: def.look.female ?? def.gender === "f" });
       ch.watch = this.learnerAt;
       ch.root.position.set(sp.x, 0, sp.z);
       ch.root.rotation.y = sp.rot;
@@ -999,7 +1128,8 @@ export class Game implements GameApi {
       tag.innerHTML = `<b>${def.name}</b><span lang="en">${def.role.en}</span>${lt}`;
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
-      this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
+      this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, spirit: this.wild ? { next: sp.sit ? 8 : 6, hop: 0 } : undefined, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
+      if (this.wild) continue;
       this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).npc || (c as any).npc !== sp.npc);
       const c = { x: sp.x, z: sp.z, r: 0.45, npc: sp.npc } as any;
       this.zone.colliders.circles.push(c);
@@ -1109,6 +1239,8 @@ export class Game implements GameApi {
     if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
       e.preventDefault(); return;
     }
+    if (e.repeat && (this.caveKeys.has(k) || ((this.wild || this.mapRegion(this.player.root.position.x, this.player.root.position.z)) && (k === "e" || k === "enter" || k === " ")))) return;
+    this.caveKeys.delete(k);
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; this.rideGoal = null; e.preventDefault(); return;
     }
@@ -1128,9 +1260,10 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     this.keys.delete(key);
+    this.caveKeys.delete(key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
+  private onBlur = () => { this.keys.clear(); this.caveKeys.clear(); this.caveStickHeld = false; this.billiards.release(" ", true); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -1254,6 +1387,8 @@ export class Game implements GameApi {
   }
 
   setJoystick(x: number, y: number) {
+    if (this.caveStickHeld && (x || y)) return;
+    this.caveStickHeld = false;
     this.joy.x = x; this.joy.y = y;
     if (x || y) { this.autoPath = null; this.autoTarget = null; this.rideGoal = null; }
     else this.helmSteer.reset();
@@ -1262,6 +1397,7 @@ export class Game implements GameApi {
   /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
    *  boards or a bench (ledges.ts). */
   private underfoot(raised: boolean): Surface {
+    if (this.wild) return "stone";
     const p = this.player.root.position;
     const island = !this.zone.interior && LIGHTHOUSE_ISLAND;
     if (island && p.z < SHORE.limit && islandGroundY(island, p.x, p.z) === island.y) return "grass";
@@ -1601,8 +1737,21 @@ export class Game implements GameApi {
     if (!this.raycaster.ray.intersectPlane(plane, p)) return;
     // door near the click?
     if (!this.zone.interior) {
+      if (this.coveArt.ready && inSlateCove(p.x, p.z)) {
+        for (const door of [COVE_DOORS.main, COVE_DOORS.cleft]) {
+          if (Math.hypot(p.x - door.x, p.z - door.z) < 2) {
+            this.walkTo(door.x + door.dx * 1.5, door.z + door.dz * 1.5, { kind: "cave-entry", id: door.id });
+            return;
+          }
+        }
+      }
       const d = this.town.doors.find((dd) => Math.hypot(dd.outX - p.x, dd.outZ - p.z) < 3.5 || Math.hypot(dd.x - p.x, dd.z - p.z) < 3);
       if (d) { this.walkTo(d.outX, d.outZ, { kind: "door", id: d.loc }); return; }
+    } else if (this.wild) {
+      for (const exit of this.wild.exits) if (Math.hypot(p.x - exit.x, p.z - exit.z) < exit.reach) {
+        this.walkTo(exit.x, exit.z, { kind: "cave-exit", id: exit.id });
+        return;
+      }
     } else if (Math.hypot(p.x - this.zone.interior.exit.x, p.z - this.zone.interior.exit.z) < 1.8) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit" }); return;
     }
@@ -1646,7 +1795,7 @@ export class Game implements GameApi {
       const i = nav.nearestFree(x, z);
       if (i >= 0 && !nav.free(nav.idx(x, z))) [x, z] = nav.center(i);
     }
-    if (outdoors && this.ledges && (islandY !== undefined || p.z >= SHORE.limit) && this.hop.ground > (islandY ?? 0) + 0.05) {
+    if (outdoors && this.ledges && !inSlateCove(p.x, p.z) && (islandY !== undefined || p.z >= SHORE.limit) && this.hop.ground > (islandY ?? 0) + 0.05) {
       let bd = Infinity;
       for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
         const i = nav.idx(p.x + dx * nav.cell, p.z + dz * nav.cell);
@@ -1696,6 +1845,11 @@ export class Game implements GameApi {
       if (!this.islandGuide) useStore.getState().toast({ kind: "info", title: "Ši užduotis atliekama telefonu", body: "Atidaryk telefoną (P) ir paskambink." });
       return;
     }
+    if (this.wild) {
+      const exit = this.caveExit();
+      if (exit) this.walkTo(exit.x, exit.z, { kind: "cave-exit", id: exit.id, onward: true });
+      return;
+    }
     const followUp = useStore.getState().hud.objective?.followUp;
     this.walkTo(tgt.x, tgt.z, followUp && tgt.kind !== "exit" ? { kind: "point" } : tgt.kind === "npc" ? { kind: "npc", id: tgt.id } : tgt.kind === "door" ? { kind: "door", id: tgt.id } : { kind: "exit" });
   }
@@ -1703,6 +1857,7 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ interaction
 
   interact() {
+    if (this.transitioning || this.caveTravel.pending) return;
     if (this.modes.active) {
       if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
       return;
@@ -1726,7 +1881,9 @@ export class Game implements GameApi {
     else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "staff") { if (n.id === LIGHTHOUSE_ISLAND?.keeper.says) this.speakKeeper(); else this.staffSays(+n.id); }
     else if (n.kind === "door") this.enterDoor(n.id);
-    else if (n.kind === "exit") this.exitInterior();
+    else if (n.kind === "exit") this.wild ? this.leaveCave(n.id) : this.exitInterior();
+    else if (n.kind === "cave-entry") void this.openCave(n.id as CoveDoor, undefined, false, true);
+    else if (n.kind === "tree") this.talkToTree();
   }
 
   /** Out of the water onto a pier's boards (a swimmer beside them). */
@@ -1751,6 +1908,7 @@ export class Game implements GameApi {
 
   exitInterior(onEntered?: () => void) {
     if (!this.zone.interior) return;
+    if (this.wild) { this.leaveCave(undefined, onEntered); return; }
     const loc = this.zone.id;
     const door = this.town.doors.find((d) => d.loc === loc);
     if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, onEntered ? undefined : "out", onEntered); return; }
@@ -1797,6 +1955,7 @@ export class Game implements GameApi {
       return;
     }
     const actor = this.npcs.find((n) => n.id === npc) ?? null;
+    if (sit.location === CAVE_ZONE && (!this.wild || !actor || talkDist(actor, this.player.root.position) >= TALK_RANGE)) return;
     this.requestConversation(sit.id, actor);
   }
 
@@ -1813,6 +1972,12 @@ export class Game implements GameApi {
     const go = () => {
       if (isCall(sit)) { this.call(sitId); return; }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
+      if (sit.location === CAVE_ZONE) {
+        if (!this.wild) this.guideToPlace(CAVE_ZONE);
+        else if (npc === this.caveCode?.SLATE_CAVE.treeNpc) this.talkToTree();
+        else this.talkTo(npc, sitId);
+        return;
+      }
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
       let zone = "town";
@@ -1872,10 +2037,11 @@ export class Game implements GameApi {
     this.conversationLoads++;
     this.observeStreetAndPhone();
     let opened = false;
+    const cave = this.caveZone;
     whenLoaded(sitId, (def) => {
       this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
       opened = true;
-    }, () => !this.disposed && !this.session?.active, () => {
+    }, () => !this.disposed && !this.session?.active && (!cave || (cave === this.caveZone && !this.transitioning)), () => {
       this.conversationLoads--;
       if (fromCard && !opened && !this.disposed) this.phone.markMissed(sitId);
     });
@@ -1983,12 +2149,31 @@ export class Game implements GameApi {
 
   private phonePageHide = () => {
     this.reactions.clear();
-    if (this.rides?.riding?.kind === "boat") this.savePlace();
+    if (this.wild || this.rides?.riding?.kind === "boat") this.savePlace();
     this.phone.dismiss();
     if (useStore.getState().progress.phone) {
       useStore.getState().updateProgress((p) => this.phone.saveClock(p));
     }
   };
+
+  talkToTree() {
+    const cave = this.caveZone, code = this.caveCode;
+    if (!cave?.nearOak(this.player.root.position) || !code || this.transitioning || this.session?.active) return;
+    whenLoaded(code.SLATE_CAVE.treeSituation, (def) => {
+      this.startSession(def, null);
+      this.aimTree();
+    }, () => !this.disposed && this.caveZone === cave && !this.session?.active && !this.transitioning);
+  }
+
+  private aimTree() {
+    if (!this.wild || !this.caveCode) return;
+    const p = this.player.root.position;
+    const shot = this.caveCode.aimTree(this.wild.space, p, this.rig.cam.position, this.screenW <= 900 && !this.sidewaysPhone);
+    this.heading = Math.atan2(shot.look.x - p.x, shot.look.z - p.z);
+    this.rig.talk = shot;
+    this.rig.mode = "talk";
+    this.talkTree = true;
+  }
 
   private startSession(sit: SituationDef, actor: NpcActor | null, introOverride?: string) {
     this.modes.exit(true);
@@ -2126,8 +2311,8 @@ export class Game implements GameApi {
       right.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize();
       for (let i = 0; i < who.length; i++) {
         const { ch, sit } = who[i], q = ch.root.position;
-        for (const y of sit ? [0.72, 0.45] : [0.9, 0.62]) for (const s of [-0.25, 0, 0.25]) {
-          if (!each(v.copy(q).addScaledVector(right, s).setY(q.y + y * ch.height), i)) return false;
+        for (const y of sit && !this.wild ? [0.72, 0.45] : [0.9, 0.62]) for (const s of [-0.25, 0, 0.25]) {
+          if (!each(v.copy(q).addScaledVector(right, s).setY(this.wild && this.caveCode ? this.caveCode.wildPersonY(who[i], y) : q.y + y * ch.height), i)) return false;
         }
       }
       return true;
@@ -2142,9 +2327,9 @@ export class Game implements GameApi {
     const tops = who.map(({ ch }) => headTop(ch));
     /** Over the learner's shoulder (the nearer views): the learner, in front, may be cut by the picture's edges. */
     let over = false;
-    const fits = (f: Shot) => points(f, (q, i) => {
+    const fits = (f: Shot, loose = false) => points(f, (q, i) => {
       // (`solo`: the people spoken with only; the learner may stand out of the picture)
-      if (solo && i === 0) return true;
+      if ((solo || loose) && i === 0) return true;
       q.project(cam);
       const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
       if (over && i === 0) return q.z <= 1 && px >= x0 - 70 && px <= x1 + 70 && py >= y0;
@@ -2191,8 +2376,8 @@ export class Game implements GameApi {
       right.set(f.look.x - f.pos.x, 0, f.look.z - f.pos.z).normalize().set(-right.z, 0, right.x);
       for (let i = 1; i < who.length; i++) {
         const { ch, sit } = who[i], q = ch.root.position, list = bodies(i);
-        for (const s of [-0.2, 0, 0.2]) for (const y of sit ? [0.79, 0.72, 0.61] : [0.97, 0.9, 0.79]) {
-          face.copy(q).addScaledVector(right, s).setY(q.y + y * ch.height);
+        for (const s of [-0.2, 0, 0.2]) for (const y of sit && !this.wild ? [0.79, 0.72, 0.61] : [0.97, 0.9, 0.79]) {
+          face.copy(q).addScaledVector(right, s).setY(this.wild && this.caveCode ? this.caveCode.wildPersonY(who[i], y) : q.y + y * ch.height);
           if (list.some((b) => covers(f.pos, face, b))) return false;
         }
       }
@@ -2231,6 +2416,10 @@ export class Game implements GameApi {
       return { pos: f.pos, look: f.look, ...(lean ? { near: n.pos } : {}), ...(uncovered(f) ? {} : { covered: true }) };
     };
     const first = frame(d0);
+    if (this.wild && this.caveCode) {
+      first.look.y = who.reduce((sum, person) => sum + this.caveCode!.wildPersonY(person, 0.78), 0) / who.length;
+      return this.caveCode.fitTalkWild(this.wild.space, first, d0, who, fits, uncovered, !!strip);
+    }
     const raise = strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
     // the nearer views first; if the room hides the learner from every one of them (they stand behind a counter, in
     // a corner), then those that show the people spoken with
@@ -2279,6 +2468,10 @@ export class Game implements GameApi {
   }
 
   private onSessionEvent(name: string, data: any) {
+    const keeper = this.caveZone?.interior.npcs.find((actor) => actor.npc === this.talkNpc?.id) as { gate?: string } | undefined;
+    if (name === "cave-pass" && this.cave && keeper?.gate === data?.gate && (data?.gate === "bram" || data?.gate === "fern")) {
+      this.cave.story({ name, data });
+    } else if (name === "tree-heard" && this.talkTree) this.cave?.story({ name, data: {} });
     showConversationEvent(name, data);
     if (name === "pay") audio.sfx("coin");
     if (name === "taxi-ride" && data?.to) this.pendingRide = { to: data.to, by: "taxi" };
@@ -2306,7 +2499,8 @@ export class Game implements GameApi {
     this.talkHome = this.talkNear = null;
     this.talkCast = []; this.talkIn = []; this.talkViews.clear();
     this.player.root.visible = true;
-    this.rig.mode = this.zone.interior ? "interior" : "follow";
+    this.talkTree = false;
+    this.rig.mode = this.walkCamera;
     this.rig.cam.clearViewOffset();
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
@@ -2439,6 +2633,20 @@ export class Game implements GameApi {
   }
 
   guideToPlace(loc: string) {
+    if (!this.rides.riding && (loc === CAVE_ZONE || loc === "old-stone-ring")) {
+      this.coveArt.load(this.town.group);
+      if (this.wild) {
+        const exit = this.caveExit()!;
+        if (loc !== CAVE_ZONE) this.walkTo(exit.x, exit.z, { kind: "exit", id: loc });
+      } else if (this.zone.interior) {
+        const exit = this.zone.interior.exit;
+        this.walkTo(exit.x, exit.z - 0.6, { kind: "exit", id: loc });
+      } else if (loc === CAVE_ZONE) {
+        const door = COVE_DOORS[PREFERRED_COVE_DOOR];
+        this.walkTo(door.x, door.z + 1.7, { kind: "cave-entry", id: door.id });
+      } else this.walkTo(RING_TARGET.x, RING_TARGET.z, { kind: "point" });
+      return;
+    }
     const door = this.town.doors.find((d) => d.loc === loc);
     if (!door || this.zone.id === loc || this.rides.riding) return;
     if (this.zone.interior) {
@@ -2528,6 +2736,7 @@ export class Game implements GameApi {
    *  `ax/az` across a counter, a stall or a table, with `person` where they stand; else where they stand). */
   objectiveTarget(): { kind: "npc" | "door" | "exit" | "point"; id?: string; x: number; z: number; person?: { x: number; z: number }; label: string } | null {
     const island = LIGHTHOUSE_ISLAND;
+    if (this.wild) return this.caveObjective;
     if (this.islandGuide && island) {
       if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
       const p = this.player.root.position, d = island.jetty;
@@ -2621,7 +2830,7 @@ export class Game implements GameApi {
       const shot = this.talkView(speaker, this.talkIn);
       this.talkViews.set(speaker.id, shot);
       this.applyTalkShot(shot);
-    }
+    } else if (this.talkTree) this.aimTree();
   }
 
   screenState() {
@@ -2671,7 +2880,7 @@ export class Game implements GameApi {
       flightAt(THEME.flyover, this.flight.t / FLIGHT_SECONDS, this.rig.stage.pos, this.rig.stage.look);
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
-    const blocked = talking || !!st.hud.panel || this.transitioning || this.modes.modal || !!this.flight;
+    const blocked = talking || !!st.hud.panel || this.caveTravel.pending || this.transitioning || this.modes.modal || !!this.flight;
     this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !mode);
     const phoneState = this.phoneSnapshot();
     this.updatePhoneTasks(dt, phoneState);
@@ -2705,12 +2914,15 @@ export class Game implements GameApi {
       this.rides.updateCrashes(dt);
       this.carVisuals?.update(dt);
     }
-    this.town.update(this.t, dt);
+    if (!this.wild) this.town.update(this.t, dt);
     this.zone.interior?.update?.(this.t, dt);
+    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, h * this.renderer.getPixelRatio());
+    const position = this.player.root.position;
+    this.coveArt.update(this.town.group, this.zone.id === "town", position.x, position.z, !this.caveTravel.pending);
     this.modes.tick(dt, !this.zone.interior && !talking && !this.flight);
     this.guidance.visible = !talking && !mode && !this.flight;
     this.guidance.group.visible = !talking && !mode && !this.flight;
-    this.guidance.update(dt, this.zone.interior ? undefined : floorY);
+    this.guidance.update(dt, this.wild?.floor ?? (this.zone.interior ? undefined : floorY));
     // guidance path (throttled)
     this.pathT -= dt;
     if (this.pathT <= 0 && !talking && !mode) {
@@ -2776,7 +2988,7 @@ export class Game implements GameApi {
     // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
     {
       const sideways = this.sidewaysPhone;
-      if (talking && this.talkNpc) {
+      if (talking && (this.talkNpc || this.talkTree)) {
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
         const pictureHeight = talkPictureHeight(h);
@@ -2909,8 +3121,8 @@ export class Game implements GameApi {
       const near = (loc: string, reach?: number) => { const d = this.town.doors.find((door) => door.loc === loc); return d ? nearLevel(Math.hypot(px - d.outX, pz - d.outZ), reach) : 0; };
       // people's murmur: in the market and the cafés; outdoors on the square, and around a market hall's door
       const market = !out ? (this.zone.id === "market" ? 0.75 : cafe ? 0.45 : 0) : Math.max(onSquare ? 0.3 : 0, marketOutdoors ? near("market") : 0);
-      audio.ambience(this.ambienceAllowed(), {
-        sea, surf: out ? surfLevel(pz - SHORE.top) : 0, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
+      audio.ambience(this.ambienceAllowed() && (!this.wild || !this.transitioning), {
+        sea, surf: out ? surfLevel(pz - SHORE.top) : this.wild ? this.caveCode!.caveWaterLevel(px, pz) : 0, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
         market, harbor: out ? near("the-pier", 34) * sea : 0, plaza: out && onSquare ? 1 : 0, tropical,
       });
     }
@@ -3081,13 +3293,13 @@ export class Game implements GameApi {
   private placeOnFoot(x: number, z: number, rot: number, stayInside = false) {
     if (this.zone.interior && !stayInside) { this.enterZone("town", { x, z, rot }, true); return; }
     const p = this.player.root.position;
-    p.set(x, this.zone.interior ? 0 : floorY(x, z), z);
+    p.set(x, this.wild?.floor(x, z) ?? (this.zone.interior ? 0 : floorY(x, z)), z);
     this.heading = rot;
     this.player.root.rotation.set(0, rot, 0);
     this.hop.land(p.y); this.applyHop();
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.clear();
-    this.rig.mode = this.zone.interior ? "interior" : "follow";
+    this.rig.mode = this.walkCamera;
     this.rig.target.copy(p);
     this.rig.yaw = rot; this.rig.snap();
     this.nearest = null;
@@ -3128,7 +3340,7 @@ export class Game implements GameApi {
     const camYaw = this.rig.mode === "follow" ? this.rig.yaw : Math.PI;
     const steer = this.steer.update(stick ? this.joy.x : ix, stick ? this.joy.y : iz, stick, camYaw, turned, dt);
     if (steer.dir !== null) this.stepOut = 0;
-    let want = new THREE.Vector3();
+    const want = this.walkWant.set(0, 0, 0);
     // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
     // count again), a run with Shift or the stick at its edge; indoors always a walk; slower the deeper one wades
     const indoor = !!this.zone.interior;
@@ -3142,7 +3354,7 @@ export class Game implements GameApi {
     let speed = (indoor ? WALK : this.keys.has("shift") || this.joyRun ? RUN : WALK + (JOG - WALK) * smoothstep(JOG_AFTER, JOG_AFTER + JOG_EASE, this.jogT)) * pace;
     // (in deep water: a calm stroke, quicker with Shift or the stick at its edge; slower under water)
     if (this.swimming) speed = this.diveK > 0.5 ? SWIM.speed * 0.85 : this.keys.has("shift") || this.joyRun ? SWIM.fast : SWIM.speed;
-    const before = p.clone();
+    const before = this.walkFrom.copy(p);
     if (through) {
       // (through a door: nothing moves until the other side)
     } else if (!blocked && (steer.dir !== null || ((this.stepOut > 0 || this.gaitOn) && !this.autoPath?.length))) {
@@ -3210,13 +3422,18 @@ export class Game implements GameApi {
       if (!indoor && !blocked && !this.swimming && !this.hop.air && this.hop.y < 0.5) this.ambient.checkBump(before, p, dt);
       // outdoors the player's own ground plan: what is low enough to jump onto has its height (ledges.ts), and the
       // sea's edge is open as far as one can wade
-      this.zone.colliders.resolve(p, 0.38, !indoor);
+      if (this.caveZone) this.caveZone.resolveStep(p, before, 0.38);
+      else this.zone.colliders.resolve(p, 0.38, !indoor);
       if (!indoor) {
         this.ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
         this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38, true);
         // (the convertibles and their people standing about; swimming, the rocks and the boats at anchor)
         this.rides.resolvePlayer(p, 0.38, this.swimming, this.hop.y);
         if (p.z < BAY.z0) p.z = BAY.z0;
+        if (p.x < WORLD.minX && p.z >= SHORE.limit && !inSlateCove(p.x, p.z)) {
+          p.x = before.x < WORLD.minX && inSlateCove(before.x, before.z) ? before.x : WORLD.minX + 0.38;
+          if (p.x < WORLD.minX) p.z = before.z;
+        }
       }
     }
     if (this.stepOut > 0) {
@@ -3225,10 +3442,11 @@ export class Game implements GameApi {
       this.stepOut = dd < 1e-3 && this.gait.speed > 1 ? 0 : Math.max(0, this.stepOut - dd);
     }
     // interior bounds / door push
-    if (this.zone.interior) {
+    this.checkCoveDoor(p, blocked);
+    if (this.zone.interior && !this.wild) {
       const it = this.zone.interior;
       if (p.z > it.d / 2 - 0.2 && Math.abs(p.x) < 1.2 && this.vel.z > 0.5) { this.exitInterior(); }
-    } else {
+    } else if (!indoor) {
       this.checkDoorPush(dt);
     }
     const moved = p.distanceTo(before) / Math.max(dt, 1e-4);
@@ -3271,7 +3489,7 @@ export class Game implements GameApi {
     // walking off an edge is a fall.
     const surfacePiece = indoor ? undefined : this.ledges?.supportPiece(p.x, p.z, this.hop.y, this.hop.air);
     const on = surfacePiece?.top ?? 0;
-    const ground = indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
+    const ground = this.wild?.floor(p.x, p.z) ?? (indoor ? 0 : on > 0 ? on : floorY(p.x, p.z));
     // the water here (the sea with its swell, a pool's), and how much of it is over what is underfoot
     const sur = indoor ? null : waterY(p.x, p.z, this.t), surface = sur ?? -99;
     const over = sur === null || on > 0 ? 0 : sur - ground;
@@ -3393,6 +3611,8 @@ export class Game implements GameApi {
     if (!t) return;
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
+    else if (t.kind === "cave-entry" && t.id) void this.openCave(t.id as CoveDoor, undefined, false, true);
+    else if (t.kind === "cave-exit") this.leaveCave(t.id, t.onward ? () => this.autoWalkToObjective() : undefined);
     else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : undefined);
   }
 
@@ -3407,6 +3627,10 @@ export class Game implements GameApi {
     this.player.steady = !!partner;
     for (const n of this.npcs) {
       if (mode?.ownsNpc?.(n.id)) continue;
+      if (n.spirit && this.caveCode) {
+        this.caveCode.updateKeeper(n, n.spirit, p, dt, talking && n === partner);
+        continue;
+      }
       const d = n.ch.root.position.distanceTo(p);
       // with the player close by, or in the conversation, they stop what they were doing and pay attention
       n.ch.attentive = d < 5.5 || (talking && (n === this.talkNpc || taking.includes(n.id)));
@@ -3584,13 +3808,24 @@ export class Game implements GameApi {
           const d = Math.hypot(dd.outX - p.x, dd.outZ - p.z);
           if (d < 3 && d < bd && !this.swimming) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
         }
+        if (this.coveArt.ready && !this.swimming && inSlateCove(p.x, p.z)) {
+          const door = coveDoorNear(p, Math.sin(this.heading), Math.cos(this.heading));
+          if (door) best = this.coveArt.prompt(door) ?? best;
+        }
+      } else if (this.wild && this.caveCode) {
+        const prompts = this.caveCode.CAVE_PROMPTS;
+        for (const exit of this.wild.exits) {
+          const d = Math.hypot(exit.x - p.x, exit.z - p.z);
+          if (d < exit.reach && d < bd) { bd = d; best = prompts[exit.id as CoveDoor]; }
+        }
+        if (!best && this.caveZone?.nearOak(p)) best = prompts.oak;
       } else {
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
       }
     }
-    const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
+    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id;
     this.nearest = best;
     if (changed) {
       if (best) audio.sfx("tick");
@@ -3599,7 +3834,7 @@ export class Game implements GameApi {
         : best.kind === "ride" ? (best.label === ROAD_UI.drive ? { label: ROAD_UI.drive, kind: "drive" } : best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: "Išlipti", kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
-        : best.kind === "mode" ? best.prompt!
+        : best.prompt ? best.prompt
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
@@ -3615,9 +3850,9 @@ export class Game implements GameApi {
       if (o.dist !== dist || (angle !== null && Math.abs((o.angle ?? 0) - angle) > 0.05)) st.setHud({ objective: { ...o, dist, angle } });
     }
     const mm = st.hud.minimap;
-    const zone = this.zone.id;
-    if (Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 || mm.zone !== zone || mm.targetX !== tgt?.x || mm.targetZ !== tgt?.z) {
-      st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: tgt?.x, targetZ: tgt?.z, zone } });
+    const zone = this.zone.id, gates = this.cave?.mask;
+    if (mm.gates !== gates || Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 || mm.zone !== zone || mm.targetX !== tgt?.x || mm.targetZ !== tgt?.z) {
+      st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: tgt?.x, targetZ: tgt?.z, zone, gates } });
     }
     this.saveT -= 0.12;
     if (this.saveT <= 0) { this.saveT = 5; this.savePlace(); }
@@ -3625,7 +3860,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone) return;
+    if (!this.player || !this.zone || this.caveTravel.pending) return;
     const p = this.player.root.position;
     const island = LIGHTHOUSE_ISLAND;
     useStore.getState().updateProgress((pr) => {
@@ -3641,6 +3876,15 @@ export class Game implements GameApi {
       } else if (island && pr.lighthouse?.boat) delete pr.lighthouse.boat;
       this.phone.saveClock(pr);
     });
+  }
+
+  get townMapWest() { return SLATE_COVE.minX; }
+  mapRegion(x: number, z: number) {
+    return this.wild ? CAVE_ZONE : this.zone?.id === "town" && inSlateCove(x, z) ? "slate-cove" : undefined;
+  }
+  drawRegionMap(ctx: CanvasRenderingContext2D, west: number, north: number, scale: number, town = false) {
+    if (!town && this.wild) this.caveCode?.drawCaveMap(ctx, west, north, scale, this.cave?.mask ?? 0);
+    else if (west < SLATE_COVE.maxX) drawSlateCoveMap(ctx, west, north, scale);
   }
 
   get groundCanvas() { return this.town?.groundCanvas; }
@@ -3681,6 +3925,9 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.streetLife?.dispose();
     this.disposed = true;
+    this.caveTravel.cancel();
+    this.caveZone?.view.dispose();
+    this.coveArt.dispose();
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();

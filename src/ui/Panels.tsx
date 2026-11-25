@@ -313,19 +313,23 @@ function MapPanel({ close }: { close: () => void }) {
   const mm = useStore((s) => s.hud.minimap);
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
   const north = island ? WORLD.minZ : SEA_Z - 2;
-  const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
+  const west = game?.townMapWest ?? WORLD.minX;
+  const W = WORLD.maxX - west, D = WORLD.maxZ - north;
   useEffect(() => {
     const g = game?.groundCanvas, c = ref.current;
     if (!g || !c) return;
-    const ppm = g.width / W, sea = (SEA_Z - 2 - north) * ppm;
-    c.width = g.width; c.height = g.height + sea;
+    const ppm = g.width / (WORLD.maxX - WORLD.minX), sea = (SEA_Z - 2 - north) * ppm;
+    c.width = W * ppm; c.height = g.height + sea;
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = "#3f8fb5";
-    ctx.fillRect(0, 0, c.width, sea);
-    ctx.drawImage(g, 0, sea);
-    if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
-  }, [W, island, north]);
-  const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#86b866";
+    ctx.fillRect(0, (SEA_Z + 1 - north) * ppm, (WORLD.minX - west) * ppm, c.height);
+    ctx.drawImage(g, (WORLD.minX - west) * ppm, sea);
+    game?.drawRegionMap?.(ctx, west, north, ppm, true);
+    if (island) drawIslandMap(ctx, island, west, north, ppm);
+  }, [W, island, north, west]);
+  const pct = (x: number, z: number) => ({ left: `${((x - west) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
   return (

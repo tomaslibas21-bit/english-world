@@ -20,6 +20,7 @@ import { PIECE_LENGTH, ribbon, Track, type RoadOpening } from "../road/track";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
+import { addSlateCoveColliders, inSlateCove } from "./slateCovePlan";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -254,7 +255,7 @@ export function buildTown(): Town {
   // bay's own edge, water.ts BAY)
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2, "town-edge");
-  colliders.addBox(WORLD.minX - 1, 0, 2, 220, "town-edge");
+  addSlateCoveColliders(colliders);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
@@ -322,7 +323,7 @@ export function buildTown(): Town {
       }
     },
     walkableAt(x, z) {
-      return x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ && !colliders.blocked(x, z, 0.3, island !== undefined && islandGroundY(island, x, z) !== undefined);
+      return (inSlateCove(x, z) || (x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ)) && !colliders.blocked(x, z, 0.3, island !== undefined && islandGroundY(island, x, z) !== undefined);
     },
   };
 }

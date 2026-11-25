@@ -5,6 +5,8 @@ import { islandGroundY, type IslandPlan } from "./world/island";
 export class NavGrid {
   cols: number; rows: number;
   blocked: Uint8Array;
+  blockedStep?: (cell: number, direction: number) => boolean;
+  blockedLine?: (ax: number, az: number, bx: number, bz: number) => boolean;
   /** Walking cost multiplier per cell (roads cost more, so paths use sidewalks and crosswalks). */
   cost: Float32Array;
   constructor(public minX: number, public minZ: number, maxX: number, maxZ: number, public cell: number, col: Colliders, radius = 0.45) {
@@ -55,6 +57,7 @@ export class NavGrid {
     return -1;
   }
   lineFree(ax: number, az: number, bx: number, bz: number): boolean {
+    if (this.blockedLine?.(ax, az, bx, bz)) return false;
     const d = Math.hypot(bx - ax, bz - az);
     const steps = Math.ceil(d / (this.cell * 0.5));
     const ia = this.idx(ax, az), ib = this.idx(bx, bz);
@@ -133,7 +136,7 @@ export class NavGrid {
         const nc = c + dc, nr = r + dr;
         if (nc < 0 || nr < 0 || nc >= cols || nr >= this.rows) continue;
         const k = nr * cols + nc;
-        if (this.blocked[k] || closedAt[k] === gen) continue;
+        if (this.blocked[k] || closedAt[k] === gen || this.blockedStep?.(cur, d)) continue;
         if (dc && dr && (this.blocked[r * cols + nc] || this.blocked[nr * cols + c])) continue; // no corner cutting
         const ng = g[cur] + DK[d] * cell * this.cost[k];
         if (stamp[k] !== gen || ng < g[k]) { stamp[k] = gen; g[k] = ng; came[k] = cur; push(k, ng + h(k)); }
