@@ -9,7 +9,8 @@
 //     old list had, the new list has; the new list has nothing the old one lacked;
 //  3. nothing extra: none of the 445 (tests/fixtures/voice-17nov-static.json) is listed unless the game can say it;
 //     every {X} line is listed only with items the game said it with or its own code says it with;
-//  4. a line no play says and no code names is not listed (s62's yes_next_the).
+//  4. a line no play says and no code names is not listed (s31's glands_ok); one whose id the code puts together from
+//     parts (s62's yes_next_the, which the 17 Nov audit had as never said) is kept.
 // VOICE_LIST_SCOPE=s33-small-talk,p28-kitchen… or VOICE_LIST_ALL=1 (about 30 minutes) widen 2 and 3.
 import { describe, expect, it } from "vitest";
 import { SITUATIONS } from "../src/content/situations";
@@ -21,7 +22,7 @@ import { Conversation, type SpokenLine } from "../src/convo/dialogue";
 import { compose, placeholders } from "../src/convo/compose";
 import type { EntityDef, SituationDef } from "../src/content/types";
 import { enumerateAll, type Utt } from "../tools/enumerate";
-import { itemsFor, referenced } from "../tools/line-reach";
+import { itemsFor, mentioned, referenced } from "../tools/line-reach";
 import { playSim } from "../tools/sim-play";
 import HISTORIC from "./fixtures/voice-17nov-static.json";
 
@@ -180,7 +181,10 @@ describe("the voice list against what the game can play", () => {
 
     // the 17 Nov cohort: still listed only where the game can say it (independent play, or the list's own runs)
     const fuzz = new Set(after.filter((u) => /:fuzz$/.test(u.where)).map((u) => audioKey(u.voice, u.speed, u.say)));
-    const unexplained = HISTORIC.filter((h) => h.where.startsWith(`${id}:`) && keys.has(h.key) && !heard.has(h.key) && !fuzz.has(h.key));
+    // (a line whose id the code puts together from parts, s62's yes_next_the, keeps the old list's reading: its items
+    // can't be read, so it is kept as it was rather than guessed)
+    const built = (w: string) => { const lid = w.split(":")[1].replace(/\[\d+\]$/, ""); return !referenced(sit, lid) && mentioned(sit, lid); };
+    const unexplained = HISTORIC.filter((h) => h.where.startsWith(`${id}:`) && keys.has(h.key) && !heard.has(h.key) && !fuzz.has(h.key) && !built(h.where));
     expect(unexplained.map((h) => `${h.key} ${h.where} ${h.voice} "${h.say}"`)).toEqual([]);
 
     // named item lines of the 17 Nov kind: listed with the items their code gives them, not with whole lists
@@ -196,14 +200,16 @@ describe("the voice list against what the game can play", () => {
     }
   }, 20 * MINUTES);
 
-  it("a line no play says and no code names is not listed (s62's yes_next_the, 13 clips on 17 Nov)", () => {
-    const sit = byId("s62-visitor-center");
-    expect(referenced(sit, "yes_next_the")).toBe(false);
-    const listed = listFor(sit);
-    expect(listed.filter((u) => u.where.startsWith("s62-visitor-center:yes_next_the["))).toEqual([]);
-    const historic = HISTORIC.filter((h) => h.where.startsWith("s62-visitor-center:yes_next_the["));
-    expect(historic.length).toBe(13);
-    expect(historic.filter((h) => keysOf(listed).has(h.key))).toEqual([]);
+  it("a line no play says and no code names is not listed (s31's glands_ok); one put together from parts is kept", () => {
+    const doctor = byId("s31-doctor");
+    expect(referenced(doctor, "glands_ok") || mentioned(doctor, "glands_ok")).toBe(false);
+    expect(listFor(doctor).filter((u) => u.where.startsWith("s31-doctor:glands_ok["))).toEqual([]);
+    // s62's yes_next_the: (rel === "across" ? "yes_across" : "yes_next") + (hasThe(p) ? "_the" : ""), said of the museum
+    // beside the police station; the 17 Nov audit had it as never said
+    const visitor = byId("s62-visitor-center");
+    expect(referenced(visitor, "yes_next_the")).toBe(false);
+    expect(mentioned(visitor, "yes_next_the")).toBe(true);
+    expect(listFor(visitor).some((u) => u.where.startsWith("s62-visitor-center:yes_next_the[") && /museum/.test(u.say))).toBe(true);
     expect(cohort.length).toBeGreaterThan(10);
   }, 10 * MINUTES);
 });

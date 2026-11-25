@@ -69,6 +69,22 @@ export function referenced(sit: SituationDef, lid: string, depth = 0): boolean {
   return false;
 }
 
+/** `referenced`, or a word code writes that the id begins or ends with (25 Nov 2026): ids put together from parts in
+ *  ways `referenced` does not read, `(rel === "across" ? "yes_across" : "yes_next") + (hasThe(p) ? "_the" : "")` (s62's
+ *  yes_next_the), `(again ? "rec_again_" : "rec_q_") + pro` (PC s75's rec_q_lo). A line this also misses is not said. */
+export function mentioned(sit: SituationDef, lid: string): boolean {
+  if (referenced(sit, lid)) return true;
+  const { own, shared } = files(sit);
+  for (const n of [names(sit.id, own), names("", shared)]) {
+    for (const lit of n.lits) {
+      if (lit === lid) return true;
+      if (lit.length >= 4 && lid.startsWith(lit) && /[_]$|_/.test(lit)) return true;
+      if (lit.length >= 3 && lit.startsWith("_") && lid.endsWith(lit)) return true;
+    }
+  }
+  return false;
+}
+
 /** The text of the call around position `at`: from its "(" to the matching ")". */
 function callAround(src: string, at: number): { head: string; args: string } | null {
   let depth = 0, open = -1;

@@ -24,7 +24,7 @@ import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
 import type { NpcDef } from "../src/content/npcs";
 import { soundKey } from "../src/convo/soundalike";
-import { itemsFor, referenced } from "./line-reach";
+import { itemsFor, mentioned, referenced } from "./line-reach";
 import { playSim } from "./sim-play";
 
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
@@ -143,9 +143,9 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
         guessed.has(lid) ? voices.filter((n) => n.id === guessed.get(lid)) : voices;
       const lists = usedLists.get(lid);
       if (!usedBy.has(lid)) {
-        const named = referenced(sit, lid);
+        const named = opts.legacy ? referenced(sit, lid) : mentioned(sit, lid);
         unreached.push({ sit: sit.id, line: lid, named });
-        // a line no play said and no code names (as a string, a prefix or a suffix it is built with) is never said
+        // a line no play said and no code names (as a string, or by a part it is put together from) is never said
         // (25 Nov 2026): it is reported and not voiced. The mini-games' lines keep their own cases below.
         const kit = KIT_LEARNER[sit.id];
         const mode = lid in extra || (sit.id === "s72-cafe" && isBaristaCoachLine(lid)) || !!kit?.only?.test(lid) ||
