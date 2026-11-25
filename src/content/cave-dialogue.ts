@@ -10,7 +10,3 @@ export function caveHints<M extends Record<string, SentSrc>>(
 export function cavePass(ctx: Ctx, gate: CaveGate) {
   ctx.event("cave-pass", { gate });
 }
-
-export type CaveStoryEvent =
-  | { name: "cave-pass"; data: { gate: CaveGate } }
-  | { name: "tree-heard"; data: Record<string, never> };

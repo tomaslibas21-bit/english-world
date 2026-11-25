@@ -1,30 +1,37 @@
 import { compose, type Sentence } from "../../convo/compose";
 import { rand } from "../world/util";
 import { loadSituation } from "../../content/situations/catalog";
-import { CHAMBERS, SLATE_CAVE } from "../world/slateCave";
+import type { Chamber } from "./plan";
 
 export interface StonePhrase { id: string; chamber: number; en: string; lt: string; s: Sentence }
 
 export const firstLine = (stoneId: string) => stoneId.replace(/-(\d+)$/, (_, n: string) => "_" + n.padStart(2, "0"));
 export const stoneGroup = (chamber: string) => "p_" + chamber;
-export const TREE_SIT = SLATE_CAVE.treeSituation;
-
-let cached: Promise<readonly StonePhrase[][]> | undefined;
-export function stonePhrases() {
-  return cached ??= loadSituation(TREE_SIT).then((def) => {
-    if (!def) throw new Error(TREE_SIT);
-    return CHAMBERS.map((chamber, i) => def.hints[stoneGroup(chamber.id)].items.map((item) => {
+export function createStoneLibrary(sitId: string, chambers: readonly Chamber[]) {
+  let cached: Promise<readonly StonePhrase[][]> | undefined;
+  return () => cached ??= loadSituation(sitId).then((def) => {
+    if (!def) throw new Error(sitId);
+    return chambers.map((chamber, i) => def.hints[stoneGroup(chamber.id)].items.map((item) => {
       const s = compose(item.s, {}, { look: () => undefined });
       return { id: item.id, chamber: i, en: s.say, lt: s.nat, s };
     }));
   }).catch((error) => { cached = undefined; throw error; });
 }
 
-export function nextLine(lines: readonly StonePhrase[][], chamber: number, heard: ReadonlySet<string>, taken: ReadonlySet<string>, rnd: () => number) {
-  const own = lines[chamber] ?? [], all = lines.flat();
-  for (const [pool, fresh] of [[own, true], [all, true], [own, false], [all, false]] as const) {
-    const choices = pool.filter((line) => !taken.has(line.id) && (!fresh || !heard.has(line.id)));
-    if (choices.length) return choices[Math.floor(rnd() * choices.length)];
+export function nextLine(lines: readonly StonePhrase[][], chamber: number, heard: ReadonlySet<string>,
+  taken: ReadonlySet<string>, rnd: () => number, choices: StonePhrase[]) {
+  for (let pass = 0; pass < 4; pass++) {
+    const own = pass % 2 === 0, fresh = pass < 2;
+    let count = 0;
+    for (let i = own ? chamber : 0; i < (own ? chamber + 1 : lines.length); i++) {
+      const group = lines[i];
+      if (!group) continue;
+      for (let j = 0; j < group.length; j++) {
+        const line = group[j];
+        if (!taken.has(line.id) && (!fresh || !heard.has(line.id))) choices[count++] = line;
+      }
+    }
+    if (count) return choices[Math.floor(rnd() * count)];
   }
 }
 

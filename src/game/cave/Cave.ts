@@ -1,13 +1,11 @@
-// Slate chambers, baked rock lighting and pooled effects.
+// Cave chambers, baked rock lighting and pooled effects.
 import * as THREE from "three";
 import { Colliders, rand } from "../world/util";
 import * as P from "./plan";
 
-import { SLATE_CAVE } from "../world/slateCave";
-import { gateStops } from "./routing";
-import { slateRune } from "../world/slateRunes";
+import type { CaveArt, CaveQuestConfig } from "./config";
+import type { createCaveRouting } from "./routing";
 
-const { fog: FOG, rock: ROCK, moss: MOSS, wood: WOOD } = SLATE_CAVE;
 type V3 = [number, number, number];
 interface Lamp { x: number; y: number; z: number; c: THREE.Color; reach: number; power: number }
 
@@ -15,11 +13,12 @@ interface Lamp { x: number; y: number; z: number; c: THREE.Color; reach: number;
  *  walls, the pools' rims and the trees from the plan. */
 export class CaveColliders extends Colliders {
   closed = 0;
+  constructor(private gates: readonly P.Gate[], private gateStops: ReturnType<typeof createCaveRouting>["gateStops"]) { super(); }
   resolveStep(p: THREE.Vector3, before: THREE.Vector3, radius: number) {
     this.resolve(p, radius);
-    for (let i = 0; i < P.GATES.length; i++) {
-      if (!(this.closed & (1 << i)) || !gateStops(i, before.x, before.z, p.x, p.z, radius + 0.08)) continue;
-      const g = P.GATES[i], nx = Math.sin(g.rot), nz = Math.cos(g.rot);
+    for (let i = 0; i < this.gates.length; i++) {
+      if (!(this.closed & (1 << i)) || !this.gateStops(i, before.x, before.z, p.x, p.z, radius + 0.08)) continue;
+      const g = this.gates[i], nx = Math.sin(g.rot), nz = Math.cos(g.rot);
       const d = radius + 0.08 - ((p.x - g.x) * nx + (p.z - g.z) * nz);
       p.x += nx * d;
       p.z += nz * d;
@@ -42,13 +41,17 @@ export class CaveColliders extends Colliders {
   /** How much room there is at (x, z) for someone `r` wide (m; negative: none). */
   private room(x: number, z: number, r: number) {
     let v = P.inside(x, z) - r;
-    for (const q of P.POOLS) {
+    for (let i = 0; i < P.POOLS.length; i++) {
+      const q = P.POOLS[i];
       if (q.ford || q.deck) continue;
       if (x > P.BRIDGE.x0 && x < P.BRIDGE.x1 && z > P.BRIDGE.z0 && z < P.BRIDGE.z1) continue;
       const k = Math.hypot((x - q.x) / (q.rx + r * 0.6), (z - q.z) / (q.rz + r * 0.6));
       v = Math.min(v, (k - 1) * Math.min(q.rx, q.rz));
     }
-    for (const t of P.TREES) v = Math.min(v, Math.hypot(x - t.x, z - t.z) - t.r - r);
+    for (let i = 0; i < P.TREES.length; i++) {
+      const tree = P.TREES[i];
+      v = Math.min(v, Math.hypot(x - tree.x, z - tree.z) - tree.r - r);
+    }
     return v;
   }
   override blocked(x: number, z: number, r: number) { return super.blocked(x, z, r) || !P.walkable(x, z, r); }
@@ -57,8 +60,12 @@ export class CaveColliders extends Colliders {
 /** Collects triangles per chamber, lighting each as it comes (the lamps of the place: the eye's light, the water, what
  *  glows), flat: one colour a face. */
 class Sink {
-  pos: number[][] = P.CHAMBERS.map(() => []);
-  col: number[][] = P.CHAMBERS.map(() => []);
+  pos: number[][];
+  col: number[][];
+  constructor(private chambers: readonly P.Chamber[]) {
+    this.pos = chambers.map(() => []);
+    this.col = chambers.map(() => []);
+  }
   lamps: Lamp[] = [];
   private a = new THREE.Vector3(); private b = new THREE.Vector3(); private c = new THREE.Vector3();
   private n = new THREE.Vector3(); private m = new THREE.Vector3(); private l = new THREE.Vector3();
@@ -101,7 +108,7 @@ class Sink {
       g.setAttribute("color", new THREE.Float32BufferAttribute(this.col[i], 3));
       g.computeBoundingSphere();
       const m = new THREE.Mesh(g, mat);
-      m.name = "cave-" + P.CHAMBERS[i].id;
+      m.name = "cave-" + this.chambers[i].id;
       m.matrixAutoUpdate = false;
       return m;
     });
@@ -141,9 +148,10 @@ export interface CaveView {
 }
 
 /** A 4 by 4 atlas, built on the first cave visit and reused across visits. */
-let atlas: THREE.CanvasTexture | undefined;
-function glyphAtlas() {
-  if (atlas) return atlas;
+const atlases = new WeakMap<CaveArt["runes"], THREE.CanvasTexture>();
+function glyphAtlas(runes: CaveArt["runes"]) {
+  const cached = atlases.get(runes);
+  if (cached) return cached;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 512;
   const ctx = canvas.getContext("2d")!;
@@ -151,7 +159,7 @@ function glyphAtlas() {
   for (let i = 0; i < 16; i++) {
     ctx.save();
     ctx.translate(i % 4 * 128, Math.floor(i / 4) * 128);
-    const strokes = slateRune(i);
+    const strokes = runes(i);
     for (const [offset, width, ink] of [[2, 7, "#222"], [0, 3, "#fff"]] as const) {
       ctx.lineWidth = width;
       ctx.strokeStyle = ink;
@@ -164,18 +172,22 @@ function glyphAtlas() {
     }
     ctx.restore();
   }
-  atlas = new THREE.CanvasTexture(canvas);
+  const atlas = new THREE.CanvasTexture(canvas);
   atlas.anisotropy = 4;
+  atlases.set(runes, atlas);
   return atlas;
 }
 
-export function buildCave(): CaveView {
+export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConfig, "chambers" | "gates">,
+  gateStops: ReturnType<typeof createCaveRouting>["gateStops"]): CaveView {
+  const { fog: FOG, rock: ROCK, moss: MOSS, wood: WOOD } = art;
+  const { chambers } = plan;
   const group = new THREE.Group();
-  group.name = "gruta";
-  const col = new CaveColliders(), sink = new Sink(), sparks = new Sparks(), r = rand(20261115);
+  group.name = zoneId;
+  const col = new CaveColliders(plan.gates, gateStops), sink = new Sink(chambers), sparks = new Sparks(), r = rand(20261115);
   const C = (s: string) => new THREE.Color(s);
-  const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
-  const fog = new THREE.FogExp2(FOG, SLATE_CAVE.density);
+  const pick = <T,>(a: readonly T[]) => a[Math.floor(r() * a.length)];
+  const fog = new THREE.FogExp2(FOG, art.density);
 
   // ---- the lamps the rock's light is worked out from
   const lamp = (x: number, y: number, z: number, c: string, reach: number, power: number) => sink.lamps.push({ x, y, z, c: C(c), reach, power });
@@ -208,7 +220,7 @@ export function buildCave(): CaveView {
     if (inIsland) y = -0.42;
     return [x, y, z];
   };
-  const FLOOR_A = C(ROCK[0]), FLOOR_B = C(ROCK[1]), SAND = C(ROCK[3]), PATH = C(SLATE_CAVE.path[0]), PATH2 = C(SLATE_CAVE.path[1]), GREEN = C(MOSS[0]);
+  const FLOOR_A = C(ROCK[0]), FLOOR_B = C(ROCK[1]), SAND = C(ROCK[3]), PATH = C(art.path[0]), PATH2 = C(art.path[1]), GREEN = C(MOSS[0]);
   const G = 1.4;
   for (let x = P.BOUNDS.minX; x < P.BOUNDS.maxX; x += G) for (let z = P.BOUNDS.minZ; z < P.BOUNDS.maxZ; z += G) {
     const cx = x + G / 2, cz = z + G / 2;
@@ -310,7 +322,7 @@ export function buildCave(): CaveView {
   const tree = (t: (typeof P.TREES)[number], crown: boolean) => {
     // (the trunk, the buttresses and the roots start a little under the ground: no cap or edge lying in its plane)
     const { x, z, r: tr, h } = t, base = P.floorY(x, z) - 0.06;
-    sink.geo(new THREE.CylinderGeometry(tr * 0.62, tr, h, 9, 6).translate(x, base + h / 2, z), SLATE_CAVE.bark, 0.06, 0.12);
+    sink.geo(new THREE.CylinderGeometry(tr * 0.62, tr, h, 9, 6).translate(x, base + h / 2, z), art.bark, 0.06, 0.12);
     for (let i = 0; i < 7; i++) {
       const a = (i / 7) * Math.PI * 2 + r() * 0.5, len = 2.6 + r() * 3.2;
       // a buttress, and the root it runs out into
@@ -318,7 +330,7 @@ export function buildCave(): CaveView {
       g.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 2.1, 0, 0.16, 0, 3.2, 0, 0, 0, 0, 0, 3.2, 0, 2.1, 0, -0.16, 2.1, 0, 0.16, 2.1, 0, -0.16, 0, 3.2, 0], 3));
       sink.geo(g.translate(tr * 0.75, 0, 0).rotateY(a).translate(x, base, z), "#857560", 0.06, 0.1);
       const ex = x + Math.cos(a) * (tr + len), ez = z - Math.sin(a) * (tr + len);
-      if (!P.poolAt(ex, ez, 0.2) || t === P.TREES[1]) sink.geo(new THREE.CylinderGeometry(0.07, 0.26, len, 5).rotateZ(Math.PI / 2).translate(tr + len / 2 + 1.2, 0.09, 0).rotateY(a).translate(x, base, z), SLATE_CAVE.roots, 0.05, 0.1);
+      if (!P.poolAt(ex, ez, 0.2) || t === P.TREES[1]) sink.geo(new THREE.CylinderGeometry(0.07, 0.26, len, 5).rotateZ(Math.PI / 2).translate(tr + len / 2 + 1.2, 0.09, 0).rotateY(a).translate(x, base, z), art.roots, 0.05, 0.1);
     }
     // (the oak spreads its boughs wide and low over its lake; the tree reaches up for the eye's light)
     const wide = t === P.TREES[1], nb = wide ? 9 : 6;
@@ -327,7 +339,7 @@ export function buildCave(): CaveView {
       sink.geo(new THREE.CylinderGeometry(0.12, 0.3, len, 5).translate(0, len / 2, 0).rotateZ(-(Math.PI / 2 - up)).rotateY(a).translate(x, base + h - 2.2 - r() * 1.5, z), pick(WOOD));
       if (crown) {
         const bx = x + Math.cos(a) * Math.cos(up) * len, bz = z - Math.sin(a) * Math.cos(up) * len, by = base + h - 2.5 + Math.sin(up) * len;
-        for (let k = 0; k < (wide ? 5 : 3); k++) sink.geo(new THREE.IcosahedronGeometry((wide ? 1.5 : 1.0) + r() * 0.8, 0).scale(1, 0.55, 1).translate(bx + (r() - 0.5) * (wide ? 3.6 : 1.6), by + r() * 0.8, bz + (r() - 0.5) * (wide ? 3.6 : 1.6)), pick(SLATE_CAVE.leaves), 0.3, 0.1);
+        for (let k = 0; k < (wide ? 5 : 3); k++) sink.geo(new THREE.IcosahedronGeometry((wide ? 1.5 : 1.0) + r() * 0.8, 0).scale(1, 0.55, 1).translate(bx + (r() - 0.5) * (wide ? 3.6 : 1.6), by + r() * 0.8, bz + (r() - 0.5) * (wide ? 3.6 : 1.6)), pick(art.leaves), 0.3, 0.1);
       }
     }
   };
@@ -357,7 +369,7 @@ export function buildCave(): CaveView {
           leafPose.rotation.set(leafRandom(), a, leafRandom());
           leafPose.updateMatrix();
           gold.setMatrixAt(goldIndex, leafPose.matrix);
-          gold.setColorAt(goldIndex, C(SLATE_CAVE.awakeLeaves[goldIndex % SLATE_CAVE.awakeLeaves.length]));
+          gold.setColorAt(goldIndex, C(art.awakeLeaves[goldIndex % art.awakeLeaves.length]));
           goldIndex++;
         }
         flowers.push(sparks.add(2, fx, y, fz, "#000000", 0.5 + r() * 0.4, 0, r));
@@ -367,7 +379,7 @@ export function buildCave(): CaveView {
     for (let i = 0; i < 60; i++) { const a = r() * 6.283, d = 1 + Math.sqrt(r()) * 9; sparks.add(1, t.x + Math.cos(a) * d, 0.4 + r() * 2, t.z + Math.sin(a) * d, pick(["#ffd7ee", "#fff3c4", "#bff8ff"]), 0.1 + r() * 0.1, 5 + r() * 4, r); }
   }
   // rock columns where a stalactite has met its stalagmite: a few in every hall, off the path
-  for (const c of P.CHAMBERS) for (let i = 0, made = 0; i < 40 && made < 4; i++) {
+  for (const c of chambers) for (let i = 0, made = 0; i < 40 && made < 4; i++) {
     const a = r() * Math.PI * 2, k = 0.45 + r() * 0.4, x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
     if (P.inside(x, z) < 2.4 || nearPath(x, z) < 3.2 || P.poolAt(x, z, 1.6) || !P.walkable(x, z, 1.2) || inEye(x, z) || c.stones.some((q) => Math.hypot(q.x - x, q.z - z) < 3.5)
       || P.TREES.some((t) => Math.hypot(t.x - x, t.z - z) < 8)) continue;
@@ -398,7 +410,7 @@ export function buildCave(): CaveView {
     }
   };
   for (let i = 0; i < 230; i++) {
-    const ci = i % P.CHAMBERS.length, c = P.CHAMBERS[ci], a = r() * Math.PI * 2, k = Math.sqrt(r()) * 0.92;
+    const ci = i % chambers.length, c = chambers[ci], a = r() * Math.PI * 2, k = Math.sqrt(r()) * 0.92;
     const x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
     if (P.inside(x, z) < 0.8 || inEye(x, z)) continue;
     if (ci !== 1 && r() < 0.55) continue; // the garden has the most
@@ -421,7 +433,7 @@ export function buildCave(): CaveView {
   }
   // mushrooms in clumps on the floor of every chamber (most in the garden), each clump with its halo
   for (let i = 0; i < 64; i++) {
-    const ci = i < 30 ? 1 : i % P.CHAMBERS.length, c = P.CHAMBERS[ci], a = r() * Math.PI * 2, k = 0.35 + r() * 0.6;
+    const ci = i < 30 ? 1 : i % chambers.length, c = chambers[ci], a = r() * Math.PI * 2, k = 0.35 + r() * 0.6;
     const x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
     if (!P.walkable(x, z, 0.5) || nearPath(x, z) < 1.8) continue;
     const colour = pick(GLOWS), n = 3 + Math.floor(r() * 4);
@@ -477,7 +489,7 @@ export function buildCave(): CaveView {
     lamp(x, 1, z, colour, 7, 0.7);
   };
   {
-    const c = P.CHAMBERS[3];
+    const c = chambers[3];
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2 + r() * 0.2, k = i % 3 === 0 ? 0.45 + r() * 0.2 : 0.86, x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
       if (!P.walkable(x, z, 0.4) || nearPath(x, z) < 3.4) continue;
@@ -507,9 +519,9 @@ export function buildCave(): CaveView {
     for (const i of [0, 1, 2, 0, 2, 3]) { const [px, py, u, v] = P4[i]; gPos.push(x + px * cx, y + py, z - px * sx); gUv.push(u, v); gTint.push(tint.r, tint.g, tint.b); gPhase.push(phase); }
     return q;
   };
-  const WAIT = C(SLATE_CAVE.rune[0]), LIT = C(SLATE_CAVE.rune[1]);
+  const WAIT = C(art.rune[0]), LIT = C(art.rune[1]);
   let cell = 0;
-  for (const c of P.CHAMBERS) for (const s of c.stones) {
+  for (const c of chambers) for (const s of c.stones) {
     const fx = Math.sin(s.rot), fz = Math.cos(s.rot);
     sink.geo(new THREE.BoxGeometry(1.5, 0.3, 1.0).rotateY(s.rot).translate(s.x, 0.15, s.z), ROCK[1]);
     sink.geo(new THREE.BoxGeometry(1.0, 1.9, 0.42).rotateY(s.rot).translate(s.x, 1.25, s.z), ROCK[2]);
@@ -546,7 +558,7 @@ export function buildCave(): CaveView {
   const veils: THREE.ShaderMaterial[] = [];
   /** The gates' pillars: the camera keeps clear of them too. */
   const posts: [number, number][] = [];
-  for (const [index, g] of P.GATES.entries()) {
+  for (const [index, g] of plan.gates.entries()) {
     const cx = Math.cos(g.rot), sx = Math.sin(g.rot), half = g.w / 2, H = 4.3;
     const bridge = g.bridge;
     if (!bridge) {
@@ -571,6 +583,7 @@ export function buildCave(): CaveView {
     group.add(veil);
     gates.set(g.id, { index, chamber: P.chamberAt(g.x, g.z), x: g.x, z: g.z, veil, open, want: 0 });
   }
+  const gateList = Array.from(gates.values());
   // the bridge of roots over the river: a deck of woven roots, low rails
   {
     const { x0, x1, z0, z1 } = P.BRIDGE, mx = (x0 + x1) / 2;
@@ -608,7 +621,7 @@ export function buildCave(): CaveView {
     g.setAttribute("aRim", new THREE.Float32BufferAttribute(ctr, 1));
     g.setAttribute("aDry", new THREE.Float32BufferAttribute(dry, 2));
     const water = new THREE.Mesh(g, new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uFog: { value: fog.density }, uFogColor: { value: C(FOG) }, uPool: { value: C(SLATE_CAVE.pool) } },
+      uniforms: { uTime: { value: 0 }, uFog: { value: fog.density }, uFogColor: { value: C(FOG) }, uPool: { value: C(art.pool) } },
       vertexShader: `attribute float aRim; attribute vec2 aDry; varying vec2 vDry; varying float vRim; varying vec3 vW; varying float vD;
         void main(){ vRim = aRim; vDry = aDry; vW = (modelMatrix * vec4(position, 1.0)).xyz; vec4 mv = viewMatrix * vec4(vW, 1.0); vD = -mv.z; gl_Position = projectionMatrix * mv; }`,
       fragmentShader: `varying float vRim; varying vec2 vDry; varying vec3 vW; varying float vD; uniform float uTime; uniform float uFog; uniform vec3 uFogColor; uniform vec3 uPool; ${GLSL_FOG}
@@ -715,7 +728,7 @@ export function buildCave(): CaveView {
 
   // ---- fireflies everywhere (most in the garden and round the heart), the oak's flowers (lit when it blooms)
   for (let i = 0; i < 420; i++) {
-    const ci = i < 120 ? 1 : i < 210 ? 4 : i % P.CHAMBERS.length, c = P.CHAMBERS[ci], a = r() * Math.PI * 2, k = Math.sqrt(r()) * 0.9;
+    const ci = i < 120 ? 1 : i < 210 ? 4 : i % chambers.length, c = chambers[ci], a = r() * Math.PI * 2, k = Math.sqrt(r()) * 0.9;
     const x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
     if (P.inside(x, z) < 1) continue;
     sparks.add(0, x, 0.5 + r() * 3.2, z, pick(["#f6ff8a", "#d9ff7a", "#fff0a0", "#a8ffd0"]), 0.26 + r() * 0.16, 0.7 + r() * 1.1, r);
@@ -757,7 +770,7 @@ export function buildCave(): CaveView {
   gg.setAttribute("aPhase", new THREE.Float32BufferAttribute(gPhase, 1));
   const glyphs = new THREE.Mesh(gg, new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.FrontSide, blending: THREE.AdditiveBlending,
-    uniforms: { uTime: { value: 0 }, uMap: { value: glyphAtlas() }, uFog: { value: fog.density } },
+    uniforms: { uTime: { value: 0 }, uMap: { value: glyphAtlas(art.runes) }, uFog: { value: fog.density } },
     vertexShader: `attribute vec3 aTint; attribute float aPhase; varying vec2 vUv; varying vec3 vTint; varying float vPh; varying float vD;
       void main(){ vUv = uv; vTint = aTint; vPh = aPhase; vec4 mv = modelViewMatrix * vec4(position, 1.0); vD = -mv.z; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying vec2 vUv; varying vec3 vTint; varying float vPh; varying float vD; uniform float uTime; uniform sampler2D uMap; uniform float uFog; ${GLSL_FOG}
@@ -824,13 +837,21 @@ export function buildCave(): CaveView {
   const timeUniforms = [group.userData.water, group.userData.falls, group.userData.shafts, glyphs]
     .map((mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>) => mesh.material.uniforms.uTime);
   const nearTrunk = (x: number, y: number, z: number) => {
-    for (const tree of P.TREES) if (y < tree.h && (tree.x - x) ** 2 + (tree.z - z) ** 2 < (tree.r * 0.83) ** 2) return true;
+    for (let i = 0; i < P.TREES.length; i++) {
+      const tree = P.TREES[i];
+      if (y < tree.h && (tree.x - x) ** 2 + (tree.z - z) ** 2 < (tree.r * 0.83) ** 2) return true;
+    }
     return false;
   };
   const nearPost = (x: number, z: number, r2: number) => {
-    for (const [px, pz] of posts) if ((px - x) ** 2 + (pz - z) ** 2 < r2) return true;
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i];
+      if ((post[0] - x) ** 2 + (post[1] - z) ** 2 < r2) return true;
+    }
     return false;
   };
+  const stoneById = new Map(stones.map((stone) => [stone.id, stone]));
+  const litHalo = C("#ffb93a"), unlitHalo = C("#3fd9ff"), burstColor = new THREE.Color();
   let lastChamber = -1;
   const view: CaveView = {
     group, colliders: col, fog,
@@ -858,8 +879,8 @@ export function buildCave(): CaveView {
       overSolid: () => false,
     },
     update(t, dt, cam, at, h) {
-      for (const clock of timeUniforms) clock.value = t;
-      for (const m of veils) m.uniforms.uTime.value = t;
+      for (let i = 0; i < timeUniforms.length; i++) timeUniforms[i].value = t;
+      for (let i = 0; i < veils.length; i++) veils[i].uniforms.uTime.value = t;
       pointsU.uTime.value = t;
       pointsU.uScale.value = h / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)));
       shade.position.set(at.x, 0.025, at.z);
@@ -869,11 +890,12 @@ export function buildCave(): CaveView {
         lastChamber = here;
         for (let i = 0; i < rocks.length; i++) rocks[i].visible = Math.abs(i - here) <= 1;
       }
-      for (const g of gates.values()) {
+      for (let i = 0; i < gateList.length; i++) {
+        const g = gateList[i];
         if (g.open.value !== g.want) g.open.value = g.want > g.open.value ? Math.min(g.want, g.open.value + dt / 1.4) : Math.max(g.want, g.open.value - dt / 0.6);
         g.veil.visible = g.open.value < 0.999 && Math.abs(g.chamber - here) <= 1 && (g.x - at.x) ** 2 + (g.z - at.z) ** 2 < 49 ** 2;
       }
-      gold.visible = here === P.CHAMBERS.length - 1 && heart.k > 0.4;
+      gold.visible = here === chambers.length - 1 && heart.k > 0.4;
       if (heart.k !== heart.want) {
         heart.k = Math.min(heart.want, heart.k + dt / 3);
         paintFlowers();
@@ -888,25 +910,24 @@ export function buildCave(): CaveView {
       else col.closed |= 1 << g.index;
     },
     setStone(id, lit) {
-      const s = stones.find((q) => q.id === id);
+      const s = stoneById.get(id);
       if (!s) return;
       const c = lit ? LIT : WAIT, tint = gg.attributes.aTint as THREE.BufferAttribute;
       for (let i = 0; i < 6; i++) tint.setXYZ(s.quad + i, c.r * (lit ? 1.25 : 1), c.g * (lit ? 1.25 : 1), c.b * (lit ? 1.25 : 1));
       tint.needsUpdate = true;
-      const h = lit ? C("#ffb93a") : C("#3fd9ff");
+      const h = lit ? litHalo : unlitHalo;
       sCol.setXYZ(s.halo, h.r, h.g, h.b); sCol.needsUpdate = true;
       sSize.setX(s.halo, lit ? 5 : 3.4); sSize.needsUpdate = true;
     },
     setCalling(id) {
-      for (const s of stones) {
-        const on = s.id === id, ph = gg.attributes.aPhase as THREE.BufferAttribute;
+      for (let i = 0; i < stones.length; i++) {
+        const s = stones[i], on = s.id === id;
         // (the one speaking: its halo wider)
         if ((sSize.getX(s.halo) > 5.5) !== on && sSize.getX(s.halo) !== 5) { sSize.setX(s.halo, on ? 6.5 : 3.4); sSize.needsUpdate = true; }
-        void ph;
       }
     },
     burst(x, y, z, colour) {
-      const c = C(colour);
+      const c = burstColor.set(colour);
       for (let i = 0; i < BURST; i++) { sPos.setXYZ(burstAt + i, x, y, z); sCol.setXYZ(burstAt + i, c.r, c.g, c.b); }
       sPos.needsUpdate = true; sCol.needsUpdate = true;
       pointsU.uBurst.value = pointsU.uTime.value;
@@ -917,7 +938,7 @@ export function buildCave(): CaveView {
     },
   };
   const heart = { k: 0, want: 0 };
-  const BLOOM = SLATE_CAVE.awakeLeaves.map(C);
+  const BLOOM = art.awakeLeaves.map(C);
   paintFlowers();
   function paintFlowers() {
     for (let i = 0; i < flowers.length; i++) {

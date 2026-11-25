@@ -6,11 +6,12 @@ import { buildTown, HILL_MARGIN, type Town } from "../src/game/world/town";
 import { NavGrid } from "../src/game/nav";
 import { COVE_APPROACH, COVE_DOORS, RING_TARGET, SLATE_COVE, RING_STAIRS, filterSlateCoveNav, inSlateCove } from "../src/game/world/slateCovePlan";
 import { buildSlateCove } from "../src/game/world/slateCove";
-import { buildCaveZone, countCaveVisit, type CaveZone } from "../src/game/cave/zone";
-import { CaveTravel, coveDoorNear } from "../src/game/cave/travel";
-import { CHAMBERS, EXITS, GATES, SPAWNS, floorY as caveFloorY } from "../src/game/cave/plan";
-import { emptyCave, gateMask, normalizeCave } from "../src/game/cave/quest";
-import { caveQuestTarget, firstClosedGate } from "../src/game/cave/routing";
+import * as caveCode from "../src/game/cave/zone";
+import { applyCaveEvent, buildCaveZone, caveRouting, caveRules, countCaveVisit, type CaveZone } from "../src/game/cave/zone";
+import { CaveLoader, CaveTravel, coveDoorNear } from "../src/game/cave/travel";
+import { EXITS, SPAWNS, floorY as caveFloorY } from "../src/game/cave/plan";
+import { CHAMBERS, GATES } from "../src/game/world/slateCave";
+import { emptyCave } from "../src/game/cave/progress";
 import { Hop } from "../src/game/movement";
 import { CameraRig } from "../src/game/camera";
 import { readPlayStats } from "../src/state/playStats";
@@ -141,8 +142,8 @@ describe("the shared cave", () => {
     for (const gate of GATES) {
       const n = Math.sin(gate.rot), m = Math.cos(gate.rot);
       const a = { x: gate.x + n * 1.6, z: gate.z + m * 1.6 }, b = { x: gate.x - n * 1.6, z: gate.z - m * 1.6 };
-      expect(firstClosedGate(a, b, zone.quest.save)?.id).toBe(gate.id);
-      expect(firstClosedGate(b, a, zone.quest.save)).toBeUndefined();
+      expect(caveRouting.firstClosedGate(a, b, zone.quest.save)?.id).toBe(gate.id);
+      expect(caveRouting.firstClosedGate(b, a, zone.quest.save)).toBeUndefined();
       expect(zone.nav.path(a.x, a.z, b.x, b.z), gate.id + " inward").toBeNull();
       expect(zone.nav.path(b.x, b.z, a.x, a.z), gate.id + " outward").not.toBeNull();
       at.set(gate.x - n * 0.05, 0, gate.z - m * 0.05);
@@ -160,8 +161,9 @@ describe("the shared cave", () => {
     const quest = zone.quest;
     quest.replace(emptyCave());
     expect(quest.mask).toBe(0);
-    expect(caveQuestTarget(SPAWNS.cleft, quest.save)?.id).toBe("cave_bram");
-    expect(quest.story({ name: "cave-pass", data: { gate: "bram" } })).toBe(true);
+    expect(caveRouting.target(SPAWNS.cleft, quest.save)?.id).toBe("cave_bram");
+    const completed = (id: string) => ({ active: true, sit: { id }, conv: { completed: true } });
+    expect(applyCaveEvent(quest, completed("x06-bram"), "cave_bram", false, "cave-pass", { gate: "bram" })).toBe(true);
     for (const id of ["tide-1", "tide-2"]) expect(quest.light(id)).toBe(true);
     expect(quest.light("tide-2")).toBe(false);
     expect(quest.light("bad")).toBe(false);
@@ -175,10 +177,10 @@ describe("the shared cave", () => {
     expect(quest.save.heart).toBe(true);
     expect(quest.mask).toBe(7);
     expect(quest.treeHeard()).toBe(false);
-    expect(caveQuestTarget(SPAWNS.cleft, quest.save)?.id).toBe("cave_fern");
-    quest.story({ name: "cave-pass", data: { gate: "fern" } });
+    expect(caveRouting.target(SPAWNS.cleft, quest.save)?.id).toBe("cave_fern");
+    applyCaveEvent(quest, completed("x07-fern"), "cave_fern", false, "cave-pass", { gate: "fern" });
     expect(quest.mask).toBe(63);
-    expect(caveQuestTarget(SPAWNS.cleft, quest.save)?.id).toBe("cave_oak");
+    expect(caveRouting.target(SPAWNS.cleft, quest.save)?.id).toBe("cave_oak");
     const nav = zone.nav;
     expect(nav.path(0, 2.2, 6, -176.8)).not.toBeNull();
     expect(nav.path(6, -176.8, 9.2, -2.2)).not.toBeNull();
@@ -188,9 +190,9 @@ describe("the shared cave", () => {
     }
     expect(quest.treeHeard()).toBe(true);
     expect(quest.treeHeard()).toBe(false);
-    const restored = normalizeCave({ ...quest.save, lit: [...quest.save.lit, "bad", "tide-1"], passed: [...quest.save.passed, "bram"] });
+    const restored = caveRules.normalize({ ...quest.save, lit: [...quest.save.lit, "bad", "tide-1"], passed: [...quest.save.passed, "bram"] });
     expect(restored).toEqual(quest.save);
-    expect(gateMask(restored)).toBe(63);
+    expect(caveRules.gateMask(restored)).toBe(63);
   });
 
   it("restores a position beyond a closed gate and follows behind both dry spawns", () => {
@@ -217,6 +219,45 @@ describe("the shared cave", () => {
         }
       }
     } finally { resumed.view.dispose(); }
+  });
+
+  it("rechecks a dry crossing at fade commit and restores with the requested spawn", async () => {
+    const loader = new CaveLoader();
+    const enter = vi.spyOn(zone.quest, "enter").mockImplementation(() => {});
+    const count = vi.fn(), build = vi.fn(() => zone);
+    loader.code = { ...caveCode, buildCaveZone: build, countCaveVisit: count };
+    const mouth = COVE_DOORS.cleft;
+    let position: { x: number; z: number } = mouth;
+    let commit: () => void = () => {};
+    const saved = { x: 6, z: -176.8, rot: 0 }, progress = emptyCave();
+    const ending = {
+      ready: () => true, position: () => position, fade: (run: () => void) => { commit = run; },
+      save: () => progress, mount: vi.fn(() => true), entered: vi.fn(),
+    };
+    const crossing = { door: mouth.id, instant: false, crossing: true };
+    try {
+      await loader.open(crossing, ending);
+      expect(loader.pending).toBe(true);
+      position = { x: mouth.x + 4, z: mouth.z };
+      commit();
+      expect(loader.pending).toBe(false);
+      expect(build).not.toHaveBeenCalled();
+      expect(count).not.toHaveBeenCalled();
+
+      position = { x: mouth.x, z: mouth.z };
+      await loader.open(crossing, ending);
+      commit();
+      commit();
+      expect(build).toHaveBeenCalledExactlyOnceWith(progress);
+      expect(ending.mount).toHaveBeenCalledExactlyOnceWith(zone, SPAWNS.cleft);
+      expect(ending.entered).toHaveBeenCalledTimes(1);
+      expect(count).toHaveBeenCalledTimes(1);
+
+      await loader.open({ door: mouth.id, saved, instant: true, crossing: false }, ending);
+      expect(ending.mount).toHaveBeenLastCalledWith(zone, saved);
+      expect(count).toHaveBeenCalledTimes(1);
+      expect(enter).toHaveBeenCalledTimes(2);
+    } finally { enter.mockRestore(); }
   });
 
   it("counts once at a successful dry transition and skips cancelled, failed and restored entries", () => {

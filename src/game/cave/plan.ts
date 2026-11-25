@@ -1,18 +1,31 @@
-import { CHAMBERS } from "../world/slateCave";
-export { CHAMBERS, GATES, KEEPERS } from "../world/slateCave";
+import type { CaveNotice } from "./config";
+
 export interface Stone { id: string; x: number; z: number; /** Its glyph faces this way (radians, 0: +z). */ rot: number }
-export interface Chamber {
-  id: string; n: number;
-  label: Readonly<{ en: string; lt: string }>;
+export interface Room {
   x: number; z: number; rx: number; rz: number;
   /** How high its roof is in the middle (m). */
   ceil: number;
-  stones: Stone[];
 }
+export interface Chamber extends Room {
+  id: string; n: number;
+  label: Readonly<{ en: string; lt: string }>;
+  stones: readonly Stone[];
+}
+
+type StoneSite = readonly [x: number, z: number, rot: number];
+export const ROOMS: readonly (Room & { sites: readonly StoneSite[] })[] = [
+  { x: 0, z: -25, rx: 17, rz: 17.5, ceil: 15, sites: [[-8.2, -24.5, Math.PI / 2], [7.2, -31.6, -0.5], [1.6, -39.4, 0.25]] },
+  { x: -15, z: -64, rx: 13.5, rz: 13, ceil: 11, sites: [[-24.2, -60.5, 1.2], [-8.4, -70.6, -0.9], [-19.5, -73.2, 0.6]] },
+  { x: -6, z: -101, rx: 15, rz: 14, ceil: 12, sites: [[-15.6, -106.4, 1.1], [3.6, -108.2, -0.8], [-6.8, -112.2, 0]] },
+  { x: 14, z: -137, rx: 13.5, rz: 12.5, ceil: 13, sites: [[5.4, -131.6, 1.0], [22.6, -135.4, -1.3], [13.2, -146.4, 0.1]] },
+  { x: 6, z: -177, rx: 17, rz: 16, ceil: 17, sites: [[-6.6, -172.4, 1.25], [18.4, -173.6, -1.2], [6.2, -191.2, 0]] },
+];
 export interface Gate {
   id: string; x: number; z: number; rot: number; w: number;
   label: Chamber["label"];
-  keeper?: string; stones?: number; tide?: number; pass?: string; to?: number; bridge?: boolean;
+  keeper?: string; stones?: number; room?: { index: number; stones: number }; pass?: string; to?: number; bridge?: boolean;
+  locked: CaveNotice;
+  opened?: CaveNotice;
 }
 export interface Passage { ax: number; az: number; bx: number; bz: number; w: number }
 export interface Pool { x: number; z: number; rx: number; rz: number; dryStrip?: number; /** One wades through it (a ford); else its rim keeps one out. */ ford?: boolean;
@@ -77,19 +90,23 @@ const segDist = (x: number, z: number, p: Passage) => {
 /** How far inside the cave (x, z) is (m; negative: in the rock): the chambers' ovals and the passages between them. */
 export function inside(x: number, z: number) {
   let best = -99;
-  for (const c of CHAMBERS) {
+  for (let i = 0; i < ROOMS.length; i++) {
+    const c = ROOMS[i];
     if (Math.abs(z - c.z) > c.rz + 2 || Math.abs(x - c.x) > c.rx + 2) continue;
     const k = Math.hypot((x - c.x) / c.rx, (z - c.z) / c.rz);
     best = Math.max(best, (1 - k) * Math.min(c.rx, c.rz));
   }
-  for (const p of PASSAGES) best = Math.max(best, p.w / 2 - segDist(x, z, p));
+  for (let i = 0; i < PASSAGES.length; i++) {
+    const passage = PASSAGES[i];
+    best = Math.max(best, passage.w / 2 - segDist(x, z, passage));
+  }
   return best;
 }
 /** The chamber (x, z) is in or nearest to (its index). */
 export function chamberAt(x: number, z: number) {
   let best = 0, bd = Infinity;
-  for (let i = 0; i < CHAMBERS.length; i++) {
-    const c = CHAMBERS[i];
+  for (let i = 0; i < ROOMS.length; i++) {
+    const c = ROOMS[i];
     const d = Math.hypot((x - c.x) / c.rx, (z - c.z) / c.rz);
     if (d < bd) { bd = d; best = i; }
   }
@@ -99,7 +116,8 @@ export function chamberAt(x: number, z: number) {
 export function roofY(x: number, z: number) {
   const d = Math.max(0, inside(x, z));
   let top = 5.2;
-  for (const c of CHAMBERS) {
+  for (let i = 0; i < ROOMS.length; i++) {
+    const c = ROOMS[i];
     const k = Math.hypot((x - c.x) / c.rx, (z - c.z) / c.rz);
     if (k < 1) top = Math.max(top, 5.2 + (c.ceil - 5.2) * (1 - k * k) ** 0.8);
   }
@@ -111,7 +129,10 @@ export function poolContains(p: Pool, x: number, z: number, grow = 0) {
   return Math.abs(x - p.x) >= (p.dryStrip ?? 0) && ((x - p.x) / (p.rx + grow)) ** 2 + ((z - p.z) / (p.rz + grow)) ** 2 < 1;
 }
 export function poolAt(x: number, z: number, grow = 0): Pool | null {
-  for (const p of POOLS) if (!p.deck && poolContains(p, x, z, grow)) return p;
+  for (let i = 0; i < POOLS.length; i++) {
+    const pool = POOLS[i];
+    if (!pool.deck && poolContains(pool, x, z, grow)) return pool;
+  }
   return null;
 }
 /** What is underfoot (m): the cave's floor, ankle-deep under a ford's water, the island a little proud of its lake. */
@@ -127,7 +148,10 @@ export function walkable(x: number, z: number, r = 0.38) {
   if (inside(x, z) < r) return false;
   const p = poolAt(x, z, r * 0.6);
   if (p && !p.ford && !(x > BRIDGE.x0 + r * 0.5 && x < BRIDGE.x1 - r * 0.5 && z > BRIDGE.z0 && z < BRIDGE.z1)) return false;
-  for (const t of TREES) if (Math.hypot(x - t.x, z - t.z) < t.r + r) return false;
+  for (let i = 0; i < TREES.length; i++) {
+    const tree = TREES[i];
+    if (Math.hypot(x - tree.x, z - tree.z) < tree.r + r) return false;
+  }
   return true;
 }
 

@@ -6,10 +6,13 @@ import { loadSituation } from "../src/content/situations/catalog";
 import { audio } from "../src/game/audio";
 import type { CaveView } from "../src/game/cave/Cave";
 import { stoneGain } from "../src/game/cave/call";
-import { CHAMBERS, EXITS, SPAWNS, TREES } from "../src/game/cave/plan";
-import { CaveQuest, normalizeCave, type CaveSave } from "../src/game/cave/quest";
-import { stonePhrases } from "../src/game/cave/stonePhrases";
-import { saveCaveProgress } from "../src/game/cave/zone";
+import { EXITS, SPAWNS, TREES } from "../src/game/cave/plan";
+import { CaveQuest, type CaveSave } from "../src/game/cave/quest";
+import { applyCaveEvent, caveRouting, caveRules, saveCaveProgress, stonePhrases } from "../src/game/cave/zone";
+import { CaveRules } from "../src/game/cave/progress";
+import { createCaveRouting } from "../src/game/cave/routing";
+import { CaveGuide } from "../src/game/cave/guide";
+import { CHAMBERS, SLATE_CAVE } from "../src/game/world/slateCave";
 import { COVE_DOORS, RING_TARGET } from "../src/game/world/slateCovePlan";
 import { emptyProgress } from "../src/state/progress";
 import { CAVE_COPY } from "../src/content/cave-copy";
@@ -20,10 +23,11 @@ const ready: CaveSave = { lit: [...tides, "root-1", "root-2"], passed: ["bram", 
 const at = (id: string) => CHAMBERS.flatMap((room) => room.stones).find((stone) => stone.id === id)!;
 const glyph = () => useStore.getState().hud.glyph!;
 
-async function visit(initial?: CaveSave) {
+async function visit(initial?: CaveSave, rules = caveRules) {
   const view = { setGate: vi.fn(), setHeart: vi.fn(), setStone: vi.fn(), setCalling: vi.fn(), burst: vi.fn() };
   const persist = vi.fn(), gates = vi.fn();
-  const quest = new CaveQuest(view as unknown as CaveView, initial, persist, gates);
+  const quest = new CaveQuest(view as unknown as CaveView, initial, persist, rules,
+    rules === caveRules ? caveRouting : createCaveRouting(rules), gates, stonePhrases);
   await quest.loadLines();
   return { quest, view, persist, gates };
 }
@@ -88,10 +92,56 @@ describe("Slate Cove listening and story", () => {
     quest.dispose();
   });
 
+  it("uses the configured speakers, sessions, event names and prerequisite masks", async () => {
+    const [first, second] = SLATE_CAVE.keepers;
+    const entrance = { ...first, gate: "entry-key", npc: "entry-actor", sitId: "entry-scene" };
+    const bridge = { ...second, gate: "bridge-key", npc: "bridge-actor", sitId: "bridge-scene" };
+    const ids: Record<string, string> = { [first.gate]: entrance.gate, [second.gate]: bridge.gate };
+    const rules = new CaveRules({ ...SLATE_CAVE, keepers: [entrance, bridge],
+      gates: SLATE_CAVE.gates.map((gate) => ({
+        ...gate, id: ids[gate.id] ?? gate.id,
+        keeper: gate.keeper && ids[gate.keeper], pass: gate.pass && ids[gate.pass],
+      })),
+      keeperEvent: "keeper-release", treeEvent: "tree-finished", treeNpc: "tree-actor", treeSituation: "tree-scene",
+    });
+    const { quest, view } = await visit({ lit: [], passed: [first.gate] }, rules);
+    const session = (id: string, completed = true, active = true) => ({ sit: { id }, conv: { completed }, active });
+    const release = (speaker: string, id: string, gate: string, completed = true, active = true) =>
+      applyCaveEvent(quest, session(id, completed, active), speaker, false, "keeper-release", { gate });
+    try {
+      expect(quest.save.passed).toEqual([]);
+      expect(quest.guide(SPAWNS.cleft)?.id).toBe(entrance.npc);
+      expect(release(entrance.npc, entrance.sitId, entrance.gate, false)).toBe(false);
+      expect(release(entrance.npc, entrance.sitId, entrance.gate, true, false)).toBe(false);
+      expect(release(bridge.npc, entrance.sitId, entrance.gate)).toBe(false);
+      expect(release(entrance.npc, first.sitId, entrance.gate)).toBe(false);
+      expect(release(entrance.npc, entrance.sitId, first.gate)).toBe(false);
+      expect(applyCaveEvent(quest, session(entrance.sitId), entrance.npc, false, "cave-pass", { gate: entrance.gate })).toBe(false);
+      expect(release(entrance.npc, entrance.sitId, entrance.gate)).toBe(true);
+      expect(view.setGate).toHaveBeenCalledWith(entrance.gate, true, false);
+      expect(release(bridge.npc, bridge.sitId, bridge.gate)).toBe(false);
+      expect(quest.mask).toBe(1);
+      for (const id of ready.lit) expect(quest.light(id)).toBe(true);
+      expect(quest.guide(SPAWNS.cleft)?.id).toBe(bridge.npc);
+      quest.update(0, SPAWNS.cleft, 0, true);
+      expect(useStore.getState().hud.cave).toMatchObject({ nextSitId: bridge.sitId, next: bridge.guide.lt });
+      expect(applyCaveEvent(quest, session("tree-scene"), undefined, true, "tree-finished", {})).toBe(false);
+      expect(release(bridge.npc, bridge.sitId, bridge.gate)).toBe(true);
+      expect(view.setGate).toHaveBeenCalledWith(bridge.gate, true, false);
+      expect(quest.mask).toBe(63);
+      expect(quest.guide(TREES[1])?.id).toBe("tree-actor");
+      expect(applyCaveEvent(quest, session("tree-scene"), undefined, false, "tree-finished", {})).toBe(false);
+      expect(applyCaveEvent(quest, session("tree-scene"), undefined, true, "tree-finished", {})).toBe(true);
+      expect(quest.save.tree).toBe(true);
+    } finally {
+      quest.dispose();
+    }
+  });
+
   it("holds Fern at five and restores first cues until the Oak is heard once", async () => {
     const five = { ...ready, passed: ["bram"], told: 2 };
     const { quest, gates } = await visit({ ...five, lit: [...five.lit, "root-1", "invalid"] });
-    expect(normalizeCave(five)).toEqual(quest.save);
+    expect(caveRules.normalize(five)).toEqual(quest.save);
     expect(quest.mask).toBe(7);
     expect(quest.replay).toBe(false);
     expect(quest.treeHeard()).toBe(false);
@@ -211,11 +261,18 @@ describe("Slate Cove listening and story", () => {
     solve(quest, id);
     expect(quest.save.lit).toEqual([...ready.lit, id]);
     expect(quest.mask).toBe(63);
-    quest.update(41, at(id), 0, true);
+    expect(quest.rearm.get(id)).toBe(40);
+    quest.update(39, at(id), 0, true);
+    expect(quest.rearm.get(id)).toBe(1);
+    quest.update(2, at(id), 0, true);
+    expect(quest.rearm.get(id)).toBe(0);
     expect(glyph()).toMatchObject({ id, solved: true });
     expect(quest.relit.has(id)).toBe(true);
     quest.close();
+    quest.update(0.01, at(id), 0, true);
+    expect(quest.rearm.get(id)).toBe(0);
     quest.update(0.01, at(id), 0, false);
+    expect(quest.rearm.get(id)).toBeUndefined();
     expect(quest.relit.has(id)).toBe(false);
     expect(quest.phrases.get(id)?.id).not.toBe(previous);
     expect(new Set([...quest.phrases.values()].map((line) => line.id)).size).toBe(15);
@@ -266,7 +323,7 @@ describe("Slate Cove listening and story", () => {
     const town = { id: "town" }, entrance = COVE_DOORS.cleft, exit = EXITS[1];
     const player = { root: { position: new Vector3(entrance.out.x, 0, entrance.out.z) } };
     const main = {
-      coveArt: { load: vi.fn() }, town: { group: {} }, caveTravel: { pending: false },
+      caveGuide: new CaveGuide(), coveArt: { load: vi.fn() }, town: { group: {} }, caveTravel: { pending: false },
       zone: town, player, rides: {}, hop: { air: false }, vel: new Vector3(2, 0, -0.8),
       guidance: { setKind: vi.fn(), setBeacon: vi.fn() }, walkTo,
     };
@@ -283,12 +340,12 @@ describe("Slate Cove listening and story", () => {
       expect(walkTo).toHaveBeenLastCalledWith(RING_TARGET.x, RING_TARGET.z, expect.objectContaining({ kind: "point" }));
 
       const leave = vi.fn((_id: string, resume?: () => void) => {
-        Object.assign(game, { zone: town, caveZone: undefined, caveObjective: null });
+        Object.assign(game, { zone: town, caveZone: undefined });
         resume?.();
       });
       Object.assign(game, {
-        zone: { id: "gruta", interior: { wild: { exits: EXITS } } }, caveZone: { quest },
-        caveObjective: { ...exit, kind: "exit", label: CAVE_COPY.door.dryExit.en },
+        zone: { id: "gruta", interior: { wild: { exits: EXITS } } },
+        caveZone: { quest, exitTarget: { ...exit, kind: "exit", label: CAVE_COPY.door.dryExit.en } },
         leaveCave: leave, resumeObjectiveWalk: () => game.autoWalkToObjective(),
       });
       game.setObjective("s69-local");

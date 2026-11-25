@@ -6,9 +6,10 @@ import { ROUTE } from "../content/route";
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
-import { CAVE_ZONE, COVE_DOORS, COVE_REACH, PREFERRED_COVE_DOOR, RING_TARGET, SLATE_COVE, drawSlateCoveMap, filterSlateCoveNav, inSlateCove, type CoveDoor } from "./world/slateCovePlan";
+import { CAVE_ZONE, COVE_DOORS, PREFERRED_COVE_DOOR, SLATE_COVE, filterSlateCoveNav, inSlateCove, type CoveDoor } from "./world/slateCovePlan";
 import { SlateCoveArt } from "./world/slateCoveArt";
-import { CaveLoader, coveDoorNear } from "./cave/travel";
+import { CaveLoader, caveExitNear, caveExitSpawn, coveDoorClick, coveDoorNear, coveDoorPush } from "./cave/travel";
+import { CaveGuide, caveMapRegion, drawCoveMap } from "./cave/guide";
 import type { CaveZone } from "./cave/zone";
 import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
@@ -78,7 +79,7 @@ import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
 import { audioDiagnosticsEnabled, audioDiagnosticsPaused, subscribeAudioDiagnostics } from "../convo/audioDiagnostics";
-import { NPCS, type Look } from "../content/npcs";
+import { NPCS } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
 import { whenLoaded } from "./prefetch";
@@ -272,14 +273,13 @@ export class Game implements GameApi {
   private caveTravel = new CaveLoader();
   private caveStickHeld = false;
   private caveKeys = new Set<string>();
-  private caveHome?: { pitch: number; dist: number; sky: number; ground: number; sun: number };
+  private restoreCaveScene?: () => void;
   private talkTree = false;
   private walkFrom = new THREE.Vector3();
   private walkWant = new THREE.Vector3();
 
-  private caveGuideMode: GuideKind = "objective";
-  private caveGuidePlace?: string;
-  private caveGuideNpc?: string;
+  private caveGuide = new CaveGuide();
+  get caveGuideNpc() { return this.caveGuide.npc; }
   get cave() { return this.caveZone?.quest ?? null; }
   get caveMapBounds() { return this.wild ? this.caveCode?.BOUNDS : undefined; }
   private get wild() { return this.zone?.interior?.wild; }
@@ -883,58 +883,46 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ zones
 
-  private openCave(door: CoveDoor, saved?: { x: number; z: number; rot: number }, instant = false, dry = false, onEntered?: () => void) {
-    if (this.disposed || this.transitioning || this.caveZone || (!instant && this.zone.id !== "town")) return;
-    const origin = this.zone, mouth = COVE_DOORS[door];
-    return this.caveTravel.open(instant, () => !this.disposed && this.zone === origin && !this.transitioning,
-      (commit) => this.fadeThen(commit), (code) => {
-        const state = useStore.getState(), p = this.player.root.position;
-        if (this.disposed || this.zone !== origin || (dry && (this.session?.active || state.hud.panel ||
-          this.rides.riding || this.swimming || this.hop.air || this.modes.active || this.modes.modal || Math.hypot(p.x - mouth.x, p.z - mouth.z) >= COVE_REACH))) return false;
-        let zone: CaveZone;
-        try {
-          zone = code.buildCaveZone(state.progress.cave);
-        } catch { return false; }
+  private openCave(door: CoveDoor, saved?: { x: number; z: number; rot: number }, instant = false, crossing = false, onEntered?: () => void) {
+    const origin = this.zone;
+    if (!instant && origin.id !== "town") return;
+    return this.caveTravel.open({ door, saved, instant, crossing }, {
+      ready: () => !this.disposed && !this.transitioning && !this.caveZone && this.zone === origin,
+      position: () => {
+        if (this.disposed || this.zone !== origin || (crossing && (this.session?.active || useStore.getState().hud.panel ||
+          this.rides.riding || this.swimming || this.hop.air || this.modes.active || this.modes.modal))) return;
+        return this.player.root.position;
+      },
+      fade: (commit) => this.fadeThen(commit),
+      save: () => useStore.getState().progress.cave,
+      mount: (zone, spawn) => {
         this.caveZone = zone;
-        this.enterZone(CAVE_ZONE, zone.safeSpawn(saved ?? zone.interior.wild!.spawns[door]), true);
-        if (this.zone !== zone) return false;
-        zone.quest.enter();
-        onEntered?.();
-        return true;
-      }, dry);
+        this.enterZone(zone.id, spawn, true);
+        if (this.zone === zone) return true;
+        this.caveZone = undefined;
+        return false;
+      },
+      entered: onEntered,
+    });
   }
-
-  private caveExit(id?: string) {
-    const exits = this.wild?.exits;
-    if (exits) for (const exit of exits) if (exit.id === id) return exit;
-    return exits?.[1];
-  }
-
-  private caveObjective: { kind: "exit"; id: string; x: number; z: number; label: string } | null = null;
 
   private leaveCave(id?: string, onEntered?: () => void) {
-    const exit = this.caveExit(id);
-    if (!exit || this.transitioning) return;
+    if (!this.wild || this.transitioning) return;
+    const spawn = caveExitSpawn(this.wild.exits, id);
+    if (!spawn) return;
     this.coveArt.load(this.town.group);
-    this.enterZone("town", COVE_DOORS[exit.id as CoveDoor].out, false, undefined, onEntered);
+    this.enterZone("town", spawn, false, undefined, onEntered);
   }
 
   private checkCoveDoor(p: THREE.Vector3, blocked: boolean) {
     if (blocked || this.hop.air || this.swimming) return;
+    const aim = this.autoTarget;
     if (this.wild) {
-      for (const exit of this.wild.exits) {
-        if (Math.hypot(p.x - exit.x, p.z - exit.z) < exit.push && this.vel.x * exit.dir[0] + this.vel.z * exit.dir[1] > 0.5) {
-          this.leaveCave(exit.id, this.autoTarget?.kind === "cave-exit" && this.autoTarget.onward ? this.resumeObjectiveWalk : undefined);
-          return;
-        }
-      }
-    } else if (this.coveArt.ready && inSlateCove(p.x, p.z) && this.vel.lengthSq() > 0.3) {
-      const speed = Math.hypot(this.vel.x, this.vel.z);
-      const door = coveDoorNear(p, this.vel.x / speed, this.vel.z / speed);
-      if (door) {
-        const guide = this.autoTarget?.kind === "cave-entry" && this.autoTarget.onward;
-        void this.openCave(door, undefined, false, true, guide ? this.resumeCaveWalk : undefined);
-      }
+      const exit = caveExitNear(this.wild.exits, p, this.vel);
+      if (exit) this.leaveCave(exit.id, aim?.kind === "cave-exit" && aim.onward ? this.resumeObjectiveWalk : undefined);
+    } else if (this.coveArt.ready) {
+      const door = coveDoorPush(p, this.vel);
+      if (door) void this.openCave(door, undefined, false, true, aim?.kind === "cave-entry" && aim.onward ? this.resumeCaveWalk : undefined);
     }
   }
 
@@ -980,22 +968,13 @@ export class Game implements GameApi {
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
       if (this.zone) this.scene.remove(this.zone.group);
       if (departing && !wild) {
-        this.cave?.dispose();
-        this.caveZone?.view.dispose();
+        this.caveZone?.dispose();
         this.caveZone = undefined;
-        if (this.caveGuidePlace === CAVE_ZONE) {
-          this.caveGuidePlace = this.caveGuideNpc = undefined;
-          this.caveGuideMode = "objective";
-        }
-        useStore.getState().toast({ kind: "info", title: this.caveCode!.CAVE_COPY.toast.exit.title.lt, body: this.caveCode!.CAVE_COPY.toast.exit.body.lt });
+        this.caveGuide.leave();
+        this.caveCode?.announceCaveExit();
       }
-      if (wild && !departing && this.caveGuidePlace !== "old-stone-ring" &&
-          (!this.phoneTask() || this.caveGuidePlace === CAVE_ZONE)) this.caveGuideMode = "cave";
-      if (wild && departing) {
-        this.cave?.close();
-        const saved = useStore.getState().progress.cave;
-        if (saved && this.cave && saved !== this.cave.save) this.cave.restore(saved);
-      }
+      if (wild && !departing) this.caveGuide.enter(!!this.phoneTask());
+      if (wild && departing) this.caveZone?.restoreProgress();
       if (departing || wild) {
         this.caveStickHeld ||= !!(this.joy.x || this.joy.y);
         for (const key of this.keys) this.caveKeys.add(key);
@@ -1005,8 +984,6 @@ export class Game implements GameApi {
         audio.stopAmbience();
       }
       this.zone = z;
-      const exit = this.caveExit();
-      this.caveObjective = exit ? { kind: "exit", id: exit.id, x: exit.x, z: exit.z, label: this.caveCode!.CAVE_COPY.door.dryExit.en } : null;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
       const indoor = !!z.interior;
@@ -1045,29 +1022,10 @@ export class Game implements GameApi {
       this.hemi.intensity = indoor ? (poolHall ? 1.23 : 1.9) : THEME.light.fill;
       this.sun.intensity = indoor ? (poolHall ? 0.92 : 1.6) : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
-      if (wild) {
-        this.caveHome ??= { pitch: this.rig.pitch, dist: this.rig.dist, sky: this.hemi.color.getHex(),
-          ground: this.hemi.groundColor.getHex(), sun: this.sun.color.getHex() };
-        this.scene.fog = wild.fog;
-        this.scene.background = wild.fog.color;
-        this.hemi.color.set(wild.hemi[0]);
-        this.hemi.groundColor.set(wild.hemi[1]);
-        this.hemi.intensity = wild.hemi[2];
-        this.sun.color.set(wild.sun[0]);
-        this.sun.intensity = wild.sun[1];
-        if (wild.camera) {
-          this.rig.homePitch = this.rig.pitch = wild.camera.pitch;
-          this.rig.dist = wild.camera.dist;
-        }
-      } else if (departing && this.caveHome) {
-        const home = this.caveHome;
-        this.hemi.color.setHex(home.sky);
-        this.hemi.groundColor.setHex(home.ground);
-        this.sun.color.setHex(home.sun);
-        this.rig.homePitch = FOLLOW.pitch;
-        this.rig.pitch = home.pitch;
-        this.rig.dist = home.dist;
-        this.caveHome = undefined;
+      if (wild) this.restoreCaveScene = this.caveCode?.applyCaveScene(wild, this.scene, this.rig, this.hemi, this.sun, this.restoreCaveScene);
+      else if (departing) {
+        this.restoreCaveScene?.();
+        this.restoreCaveScene = undefined;
       }
       this.rig.mode = this.walkCamera;
       if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
@@ -1128,7 +1086,7 @@ export class Game implements GameApi {
       if ((sp.npc === "sam" || sp.npc === "emma") && sp.npc !== partner) continue;
       const def = NPCS[sp.npc];
       if (!def) continue;
-      const caveLook: Partial<Look> | undefined = this.wild ? this.caveCode?.SLATE_CAVE.keeperLooks[sp.npc as "cave_bram" | "cave_fern"] : undefined;
+      const caveLook = this.wild ? this.caveCode?.keeperLooks[sp.npc] : undefined;
       const ch = createCharacter({ ...def.look, ...caveLook, female: def.look.female ?? def.gender === "f" });
       ch.watch = this.learnerAt;
       ch.root.position.set(sp.x, 0, sp.z);
@@ -1759,21 +1717,13 @@ export class Game implements GameApi {
     if (!this.raycaster.ray.intersectPlane(plane, p)) return;
     // door near the click?
     if (!this.zone.interior) {
-      if (this.coveArt.ready && inSlateCove(p.x, p.z)) {
-        for (const door of [COVE_DOORS.main, COVE_DOORS.cleft]) {
-          if (Math.hypot(p.x - door.x, p.z - door.z) < 2) {
-            this.walkTo(door.x + door.dx * 1.5, door.z + door.dz * 1.5, { kind: "cave-entry", id: door.id });
-            return;
-          }
-        }
-      }
+      const mouth = this.coveArt.ready && coveDoorClick(p);
+      if (mouth) { this.walkTo(mouth.x, mouth.z, { kind: "cave-entry", id: mouth.id }); return; }
       const d = this.town.doors.find((dd) => Math.hypot(dd.outX - p.x, dd.outZ - p.z) < 3.5 || Math.hypot(dd.x - p.x, dd.z - p.z) < 3);
       if (d) { this.walkTo(d.outX, d.outZ, { kind: "door", id: d.loc }); return; }
     } else if (this.wild) {
-      for (const exit of this.wild.exits) if (Math.hypot(p.x - exit.x, p.z - exit.z) < exit.reach) {
-        this.walkTo(exit.x, exit.z, { kind: "cave-exit", id: exit.id });
-        return;
-      }
+      const exit = caveExitNear(this.wild.exits, p);
+      if (exit) { this.walkTo(exit.x, exit.z, { kind: "cave-exit", id: exit.id }); return; }
     } else if (Math.hypot(p.x - this.zone.interior.exit.x, p.z - this.zone.interior.exit.z) < 1.8) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit" }); return;
     }
@@ -1861,13 +1811,13 @@ export class Game implements GameApi {
   private resumeObjectiveWalk = () => this.autoWalkToObjective();
   private resumeCaveWalk = () => this.autoWalkToObjective("cave");
 
-  autoWalkToObjective(mode: GuideKind = this.caveGuideMode) {
+  autoWalkToObjective(mode: GuideKind = this.caveGuide.mode) {
     // (at a wheel one drives there oneself: the marks on the ground lead the way)
     if (this.islandGuide && (this.rides.riding?.kind === "boat" || this.swimming)) { this.pathT = 0; return; }
     if (this.rides.riding) { useStore.getState().toast({ kind: "info", title: "Pirmiausia išlipk", body: "Arba važiuok pats – rodyklės ant žemės rodo kelią." }); return; }
-    if ((this.cave || this.caveGuidePlace) && (this.caveTravel.pending || useStore.getState().hud.glyph)) return;
-    if (mode !== this.caveGuideMode) {
-      this.caveGuideMode = mode;
+    if ((this.cave || this.caveGuide.place) && (this.caveTravel.pending || useStore.getState().hud.glyph)) return;
+    if (mode !== this.caveGuide.mode) {
+      this.caveGuide.mode = mode;
       this.refreshObjective();
     }
     const tgt = this.objectiveTarget(mode);
@@ -1992,6 +1942,7 @@ export class Game implements GameApi {
     const actor = this.npcs.find((n) => n.id === npc) ?? null;
     if (sit.location === CAVE_ZONE && (!this.wild || !actor || talkDist(actor, this.player.root.position) >= TALK_RANGE)) return;
     this.requestConversation(sit.id, actor);
+    return true;
   }
 
   /** Situation picker: go straight into a conversation (no walking). The player appears in front of
@@ -2005,14 +1956,8 @@ export class Game implements GameApi {
     this.lastScenario = sitId;
     if (sit.location === CAVE_ZONE) {
       this.session?.close();
-      const at = this.player.root.position;
-      const target = this.cave?.guideTo(sit.npc, at);
-      if (target?.id === sit.npc) {
-        const actor = this.npcs.find((n) => n.id === sit.npc);
-        if (actor && talkDist(actor, at) < TALK_RANGE) { this.talkTo(actor.id, sitId); return; }
-        if (target.kind === "tree" && this.talkToTree()) return;
-      }
-      this.guideToPlace(CAVE_ZONE, sit.npc);
+      if (!this.cave || !this.caveCode?.startCaveEncounter(this.cave, sit.npc, this.player.root.position,
+        (npc) => this.talkTo(npc, sitId) === true, this.offerOak)) this.guideToPlace(CAVE_ZONE, sit.npc);
       return;
     }
     if (this.cave) {
@@ -2208,13 +2153,13 @@ export class Game implements GameApi {
   talkToTree() {
     const cave = this.caveZone, code = this.caveCode;
     const free = () => !this.disposed && this.caveZone === cave && !this.session?.active && !this.transitioning &&
-      !this.hop.air && !useStore.getState().hud.panel && !useStore.getState().hud.glyph && cave?.nearOak(this.player.root.position);
-    if (!code || !free() || this.conversationLoads) return false;
+      !this.hop.air && !useStore.getState().hud.panel && !useStore.getState().hud.glyph && !!cave?.nearOak(this.player.root.position);
+    if (!code || !cave || !free() || this.conversationLoads) return false;
     this.conversationLoads++;
-    whenLoaded(code.SLATE_CAVE.treeSituation, (def) => {
+    whenLoaded(code.treeSituation, (def) => {
       this.startSession(def, null);
       this.aimTree();
-    }, () => !!free(), () => { this.conversationLoads--; });
+    }, free, () => { this.conversationLoads--; });
     return true;
   }
 
@@ -2244,7 +2189,7 @@ export class Game implements GameApi {
     this.keepsake.clear();
     if (this.cave) {
       this.cave.close();
-      if (this.caveGuideNpc === sit.npc) this.caveGuideNpc = undefined;
+      this.caveGuide.talk(sit.npc);
     }
     this.cancelRide();
     // a hop ends at once, and the player's own walk gives way to the conversation's stop (as it always was)
@@ -2537,10 +2482,7 @@ export class Game implements GameApi {
   }
 
   private onSessionEvent(name: string, data: any) {
-    const keeper = this.caveZone?.interior.npcs.find((actor) => actor.npc === this.talkNpc?.id) as { gate?: string } | undefined;
-    if (name === "cave-pass" && this.cave && keeper?.gate === data?.gate && (data?.gate === "bram" || data?.gate === "fern") && this.session?.sit.id === (data.gate === "bram" ? "x06-bram" : "x07-fern")) {
-      this.cave.story({ name, data });
-    } else if (name === "tree-heard" && this.talkTree && this.session?.sit.id === this.caveCode?.SLATE_CAVE.treeSituation) this.cave?.story({ name, data: {} });
+    if (this.cave) this.caveCode?.applyCaveEvent(this.cave, this.session, this.talkNpc?.id, this.talkTree, name, data);
     showConversationEvent(name, data);
     if (name === "pay") audio.sfx("coin");
     if (name === "taxi-ride" && data?.to) this.pendingRide = { to: data.to, by: "taxi" };
@@ -2703,11 +2645,8 @@ export class Game implements GameApi {
   }
 
   guideToPlace(loc: string, npc?: string) {
-    if (loc === CAVE_ZONE || loc === "old-stone-ring") {
+    if (this.caveGuide.select(loc, npc)) {
       this.coveArt.load(this.town.group);
-      this.caveGuidePlace = loc;
-      this.caveGuideNpc = npc;
-      this.caveGuideMode = "cave";
       this.islandGuide = false;
       this.autoPath = this.autoTarget = null;
       this.refreshObjective();
@@ -2723,7 +2662,7 @@ export class Game implements GameApi {
   guideToLighthouse() {
     if (!LIGHTHOUSE_ISLAND) return;
     this.islandGuide = true;
-    this.caveGuideMode = "objective";
+    this.caveGuide.mode = "objective";
     this.refreshObjective();
     if (!this.rides.riding) this.autoWalkToObjective();
   }
@@ -2732,9 +2671,8 @@ export class Game implements GameApi {
     const sit = sitId ? SITUATION_BY_ID[sitId] : undefined;
     if (sit?.location === CAVE_ZONE) { this.guideToPlace(CAVE_ZONE, sit.npc); return; }
     if (sit?.bonus) return;
-    if (this.caveGuideMode === "cave") this.autoPath = this.autoTarget = null;
-    this.caveGuideMode = "objective";
-    this.caveGuidePlace = this.caveGuideNpc = undefined;
+    if (this.caveGuide.mode === "cave") this.autoPath = this.autoTarget = null;
+    this.caveGuide.clear();
     this.islandGuide = false;
     useStore.getState().updateProgress((p) => { p.objective = sitId; });
     this.refreshObjective();
@@ -2806,27 +2744,13 @@ export class Game implements GameApi {
 
   /** Where to guide the player right now for the current objective; for a person, where to stand to talk to them (their
    *  `ax/az` across a counter, a stall or a table, with `person` where they stand; else where they stand). */
-  objectiveTarget(mode: GuideKind = this.caveGuideMode): {
+  objectiveTarget(mode: GuideKind = this.caveGuide.mode): {
     kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree";
     id?: string; x: number; z: number; person?: { x: number; z: number }; label: string
   } | null {
     const island = LIGHTHOUSE_ISLAND;
-    if (mode === "cave") {
-      const ring = this.caveGuidePlace === "old-stone-ring";
-      const loc = LOCATIONS[ring ? "old-stone-ring" : CAVE_ZONE];
-      if (this.cave && !ring) {
-        const at = this.player.root.position, npc = this.caveGuideNpc;
-        const target = npc ? this.cave.guideTo(npc, at) : this.cave.guide(at);
-        return target && { ...target, label: NPCS[target.id]?.name ?? loc.name };
-      }
-      if (this.cave) return this.caveObjective;
-      const exit = this.zone.interior?.exit;
-      if (exit) return { kind: "exit", x: exit.x, z: exit.z - 0.6, label: loc.name };
-      if (ring) return { kind: "point", ...RING_TARGET, label: loc.name };
-      const door = COVE_DOORS[PREFERRED_COVE_DOOR];
-      return { kind: "cave-entry", id: door.id, x: door.x, z: door.z + 1.7, label: loc.name };
-    }
-    if (this.wild) return this.caveObjective;
+    if (mode === "cave") return this.caveGuide.target(this.player.root.position, this.caveZone, this.wild ? undefined : this.zone.interior?.exit);
+    if (this.wild) return this.caveZone?.exitTarget ?? null;
     if (this.islandGuide && island) {
       if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
       const p = this.player.root.position, d = island.jetty;
@@ -2869,13 +2793,13 @@ export class Game implements GameApi {
   }
 
   refreshObjective() {
-    this.guidance.setKind(this.caveGuideMode);
+    this.guidance.setKind(this.caveGuide.mode);
     const sit = this.currentObjective();
     const st = useStore.getState();
     const island = LIGHTHOUSE_ISLAND;
-    if (!this.wild && this.caveGuideMode === "cave" && this.caveGuidePlace) {
-      const loc = LOCATIONS[this.caveGuidePlace];
-      st.setHud({ objective: { followUp: true, targetLoc: loc.id, sitId: loc.id, title: loc.name, titleLt: loc.lt, goal: "", where: loc.lt, dist: null, angle: null, inside: false } });
+    const coveObjective = !this.wild && this.caveGuide.exteriorObjective();
+    if (coveObjective) {
+      st.setHud({ objective: coveObjective });
       this.showBeacon(this.objectiveTarget());
       this.pathT = 0;
       return;
@@ -2907,7 +2831,7 @@ export class Game implements GameApi {
     if (!tgt) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     const y = this.islandGuide && LIGHTHOUSE_ISLAND && !this.zone.interior ? islandGroundY(LIGHTHOUSE_ISLAND, over.x, over.z) : undefined;
-    this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? { x: tgt.x, z: tgt.z } : undefined, y);
+    this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? tgt : undefined, y);
   }
 
   // ------------------------------------------------------------------ loop
@@ -3915,15 +3839,8 @@ export class Game implements GameApi {
           const door = coveDoorNear(p, Math.sin(this.heading), Math.cos(this.heading));
           if (door) best = this.coveArt.prompt(door) ?? best;
         }
-      } else if (this.wild && this.caveCode) {
-        const prompts = this.caveCode.CAVE_PROMPTS;
-        for (const exit of this.wild.exits) {
-          const d = Math.hypot(exit.x - p.x, exit.z - p.z);
-          if (d < exit.reach && d < bd) { bd = d; best = prompts[exit.id as CoveDoor]; }
-        }
-        if (!best && this.caveZone?.nearOak(p)) best = prompts.oak;
-        const stone = !best && this.cave?.near(p);
-        if (stone) best = { kind: "glyph", id: stone.id, label: prompts.stone.label, prompt: prompts.stone };
+      } else if (this.caveZone) {
+        best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
@@ -3948,8 +3865,8 @@ export class Game implements GameApi {
     if (st.hud.ride !== ride) st.setHud({ ride });
     // objective distance & minimap
     const tgt = this.objectiveTarget();
-    const quest = this.cave && (this.caveGuideMode === "cave" && this.caveGuidePlace !== "old-stone-ring" ? tgt : this.cave.guide(p));
-    const exit = this.caveObjective;
+    const quest = this.caveGuide.questTarget(p, this.caveZone, tgt);
+    const exit = this.caveZone?.exitTarget;
     const o = st.hud.objective;
     if (o) {
       const task = exit ?? tgt;
@@ -3988,11 +3905,11 @@ export class Game implements GameApi {
 
   get townMapWest() { return SLATE_COVE.minX; }
   mapRegion(x: number, z: number) {
-    return this.wild ? CAVE_ZONE : this.zone?.id === "town" && inSlateCove(x, z) ? "slate-cove" : undefined;
+    return caveMapRegion(this.zone?.id, x, z);
   }
   drawRegionMap(ctx: CanvasRenderingContext2D, west: number, north: number, scale: number, town = false) {
     if (!town && this.wild) this.caveCode?.drawCaveMap(ctx, west, north, scale, this.cave?.mask ?? 0);
-    else if (west < SLATE_COVE.maxX) drawSlateCoveMap(ctx, west, north, scale);
+    else drawCoveMap(ctx, west, north, scale);
   }
 
   get groundCanvas() { return this.town?.groundCanvas; }
@@ -4035,8 +3952,7 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.disposed = true;
     this.caveTravel.cancel();
-    this.cave?.dispose();
-    this.caveZone?.view.dispose();
+    this.caveZone?.dispose();
     this.coveArt.dispose();
     this.modes.dispose();
     audio.bed(null);

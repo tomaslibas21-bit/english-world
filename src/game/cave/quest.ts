@@ -1,33 +1,20 @@
-import type { CaveStoryEvent } from "../../content/cave-dialogue";
-import { CHAMBERS, GATES, KEEPERS, SLATE_CAVE } from "../world/slateCave";
-import { CAVE_COPY } from "../../content/cave-copy";
-import { LOCATIONS } from "../../content/locations";
 import { coachVoice } from "../../content/voices";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../../convo/speech";
 import { surfaceTokens } from "../../convo/normalize";
 import { useStore } from "../../state/store";
 import type { PhraseSource } from "../../ui/kit/PhraseSave";
 import { audio } from "../audio";
-import { chamberAt, TREES, type Gate, type Stone } from "./plan";
-import { caveQuestTarget, firstClosedGate } from "./routing";
-import { allHeard, firstLine, nextLine, stoneMeaningChoices, stonePhrases, TREE_SIT, type StonePhrase } from "./stonePhrases";
+import { chamberAt, TREES, type Stone } from "./plan";
+import type { CaveNotice } from "./config";
+import type { createCaveRouting } from "./routing";
+import type { CaveRules, CaveSave } from "./progress";
+import { allHeard, firstLine, nextLine, stoneMeaningChoices, type StonePhrase } from "./stonePhrases";
+
 import { StoneCall, type Listener } from "./call";
 import type { CaveView } from "./Cave";
 
-export interface CaveSave {
-  lit: string[];
-  passed: string[];
-  seen?: boolean;
-  heart?: boolean;
-  tree?: boolean;
-  heard?: string[];
-  rounds?: number;
-  told?: number;
-}
+export type { CaveSave } from "./progress";
 
-const stones = new Map(CHAMBERS.flatMap((room, chamber) => room.stones.map((stone) => [stone.id, { stone, chamber }] as const)));
-const requiredMasks = [1, 3, 15, 31, 63];
-const FULL_MASK = requiredMasks.at(-1)!;
 const TREE = TREES[1];
 const REARM = 40;
 type Point = { x: number; z: number };
@@ -68,7 +55,7 @@ interface Opening {
   playback?: AbortController;
 }
 
-function announce(copy: { title: { lt: string }; body?: { lt: string } }, kind: "info" | "success" | "tip" | "stamp" = "success") {
+function announce(copy: CaveNotice, kind: "info" | "success" | "tip" | "stamp" = "success") {
   useStore.getState().toast({ kind, title: copy.title.lt, body: copy.body?.lt });
 }
 
@@ -87,47 +74,6 @@ function saidBack(text: string, phrase: string) {
   const n = matches[expected.length];
   return n / expected.length >= (expected.length <= 3 ? 1 : 0.8) && n / heard.length >= 0.6;
 }
-const keeperIds = new Set(KEEPERS.map((keeper) => keeper.gate));
-export const emptyCave = (): CaveSave => ({ lit: [], passed: [], heart: false });
-
-export function normalizeCave(save?: CaveSave): CaveSave {
-  if (!save || typeof save !== "object") return emptyCave();
-  const lit = Array.isArray(save.lit) ? [...new Set(save.lit.filter((id) => stones.has(id)))] : [];
-  const passed = Array.isArray(save.passed) ? [...new Set(save.passed.filter((id) => keeperIds.has(id)))] : [];
-  const heard = Array.isArray(save.heard) ? [...new Set(save.heard.filter((id) => typeof id === "string"))] : undefined;
-  const rounds = Number.isSafeInteger(save.rounds) && save.rounds! >= 0 ? save.rounds : 0;
-  return { ...save, lit, passed, ...(save.heard !== undefined && { heard }), ...(save.rounds !== undefined && { rounds }),
-    heart: lit.length >= SLATE_CAVE.goals.oak };
-}
-
-export function stonesLit(save: CaveSave, room: number) {
-  let n = 0;
-  for (const stone of CHAMBERS[room].stones) if (save.lit.includes(stone.id)) n++;
-  return n;
-}
-
-export function gateOpen(gate: Gate, save: CaveSave, all = false) {
-  return all || (
-    (!gate.keeper || save.passed.includes(gate.keeper)) &&
-    (!gate.pass || save.passed.includes(gate.pass)) &&
-    (!gate.tide || stonesLit(save, 0) >= gate.tide) &&
-    (!gate.stones || save.lit.length >= gate.stones)
-  );
-}
-
-const OPEN = { open: true } as const;
-const KEEPER = { open: false, why: "keeper" } as const;
-const STONES = { open: false, why: "stones" } as const;
-export function gateState(gate: Gate, save: CaveSave, all = false) {
-  return gateOpen(gate, save, all) ? OPEN : gate.keeper || (gate.pass && !save.passed.includes(gate.pass)) ? KEEPER : STONES;
-}
-
-export function gateMask(save: CaveSave, all = false) {
-  let mask = 0;
-  for (let i = 0; i < GATES.length; i++) if (gateOpen(GATES[i], save, all)) mask |= 1 << i;
-  return mask;
-}
-
 /** Owns physical progress, listening and the single reader opening for this visit. */
 export class CaveQuest {
   save: CaveSave;
@@ -135,9 +81,14 @@ export class CaveQuest {
   readonly pool = new Map<string, StonePhrase>();
   readonly phrases = new Map<string, StonePhrase>();
   readonly relit = new Set<string>();
-  readonly rearm = new Map<string, number>();
+  private readonly countdowns = new Map<string, number>();
+  get rearm(): ReadonlyMap<string, number> { return this.countdowns; }
   replay: boolean;
 
+  private readonly rearming: string[];
+  private rearmingCount = 0;
+  private readonly callCandidates: Stone[];
+  private lineChoices: StonePhrase[] = [];
   private lines: readonly StonePhrase[][] = [];
   private heard = new Set<string>();
   private taken = new Set<string>();
@@ -160,8 +111,11 @@ export class CaveQuest {
   private cardRoom = -1;
 
   constructor(private view: CaveView, initial: CaveSave | undefined, private persist: (save: CaveSave, phrase?: StonePhrase) => void,
-    private syncGates: (mask: number) => void) {
-    this.save = normalizeCave(initial);
+    readonly rules: CaveRules, private routing: ReturnType<typeof createCaveRouting>, private syncGates: (mask: number) => void,
+    private loadLibrary: () => Promise<readonly StonePhrase[][]>) {
+    this.rearming = new Array(rules.sites.length);
+    this.callCandidates = new Array(rules.sites.length);
+    this.save = rules.normalize(initial);
     this.replay = !!this.save.tree;
     this.sync(true);
     for (const id of this.save.lit) if (!this.replay) this.view.setStone(id, true);
@@ -173,15 +127,16 @@ export class CaveQuest {
     this.voice = coachVoice(useStore.getState().progress.profile?.gender);
     const returning = this.save.seen;
     this.replace({ ...this.save, seen: true });
-    announce(returning ? CAVE_COPY.toast.returning : CAVE_COPY.toast.first, "tip");
+    announce(returning ? this.rules.config.copy.toast.returning : this.rules.config.copy.toast.first, "tip");
     void this.loadLines();
   }
 
   async loadLines() {
     if (this.lines.length || !this.alive) return;
-    const lines = await stonePhrases().catch(() => null);
+    const lines = await this.loadLibrary().catch(() => null);
     if (!lines || !this.alive || this.lines.length) return;
     this.lines = lines;
+    this.lineChoices = new Array(lines.reduce((n, room) => n + room.length, 0));
     for (const group of lines) for (const line of group) this.pool.set(line.id, line);
     this.heard = new Set((this.save.heard ?? []).filter((id) => this.pool.has(id)));
     if (allHeard(lines, this.heard)) this.finishRound();
@@ -190,9 +145,11 @@ export class CaveQuest {
   }
 
   private assign() {
-    for (const [id, { chamber }] of stones) {
+    const { sites } = this.rules;
+    for (let i = 0; i < sites.length; i++) {
+      const { stone: { id }, chamber } = sites[i];
       if (this.phrases.has(id)) continue;
-      const line = this.replay ? nextLine(this.lines, chamber, this.heard, this.taken, Math.random) : this.pool.get(firstLine(id));
+      const line = this.replay ? nextLine(this.lines, chamber, this.heard, this.taken, Math.random, this.lineChoices) : this.pool.get(firstLine(id));
       if (!line) continue;
       this.phrases.set(id, line);
       this.taken.add(line.id);
@@ -200,10 +157,10 @@ export class CaveQuest {
   }
 
   private sync(initial = false) {
-    const next = gateMask(this.save);
-    for (let i = 0; i < GATES.length; i++) {
+    const next = this.rules.gateMask(this.save), { gates } = this.rules.config;
+    for (let i = 0; i < gates.length; i++) {
       const bit = 1 << i;
-      if (initial || ((this.mask ^ next) & bit)) this.view.setGate(GATES[i].id, !!(next & bit), initial);
+      if (initial || ((this.mask ^ next) & bit)) this.view.setGate(gates[i].id, !!(next & bit), initial);
     }
     if (initial || next !== this.mask) this.syncGates(next);
     this.mask = next;
@@ -211,9 +168,9 @@ export class CaveQuest {
   }
 
   private eligible(id: string) {
-    const entry = stones.get(id);
+    const entry = this.rules.stones.get(id);
     if (!entry) return false;
-    const required = requiredMasks[entry.chamber];
+    const required = this.rules.config.stoneMasks[entry.chamber];
     return (this.mask & required) === required;
   }
 
@@ -224,29 +181,26 @@ export class CaveQuest {
   }
 
   pass(gate: string) {
-    if (!this.alive || !keeperIds.has(gate) || this.save.passed.includes(gate) || (gate === "fern" && (this.mask & 7) !== 7)) return false;
+    const keeper = this.rules.keeperByGate.get(gate);
+    if (!this.alive || !keeper || this.save.passed.includes(gate) || (this.mask & keeper.requires) !== keeper.requires) return false;
     this.replace({ ...this.save, passed: [...this.save.passed, gate] });
     this.callTime = 2.5;
     if (this.mounted) {
-      announce(gate === "bram" ? CAVE_COPY.toast.bramPassed : CAVE_COPY.toast.fernPassed);
+      announce(keeper.passed);
       audio.sfx("success");
     }
     return true;
   }
 
   treeNear(at: Point, reach = 4.7) {
-    return this.mask === FULL_MASK && Math.hypot(TREE.x - at.x, TREE.z - at.z) < reach;
+    return this.mask === this.rules.fullMask && Math.hypot(TREE.x - at.x, TREE.z - at.z) < reach;
   }
 
   treeHeard() {
-    if (!this.alive || this.mask !== FULL_MASK || this.save.tree) return false;
+    if (!this.alive || this.mask !== this.rules.fullMask || this.save.tree) return false;
     this.replace({ ...this.save, tree: true });
-    if (this.mounted) announce(CAVE_COPY.toast.replayStart, "tip");
+    if (this.mounted) announce(this.rules.config.copy.toast.replayStart, "tip");
     return true;
-  }
-
-  story(event: CaveStoryEvent) {
-    return event.name === "cave-pass" ? this.pass(event.data.gate) : this.treeHeard();
   }
 
   restore(save: CaveSave) {
@@ -260,17 +214,18 @@ export class CaveQuest {
 
   private applySave(save: CaveSave, restored = false) {
     const previous = this.save;
-    this.save = normalizeCave(save);
+    this.save = this.rules.normalize(save);
     if (restored) this.heard = new Set((this.save.heard ?? []).filter((id) => this.pool.has(id)));
     const replay = !!this.save.tree;
     if (this.replay !== replay) {
       this.replay = replay;
       this.relit.clear();
-      this.rearm.clear();
+      this.countdowns.clear();
+      this.rearmingCount = 0;
       this.phrases.clear();
       this.taken.clear();
       this.assign();
-      for (const id of stones.keys()) this.view.setStone(id, !replay && this.save.lit.includes(id));
+      for (const { stone } of this.rules.sites) this.view.setStone(stone.id, !replay && this.save.lit.includes(stone.id));
       this.callTime = 2.5;
     } else if (!this.replay) {
       for (const id of previous.lit) if (!this.save.lit.includes(id)) this.view.setStone(id, false);
@@ -285,22 +240,24 @@ export class CaveQuest {
     && !(this.replay ? this.relit.has(id) : this.save.lit.includes(id));
 
   guide(p: Point) {
-    return caveQuestTarget(p, this.save, false, this.replay ? this.waiting : undefined);
+    return this.routing.target(p, this.save, false, this.replay ? this.waiting : undefined);
   }
 
   guideTo(npc: string, p: Point) {
-    return caveQuestTarget(p, this.save, false, undefined, npc);
+    return this.routing.target(p, this.save, false, undefined, npc);
   }
 
   gateTarget(from: Point, to: Point) {
-    return firstClosedGate(from, to, this.save) ? this.guide(from) : null;
+    return this.routing.firstClosedGate(from, to, this.save) ? this.guide(from) : null;
   }
 
   near(p: Point) {
     let best: Stone | null = null, distance = 2.7;
-    for (const { stone } of stones.values()) {
+    const { sites } = this.rules;
+    for (let i = 0; i < sites.length; i++) {
+      const { stone } = sites[i];
       const d = Math.hypot(stone.x - p.x, stone.z - p.z);
-      if (d < distance && this.waiting(stone.id) && !firstClosedGate(p, stone, this.save)) {
+      if (d < distance && this.waiting(stone.id) && !this.routing.firstClosedGate(p, stone, this.save)) {
         best = stone;
         distance = d;
       }
@@ -325,10 +282,20 @@ export class CaveQuest {
       if ((this.warningTime -= dt) <= 0) { this.warningTime = 0.35; this.warnAtGate(p); }
     } else this.stopCall();
 
-    if (!quiet || this.opening) for (const [id, remaining] of this.rearm) {
-      if (remaining > dt || this.opening?.quiz.id === id) this.rearm.set(id, Math.max(0, remaining - dt));
-      else {
-        this.rearm.delete(id);
+    if ((!quiet || this.opening) && this.rearmingCount) this.updateRearm(dt);
+    if (room !== this.cardRoom) this.card(room);
+  }
+
+  private updateRearm(dt: number) {
+    // Keep the solve order when several stones expire in the same tick.
+    let active = 0;
+    for (let i = 0; i < this.rearmingCount; i++) {
+      const id = this.rearming[i], remaining = this.countdowns.get(id)!;
+      if (remaining > dt || this.opening?.quiz.id === id) {
+        this.countdowns.set(id, Math.max(0, remaining - dt));
+        this.rearming[active++] = id;
+      } else {
+        this.countdowns.delete(id);
         this.relit.delete(id);
         this.taken.delete(this.phrases.get(id)!.id);
         this.phrases.delete(id);
@@ -337,26 +304,36 @@ export class CaveQuest {
         this.cardRoom = -1;
       }
     }
-    if (room !== this.cardRoom) this.card(room);
+    this.rearmingCount = active;
   }
 
   private warnAtGate(p: Point) {
-    const gate = GATES.find((g, i) => !(this.mask & (1 << i)) && Math.hypot(g.x - p.x, g.z - p.z) < 3.4);
-    if (gate?.id === this.warned) return;
-    this.warned = gate?.id;
-    if (!gate) return;
-    const copy = CAVE_COPY.toast;
-    announce(gate.id === "bram" ? copy.bramLocked : gate.id === "fern" ? copy.fernLocked
-      : gate.id === "g2" ? copy.tideLocked : gate.id === "g3" ? copy.rootLocked : copy.oakLocked, "info");
+    const { gates } = this.rules.config;
+    let nearby: typeof gates[number] | undefined;
+    for (let i = 0; i < gates.length; i++) {
+      const gate = gates[i];
+      if (!(this.mask & (1 << i)) && Math.hypot(gate.x - p.x, gate.z - p.z) < 3.4) {
+        nearby = gate;
+        break;
+      }
+    }
+    if (nearby?.id === this.warned) return;
+    this.warned = nearby?.id;
+    if (nearby) announce(nearby.locked, "info");
   }
 
   private call(room: number) {
     this.callTime = 1.5;
     if (audio.getState() !== "idle") return;
-    const available = CHAMBERS[room].stones.filter((stone) => this.waiting(stone.id) &&
-      Math.hypot(stone.x - this.ear.x, stone.z - this.ear.z) <= 34 && !firstClosedGate(this.ear, stone, this.save));
-    if (!available.length) return;
-    const stone = available[this.turn++ % available.length], phrase = this.phrases.get(stone.id)!;
+    const stones = this.rules.config.chambers[room].stones;
+    let available = 0;
+    for (let i = 0; i < stones.length; i++) {
+      const stone = stones[i];
+      if (this.waiting(stone.id) && Math.hypot(stone.x - this.ear.x, stone.z - this.ear.z) <= 34 &&
+          !this.routing.firstClosedGate(this.ear, stone, this.save)) this.callCandidates[available++] = stone;
+    }
+    if (!available) return;
+    const stone = this.callCandidates[this.turn++ % available], phrase = this.phrases.get(stone.id)!;
     this.view.setCalling(stone.id);
     this.view.burst(stone.x, 1.5, stone.z, "#a7eee4");
     this.calling = stone;
@@ -384,18 +361,23 @@ export class CaveQuest {
 
   private card(room: number) {
     this.cardRoom = room;
-    const { guide, card } = CAVE_COPY, c = CHAMBERS[room];
-    const target = this.guide(this.ear), n = Math.min(this.save.lit.length, SLATE_CAVE.goals.oak);
-    const next = this.replay ? card.replayCount(this.heard.size).lt
-      : target?.id === KEEPERS[0].npc ? guide.bram.lt
-      : target?.id === KEEPERS[1].npc ? guide.fern.lt
-      : target?.kind === "tree" ? guide.oak.lt : guide.stone.lt;
-    const lit = this.replay ? c.stones.filter((stone) => this.relit.has(stone.id)).length : stonesLit(this.save, room);
-    const open = 1 + GATES.filter((gate, i) => gate.to !== undefined && this.mask & (1 << i)).length;
-    const nextSitId = target?.kind === "tree" ? TREE_SIT
-      : target?.id === KEEPERS[0].npc ? "x06-bram" : target?.id === KEEPERS[1].npc ? "x07-fern" : undefined;
-    useStore.getState().setHud({ cave: { n: c.n, of: CHAMBERS.length, name: c.label.en, lt: c.label.lt,
-      lit, stones: c.stones.length, open, next, nextSitId, count: this.replay ? card.round((this.save.rounds ?? 0) + 1).lt : card.oakCount(n).lt } });
+    const { chambers, gates, copy: { guide, card }, wakeAt, treeSituation } = this.rules.config, c = chambers[room];
+    const target = this.guide(this.ear);
+    const keeper = target?.kind === "npc" ? this.rules.keeperByNpc.get(target.id) : undefined;
+    const tree = target?.kind === "tree";
+    const nextSitId = tree ? treeSituation : keeper?.sitId;
+    let lit = 0, open = 1;
+    if (this.replay) {
+      for (let i = 0; i < c.stones.length; i++) if (this.relit.has(c.stones[i].id)) lit++;
+    } else lit = this.rules.stonesLit(this.save, room);
+    for (let i = 0; i < gates.length; i++) if (gates[i].to !== undefined && this.mask & (1 << i)) open++;
+    const next = this.replay ? card.replayCount(this.heard.size).lt : (keeper?.guide ?? (tree ? guide.tree : guide.stone)).lt;
+    const count = this.replay ? card.round((this.save.rounds ?? 0) + 1).lt : card.wakeCount(Math.min(this.save.lit.length, wakeAt)).lt;
+    const st = useStore.getState(), previous = st.hud.cave;
+    if (previous?.n === c.n && previous.lit === lit && previous.open === open && previous.next === next &&
+        previous.nextSitId === nextSitId && previous.count === count) return;
+    st.setHud({ cave: { n: c.n, of: chambers.length, name: c.label.en, lt: c.label.lt,
+      lit, stones: c.stones.length, open, next, nextSitId, count } });
   }
 
   open(id: string, at: Point = this.ear) {
@@ -404,7 +386,7 @@ export class CaveQuest {
     this.stopCall();
     const unavailable = !this.hasAudio(phrase);
     const quiz: GlyphQuiz = {
-      id, opening: ++this.openingId, source: { situationId: TREE_SIT, sourceLabel: LOCATIONS.gruta.name },
+      id, opening: ++this.openingId, source: { situationId: this.rules.config.treeSituation, sourceLabel: this.rules.config.label },
       text: phrase.en, lt: phrase.lt, s: phrase.s, ...stoneMeaningChoices(id, phrase, this.save.lit.length, this.lines),
       wrong: [], shown: unavailable, solved: false, unavailable, mic: speechSupported() ? "off" : "unsupported", heard: "",
     };
@@ -512,7 +494,7 @@ export class CaveQuest {
   private finishRound() {
     this.heard.clear();
     this.replace({ ...this.save, heard: [], rounds: (this.save.rounds ?? 0) + 1 });
-    if (this.mounted) announce(CAVE_COPY.toast.replayDone, "stamp");
+    if (this.mounted) announce(this.rules.config.copy.toast.replayDone, "stamp");
   }
 
   private solve(opening: Opening) {
@@ -521,25 +503,28 @@ export class CaveQuest {
     this.stopMic();
     this.stopPlayback(opening);
     this.patch(opening, { shown: true, solved: true, mic: speechSupported() ? "off" : "unsupported" });
-    const { stone, chamber } = stones.get(quiz.id)!;
+    const { stone, chamber } = this.rules.stones.get(quiz.id)!;
     const before = this.save, mask = this.mask;
     this.heard.add(phrase.id);
     if (this.replay) {
       this.relit.add(quiz.id);
-      this.rearm.set(quiz.id, REARM);
+      this.countdowns.set(quiz.id, REARM);
+      this.rearming[this.rearmingCount++] = quiz.id;
     }
     const lit = before.lit.includes(quiz.id) ? before.lit : [...before.lit, quiz.id];
     this.replace({ ...before, lit, heard: [...this.heard] }, phrase);
     if (this.replay) this.view.setStone(quiz.id, true);
     this.view.burst(stone.x, 1.5, stone.z, "#ffd76a");
     audio.sfx("success");
-    const copy = CAVE_COPY.toast;
-    if (!before.heart && this.save.heart) announce(copy.oakAwoke, "stamp");
+    const copy = this.rules.config.copy.toast;
+    if (!before.heart && this.save.heart) announce(copy.treeAwoke, "stamp");
     else if (this.replay && !allHeard(this.lines, this.heard)) announce(copy.replayLit);
     else if (!this.replay) {
-      const left = CHAMBERS[chamber].stones.length - stonesLit(this.save, chamber);
-      announce((mask ^ this.mask) & 2 ? copy.tideOpen : (mask ^ this.mask) & 4 ? copy.rootOpen
-        : { title: copy.stoneLit.title, body: left ? copy.stoneLit.body(left) : undefined });
+      const { gates, chambers } = this.rules.config;
+      let opened: CaveNotice | undefined;
+      for (let i = 0; i < gates.length && !opened; i++) if ((mask ^ this.mask) & (1 << i)) opened = gates[i].opened;
+      const left = chambers[chamber].stones.length - this.rules.stonesLit(this.save, chamber);
+      announce(opened ?? { title: copy.stoneLit.title, body: left ? copy.stoneLit.body(left) : undefined });
     }
     if (this.replay && allHeard(this.lines, this.heard)) this.finishRound();
     this.card(chamberAt(this.ear.x, this.ear.z));
