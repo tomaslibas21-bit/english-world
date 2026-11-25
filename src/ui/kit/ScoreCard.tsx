@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { SAY_IT_UI } from "../../content/say-it";
 import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
@@ -24,6 +24,10 @@ interface ScoreCardProps {
 type ScoreAction = { label: string; run(): void };
 type ScoreActions = { actions: ReactNode; again?: never; done?: never }
   | { actions?: undefined; again: ScoreAction; done: ScoreAction };
+function keepActionKey(event: KeyboardEvent) {
+  if (event.key === " " || event.key === "Enter") event.stopPropagation();
+}
+
 export function ScoreNumber({ value }: { value: number }) {
   return <span className="mode-score-number">{value}</span>;
 }
@@ -51,7 +55,7 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, review
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
-      <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
+      <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title" data-review={review?.length ? "" : undefined}>
         {ratio != null && Number.isFinite(ratio) && <ScoreStars ratio={ratio} />}
         <h2 id="mode-score-title" ref={heading}>{title}</h2>
         {celebrate && <Confetti from={heading} />}
@@ -63,10 +67,10 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, review
         </dl>
         {children}
         {!!review?.length && <PhraseReview key={reviewRun} entries={review} />}
-        <div className="mode-score-actions">
+        <div className="mode-score-actions" onKeyDown={keepActionKey} onKeyUp={keepActionKey}>
           {again && done ? <>
-            <button className="btn" onClick={again.run}>{again.label}</button>
-            <button className="btn soft" onClick={done.run}>{done.label}</button>
+            <button type="button" className="btn" onClick={again.run}>{again.label}</button>
+            <button type="button" className="btn soft" onClick={done.run}>{done.label}</button>
           </> : actions}
         </div>
       </section>

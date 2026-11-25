@@ -16,13 +16,13 @@ import type { ModeHost } from "../kit/host";
 import { conversationLine, learnerTurn } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { SayItRound, type SayItCue, type SayItTarget } from "../kit/sayIt";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { BETO_STAGE_YAW, frameLoteria, loteriaShot, TONA_STAGE_YAW } from "./framing";
 import {
   BETOS_STAND, LEARNER_SEAT, LOTERIA_APPROACH, LOTERIA_BULBS, LOTERIA_HOLDER, TABLE_SEAT, TONAS_SEAT,
 } from "./location";
 import { cardsNeeded, listenStage, LoteriaRoundState, roundKind, SIDE } from "./logic";
-import { loteriaUi, resetLoteriaUi, useLoteria, type CardLabel, type Phase } from "./store";
+import { loteriaNames, loteriaUi, resetLoteriaUi, useLoteria, type CardLabel, type Phase } from "./store";
 
 const shoutKey = "lt_a_loteria";
 const cardKey = ({ id }: LoteriaCard) => `lt_c_${id}`;
@@ -60,6 +60,7 @@ interface Run {
   speech: SayItRound;
   cue?: SayItCue;
   spotlight: number;
+  review: PhraseRun;
 }
 
 interface Stage {
@@ -80,6 +81,7 @@ export class LoteriaMode implements GameMode {
   readonly exitLabel = L(LOTERIA_UI.exit);
   readonly conversation = { situation: SIT, label: L(LOTERIA_UI.start) };
   private starting = false;
+  private attempt = 0;
   private run: Run | null = null;
   private stage: Stage | null = null;
   private labels: Record<string, CardLabel> = {};
@@ -95,6 +97,7 @@ export class LoteriaMode implements GameMode {
     framePlayback: true,
     say: (line) => {
       if (!line) return;
+      if (!(this.run?.round.faceDown && line.key.startsWith("lt_c_"))) this.run?.review.add(line.sentence);
       if (line.key.startsWith("lt_v_")) loteriaUi({ verse: line, caller: null });
       else if (this.speaker === TONA) loteriaUi({ neighbor: line });
       else loteriaUi({ caller: line });
@@ -118,19 +121,20 @@ export class LoteriaMode implements GameMode {
   start() {
     if (this.active || !this.host.canStart() || !this.scene.npc(TONA)) return false;
     this.starting = true;
+    const attempt = ++this.attempt;
     const load = getSituation(SIT);
-    if (load) return this.enter();
+    if (load) return this.enter(attempt);
     void loadSituation(SIT).then((sit) => {
-      if (!this.starting || !this.host.owns(this.id)) return;
+      if (this.attempt !== attempt || !this.starting || !this.host.owns(this.id)) return;
       if (!sit || !this.host.canStart()) this.exit(true);
-      else this.enter();
-    }, () => this.exit(true));
+      else this.enter(attempt);
+    }, () => { if (this.attempt === attempt) this.exit(true); });
     return true;
   }
 
-  private enter() {
+  private enter(attempt: number) {
     const fading = this.host.fade(() => {
-      if (!this.starting || !this.host.owns(this.id)) return;
+      if (this.attempt !== attempt || !this.starting || !this.host.owns(this.id)) return;
       const tona = this.scene.npc(TONA);
       if (!tona) { this.exit(true); return; }
       this.host.prepare();
@@ -176,7 +180,7 @@ export class LoteriaMode implements GameMode {
 
       this.labels = Object.fromEntries(LOTERIA_DECK.map((card) => {
         const line = conversationLine(SIT, BETO, cardKey(card), LOTERIA_LINES, false);
-        return [card.id, { name: line?.en ?? "", gloss: line?.nat ?? line?.units.map((unit) => unit.lt).join(" ") ?? "" }];
+        return [card.id, { name: line?.en ?? "", gloss: line?.nat ?? line?.units.map((unit) => unit.lt).join(" ") ?? "", sentence: line ?? undefined }];
       }));
       this.roundIndex = 0;
       this.seedForCues = 0;
@@ -211,7 +215,9 @@ export class LoteriaMode implements GameMode {
     const run: Run = this.run = {
       round, phase: "opening", busy: true, time: 0, namedAt: 0, coveredAt: Infinity, readyAt: Infinity,
       lastCoach: -Infinity, coaches: new Map(), markTip: false, lateTip: false, uncalled: false, wrongShout: false, shout: false, shoutAt: 0, speech: new SayItRound(), spotlight: -1,
+      review: new PhraseRun(SIT),
     };
+    run.review.lines(loteriaNames(round.board, this.labels));
     loteriaUi({ board: round.board, labels: this.labels, kind: round.kind, next: roundKind(this.roundIndex + 1), micOn: this.micOn });
     countPlay("games", this.id);
     void this.opening(run);
@@ -226,6 +232,7 @@ export class LoteriaMode implements GameMode {
   }
 
   private async say(run: Run, key: string) {
+    if (this.run !== run) return false;
     this.speaker = key.startsWith("lt_t_") ? TONA : BETO;
     loteriaUi({ neighbor: null, ...(this.speaker === BETO ? { caller: null } : {}) });
     const line = await this.dialogue.say(SIT, this.speaker, key, LOTERIA_LINES);
@@ -241,6 +248,10 @@ export class LoteriaMode implements GameMode {
   private sync(run: Run) {
     const { round } = run;
     const card = round.current;
+    if (card && !round.faceDown) {
+      const sentence = this.labels[card.id]?.sentence;
+      if (sentence) run.review.add(sentence);
+    }
     const winningCells = round.winner ? [] : round.pattern ?? [];
     run.spotlight = round.board.findIndex((cell) => cell.id === card?.id);
     loteriaUi({
@@ -401,6 +412,7 @@ export class LoteriaMode implements GameMode {
       if (!await this.say(run, "lt_b_check")) return;
       if (round.kind !== "llena") {
         this.setPhase(run, "reading");
+        run.review.lines(loteriaNames(winning, this.labels));
         loteriaUi({ read: winning });
         const pending = [...winning];
         while (pending.length) {
@@ -423,7 +435,8 @@ export class LoteriaMode implements GameMode {
     this.setPhase(run, "score");
     loteriaUi({
       caller: null, neighbor: null, result: {
-        winner: round.winner!, calls: round.called.length, covered: round.covered.size, heard: round.byEar.size, phrases: phrases.length, ...run.speech.result,
+        winner: round.winner!, calls: round.called.length, covered: round.covered.size, heard: round.byEar.size, phrases: phrases.length,
+        review: run.review.finish(), ...run.speech.result,
       },
     });
   }
@@ -521,7 +534,7 @@ export class LoteriaMode implements GameMode {
         if (this.run.phase === "score") this.host.rig.stage = loteriaShot();
         this.dialogue.cancel();
         // Invalidate all of the previous round's pending continuations.
-        const leaving = this.run = { ...this.run, phase: "leaving", busy: true };
+        const leaving = this.run = { ...this.run, phase: "leaving", busy: true, review: new PhraseRun(SIT) };
         loteriaUi({ result: null, caller: null, verse: null, read: [], ready: false, winningCells: [], replay: false, tip: null, glow: -1 });
         this.setPhase(leaving, "leaving");
         void this.say(leaving, "lt_t_bye").then(() => { if (this.run === leaving) this.exit(true); });
@@ -530,7 +543,9 @@ export class LoteriaMode implements GameMode {
     }
 
     this.starting = false;
+    this.attempt++;
     this.run = null;
+    this.labels = {};
     this.dialogue.cancel();
     const stage = this.stage;
     this.stage = null;

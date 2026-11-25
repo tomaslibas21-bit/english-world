@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { SayItCue } from "../kit/sayIt";
-import type { RoadResult } from "../road/store";
-import type { GateWord, Prompt } from "../road/words";
+import type { GateFeedback, RoadResult } from "../road/store";
+import type { Prompt } from "../road/words";
 import type { PlayWay } from "../road/save";
 import { SEA_SECONDS } from "./course";
 
@@ -25,7 +25,7 @@ type SeaUi = {
   answeredLane?: number;
   remaining: number;
   streak: number;
-  feedback?: { correct: boolean; word: GateWord };
+  feedback?: GateFeedback;
   result?: RoadResult;
 };
 

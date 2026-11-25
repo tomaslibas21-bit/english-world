@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { activatePhraseControl, cardsFor, checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8311";
@@ -268,6 +269,28 @@ try {
       await shot("listen-first");
       s = await state();
       assert.equal(s.current, "gorrito");
+      const book = page.locator(".loteria-stage-actions .phrase-chooser");
+      const opener = book.locator("summary");
+      const boardNames = await page.locator(".loteria-cell strong").allTextContents();
+      const historyNames = await page.locator(".loteria-history-strip [title]").evaluateAll((nodes) => nodes.map((node) => node.title));
+      await activatePhraseControl(page, opener, phone);
+      const names = book.getByRole("combobox");
+      await names.waitFor({ state: "attached" });
+      assert.deepEqual(await names.locator("option").allTextContents(), [...new Set([...boardNames, ...historyNames])],
+        "the list uses printed board and revealed history order with no extra answer");
+      assert.equal(await names.locator("option:checked").textContent(), boardNames[0]);
+      const alternative = boardNames[s.board.findIndex((id) => id !== s.current && !s.calls.includes(id))];
+      assert.ok(alternative, "a printed name that has not been called");
+      await names.selectOption({ label: alternative });
+      const nameCard = await checkManualSave(page, book.locator("[data-phrase-save]"), phone, alternative, sit, state);
+      await activatePhraseControl(page, opener, phone);
+      assert.equal(await page.locator(".loteria-caller[data-card-name]").count(), 0);
+      const verse = await page.evaluate(async () => {
+        const { useLoteria } = await import("/src/game/loteria/store.ts");
+        return useLoteria.getState().verse.sentence;
+      });
+      const verseCard = await checkManualSave(page, page.locator(".loteria-verse [data-phrase-save]"), phone, verse.en, sit, state, "Space");
+      assert.equal(verseCard.lt, verse.nat);
       await press(cell(s.current));
       await wait(async () => (await state())?.phase === "waiting" && !(await state()).faceDown, "the name finishes and the card turns over");
 
@@ -313,6 +336,14 @@ try {
       assert.equal(await page.locator(".mode-score-line").innerText(), lt ? "Laimėjai!" : "You won!");
       const scoreRows = page.locator(".mode-score-card dd");
       assert.equal((await scoreRows.nth(2).innerText()).trim(), "1", "covered a card before it turned over");
+      const review = page.locator(".mode-score-card .phrase-review-row");
+      const scoreList = review.getByRole("combobox");
+      await scoreList.waitFor({ state: "attached" });
+      const listed = await scoreList.locator("option").allTextContents();
+      assert.deepEqual(listed.slice(0, 16), boardNames);
+      assert(listed.includes(verse.en));
+      assert.deepEqual(await cardsFor(page, alternative), [nameCard]);
+      assert.deepEqual(await cardsFor(page, verse.en), [verseCard]);
       await step(18);
       await fits(true);
       await shot("score");

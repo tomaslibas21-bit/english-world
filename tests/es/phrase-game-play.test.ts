@@ -3,6 +3,7 @@ import { WORD_GATE_UI } from "../../src/content/road";
 import { audioDir } from "../../src/content/voices";
 import { EDITION } from "../../src/edition";
 import { loadPhrasePool } from "../../src/game/road/phrasePool";
+import { gateOptions } from "../../src/game/road/phraseEntries";
 import { gateSayItTarget, keepRunPhrases, practiceResult, RunScore } from "../../src/game/road/run";
 import { addCards, cardKey, useCards } from "../../src/state/cards";
 import { L } from "../../src/ui/i18n";
@@ -30,7 +31,26 @@ describe("Puerto Colibrí phrase mode", () => {
       expect(new Set(options.map((text) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""))).size).toBe(3);
       expect(options.every((text) => Math.abs(phrase!.words.length - phrases.get(text)!.words.length) <= 2)).toBe(true);
       expect(options.filter((_, lane) => lane !== right).every((text) => phrases.get(text)!.topic !== phrase!.topic)).toBe(true);
+      expect(gateOptions(prompt, "Road").map(({ sentence }) => [sentence.en, sentence.nat]))
+        .toEqual(options.map((target) => [target, phrases.get(target)!.p]));
     }
+  });
+
+  it("freezes the displayed choices in first-seen order and leaves a missed gate unawarded", async () => {
+    const { listen } = await loadPhrasePool(() => 0.42);
+    const first = listen[0], second = listen[1];
+    const score = new RunScore(150, "Road");
+    score.show(first);
+    score.answer(first, (first.right + 1) % 3);
+    const review = score.review.finish();
+    expect(review.map(({ sentence }) => sentence.en)).toEqual(first.options);
+    expect(review.every(({ sourceLabel }) => sourceLabel === "Road")).toBe(true);
+    expect(keepRunPhrases(score)).toBe(0);
+    score.show(second);
+    expect(score.review.finish()).toBe(review);
+    const retry = new RunScore(150, "Road");
+    retry.show(second);
+    expect(retry.review.finish().map(({ sentence }) => sentence.en)).toEqual(second.options);
   });
 
   it("accepts the Spanish phrase aloud and keeps the learner's meaning without updating an existing card", async () => {

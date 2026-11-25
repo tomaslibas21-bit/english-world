@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { activatePhraseControl, checkManualSave } from "./fixtures/phrase-saves.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8460";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
@@ -71,6 +72,26 @@ try {
     await page.evaluate(() => window.__ew.game.surfStart("beginner"));
     await real(700); await step(30);
     check(`${label}: a lesson is on`, await page.evaluate(() => window.__ew.surf.getState().active));
+
+    for (let i = 0; i < 120 && !await page.locator(".surf-choice").count(); i++) await step(4);
+    const snapshot = () => page.evaluate(() => {
+      const { line, choice, said, todo, phase, score } = window.__ew.surf.getState();
+      return { line: line?.cue, choice: choice?.options.map(({ cue, s }) => ({ cue, text: s.en })), said: said?.cue, todo, phase, score };
+    });
+    const turn = await snapshot();
+    assert(turn.line && turn.choice?.length >= 2, "the active instructor cue leads to the original learner turn");
+    const live = page.locator(".surf-card [data-phrase-save]");
+    const target = await page.evaluate(() => window.__ew.surf.getState().line.s.en);
+    await checkManualSave(page, live, size.phone, target, "x01-surf", snapshot, "Space");
+    const book = page.locator(".surf-turn .phrase-chooser");
+    await activatePhraseControl(page, book.locator("summary"), size.phone);
+    const answers = book.getByRole("combobox");
+    await answers.waitFor({ state: "attached" });
+    assert.deepEqual(await answers.locator("option").allTextContents(), turn.choice.map(({ text }) => text));
+    const unused = turn.choice[1].text;
+    await answers.selectOption({ label: unused });
+    await checkManualSave(page, book.locator("[data-phrase-save]"), size.phone, unused, "x01-surf", snapshot);
+    await activatePhraseControl(page, book.locator("summary"), size.phone);
 
     /** Put a line on the screen as hers (heard `n` times before: the support the game would give it), as the only
      *  answer, and as what the learner has just said; read what each shows. */

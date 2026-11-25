@@ -1,11 +1,12 @@
 import { dueCards, useCards } from "../../state/cards";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { SayItRound, sayItWords } from "../kit/sayIt";
 import { pickPrompt, updateRecentMisses, type GateAnswer } from "./review";
+import { gateAnswerEntry, gateOptions } from "./phraseEntries";
 import { recentMisses, type PlayWay } from "./save";
-import { loadPool, wordPrompts, type GateWord, type Prompt, type PromptPool } from "./words";
+import { loadPool, wordPrompts, type Prompt, type PromptPool } from "./words";
 
 export const DRIVE_SECONDS = 150;
 export const FIRST_GATE = 75;
@@ -47,12 +48,16 @@ export class RunScore {
   total = 0;
   streak = 0;
   bestStreak = 0;
-  readonly missed = new Map<string, GateWord>();
+  readonly missed = new Map<string, Prompt>();
   readonly learned = new Map<string, Prompt>();
-  readonly recovered = new Map<string, GateWord>();
+  readonly recovered = new Map<string, Prompt>();
   readonly history: GateAnswer[] = [];
 
-  constructor(readonly duration = DRIVE_SECONDS) {}
+  constructor(readonly duration = DRIVE_SECONDS, readonly title = "", readonly review = new PhraseRun("")) {}
+
+  show(prompt: Prompt) {
+    this.review.entries(gateOptions(prompt, this.title));
+  }
 
   advance(dt: number) {
     this.elapsed = Math.min(this.duration, this.elapsed + dt);
@@ -62,6 +67,7 @@ export class RunScore {
   }
 
   answer(prompt: Prompt, lane: number) {
+    this.review.entries(gateOptions(prompt, this.title, true));
     const correct = lane === prompt.right;
     const id = `${prompt.word.situation}|${prompt.word.en.toLowerCase()}`;
     this.history.push({ prompt, correct });
@@ -72,31 +78,37 @@ export class RunScore {
       this.bestStreak = Math.max(this.bestStreak, this.streak);
       this.gatePoints += 100 + 25 * (this.streak - 1);
       this.learned.set(id, prompt);
-      if (prompt.practice === "firstRetry" || prompt.practice === "lastRetry") this.recovered.set(id, prompt.word);
+      if (prompt.practice === "firstRetry" || prompt.practice === "lastRetry") this.recovered.set(id, prompt);
     } else {
       this.streak = 0;
-      if (this.missed.size < 3) this.missed.set(id, prompt.word);
+      if (this.missed.size < 3) this.missed.set(id, prompt);
     }
     return correct;
   }
 }
 
 
-export function keepRunPhrases(score: RunScore) {
+export function keepRunPhrases(score: RunScore, title?: string) {
   const before = useCards.getState().cards.length;
   for (const prompt of score.learned.values()) {
     const { word, gap } = prompt;
     if (gap) keepPhrases(word.situation, [gap.full]);
     else {
       const say = prompt.phrase ? prompt.phrase.f : prompt.word.clip.say;
-      keepPhrases(word.situation, [{ en: word.en, nat: word.lt, say, units: [{ en: word.en, lt: word.lt }] }]);
+      keepPhrases(word.situation, [{ en: word.en, nat: word.lt, say, units: [{ en: word.en, lt: word.lt }] }], word.situation ? undefined : title);
     }
   }
   return useCards.getState().cards.length - before;
 }
 
 export function practiceResult(score: RunScore, way: PlayWay) {
+  const missed = [...score.missed.values()];
   const recovered = [...score.recovered.values()];
-  const phrases = way === "phrases" ? [...score.learned.values()].map(({ word }) => word) : undefined;
-  return { missed: [...score.missed.values()], recovered, phrases };
+  const phrases = way === "phrases" ? [...score.learned.values()] : undefined;
+  return {
+    missed: missed.map(({ word }) => word), recovered: recovered.map(({ word }) => word), phrases: phrases?.map(({ word }) => word),
+    missedEntries: missed.map((prompt) => gateAnswerEntry(prompt, score.title)),
+    practiceEntries: (phrases ?? [...score.recovered].flatMap(([id, prompt]) => score.missed.has(id) ? [] : [prompt]))
+      .map((prompt) => gateAnswerEntry(prompt, score.title)),
+  };
 }

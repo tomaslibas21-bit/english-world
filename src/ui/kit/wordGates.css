@@ -59,6 +59,8 @@
   border: 1px solid #ddc59680;
 }
 .road-cue:has(.road-replay) { padding: 2px 5px 2px 12px; }
+.road-feedback:has(> [data-phrase-save]) { grid-template-columns: minmax(0, 1fr) 44px; column-gap: 6px; }
+.road-feedback > [data-phrase-save] { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 .road-cue { position: relative; }
 .road-cue .say-it { position: static; }
 .road-cue .say-it-message { right: 4px; }
@@ -176,16 +178,25 @@
 .road-missed article { border-top: 1px solid var(--line); padding: 7px 0; }
 .road-missed article > small { display: block; }
 .road-missed article > .road-comeback { display: inline-block; margin: 2px 6px 0; font-size: .77rem; color: #216d54; }
-.road-missed select {
-  width: 100%;
+.road-practice-picker { position: relative; min-width: 0; }
+.road-practice-picker select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.road-practice-value {
   min-height: 44px;
-  padding-inline: 8px;
+  display: block;
+  align-content: center;
+  padding: 4px calc(8px + 1.2em) 4px 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  font: inherit;
   color: var(--ink);
   background: var(--panel-solid);
+  overflow-wrap: anywhere;
 }
+.road-practice-picker::after {
+  content: ""; position: absolute; inset-inline-end: 10px; top: 50%;
+  width: .45em; height: .45em; border: solid var(--accent); border-width: 0 2px 2px 0;
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+.road-practice-picker select:focus-visible + .road-practice-value { outline: 3px solid var(--focus); outline-offset: 2px; }
 .road-missed .ended-destination { grid-template-columns: auto minmax(0, 1fr) auto; margin: 4px 0 0; gap: 6px; }
 .road-missed .ended-destination .btn { grid-column: auto; font-size: .82rem; white-space: nowrap; }
 @media (max-height: 700px) {

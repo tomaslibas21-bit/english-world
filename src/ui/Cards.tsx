@@ -90,9 +90,9 @@ export function inView(el: HTMLElement): boolean {
 /** What a tapped word offers: the word with its Lithuanian, „+ Į korteles“ and „+ Visą sakinį“
  *  (only the sentence for words glossed "—"). Closes on an outside tap, Esc, or when the word
  *  scrolls away. */
-export function WordPopover({ s, index, anchor, onClose, source, portalHost, targetLang = TL, helperLang = EDITION.helper }: {
+export function WordPopover({ s, index, anchor, onClose, source, portalHost, targetLang = TL, helperLang = EDITION.helper, partial }: {
   s: Sentence; index: number; anchor: HTMLElement; onClose: () => void;
-  source?: PhraseSource; portalHost?: HTMLElement; targetLang?: string; helperLang?: string;
+  source?: PhraseSource; portalHost?: HTMLElement; targetLang?: string; helperLang?: string; partial?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -151,7 +151,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost, tar
         {!dash && (wordIn
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
           : <button className="btn small" onClick={() => { if (useCards.getState().add({ ...word, sourceLabel })) setSaved(true); }}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
-        <PhraseSave sentence={s} situationId={situationId} sourceLabel={sourceLabel} popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
+        {!partial && <PhraseSave sentence={s} situationId={situationId} sourceLabel={sourceLabel} popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />}
       </div>
       {saved && <div className="wpop-hint">{L("Kortelę rasite „Frazių knygelėje“.")}</div>}
     </div>,

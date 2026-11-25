@@ -6,12 +6,8 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
 import { useTownQuests } from "../game/photowalk/store";
-import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
-import { TaxiOverlay } from "./Taxi";
-import { PoolOverlay } from "./Pool";
-import { LoteriaOverlay } from "./Loteria";
-import { SurfOverlay, SurfPicker } from "./Surf";
-import { BaristaOffer, BaristaOverlay } from "./Barista";
+import { useBarista } from "../game/barista/store";
+import { PhotoChip, QuestArrival } from "./PhotoWalkHud";
 import { game } from "../game/gameRef";
 import { coach } from "../game/coach";
 import { CAVE_ZONE } from "../game/cave/groundsPlan";
@@ -71,6 +67,15 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
+const TaxiOverlay = lazy(() => import("./Taxi").then(({ TaxiOverlay }) => ({ default: TaxiOverlay })));
+const PoolOverlay = lazy(() => import("./Pool").then(({ PoolOverlay }) => ({ default: PoolOverlay })));
+const LoteriaOverlay = lazy(() => import("./Loteria").then(({ LoteriaOverlay }) => ({ default: LoteriaOverlay })));
+const SurfOverlay = lazy(() => import("./Surf").then(({ SurfOverlay }) => ({ default: SurfOverlay })));
+const SurfPicker = lazy(() => import("./Surf").then(({ SurfPicker }) => ({ default: SurfPicker })));
+const BaristaOverlay = lazy(() => import("./Barista").then(({ BaristaOverlay }) => ({ default: BaristaOverlay })));
+const BaristaOffer = lazy(() => import("./Barista").then(({ BaristaOffer }) => ({ default: BaristaOffer })));
+const PhotoWalkOverlay = lazy(() => import("./PhotoWalk").then(({ PhotoWalkOverlay }) => ({ default: PhotoWalkOverlay })));
+const DirectionsCard = lazy(() => import("./PhotoWalk").then(({ DirectionsCard }) => ({ default: DirectionsCard })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
 
 export function Hud() {
@@ -80,6 +85,7 @@ export function Hud() {
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
   const surfing = useSurf((s) => s.active);
   const picking = useSurf((s) => s.picking);
+  const baristaOffered = useBarista((s) => s.offered);
   const notesVisible = useStore(usesTownNotes);
   const note = notesVisible ? townNote(hud) : null;
   const ride = townRide(hud.ride);
@@ -88,6 +94,7 @@ export function Hud() {
   const toast = useTownToast(note === "toast");
   const questHud = hud.minimap.zone === "town" && !hud.ride && !hud.panel && !picking;
   const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
+  const hasDirections = useTownQuests((s) => s.directions !== null);
   const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
   const narrow = useNarrowHud();
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
@@ -101,7 +108,7 @@ export function Hud() {
   // The surf lesson keeps her line, the answers, the score, and its own arrows.
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <SurfOverlay toolbar={<Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} surf />} />
+      <Suspense><SurfOverlay toolbar={<Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} surf />} /></Suspense>
       <RadioSetLayer />
       <Fade />
     </div>
@@ -140,7 +147,7 @@ export function Hud() {
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} />
           <TownToast toast={toast} />
-          {questHud && !directionsToast && <DirectionsCard />}
+          {questHud && !directionsToast && hasDirections && <Suspense><DirectionsCard /></Suspense>}
         </div>
         <Minimap {...screen} />
       </div>
@@ -161,9 +168,9 @@ export function Hud() {
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
       {hud.showTouch && <TouchControls />}
-      {!hud.panel && <BaristaOffer />}
+      {!hud.panel && baristaOffered && <Suspense><BaristaOffer /></Suspense>}
       {questHud && <><PhotoChip /><QuestArrival /></>}
-      <SurfPicker />
+      {picking && <Suspense><SurfPicker /></Suspense>}
       <Fade />
     </div>
   );

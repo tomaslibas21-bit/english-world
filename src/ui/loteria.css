@@ -33,6 +33,10 @@
   padding: 5px 8px;
 }
 .loteria-exit { position: absolute; top: 0; left: 0; min-height: 34px; pointer-events: auto; }
+.loteria-stage-actions { position: absolute; inset: 0 auto auto 0; display: flex; align-items: start; gap: 6px; z-index: 1; }
+.loteria-stage-actions .loteria-exit { position: static; }
+.loteria-stage-actions .phrase-chooser { pointer-events: auto; }
+.loteria-stage-actions .phrase-chooser-panel { position: fixed; inset: 56px auto auto max(12px, env(safe-area-inset-left)); }
 .loteria-play kbd {
   display: inline-block;
   color: #554033;

@@ -140,6 +140,8 @@
 .photo-quiz-mic { display: flex; gap: 8px; align-items: center; font-size: 0.9em; }
 .photo-quiz-mic:empty { display: none; }
 .photo-quiz-mic .mic { width: 44px; height: 44px; padding: 0; }
+.photo-quiz-mic .phrase-chooser { margin-inline-start: auto; }
+.photo-quiz-mic .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
 .photo-flash { position: fixed; inset: 0; z-index: 1; background: white; pointer-events: none; animation: photo-flash 0.22s ease-out both; }
 @keyframes photo-flash { from { opacity: 0.85; } to { opacity: 0; } }
 .quest-sparkle { color: #c58a19; animation: quest-sparkle 0.65s ease-out both; }
@@ -160,7 +162,7 @@
   overscroll-behavior: contain;
 }
 .directions-card .direction-lines { display: grid; gap: 3px; }
-.direction-lines button {
+.direction-lines button[data-line] {
   border: 0;
   border-radius: 8px;
   background: var(--accent-soft);
@@ -222,7 +224,7 @@
   .directions-card p { margin-top: 2px; }
   .directions-card .quest-close { flex-basis: 30px; width: 30px; height: 30px; border-radius: 8px; }
   .directions-card .direction-lines { gap: 2px; }
-  .direction-lines button { padding: 3px 5px; border-radius: 6px; }
+  .direction-lines button[data-line] { padding: 3px 5px; border-radius: 6px; }
   .direction-lines .kit-gloss-compact { gap: 1px; line-height: 1.1; }
   .directions-card footer { gap: 4px; }
   .directions-card .btn.small { min-height: 28px; padding: 2px 4px; font-size: 0.82em; }

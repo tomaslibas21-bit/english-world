@@ -1,5 +1,6 @@
 import type { WebGLRenderer } from "three";
-import { SEA_EDITION } from "../../content/sea";
+import { SEA_EDITION, SEA_UI } from "../../content/sea";
+import { L } from "../../ui/i18n";
 import { EDITION } from "../../edition";
 import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
@@ -11,6 +12,7 @@ import type { Ride } from "../rides/Rides";
 import { readBest, saveBest } from "../road/ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "../road/karaoke";
 import { loadPhrasePool } from "../road/phrasePool";
+import { gateAnswerEntry, gateOptions } from "../road/phraseEntries";
 import { gatesLeft } from "../road/review";
 import { gateSayItTarget, gateWord, keepRunPhrases, loadWordPrompts, practiceResult, rememberRun, runPicker, RunScore } from "../road/run";
 import { isPlayWay, playWay, setPlayWay, type PlayWay } from "../road/save";
@@ -26,6 +28,7 @@ import { SeaView } from "./view";
 
 const driveKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"]);
 const edition = SEA_EDITION.id;
+const reviewTitle = L(SEA_UI.title);
 
 export async function prepareSea() {
   const [pool] = await Promise.all([loadWordPrompts(), preloadSeaOverlay()]);
@@ -40,7 +43,7 @@ export class SeaMode {
   private phase: "town" | "briefing" | "loading" | "drive" | "turn" | "result" | "unavailable" = "town";
   private readonly view: SeaView;
   private boat: SeaBoat;
-  private score = new RunScore(SEA_SECONDS);
+  private score = new RunScore(SEA_SECONDS, reviewTitle);
   private pick?: ReturnType<typeof runPicker>;
   private way: PlayWay = "words";
   private played = false;
@@ -108,7 +111,7 @@ export class SeaMode {
     }
     this.way = way;
     this.played = true;
-    this.score = new RunScore(SEA_SECONDS);
+    this.score = new RunScore(SEA_SECONDS, reviewTitle);
     this.gateAt = FIRST_GATE;
     this.nextPromptIn = this.feedback = this.sailed = 0;
     this.reveal = this.forced = undefined;
@@ -144,6 +147,7 @@ export class SeaMode {
     this.gate = new SeaGate(this.gateAt, prompt, this.boat.startX, this.boat.startZ - this.gateAt);
     this.poseGate(this.host.time());
     this.view.scene.add(this.gate.mesh);
+    this.score.show(prompt);
     useSea.setState({ prompt, gateId: this.gate.id, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)) });
     void preloadBoardFont(prompt.options);
     if (!this.crossing) this.playPrompt(prompt);
@@ -199,7 +203,10 @@ export class SeaMode {
     this.gateAt = nextGate(distance);
     gate.cross(lane, correct);
     this.poseGate(time);
-    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: { correct, word: prompt.word } });
+    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: {
+      correct, word: prompt.word, entry: prompt.phrase ? undefined : gateAnswerEntry(prompt, reviewTitle),
+      options: prompt.phrase ? undefined : gateOptions(prompt, reviewTitle, true),
+    } });
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {
@@ -310,11 +317,11 @@ export class SeaMode {
     const best = { points: score.points, frames: [] };
     const record = saveBest(edition, best, this.best, undefined, "sea");
     if (record) this.best = best;
-    const cards = keepRunPhrases(score);
+    const cards = keepRunPhrases(score, reviewTitle);
     useStore.getState().setHud({ ride: null });
     useSea.setState({ phase: this.phase, feedback: undefined, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: this.sailed,
-      record, cards, ...practiceResult(score, this.way), ...score.sayIt.result,
+      record, cards, review: score.review.finish(), ...practiceResult(score, this.way), ...score.sayIt.result,
     } });
   }
 
@@ -419,7 +426,10 @@ export class SeaMode {
     this.view.dispose();
     if (!handoff) this.quiet();
     this.host.returnBoat(this.source, onFoot, handoff);
-    if (this.guiding) useSea.setState({ phase: "guide" });
+    if (this.guiding) {
+      const { result } = useSea.getState();
+      useSea.setState({ phase: "guide", result: result && { ...result, review: undefined, missedEntries: undefined, practiceEntries: undefined } });
+    }
     else {
       resetSeaUi();
       this.host.left("sea");

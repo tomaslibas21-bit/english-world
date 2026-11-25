@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { activatePhraseControl, checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -303,6 +304,19 @@ try {
         assert.equal(await pocketChip("ls").locator('[lang="es"]').innerText(),
           variety === "spain" ? "a la del medio, a la izquierda" : "a la de en medio, a la izquierda");
         assert.equal(await pocketChip("ls").locator(`small[lang="${ltLayer ? "lt" : "en"}"]`).count(), 1);
+        const composed = await page.evaluate(async () => {
+          const { useBilliards } = await import("/src/game/billiards/store.ts");
+          return useBilliards.getState().call.sentence;
+        });
+        const book = page.locator(".bl-instruction .phrase-chooser");
+        const opener = book.locator("summary");
+        await activatePhraseControl(page, opener, phone);
+        await book.getByRole("combobox").selectOption({ label: composed.en });
+        const saved = await checkManualSave(page, book.locator("[data-phrase-save]"), phone, composed.en, "x11-billar", state);
+        assert.equal(saved.lt, composed.nat);
+        assert.equal(saved.sentence.say ?? saved.sentence.en, composed.say);
+        await activatePhraseControl(page, opener, phone);
+        assert.equal(await row.getByRole("button").count(), 1);
       }
       const clippedChoices = await page.locator(".bl-pocket-chips .kit-gloss-compact > *").evaluateAll((labels) => labels.filter((label) => {
         const style = getComputedStyle(label);

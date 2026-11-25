@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import type { Sentence } from "../../convo/compose";
 import type { Do, Level, Phase, Score, SurfArrow } from "./logic";
+import type { PhraseReviewEntry } from "../../ui/kit/phraseLine";
 
 /** One of her lines (or an answer), and the picture of what it asks for where the edition has one (its URL). */
 export interface SurfLine { cue: string; s: Sentence; pic?: string }
@@ -38,6 +39,7 @@ export interface SurfUi {
   score: Score;
   /** The lesson is over: its score card is on show. */
   over: boolean;
+  review?: readonly PhraseReviewEntry[];
   /** Before this lesson: waves ridden and seconds on them, ever. */
   best: { waves: number; seconds: number };
 }
@@ -46,9 +48,30 @@ export const EMPTY_SCORE: Score = { waves: 0, seconds: 0, followed: 0, asked: 0,
 export const NO_MIC: SurfUi["mic"] = { status: "off", heard: "" };
 const EMPTY: SurfUi = { active: false, keyFlash: null, picking: false, level: null, phase: null, line: null, support: 0, choice: null, todo: null, said: null, mic: NO_MIC, micOn: true, balance: 1, asked: false, mark: null, score: EMPTY_SCORE, over: false, best: { waves: 0, seconds: 0 } };
 
-export const useSurf = create<SurfUi & { set(p: Partial<SurfUi>): void; reset(): void }>((set) => ({
+type PhraseEvents = (patch: Partial<SurfUi>, current: SurfUi) => readonly PhraseReviewEntry[] | undefined;
+let phraseEvents: PhraseEvents | undefined;
+
+export function trackSurfPhrases(track: PhraseEvents) {
+  phraseEvents = track;
+  return () => {
+    if (phraseEvents !== track) return false;
+    phraseEvents = undefined;
+    return true;
+  };
+}
+
+export const useSurf = create<SurfUi & { set(p: Partial<SurfUi>): void; reset(): void }>((set, get) => ({
   ...EMPTY,
-  set: (p) => set(p),
+  set: (p) => {
+    if (phraseEvents && (p.active || p.line || p.choice !== undefined || p.said || p.over)) {
+      const review = phraseEvents(p, get());
+      if (p.active || p.over) { set({ ...p, review }); return; }
+    }
+    set(p);
+  },
   // (the learner's choice of answering aloud or by taps outlives a lesson)
-  reset: () => set((s) => ({ ...EMPTY, micOn: s.micOn })),
+  reset: () => {
+    phraseEvents?.(EMPTY, get());
+    set((s) => ({ ...EMPTY, review: undefined, micOn: s.micOn }));
+  },
 }));

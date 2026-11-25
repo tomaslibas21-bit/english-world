@@ -5,7 +5,7 @@
 // them (a tap answers too), or, when she asked for a move, that move and its key in large letters right under her
 // line. On a phone the arrows sit under the right thumb. The balance in a ride; the score; the level's
 // choice at the start and the score card at the end.
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useStore } from "../state/store";
 import { useSurf, type SurfLine, type SurfUi } from "../game/surf/store";
 import { arrowFor, type Do, type SurfArrow } from "../game/surf/logic";
@@ -14,6 +14,8 @@ import { game } from "../game/gameRef";
 import { Interlinear } from "./Interlinear";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
+import { PhraseChooser } from "./kit/PhraseChooser";
+import { PhraseSave } from "./kit/PhraseSave";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { SitIcon } from "./SitIcon";
 import { SURF } from "../content/surf";
@@ -174,7 +176,7 @@ function Move({ todo, touch }: { todo: SurfUi["todo"]; touch: boolean }) {
 }
 
 /** The learner's turn to speak: what the microphone is doing, and its button (answering aloud on or off). */
-function Mic({ mic, on }: { mic: SurfUi["mic"]; on: boolean }) {
+function Mic({ mic, on, children }: { mic: SurfUi["mic"]; on: boolean; children?: ReactNode }) {
   const live = mic.status === "listening" || mic.status === "starting";
   // (between two tries it is still the microphone's turn)
   const busy = live || mic.status === "unclear";
@@ -200,6 +202,7 @@ function Mic({ mic, on }: { mic: SurfUi["mic"]; on: boolean }) {
         </button>
       )}
       <div className="mic-status"><b>{title}</b><span className="sub">{sub}</span></div>
+      {children}
     </div>
   );
 }
@@ -238,6 +241,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   // the translations follow the game's settings, as in every conversation: her lines (lt), the learner's (sayLt)
   const lt = useStore((st) => st.settings.lt !== false);
   const sayLt = useStore((st) => st.settings.sayLt !== false);
+  const replies = useMemo(() => s.choice?.options.map(({ s }) => ({ ...surfSource, sentence: s })) ?? [], [s.choice]);
   if (!s.active) return null;
   const sc = s.score;
   const riding = s.phase === "ride";
@@ -264,6 +268,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
                   {s.mark === "ok" && <FeedbackBadge correct label={L("Teisingai!")} />}
                   {s.mark === "no" && <FeedbackBadge correct={false} label={L("Pabandyk dar kartą")} />}
                 </div>
+                <PhraseSave sentence={s.line.s} {...surfSource} />
                 <Line line={s.line} lt={lt} />
               </div>
               {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
@@ -277,7 +282,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       {/* the learner's turn to speak: the microphone listens for one of these lines; a tap answers too */}
       {s.choice && !s.over && (
         <div className="surf-choices">
-          <Mic mic={s.mic} on={s.micOn} />
+          <Mic mic={s.mic} on={s.micOn}><PhraseChooser key={s.choice.id} entries={replies} targetOnly={!sayLt} /></Mic>
           {s.choice.options.map((o, i) => (
             <button key={o.cue} className="surf-choice" onClick={() => game?.surfChoose(o.cue)}>
               {!touch && <kbd>{i + 1}</kbd>}
@@ -287,10 +292,10 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
         </div>
       )}
       {/* what the learner has just said, until she answers */}
-      {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span className="surf-said-words"><span>{s.said.s.en}</span>{sayLt && s.said.s.nat && <small lang={EDITION.helper}>{s.said.s.nat}</small>}</span></div>}
+      {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span className="surf-said-words"><span>{s.said.s.en}</span>{sayLt && s.said.s.nat && <small lang={EDITION.helper}>{s.said.s.nat}</small>}</span><PhraseSave sentence={s.said.s} {...surfSource} /></div>}
       {touch && !s.over && <SurfPad todo={s.todo} />}
       {s.over && (
-        <ScoreCard title={L("Pamoka baigta")} rows={[
+        <ScoreCard title={L("Pamoka baigta")} review={s.review} rows={[
           { label: L("Bangos"), value: <ScoreNumber value={sc.waves} /> },
           { label: L("Sekundės ant bangos"), value: <ScoreNumber value={sc.seconds} /> },
           { label: L("Komandos laiku"), value: <><ScoreNumber value={sc.followed} />/{sc.asked}</> },

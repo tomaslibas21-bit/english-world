@@ -238,7 +238,10 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
     }
 
     await until(() => ui().result?.served === 6);
-    expect(ui().result).toMatchObject({ firstTime: 5, served: 6 });
+    expect(ui().result).toMatchObject({ firstTime: 5, served: 6, cards: es ? 30 : 32 });
+    expect(ui().result?.review).toEqual(expect.arrayContaining([
+      expect.objectContaining({ situationId: "s72-cafe", sentence: expect.objectContaining({ en: es ? "Para aquí" : "For here" }) }),
+    ]));
     expect(mia.root.position).toEqual(COUNTER_SEAT);
     for (const [width, height] of views) {
       const cardTop = height - 300;
@@ -256,6 +259,7 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
     expect(playback).toHaveBeenCalledWith(coachVoice("m"), 1, es ? "¡Muchas gracias!" : "Thank you very much!", expect.anything());
     mode.action("again");
     await until(() => ui().choices[0]?.key === "bs_a_hi");
+    expect(ui().result).toBeNull();
     expect(mode.state()).toMatchObject({ customer: 1, wrong: 0, served: 0, help: 0 });
     registry.exit();
     await until(() => !fade.active);

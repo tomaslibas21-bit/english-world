@@ -24,6 +24,7 @@ class Karaoke {
   private node?: HTMLDivElement;
   private spans: HTMLSpanElement[] = [];
   private line?: Line;
+  private listeners = new Set<() => void>();
   private frame = 0;
   private upcoming = false;
   private nextPrompt?: string;
@@ -34,6 +35,11 @@ class Karaoke {
   constructor(private mode: FaceMode) {}
 
   get visible() { return this.line !== undefined; }
+  snapshot = () => this.line?.phrase;
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
 
   attach = (node: HTMLDivElement | null) => {
     this.node = node ?? undefined;
@@ -63,6 +69,7 @@ class Karaoke {
     this.stop();
     const line: Line = this.line = { phrase, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now() };
     this.mountLine();
+    this.listeners.forEach((listener) => listener());
     const tick = (now: number) => {
       if (this.line !== line) return;
       this.update(line, now);
@@ -83,6 +90,7 @@ class Karaoke {
   }
 
   stop() {
+    const visible = this.visible;
     if (this.line) {
       this.line.clip.stop();
       cancelAnimationFrame(this.frame);
@@ -93,6 +101,7 @@ class Karaoke {
     this.lit = 0;
     this.current = -1;
     if (this.node) this.node.hidden = true;
+    if (visible) this.listeners.forEach((listener) => listener());
   }
 
   /** Align against the board projection from the frame that was just drawn. */

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sampleBoardRegistration } from "./board-registration.mjs";
+import { checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
@@ -311,7 +312,7 @@ async function checkKaraokeTiming(run, item, previousGate) {
   assert.fail("the karaoke overlay did not hide after the clip and fade");
 }
 
-async function checkScore(run, game, earned, comeback) {
+async function checkScore(run, game, earned, comeback, firstBoard) {
   const before = await run.read();
   await run.page.evaluate((id) => id === "road" ? window.__ew.road.jumpTimer() : window.__ew.seaTimer(), game);
   const state = await run.waitState((state) => state.phase === "result", "shows the score card", 4);
@@ -327,6 +328,45 @@ async function checkScore(run, game, earned, comeback) {
   await select.selectOption({ label: pair });
   assert.equal(await select.locator("option:checked").textContent(), pair);
   assert.equal(await list.getByText(ui.comeback, { exact: true }).isVisible(), true);
+  const review = score.locator(":scope > .phrase-review-row");
+  const all = review.getByRole("combobox");
+  await all.waitFor({ state: "attached" });
+  assert.deepEqual((await all.locator("option").allTextContents()).slice(0, 3), firstBoard);
+  const target = firstBoard.filter((phrase) => !earned.has(phrase)).sort((a, b) => b.length - a.length)[0];
+  assert.ok(target, "the first board has an unearned alternative");
+  await all.selectOption({ label: target });
+  const save = review.locator("[data-phrase-save]");
+  await save.scrollIntoViewIfNeeded();
+  const saved = await checkManualSave(run.page, save, run.phone, target, "", run.read);
+  assert.equal(saved.lt, items.find((item) => item.f === target).p);
+  const title = await run.page.evaluate(async (mode) => {
+    const { L } = await import("/src/ui/i18n.ts");
+    const words = mode === "road" ? (await import("/src/content/road.ts")).ROAD_UI : (await import("/src/content/sea.ts")).SEA_UI;
+    return L(words.title);
+  }, game);
+  assert.equal(saved.sourceLabel, title);
+  await score.evaluate((el) => { el.style.fontSize = "200%"; });
+  try {
+    const selected = review.locator(".phrase-review-value");
+    assert.equal(await selected.textContent(), target);
+    assert(await review.evaluate((el) => {
+      const { left, right } = el.getBoundingClientRect();
+      return [...el.querySelectorAll(".phrase-review-value, small")].every((child) => {
+        const range = document.createRange();
+        range.selectNodeContents(child);
+        return [...range.getClientRects()].every((r) => r.left >= left - 1 && r.right <= right + 1);
+      });
+    }), "selected Spanish and helper fit at 200%");
+    for (const action of await score.locator(".mode-score-actions button").all()) {
+      await action.scrollIntoViewIfNeeded();
+      assert(await action.evaluate((el) => {
+        const { x, y, width, height } = el.getBoundingClientRect();
+        return height >= 44 && el.contains(document.elementFromPoint(x + width / 2, y + height / 2));
+      }), "the score action is reachable at 200%");
+    }
+  } finally {
+    await score.evaluate((el) => el.style.removeProperty("font-size"));
+  }
 }
 
 async function testGame(browser, game, size, budget) {
@@ -336,7 +376,7 @@ async function testGame(browser, game, size, budget) {
   const onTimeout = () => { void close().catch(() => {}); };
   budget.addEventListener("abort", onTimeout, { once: true });
   const earned = new Map();
-  let first, missed, comeback;
+  let first, firstBoard, missed, comeback;
   const checks = [
     ["choice defaults to Words and fits", async () => {
       await run.reachChoice();
@@ -345,7 +385,9 @@ async function testGame(browser, game, size, budget) {
     ["first phrase shows the learner's prompt and requests its pClip", async () => {
       const from = run.mp3Urls.length;
       await run.choose("phrases");
-      first = phraseFor(await run.gate(0));
+      const state = await run.gate(0);
+      first = phraseFor(state);
+      firstBoard = state.gates;
       await run.wait(() => run.cue.isVisible(), "shows the first prompt after departure", 4);
       assert.equal(await run.cue.innerText(), first.p);
       await run.waitForClip(first.pClip, from);
@@ -389,7 +431,7 @@ async function testGame(browser, game, size, budget) {
       }
       assert.fail(`phrase ${missed.id} did not come back within four gates`);
     }],
-    ["score lists Spanish with the learner's meanings and marks the comeback", () => checkScore(run, game, earned, comeback)],
+    ["score lists Spanish with the learner's meanings and marks the comeback", () => checkScore(run, game, earned, comeback, firstBoard)],
     ["reload remembers Phrases and selecting Words restores the word game", async () => {
       await run.reachChoice(true);
       await checkChoice(run, "phrases");

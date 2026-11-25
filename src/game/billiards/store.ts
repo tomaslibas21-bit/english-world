@@ -4,10 +4,11 @@ import type { SayItCue } from "../kit/sayIt";
 import type { Call } from "./calls";
 import type { Pocket } from "./physics";
 import type { Side, Winner } from "./rules";
+import type { PhraseReviewEntry } from "../../ui/kit/phraseLine";
 
 export type Phase = "intro" | "group" | "break" | "call" | "aim" | "rolling" | "tina" | "listen" | "feedback" | "reply" | "result";
 export interface RackBall { id: number; down: boolean }
-export interface Result { winner: Winner; shots: number; called: number; understood: number; listens: number; sunk: number; cards: number; said?: number }
+export interface Result { winner: Winner; shots: number; called: number; understood: number; listens: number; sunk: number; cards: number; said?: number; review: readonly PhraseReviewEntry[] }
 
 interface BilliardsUI {
   phase: Phase;

@@ -1,6 +1,6 @@
 import { isTownQuest } from "../content/townQuests";
 import { clearPhotos } from "../game/photowalk/photos";
-import { PhotoBookContact } from "./PhotoWalk";
+import { PhotoBookContact } from "./PhotoWalkHud";
 import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";

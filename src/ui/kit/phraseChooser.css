@@ -1,4 +1,4 @@
-.phrase-chooser { position: relative; }
+.phrase-chooser { position: relative; pointer-events: auto; }
 .phrase-chooser > summary { display: grid; place-items: center; list-style: none; width: 44px; height: 44px; padding: 0; }
 .phrase-chooser > summary::-webkit-details-marker { display: none; }
 .phrase-chooser-panel {

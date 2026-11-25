@@ -2,6 +2,7 @@
 // WORLD_SHOTS saves the idle rally, stage, hit, splash and score card.
 import assert from "node:assert/strict";
 import { launchPoolBrowser, poolPage, poolViewports } from "./pool-browser.mjs";
+import { checkManualSave } from "./fixtures/phrase-saves.mjs";
 
 const browser = await launchPoolBrowser();
 try {
@@ -106,7 +107,10 @@ try {
     // The round has captured its RNG. Restore the world's randomness so the splash fans out.
     await page.evaluate((random) => { Math.random = random; }, restoreRandom);
     await restoreRandom.dispose();
+    const yours = page.locator('.pool-cue[data-line="pl_tuya"]');
     assert(await page.locator('[data-line="pl_tuya"]').isVisible());
+    await checkManualSave(page, yours.locator("[data-phrase-save]"), phone, "¡Tuya!", "x09-alberca", state, "Space");
+    if (!phone) await page.evaluate(() => document.activeElement.blur());
     const { subjects, foreground } = await page.evaluate(() => window.__ew.game.poolFraming());
     assert.deepEqual(subjects.map(({ id }) => id).sort(), ["ball", "diego", "learner", "santi", "vale"]);
     for (const { id, point: [x, y, z], blockers } of subjects) {
@@ -151,6 +155,10 @@ try {
     }));
     assert.deepEqual(displayedBest, { value: "2", opaque: true, animated: false }, "best run paints its final value immediately");
     assert.equal((await state()).drops, 3);
+    const review = card.locator(".phrase-review-row");
+    const rules = "Hay que tener la pelota en el aire.";
+    await review.getByRole("combobox").selectOption({ label: rules });
+    await checkManualSave(page, review.locator("[data-phrase-save]"), phone, rules, "x09-alberca", state);
     const saved = await page.evaluate(() => window.__ew.store.getState().progress.pool);
     assert.deepEqual(saved, { best: 2, rounds: 1, rulesHeard: true });
     await shot("score");

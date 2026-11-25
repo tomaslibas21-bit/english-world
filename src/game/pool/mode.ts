@@ -13,7 +13,7 @@ import type { KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { rand } from "../world/util";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, poolMotionPreference, POOL_CENTER, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, type PoolKid } from "../world/pool";
 import { flightPosition, nextFlight, PoolRound, SPLASH_SECONDS, type Flight, type PoolEvent, type Receiver } from "./logic";
@@ -95,6 +95,7 @@ class PoolMode implements GameMode {
   private hitAt = new Map<Receiver, number>();
   private dropAt = -Infinity;
   private ball = ballMesh();
+  private review: PhraseRun | null = null;
   private rings = splashRings();
   private origin = new THREE.Vector3();
   private target = new THREE.Vector3();
@@ -154,6 +155,7 @@ class PoolMode implements GameMode {
     this.firstPass = true;
     this.clearCues();
     this.kept.clear();
+    this.review = new PhraseRun(POOL_SITUATION);
     this.hitAt.clear();
     this.dropAt = -Infinity;
     this.holdBall("vale");
@@ -202,6 +204,7 @@ class PoolMode implements GameMode {
       if (!sentence) continue;
       const line = { key, sentence };
       this.cueUntil[slot] = this.clock + hold;
+      this.review?.add(sentence);
       usePool.setState({ [slot]: line });
       if (phraseKeys.has(key)) this.kept.set(key, line);
       const { slowVoice, volume } = useStore.getState().settings;
@@ -333,7 +336,7 @@ class PoolMode implements GameMode {
     this.phase = "result";
     this.clearCues();
     usePool.setState({
-      result: { best: round.best, learnerHits: round.learnerHits, drops: round.drops, cards: kept.length },
+      result: { best: round.best, learnerHits: round.learnerHits, drops: round.drops, cards: kept.length, review: this.review?.finish() },
       help: null,
     });
   }
@@ -487,6 +490,7 @@ class PoolMode implements GameMode {
     const placed = this.phase !== "entering";
     this.phase = null;
     this.round = null;
+    this.review = null;
     this.notice = null;
     this.clearCues();
     this.hitAt.clear();

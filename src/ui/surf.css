@@ -24,8 +24,9 @@
 .surf-card.ok { border-color: var(--good, #37a26b); }
 .surf-card.no { border-color: var(--warm, #e7a13a); }
 .surf-words { min-width: 0; padding-inline-end: 48px; }
-.surf-cue-line { display: flow-root; }
-.surf-feedback { float: inline-start; width: 28px; height: 24px; }
+.surf-cue-line { position: relative; display: flow-root; }
+.surf-cue-line > [data-phrase-save] { float: inline-start; margin-inline-end: 6px; }
+.surf-feedback { position: absolute; inset: -12px auto auto 0; pointer-events: none; }
 .surf .mode-score-actions .surf-later { min-height: 44px; }
 .surf-again { position: absolute; inset-inline-end: 2px; bottom: 2px; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
 .surf-again:hover { filter: brightness(1.06); }
@@ -80,6 +81,8 @@ button.surf-move { cursor: pointer; }
 .surf-turn .surf-mic { width: 50px; height: 50px; flex: none; }
 .surf-turn .surf-mic.muted { background: #9aa7b1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); }
 .surf-turn .mic-status b { font-size: 1.05em; }
+.surf-turn .phrase-chooser { margin-inline-start: auto; flex: none; }
+.surf-turn .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
 .surf-said { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px); background: var(--good, #37a26b); color: #fff; border-radius: 999px; padding: 9px 18px 9px 14px; font-family: var(--en); font-size: 1.25em; font-weight: 600; box-shadow: 0 4px 14px rgba(10, 60, 40, 0.3); animation: surf-move-in 0.2s ease-out; pointer-events: none; }
 .surf.touch .surf-said { bottom: var(--above-pad); }
 
@@ -159,6 +162,7 @@ button.surf-move { cursor: pointer; }
   .surf-turn, .surf-choice:only-of-type { grid-column: 1 / -1; }
   .surf-turn { padding-block: 4px; }
   .surf-turn .surf-mic { width: 44px; height: 44px; }
+  .surf-turn .phrase-chooser-panel { inset: 52px 12px auto auto; position: fixed; }
   .surf-choice { min-height: 46px; align-content: center; padding: 5px 7px; overflow-wrap: anywhere; }
   .surf-choice .surf-il { font-size: 1.1em; line-height: 1.12; }
   .surf-choice .surf-il .lt { font-size: max(12px, 0.65em); margin-top: 1px; }

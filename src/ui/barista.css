@@ -19,8 +19,9 @@
 .barista-counter b { margin-left: 3px; }
 .barista-exit { margin-left: auto; min-height: 44px; font-weight: 800; }
 .barista-bottom {
+  --barista-bottom-inset: max(10px, env(safe-area-inset-bottom));
   position: absolute;
-  inset: auto max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  inset: auto max(10px, env(safe-area-inset-right)) var(--barista-bottom-inset) max(10px, env(safe-area-inset-left));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
@@ -135,8 +136,9 @@
 .barista-choice small { color: #4c6156; font-weight: 600; }
 
 .barista-tray {
+  --barista-tray-padding: 10px;
   width: min(1080px, 100%);
-  padding: 10px 12px;
+  padding: var(--barista-tray-padding) 12px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 5px 8px;
@@ -213,6 +215,17 @@
 .barista-chip kbd { position: absolute; top: 2px; left: 3px; padding: 0 3px; font-size: 9px; }
 .barista-tray[data-shortcuts="true"] .barista-chip { padding-inline: 14px 4px; }
 .barista-give { display: grid; align-items: stretch; }
+.barista-tray-actions { display: flex; align-self: end; justify-self: end; gap: 6px; }
+.barista-tray-actions .phrase-chooser-panel {
+  position: fixed;
+  inset: auto 0 calc(var(--barista-bottom-inset) + var(--barista-tray-padding) + 51px);
+  margin-inline: auto;
+  max-height: 26dvh;
+  overscroll-behavior: contain;
+}
+.barista-listen-actions .phrase-chooser-panel,
+.barista-turn .phrase-chooser-panel { inset-block: auto calc(100% + 6px); }
+.barista-offer [data-phrase-save].btn { padding: 0; }
 .barista-give .btn, .barista-offer .btn { min-height: 44px; padding: 5px 15px; }
 .barista-give kbd { margin-left: 8px; color: inherit; }
 .barista-give button:disabled { opacity: 0.55; }
@@ -241,12 +254,12 @@
 @media (max-width: 600px) {
   .barista-header { inset-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right)); }
   .barista-counter, .barista-exit { font-size: 13px; padding-inline: 10px; }
-  .barista-bottom { inset-inline: max(5px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-right)); bottom: max(5px, env(safe-area-inset-bottom)); gap: 4px; }
+  .barista-bottom { --barista-bottom-inset: max(5px, env(safe-area-inset-bottom)); inset-inline: max(5px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-right)); gap: 4px; }
   .barista-cue-text { padding: 6px 8px; border-radius: 12px; }
   .barista-cue .il { font-size: 18px; line-height: 1.12; }
   .barista-cue .u .lt { font-size: 11px; }
   .barista-cue .nat { font-size: 12px; }
-  .barista-tray { padding: 7px; gap: 5px 6px; border-radius: 14px; max-height: 76dvh; overflow-y: auto; }
+  .barista-tray { --barista-tray-padding: 7px; padding: var(--barista-tray-padding); gap: 5px 6px; border-radius: 14px; max-height: 76dvh; overflow-y: auto; }
   .barista-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .barista-row-label { padding: 0 5px; font-size: 12px; }
   /* A column can widen for the longest word in either language. */
@@ -262,6 +275,7 @@
 }
 
 @media (max-width: 360px) {
+  .barista-row[data-row="dine"] { grid-template-columns: minmax(0, 1fr); }
   .barista-row:is([data-row="drink"], [data-row="milk"], [data-row="extras"]) .barista-chips {
     grid-template-columns: repeat(3, minmax(min-content, 1fr));
   }
