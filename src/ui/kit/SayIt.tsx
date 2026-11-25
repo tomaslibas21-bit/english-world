@@ -9,6 +9,8 @@ import "./sayIt.css";
 const seenTips = new Set<string>();
 const feedback = { ...MIC_FEEDBACK, hit: words.hit, miss: words.miss };
 
+type SayItMessages = { tip: string; miss: string };
+
 function firstTip(game: string) {
   if (seenTips.has(game)) return false;
   seenTips.add(game);
@@ -20,7 +22,7 @@ function firstTip(game: string) {
   return true;
 }
 
-function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
+function SayItButton({ game, cue, messages }: { game: string; cue: SayItCue; messages: SayItMessages }) {
   const status = useSyncExternalStore(cue.subscribe, cue.getSnapshot, cue.getSnapshot);
   const [tip, setTip] = useState(false);
   useEffect(() => {
@@ -31,8 +33,8 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
   }, [game]);
   const listening = status === "listening";
   const awarded = status === "hit" || status === "credited";
-  const message = status === "idle" || listening ? (tip ? words.tip : null)
-    : status === "credited" ? null : feedback[status];
+  const message = status === "idle" || listening ? (tip ? messages.tip : null)
+    : status === "credited" ? null : status === "miss" ? messages.miss : feedback[status];
   return <span className="say-it" data-status={status}>
     <button type="button" className="say-it-mic" aria-label={listening ? words.micStop : words.mic}
       aria-pressed={listening} aria-disabled={awarded} onClick={cue.toggle}>
@@ -44,6 +46,6 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
   </span>;
 }
 
-export function SayIt({ game, cue }: { game: string; cue?: SayItCue | null }) {
-  return speechSupported() && cue ? <SayItButton game={game} cue={cue} /> : null;
+export function SayIt({ game, cue, messages = words }: { game: string; cue?: SayItCue | null; messages?: SayItMessages }) {
+  return speechSupported() && cue ? <SayItButton game={game} cue={cue} messages={messages} /> : null;
 }

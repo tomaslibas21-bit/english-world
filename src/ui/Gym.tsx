@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type KeyboardEvent, type SyntheticEvent } from "react";
-import { GYM_MOVE_LABELS, GYM_UI as words, learnerLang, type GyMoveId } from "../content/gym";
+import { GYM_MOVE_LABELS, GYM_SAY_IT_MESSAGES, GYM_UI as words, learnerLang, type GyMoveId } from "../content/gym";
 import { game } from "../game/gameRef";
 import { GYM_KEYS } from "../game/gym/round";
 import { useGym, type GymView } from "../game/gym/store";
@@ -100,7 +100,7 @@ function GymRoundView({ view, touch }: { view: GymView; touch: boolean }) {
               disabled={view.revealed || (!choose && phase !== "listen")} onClick={() => act("reveal")}>
               {words.reveal}
             </button>
-            <div className="gym-mic"><SayIt game="gym" cue={view.sayIt} /></div>
+            <div className="gym-mic"><SayIt game="gym" cue={view.sayIt} messages={GYM_SAY_IT_MESSAGES} /></div>
           </div>
         </div>}
         {phase === "score" && <div className="gym-result">
