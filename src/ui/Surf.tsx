@@ -245,7 +245,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   const pic = line?.pic;
   const nat = line && lt && !sameAsGloss(line.s) ? line.s.nat : null;
   return (
-    <div className={"surf" + (touch ? " touch" : "")}>
+    <div className={"surf" + (touch ? " touch" : "")} data-phase={s.phase}>
       <div className="surf-top">
         <button className="surf-x" onClick={() => game?.surfStop()} aria-label={L("Baigti pamoką")} title={L("Baigti pamoką")}><Icon name="close" size={20} strokeWidth={2.4} /></button>
         <button className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow} onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>{L("Lėčiau")}</button>

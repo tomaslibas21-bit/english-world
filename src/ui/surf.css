@@ -27,7 +27,7 @@
 .surf-cue-line { display: flow-root; }
 .surf-cue-footer { display: flex; align-items: center; gap: 6px; }
 .surf-cue-details { flex: 1; min-width: 0; }
-.surf-feedback { float: inline-start; width: 28px; height: 24px; }
+.surf-feedback:not(:empty) { float: inline-start; width: 28px; height: 24px; }
 .surf .mode-score-actions .surf-later { min-height: 44px; }
 .surf-again { flex: none; margin-inline-start: auto; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
 .surf-again:hover { filter: brightness(1.06); }
@@ -183,12 +183,24 @@ button.surf-move { cursor: pointer; }
 @media (max-width: 520px) and (max-height: 700px) and (orientation: portrait) {
   .surf.touch .surf-choices { align-self: end; }
 }
+/* Keep the whole board visible as it pitches on a portrait ride. */
+@media (max-width: 520px) and (orientation: portrait) {
+  .surf.touch[data-phase="ride"] .surf-say { gap: 6px; }
+  .surf.touch[data-phase="ride"] .surf-card { gap: 6px; padding-block: 6px; }
+  .surf.touch[data-phase="ride"] .surf-card .il:not(.plain) { column-gap: 0.34em; row-gap: 3px; line-height: 1.1; }
+  .surf.touch[data-phase="ride"] .surf-card .nat { margin-top: 4px; padding-top: 4px; line-height: 1.2; }
+  .surf.touch[data-phase="ride"] .surf-balance { margin-top: 5px; }
+  .surf.touch[data-phase="ride"] .surf-move { min-height: 40px; padding-block: 6px; }
+}
 @media (max-height: 520px) and (orientation: landscape) {
   .surf.touch { --pad-space: calc(3 * var(--arrow-size) + 2 * var(--pad-gap) + 26px + env(safe-area-inset-right)); }
   .surf.touch .surf-say { top: calc(56px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); transform: none; }
   .surf.touch .surf-card { max-width: min(44vw, 400px); }
-  .surf.touch:has(.surf-choices) { justify-items: start; padding-bottom: var(--pad-bottom); }
-  .surf.touch:has(.surf-choices) .surf-card { width: max-content; max-width: min(620px, 100%); }
+  .surf.touch:has(.surf-choices) { justify-items: start; row-gap: 6px; padding-bottom: var(--pad-bottom); }
+  /* Use the full cue row for the picture and glosses. The answers below share their row with the pad. */
+  .surf.touch:has(.surf-choices) .surf-say { width: min(620px, 100%); align-items: start; }
+  .surf.touch:has(.surf-choices) .surf-card { max-width: 100%; }
+  .surf.touch:has(.surf-choices) .surf-card.has-pic { width: 100%; }
   .surf.touch .surf-choices { align-self: end; width: min(540px, calc(100vw - var(--pad-space) - 12px - env(safe-area-inset-left))); }
   .surf.touch .surf-said { left: calc(12px + env(safe-area-inset-left)); transform: none; bottom: var(--pad-bottom); max-width: calc(100vw - var(--pad-space) - 20px); }
 }
