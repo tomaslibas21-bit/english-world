@@ -58,7 +58,10 @@ const surfaces: Record<string, Surface> = {
 };
 const EXTRA_SCOPES = ".radio-set, .phone-ring, .street-card";
 const ROOTS = SCOPE + ", " + EXTRA_SCOPES;
-const HUD_CONTROLS = ".toolbar, .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .view-chip";
+const HUD_CONTROLS = ".toolbar, .toolbar-drawer:not([inert]), .ride-menu, .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .view-chip, .lh-tools";
+const TASK_NOTES = ".objective-card, .zone-banner, .coach, .town-toasts .toast, .directions-card, .text-arrival";
+const NOTICE_HOSTS = ".hud, .convo, .overlay, .lh";
+const NOTICE_ANCHORS = `${ROOTS}, ${NOTES}, ${HUD_CONTROLS}, ${TASK_NOTES}, ${CONTROL}, .sheet, .phone`;
 
 const WORLD_MAP = [["L", "move"], ["R", "look"], ["A", "jump"], ["X", "interact"]] as const;
 const MENU_MAP = [["✚/L", "move"], ["A", "choose"], ["B", "back"]] as const;
@@ -73,6 +76,27 @@ function control(el: Element | null): el is HTMLElement {
 
 function visible(el: HTMLElement) {
   return el.getClientRects().length > 0 && getComputedStyle(el).visibility === "visible";
+}
+
+function onScreen(el: HTMLElement, viewport: DOMRect, whole = false) {
+  if (!visible(el)) return false;
+  const box = el.getBoundingClientRect();
+  let left = viewport.left, right = viewport.right, top = viewport.top, bottom = viewport.bottom;
+  for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+    const style = getComputedStyle(parent);
+    if (style.overflowX === "visible" && style.overflowY === "visible") continue;
+    const bounds = parent.getBoundingClientRect();
+    if (style.overflowX !== "visible") {
+      left = Math.max(left, bounds.left);
+      right = Math.min(right, bounds.right);
+    }
+    if (style.overflowY !== "visible") {
+      top = Math.max(top, bounds.top);
+      bottom = Math.min(bottom, bounds.bottom);
+    }
+  }
+  return whole ? box.left >= left && box.right <= right && box.top >= top && box.bottom <= bottom
+    : box.left < right && box.right > left && box.top < bottom && box.bottom > top;
 }
 
 export function textEntry(el: Element | null): boolean {
@@ -187,13 +211,17 @@ export class GamepadView {
   private returnTo = new WeakMap<HTMLElement, Launcher>();
   private restore?: HTMLElement;
   private focusOnReturn = false;
+  private noticeLayer?: HTMLElement;
   private notice?: HTMLElement;
+  private noticeSlot?: HTMLElement;
   private status?: HTMLElement;
   private legend?: HTMLElement;
   private timer?: ReturnType<typeof setTimeout>;
   private announce?: ReturnType<typeof setTimeout>;
+  private noticeChanges?: MutationObserver;
   private resize?: ResizeObserver;
-  private resizeAnchor?: Element;
+  private noticeHosts: HTMLElement[] = [];
+  private measured = new Set<Element>();
   private menuMap?: boolean;
 
   constructor(private debug: PadDebug, private resetInput: () => void) {}
@@ -223,15 +251,14 @@ export class GamepadView {
     document.addEventListener("focusout", this.focusOut);
     document.addEventListener("compositionstart", this.compositionStart);
     document.addEventListener("compositionend", this.compositionEnd);
-    window.addEventListener("resize", this.placeNotice);
     this.refresh();
     this.show("connected");
   }
 
   disconnect() {
     if (!this.app) return;
-    this.show("disconnected");
     this.stopWatching();
+    this.show("disconnected");
   }
 
   dispose() {
@@ -684,6 +711,8 @@ export class GamepadView {
 
   private show(key: "connected" | "disconnected") {
     if (!this.notice) {
+      this.noticeLayer = document.createElement("div");
+      this.noticeLayer.className = "pad-hint-layer";
       this.notice = document.createElement("div");
       this.notice.lang = "lt";
       this.notice.setAttribute("role", "status");
@@ -694,35 +723,119 @@ export class GamepadView {
       this.legend.className = "pad-hint-map";
       this.legend.setAttribute("aria-hidden", "true");
       this.notice.append(this.status, this.legend);
+      this.noticeLayer.append(this.notice);
       this.menuMap = undefined;
+      this.notice.dataset.padHint = key;
+      document.body.append(this.noticeLayer);
+      this.noticeChanges = new MutationObserver(this.noticeChanged);
+      window.addEventListener("resize", this.placeNotice);
+      this.app?.addEventListener("scrollend", this.noticeScroll, true);
+      this.app?.addEventListener("animationend", this.noticeAnimation);
+      document.addEventListener("padpopover", this.placeNotice);
     }
     this.notice.dataset.padHint = key;
     this.placeNotice();
     clearTimeout(this.announce);
+    clearTimeout(this.timer);
     this.announce = setTimeout(() => {
       if (!this.status) return;
       this.status.textContent = PAD_LINES[key].nat;
       this.placeNotice();
     }, 0);
-    clearTimeout(this.timer);
     this.timer = setTimeout(this.removeNotice, key === "connected" ? 3200 : 2400);
   }
 
   private removeNotice = () => {
     clearTimeout(this.announce);
     clearTimeout(this.timer);
+    window.removeEventListener("resize", this.placeNotice);
+    this.app?.removeEventListener("scrollend", this.noticeScroll, true);
+    this.app?.removeEventListener("animationend", this.noticeAnimation);
+    document.removeEventListener("padpopover", this.placeNotice);
+    this.noticeChanges?.disconnect();
+    this.noticeChanges = undefined;
+    this.noticeHosts = [];
     this.resize?.disconnect();
-    this.resizeAnchor = undefined;
-    this.notice?.remove();
-    this.notice = this.status = this.legend = undefined;
-    if (!this.observer) window.removeEventListener("resize", this.placeNotice);
+    this.resize = undefined;
+    this.measured.clear();
+    this.noticeSlot?.remove();
+    this.noticeLayer?.remove();
+    this.noticeLayer = this.notice = this.noticeSlot = this.status = this.legend = undefined;
   };
 
+  private noticeAnimation = (event: Event) => {
+    if (event.target instanceof Element && event.target.matches(`${NOTICE_HOSTS}, .sheet, ${TASK_NOTES}`)) this.placeNotice();
+  };
+
+  private noticeScroll = (event: Event) => {
+    if (!(event.target instanceof Element)) return;
+    const slot = this.noticeSlot;
+    if ((slot?.isConnected && event.target.contains(slot)) || event.target.matches(".sheet-body, .yt-scroll, .lh")) {
+      this.placeNotice();
+    }
+  };
+
+  private noticeChanged = (records: MutationRecord[]) => {
+    if ((this.noticeSlot?.parentElement && !this.noticeSlot.isConnected) || records.some((record) => {
+      if (record.target === this.app || record.target === document.documentElement) return true;
+      if (record.type === "attributes") {
+        const target = record.target as Element;
+        return target.matches(`${NOTICE_ANCHORS}, .toolbar-drawer`) || record.attributeName === "data-pad-scope" ||
+          [...this.measured].some((element) => target.contains(element));
+      }
+      return [...record.addedNodes, ...record.removedNodes].some((node) =>
+        node instanceof Element && (node.matches(NOTICE_ANCHORS) || node.querySelector(NOTICE_ANCHORS)));
+    })) this.placeNotice();
+  };
+
+  private noticeSurface(app: HTMLElement) {
+    const hosts = Array.from(app.children).filter((node): node is HTMLElement =>
+      node instanceof HTMLElement && node.matches(NOTICE_HOSTS));
+    if (hosts.length !== this.noticeHosts.length || hosts.some((host, i) => host !== this.noticeHosts[i]) ||
+        !this.measured.size) {
+      this.noticeHosts = hosts;
+      this.noticeChanges?.disconnect();
+      this.noticeChanges?.observe(app, { childList: true });
+      this.noticeChanges?.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+      // Observe surface commits, leaving canvas, world tags and unrelated app trees out of the notice lifetime.
+      for (const host of hosts) this.noticeChanges?.observe(host, {
+        subtree: true, childList: true, attributes: true,
+        attributeFilter: ["data-pad-scope", "data-pad-phase", "inert", "hidden", "aria-hidden", "disabled", "aria-disabled"],
+      });
+    }
+    let active = this.active?.isConnected && !this.active.closest(BLOCKED) ? this.active : null;
+    let rank = active ? surfaces[this.kind(active)].priority : 0;
+    const root = (node: HTMLElement) => {
+      if (!visible(node) || node.closest(BLOCKED)) return;
+      const popup = padPopovers.get(node);
+      if (popup && (!popup.anchor.isConnected || popup.anchor.closest(BLOCKED) || (active && !active.contains(popup.anchor) && rank < 110))) return;
+      const priority = surfaces[this.kind(node)]?.priority ?? 0;
+      if (priority >= rank && priority > 0) { active = node; rank = priority; }
+    };
+    if (!this.observer || !active) {
+      for (const host of hosts) {
+        if (host.matches(ROOTS)) root(host);
+        for (const node of host.querySelectorAll<HTMLElement>(ROOTS)) root(node);
+      }
+      for (const node of document.body.querySelectorAll<HTMLElement>(`:scope > ${SCOPE}`)) root(node);
+    }
+    return active;
+  }
+
+  private watchNoticeSize(elements: Element[]) {
+    this.resize ??= new ResizeObserver(this.placeNotice);
+    const next = new Set(elements);
+    for (const element of this.measured) if (!next.has(element)) this.resize.unobserve(element);
+    for (const element of next) if (!this.measured.has(element)) this.resize.observe(element);
+    this.measured = next;
+  }
+
   private placeNotice = () => {
-    const { notice, legend, app } = this;
-    if (!notice || !legend || !app) return;
-    // A disconnected notice keeps its last map and remains in the current view until expiry.
-    const menu = this.observer ? !!this.active : this.menuMap ?? false;
+    const { notice, noticeLayer, legend, app } = this;
+    if (!notice || !noticeLayer || !legend || !app) return;
+    const active = this.noticeSurface(app);
+    const kind = active ? this.kind(active) : undefined;
+    const menu = !!kind;
     if (this.menuMap !== menu) {
       this.menuMap = menu;
       const items = (menu ? MENU_MAP : WORLD_MAP).map(([glyph, key]) => {
@@ -739,95 +852,108 @@ export class GamepadView {
       }
       legend.replaceChildren(...items);
     }
-    const active = this.active;
-    const kind = active ? this.kind(active) : null;
-    const notes = (!kind || kind === "toolbar" || kind === "drawer" || kind === "street" || kind === "phone-ring")
-      ? app.querySelector<HTMLElement>(NOTES) : null;
-    const desktop = innerWidth >= 901 && innerHeight > 520;
-    let slot: HTMLElement | null = null;
-    if (!this.observer && notice.isConnected) return;
-    if (notes && matchMedia("(max-width: 600px) and (orientation: portrait)").matches) slot = notes;
-    else if (active && kind) {
-      if (kind === "convo" || kind === "ended" || kind === "intro" || kind === "info") {
-        const convo = active.closest(".convo");
-        if (!desktop && convo && convo.getBoundingClientRect().top < 100) slot = convo.querySelector(".convo-tools");
-      } else if (kind === "panel") {
-        const sheet = active.querySelector<HTMLElement>(surfaces.panel.slot!);
-        if (!desktop || !sheet || sheet.getBoundingClientRect().left < 292) slot = sheet;
-      } else if (!desktop && !["drawer", "toolbar", "auxiliary", "popover", "tooltip", "meeting"].includes(kind)) {
-        const selector = surfaces[kind].slot;
-        slot = selector ? active.matches(selector) ? active : app.querySelector<HTMLElement>(selector) : active;
-      }
-    }
-    let anchor: Element | null = null;
-    if (!slot && notes) anchor = notes.querySelector(".objective-card");
-    if (!slot && !anchor && (!active || kind === "auxiliary")) {
-      anchor = app.querySelector(".surf-top, .road-header, .taxi-cue, .bl-header");
-    }
-    if (anchor !== this.resizeAnchor) {
-      this.resize?.disconnect();
-      this.resizeAnchor = anchor ?? undefined;
-      if (anchor) {
-        this.resize ??= new ResizeObserver(this.placeNotice);
-        this.resize.observe(anchor);
-      }
-    }
-    const hud = Array.from(app.querySelectorAll<HTMLElement>(HUD_CONTROLS)).filter(visible);
-    const choices: HTMLElement[] = [];
-    if (active && kind) {
-      const surface = surfaces[kind];
-      const first = surface.first && active.querySelector<HTMLElement>(`:is(${surface.first}):not(:disabled, [aria-disabled=true])`);
-      const back = active.querySelector<HTMLElement>(BACK) ??
-        (surface.back ? app.querySelector<HTMLElement>(surface.back) : null);
-      for (const target of [first, back]) if (target && visible(target)) choices.push(target);
-      const convo = active.closest<HTMLElement>(".convo");
-      if (!slot && convo) choices.push(convo);
-      if (kind === "popover" || kind === "tooltip" || kind === "meeting") choices.push(active);
-    }
-    if (slot) {
-      notice.dataset.padPlacement = slot === notes ? "notes" : "flow";
-      if (notice.parentElement !== slot) {
-        if (slot === notes) this.moveNotice(slot, null);
-        else {
-          const head = slot.querySelector(":scope > :is(header, .sheet-head, .phone-status)");
-          this.moveNotice(slot, head ? head.nextSibling : slot.firstChild);
-        }
-      }
-      const { left, top, width, height, bottom } = notice.getBoundingClientRect();
-      if (top >= 0 && bottom <= innerHeight &&
-          !hud.some((item) => overlaps(left, top, width, height, item.getBoundingClientRect())) &&
-          !choices.some((item) => overlaps(left, top, width, height, item.getBoundingClientRect(), 0))) return;
-    }
-    notice.dataset.padPlacement = "fixed";
-    if (notice.parentElement !== document.body) this.moveNotice(document.body, null);
-    notice.style.removeProperty("--pad-left");
-    notice.style.removeProperty("--pad-top");
-    const { left, top, width, height } = notice.getBoundingClientRect();
-    const after = anchor?.getBoundingClientRect();
-    const y = after ? after.bottom + 6 : top;
-    const occupied = [...hud, ...choices].map((item) => item.getBoundingClientRect());
-    if (after) occupied.push(after);
-    // Try the HUD anchor first, then the corners and the open space around the current controls.
-    const xs = [left, innerWidth - left - width, ...occupied.map((box) => box.right + 8)];
-    const ys = [y, top, ...occupied.map((box) => box.bottom + 8)];
-    for (const x of xs) {
-      for (const y of ys) {
-        if (x < left || y < top || x + width > innerWidth - 12 || y + height > innerHeight - 12 ||
-            occupied.some((box) => overlaps(x, y, width, height, box, box === after ? 6 : 8))) continue;
-        notice.style.setProperty("--pad-left", `${x}px`);
-        notice.style.setProperty("--pad-top", `${y}px`);
-        return;
-      }
-    }
-    if (slot) {
-      notice.dataset.padPlacement = slot === notes ? "notes" : "flow";
-      this.moveNotice(slot, null);
-    }
-  };
 
-  private moveNotice(slot: HTMLElement, before: Node | null) {
-    const notice = this.notice!;
-    if (notice.isConnected && typeof slot.moveBefore === "function") slot.moveBefore(notice, before);
-    else slot.insertBefore(notice, before);
-  }
+    const safe = noticeLayer.getBoundingClientRect();
+    const notes = app.querySelector<HTMLElement>(NOTES);
+    const hud = Array.from(app.querySelectorAll<HTMLElement>(HUD_CONTROLS)).filter(visible);
+    const task = Array.from(app.querySelectorAll<HTMLElement>(TASK_NOTES)).filter(visible);
+    const surface = kind && surfaces[kind];
+    const choices: HTMLElement[] = [];
+    if (active && surface) {
+      const current = document.activeElement;
+      if (current instanceof HTMLElement && active.contains(current) && onScreen(current, safe)) choices.push(current);
+      const first = Array.from(active.querySelectorAll<HTMLElement>(surface.first ?? CONTROL))
+        .find((target) => control(target) && onScreen(target, safe));
+      const back = active.querySelector<HTMLElement>(BACK) ?? (surface.back ? app.querySelector<HTMLElement>(surface.back) : null);
+      for (const target of [first, back]) if (target && visible(target)) choices.push(target);
+    }
+    const convo = active?.closest<HTMLElement>(".convo");
+    const convoBack = convo?.querySelector<HTMLElement>(".convo-head [data-pad-back]");
+    if (convoBack && visible(convoBack)) choices.push(convoBack);
+    const panel = kind === "panel" ? active?.querySelector<HTMLElement>(surfaces.panel.slot!) : null;
+    const margin = convo ?? panel ?? (kind && !["drawer", "toolbar", "auxiliary", "home"].includes(kind) ? active : null);
+    const flowSelector = surface && surface.slot;
+    const slot = convo?.querySelector<HTMLElement>(".convo-tools") ?? panel ??
+      (kind && !["drawer", "toolbar", "auxiliary", "popover", "tooltip", "meeting", "panel"].includes(kind)
+        ? flowSelector ? (active?.matches(flowSelector) ? active : app.querySelector<HTMLElement>(flowSelector)) : active
+        : null);
+    const anchor = notes?.querySelector<HTMLElement>(".objective-card") ??
+      app.querySelector<HTMLElement>(".surf-top, .road-header, .taxi-cue, .bl-header");
+    // A measured header can also be the insertion host. Its own reservation must never wake the observer.
+    const sizeAnchor = anchor && !anchor.contains(slot) ? [anchor] : [];
+    this.watchNoticeSize([noticeLayer, ...hud, ...task, ...choices, ...sizeAnchor]);
+
+    const controls = hud.concat(choices);
+    const clear = (left: number, top: number, width: number, height: number, boxes: { box: DOMRect; gap: number }[]) =>
+      width > 0 && height > 0 && left >= safe.left && top >= safe.top &&
+      left + width <= safe.right && top + height <= safe.bottom &&
+      !boxes.some(({ box, gap }) => overlaps(left, top, width, height, box, gap));
+    const obstacles = (elements: HTMLElement[], gap: number) =>
+      elements.filter(visible).map((el) => el.getBoundingClientRect()).filter((box) => box.width > 0 && box.height > 0)
+        .map((box) => ({ box, gap }));
+    const position = (left: number, top: number) => {
+      notice.style.setProperty("--pad-left", `${left - safe.left}px`);
+      notice.style.setProperty("--pad-top", `${top - safe.top}px`);
+      notice.dataset.padPositioned = "";
+    };
+    const resetSlot = () => {
+      this.noticeSlot?.remove();
+      notice.style.removeProperty("--pad-width");
+    };
+    const flow = (host: HTMLElement, inNotes = false) => {
+      const slot = this.noticeSlot ??= document.createElement("div");
+      slot.setAttribute("aria-hidden", "true");
+      slot.dataset.padSlot = inNotes ? "notes" : "flow";
+      if (slot.parentElement !== host) {
+        const head = host.querySelector(":scope > :is(header, .sheet-head, .phone-status, .convo-head)");
+        host.insertBefore(slot, inNotes ? null : head ? head.nextSibling : host.firstChild);
+      }
+      notice.style.setProperty("--pad-width", `${slot.getBoundingClientRect().width}px`);
+      const { width, height } = notice.getBoundingClientRect();
+      slot.style.height = `${height}px`;
+      const { left, top } = slot.getBoundingClientRect();
+      // The opaque picker or phone already covers the HUD notes where this slot is drawn.
+      const surroundingNotes = host === panel ? [] : task;
+      const boxes = [...obstacles(controls, 8), ...obstacles(surroundingNotes, inNotes ? 6 : 8)];
+      if (clear(left, top, width, height, boxes) && onScreen(slot, safe, true)) {
+        position(left, top);
+        return true;
+      }
+      resetSlot();
+      return false;
+    };
+    const fixed = (boxes: { box: DOMRect; gap: number }[]) => {
+      const { width, height } = notice.getBoundingClientRect();
+      const left = Math.max(12, safe.left), right = Math.min(innerWidth - 12, safe.right);
+      const top = Math.max(12, safe.top), bottom = Math.min(innerHeight - 12, safe.bottom);
+      const xs = [left, right - width, ...boxes.flatMap(({ box, gap }) => [box.right + gap, box.left - gap - width])];
+      const ys = [anchor ? anchor.getBoundingClientRect().bottom + 6 : top, top, bottom - height,
+        ...boxes.flatMap(({ box, gap }) => [box.bottom + gap, box.top - gap - height])];
+      for (const x of xs) for (const y of ys) {
+        if (x < left || y < top || x + width > right || y + height > bottom || !clear(x, y, width, height, boxes)) continue;
+        position(x, y);
+        return true;
+      }
+      return false;
+    };
+
+    const underNote = notes && (!kind || ["toolbar", "drawer", "street", "phone-ring"].includes(kind)) &&
+      matchMedia("(max-width: 600px) and (orientation: portrait)").matches;
+    if (underNote && flow(notes, true)) return;
+
+    // An accepted slot stays reserved for this surface. Its own height is never observed.
+    const preferFlow = slot && (this.noticeSlot?.parentElement === slot || (kind === "home" && innerWidth <= 600));
+    if (slot && preferFlow && flow(slot)) return;
+    resetSlot();
+    const fixedControls = anchor && !task.includes(anchor) ? controls.concat(anchor) : controls;
+    const boxes = [...obstacles(fixedControls, 8), ...obstacles(task, 8)];
+    if (fixed(margin && visible(margin) ? [...boxes, ...obstacles([margin], 8)] : boxes)) return;
+    if (slot && !preferFlow && flow(slot)) return;
+    if (active) {
+      const visibleControls = Array.from(active.querySelectorAll<HTMLElement>(`${CONTROL}, input, select, textarea`))
+        .filter((element) => onScreen(element, safe));
+      if (fixed([...boxes, ...obstacles(visibleControls, 8)])) return;
+    }
+    delete notice.dataset.padPositioned;
+  };
 }

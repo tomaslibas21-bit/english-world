@@ -12,10 +12,19 @@
   pointer-events: none;
 }
 
+.pad-hint-layer {
+  position: fixed;
+  z-index: 60;
+  inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  pointer-events: none;
+}
 [data-pad-hint] {
+  position: absolute;
+  left: var(--pad-left, 0px);
+  top: var(--pad-top, 0px);
   box-sizing: border-box;
   width: max-content;
-  max-width: min(268px, 100%);
+  max-width: min(268px, var(--pad-width, calc(100% - 24px)));
   padding: 7px 10px;
   border-inline-start: 3px solid #087c78;
   border-radius: 12px;
@@ -27,23 +36,26 @@
   pointer-events: none !important;
   overflow-wrap: anywhere;
 }
-[data-pad-placement="fixed"] {
-  position: fixed;
-  z-index: 60;
-  inset-inline-start: max(var(--pad-left, 12px), env(safe-area-inset-left));
-  top: max(var(--pad-top, 12px), env(safe-area-inset-top));
-  max-width: min(268px, calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
-}
-[data-pad-placement="notes"] {
+[data-pad-hint]:not([data-pad-positioned]) { opacity: 0; }
+
+/* Reserve space under the task or in a crowded surface while the live node stays mounted. */
+[data-pad-slot] {
+  box-sizing: border-box;
+  width: 268px;
+  max-width: calc(100% - 16px);
   flex: none;
+  pointer-events: none !important;
+}
+[data-pad-slot="notes"] {
   order: 1;
   margin-top: 6px;
   max-width: min(268px, var(--note-width, 100%));
 }
-[data-pad-placement="flow"] { flex: none; margin: 6px auto; grid-column: 1 / -1; }
-:is(.barista-header, .gofish-header, .bl-header):has(> [data-pad-hint]) { flex-wrap: wrap; }
-:is(.barista-header, .gofish-header, .bl-header) > [data-pad-hint] { order: 1; margin-inline: 0; }
-.convo-tools > [data-pad-hint] { margin-inline: 12px; }
+[data-pad-slot="flow"] { margin: 8px auto; grid-column: 1 / -1; }
+:is(.sheet, .phone) > [data-pad-slot] { margin-inline: 8px auto; }
+:is(.barista-header, .gofish-header, .bl-header):has(> [data-pad-slot]) { flex-wrap: wrap; }
+:is(.barista-header, .gofish-header, .bl-header) > [data-pad-slot] { order: 1; margin-inline: 0; }
+.convo-tools > [data-pad-slot] { margin-inline: 12px; }
 
 .pad-hint-map {
   display: flex;

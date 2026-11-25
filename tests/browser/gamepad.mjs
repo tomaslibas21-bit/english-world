@@ -107,16 +107,23 @@ function install({ key, progress }) {
   // Watch the transient's wall time even if a render batch or artifact capture is slow.
   const notices = [];
   let current;
-  new MutationObserver(() => {
+  const announcements = new MutationObserver((records) => {
+    if (current) current.record.writes += records.length;
+  });
+  new MutationObserver((records) => {
+    if (current && records.some((record) => [...record.removedNodes].some((node) =>
+      node === current.hint || node.contains(current.hint)))) current.record.unmounts++;
     const hint = document.querySelector("[data-pad-hint]");
     const kind = hint?.dataset.padHint;
     if (current?.hint === hint && current?.kind === kind) return;
     if (current) current.record.removed = wallNow();
+    announcements.disconnect();
     current = undefined;
     if (hint) {
-      const record = { kind, shown: wallNow(), removed: null };
+      const record = { kind, shown: wallNow(), removed: null, writes: 0, unmounts: 0 };
       notices.push(record);
       current = { hint, kind, record };
+      announcements.observe(hint.querySelector("strong"), { childList: true, subtree: true, characterData: true });
     }
   }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-pad-hint"] });
 
@@ -295,7 +302,7 @@ async function run(width, height, mobile, mode, contract) {
   }
 }
 
-async function inspectHint(h, kind, map, extra = "") {
+async function inspectHint(h, kind, map, extra = "", surface = null) {
   const { page, until, check } = h;
   const [on, off, move, look, jump, use, choose, back] = fixture.hint;
   const expected = map === "world" ? [["L", move], ["R", look], ["A", jump], ["X", use]]
@@ -303,11 +310,12 @@ async function inspectHint(h, kind, map, extra = "") {
   const status = kind === "connected" ? on : off;
   await until(`${kind} hint has its status`, () => page.evaluate(([selector, status]) =>
     document.querySelector(selector)?.textContent === status, [`${padHint} strong`, status]), { frames: 0, timeout: 1500 });
-  const result = await page.evaluate(([selector, extra]) => {
+  const result = await page.evaluate(([selector, extra, surface]) => {
     const cards = [...document.querySelectorAll(selector)];
     const card = cards[0];
     if (!card) return { count: cards.length };
     const box = card.getBoundingClientRect();
+    const style = getComputedStyle(card);
     const safe = document.createElement("div");
     safe.style.cssText = "position:fixed;visibility:hidden;inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)";
     document.body.append(safe);
@@ -316,8 +324,23 @@ async function inspectHint(h, kind, map, extra = "") {
     const within = (r, b) => r.width > 0 && r.height > 0 && r.left >= b.left - 1 && r.top >= b.top - 1
       && r.right <= b.right + 1 && r.bottom <= b.bottom + 1;
     const drawn = (el) => el.getClientRects().length && getComputedStyle(el).visibility === "visible";
-    const selectors = [".joy", ".jump-btn", ".act-btn", ".ride-menu", ".prompt", extra].filter(Boolean).join(",");
-    const obstacles = [...document.querySelectorAll(selectors)].filter(drawn).filter((el) => {
+    const onScreen = (el) => {
+      if (!drawn(el) || el.closest("[inert], [hidden], [aria-hidden=true]")) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.right > inset.left && r.bottom > inset.top &&
+        r.left < inset.right && r.top < inset.bottom;
+    };
+    const panel = document.querySelector(".overlay > :is(.sheet, .phone)");
+    const task = panel && within(box, panel.getBoundingClientRect()) ? "" : ".objective-card";
+    const selectors = [".toolbar", ".joy", ".jump-btn", ".act-btn", ".ride-menu", ".prompt", task, extra].filter(Boolean).join(",");
+    const controls = [...document.querySelectorAll(selectors)].filter(drawn);
+    const root = surface && document.querySelector(surface.root);
+    const choice = root && [...root.querySelectorAll(surface.choice)].find((el) =>
+      !el.matches(":disabled, [aria-disabled=true]") && onScreen(el));
+    const focused = root?.contains(document.activeElement) && onScreen(document.activeElement) ? document.activeElement : null;
+    const back = root && [...root.querySelectorAll("[data-pad-back]")].find(onScreen);
+    for (const el of [choice, focused, back]) if (el) controls.push(el);
+    const obstacles = controls.filter((el) => {
       const r = el.getBoundingClientRect();
       return r.left < box.right && r.right > box.left && r.top < box.bottom && r.bottom > box.top;
     }).map((el) => el.className);
@@ -335,27 +358,52 @@ async function inspectHint(h, kind, map, extra = "") {
       count: cards.length, kind: card.dataset.padHint, status: card.querySelector("strong").innerText,
       columns: labels, menuKey: map.querySelector(":scope > b")?.innerText ?? null,
       role: card.getAttribute("role"), live: card.getAttribute("aria-live"),
+      atomic: card.getAttribute("aria-atomic"), pointerEvents: style.pointerEvents,
       box: box.toJSON(), safe: within(box, inset), textFits, obstacles,
-      mapSize: parseFloat(getComputedStyle(map).fontSize), visible: !!drawn(card),
+      mapSize: parseFloat(getComputedStyle(map).fontSize),
+      statusSize: parseFloat(getComputedStyle(card.querySelector("strong")).fontSize),
+      accentWidth: style.borderInlineStartWidth, accentColor: style.borderInlineStartColor, radius: style.borderRadius,
+      visible: !!drawn(card) && Number(style.opacity) > 0,
+      choice: choice?.textContent.trim(), back: back?.getAttribute("aria-label") ?? back?.textContent.trim(),
       overflow: card.scrollWidth - card.clientWidth,
     };
-  }, [padHint, extra]);
+  }, [padHint, extra, surface]);
   check(`${kind} hint has one visible status and paired map`, result.count === 1 && result.kind === kind &&
-    result.status === status && result.visible && result.role === "status" && result.live === "polite" &&
+    result.status === status && result.visible && result.role === "status" && result.live === "polite" && result.atomic === "true" &&
     JSON.stringify(result.columns) === JSON.stringify(expected) && result.menuKey === (map === "menu" ? "☰" : null), result);
   check(`${kind} hint stays in the safe area, clear of current controls`, result.safe && result.textFits &&
-    result.overflow <= 1 && result.mapSize >= 12 && result.box.width <= 269 && result.box.height <= 140 &&
-    result.obstacles.length === 0, result);
+    result.overflow <= 1 && result.statusSize >= 14 && result.mapSize >= 12 && result.box.width <= 269 && result.box.height <= 140 &&
+    result.pointerEvents === "none" && result.obstacles.length === 0 && (!surface || (result.choice && result.back)), result);
+  check(`${kind} keeps the rounded cream card's teal accent`, result.accentWidth === "3px" &&
+    result.accentColor === "rgb(8, 124, 120)" && result.radius === "12px", result);
   return result;
 }
 
+async function sameNotice(h, live, kind) {
+  const lifecycle = await live.evaluate((card, kind) => ({
+    same: card === document.querySelector("[data-pad-hint]"),
+    ...window.__padFixture.notices.findLast((notice) => notice.kind === kind),
+  }), kind);
+  h.check(`${kind} kept the same mounted status with one announcement write`, lifecycle.same &&
+    lifecycle.removed === null && lifecycle.unmounts === 0 && lifecycle.writes === 1, lifecycle);
+}
+
 async function hintExpires(h, kind, milliseconds) {
-  const gone = await h.until(`${kind} hint expires on the wall clock`, () => h.page.evaluate((kind) =>
-    window.__padFixture.notices.findLast((notice) => notice.kind === kind && notice.removed !== null), kind),
+  const gone = await h.until(`${kind} hint expires on the wall clock`, () => h.page.evaluate((kind) => {
+    const notice = window.__padFixture.notices.findLast((notice) => notice.kind === kind);
+    return notice?.removed != null ? notice : null;
+  }, kind),
   { timeout: milliseconds + 1500, frames: 0 });
   const duration = gone.removed - gone.shown;
   h.check(`${kind} hint expires around ${milliseconds} ms`, duration >= milliseconds - 150 && duration <= milliseconds + 900 &&
     await h.page.locator(padHint).count() === 0, { duration });
+}
+
+async function hintAtLargeText(h) {
+  const { page, until } = h;
+  await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
+  await until("the app applies the 130% text setting", () => page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--scale").trim() === "1.3"));
 }
 
 async function realMovement(h) {
@@ -1217,9 +1265,7 @@ async function detachContract(h, real) {
 
   h.mark("same-index reconnect and 130% hint");
   await place(h);
-  await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
-  await until("the app applies the 130% text setting", () => page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue("--scale").trim() === "1.3"));
+  await hintAtLargeText(h);
   await attach("standard", [button.A]);
   await when("the replacement connects on the same slot", (s) => s.pad.connected, { frames: 1 });
   const ground = await state();
@@ -1241,6 +1287,28 @@ async function detachContract(h, real) {
     { ground, fresh });
   await sample();
   await when("the reconnect jump lands", (s) => !s.hop.air);
+
+  h.mark("130% unplug through the town picker");
+  await detach();
+  await inspectHint(h, "disconnected", "world");
+  const live = await page.locator(padHint).elementHandle();
+  const picker = { root: '[data-pad-scope="panel"][data-pad-phase="scenarios"]', choice: ".scn-card[data-sit]" };
+  await page.evaluate(() => window.__ew.store.getState().setHud({ panel: "scenarios" }));
+  await until("the real picker opens while the pad is unplugged", () => page.locator(picker.root).isVisible(), { frames: 0 });
+  await turn(280); // Let the picker complete its 250 ms entrance.
+  const inPicker = await inspectHint(h, "disconnected", "menu", "", picker);
+  check("the unplugged picker keeps both lines at 130%", inPicker.statusSize >= 18.1 && inPicker.mapSize >= 15.5, inPicker);
+  await sameNotice(h, live, "disconnected");
+  await shot("disconnect-picker-130-percent");
+  await page.locator(`${picker.root} [data-pad-back]`).evaluate((el) => el.click());
+  await until("the picker and its layout slot leave the DOM", () => page.locator(picker.root).count().then((n) => !n), { frames: 0 });
+  await inspectHint(h, "disconnected", "world");
+  await sameNotice(h, live, "disconnected");
+  await live.dispose();
+  await hintExpires(h, "disconnected", 2400);
+  check("the second unplug returns to no frame polling, focus ring or layout slot",
+    (await step(12)).every(({ polls }) => polls === 0) &&
+    await page.locator("[data-pad-focus], [data-pad-slot], .pad-hint-layer").count() === 0, await state());
 }
 
 async function townContract(h) {
@@ -1257,7 +1325,7 @@ async function townContract(h) {
 }
 
 async function lightContract(h) {
-  const { page, step, state, attach, focused, focusWith, check, shot, tap, when, until } = h;
+  const { page, step, state, attach, detach, focused, focusWith, check, shot, tap, when, until } = h;
   h.mark("light home");
   const lightOnly = () => page.evaluate(() => {
     const g = window.__ew.game;
@@ -1294,6 +1362,35 @@ async function lightContract(h) {
     !window.__ew.store.getState().conv.active && !!document.querySelector(".lh[data-pad-scope=home]:not([inert])")));
   check("the light scene and Back never create a 3D host", await lightOnly());
   await shot("light-back");
+
+  h.mark("130% unplug from the light scene intro");
+  await hintAtLargeText(h);
+  await page.locator(card).first().evaluate((el) => el.click());
+  await until("a fresh scene intro opens", () => page.locator(intro).isVisible());
+  await focusWith(`${intro} [data-pad-default]`);
+  await turn(360); // The conversation slides in for 350 ms.
+  await detach();
+  check("unplug clears the intro's pad focus ring immediately", await page.locator("[data-pad-focus]").count() === 0);
+  const inIntro = await inspectHint(h, "disconnected", "menu", ".convo-head [data-pad-back]", {
+    root: intro, choice: "[data-pad-default]",
+  });
+  check("Pradėti and Back stay clear of the 130% intro status",
+    inIntro.choice === "Pradėti" && inIntro.mapSize >= 15.5, inIntro);
+  const live = await page.locator(padHint).elementHandle();
+  await sameNotice(h, live, "disconnected");
+  await shot("disconnect-intro-130-percent");
+  await page.locator(`${intro} [data-pad-default]`).evaluate((el) => el.click());
+  await until("Pradėti removes the intro during the disconnect grace period", () => page.locator(intro).count().then((n) => !n), { frames: 0 });
+  const conversation = { root: ".convo", choice: "[data-pad-answer], .guide .chip, .guide-toggle" };
+  await inspectHint(h, "disconnected", "menu", "", conversation);
+  await sameNotice(h, live, "disconnected");
+  await shot("disconnect-conversation-130-percent");
+  await attach();
+  await when("the replacement arrives before the conversation's unplug notice expires", (s) => s.pad.connected, { frames: 1 });
+  await inspectHint(h, "connected", "menu", "", conversation);
+  await sameNotice(h, live, "connected");
+  await live.dispose();
+  await hintExpires(h, "connected", 3200);
 }
 
 try {
