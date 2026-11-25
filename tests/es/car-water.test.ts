@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NPCS } from "@/content/npcs";
 import { Ambient } from "@/game/ambient";
 import { SALTO, ways } from "@/game/cave/groundsPlan";
-import { createCharacter } from "@/game/characters";
+import { createCharacter, withBackpack } from "@/game/characters";
+import { BONE } from "@/game/characters/builders";
 import { NavGrid } from "@/game/nav";
 import { CAR_WATER, carFootprintOverlapsBox, carWaterClearanceY, createCarWaterProbe, probeCarWater,
   sampleCarWater, supportedCarWaterHeight, sweepCarFootprintBox, wetDriveSettings } from "@/game/rides/carWater";
@@ -659,14 +660,15 @@ describe("Puerto Colibrí's built water approaches", () => {
   }, 20_000);
 });
 
-function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<CarWaterAdapter, "drops" | "splash" | "wash"> & { drops: Splashes }) {
+function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<CarWaterAdapter, "drops" | "splash" | "wash"> & { drops: Splashes },
+  look = NPCS.vale.look) {
   const fixture = buildTownFixture({ movableParking: true });
   const { town } = fixture, col = town.colliders, dt = 1 / hz;
   const nav = new NavGrid(-156.5, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, col);
   const places: [number, number][] = town.doors.filter(d => d.loc !== "airport").map(d => [d.outX, d.outZ]);
   places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
   const ambient = new Ambient(nav, places, "low", town.seats, col);
-  const player = createCharacter(NPCS.vale.look);
+  const player = createCharacter(look);
   const cam = new PerspectiveCamera();
   const people = OUTDOOR_NPCS.slice();
   const fades: string[] = [], events: string[] = [];
@@ -1256,6 +1258,95 @@ it("keeps the PC pier rails solid through bumper yaw and lands after an unsuppor
 });
 
 describe.each([60, 20])("PC basin support and deadlines at %i Hz", hz => {
+  const browserLook = withBackpack({ skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" },
+    top: "#2a9d8f", bottom: "#264653", female: false });
+
+  function posedFace(f: ReturnType<typeof occupiedTown>) {
+    const eye = Reflect.get(f.player, "bones")?.[BONE.eyes];
+    const head = Reflect.get(f.player, "head");
+    return eye ? eye.localToWorld(new Vector3(0, -0.04, 0.005))
+      : head.localToWorld(new Vector3(0, -0.025, 0.25));
+  }
+
+  function checkExterior(f: ReturnType<typeof occupiedTown>, face: Vector3) {
+    const p = f.player.root.position, { x, z, heading, spec } = f.car.m;
+    expect(f.player.root.visible).toBe(true);
+    expect(f.rides.riding).toBeNull();
+    expect(footHits(f.col, p)).toEqual([]);
+    expect(bodyHitsCircle({ x, z, rot: heading }, spec, { x: p.x, z: p.z, r: W.footRadius - 1e-6 })).toBe(false);
+    expect(p.y).toBeGreaterThanOrEqual(floorY(p.x, p.z));
+    expect(face.y).toBeGreaterThanOrEqual(floorY(face.x, face.z));
+    expect(face.y - (waterY(face.x, face.z, f.time) ?? -Infinity)).toBeGreaterThanOrEqual(W.faceClear);
+    f.supported();
+  }
+
+  it.each([false, true])("keeps the posed face at Boca clear of El Salto (west sill blocked: %s)", async blocked => {
+    const f = occupiedTown(hz, RIDES, undefined, browserLook);
+    f.player.fidgets = false;
+    try {
+      const origin = { x: -139.4, z: -6, rot: Math.PI };
+      await f.board(f.rides.find("park"));
+      f.stage(origin.x, origin.z, origin.rot);
+      f.frame();
+      expect(f.inspect()).toMatchObject({ phase: "float", band: "float", reason: "depth", region: "cenote" });
+      expect(f.inspect().centreDepth).toBeGreaterThan(2.5);
+      const oldExitX = origin.x - f.car.m.spec.wide - W.footRadius - 0.06 - 0.32 / (0.22 * hz);
+      expect(floorY(oldExitX, origin.z)).toBeLessThan(0);
+      expect(floorY(oldExitX - 0.46436, origin.z + 0.014)).toBe(SALTO.y);
+      if (blocked) {
+        // A live obstruction blocks the west sill while the exact same car pose and east sill remain clear.
+        f.col.addCircle(-141.34, -6, 0.16);
+        expect(solidHits(f.col, origin, f.car.m.spec)).toEqual([]);
+      }
+      expect(f.rides.leave()).toBe(true);
+      const exitStart = f.player.root.position.clone();
+      const [boca, , ojo] = ways(-136, -6);
+      let visible = 0, stepDistance = 0;
+      for (let step = 0; step < hz * 3.5 && f.inspect().active; step++) {
+        f.frame();
+        const state = f.inspect(), p = f.player.root.position, face = posedFace(f);
+        if (!state.active) break;
+        checkExterior(f, face);
+        expect(state.assistedOnFoot).toBe(true);
+        expect(state.exitDoor).toBe(blocked ? -1 : 1);
+        expect(Math.hypot(p.x - ojo.x, p.z - ojo.z)).toBeGreaterThan(ojo.reach + W.footRadius);
+        expect(p.y).toBeLessThan(0.04);
+        if (!blocked) expect(Math.hypot(p.x - boca.x, p.z - boca.z)).toBeLessThan(boca.reach);
+        expect(f.car.m.x).toBe(origin.x);
+        expect(f.car.m.z).toBe(origin.z);
+        if (step < Math.ceil(hz * 0.22)) stepDistance = Math.max(stepDistance, p.distanceTo(exitStart));
+        visible++;
+      }
+      expect(visible).toBeGreaterThan(hz * 0.22);
+      expect(stepDistance).toBeGreaterThan(0.25);
+      expect(f.inspect()).toMatchObject({ active: false, landing: "spare" });
+      expect(f.snaps[0]?.covered).toBe(true);
+      f.dryPair();
+    } finally { f.close(); }
+  }, 20_000);
+
+  it("keeps the learner alongside the same car on an open assisted tow", async () => {
+    const f = occupiedTown(hz, RIDES, undefined, browserLook);
+    f.player.fidgets = false;
+    try {
+      await f.board(f.cars.find(c => c.id === "parked-0"));
+      f.stage(128, -55, Math.PI);
+      for (let i = 0; i < 12 * hz && !f.rides.water!.returning; i++) f.frame(go);
+      expect(f.inspect()).toMatchObject({ phase: "float", reason: "depth" });
+      const car = f.car, floatZ = car.m.z;
+      expect(f.rides.leave()).toBe(true);
+      for (let i = 0; i < 3.5 * hz && f.inspect().active; i++) {
+        f.frame();
+        checkExterior(f, posedFace(f));
+        expect(Math.hypot(f.player.root.position.x - car.m.x, f.player.root.position.z - car.m.z)).toBeLessThan(2);
+      }
+      expect(f.inspect()).toMatchObject({ active: false, landing: "trail" });
+      expect(car.m.z - floatZ).toBeGreaterThan(5);
+      expect(f.rides.find(car.id)).toBe(car);
+      f.dryPair();
+    } finally { f.close(); }
+  }, 20_000);
+
   it("enters the cenote from the open grounds and blocks the hotel straight run on real children", async () => {
     const f = occupiedTown(hz);
     try {

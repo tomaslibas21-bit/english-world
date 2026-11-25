@@ -1637,7 +1637,11 @@ export class Game implements GameApi {
     this.heading = rot;
     this.player.root.rotation.set(0, rot, 0);
     this.afterRide();
-    if (this.rides.water?.returning) return;
+    if (this.rides.water?.returning) {
+      // Frame the learner at the sill on the first detached draw, including the narrow phone view.
+      this.rig.target.copy(p);
+      return;
+    }
     if (this.seaMooring) {
       this.seaMooring = undefined;
       this.savePlace();

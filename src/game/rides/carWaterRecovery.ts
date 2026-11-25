@@ -1,7 +1,8 @@
 import { Vector3 } from "three";
 import type { GameCharacter } from "../characters";
 import type { Ambient } from "../ambient";
-import { DECKS, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
+import { ways } from "../cave/groundsPlan";
+import { DECKS, FLOORS, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
 import { TRAFFIC_LANES, WORLD } from "../world/layout";
 import type { CarWaterArea, CarWaterPlan } from "../world/rides";
 import type { Colliders } from "../world/util";
@@ -30,6 +31,20 @@ const WET_LIMIT = W.maxWetSeconds * 1000, RETURN_LIMIT = 3500;
 const FLOAT = 0.5, TOW_END = 2.35, DRAIN = 0.65, FADE = 0.18, TOW_SPEED = 8;
 const FOOT_STEP = 0.22, EXIT_START = W.footRadius + 0.06;
 const PADDING = 0.04, STEP = 0.12, SEPARATION = 9;
+const FOOT_RISE = 0.32;
+const DISC_ANGLES = Array.from({ length: 16 }, (_, i) => ({
+  x: Math.cos(i * Math.PI / 8), z: Math.sin(i * Math.PI / 8),
+}));
+// Try the outward step first, then turn and move along the sill if it has less room.
+const EXIT_STEPS = [
+  { start: EXIT_START, end: W.footOffset, sill: 0, turn: 0 },
+  { start: EXIT_START, end: EXIT_START, sill: 0.35, turn: -Math.PI / 2 },
+  { start: EXIT_START, end: EXIT_START, sill: -0.35, turn: Math.PI / 2 },
+  { start: EXIT_START, end: W.footOffset, sill: 0.6, turn: -Math.PI / 2 },
+  { start: EXIT_START, end: W.footOffset, sill: -0.6, turn: Math.PI / 2 },
+  { start: W.footOffset, end: W.footOffset, sill: 0, turn: 0 },
+];
+type ExitStep = typeof EXIT_STEPS[number];
 const DOORS: readonly Door[] = [1, -1, 2, -2];
 const HOME_OFFSETS = [0, 0.55, -0.55, 1.15, -1.15, 1.75, -1.75];
 const WEST_DOOR_OFFSETS = [0, -0.55, 0.5];
@@ -70,6 +85,7 @@ export interface CarWaterScene {
 
 export class CarWaterClearance {
   readonly ground;
+  private readonly drop;
   private readonly shape = emptyBox();
   private readonly home = emptyPose();
   private readonly poolBox = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
@@ -83,6 +99,7 @@ export class CarWaterClearance {
   constructor(private readonly plan: CarWaterPlan, private readonly scene: CarWaterScene) {
     this.ground = townCarWaterGround(plan);
     this.rails = scene.colliders.boxes.filter(b => b.deckRail || b.carRim);
+    if (plan.westGrounds && plan.cenote) this.drop = ways(plan.cenote.x, plan.cenote.z).find(w => w.drop);
   }
 
   private body(p: Pose, r: Ride, margin = 0) {
@@ -166,6 +183,67 @@ export class CarWaterClearance {
   foot(r: Ride, x: number, z: number, margin = PADDING, dry = false) {
     this.person(x, z, margin);
     return this.clear(r, dry);
+  }
+
+  private floorFits(x: number, z: number, low: number, high: number) {
+    const y = floorY(x, z);
+    return y >= low && y <= high;
+  }
+
+  private floorDisc(x: number, z: number, radius: number, low: number, high: number) {
+    if (!this.floorFits(x, z, low, high)) return false;
+    for (const v of DISC_ANGLES) {
+      if (!this.floorFits(x + radius * v.x, z + radius * v.z, low, high)) return false;
+    }
+    // Probe intersected overrides even when their corner or sharp edge falls between spokes.
+    return this.floorEdges(FLOORS, x, z, radius, low, high) && this.floorEdges(DECKS, x, z, radius, low, high);
+  }
+
+  private floorEdges(floors: readonly { x0: number; x1: number; z0: number; z1: number }[],
+    x: number, z: number, radius: number, low: number, high: number) {
+    for (const f of floors) {
+      const px = clamp(x, f.x0 + 1e-6, f.x1 - 1e-6), pz = clamp(z, f.z0 + 1e-6, f.z1 - 1e-6);
+      if (Math.hypot(x - px, z - pz) < radius && !this.floorFits(px, pz, low, high)) return false;
+    }
+    return true;
+  }
+
+  private clearOfDrop(x: number, z: number, radius: number) {
+    return !this.drop || Math.hypot(x - this.drop.x, z - this.drop.z) >= this.drop.reach + radius;
+  }
+
+  /** Clearance for a detached idle learner or the 0.6 surface stroke. The neck and face move forward
+   *  together in the latter. Cover both the head and its forward projection, including idle sway. */
+  exterior(r: Ride, car: Pose, f: CarWaterFoot, time: number, halfStep: number) {
+    const { x, z, y, rot, swim } = f;
+    const { half, wide } = r.m.spec, bumper = CONVERTIBLE_BUMPER;
+    const hl = r.model ? half : Math.max(half, bumper.offset + bumper.depth / 2);
+    const hw = r.model ? wide : Math.max(wide, bumper.width / 2);
+    const footRadius = Math.hypot(W.footRadius, halfStep);
+    if (reach(car, hl, hw, x, z) < footRadius || !this.clearOfDrop(x, z, footRadius)
+      || !this.floorDisc(x, z, footRadius, swim ? -Infinity : y - FOOT_RISE, y + FOOT_RISE)
+      || !this.foot(r, x, z)) return false;
+
+    const s = Math.sin(rot), c = Math.cos(rot), radius = Math.hypot(0.28, halfStep);
+    // A low bound on the visible head after the first idle update, including stroke bob.
+    const faceY = y + (swim ? 1.02 : 1.24);
+    const front = swim ? 0.47 : 0.23;
+    for (let i = 0; i <= 2; i++) {
+      const d = front * i / 2;
+      const px = x + d * s, pz = z + d * c;
+      if (reach(car, hl, hw, px, pz) < radius || !this.clearOfDrop(px, pz, radius)
+        || !this.floorDisc(px, pz, radius, -Infinity, faceY)) return false;
+      if (faceY < (waterY(px, pz, time) ?? -Infinity) + W.faceClear) return false;
+      for (const v of DISC_ANGLES) {
+        const live = waterY(px + radius * v.x, pz + radius * v.z, time);
+        if (live !== null && faceY < live + W.faceClear) return false;
+      }
+      if (d + radius > W.footRadius) {
+        this.person(px, pz, radius + PADDING - W.footRadius);
+        if (!this.clear(r, false)) return false;
+      }
+    }
+    return true;
   }
 
   private hulls(r: Ride, p: Pose) {
@@ -298,10 +376,11 @@ export class CarWaterClearance {
       reserve.heading = p.heading; reserve.hl = half + 0.2; reserve.hw = wide + 0.98;
       if (!this.reservation(r, reserve)) return false;
     }
-    copyPose(out.pose, p);
     const f = out.foot, d = side * (wide + W.footOffset);
     f.x = p.x + c * d; f.z = p.z - s * d; f.y = floorY(f.x, f.z);
     f.rot = p.heading + side * Math.PI / 2; f.swim = 0;
+    if (!this.exterior(r, p, f, 0, 0)) return false;
+    copyPose(out.pose, p);
     out.door = side; out.valid = true;
     return true;
   }
@@ -401,6 +480,7 @@ export class CarWaterRecovery {
   private readonly turnFrom = emptyPose();
   private readonly sideFoot = emptyFoot();
   private readonly testFoot = emptyFoot();
+  private readonly sweepFoot = emptyFoot();
   private readonly outside = emptyFoot();
   private readonly face = new Vector3();
   private readonly driveFrom = emptyPose();
@@ -438,6 +518,7 @@ export class CarWaterRecovery {
   private startPitch = 0;
   private inlandTurn = 0;
   private footDoor: Door = 1;
+  private footStep: ExitStep = EXIT_STEPS[0];
   private exitWanted = false;
   private assisted = false;
   private blockedRoute = false;
@@ -825,6 +906,7 @@ export class CarWaterRecovery {
       if (this.landedAt === Infinity) this.stepOut(r);
       else if (this.stillClear(r, this.landing)) {
         copyPair(this.landing, this.candidate);
+        this.footDoor = this.landing.door;
         this.putFoot(r, this.landing.foot);
       }
     }
@@ -852,13 +934,20 @@ export class CarWaterRecovery {
     this.host.place(r, false, false, this.time);
   }
 
-  private beside(r: Ride, p: Pose, door: Door, offset: number, out: CarWaterFoot) {
+  private beside(r: Ride, p: Pose, door: Door, offset: number, out: CarWaterFoot, sill = 0, turn = 0) {
     const s = Math.sin(p.heading), c = Math.cos(p.heading), side = Math.abs(door) === 1;
-    const across = side ? Math.sign(door) * (r.m.spec.wide + offset) : 0;
-    const along = side ? 0 : Math.sign(door) * (r.m.spec.half + offset);
+    const { half, wide } = r.m.spec, bumper = CONVERTIBLE_BUMPER;
+    const end = r.model ? half : Math.max(half, bumper.offset + bumper.depth / 2);
+    const across = side ? door * (wide + offset) : sill;
+    const along = side ? sill : Math.sign(door) * (end + offset);
     out.x = p.x + across * c + along * s; out.z = p.z - across * s + along * c;
-    out.rot = p.heading + (side ? door * Math.PI / 2 : door < 0 ? Math.PI : 0);
+    out.rot = p.heading + (side ? door * Math.PI / 2 : door < 0 ? Math.PI : 0) + turn;
     this.footHeight(out);
+  }
+
+  private exitFoot(r: Ride, p: Pose, door: Door, step: ExitStep, k: number, out: CarWaterFoot) {
+    const turn = Math.abs(door) === 1 ? Math.sign(door) : -Math.sign(door);
+    this.beside(r, p, door, step.start + (step.end - step.start) * k, out, step.sill * k, turn * step.turn);
   }
 
   private footHeight(out: CarWaterFoot) {
@@ -869,16 +958,23 @@ export class CarWaterRecovery {
 
   private stepOut(r: Ride) {
     if (!finite(r.m) || this.assisted || !this.clearance.car(r, r.m)) return;
+    const { x, z } = r.m;
+    const sill = Math.max(floorY(x, z), (waterY(x, z, this.time) ?? -Infinity) - 0.68);
     let best = -Infinity;
     for (const door of DOORS) {
       if (door === 2 && best > -Infinity) break;
-      this.beside(r, r.m, door, EXIT_START, this.testFoot);
-      this.beside(r, r.m, door, W.footOffset, this.sideFoot);
-      if (!this.footSweep(r, this.testFoot, this.sideFoot)) continue;
-      const h = floorY(this.sideFoot.x, this.sideFoot.z);
-      if (h > best) {
-        best = h; this.footDoor = door;
-        Object.assign(this.outside, this.testFoot);
+      for (const step of EXIT_STEPS) {
+        this.exitFoot(r, r.m, door, step, 0, this.testFoot);
+        // The first detached position must be within stepping or lowering distance of the car's support.
+        if (this.testFoot.y > sill + 0.55 || this.testFoot.y < sill - 1.45) continue;
+        this.exitFoot(r, r.m, door, step, 1, this.sideFoot);
+        if (!this.footSweep(r, r.m, this.testFoot, this.sideFoot)) continue;
+        const h = floorY(this.sideFoot.x, this.sideFoot.z);
+        if (h > best) {
+          best = h; this.footDoor = door; this.footStep = step;
+          Object.assign(this.outside, this.testFoot);
+        }
+        break;
       }
     }
     if (best === -Infinity) { this.blockedRoute = true; return; }
@@ -895,30 +991,38 @@ export class CarWaterRecovery {
     this.host.foot(foot);
   }
 
-  private footSweep(r: Ride, from: Point, to: Point) {
-    const n = Math.max(1, Math.ceil(distance(from, to) / STEP));
+  private footSweep(r: Ride, car: Pose, from: CarWaterFoot, to: CarWaterFoot) {
+    const turn = angle(to.rot - from.rot), f = this.sweepFoot;
+    const length = distance(from, to) + Math.abs(turn) * 0.75;
+    const n = Math.max(1, Math.ceil(length / STEP)), halfStep = length / (2 * n);
+    let y = from.y;
     for (let i = 0; i <= n; i++) {
       const k = i / n;
-      if (!this.clearance.foot(r, from.x + (to.x - from.x) * k, from.z + (to.z - from.z) * k)) return false;
+      f.x = from.x + (to.x - from.x) * k; f.z = from.z + (to.z - from.z) * k;
+      f.rot = from.rot + turn * k;
+      this.footHeight(f);
+      if (Math.abs(f.y - y) > FOOT_RISE || !this.clearance.exterior(r, car, f, this.time, halfStep)) return false;
+      y = f.y;
     }
     return true;
   }
 
-  private swept(r: Ride, a: Pose, b: Pose, door: Door | 0) {
+  private swept(r: Ride, a: Pose, b: Pose, door: Door | 0, step?: ExitStep, startY?: number) {
     const turn = Math.abs(angle(b.heading - a.heading));
-    const n = Math.max(1, Math.ceil((distance(a, b) + turn * (r.m.spec.half + W.footOffset)) / STEP));
+    const length = distance(a, b) + turn * (r.m.spec.half + W.footOffset + (door ? 0.75 : 0));
+    const n = Math.max(1, Math.ceil(length / STEP)), halfStep = length / (2 * n);
     if (n > 128 || Math.abs(floorY(a.x, a.z) - floorY(b.x, b.z)) > 1) return false;
-    if (door) this.beside(r, a, door, W.footOffset, this.testFoot);
+    let y = startY;
     for (let i = 0; i <= n; i++) {
       const p = this.sweepPose;
       mixPose(p, a, b, i / n);
       if (!this.clearance.car(r, p)) return false;
       if (door) {
-        this.beside(r, p, door, W.footOffset, this.sideFoot);
-        if (!this.footSweep(r, this.testFoot, this.sideFoot)
-          || reach(p, r.m.spec.half, r.m.spec.wide, (this.testFoot.x + this.sideFoot.x) / 2,
-            (this.testFoot.z + this.sideFoot.z) / 2) < W.footRadius) return false;
-        Object.assign(this.testFoot, this.sideFoot);
+        if (step) this.exitFoot(r, p, door, step, 1, this.sideFoot);
+        else this.beside(r, p, door, W.footOffset, this.sideFoot);
+        if ((y !== undefined && Math.abs(this.sideFoot.y - y) > FOOT_RISE)
+          || !this.clearance.exterior(r, p, this.sideFoot, this.time, halfStep)) return false;
+        y = this.sideFoot.y;
       }
     }
     return true;
@@ -933,7 +1037,8 @@ export class CarWaterRecovery {
     for (let i = 1; i <= this.count; i++) {
       const node = this.history[(this.head + 32 - i) % 32], previous = this.route[i - 1];
       const span = Math.max(distance(previous, node), Math.abs(angle(node.heading - previous.heading)) * (r.m.spec.half + W.footOffset));
-      if (span > 1.8 || this.lengths[i - 1] + span > TOW_SPEED * (TOW_END - FLOAT - 0.16) || !this.swept(r, previous, node, door)) break;
+      if (span > 1.8 || this.lengths[i - 1] + span > TOW_SPEED * (TOW_END - FLOAT - 0.16)
+        || !this.swept(r, previous, node, door, door ? this.footStep : undefined)) break;
       copyPose(this.route[i], node);
       this.lengths[i] = this.lengths[i - 1] + span;
       if (node.pair.valid && (door === 0 || Math.abs(door) === 1)
@@ -962,6 +1067,16 @@ export class CarWaterRecovery {
       this.host.settle?.(r, this.time, Math.max(0, 1 - drain / DRAIN));
       return;
     }
+    if (this.assisted) {
+      const k = clamp((this.age - this.exitAt) / FOOT_STEP, 0, 1);
+      if (this.fadeAt === Infinity) this.exitFoot(r, r.m, this.footDoor, this.footStep, k, this.sideFoot);
+      else {
+        Object.assign(this.sideFoot, this.outside);
+        this.footHeight(this.sideFoot);
+      }
+      if (!this.footSweep(r, r.m, this.outside, this.sideFoot)) { this.coveredLanding(r); return; }
+      Object.assign(this.outside, this.sideFoot);
+    }
     if (this.age >= FLOAT) {
       if (!this.blockedRoute && this.routeCount && this.fadeAt === Infinity) this.tow(r);
       if (this.landedAt < Infinity) return;
@@ -973,13 +1088,6 @@ export class CarWaterRecovery {
         this.host.fade("cover");
       }
       if (this.age >= this.fadeAt + FADE) { this.coveredLanding(r); return; }
-    }
-    if (this.assisted) {
-      const k = clamp((this.age - this.exitAt) / FOOT_STEP, 0, 1);
-      this.beside(r, r.m, this.footDoor, EXIT_START + (W.footOffset - EXIT_START) * k, this.sideFoot);
-      if (this.fadeAt === Infinity && this.footSweep(r, this.outside, this.sideFoot)) Object.assign(this.outside, this.sideFoot);
-      else { this.blockedRoute = true; this.footHeight(this.outside); }
-      if (!this.clearance.foot(r, this.outside.x, this.outside.z)) { this.coveredLanding(r); return; }
     }
     this.maintain(r);
     this.host.place(r, false, false, this.time);
@@ -997,18 +1105,18 @@ export class CarWaterRecovery {
       const i = this.routeAt, before = this.lengths[i - 1], after = this.lengths[i];
       const next = Math.min(end, after);
       mixPose(this.trial, this.route[i - 1], this.route[i], after > before ? (next - before) / (after - before) : 1);
-      if (!this.swept(r, r.m, this.trial, this.assisted ? this.footDoor : 0)) { this.blockedRoute = true; return; }
-      if (this.assisted) {
-        this.beside(r, this.trial, this.footDoor, W.footOffset, this.sideFoot);
-        if (!this.footSweep(r, this.outside, this.sideFoot)) { this.blockedRoute = true; return; }
-        Object.assign(this.outside, this.sideFoot);
+      if (!this.swept(r, r.m, this.trial, this.assisted ? this.footDoor : 0,
+        this.assisted ? this.footStep : undefined, this.assisted ? this.outside.y : undefined)) {
+        this.blockedRoute = true; return;
       }
+      if (this.assisted) Object.assign(this.outside, this.sideFoot);
       copyPose(r.m, this.trial);
       this.progressed = next;
       if (next === after) this.routeAt++;
     }
     if (this.age + 1e-6 < TOW_END || this.progressed < this.routeDistance - 1e-5) return;
-    if (!this.stillClear(r, this.landing) || this.assisted && this.footDoor !== this.candidate.door) {
+    if (!this.stillClear(r, this.landing) || this.assisted && (this.footDoor !== this.candidate.door
+      || !this.footSweep(r, r.m, this.outside, this.candidate.foot))) {
       this.blockedRoute = true;
       return;
     }
@@ -1052,7 +1160,10 @@ export class CarWaterRecovery {
   }
 
   private placeLanding(r: Ride, handback: boolean, snap: boolean, transfer = false) {
-    if (!transfer && (this.exitWanted || this.assisted || !this.host.driver(r))) this.putFoot(r, this.landing.foot);
+    if (!transfer && (this.exitWanted || this.assisted || !this.host.driver(r))) {
+      this.footDoor = this.landing.door;
+      this.putFoot(r, this.landing.foot);
+    }
     this.host.place(r, handback, snap, this.time, transfer);
   }
 
@@ -1175,7 +1286,7 @@ export class CarWaterRecovery {
 
   learnerFace(ch: GameCharacter, time: number) {
     const r = this.car;
-    if (!r || !this.owns(r) || !ch.headPosition) return;
+    if (!r || this.assisted || !this.owns(r) || !ch.headPosition) return;
     const head = ch.headPosition(this.face);
     const live = waterY(head.x, head.z, time);
     // Allow for the small offset from the head joint to the visible face.
@@ -1215,7 +1326,8 @@ export class CarWaterRecovery {
       wheelDepths: [p.frontLeft.depth, p.frontRight.depth, p.rearLeft.depth, p.rearRight.depth],
       samples: [{ ...p.centre }, { ...p.frontLeft }, { ...p.frontRight }, { ...p.rearLeft }, { ...p.rearRight }],
       steerGain: limits?.steerGain ?? 1, forwardCap: limits?.forward ?? null, reverseCap: limits?.reverse ?? null,
-      assistedOnFoot: this.assisted, fallback: this.usedFallback, landing: this.lastLanding,
+      assistedOnFoot: this.assisted, exitDoor: this.assisted ? this.footDoor : null,
+      fallback: this.usedFallback, landing: this.lastLanding,
       landingPair: this.landing.valid && (this.lastLanding || this.returning && this.routeCount > 0)
         ? { pose: { ...this.landing.pose }, foot: { ...this.landing.foot } } : null,
       fallbackReason: this.usedFallback ? (this.routeCount ? "corridor-unfinished" : "no-corridor") : null,

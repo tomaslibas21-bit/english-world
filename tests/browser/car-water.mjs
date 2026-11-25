@@ -351,7 +351,7 @@ async function installReads() {
     const player = { ...point(p.root.position), floor: floorY(p.root.position.x, p.root.position.z),
       surface: waterY(p.root.position.x, p.root.position.z, g.t),
       shown: p.root.visible, inView: visible(p.root) && project(face).visible,
-      pose: p.anim, swimPose: p.swim, velocity: g.vel.length(), air: g.hop.air,
+      heading: p.root.rotation.y, pose: p.anim, swimPose: p.swim, velocity: g.vel.length(), air: g.hop.air,
     };
     return finishSample(player, face, id, before, w, p, c, hud);
   }
@@ -1815,20 +1815,39 @@ async function cenoteTrip(run, approach = site.cenote.road) {
 async function caveMouth(run) {
   await run.board(convertible);
   await run.watch();
+  const geometry = await cenoteGeometry(run);
+  const ojo = geometry.ways.find(w => w.id === "ojo");
+  const margins = { faceFloor: Infinity, faceWater: Infinity, cameraWater: Infinity };
+  let visibleFrames = 0;
+  run.inspectFrame = s => {
+    assert.ok(s.zone === "town" && s.nearWay == null && s.prompt !== "enter" && !s.nearbyWays.includes("ojo"),
+      "assisted travel stays in town, outside the El Ojo fall zone and without a portal prompt");
+    if (!s.water?.active) return;
+    const faceFloor = s.face.y - s.face.floor;
+    const faceWater = s.face.y - (s.face.surface ?? -Infinity);
+    const cameraWater = s.camera.y - (s.camera.surface ?? -Infinity);
+    assert.ok(faceFloor >= -1e-6 && faceWater >= 0.15 - 1e-6 && cameraWater >= 0.35 - 1e-6,
+      `posed face and presented camera clear their own floor and surface ${JSON.stringify({ face: s.face, camera: s.camera })}`);
+    if (!s.water.assistedOnFoot) return;
+    assert.ok(s.player.shown && s.player.inView && !s.swim && s.dive < 0.001 && !s.undersea,
+      "the assisted learner remains in view without ordinary swim or dive");
+    visibleFrames++;
+    margins.faceFloor = Math.min(margins.faceFloor, faceFloor);
+    margins.faceWater = Math.min(margins.faceWater, faceWater);
+    margins.cameraWater = Math.min(margins.cameraWater, cameraWater);
+  };
   await run.stage([-139.4, -6, Math.PI]);
   const hazard = await run.frame();
   assert.ok(hazard.water.reason === "depth" && hazard.water.region === "cenote" && hazard.car.depth > 2.5);
   await run.act("out");
   const outside = await run.frame();
   assert.ok(outside.water.assistedOnFoot && outside.water.active && outside.riding === null && outside.player.shown
-    && outside.nearbyWays.includes("boca") && outside.nearWay == null && outside.prompt !== "enter",
+    && outside.player.inView && outside.nearbyWays.includes("boca") && outside.nearWay == null && outside.prompt !== "enter",
     "the actual exterior learner is close to the mouth and the return keeps cave actions inactive");
-  const geometry = await cenoteGeometry(run);
-  const ojo = geometry.ways.find(w => w.id === "ojo");
   assert.ok(gap(outside.player, ojo) > ojo.reach && gap(outside.player, ojo) < 15, "El Ojo is nearby and outside this assisted corridor");
-  run.inspectFrame = s => assert.ok(s.zone === "town" && s.nearWay == null && !s.nearbyWays.includes("ojo"),
-    "assisted travel stays in town, outside the El Ojo fall zone");
+  run.log({ exitDoor: outside.water.exitDoor, root: outside.player, face: outside.face });
   await finish(run, { onFoot: true });
+  run.log({ visibleFrames, margins });
   delete run.inspectFrame;
   delete run.safety;
 
