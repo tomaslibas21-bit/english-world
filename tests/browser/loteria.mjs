@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { activatePhraseControl, assertSavedSentence, cardsFor, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
+import { activatePhraseControl, assertSavedSentence, cardCentre, cardsFor, checkCardList, checkManualSave, fixtureSentence } from "./fixtures/phrase-saves.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8311";
@@ -210,6 +210,7 @@ try {
       }
 
       await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", 2);
+      assert.equal(await page.locator("html").getAttribute("lang"), lt ? "lt" : "en");
       assert(await page.evaluate(() => window.__ew.loteria.stage(2, 6)), "stage a seeded game at the zócalo");
       const before = await daylight();
       const talk = async () => {
@@ -267,15 +268,30 @@ try {
         round: await state(),
         input: await page.evaluate(async () => {
           const { useLoteria } = await import("/src/game/loteria/store.ts");
-          const { mic, read } = useLoteria.getState();
+          const { mic, read, result } = useLoteria.getState();
           const { game, store } = window.__ew;
-          return { byEar: [...game.modes.get("loteria").run.round.byEar], mic, read, play: store.getState().progress.play };
+          const { round, wrongShout, shout } = game.modes.get("loteria").run;
+          return { byEar: [...round.byEar], mic, read, play: store.getState().progress.play,
+            wrongShout, shout, winner: round.winner, result };
         }),
         shown: await page.locator(".loteria-caller[data-card-name]").count(),
         glows: await page.locator('.loteria-cell[data-glow="true"]').count(),
         readChips: await page.locator(".loteria-read-chip").count(),
         focusCell: await page.locator(".loteria-cell:focus").count(),
       });
+      const shoutLine = await fixtureSentence(page, sit, "lt_a_loteria", true);
+      const shoutSave = page.locator(".loteria-footer > .loteria-shout-save[data-phrase-save]");
+      const saveBounds = await cardCentre(shoutSave, 44);
+      assert.deepEqual([saveBounds.width, saveBounds.height], [44, 44]);
+      assert(await shout.isEnabled());
+      assert.equal(await shoutSave.evaluate((button) => button.nextElementSibling?.matches("button.loteria-shout")), true);
+      const claimBounds = await cardCentre(shout);
+      assert(saveBounds.x + saveBounds.width / 2 <= claimBounds.x - claimBounds.width / 2, "separate save and claim hit areas");
+      const { input: { wrongShout, shout: queuedShout, winner, result } } = await saveState();
+      assert.deepEqual([wrongShout, queuedShout, winner, result], [false, false, null, null]);
+      const shoutCard = await checkManualSave(page, shoutSave, phone, shoutLine.en, sit, saveState);
+      assertSavedSentence(shoutCard, shoutLine, sit);
+      await shot("phrase-shout-kept");
       const nameRow = page.locator(".loteria-caller[data-card-name]");
       const nameKey = await nameRow.getAttribute("data-line");
       assert.match(nameKey, /^lt_c_/);
@@ -285,7 +301,7 @@ try {
       await shot("phrase-revealed-name");
       assert.equal(await cell(s.current).getAttribute("data-glow"), "true");
       if (phone) await press(cell(s.current));
-      else await page.keyboard.press("Space");
+      else await cell(s.current).press("Space");
       assert.equal(await cell(s.current).getAttribute("aria-pressed"), "true");
       const beanRatio = await cell(s.current).evaluate((tile) =>
         tile.querySelector(".loteria-bean").offsetWidth / tile.clientWidth);
@@ -375,6 +391,7 @@ try {
       const listed = await scoreList.locator("option").allTextContents();
       assert.deepEqual(listed.slice(0, 16), boardNames);
       assert(listed.includes(verse.en));
+      assert.equal(listed.filter((target) => target === shoutLine.en).length, 1);
       assert.deepEqual(await cardsFor(page, alternative), [nameCard]);
       assert.deepEqual(await cardsFor(page, verse.en), [verseCard]);
       for (const saved of [revealedNameCard, verseCard]) {
@@ -387,6 +404,15 @@ try {
       await step(18);
       await fits(true);
       await shot("score");
+      await scoreList.selectOption({ label: shoutLine.en });
+      assert.equal(await review.locator(`small[lang="${lt ? "lt" : "en"}"]`).textContent(), shoutLine.nat);
+      const reviewSave = review.locator("[data-phrase-save]");
+      assert.equal(await reviewSave.getAttribute("aria-pressed"), "true");
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard], "the automatic award keeps the manual card");
+      await activatePhraseControl(page, reviewSave, phone);
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard]);
+      await fits(true);
+      await shot("phrase-shout-review");
 
       await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
       await wait(async () => (await state())?.kind === "esquinas", "Again starts four corners");
@@ -434,6 +460,15 @@ try {
       await wait(() => shown(".loteria-cta"), "x10 end card offers another board");
       await press(page.locator(".loteria-cta"));
       await wait(async () => (await state())?.phase === "waiting", "returns to a playable round");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      frame = 0;
+      await wait(() => page.evaluate(() => {
+        const { game, store } = window.__ew ?? {};
+        return game && store.getState().screen === "play" && !store.getState().hud.zoneBanner;
+      }), "town reloads", 2);
+      await checkCardList(page, { learner: lt ? "lt" : "en", target: "es", cards: [shoutCard], press });
+      assert.deepEqual(await cardsFor(page, shoutLine.en), [shoutCard], "the original shout card survives reload");
+      await shot("phrase-shout-reloaded");
       assert.deepEqual(errors, []);
       console.log(`${label}: chat, line, score, four corners and replay passed.`);
     } finally {

@@ -293,6 +293,8 @@ it("launches from the queued chat event, reads a winning line, restarts at corne
     expect(bulbs.visible).toBe(true);
     expect(player.anim).toBe("sit");
     expect(player.root.visible).toBe(false);
+    const shoutSentence = useLoteria.getState().shoutSentence;
+    expect(shoutSentence).toEqual(conversationLine(sit.id, "beto", "lt_a_loteria", undefined, true));
     const caller = scene.getObjectByName("loteria-beto")!;
     caller.updateMatrixWorld(true);
     const eye = loteriaShot().pos;
@@ -318,13 +320,19 @@ it("launches from the queued chat event, reads a winning line, restarts at corne
       mode.action("read", `lt_c_${card}`);
     }
     await tick(() => !!useLoteria.getState().result);
-    expect(useLoteria.getState().result).toMatchObject({ winner: "learner", phrases: 8 });
+    const result = useLoteria.getState().result!;
+    expect(result).toMatchObject({ winner: "learner", phrases: 8 });
+    const shoutEntries = result.review.filter(({ sentence }) => sentence.en === shoutSentence?.en);
+    expect(shoutEntries).toHaveLength(1);
+    expect(shoutEntries[0].situationId).toBe(sit.id);
+    expect(shoutEntries[0].sentence).toBe(shoutSentence);
     mode.action("again");
-    expect(useLoteria.getState()).toMatchObject({ kind: "esquinas", next: "llena", phase: "opening", covered: [], glow: -1 });
+    expect(useLoteria.getState()).toMatchObject({ kind: "esquinas", next: "llena", phase: "opening", covered: [], glow: -1, result: null, shoutSentence });
     registry.exit();
     await tick(() => !registry.active);
     expect(daylight).toHaveBeenCalledOnce();
     expect(screen).toBeNull();
+    expect(useLoteria.getState().shoutSentence).toBeNull();
     expect(bulbs.visible).toBe(false);
     expect(tona.root.rotation.y).toBe(TONAS_SEAT.rot);
     expect(player.anim).toBe("idle");

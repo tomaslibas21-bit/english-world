@@ -33,6 +33,7 @@ export interface LoteriaUi {
   bounce: { index: number; count: number } | null;
   tip: Tip | null;
   ready: boolean;
+  shoutSentence: Sentence | null;
   winningCells: readonly number[];
   replay: boolean;
   sayIt?: SayItCue;
@@ -46,7 +47,7 @@ export interface LoteriaUi {
 const empty: LoteriaUi = {
   kind: "linea", next: "esquinas", phase: "opening", board: [], labels: {}, covered: [], called: [], faceDown: false,
   verse: null, caller: null, neighbor: null, focus: 0, glow: -1, bounce: null, tip: null,
-  ready: false, winningCells: [], replay: false, sayIt: undefined,
+  ready: false, shoutSentence: null, winningCells: [], replay: false, sayIt: undefined,
   choices: [], read: [], mic: { status: "off", heard: "" }, micOn: false, result: null,
 };
 

@@ -60,7 +60,7 @@ function Shortcut({ children, touch }: { children: ReactNode; touch: boolean }) 
 export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const {
     phase, kind, next, labels, board, covered, current, called, faceDown, caller, verse, neighbor,
-    focus, glow, bounce, tip, ready, winningCells, replay, sayIt, choices, read, mic, micOn, result,
+    focus, glow, bounce, tip, ready, shoutSentence, winningCells, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
   const names = useMemo(() => phraseEntries(source.situationId, loteriaNames([...board, ...called], labels)), [board, called, labels]);
 
@@ -164,6 +164,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
               data-listening={mic.status === "listening" || mic.status === "starting"} onClick={() => act("mic", !micOn)}>
               <Icon name="mic" size={19} />
             </button>}
+          {shoutSentence && <PhraseSave sentence={shoutSentence} {...source} className="loteria-shout-save" />}
           <button type="button" className="loteria-shout" data-ready={ready} disabled={!playable}
             onClick={() => act("shout")}>{L(words.shout)} <Shortcut touch={touch}>L</Shortcut></button>
         </footer>

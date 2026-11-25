@@ -1,6 +1,7 @@
 import { Vector3, type Object3D } from "three";
 import { NPCS } from "../../content/npcs";
 import { getSituation, loadSituation } from "../../content/situations/catalog";
+import type { Sentence } from "../../convo/compose";
 import { EDITION } from "../../edition";
 import {
   LOTERIA_CALLER as BETO, LOTERIA_DECK, LOTERIA_NEIGHBOR as TONA, LOTERIA_SITUATION as SIT, LOTERIA_UI,
@@ -26,7 +27,7 @@ import { loteriaNames, loteriaUi, resetLoteriaUi, useLoteria, type CardLabel, ty
 
 const shoutKey = "lt_a_loteria";
 const cardKey = ({ id }: LoteriaCard) => `lt_c_${id}`;
-const phraseKeys = [shoutKey, "lt_b_check", "lt_b_buena", "lt_t_tiene", "lt_t_casi"];
+const phraseKeys = ["lt_b_check", "lt_b_buena", "lt_t_tiene", "lt_t_casi"];
 const prettyCards = new Set(["rosa", "estrella", "colibri", "luna"]);
 const callExtras = ["lt_b_next", "lt_b_ahi_va"];
 const directions: Record<string, [number, number]> = { arrowup: [0, -1], arrowdown: [0, 1], arrowleft: [-1, 0], arrowright: [1, 0] };
@@ -57,6 +58,7 @@ interface Run {
   wrongShout: boolean;
   shout: boolean;
   shoutAt: number;
+  shoutSentence: Sentence;
   speech: SayItRound;
   cue?: SayItCue;
   spotlight: number;
@@ -212,13 +214,14 @@ export class LoteriaMode implements GameMode {
     this.dialogue.setMic(this.micOn);
     resetLoteriaUi();
     const round = new LoteriaRoundState(this.roundIndex, this.seed + this.roundIndex);
+    const shoutSentence = conversationLine(SIT, BETO, shoutKey, LOTERIA_LINES, true)!;
     const run: Run = this.run = {
       round, phase: "opening", busy: true, time: 0, namedAt: 0, coveredAt: Infinity, readyAt: Infinity,
       lastCoach: -Infinity, coaches: new Map(), markTip: false, lateTip: false, uncalled: false, wrongShout: false, shout: false, shoutAt: 0, speech: new SayItRound(), spotlight: -1,
-      review: new PhraseRun(SIT),
+      shoutSentence, review: new PhraseRun(SIT),
     };
     run.review.lines(loteriaNames(round.board, this.labels));
-    loteriaUi({ board: round.board, labels: this.labels, kind: round.kind, next: roundKind(this.roundIndex + 1), micOn: this.micOn });
+    loteriaUi({ board: round.board, labels: this.labels, kind: round.kind, next: roundKind(this.roundIndex + 1), micOn: this.micOn, shoutSentence });
     countPlay("games", this.id);
     void this.opening(run);
   }
@@ -291,7 +294,7 @@ export class LoteriaMode implements GameMode {
     if (wasHidden) audio.sfx("cardFlip");
     if (round.winner) { void this.finish(run); return; }
     run.cue = run.speech.open(this.spokenTarget(cardKey(card)), {
-      ...this.spokenTarget(shoutKey),
+      ...this.spokenTarget(shoutKey, run.shoutSentence),
       available: () => !!round.pattern && !run.shout,
       onAward: () => this.requestShout(run, true),
     });
@@ -317,9 +320,8 @@ export class LoteriaMode implements GameMode {
     this.setPhase(run, "waiting");
   }
 
-  private spokenTarget(key: string): SayItTarget {
-    const line = conversationLine(SIT, BETO, key, LOTERIA_LINES, true)!;
-    const match = learnerTurn([{ key, sentence: line }], LOTERIA_ACCEPT);
+  private spokenTarget(key: string, sentence = conversationLine(SIT, BETO, key, LOTERIA_LINES, true)!): SayItTarget {
+    const match = learnerTurn([{ key, sentence }], LOTERIA_ACCEPT);
     return {
       phrases: match.phrases,
       evaluate: (text) => {
@@ -428,9 +430,11 @@ export class LoteriaMode implements GameMode {
       for (const key of ["lt_t_gane", "lt_b_tona", "lt_t_otra"]) if (!await this.say(run, key)) return;
     }
     if (!await this.say(run, "lt_b_end")) return;
-    const phrases = [...phraseKeys, ...winning.slice(0, 3).map(cardKey)].flatMap((key) =>
-      conversationLine(SIT, key.startsWith("lt_t_") ? TONA : BETO, key, LOTERIA_LINES, key === shoutKey) ?? []);
+    const rewardKeys = [...phraseKeys, ...winning.slice(0, 3).map(cardKey)];
+    const phrases = [run.shoutSentence, ...rewardKeys.flatMap((key) =>
+      conversationLine(SIT, key.startsWith("lt_t_") ? TONA : BETO, key, LOTERIA_LINES, false) ?? [])];
     keepPhrases(SIT, phrases);
+    run.review.add(run.shoutSentence);
     this.host.rig.stage = loteriaShot(true);
     this.setPhase(run, "score");
     loteriaUi({
