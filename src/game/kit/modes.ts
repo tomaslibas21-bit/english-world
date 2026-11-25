@@ -1,5 +1,7 @@
 import type { Ride } from "../rides/Rides";
 
+import type { PadScope } from "../gamepad";
+
 export type CleanScreen = "menu" | "overlay";
 export interface ModeScreen { kind: CleanScreen; id: string; exitLabel?: string }
 
@@ -23,10 +25,11 @@ export interface ModePrompt {
   kind: "surf" | "taxi" | "barista" | "pool" | "billiards" | "gym";
 }
 
-export interface GameMode {
+export interface GameMode extends PadScope {
   id: string;
   readonly active: boolean;
   readonly modal?: boolean;
+  readonly padAction?: boolean;
   readonly indoorPrompt?: boolean;
   readonly cleanScreen: CleanScreen;
   readonly exitLabel?: string;
@@ -42,6 +45,7 @@ export interface GameMode {
   controlsNpc?(id: string): boolean;
   tick?(dt: number, outdoors: boolean): void;
   input(input: ModeInput): boolean;
+  blur?(): void;
   prompt?(x: number, z: number): ModePrompt | null;
   event?(name: string, data: unknown): string | undefined;
   action?(name: string, value?: string | boolean): void;
@@ -78,6 +82,9 @@ export class ModeRegistry {
 
   owns(id: string) { return this.selected?.id === id; }
 
+  /** B on a pad surface with no Back of its own: the engaged mode decides (GameMode.padBackFrom). */
+  padBackFrom(surface: string) { return !!this.selected?.padBackFrom?.(surface); }
+
   entered(id: string) {
     if (this.selected?.id !== id || this.screenBefore !== undefined) return;
     this.screenBefore = this.screen.read();
@@ -95,6 +102,7 @@ export class ModeRegistry {
   }
 
   input(input: ModeInput) { return this.selected?.input(input) ?? false; }
+  blur() { this.selected?.blur?.(); }
   update(frame: ModeFrame) { this.active?.update(frame); }
   tick(dt: number, outdoors: boolean) {
     for (const mode of this.modes.values()) mode.tick?.(dt, outdoors && !this.active);

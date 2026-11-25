@@ -16,7 +16,7 @@ export function PhotoChip() {
   const near = useTownQuests((s) => s.near);
   const { found } = useWalk();
   if (!camera) return null;
-  return <button type="button" className="photo-chip" data-near={near ?? undefined} aria-label={near ? L(words.shoot) : L(words.open)}
+  return <button type="button" className="photo-chip" data-pad-tool="photo-chip" data-near={near ?? undefined} aria-label={near ? L(words.shoot) : L(words.open)}
     title={near ? L(words.shoot) : L(words.open)} onClick={() => game?.modeStart?.("photowalk", "camera")}>
     <span><Icon name="camera" size={18} />{found.length}/{PHOTO_THINGS.length}</span>
     {near && <small>{L(words.shoot)}</small>}
@@ -27,7 +27,7 @@ export function PhotoBookContact({ close }: { close(): void }) {
   const { status, found } = useWalk();
   const light = useStore((s) => s.settings.play === "light");
   if (light || (status !== "paused" && status !== "found" && status !== "done")) return null;
-  return <button type="button" className="contact photo-contact" onClick={() => { close(); game?.modeStart?.("photowalk", "book"); }}>
+  return <button type="button" className="contact photo-contact" data-pad-tool="photo-book" onClick={() => { close(); game?.modeStart?.("photowalk", "book"); }}>
     <span className="avatar"><Icon name="camera" size={21} /></span>
     <span className="txt"><b>{L(words.phone)}</b><span>{found.length}/{PHOTO_THINGS.length}</span></span>
   </button>;

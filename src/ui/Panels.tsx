@@ -76,7 +76,7 @@ export function Panels() {
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   return (
-    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+    <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}
       {panel === "journal" && <Journal close={close} />}
       {panel === "phone" && <Phone close={close} />}
@@ -127,7 +127,7 @@ function SheetHead({ icon, title, close, tools }: { icon: IconName; title: React
       <span className="sheet-ico" aria-hidden><Icon name={icon} size={24} /></span>
       <h2>{title}</h2>
       {tools}
-      <button className="close-x" onClick={close} aria-label={L("Uždaryti")}><Icon name="close" /></button>
+      <button className="close-x" data-pad-back onClick={close} aria-label={L("Uždaryti")}><Icon name="close" /></button>
     </div>
   );
 }
@@ -420,7 +420,7 @@ function Phone({ close }: { close: () => void }) {
   return (
     <div className={"phone" + (thread ? " thread-open" : "")} role="dialog" aria-label={L("Telefonas")}>
       <div className="phone-status">
-        <span>9:41</span><button className="phone-close" ref={closeButton} onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
+        <span>9:41</span><button className="phone-close" data-pad-back ref={closeButton} onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
       </div>
       <Toasts phone />
       {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <div className="phone-directory">
@@ -504,12 +504,12 @@ function Settings({ close }: { close: () => void }) {
           <div className="seg">{[1, 1.15, 1.3].map((z, i) => <button key={z} className={s.textSize === z ? "on" : ""} onClick={() => set({ textSize: z })}>{["A", "A+", "A++"][i]}</button>)}</div>
         </div>
         <div className="set-row">
-          <div className="txt"><b>{L("Garsumas")}</b></div>
-          <input type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
+          <div className="txt"><b id="settings-volume">{L("Garsumas")}</b></div>
+          <input type="range" data-pad-adjust min={0} max={1} step={0.05} aria-labelledby="settings-volume" value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
         </div>
         <div className="set-row">
           <div className="txt"><b>{L("Garsai")}</b><span>{L("Žingsniai, jūra, miestelio garsai – tyliau už balsus.")}</span></div>
-          <input type="range" min={0} max={1} step={0.05} value={s.sounds} aria-label={L("Garsai")} onChange={(e) => { set({ sounds: +e.target.value }); audio.sounds = +e.target.value; if (+e.target.value > 0) audio.sfx("pop"); }} style={{ width: 160 }} />
+          <input type="range" data-pad-adjust min={0} max={1} step={0.05} value={s.sounds} aria-label={L("Garsai")} onChange={(e) => { set({ sounds: +e.target.value }); audio.sounds = +e.target.value; if (+e.target.value > 0) audio.sfx("pop"); }} style={{ width: 160 }} />
         </div>
         {s.play !== "light" && STYLES_ENABLED && <div className="set-row">
           <div className="txt"><b>{L("Pasaulio stilius")}</b><span>{L("Bandomieji 3D miesto stiliai. Pakeitus puslapis persikrauna.")}</span></div>
@@ -538,7 +538,7 @@ function Settings({ close }: { close: () => void }) {
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">{L("Atsisiuntimai ir failų pašalinimas")}</a></div>}
         <div className="set-row">
           <div className="txt"><b>{L("Pradėti iš naujo")}</b><span>{L("Ištrina šios naršyklės išsaugotą progresą.")}</span></div>
-          <button className="btn ghost small" onClick={() => {
+          <button className="btn ghost small" data-pad-no-default onClick={() => {
             if (!confirm(L("Tikrai ištrinti progresą?"))) return;
             useStore.getState().updateProgress((p) => {
               delete p.phone;

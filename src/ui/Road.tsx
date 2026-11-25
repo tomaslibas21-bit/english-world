@@ -30,14 +30,14 @@ function LiftOffer({ touch }: { touch: boolean }) {
   const listening = mic.status === "starting" || mic.status === "listening";
   return <div className="road-lift">
     <LiftLine />
-    {!!choices.length && <div className="road-choices">
+    {!!choices.length && <div className="road-choices" data-pad-scope="choice">
       <PhraseChooser entries={entries} targetOnly={false} />
       {speechSupported() && <div className="road-mic">
         <button className={`mic${listening ? " listening" : ""}`} type="button" aria-label={L(micOn && listening ? words.micOff : words.micOn)}
           onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={23} /></button>
         {mic.heard && <span lang={TL}>{mic.heard}</span>}
       </div>}
-      {choices.map(({ key, sentence }, i) => <button className="road-choice" type="button" data-line={key} key={key} onClick={() => act("choose", key)}>
+      {choices.map(({ key, sentence }, i) => <button className="road-choice" type="button" data-line={key} data-pad-answer={key} key={key} onClick={() => act("choose", key)}>
         {!touch && <kbd>{i + 1}</kbd>}
         <span lang={TL}>{sentence.en}</span>
         <small lang={HL}>{sentence.nat}</small>
@@ -73,14 +73,14 @@ export function RoadOverlay({ touch }: { touch: boolean }) {
   const phase = useRoad((s) => s.phase);
   const result = useRoad((s) => s.result);
   const way = useRoad((s) => s.way);
-  return <div className="road-overlay" lang={HL}>
+  return <div className="road-overlay" data-pad-tools={phase === "drive" || undefined} lang={HL}>
     {phase === "briefing" && <WordGateStart way={way} start={(choice) => act("start", choice)} done={done} town={words.town} />}
     {phase === "lift" && <LiftOffer touch={touch} />}
     {phase === "drive" && <DriveOverlay touch={touch} />}
     {phase === "result" && result && <WordGateResult result={result} words={words} actions={scoreActions}><LiftLine /></WordGateResult>}
-    {(phase === "loading" || phase === "unavailable") && <div className="road-lift road-loading">
+    {(phase === "loading" || phase === "unavailable") && <div className="road-lift road-loading" data-pad-scope="choice">
       <strong>{L(phase === "loading" ? words.title : words.unavailable)}</strong>
-      <button className="btn" onClick={done}>{L(words.town)}</button>
+      <button className="btn" data-pad-default data-pad-back onClick={done}>{L(words.town)}</button>
     </div>}
   </div>;
 }

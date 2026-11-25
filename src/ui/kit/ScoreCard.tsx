@@ -55,7 +55,7 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, review
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
-      <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title" data-review={review?.length ? "" : undefined}>
+      <section className="mode-score-card" data-pad-scope="score" role="dialog" aria-labelledby="mode-score-title" data-review={review?.length ? "" : undefined}>
         {ratio != null && Number.isFinite(ratio) && <ScoreStars ratio={ratio} />}
         <h2 id="mode-score-title" ref={heading}>{title}</h2>
         {celebrate && <Confetti from={heading} />}
@@ -69,8 +69,8 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, review
         {!!review?.length && <PhraseReview key={reviewRun} entries={review} />}
         <div className="mode-score-actions" onKeyDown={keepActionKey} onKeyUp={keepActionKey}>
           {again && done ? <>
-            <button type="button" className="btn" onClick={again.run}>{again.label}</button>
-            <button type="button" className="btn soft" onClick={done.run}>{done.label}</button>
+            <button type="button" className="btn" data-pad-default onClick={again.run}>{again.label}</button>
+            <button type="button" className="btn soft" data-pad-back onClick={done.run}>{done.label}</button>
           </> : actions}
         </div>
       </section>

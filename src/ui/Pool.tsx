@@ -52,7 +52,7 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
         </div>
       </div>
       {touch && (
-        <button type="button" className="jump-btn pool-hit" data-can-hit={canHit} aria-label={helpText.short}
+        <button type="button" className="jump-btn pool-hit" data-pad-skip data-can-hit={canHit} aria-label={helpText.short}
           onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}
           onClick={(e) => { if (e.detail === 0) game?.jump(); }}>
           <Icon name="chevronUp" size={34} strokeWidth={2.5} />

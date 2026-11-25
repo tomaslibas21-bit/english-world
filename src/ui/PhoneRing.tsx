@@ -10,7 +10,7 @@ export function PhoneRing({ id }: { id: string }) {
   if (!call) return null;
   const incoming = call.kind === "incoming";
   return (
-    <section className="phone-ring" data-call={id} data-kind={call.kind} aria-label={call.name} lang={HL}>
+    <section className="phone-ring" data-pad-scope="phone-ring" data-call={id} data-kind={call.kind} aria-label={call.name} lang={HL}>
       <div className="phone-ring-id" aria-live="polite">
         <div className="phone-ring-avatar" aria-hidden>
           {portrait ? <img src={portrait} alt="" /> : <Icon name={incoming && call.video ? "video" : "phoneCall"} size={24} />}
@@ -23,8 +23,8 @@ export function PhoneRing({ id }: { id: string }) {
       </div>
       {!incoming && <p>{call.reason}</p>}
       <div className="phone-ring-actions">
-        <button className="btn soft" onClick={() => game?.handlePhoneCard?.(id, false)}>{incoming ? L("Atmesti") : L("Vėliau")}</button>
-        <button className="btn" onClick={() => game?.handlePhoneCard?.(id, true)}>{incoming ? L("Atsiliepti") : L("Skambinti")}</button>
+        <button className="btn soft" data-pad-back onClick={() => game?.handlePhoneCard?.(id, false)}>{incoming ? L("Atmesti") : L("Vėliau")}</button>
+        <button className="btn" data-pad-default onClick={() => game?.handlePhoneCard?.(id, true)}>{incoming ? L("Atsiliepti") : L("Skambinti")}</button>
       </div>
     </section>
   );

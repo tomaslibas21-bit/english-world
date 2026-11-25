@@ -62,27 +62,27 @@ function PhotoBook() {
   const { visit, line } = useTownQuests();
   const [confirm, setConfirm] = useState(false);
   const title = status === "done" ? L(words.done) : L(words.book);
-  return <section className="photo-sheet photo-book" role="dialog" aria-modal="true" aria-label={title}>
+  return <section className="photo-sheet photo-book" data-pad-scope="modal" role="dialog" aria-modal="true" aria-label={title}>
     <img className="photo-book-cover" src={`${import.meta.env.BASE_URL}photowalk/cover.webp`} alt="" aria-hidden
       onError={(e) => { e.currentTarget.hidden = true; }} />
     <header>
       <Icon name="camera" size={23} />
       <div><h2>{title}</h2><p>{L(words.found, { n: found.length, of: PHOTO_THINGS.length })}</p></div>
-      <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+      <button type="button" className="quest-close" data-pad-back aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
     {visit && line && <div className="photo-visit" data-line={line.key}><PhotoPhrase sentence={line.sentence} /></div>}
     <ol className="photo-pages">
       {PHOTO_THINGS.map((thing) => <PhotoPage key={thing.id} thing={thing} found={found.includes(thing.id)} />)}
     </ol>
-    <footer>
+    <footer data-pad-scope={confirm ? "photo-confirm" : undefined}>
       {confirm ? <>
         <div className="photo-confirm">{L(words.quitAsk)}</div>
-        <button className="btn small" type="button" onClick={() => act("quit")}>{stopLabel}</button>
-        <button className="btn soft small" type="button" onClick={() => setConfirm(false)}>{L(words.quitNo)}</button>
+        <button className="btn small" type="button" data-pad-no-default onClick={() => act("quit")}>{stopLabel}</button>
+        <button className="btn soft small" type="button" data-pad-back data-pad-default onClick={() => setConfirm(false)}>{L(words.quitNo)}</button>
       </> : <>
         {status === "on" && <button className="btn soft small" type="button" onClick={() => act("pause")}>{L(words.pause)}</button>}
         {status === "paused" && <button className="btn small" type="button" onClick={() => act("resume")}>{L(words.resume)}</button>}
-        {status !== "done" && <button className="btn ghost small" type="button" onClick={() => setConfirm(true)}>{stopLabel}</button>}
+        {status !== "done" && <button className="btn ghost small" type="button" data-pad-tool="photo-stop" onClick={() => setConfirm(true)}>{stopLabel}</button>}
         <button className="btn ghost small" type="button" onClick={() => game?.modeExit()}>{L(words.close)}</button>
       </>}
     </footer>
@@ -105,12 +105,12 @@ function PhotoQuiz() {
   const pick = (id: PhotoThingId) => act("pick", id);
   return <>
     <div className="photo-flash" aria-hidden />
-    <section className="photo-sheet photo-quiz" role="dialog" aria-modal="true" aria-label={title} data-thing={quiz.id}>
+    <section className="photo-sheet photo-quiz" data-pad-scope="modal" data-pad-phase={quiz.got ? "found" : "quiz"} role="dialog" aria-modal="true" aria-label={title} data-thing={quiz.id}>
       <header>
         {quiz.got && <Icon name="sparkles" className="quest-sparkle" size={23} />}
         {!quiz.got && quiz.jpeg && <img className="photo-preview" src={quiz.jpeg} alt="" width={160} height={120} />}
         <div aria-live="polite"><h2>{title}</h2>{!quiz.got && <p>{L(words.sayOrPick)}</p>}</div>
-        <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+        <button type="button" className="quest-close" data-pad-back aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
       </header>
       {quiz.got ? <>
         {line && <div data-line={line.key}><PhotoPhrase sentence={line.sentence} /></div>}
@@ -130,10 +130,10 @@ function PhotoQuiz() {
 function PhotoFinale() {
   const { line, choices, mic } = useTownQuests();
   const entries = useMemo(() => phraseEntries(photoSource.situationId, choices), [choices]);
-  return <section className="photo-sheet photo-finale" role="dialog" aria-modal="true" aria-label={L(words.book)}>
+  return <section className="photo-sheet photo-finale" data-pad-scope="modal" role="dialog" aria-modal="true" aria-label={L(words.book)}>
     <header>
       <h2>{L(words.book)}</h2>
-      <button type="button" className="quest-close" aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
+      <button type="button" className="quest-close" data-pad-back aria-label={L(words.close)} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
     {line && <div aria-live="polite" data-line={line.key}><PhotoPhrase sentence={line.sentence} /></div>}
     {choices.length > 0 && <div className="photo-choices">

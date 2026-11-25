@@ -25,7 +25,7 @@ export default function StreetBubbles() {
 
   return line ? (
     <div ref={bubbleRef} key={key} role="group" className="street-bubble phrase-save-row" data-chatter={id} aria-expanded={translated}>
-      <button type="button" className="street-bubble-text" aria-expanded={translated} onClick={translate}>
+      <button type="button" className="street-bubble-text" data-pad-tool="street-bubble" aria-expanded={translated} onClick={translate}>
         <span className="street-bubble-copy">
           <GlossLine sentence={line.sentence} gloss={false} compact />
           {translated && <small className="street-tr" lang={HL}>{line.sentence.nat}</small>}

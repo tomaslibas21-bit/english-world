@@ -27,6 +27,7 @@ export interface ModeHost {
   board(ride: Ride): boolean;
   startTownDrive(ride: Ride): void;
   drive(dt: number, controls: Controls | null): void;
+  horn?(): void;
   dismount(x?: number, z?: number, rot?: number, keepParked?: boolean): void;
   snapTaxi(ride: Ride, dimensions: { width: number; length: number; height: number }): void;
   scoreShot(beside?: Box3): CameraRig["stage"];

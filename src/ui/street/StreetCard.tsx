@@ -68,7 +68,7 @@ export function StreetCard({ light = false, compact = false }: { light?: boolean
     <Icon name="mic" size={21} />
   </button>;
   return (
-    <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-moment={moment.id}
+    <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-pad-scope="street" data-moment={moment.id}
       data-cast={cast.id} data-script={scriptName} data-step={view.step} data-exchange={view.exchange} data-kind={moment.kind}
       aria-label={light ? words.light : view.role}>
       {light && <h2>{words.light}</h2>}
@@ -92,7 +92,7 @@ export function StreetCard({ light = false, compact = false }: { light?: boolean
       {!!choices.length && <div className="street-turn">
         <div className="street-choices" role="group" aria-label={words.answer}>
           {choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
-            <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} onClick={() => view.choose(key)}>
+            <button type="button" className="btn soft street-choice" data-line={key} data-pad-answer data-translated={sayLt || undefined} onClick={() => view.choose(key)}>
               <GlossLine sentence={sentence} gloss={sayLt} compact />
             </button>
             <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} />

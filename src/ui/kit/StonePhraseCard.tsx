@@ -153,10 +153,10 @@ export default function StonePhraseCard({ reader, title, labels = reader.labels,
         dismiss();
       }
     }}>
-    <section ref={panel} tabIndex={-1} className={withClass("stone-phrase-card", classNames.card) + (solved ? " solved" : "")}>
+    <section ref={panel} tabIndex={-1} data-pad-scope="glyph" className={withClass("stone-phrase-card", classNames.card) + (solved ? " solved" : "")}>
       <header className="stone-phrase-header">
         <div className={classNames.heading}>{heading ?? <h2>{title}</h2>}</div>
-        <button type="button" className={withClass("stone-phrase-close", classNames.close)} aria-label={labels.close} title={labels.close}
+        <button type="button" className={withClass("stone-phrase-close", classNames.close)} data-pad-back aria-label={labels.close} title={labels.close}
           onClick={dismiss}><Icon name="close" size={20} /></button>
       </header>
       <div className={withClass("stone-phrase-reading", classNames.reading)}>

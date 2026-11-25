@@ -29,7 +29,7 @@ export default function CaveGlyphReader({ g, cave, reader }: { g: GlyphQuiz; cav
       <div className="glyph-opts">
         {g.options.map((option, index) => {
           const wrong = g.wrong.includes(index);
-          return <button type="button" key={index} className={wrong ? "glyph-opt wrong" : "glyph-opt"} disabled={wrong} lang={helperLang} onClick={() => pick(index)}>
+          return <button type="button" key={index} data-pad-answer={index} className={wrong ? "glyph-opt wrong" : "glyph-opt"} disabled={wrong} lang={helperLang} onClick={() => pick(index)}>
             <kbd>{index + 1}</kbd><span>{option}</span>
           </button>;
         })}

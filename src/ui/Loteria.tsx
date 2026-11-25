@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { LOTERIA_SITUATION, LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
@@ -69,6 +69,26 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
     focus, glow, bounce, tip, ready, shoutSentence, winningCells, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
   const names = useMemo(() => phraseEntries(source.situationId, loteriaNames([...board, ...called], labels)), [board, called, labels]);
+  const grid = useRef<HTMLDivElement>(null);
+  // A controller moves its focus ring over the cells (src/ui/gamepad.ts, "padfocus"): the board's cursor follows it.
+  // Keyboard arrows, Tab and taps keep their own behavior; nothing here runs before a controller focuses a cell.
+  useLayoutEffect(() => {
+    const board = grid.current;
+    if (!board) return;
+    const follow = (event: Event) => {
+      const index = Array.prototype.indexOf.call(board.children, event.target);
+      if (index >= 0) act("focus", String(index));
+    };
+    board.addEventListener("padfocus", follow);
+    return () => board.removeEventListener("padfocus", follow);
+  }, []);
+  // …and when the board moves its cursor (a called card), a cell the controller holds moves with it.
+  useLayoutEffect(() => {
+    const current = document.activeElement;
+    if (!current?.matches(".loteria-cell[data-pad-focus]") || !grid.current?.contains(current)) return;
+    const target = grid.current.children[focus];
+    if (target instanceof HTMLButtonElement && target !== current && !target.disabled) target.focus({ preventScroll: true });
+  }, [focus]);
 
   if (result) return (
     <div className="loteria-score" lang={HL}>
@@ -94,11 +114,11 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const showCard = current && !reading && phase !== "leaving";
   const visibleCaller = faceDown && caller?.key.startsWith("lt_c_") ? null : caller;
   return (
-    <main className="loteria-play" data-phase={phase} lang={HL}>
+    <main className="loteria-play" data-phase={phase} data-pad-scope="choice" lang={HL}>
       <div className="loteria-stage">
         <div className="loteria-scene" aria-hidden="true" />
         <div className="loteria-stage-actions">
-          <button type="button" className="loteria-exit" onClick={() => act("exit")}>
+          <button type="button" className="loteria-exit" data-pad-back onClick={() => act("exit")}>
             <Icon name="walk" size={17} /> {L(words.exit)} <Shortcut touch={touch}>Esc</Shortcut>
           </button>
           <PhraseChooser entries={names} targetOnly={false} />
@@ -115,7 +135,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
             <div className="loteria-read">
               {read.map((card) => {
                 const i = choices.findIndex((choice) => choice.key === `lt_c_${card.id}`);
-                return <button type="button" key={card.id} className="loteria-read-chip"
+                return <button type="button" key={card.id} className="loteria-read-chip" data-pad-answer
                   data-line={`lt_c_${card.id}`} disabled={i < 0} onClick={() => act("read", `lt_c_${card.id}`)}>
                   <Icon name="speaker" size={15} /><span lang={TL}>{labels[card.id].name}</span>
                   {i >= 0 && <Shortcut touch={touch}>{i + 1}</Shortcut>}
@@ -145,10 +165,11 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
         <p className="loteria-help" role="status">
           {phase === "opening" ? L(words.roundHelp[kind]) : hint}
         </p>
-        <div className="loteria-board" role="group" aria-label={L(words.board)}>
+        <div ref={grid} className="loteria-board" data-pad-grid="loteria" role="group" aria-label={L(words.board)}>
           {board.map((card, index) => {
             const marked = covered.includes(index);
             return <button type="button" key={card.id} className="loteria-cell" data-card={card.id}
+              data-pad-default={playable && focus === index || undefined}
               data-focus={!touch && focus === index} data-glow={glow === index} data-winning={ready && winningCells.includes(index)} data-corner={kind === "esquinas" && isCorner(index)}
               aria-pressed={marked} disabled={!playable} onClick={() => act("cover", String(index))}>
               <LoteriaTile card={card} label={labels[card.id]} pictureUrl={picture(card)} bean={marked
@@ -160,7 +181,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
         <footer className="loteria-footer">
           <div className="loteria-history">
             <span>{L(words.calledCount, { n: called.length })}</span>
-            <div tabIndex={called.length ? 0 : undefined} className="loteria-history-strip"
+            <div tabIndex={called.length ? 0 : undefined} className="loteria-history-strip" data-pad-scroll
               aria-label={L(words.called)} onKeyDown={(e) => { if (e.key.startsWith("Arrow")) e.stopPropagation(); }}>
               {called.map((card) => <span key={card.id} title={labels[card.id].name} aria-label={labels[card.id].name}>{card.icon}</span>)}
             </div>

@@ -26,7 +26,7 @@ export function SeaOverlay({ touch }: { touch: boolean }) {
   const panel = useStore(state => state.hud.panel);
   if (panel && phase !== "guide") return null;
   const showHint = phase === "drive" && remaining >= SEA_SECONDS - 3;
-  return <div className="sea-overlay" data-guiding={phase === "guide" || undefined} inert={phase === "guide"} lang={HL}>
+  return <div className="sea-overlay" data-pad-tools={phase === "drive" || undefined} data-guiding={phase === "guide" || undefined} inert={phase === "guide"} lang={HL}>
     {phase === "briefing" && <WordGateStart way={way} start={(choice) => act("start", choice)} done={done} town={words.town} />}
     {(phase === "drive" || phase === "turn") && <>
       <WordGateHeader game="sea" words={words} {...{ prompt, sayIt, feedback, remaining, streak, showHint }} questionSlot={crossing && <SeaCrossingTitle crossing={crossing} />} home={done} replay={() => act("replay")} />
@@ -35,9 +35,9 @@ export function SeaOverlay({ touch }: { touch: boolean }) {
       {showHint && <p className="road-controls">{L(touch ? words.touchControls : words.controls)}</p>}
     </>}
     {(phase === "result" || phase === "guide") && result && <WordGateResult result={result} words={words} actions={scoreActions} />}
-    {(phase === "loading" || phase === "unavailable") && <div className="sea-unavailable">
+    {(phase === "loading" || phase === "unavailable") && <div className="sea-unavailable" data-pad-scope="choice">
       <strong>{L(phase === "loading" ? words.title : words.unavailable)}</strong>
-      <button className="btn" onClick={done}>{L(words.town)}</button>
+      <button className="btn" data-pad-default data-pad-back onClick={done}>{L(words.town)}</button>
     </div>}
   </div>;
 }

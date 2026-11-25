@@ -14,6 +14,7 @@ import { updateHelp, type HelpProgress } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { rand } from "../world/util";
 import { chooseShot } from "./ai";
@@ -96,6 +97,8 @@ export class BilliardsMode implements GameMode {
   private angle = Math.PI;
   private power = 0;
   private charge: number | null = null;
+  private chargeSource: "space" | "pad" | null = null;
+  private pointerPower = false;
   private accumulator = 0;
   /** The shot being fired is the break (its recording plays once with the strike). */
   private breaking = false;
@@ -188,6 +191,8 @@ export class BilliardsMode implements GameMode {
     this.afterFeedback = null;
     this.answerDelay = this.replyDelay = 0;
     this.charge = null;
+    this.chargeSource = null;
+    this.pointerPower = false;
     this.power = 0;
     this.angle = Math.PI;
     this.scoreFraming = false;
@@ -399,13 +404,49 @@ export class BilliardsMode implements GameMode {
     ui({ power: value });
   }
 
+  /** A controller's held A charges on the existing clock without a store update per frame (the whole overlay listens
+   *  to the store): the mounted meter is painted directly, and the store hears the power once, when the charge ends. */
+  private meter: { track: HTMLElement | null; value: HTMLElement | null } | null = null;
+  private padPower(value: number) {
+    this.power = value;
+    const find = (selector: string) => typeof document?.querySelector === "function" ? document.querySelector<HTMLElement>(selector) : null;
+    const meter = this.meter ??= { track: find(".billiards .bl-power-track"), value: find(".billiards .bl-power-value") };
+    meter.track?.style.setProperty("--bl-power", String(value));
+    if (meter.value) meter.value.textContent = `${Math.round(value * 100)}%`;
+  }
+
   private get aiming() { return this.phase === "aim" || this.phase === "break"; }
+  get padAction() { return this.active && this.phase !== "result"; }
+  get padNavigate() { return this.aiming; }
+  get padPhase() { return this.phase; }
+
+  padBack() { this.exit(); return true; }
+
+  padTick(_input: unknown, pressed: number, released: number, _dt: number, direction: number, held: number) {
+    if ((released & PadButton.A) && this.releaseCharge("pad")) return "confirm" as const;
+    if (!this.aiming) return;
+    if (pressed & PadButton.A) this.startCharge("pad");
+    if (direction === PadButton.Left || direction === PadButton.Right) {
+      this.nudge((direction === PadButton.Left ? -1 : 1) * (held & PadButton.LB ? 0.1 : 0.5));
+    }
+  }
+
+  padCancel() { this.releaseCharge("pad", true); }
+
+  private startCharge(source: "space" | "pad") {
+    if (this.charge !== null || (source === "pad" && this.pointerPower)) return;
+    this.charge = 0;
+    this.chargeSource = source;
+    this.meter = null;
+  }
 
   private fire(power: number, call: Call | null) {
     if (!this.round || this.shot || !Number.isFinite(power)) return;
     const { balls, side } = this.round;
     if (side === "learner" && call) this.round.shots++;
     this.charge = null;
+    this.chargeSource = null;
+    this.pointerPower = false;
     this.shot = {
       power: clamp(power, 0.055, 1), windup: 0.17, rest: 0, call,
       eightAllowed: !!call && call.ball === 8 && !remaining(balls, this.group(side)).length,
@@ -548,7 +589,9 @@ export class BilliardsMode implements GameMode {
     if (this.charge !== null) {
       this.charge += dt;
       const cycle = (this.charge / 1.2) % 2;
-      this.setPower(cycle <= 1 ? cycle : 2 - cycle);
+      const value = cycle <= 1 ? cycle : 2 - cycle;
+      if (this.chargeSource === "pad") this.padPower(value);
+      else this.setPower(value);
     }
     if (this.phase === "listen" && this.help.level === 1 && this.listened < 2) {
       this.listened += dt;
@@ -573,7 +616,7 @@ export class BilliardsMode implements GameMode {
     if (key === "escape") { this.exit(); return true; }
     if (this.aiming) {
       if (key === " ") {
-        if (!repeat && this.charge === null) this.charge = 0;
+        if (!repeat) this.startCharge("space");
         return true;
       }
       if (key === "arrowleft" || key === "arrowright") {
@@ -581,17 +624,28 @@ export class BilliardsMode implements GameMode {
         return true;
       }
     }
-    if (key === "m" && ["call", "group", "reply"].includes(this.phase) && this.dialogue.key(key)) {
-      ui({ micOn: this.dialogue.micOn });
-      return true;
-    }
+    if (key === "m") return this.toggleMic();
     return (this.phase === "group" || this.phase === "reply") && this.dialogue.key(key);
   }
 
+  private toggleMic() {
+    if ((this.phase !== "call" && this.phase !== "group" && this.phase !== "reply") || !this.dialogue.key("m")) return false;
+    ui({ micOn: this.dialogue.micOn });
+    return true;
+  }
+
   release(key: string, cancel = false) {
-    if (key !== " " || this.charge === null) return false;
+    return key === " " && this.releaseCharge("space", cancel);
+  }
+
+  private releaseCharge(source: "space" | "pad", cancel = false) {
+    if (this.chargeSource !== source) return false;
     this.charge = null;
+    this.chargeSource = null;
+    this.meter = null;
     const power = this.power;
+    // (the pad's charge painted the meter itself: the store now hears where it stopped, once)
+    if (source === "pad") ui({ power });
     if (!cancel && this.aiming && power >= 0.04) this.fire(power, this.ownCall);
     else this.setPower(0);
     return true;
@@ -629,11 +683,14 @@ export class BilliardsMode implements GameMode {
     else if (name === "confirm") this.confirmCall();
     else if (name === "replay") void this.replay();
     else if (name === "choice" && typeof value === "string") this.dialogue.choose(value);
+    else if (name === "mic") this.toggleMic();
     else if (name === "skip" && this.phase === "reply") this.dialogue.skipTurn();
     else if (name === "again" && this.phase === "result") this.newRack(this.round.group);
     else if (name === "nudge") this.nudge(Number(value));
-    else if (name === "power" && this.aiming && this.charge === null) this.setPower(clamp(Number(value) || 0, 0, 1));
-    else if (name === "shoot" && this.aiming && this.charge === null) {
+    else if (name === "power-start" && this.aiming && this.chargeSource !== "pad") this.pointerPower = true;
+    else if (name === "power-end") this.pointerPower = false;
+    else if (name === "power" && this.aiming && this.pointerPower && this.charge === null) this.setPower(clamp(Number(value) || 0, 0, 1));
+    else if (name === "shoot" && this.aiming && this.pointerPower && this.charge === null) {
       if (this.power >= 0.04) this.fire(this.power, this.ownCall);
       else this.setPower(0);
     } else if (name === "tap" && typeof value === "string") {
@@ -703,6 +760,8 @@ export class BilliardsMode implements GameMode {
     this.round = null;
     this.shot = null;
     this.charge = null;
+    this.chargeSource = null;
+    this.pointerPower = false;
     this.replaying = false;
     this.dialogue.cancel();
     this.table!.setRack(rack(401));
@@ -732,7 +791,8 @@ export class BilliardsMode implements GameMode {
   debug() {
     if (!import.meta.env.DEV) return undefined;
     return {
-      state: () => this.round ? { ...useBilliards.getState(), group: this.round.group, shots: this.round.shots,
+      // (the mode's own power: a pad charge paints the meter without publishing each frame)
+      state: () => this.round ? { ...useBilliards.getState(), power: this.power, group: this.round.group, shots: this.round.shots,
         sayIt: undefined, said: this.round.sayIt.count,
         ai: this.ai?.call, angle: this.angle, layout: this.round.balls.map((ball) => ({ ...ball })),
         table: this.tableBounds(window.innerWidth, window.innerHeight),

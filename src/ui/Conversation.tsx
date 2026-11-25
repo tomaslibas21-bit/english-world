@@ -233,7 +233,7 @@ export function Conversation() {
   const retryWithMic = supported && !conv.typing;
   return (
     <>
-    <div className="convo" ref={panelRef} data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
+    <div className="convo" ref={panelRef} data-pad-scope="convo" data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
       <div className="convo-tools">
       {townPhone && <PhoneCallHeader key={conv.run} />}
       <div className="convo-head">
@@ -249,7 +249,7 @@ export function Conversation() {
         <div className="head-actions">
           <button className="close-x" onClick={() => game?.restartScenario()} title={L("Pradėti šį pokalbį iš naujo")} aria-label={L("Pradėti iš naujo")}><Icon name="restart" /></button>
           <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title={L("Visos situacijos")} aria-label={L("Visos situacijos")}><Icon name="list" /></button>
-          <button className={"close-x" + (livePhone ? " hang-up" : "")} onClick={() => game?.closeConversation()} title={keyboardHints ? L("Baigti pokalbį (Esc)") : L("Baigti pokalbį")} aria-label={L("Baigti pokalbį")}><Icon name={livePhone ? "phoneCall" : "close"} /></button>
+          <button className={"close-x" + (livePhone ? " hang-up" : "")} data-pad-back onClick={() => game?.closeConversation()} title={keyboardHints ? L("Baigti pokalbį (Esc)") : L("Baigti pokalbį")} aria-label={L("Baigti pokalbį")}><Icon name={livePhone ? "phoneCall" : "close"} /></button>
         </div>
       </div>
 
@@ -292,7 +292,7 @@ export function Conversation() {
 
           {pendingChoices && <div className="miss-box speech-confirm" ref={recoveryRef}>
             <p className="recovery-title">{confirmationQuestion}</p>
-            {pendingChoices.map(text => <button className="dym-opt" key={text} lang={TL} disabled={conv.phase !== "you"}
+            {pendingChoices.map((text, i) => <button className="dym-opt" key={text} data-pad-answer={i} lang={TL} disabled={conv.phase !== "you"}
               onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}><span className="dym-en">{text}</span></button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
               onClick={() => edit(conv.lastHeard)}><Icon name="pencil" size={17} /> {L("Pataisyti tekstą")}</button>
@@ -364,7 +364,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
   );
 
   return (
-    <div className="yourturn ended-box">
+    <div className="yourturn ended-box" data-pad-scope="ended">
       <div className="ended-heading">
         {completed && <span className="ended-badge"><Icon name="check" size={17} strokeWidth={2.5} /></span>}
         <h2 className="ended-title">{completed ? L("Užduotis įvykdyta!") : L("Pokalbis baigtas")}</h2>
@@ -472,17 +472,17 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
   return <div className="npc-info" ref={ref}
     onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(false); dismissed.current = false; } }}
     onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) close(); }}>
-    <button className="npc-info-button" aria-label={L("Apie pašnekovą")} aria-expanded={open} aria-controls="npc-info-card"
+    <button className="npc-info-button" data-pad-focus-opens aria-label={L("Apie pašnekovą")} aria-expanded={open} aria-controls="npc-info-card"
       onPointerEnter={(e) => { if (e.pointerType === "mouse" && !dismissed.current) setHover(true); }}
       onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))} onClick={() => { dismissed.current = false; setTapped(!tapped); }}>
       <span aria-hidden="true">i</span>
     </button>
     <SectionHelpButton className="npc-info-button" onOpen={close} />
-    {open && <div className="npc-info-card" id="npc-info-card" role="region" aria-label={L("Apie pašnekovą")}>
+    {open && <div className="npc-info-card" data-pad-scope="info" id="npc-info-card" role="region" aria-label={L("Apie pašnekovą")}>
       <div className="npc-identity">
         <div className="avatar" style={{ background: avatarColor(npcId) }}>{(npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who"><b>{npc?.name}</b><span className="role"><em lang={TL}>{roleSaid(npc)}</em>{ltRole && <small lang={EDITION.helper}>{ltRole}</small>}</span></div>
-        <button className="close-x" onClick={close} aria-label={L("Uždaryti informaciją")}><Icon name="close" size={20} /></button>
+        <button className="close-x" data-pad-back onClick={close} aria-label={L("Uždaryti informaciją")}><Icon name="close" size={20} /></button>
       </div>
       <p className="place" lang={EDITION.helper}>{sit.mode === "video" ? L("Vaizdo skambutis") : placeLtNamed(sit.location)}</p>
       {intro && <p className="scene-intro-text" lang={EDITION.helper}>{sceneText(intro, useStore.getState().progress.profile?.gender ?? "m")}</p>}
@@ -903,7 +903,7 @@ function DidYouMean({ guess, lt }: { guess: Guess; lt: boolean }) {
     <div className="dym">
       <div className="dym-q">{guess.stuck ? L("Nepavyksta? Pasirink, ką norėjai pasakyti:") : L("Ar norėjai pasakyti:")}</div>
       {guess.options.map((o) => (
-        <button key={o.en} className="dym-opt" onClick={() => game?.activeSession?.submit(o.en, [], via)}>
+        <button key={o.en} className="dym-opt" data-pad-answer onClick={() => game?.activeSession?.submit(o.en, [], via)}>
           <span className="dym-text">
             <span className="dym-en" lang={TL}>{o.en}</span>
             {lt && <span className="dym-lt" lang={EDITION.helper}>{o.nat}</span>}

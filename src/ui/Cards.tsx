@@ -58,6 +58,11 @@ function keepCaps(word: string): boolean {
   return NAMES.has(w) || (!!p && (w === p.name.trim().toLowerCase() || w === p.surname.trim().toLowerCase()));
 }
 
+export interface PopoverElement extends HTMLElement {
+  popoverAnchor?: HTMLElement;
+  popoverClose?: () => void;
+}
+
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
 function place(r: DOMRect, w: number, h: number): TipSpot {
   const m = 8, gap = 9, vw = window.innerWidth, vh = window.innerHeight;
@@ -132,6 +137,8 @@ export function trackPopover(anchor: HTMLElement, popup: HTMLElement, onClose: (
     popup.style.top = `${spot.top}px`;
     popup.style.setProperty("--arrow", `${spot.arrow}px`);
     popup.style.visibility = "visible";
+    // (the controller moves into a popover once it stands where it is shown: gamepad.ts)
+    popup.setAttribute("data-pad-placed", "");
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
   const onScroll = (e: Event) => { if (!(e.target instanceof Element) || e.target.contains(anchor)) schedule(); };
@@ -153,6 +160,7 @@ export function trackPopover(anchor: HTMLElement, popup: HTMLElement, onClose: (
   document.fonts.addEventListener("loadingdone", schedule);
   return () => {
     cancelAnimationFrame(frame);
+    popup.removeAttribute("data-pad-placed");
     resize.disconnect();
     content.disconnect();
     window.removeEventListener("scroll", onScroll, true);
@@ -171,7 +179,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost, tar
   s: Sentence; index: number; anchor: HTMLElement; onClose: () => void;
   source?: PhraseSource; portalHost?: HTMLElement; targetLang?: string; helperLang?: string; partial?: boolean;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement & PopoverElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
@@ -181,6 +189,13 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost, tar
   const u = s.units[index];
   const word = useMemo(() => unitInput(s, index, situationId, keepCaps), [s, index, situationId]);
   const dash = !u || isDashGloss(u.lt) || !word;
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.popoverAnchor = anchor;
+    el.popoverClose = onClose;
+  }, [anchor, onClose]);
 
   useLayoutEffect(() => {
     if (ref.current) return trackPopover(anchor, ref.current, () => closeRef.current(), "above", place);
@@ -204,7 +219,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost, tar
   const wordIn = !!word && keys.has(cardKey(word.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className="wpop" role="dialog" aria-label={L("Žodis „{word}“", { word: shown })} onClick={(event) => event.stopPropagation()} style={{ left: 0, top: 0, visibility: "hidden" }}>
+    <div ref={ref} data-pad-scope="popover" className="wpop" role="dialog" aria-label={L("Žodis „{word}“", { word: shown })} onClick={(event) => event.stopPropagation()} style={{ left: 0, top: 0, visibility: "hidden" }}>
       <div className="wpop-body">
         <div className="wpop-en" lang={targetLang}>{shown}</div>
         {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}

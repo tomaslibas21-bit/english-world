@@ -54,7 +54,7 @@ export function RadioTool({ phone = false, shortcut = true }: { phone?: boolean;
     : (on ? L("Išjungti radiją") : L("Įjungti radiją"));
   return (
     <div className={"radio-tool " + SKIN}>
-      <button className={"icon-btn radio-btn" + (on ? " on" : "")} onClick={() => phone ? radio.tap() : radio.power()} title={title} aria-label={title}
+      <button data-pad-tool="radio" className={"icon-btn radio-btn" + (on ? " on" : "")} onClick={() => phone ? radio.tap() : radio.power()} title={title} aria-label={title}
         aria-pressed={phone ? undefined : on} aria-haspopup={phone ? "dialog" : undefined} aria-expanded={phone ? open : undefined}>
         <Icon name="radio" size={25} />{!phone && shortcut && <span className="key" aria-hidden>R</span>}
         <span className="radio-lamp" aria-hidden />
@@ -87,7 +87,7 @@ function RadioPlate() {
   }, [playing, song]);
   const name = STATIONS.find((s) => s.id === station)?.name ?? "";
   return (
-    <button className={"radio-plate" + (playing ? " playing" : "")} onClick={() => radio.setOpen(true)} title={L("Stotys ir dainos")} aria-label={`${name}. ${L("Stotys ir dainos")}`}>
+    <button data-pad-tool="radio-set" className={"radio-plate" + (playing ? " playing" : "")} onClick={() => radio.setOpen(true)} title={L("Stotys ir dainos")} aria-label={`${name}. ${L("Stotys ir dainos")}`}>
       <span className="radio-eq" aria-hidden><i /><i /><i /></span>
       <span className="radio-plate-text" lang={TL} key={title ?? name}>{title ?? name}</span>
       <Icon name="chevronDown" size={15} strokeWidth={2.25} className="radio-plate-more" />
@@ -211,7 +211,7 @@ function RadioSet() {
   const length = s.song?.d ?? 0;
   const like = () => { setHearted(s.liked ? "removed" : "added"); setBeat((n) => n + 1); radio.like(); };
   return (
-    <div className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label={L("Radijas")}>
+    <div className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} data-pad-scope="radio" role="dialog" aria-label={L("Radijas")}>
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />

@@ -12,6 +12,7 @@ import { audio } from "../audio";
 import { ModeDialogue } from "../kit/dialogue";
 import { PhraseRun } from "../kit/phrases";
 import type { ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
 import { carHasRoof, carModelEntry } from "../world/carModels";
@@ -141,6 +142,34 @@ export class RoadMode {
 
   constructor(private host: RoadHost) {}
   get active() { return this.phase !== "town"; }
+  get padPhase() { return this.phase; }
+  get padDriving() { return this.phase === "drive"; }
+  get padAction() {
+    return this.phase === "approach" || this.phase === "depart" ||
+      (this.phase === "offer" && !useRoad.getState().choices.length);
+  }
+
+  padBack() {
+    if (!this.padDriving && !this.padAction) return false;
+    this.exit(false);
+    return true;
+  }
+
+  /** B on the lift's answers or the run's setup: the same exit as the physical Escape (input below). */
+  padBackFrom(surface: string) {
+    const answers = surface === "choice" && ["approach", "offer", "depart"].includes(this.phase);
+    const setup = surface === "word-setup" && this.phase === "briefing";
+    if (!answers && !setup) return false;
+    this.exit(false);
+    return true;
+  }
+
+  padTick(_input: unknown, pressed: number) {
+    if (this.padDriving && (pressed & PadButton.X)) {
+      this.action("horn");
+      return "horn" as const;
+    }
+  }
   get lifted() { return !!this.lift; }
 
   start(edge: WalkEdge) {

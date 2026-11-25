@@ -57,7 +57,7 @@ function GateLabel({ mode, id, lane, text, layout, steer }: {
     {["tl", "tr", "bl", "br", "center", "em"].map((probe) => <i key={probe} aria-hidden data-face-probe={probe} />)}
   </>;
   const props = { ref, className: "road-gate", "data-lane": lane, "aria-label": text, style };
-  return steer ? <button type="button" {...props} onClick={() => steer(lane)}>{content}</button> : <div {...props}>{content}</div>;
+  return steer ? <button type="button" data-pad-aux data-pad-answer={lane} {...props} onClick={() => steer(lane)}>{content}</button> : <div {...props}>{content}</div>;
 }
 
 export function GateLabels({ mode, prompt, gateId, steer, answeredLane, stampedLane }: {
@@ -79,15 +79,15 @@ export function WordGateStart({ way, start, done, town }: {
 }) {
   const ways: PlayWay[] = [way, way === "words" ? "phrases" : "words"];
   return <div className="word-gate-start">
-    <section role="dialog" aria-labelledby="word-gate-start-title">
+    <section data-pad-scope="word-setup" role="dialog" aria-labelledby="word-gate-start-title">
       <h2 id="word-gate-start-title">{L(WORD_GATE_UI.heading)}</h2>
       <div className="word-gate-ways">
         {ways.map((id) => <button key={id} type="button" data-way={id}
-          aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
+          data-pad-default={id === way || undefined} aria-current={id === way || undefined} autoFocus={id === way} onClick={() => start(id)}>
           <strong>{L(WORD_GATE_UI[id].title)}</strong><small>{L(WORD_GATE_UI[id].line)}</small>
         </button>)}
       </div>
-      <button className="btn soft" onClick={done}>{L(town)}</button>
+      <button className="btn soft" data-pad-back onClick={done}>{L(town)}</button>
     </section>
   </div>;
 }
@@ -114,9 +114,9 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
   const title = L(words.title);
   const showTargets = !!prompt && (!!prompt.phrase || (!!prompt.gap && !feedback));
   const entries = useMemo(() => prompt && showTargets ? gateOptions(prompt, title) : undefined, [prompt, showTargets, title]);
-  return <header className="road-header">
+  return <header className="road-header" data-pad-aux>
       <div className="road-dash">
-        <button className="road-icon" aria-label={L(words.town)} title={L(words.town)} onClick={home}><Icon name="home" size={21} /></button>
+        <button className="road-icon" data-pad-back aria-label={L(words.town)} title={L(words.town)} onClick={home}><Icon name="home" size={21} /></button>
         <h1>{L(words.title)}</h1>
         <div className="road-meters">
           <span>{L(words.time)} <b>{clockText(remaining)}</b></span>
@@ -167,7 +167,7 @@ function PracticeSelection({ items, index, choose, entries, label, labelledBy }:
   const text = <><strong lang={TL}>{en}</strong> <span lang={HL}>· {lt}</span></>;
   return <div className="phrase-save-row">
     {items.length === 1 ? <div>{text}</div> : <div className="road-practice-picker">
-      <select aria-label={label} aria-labelledby={labelledBy} value={index} onChange={(event) => choose(Number(event.target.value))}
+      <select data-pad-adjust aria-label={label} aria-labelledby={labelledBy} value={index} onChange={(event) => choose(Number(event.target.value))}
         onKeyDown={(event) => { if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation(); }}>
         {items.map(({ en, situation }, i) => {
           const option = pair(i);

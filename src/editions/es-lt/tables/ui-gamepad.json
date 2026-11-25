@@ -1,0 +1,38 @@
+{
+  "sent": {
+    "Control | conectado␟Controller | connected␟Controller connected": {
+      "gloss": "Valdiklis | prijungtas",
+      "nat": "Valdiklis prijungtas"
+    },
+    "Control | desconectado␟Controller | disconnected␟Controller disconnected": {
+      "gloss": "Valdiklis | atjungtas",
+      "nat": "Valdiklis atsijungė"
+    },
+    "Moverse␟Move␟Move": {
+      "gloss": "Judėti",
+      "nat": "Judėti"
+    },
+    "Mirar alrededor␟Look around␟Look around": {
+      "gloss": "Apsidairyti",
+      "nat": "Apsidairyti"
+    },
+    "Saltar␟Jump␟Jump": {
+      "gloss": "Šokti",
+      "nat": "Pašokti"
+    },
+    "Usar␟Use␟Use": {
+      "gloss": "Naudoti",
+      "nat": "Naudoti"
+    },
+    "Elegir␟Choose␟Choose": {
+      "gloss": "Pasirinkti",
+      "nat": "Pasirinkti"
+    },
+    "Volver␟Go back␟Go back": {
+      "gloss": "Grįžti",
+      "nat": "Grįžti"
+    }
+  },
+  "entity": {},
+  "text": {}
+}

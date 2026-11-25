@@ -18,15 +18,15 @@ export function SceneIntro({ sit }: { sit: SituationDef }) {
   useEffect(() => { if (open) start.current?.focus({ preventScroll: true }); }, [open, run]);
   if (!open) return null;
   const close = () => useStore.getState().setConv({ introOpen: false });
-  return <div className="scene-intro" role="region" aria-label={L("Scena")}>
+  return <div className="scene-intro" data-pad-scope="intro" role="region" aria-label={L("Scena")}>
     <div className="scene-intro-head"><b>{intro ? L("Scena") : sit.title.lt || sit.title.en}</b>
-      <button className="close-x" onClick={close} aria-label={L("Uždaryti sceną")}><Icon name="close" size={18} /></button>
+      <button className="close-x" data-pad-back onClick={close} aria-label={L("Uždaryti sceną")}><Icon name="close" size={18} /></button>
     </div>
     {intro ? <p lang={EDITION.helper}>{sceneText(intro, gender)}</p> : <>
       {npc && <p>{npc.name}</p>}
       {sit.goal && <p lang={EDITION.helper}>{sceneText(sit.goal, gender)}</p>}
     </>}
-    <button ref={start} className="btn scene-start" onClick={close}>{L("Pradėti")}</button>
+    <button ref={start} className="btn scene-start" data-pad-default onClick={close}>{L("Pradėti")}</button>
   </div>;
 }
 

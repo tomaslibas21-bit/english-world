@@ -4,6 +4,7 @@ import { useBilliards, type RackBall } from "../game/billiards/store";
 import { ballColor } from "../game/billiards/table";
 import type { KitLine } from "../game/kit/dialogue";
 import { BILLIARDS_NPC, BILLIARDS_SITUATION } from "../content/billiards-lines";
+import { speechSupported } from "../convo/speech";
 import { HL, L } from "./i18n";
 import { Icon } from "./icons";
 import { FeedbackBadge } from "./kit/FeedbackBadge";
@@ -68,7 +69,7 @@ const CallReservation = memo(function CallReservation({ options }: { options: Ki
 });
 
 function Choice({ line }: { line: KitLine }) {
-  return <button className="bl-choice" data-line={line.key} onClick={() => act("choice", line.key)}>
+  return <button className="bl-choice" data-line={line.key} data-pad-answer={line.key} onClick={() => act("choice", line.key)}>
     <GlossLine sentence={line.sentence} gloss compact />
   </button>;
 }
@@ -110,6 +111,7 @@ function PowerBar({ power }: { power: number }) {
     if (drag.current?.id !== e.pointerId) return;
     drag.current = null;
     act("power", "0");
+    act("power-end");
   };
   return <div className="bl-power">
     <span>{L("Jėga")}</span>
@@ -118,6 +120,7 @@ function PowerBar({ power }: { power: number }) {
         if (e.button !== 0 || drag.current) return;
         drag.current = { id: e.pointerId, start: e.clientY, pulled: false };
         e.currentTarget.setPointerCapture(e.pointerId);
+        act("power-start");
         pull(e);
       }}
       onPointerMove={(e) => {
@@ -132,6 +135,7 @@ function PowerBar({ power }: { power: number }) {
         drag.current = null;
         if (current.pulled || e.clientY - current.start > 3) { pull(e); act("shoot"); }
         else act("power", "0");
+        act("power-end");
       }}
       onPointerCancel={cancel} onLostPointerCapture={cancel}>
       <i className="bl-power-fill" /><i className="bl-power-knob" />
@@ -145,6 +149,8 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const { phase, side, line, choices, selection, pockets, available, call, sayIt, reveal, correct, result } = state;
   const aiming = phase === "aim" || phase === "break";
   const picking = phase === "call" || phase === "listen";
+  const answering = phase === "group" || phase === "reply";
+  const mic = (choices.length > 0 && answering || phase === "call") && speechSupported();
   const waitingForTina = side === "tina" && phase === "tina";
   const showCall = !!call && (phase === "feedback" || (phase === "listen" || waitingForTina) && reveal);
   const entries = useMemo(() => picking
@@ -153,7 +159,8 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   [picking, phase, pockets, phase === "call" ? call : null, choices]);
   const shotOk = phase === "feedback" && correct;
   const scoreTitle = result?.winner === "learner" ? L("Laimėjai!") : result?.winner === "tina" ? opponentLabels.won : L("Lygiosios");
-  return <div className="billiards" data-phase={phase} lang={HL}>
+  return <div className="billiards" data-phase={phase} data-pad-scope={picking || answering ? "choice" : undefined}
+    data-pad-tools={aiming || undefined} lang={HL}>
     <header className="bl-header">
       <section className="bl-status">
         <div className="bl-turn" aria-live="polite"><i />{side === "learner" ? L("Tavo eilė") : opponentLabels.turn}</div>
@@ -162,7 +169,11 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
           <BallRow name={opponentLabels.name} balls={state.balls.tina} active={side === "tina"} />
         </div>
       </section>
-      <button className="bl-exit" onClick={() => game?.modeExit()}><Icon name="close" size={15} />{L("Baigti partiją")}</button>
+      {mic && <button className={`bl-mic mic${state.mic.status === "listening" ? " listening" : ""}`} type="button" data-pad-only
+        aria-pressed={state.micOn} aria-label={state.micOn ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")} onClick={() => act("mic")}>
+        <Icon name="mic" size={20} />
+      </button>}
+      <button className="bl-exit" data-pad-aux data-pad-back onClick={() => game?.modeExit()}><Icon name="close" size={15} />{L("Baigti partiją")}</button>
     </header>
     <div className="bl-stage">
       <TablePad aiming={aiming} usable={picking || aiming} />
@@ -183,12 +194,12 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         </div>
         {showCall && <Speech line={call} />}
         <div className="bl-chip-heading">{L("Kamuolys")}</div>
-        <div className="bl-ball-chips" role="group" aria-label={L("Kamuolys")}>
-          {[...available].sort((a, b) => a - b).map((id) => <button key={id} className="bl-ball-option" data-ball={id} aria-pressed={id === selection.ball}
+        <div className="bl-ball-chips" data-pad-grid role="group" aria-label={L("Kamuolys")}>
+          {[...available].sort((a, b) => a - b).map((id) => <button key={id} className="bl-ball-option" data-ball={id} data-pad-answer aria-pressed={id === selection.ball}
             disabled={state.replaying} onClick={() => act("ball", String(id))}><BallBadge id={id} down={false} /></button>)}
         </div>
         <div className="bl-chip-heading">{L("Kišenė")}</div>
-        <div className="bl-pocket-chips" role="group" aria-label={L("Kišenė")}>
+        <div className="bl-pocket-chips" data-pad-grid role="group" aria-label={L("Kišenė")}>
           {pockets.map(({ id, line }) => <button key={id} data-pocket={id} className="bl-choice" aria-pressed={id === selection.pocket}
             disabled={state.replaying} onClick={() => act("pocket", id)}>
             <GlossLine sentence={{ ...line.sentence, en: line.sentence.en.replace(/\.$/, ""),
@@ -206,10 +217,10 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       {aiming && <>
         {phase === "break" ? <h2>{L("Pradinis smūgis – skelbti nereikia.")}</h2> : call && <Speech line={call} />}
         <div className="bl-aim">
-          <button className="bl-nudge" aria-label={L("Taikyti kairiau")} onClick={() => act("nudge", "-0.25")}>◀</button>
+          <button className="bl-nudge" data-pad-aux aria-label={L("Taikyti kairiau")} onClick={() => act("nudge", "-0.25")}>◀</button>
           {state.aimHelp && <p>{touch ? L("Vilk pirštu – taikyk. Tada patrauk jėgos juostą ir paleisk.")
             : L("Spausk ar vilk ant stalo – taikyk. Laikyk tarpą arba patrauk jėgos juostą ir paleisk.")}</p>}
-          <button className="bl-nudge" aria-label={L("Taikyti dešiniau")} onClick={() => act("nudge", "0.25")}>▶</button>
+          <button className="bl-nudge" data-pad-aux aria-label={L("Taikyti dešiniau")} onClick={() => act("nudge", "0.25")}>▶</button>
         </div>
         {!touch && state.aimHelp && <small className="bl-key-help">{L("← → – taikyti, tarpas – smūgis")}</small>}
       </>}

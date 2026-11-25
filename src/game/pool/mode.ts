@@ -13,6 +13,7 @@ import type { KitLine } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { PadButton } from "../padButtons";
 import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { rand } from "../world/util";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, poolMotionPreference, POOL_CENTER, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, type PoolKid } from "../world/pool";
@@ -391,6 +392,18 @@ class PoolMode implements GameMode {
     const notice = visible && this.clock < this.noticeUntil ? this.notice : null;
     const current = usePool.getState();
     if (canHit !== current.canHit || help !== current.help || notice !== current.notice) usePool.setState({ canHit, help, notice });
+  }
+
+  get padAction() { return this.active && this.phase !== "result"; }
+  get padPhase() { return this.phase ?? undefined; }
+
+  padBack() { this.exit(false); return true; }
+
+  padTick(_input: unknown, pressed: number) {
+    if (this.phase === "play" && (pressed & PadButton.A)) {
+      this.input({ kind: "jump" });
+      return "jump" as const;
+    }
   }
 
   input(input: ModeInput) {
