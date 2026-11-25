@@ -1,13 +1,14 @@
 // Loaded on an actor-backed conversation request.
 import * as THREE from "three";
+import { EDITION } from "../edition";
 import type { CameraRig } from "./camera";
 import type { GameCharacter } from "./characters";
 import type { OcclusionField } from "./occlusion";
 import { watchTalkLayout, type TalkLayout } from "./talkLayout";
-import { covers, type Body, type Shot } from "./talkShot";
+import { COUNTER_PHONE_SHOTS, covers, type Body, type Shot } from "./talkShot";
 import { rayReaches, TalkMeshRanges } from "./talkMeshRange";
 
-type Actor = { ch: GameCharacter; rot: number; sit?: boolean; alux?: unknown };
+type Actor = { id?: string; ch: GameCharacter; rot: number; sit?: boolean; alux?: unknown };
 type Mesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
 type Box = TalkLayout["picture"];
 
@@ -19,7 +20,7 @@ interface FitInput {
   scene: THREE.Scene;
   lens: THREE.PerspectiveCamera;
   screen: TalkLayout;
-  room?: { w: number; d: number };
+  room?: { id?: string; w: number; d: number };
   wild?: Pick<NonNullable<CameraRig["space"]>, "inside" | "free">;
   field?: OcclusionField;
   max: number;
@@ -261,7 +262,7 @@ class TalkMeshes {
 }
 
 interface Candidate extends Framing {
-  kind: "shoulder" | "front" | "level" | "close" | "raised" | "counter" | "over" | "steep" | "near" | "cave";
+  kind: "shoulder" | "front" | "level" | "close" | "raised" | "counter" | "over" | "steep" | "near" | "cave" | "counter-phone";
   yaw: number;
   clearance: number;
   size: number;
@@ -508,7 +509,9 @@ export class TalkFraming {
       if (pos.distanceToSquared(head.middle) > input.max ** 2) return;
       const target = kind === "cave" ? caveSize : short && kind === "counter" ? 10.1 : preferred;
       const focal = screen.viewportHeight * target / 100 * pos.distanceTo(head.middle) / (head.crown.y - head.chin.y);
-      const maxFov = portrait && (kind === "front" || kind === "level" || kind === "close" || kind === "near" || kind === "cave") ? 114 : short ? 94 : 80;
+      // The lens is close to the speaker, so use a wider field to keep the head in the panel opening.
+      const maxFov = kind === "counter-phone" ? 150
+        : portrait && (kind === "front" || kind === "level" || kind === "close" || kind === "near" || kind === "cave") ? 114 : short ? 94 : 80;
       const adaptive = short || kind !== "shoulder";
       const fov = old?.fov ?? (adaptive ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
       const f: Candidate = { pos, look, fov, nearPlane: old?.nearPlane ?? TALK_NEAR, dx: 0, dy: 0, kind, yaw,
@@ -524,6 +527,13 @@ export class TalkFraming {
     };
 
     const estimate = THREE.MathUtils.clamp((head.crown.y - head.chin.y) * defaultFocal / (screen.viewportHeight * preferred / 100), 1.2, input.max * 0.9);
+    const phone = portrait || (w > h && screen.viewportHeight <= 520);
+    const counterShot = EDITION.id === "es" && phone && room?.id ? COUNTER_PHONE_SHOTS[room.id] : undefined;
+    if (counterShot && speaker.id === counterShot.speaker) {
+      const pos = head.middle.clone().addScaledVector(authored, counterShot.distance);
+      pos.y += counterShot.lift;
+      add(pos, head.middle, "counter-phone", 0);
+    }
     if (previous?.clear) add(previous.pos, previous.look, "shoulder", 0, previous);
     for (const side of [1, -1]) {
       for (const d of [2.4, 3.3, 4.4]) for (const yaw of [36, 50, 66]) pose(yaw * side, d, 15, "shoulder");
@@ -605,6 +615,7 @@ export class TalkFraming {
     const compare = (a: Candidate, b: Candidate) =>
       Number(b.facing >= FACE_PREFERENCE) - Number(a.facing >= FACE_PREFERENCE)
       || (a.facing < FACE_PREFERENCE && b.facing < FACE_PREFERENCE ? b.facing - a.facing : 0)
+      || Number(b.kind === "counter-phone") - Number(a.kind === "counter-phone")
       || Number(a.kind === "steep") - Number(b.kind === "steep") || b.quality - a.quality;
     candidates.sort(compare);
 
@@ -616,7 +627,8 @@ export class TalkFraming {
       if (f) shortlist.add(f);
       return f;
     };
-    pick(() => true);
+    const best = pick(() => true);
+    if (best?.kind === "counter-phone") pick((f) => f.kind !== "counter-phone");
     const first = pick((f) => f.kind === "shoulder" && !f.prior);
     if (first) pick((f) => f.kind === "shoulder" && f.yaw * first.yaw < 0);
     pick((f) => f.kind === "level" && f.facing >= FACE_PREFERENCE);

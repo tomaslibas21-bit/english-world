@@ -4,8 +4,9 @@ import { NPCS } from "../../src/content/npcs";
 import { Character } from "../../src/game/characters/Character";
 import { withBackpack } from "../../src/game/characters";
 import { OcclusionField } from "../../src/game/occlusion";
-import { TalkFraming } from "../../src/game/talkFraming";
+import { TalkFraming, type Framing } from "../../src/game/talkFraming";
 import type { TalkLayout } from "../../src/game/talkLayout";
+import { getInterior } from "../../src/game/world/interiors";
 import { OUTDOOR_NPCS } from "../../src/game/world/layout";
 import { buildTown } from "../../src/game/world/town";
 import { floorY } from "../../src/game/water";
@@ -67,6 +68,16 @@ function readFace(actor: Character, lens: THREE.PerspectiveCamera, sceneMeshes: 
   });
 }
 
+function presentShot(lens: THREE.PerspectiveCamera, shot: Framing, screen: TalkLayout) {
+  const { width, height } = screen;
+  lens.position.copy(shot.near ?? shot.pos);
+  lens.lookAt(shot.look);
+  lens.fov = shot.fov;
+  lens.near = shot.nearPlane;
+  lens.setViewOffset(width, height, screen.shiftX + shot.dx, screen.shiftY + shot.dy, width, height);
+  lens.updateMatrixWorld();
+}
+
 const spot = OUTDOOR_NPCS.find((npc) => npc.npc === "mrs_lee")!;
 const scene = new THREE.Scene();
 const meshes: { mesh: THREE.Mesh; bounds: THREE.Box3 }[] = [];
@@ -78,7 +89,13 @@ beforeAll(() => {
     createRadialGradient: () => ({ addColorStop() {} }),
     getImageData: () => ({ data: new Uint8ClampedArray(4 * 128 ** 2) }),
   }, { get: (target, key) => Reflect.get(target, key) ?? (() => {}) });
-  vi.stubGlobal("document", { createElement: () => ({ getContext: () => context }) });
+  class Canvas {
+    width = 0;
+    height = 0;
+    getContext() { return context; }
+  }
+  vi.stubGlobal("HTMLCanvasElement", Canvas);
+  vi.stubGlobal("document", { createElement: () => new Canvas() });
   vi.spyOn(Math, "random").mockReturnValue(0.47);
   const town = buildTown({ movableParking: true });
   scene.add(town.group);
@@ -124,12 +141,7 @@ it.each([0, 0.7, -0.7])("keeps both eyes and the speaking mouth clear at the tia
         report: (stats) => expect(stats.tested, label).toBeLessThanOrEqual(8) });
       expect(shot?.clear, label).toBe(true);
       if (!shot) continue;
-      lens.position.copy(shot.near ?? shot.pos);
-      lens.lookAt(shot.look);
-      lens.fov = shot.fov;
-      lens.near = shot.nearPlane;
-      lens.setViewOffset(width, height, screen.shiftX + shot.dx, screen.shiftY + shot.dy, width, height);
-      lens.updateMatrixWorld();
+      presentShot(lens, shot, screen);
       for (let step = 1; step <= 90; step++) {
         ch.root.rotation.y += (facing - ch.root.rotation.y) * 7 / 60;
         ch.update(1 / 60);
@@ -145,6 +157,62 @@ it.each([0, 0.7, -0.7])("keeps both eyes and the speaking mouth clear at the tia
   } finally {
     ch.root.removeFromParent();
     learner.root.removeFromParent();
+    ch.dispose();
+    learner.dispose();
+  }
+});
+
+it.each([
+  { place: "sunny-cup", id: "mia", maxPitch: 20 },
+  { place: "bank", id: "aaron", maxPitch: 8 },
+])("keeps the face clear and the phone camera low in $place", ({ place, id, maxPitch }) => {
+  const room = getInterior(place)!;
+  const spot = room.npcs.find((npc) => npc.npc === id)!;
+  const def = NPCS[id];
+  const ch = new Character({ ...def.look, female: def.look.female ?? def.gender === "f" });
+  const learner = new Character(withBackpack({ skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" }));
+  const scene = new THREE.Scene();
+  scene.add(room.group, ch.root, learner.root);
+  ch.root.position.set(spot.x, 0, spot.z);
+  ch.root.rotation.y = spot.rot;
+  learner.root.position.set(spot.ax!, 0, spot.az!);
+  learner.root.rotation.y = spot.rot + Math.PI;
+  ch.watch = learner.root.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+  ch.fidgets = learner.fidgets = false;
+  learner.update(1 / 60);
+  scene.updateMatrixWorld(true);
+  const roomMeshes: typeof meshes = [];
+  for (const root of [room.group, learner.root]) root.traverseVisible((part) => {
+    if ((part as THREE.Mesh).isMesh) roomMeshes.push({ mesh: part as THREE.Mesh, bounds: new THREE.Box3().setFromObject(part) });
+  });
+  const framing = new TalkFraming();
+  try {
+    for (const [width, height, right, bottom] of [[390, 844, 390, 211], [390, 664, 390, 132.8], [844, 390, 211, 390], [1280, 800, 766, 800]]) {
+      const desktop = width === 1280;
+      const screen = {
+        width, height, viewportHeight: height, shiftX: (width - right) / 2, shiftY: height / 2 - bottom * 0.46,
+        picture: { x0: 10, x1: right - 10, y0: 10, y1: bottom - 10 },
+        obstacles: [{ x0: right - 79, x1: right - 4, y0: bottom - 64, y1: bottom - 2 }],
+      };
+      const lens = new THREE.PerspectiveCamera(50, width / height, 0.1, 900);
+      const label = `${width}x${height}`;
+      ch.talk(5, () => 0.7, () => 0);
+      ch.update(1 / 60);
+      const shot = framing.fit({ scene, speaker: { id, ch, rot: spot.rot }, learner, people: [ch], room, screen, lens, max: 30,
+        report: ({ tested }) => expect(tested, label).toBeLessThanOrEqual(8) });
+      expect(shot?.clear, label).toBe(true);
+      if (!shot) continue;
+      presentShot(lens, shot, screen);
+      if (!desktop) {
+        const direction = lens.getWorldDirection(new THREE.Vector3());
+        expect(THREE.MathUtils.radToDeg(Math.asin(Math.abs(direction.y))), label).toBeLessThan(maxPitch);
+      }
+      for (let step = 0; step < 90; step++) ch.update(1 / 60);
+      scene.updateMatrixWorld(true);
+      expect(readFace(ch, lens, roomMeshes, screen), label).toEqual([true, true, true]);
+    }
+  } finally {
+    scene.remove(room.group);
     ch.dispose();
     learner.dispose();
   }
