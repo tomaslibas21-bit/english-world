@@ -26,7 +26,7 @@ const hints: Record<KeeperStep, HintGroup> = {
   storm: { lt: "Paklausti apie audrą", items: [
     { id: "k_stay", s: t("Where | did | you | stay?", "Kur | — | Jūs | likote?", "Kur likote per audrą?",
       { flags: { 1: "‘Did’ marks the past. In Lithuanian the verb form carries that meaning." } }) },
-    { id: "k_light_on", s: t("Did | the | light | stay on?", "Ar | — | šviesa | tebeveikė?", "Ar šviesa vis dar veikė?") },
+    { id: "k_light_on", s: t("Did | the | light | stay on?", "Ar | — | šviesa | tebeveikė?", "Ar šviesa neužgeso?") },
   ] },
   gift: { lt: "Priimti raštelį", items: [
     { id: "k_keep", s: t("I'll keep | it, | thanks.", "Pasiliksiu | jį, | ačiū.", "Pasiliksiu, ačiū.") },
