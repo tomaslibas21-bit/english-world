@@ -278,9 +278,25 @@
 }
 .gofish-drawn[data-say-it="true"] { animation: gofish-reveal 0.22s ease-out both; }
 .gofish-drawn .say-it { position: absolute; top: 0; left: calc(100% + 5px); }
-/* the note grows away from the card, never over its word (on a narrow phone it grows back, to stay on screen) */
 .gofish-drawn .say-it .say-it-message:not(:empty) { right: auto; left: 0; }
-@media (max-width: 520px) { .gofish-drawn .say-it .say-it-message:not(:empty) { left: auto; right: 0; } }
+@media (max-width: 520px) and (orientation: portrait) {
+  .gofish-drawn .say-it {
+    top: auto;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    translate: -50% 0;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    align-items: center;
+  }
+  .gofish-drawn .say-it-mic { flex: none; }
+  .gofish-drawn .say-it .say-it-message:not(:empty) {
+    position: static;
+    min-width: 0;
+    margin-inline-start: 4px;
+    white-space: normal;
+  }
+}
 @keyframes gofish-reveal {
   from { opacity: 0; scale: 0.6; }
 }
@@ -318,6 +334,17 @@
   }
   .gofish-hand:is([data-count="7"], [data-count="8"]) {
     max-width: calc(4 * var(--card-width) + 3 * var(--card-gap));
+  }
+}
+@media (max-width: 520px), (orientation: landscape) and (max-height: 560px) and (pointer: coarse) {
+  .gofish-card {
+    height: auto;
+    min-height: calc(var(--card-art) + 41px);
+    padding-inline: 2px;
+  }
+  .gofish-card .gofish-word small {
+    font-size: 12px;
+    overflow-wrap: anywhere;
   }
 }
 @media (max-width: 520px) and (max-height: 700px) {
