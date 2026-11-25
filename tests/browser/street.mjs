@@ -144,6 +144,102 @@ async function assertBubbleFits(bubble, viewport, label) {
   assert.deepEqual(fit.clipped, [], `${context}: bubble text fits inside the button`);
 }
 
+async function checkMovingChatter(page, bubble, viewport) {
+  const [width, height] = viewport;
+  const touch = Math.min(width, height) <= 520;
+  const point = await page.evaluate(() => {
+    const canvas = document.querySelector(".stage canvas");
+    for (const y of [0.7, 0.5, 0.6, 0.4].map((n) => innerHeight * n)) {
+      for (const x of [0.5, 0.3, 0.65].map((n) => innerWidth * n)) {
+        if (document.elementFromPoint(x, y) === canvas) return { x, y };
+      }
+    }
+    return null;
+  });
+  assert(point, "the town canvas can receive a camera drag");
+  const cdp = touch ? await page.context().newCDPSession(page) : null;
+  const finger = (type, point) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: point ? [point] : [] });
+  const start = await page.evaluate(() => window.__ew.game.rig.cam.position.toArray());
+  if (cdp) await finger("touchStart", point);
+  else {
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+  }
+  let taggedFrames = 0;
+  try {
+    for (let i = 1; i <= 6; i++) {
+      const next = { x: point.x + 4 * i, y: point.y };
+      if (cdp) await finger("touchMove", next);
+      else await page.mouse.move(next.x, next.y);
+      const sample = await bubble.evaluate((el) => {
+        const nativeRect = Element.prototype.getBoundingClientRect;
+        let reads = 0;
+        Element.prototype.getBoundingClientRect = function () {
+          if (this.classList.contains("nametag")) reads++;
+          return nativeRect.call(this);
+        };
+        // Sample only the live town RAF callbacks. Geometry assertions run after restoring the native method.
+        try { window.__stepStreet(1, 16); }
+        finally { Element.prototype.getBoundingClientRect = nativeRect; }
+        const a = el.getBoundingClientRect();
+        const button = el.querySelector(".street-bubble-text");
+        const tags = [...document.querySelectorAll(".nametag")].filter((tag) => tag.checkVisibility({ visibilityProperty: true }));
+        return { reads, tags: tags.length, visible: a.width > 0 && a.height > 0 && getComputedStyle(el).visibility === "visible",
+          hit: button.contains(document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)) };
+      });
+      assert.equal(sample.reads, 0, "live chatter placement reads no nametag DOMRects");
+      assert(sample.visible && sample.hit, "the moving bubble stays visible with a centre hit on the translation button");
+      if (sample.tags) taggedFrames++;
+      await assertBubbleFits(bubble, viewport, "translated line during a camera drag");
+    }
+  } finally {
+    if (cdp) {
+      await finger("touchEnd");
+      await cdp.detach();
+    } else await page.mouse.up();
+  }
+  const end = await page.evaluate(() => window.__ew.game.rig.cam.position.toArray());
+  assert(Math.hypot(...end.map((n, i) => n - start[i])) > 0.01, "the camera moves during the cost sample");
+  assert(taggedFrames > 1, "visible nametags exercise the cost check over multiple frames");
+}
+
+async function checkNametagGeometry(bubble, viewport) {
+  const sample = await bubble.evaluate((el) => {
+    const { nametagLayout: layout } = window.__ew.game;
+    const tag = layout.boxes.find(({ tag }) => getComputedStyle(tag).visibility === "visible")?.tag;
+    if (!tag) return null;
+    const role = tag.querySelector("i") || tag.querySelector("span");
+    const layer = tag.parentElement;
+    const { transform, transformOrigin } = layer.style;
+    const { fontSize } = role.style;
+    const height = tag.offsetHeight;
+    try {
+      role.style.fontSize = "18px";
+      layer.style.transformOrigin = "top left";
+      layer.style.transform = "translate(5px, 3px) scale(0.98, 0.97)";
+      window.__stepStreet(1, 0);
+      const actual = tag.getBoundingClientRect();
+      const chatter = el.getBoundingClientRect();
+      const box = layout.boxes.find((box) => box.tag === tag);
+      if (!box || !layout.rect) return null;
+      const { rect, scaleX, scaleY } = layout;
+      const clears = chatter.left >= actual.right || chatter.right <= actual.left ||
+        chatter.top >= actual.bottom || chatter.bottom <= actual.top;
+      return { grew: tag.offsetHeight > height, clears, error: Math.max(
+        Math.abs(rect.left + scaleX * box.x0 - actual.left), Math.abs(rect.left + scaleX * box.x1 - actual.right),
+        Math.abs(rect.top + scaleY * box.y0 - actual.top), Math.abs(rect.top + scaleY * box.y1 - actual.bottom),
+      ) };
+    } finally {
+      role.style.fontSize = fontSize;
+      layer.style.transform = transform;
+      layer.style.transformOrigin = transformOrigin;
+      window.__stepStreet(1, 0);
+    }
+  });
+  assert(sample?.grew && sample.clears && sample.error <= 0.51,
+    `${viewport.join("x")}: the placed box tracks the resized tag in its offset, scaled layer (${JSON.stringify(sample)})`);
+}
+
 try {
   await mkdir(shots, { recursive: true });
   await withGame(size[0], {}, async ({ page, step, state, force, advance, wait, card, press, closed }) => {
@@ -338,6 +434,10 @@ try {
       await step(2, 0);
       await assertBubbleFits(bubble, viewport, "translated line with expanded task");
       await shot("chatter");
+      if (storage === "english-world" && (viewport[1] === 844 || viewport[0] === 1280)) {
+        await checkNametagGeometry(bubble, viewport);
+        await checkMovingChatter(page, bubble, viewport);
+      }
       await wait(async () => await bubble.isVisible() && !(await bubble.locator(".street-tr").isVisible()) && await bubble.innerText() !== first,
         "the second speaker's bubble appears");
       assert.equal(await bubble.getAttribute("data-chatter"), id);
