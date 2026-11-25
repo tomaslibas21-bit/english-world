@@ -846,7 +846,7 @@ export async function fernTalk(run, { clues = true } = {}) {
   await heard(run, ["I wear a little cap. An oak sleeps inside me.", "Dėviu mažą kepurėlę. Manyje miega ąžuolas."]);
   await surface(run, dialog.locator(".guide .chips"), ["gilė", "riešutas", "akmuo", "kriauklė"]);
   if (clues) {
-    await alternative(run, "Paprašyti pagalbos", ["Can I have a clue?", "užuominą?"]);
+    await alternative(run, "Paprašyk pagalbos", ["Can I have a clue?", "užuominą?"]);
     await answer(run, "Can I have a clue?");
     await turn(run);
     await heard(run, ["Look under an oak in the fall.", "Rudenį paieškokite po ąžuolu."]);
