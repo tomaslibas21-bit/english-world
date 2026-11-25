@@ -66,7 +66,7 @@ try {
     const finishCafe = async () => {
       await page.locator(".convo").waitFor({ timeout: 20000 });
       const intro = page.locator(".scene-intro").getByRole("button", { name: t.start, exact: true });
-      if (await intro.isVisible()) await press(intro);
+      await press(intro);
 
       const input = page.locator(".typebox input");
       for (let turn = 0; turn < 10; turn++) {

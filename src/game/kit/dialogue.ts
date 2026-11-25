@@ -197,7 +197,7 @@ export class ModeDialogue {
 
   private listen() {
     const turn = this.turn;
-    if (!turn || turn.choosing || this.playback || this.paused || this.micHeld || !this.micOn || !speechSupported() || document.hidden) return;
+    if (!turn || turn.choosing || this.playback || this.attempt?.running || this.paused || this.micHeld || !this.micOn || !speechSupported() || document.hidden) return;
     this.stopListening();
     const { phrases, read } = turn.speech;
     const attempt = createSpeechAttempt({

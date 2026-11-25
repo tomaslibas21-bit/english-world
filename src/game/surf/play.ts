@@ -350,13 +350,13 @@ export class SurfPlay {
   /** Her line once more (a tap on it): the microphone waits for her to finish. */
   repeat() {
     const L = this.logic, line = useSurf.getState().line;
-    if (!L || !line || L.talking) return;
+    if (!L || !line || L.talking || this.leaving) return;
     const turn = L.choice;
     const resumeMic = this.speech?.running || this.listenT !== null;
     this.stopListening("replay instructor");
     const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
     void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then((played) => {
-      if (played && resumeMic && turn && this.logic === L && L.choice === turn) this.listen();
+      if (played && resumeMic && turn && this.logic === L && L.choice === turn && !this.leaving) this.listen();
     });
   }
 
@@ -376,7 +376,7 @@ export class SurfPlay {
     const L = this.logic, ui = useSurf.getState();
     if (this.listenT) { clearTimeout(this.listenT); this.listenT = null; }
     if (!L?.choice || L.choice !== this.lastChoice || !ui.choice?.options.length || !ui.micOn || !speechSupported() ||
-        this.speech?.running || this.paused || useStore.getState().hud.panel || document.visibilityState !== "visible") return;
+        this.speech?.running || this.leaving || this.paused || useStore.getState().hud.panel || document.visibilityState !== "visible") return;
     // Give an audible line time to finish. Bound the wait for a recording that stalls while loading.
     const voice = audio.getState();
     if (voice === "playing" || (voice === "loading" && waited < 6000)) {

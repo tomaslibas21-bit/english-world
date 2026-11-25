@@ -209,14 +209,9 @@ try {
         }), "Toña's talk prompt");
         if (phone) await press(page.locator(".act-btn"));
         else await page.keyboard.press("e");
-        // The intro on each new visit uses a wall-clock timer. Close it through the UI
-        // so polling with a stepped animation clock doesn't race the timer.
-        const intro = page.locator(".scene-intro .btn");
-        await wait(async () => await intro.isVisible() || await page.evaluate((sitId) => {
-          const { conv } = window.__ew.store.getState();
-          return conv.active && conv.sitId === sitId && !conv.introOpen;
-        }, sit), "x10 scene intro");
-        if (await intro.isVisible()) await press(intro);
+        const intro = page.locator(".scene-start");
+        await wait(() => intro.isVisible(), "x10 scene intro");
+        await press(intro);
       };
       const turn = (id) => wait(() => page.evaluate(([sitId, stepId]) => {
         const { conv } = window.__ew.store.getState();

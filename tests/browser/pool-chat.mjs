@@ -7,7 +7,7 @@ const sit = "x09-alberca";
 const browser = await launchPoolBrowser();
 try {
   for (const viewport of poolViewports) {
-    const { page, context, label, errors, open, shot } = await poolPage(browser, viewport);
+    const { page, context, phone, label, errors, open, shot } = await poolPage(browser, viewport);
     await open({ sit });
     await page.waitForFunction(() => !!window.__ew?.store);
     await page.evaluate((sitId) => {
@@ -31,6 +31,8 @@ try {
       void window.__ew.game.activeSession.submit(answer, [], "typed");
     }, text);
 
+    const start = page.locator(".scene-start");
+    if (phone) await start.tap(); else await start.click();
     await turn("play");
     await page.locator(".transcript .msg.npc").last().waitFor();
     await shot("chat-greeting");

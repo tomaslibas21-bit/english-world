@@ -121,7 +121,8 @@ try {
     // ---- a tap on the island: walking up to the tree starts its conversation by itself
     await page.evaluate(() => window.__ew.game.walkTo(6, -177.2, { kind: "point" }));
     await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 40000 });
-    await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
+    const start = page.locator(".scene-start");
+    if (phone) await start.tap(); else await start.click();
     await page.waitForFunction(() => window.__ew.store.getState().conv.phase === "you", null, { timeout: 90000 });
     await page.waitForTimeout(1200);
     const v = await page.evaluate(([tx, tz]) => {

@@ -41,7 +41,8 @@ function setup() {
   return { dialogue: new ModeDialogue(ui), ui };
 }
 
-function speak(...transcripts: string[]) {
+async function speak(...transcripts: string[]) {
+  await vi.advanceTimersByTimeAsync(1); // Let a previous recogniser deliver its asynchronous end.
   const recognition = mocks.recognition!;
   recognition.onstart?.();
   recognition.onspeechstart?.();
@@ -60,7 +61,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   setVariety("default");
-  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(1);
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -100,7 +101,7 @@ describe("mini-game dialogue", () => {
     void turn.then(completed);
     const chip = text("tx_a_where");
     expect(mocks.speech.mock.calls[0][0].evaluate(chip)).toBe("complete");
-    speak(chip);
+    await speak(chip);
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.finishedAnswer - 1);
     expect(completed).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -120,7 +121,7 @@ describe("mini-game dialogue", () => {
       for (const phrase of transcripts) {
         const turn = dialogue.expect(situation, npc, [key], TAXI_LINES, TAXI_ACCEPT);
         expect(mocks.speech.mock.lastCall?.[0].phrases).toEqual([...new Set([expected, ...variants])]);
-        speak(phrase);
+        await speak(phrase);
         await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
         expect(await turn).toMatchObject({ key, sentence: { en: expected } });
       }
@@ -141,13 +142,36 @@ describe("mini-game dialogue", () => {
     const evaluate = mocks.speech.mock.lastCall![0].evaluate;
     expect(evaluate("ciento")).toBe("prefix");
     expect(evaluate("$135")).toBe("none");
-    speak("$135");
+    await speak("$135");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.unclear);
     expect(ui.mic).toHaveBeenLastCalledWith({ status: "unclear", heard: "$135" });
     dialogue.update(1.3, false);
-    speak("$135", "$100");
+    await speak("$135", "$100");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(await turn).toMatchObject({ key: "tx_r2_a_fare" });
+  });
+
+  it("keeps an active mic and waits for its end when toggled off and on", async () => {
+    const { dialogue } = setup();
+    const turn = dialogue.expect(situation, npc, ["tx_a_where"], TAXI_LINES, TAXI_ACCEPT);
+    const first = mocks.recognition;
+    expect(first).toBeTruthy();
+    dialogue.setMic(true);
+    expect(mocks.recognition).toBe(first);
+
+    dialogue.setMic(false);
+    dialogue.setMic(true);
+    expect(mocks.recognition).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    const second = mocks.recognition!;
+    expect(second).toBeTruthy();
+    expect(second).not.toBe(first);
+
+    const abort = vi.spyOn(second, "abort");
+    second.onend?.();
+    dialogue.cancel();
+    expect(abort).not.toHaveBeenCalled();
+    expect(await turn).toBeNull();
   });
 
   it("uses stepped time for muted lines, accepts keys and taps, and cancels a pending turn", async () => {

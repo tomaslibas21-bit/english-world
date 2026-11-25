@@ -467,8 +467,14 @@ try {
 
     if (!phone) {
       await page.evaluate((id) => window.__ew.game.startScenario(id), cafe);
-      await page.waitForFunction(() => !!window.__ew.game.activeSession?.active, null, { polling: 25 });
-      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
+      const start = page.locator(".scene-start");
+      await wait(() => start.isVisible(), "the café scene card opens");
+      await press(start);
+      await page.evaluate(() => {
+        const { audio, store } = window.__ew;
+        audio.stop();
+        store.getState().setConv({ phase: "ended", completed: true });
+      });
       await press(page.locator(".ended-box").getByRole("button", { name: words.start }));
       await wait(() => choice("bs_a_hi").isVisible(), "the A3 payoff launches the shift directly");
       await page.keyboard.press("1");

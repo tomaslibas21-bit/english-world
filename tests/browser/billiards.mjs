@@ -215,7 +215,7 @@ try {
       await press(talk);
       await wait(() => page.locator(".convo").isVisible(), `${owner}'s conversation`);
       const intro = page.locator(".scene-intro").getByRole("button", { name: ui.start });
-      if (await intro.isVisible()) await press(intro);
+      await press(intro);
       for (const [expected, answer] of Object.entries(replies)) {
         await wait(async () => {
           const ready = await page.evaluate((name) => {

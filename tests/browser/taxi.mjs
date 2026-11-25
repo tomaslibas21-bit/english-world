@@ -438,12 +438,11 @@ try {
 
     await page.evaluate(() => window.__ew.game.startScenario("s66-taxi"));
     await waitFor(async () => { await real(10); return page.evaluate(() => window.__ew.game.activeSession?.active); }, "s66 opens");
-    await page.evaluate(async () => {
+    await press(page.locator(".scene-start"));
+    await page.evaluate(() => {
       const { game, store, audio } = window.__ew;
       const { setConv } = store.getState();
-      // Let the intro hand over to the greeting, then cancel its audio before showing the simulated end card.
-      setConv({ introOpen: false });
-      await Promise.resolve();
+      // Cancel the greeting before showing the simulated end card.
       audio.stop();
       game.activeSession.stopListening();
       game.onSessionEvent("taxi-ride", { to: "bank" });

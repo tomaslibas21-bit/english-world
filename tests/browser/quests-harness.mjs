@@ -118,7 +118,7 @@ export async function talkTo(page, id, situation) {
     const { active, hostId, sitId } = window.__ew.store.getState().conv;
     return active && hostId === id && sitId === situation;
   }, { id, situation });
-  await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
+  await page.locator(".scene-start").click();
 }
 
 export async function answer(page, step, text) {

@@ -11,6 +11,7 @@ import { StyledCharacter } from "../../src/game/characters/StyledCharacter";
 import { surfLook, withBackpack } from "../../src/game/characters";
 import { CameraRig } from "../../src/game/camera";
 import { Game } from "../../src/game/Game";
+import { audio } from "../../src/game/audio";
 import { SURF_SPOT } from "../../src/game/world/surf";
 import { arrowFor, NO_INPUT, type Do, type Phase, type SurfArrow, type SurfInput } from "../../src/game/surf/logic";
 import { SurfPlay } from "../../src/game/surf/play";
@@ -157,6 +158,36 @@ describe("surf clothes", () => {
     throughFade();
     expect(play.active).toBe(false);
     expect(game.player).toBe(normal);
+  });
+});
+
+describe("surf replay", () => {
+  it.each(["same turn", "answered", "new turn", "leaving"])("resumes listening after the voice only on the same turn (%s)", async (state) => {
+    const previous = useSurf.getState();
+    const game = { fade: (_inDark: () => void): boolean => true } as ConstructorParameters<typeof SurfPlay>[2];
+    const play = new SurfPlay(SURF_SPOT!, SURF!, game);
+    const listen = vi.spyOn(play, "listen").mockImplementation(() => {});
+    const choice = { id: "ack", options: ["a_ok"] };
+    const logic = { talking: false, choice: choice as typeof choice | null };
+    Object.assign(play, { logic, listenT: setTimeout(listen, 200) });
+    const line = { en: "¿Lista?", nat: "Ready?", say: "¿Lista?", units: [] };
+    useSurf.setState({ line: { cue: "ready", s: line } });
+    let finish!: (played: boolean) => void;
+    const replay = vi.spyOn(audio, "play").mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    try {
+      play.repeat();
+      expect(listen).not.toHaveBeenCalled();
+      if (state === "answered") logic.choice = null;
+      if (state === "new turn") logic.choice = { ...choice };
+      if (state === "leaving") play.stop();
+      finish(true);
+      await Promise.resolve();
+      expect(listen).toHaveBeenCalledTimes(state === "same turn" ? 1 : 0);
+    } finally {
+      play.stopListening();
+      replay.mockRestore();
+      useSurf.setState(previous);
+    }
   });
 });
 

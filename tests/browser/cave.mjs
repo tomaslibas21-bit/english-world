@@ -92,7 +92,8 @@ try {
     await press();
     await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 15000 });
     check(`${label}: talking to Kin starts his conversation, off the route`, await page.evaluate(() => { const c = window.__ew.store.getState().conv, g = window.__ew.game; return c.sitId === "x02-alux-kin" && !g.orderedSituations().some((q) => q.id === c.sitId) && g.orderedSituations().length >= 50; }));
-    await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
+    const start = page.locator(".scene-start");
+    if (phone) await start.tap(); else await start.click();
     const say = async (text) => {
       await page.waitForFunction(() => window.__ew.store.getState().conv.phase === "you", null, { timeout: 30000 });
       await page.evaluate((t) => window.__ew.game.activeSession.submit(t, [], "typed"), text);

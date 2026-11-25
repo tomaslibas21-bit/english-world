@@ -205,6 +205,7 @@ try {
   assert.equal(await panel.locator(".yourturn").isVisible(), false, "no reply controls before the first line");
   const gap = await panel.evaluate((el) => el.clientHeight - el.querySelector(".convo-tools").offsetHeight);
   assert(gap <= 1, `the opening panel fits its controls (${gap}px of extra height)`);
+  await press(panel.locator(".scene-start"));
   await waitFor(async () => (await header.getByRole("timer").innerText()) !== "0:00", "call clock runs");
   await shot("answered", panel);
 
