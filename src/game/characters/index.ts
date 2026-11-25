@@ -10,6 +10,7 @@ export type CharacterJoint = "body" | "head" | "armL" | "armR" | "foreL" | "fore
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
 export interface GameCharacter {
   root: THREE.Group;
+  readonly headJoint: THREE.Object3D;
   readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;

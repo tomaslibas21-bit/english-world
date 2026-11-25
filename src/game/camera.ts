@@ -72,7 +72,7 @@ export class CameraRig {
   taxiSnapRays = 0;
   private manualT = 0;
   interiorBounds = { w: 16, d: 12 };
-  talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
+  talk: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
   stage: { pos: THREE.Vector3; look: THREE.Vector3; rate: number; fov?: number; shiftY?: number } | null = null;
@@ -154,6 +154,7 @@ export class CameraRig {
     this.dist = THREE.MathUtils.clamp(this.dist * (1 + delta * 0.001), 5, 22);
   }
   get manuallyAiming() { return this.dragging || this.manualT > 0; }
+  get presentedLook(): THREE.Vector3 { return this.curLook; }
 
   /** Snap to the target. An authored yaw cancels any unfinished turn from the previous view. */
   snap(yaw?: number) {
@@ -162,6 +163,7 @@ export class CameraRig {
       this.yawVel = 0;
       this.slideYaw = this.standYaw = null;
     }
+    if (this.mode === "talk") this.joltT = JOLT_TIME;
     if (this.mode === "follow") {
       this.ahead.set(0, 0, 0);
       this.curPos.copy(this.placeFollow(0, true));
@@ -455,10 +457,10 @@ export class CameraRig {
     return THREE.MathUtils.lerp(Math.max(fov, taxiFov), fov, smoothstep(0, TAXI_BLEND_SECONDS, shot.elapsed));
   }
 
-  /** The conversation uses 50° throughout. Very wide screens keep roughly the desktop's horizontal view, while
-   *  upright phones keep the taller framing of the town and the rooms. */
+  /** A talk uses its fitted lens. In town, very wide screens keep roughly the desktop's horizontal view and
+   *  upright phones keep the taller framing. */
   fovFor(w: number, h: number, running: boolean) {
-    if (this.mode === "talk") return 50;
+    if (this.mode === "talk") return this.talk?.fov ?? 50;
     const aspect = w / Math.max(1, h);
     if (this.mode === "stage") return this.stage?.fov ?? stageFov(aspect);
     if (this.mode === "interior") {

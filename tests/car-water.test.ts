@@ -1234,7 +1234,7 @@ function occupiedTownFixture(plan = RIDES) {
   let now = 1000, time = 0;
   vi.stubGlobal("performance", { now: () => now });
   const player: GameCharacter = {
-    root: new Group(), rightHand: new Group(), height: 1.75, anim: "idle",
+    root: new Group(), headJoint: new Group(), rightHand: new Group(), height: 1.75, anim: "idle",
     joint: vi.fn(() => new Group()),
     setAnim(anim) { this.anim = anim; }, update() {}, talk() {},
   };

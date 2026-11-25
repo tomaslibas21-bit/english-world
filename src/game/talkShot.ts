@@ -1,7 +1,4 @@
-// The conversation's nearer view (Game.fitTalk tries these before its own, older framings): over the learner's
-// shoulder, so the person spoken with is seen from the front and large, and the learner's own figure (their backpack,
-// their head) is never between the camera and that person's face. Pure geometry: what is in the picture, what the
-// town or a room puts in the way, is Game.ts's to judge.
+// Shoulder views for callers with a known focus, and the body test shared with the conversation fitter.
 import * as THREE from "three";
 
 export interface Shot { pos: THREE.Vector3; look: THREE.Vector3; /** where the camera leans in to while they speak */ near?: THREE.Vector3; /** the learner's figure is in front of a face from here */ covered?: boolean }

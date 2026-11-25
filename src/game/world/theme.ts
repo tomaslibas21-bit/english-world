@@ -5,17 +5,15 @@
 
 import type { FlyKey } from "../flyover";
 
+type TalkLens = [x: number, y: number, z: number];
+
 export interface TownTheme {
   /** The first visit's flight over the town (game/flyover.ts): the points the camera glides along and what it looks at
    *  from each, ending in front of the airport. Empty: no flight. */
   flyover: FlyKey[];
-  /** The conversation's camera (Game.startSession). Off (null), it frames the player, the main speaker and the
-   *  conversation's other speakers within 7 m of them from a set distance (2.6 times how far apart they stand, at
-   *  least 6 m), which a phone's narrow picture can cut. With this, the speakers within `reach` m of the main one are
-   *  framed, and the camera backs off (to at most `max` m) until every one of them, head and chest, is in the part of
-   *  the picture the conversation panel leaves free, at any screen shape, with nothing in front of them outdoors
-   *  (Game.ts `fitTalk`). */
-  talkCamera: { reach: number; max: number } | null;
+  /** The conversation's face fitter. `reach` limits which cast members can take the camera from the host.
+   *  `max` limits the lens distance. `hints` adds room-space lens positions by room and actor. */
+  talkCamera: { reach: number; max: number; hints?: Record<string, Record<string, [TalkLens, ...TalkLens[]]>> } | null;
   /** Where people stand in the rooms instead of where interiors.ts puts them, by room id and character (`ax`/`az`:
    *  where the player stands to talk to them): a conversation's other speaker near enough to share its picture. */
   roomSpots: Record<string, Record<string, { x: number; z: number; rot: number; ax?: number; az?: number }>>;
@@ -33,10 +31,14 @@ export const THEME: TownTheme = {
     { pos: [60, 30, -85], look: [105, 2, -15] },
     { pos: [104, 13, -30], look: [140, 4, -8] },
   ],
-  // Every speaker in the picture, a phone's too (Mark at Sophie's party, Mrs. Lee at her flower stall, Greg and
-  // Vanessa at the meeting…): the speakers within 12 m of the main one framed, the camera backing off to at most 30 m,
-  // as in Puerto Colibrí
-  talkCamera: { reach: 12, max: 30 },
+  talkCamera: {
+    reach: 12,
+    max: 30,
+    hints: {
+      // Customer side, high enough for the chin ray to clear the teller strip above the 2.30 m glass.
+      bank: { aaron: [[1.9, 2.98, -3.02], [-1.9, 2.98, -3.02]] },
+    },
+  },
   // and the two who stood too far away come nearer, where Puerto Colibrí's Don Arturo and Doña Lupita stand: Harold
   // watches over the statue by the gallery's entrance, near Ben's desk (s70: his "Please don't touch the paintings!"),
   // and Rita is in the hallway by the vacant apartment's door (s82: the new neighbor's door), with Mr. Patel just

@@ -22,6 +22,7 @@ export class StyledCharacter {
   lift = 0;
   private spec: CharSpec;
   private bones: THREE.Bone[] = [];
+  get headJoint(): THREE.Object3D { return this.bones[BONE.head]; }
   private t = Math.random() * 10;
   private blinkT = 2 + Math.random() * 3;
   private glance = 0;
