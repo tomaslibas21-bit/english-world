@@ -479,12 +479,12 @@ export const STRINGS: Record<string, string> = {
 
   // Cards (src/ui/Cards.tsx)
   "Žodis „{word}“": "Word “{word}”",
-  "Atskirai neverčiama – išsaugokite visą sakinį.": "Not translated on its own – save the whole sentence.",
+  "Atskirai neverčiama – išsaugok visą sakinį.": "Not translated on its own – save the whole sentence.",
   "Kortelėse": "In cards",
   "Į korteles": "Add to cards",
   "Sakinys kortelėse": "Sentence in cards",
   "Visą sakinį": "Whole sentence",
-  "Kortelę rasite „Frazių knygelėje“.": "You'll find the card in the “Phrasebook”.",
+  "Kortelę rasi „Frazių knygelėje“.": "You'll find the card in the “Phrasebook”.",
   "šiandien": "today",
   "rytoj": "tomorrow",
   "poryt": "in 2 days",

@@ -208,14 +208,14 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost, tar
       <div className="wpop-body">
         <div className="wpop-en" lang={targetLang}>{shown}</div>
         {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-        {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugokite visą sakinį.")}</div> : <div className="wpop-lt" lang={helperLang}>{word.lt}</div>}
+        {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugok visą sakinį.")}</div> : <div className="wpop-lt" lang={helperLang}>{word.lt}</div>}
         <div className="wpop-acts">
           {!dash && (wordIn
             ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
             : <button className="btn small" onClick={() => { if (useCards.getState().add({ ...word, sourceLabel })) setSaved(true); }}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
           {!partial && <PhraseSave sentence={s} situationId={situationId} sourceLabel={sourceLabel} popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />}
         </div>
-        {saved && <div className="wpop-hint">{L("Kortelę rasite „Frazių knygelėje“.")}</div>}
+        {saved && <div className="wpop-hint">{L("Kortelę rasi „Frazių knygelėje“.")}</div>}
       </div>
     </div>,
     portalHost ?? document.body,
