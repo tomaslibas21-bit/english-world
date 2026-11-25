@@ -61,7 +61,7 @@ it("opens the live picker actor at the shop, pump and startup board on repeat vi
   const player = createCharacter(look);
   scene.add(town.group, npcLayer, player.root);
   const game = Object.assign(Object.create(Game.prototype), {
-    zone: town, zones: new Map([[town.id, town]]), scene, npcLayer, player, npcs: [], extras: [],
+    zone: town, zones: new Map([[town.id, town]]), scene, npcLayer, player, npcs: [], placedNametags: [], extras: [],
     tagLayer: { appendChild: noop }, ambient: { group: new THREE.Group() },
     sky: new THREE.Group(), hemi: new THREE.HemisphereLight(), sun: new THREE.DirectionalLight(),
     modes: { exit: noop, get: noop, owns: noop, cancelQueued: noop, launchQueued: noop },
