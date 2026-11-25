@@ -171,6 +171,24 @@ try {
       await checkReplies();
       await capture("text-03-translation");
 
+      if (width === 844 && height === 390) {
+        const last = body.locator(newest);
+        const before = await last.evaluate((bubble) => {
+          const scroller = bubble.closest(".text-thread-body");
+          const bottom = scroller.getBoundingClientRect().top + scroller.clientHeight;
+          scroller.scrollTop += Math.ceil(bubble.getBoundingClientRect().bottom - bottom);
+          return scroller.scrollTop;
+        });
+        await tap(last);
+        assert.equal(await last.locator("small").innerText(), dinner.lines.at(-1).lt);
+        await waitFor(() => last.evaluate((bubble, before) => {
+          const scroller = bubble.closest(".text-thread-body");
+          const top = scroller.getBoundingClientRect().top;
+          const bounds = bubble.getBoundingClientRect();
+          return scroller.scrollTop > before && bounds.top >= top - 1 && bounds.bottom <= top + scroller.clientHeight + 1;
+        }, before), "the expanded message scrolls fully into view in landscape");
+      }
+
       const reply = dinner.replies[0];
       await tap(replies.first());
       assert.equal(await thread.locator(".mine .text-bubble").innerText(), reply.en);

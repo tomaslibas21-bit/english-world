@@ -89,6 +89,8 @@ try {
     const score = page.locator(".gofish-result .mode-score-card");
     const shot = (name) => page.screenshot({ path: join(dir, `gofish-${name}.png`) });
     const opponents = page.locator(".gofish-person");
+    const speaking = opponents.filter({ has: page.locator('[data-turn-cue="speaker"] svg[width="16"]') });
+    const replay = page.getByRole("button", { name: "Klausyti dar kartą" });
     const countPositions = () => opponents.locator(".gofish-count").evaluateAll((counts) =>
       counts.map((count) => count.getBoundingClientRect().left));
     const checkTarget = async (id) => {
@@ -274,12 +276,8 @@ try {
       } else if (action === "reply") {
         const cue = page.locator(".gofish-cue");
         const question = await cue.getAttribute("data-line");
-        const speaker = await cue.getAttribute("data-speaker");
         assert.equal(await page.locator('.gofish-person[aria-pressed="true"], [data-turn-cue="target"]').count(), 0);
-        const speaking = opponents.filter({ has: page.locator('[data-turn-cue="speaker"] svg[width="16"]') });
-        assert.equal(await speaking.count(), 1);
-        assert.equal(await speaking.getAttribute("data-target"), speaker);
-        assert.equal(await speaking.locator("strong").innerText(), await cue.locator(".gofish-speaker").innerText());
+        assert.equal(await speaking.count(), 0, "the speaker icon clears before the reply chips are enabled");
         assert.deepEqual(await opponents.locator(".gofish-turn-icon").evaluateAll((slots) =>
           slots.map((slot) => slot.getBoundingClientRect().width)), [16, 16], "both opponents reserve icon space");
         const word = question.slice("gf_ask_".length);
@@ -289,10 +287,11 @@ try {
         if (!wrong) {
           wrong = true;
           assert.equal(await page.locator(".gofish-speaker").innerText(), "Dan");
-          const replay = page.getByRole("button", { name: "Klausyti dar kartą" });
           await press(replay);
           assert(await replay.isDisabled(), "replay click begins playback");
+          assert.equal(await speaking.getAttribute("data-target"), "dan");
           await wait(() => choice(correct).isVisible(), "replay restores the reply chips");
+          assert.equal(await speaking.count(), 0, "the speaker icon clears when replay ends");
           const wrongKey = correct === "gf_yes" ? "gf_nope" : "gf_yes";
           if (phone) await press(choice(wrongKey)); else await page.keyboard.press(wrongKey === "gf_yes" ? "y" : "n");
           await wait(() => page.locator('.gofish-cue[data-line="gf_sure"]').isVisible(), "wrong reply prompts another look");
@@ -356,6 +355,13 @@ try {
       await wait(() => page.locator(".gofish-overlay[data-deck=animals] .gofish-card:enabled").first().isVisible(),
         "the dinner end card starts the next deck");
       assert.equal(await page.locator(".gofish-tip").count(), 0, "second round starts with glosses and without guided tips");
+      const pickCard = page.getByText("Pasirink savo kortą ir paklausk", { exact: true });
+      assert(await pickCard.isVisible());
+      await press(replay);
+      assert.equal(await speaking.getAttribute("data-target"), "nora");
+      assert.equal(await pickCard.count(), 0, "the pick-card prompt stays hidden during playback");
+      await wait(() => pickCard.isVisible(), "the pick-card prompt returns after Nora finishes");
+      assert.equal(await speaking.count(), 0);
       await page.keyboard.press("Escape");
       await wait(() => page.locator(".minimap").isVisible(), "Escape exits during a turn");
     }

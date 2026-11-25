@@ -76,11 +76,10 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
   const deck = GOFISH_DECKS[round?.deck ?? 0];
   const hand = round?.hands.learner ?? [];
   const asking = step === "ask" && !!choices.length && !busy;
-  const replying = step === "reply" || (step === "listen" && (line?.key === "gf_yes" || line?.key === "gf_nope"));
-  const replySpeaker = replying ? line?.speaker : undefined;
+  const speaker = busy ? line?.speaker : undefined;
   const visibleChoices = step === "ask" ? choices.filter(({ key }) => key === `gf_ask_${picked}`) : choices;
   const listening = mic.status === "starting" || mic.status === "listening";
-  const coach = mic.status === "unclear" ? BARISTA_UI.retry : tip;
+  const coach = step === "ask" && busy ? null : mic.status === "unclear" ? BARISTA_UI.retry : tip;
   const cueName = line?.speaker === "learner" ? learner : line && NPCS[line.speaker].name;
   return <div className="gofish-overlay" lang="lt" data-deck={deck.id}>
     <header className="gofish-header">
@@ -92,7 +91,7 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
     {line && <div className="gofish-top gofish-cue gofish-paper" data-line={line.key} data-speaker={line.speaker}>
       <div className="gofish-sentence" aria-live="polite">
         {cueName && <b className="gofish-speaker" lang={line.speaker === "learner" ? undefined : "en"}>{cueName}
-          {replySpeaker === "learner" && <span className="gofish-turn-icon" data-turn-cue="speaker" aria-hidden="true">
+          {step === "reply" && speaker === "learner" && <span className="gofish-turn-icon" data-turn-cue="speaker" aria-hidden="true">
             <Icon name="speaker" size={16} />
           </span>}
         </b>}
@@ -113,14 +112,13 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
       {GOFISH_SPEAKER_NAMES.map((id) => {
         const count = round.hands[id].length, pairs = round.pairs[id].length;
         const selected = step === "ask" && target === id;
-        const speaking = replySpeaker === id;
+        const speaking = speaker === id;
         return <button type="button" key={id} data-target={id} className="gofish-person gofish-paper"
           disabled={!asking || count === 0} aria-pressed={step === "ask" ? selected : undefined}
           onClick={() => act("target", id)}>
           <strong lang="en">{NPCS[id].name}</strong>
-          <span className="gofish-turn-icon" data-turn-cue={selected ? "target" : speaking ? "speaker" : undefined} aria-hidden="true">
-            {selected && <Icon name="check" size={16} strokeWidth={2.4} />}
-            {speaking && <Icon name="speaker" size={16} />}
+          <span className="gofish-turn-icon" data-turn-cue={speaking ? "speaker" : selected ? "target" : undefined} aria-hidden="true">
+            {speaking ? <Icon name="speaker" size={16} /> : selected && <Icon name="check" size={16} strokeWidth={2.4} />}
           </span>
           <span className="gofish-count"><CardBack />{count}</span>
           <span className="gofish-count" aria-label={`${words.pairsOf(GOFISH_NAMES[id].gen)} ${pairs}`}>
@@ -160,7 +158,7 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
                 <span lang="en">{sentence.en}</span>{gloss && <small lang="lt">{sentence.nat}</small>}
               </button>
             )) : <span className="gofish-status">
-              {step === "ask" && !tip ? words.pickCard
+              {asking && !tip ? words.pickCard
                 : round.turn !== "learner" && !tip ? words.turnOf(GOFISH_NAMES[round.turn].gen) : null}
             </span>}
             <span className="gofish-pond"><CardBack />{words.pondLeft(round.pond.length)}</span>
