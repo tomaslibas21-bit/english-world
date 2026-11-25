@@ -1,5 +1,7 @@
-// Written by tools/situation-icons.mjs from lucide-static 1.77.0 (ISC license, docs/licenses/lucide.txt): the shapes of
-// the conversations' icons (src/content/situationIcons.ts), each a list of SVG elements on a 24×24 grid.
+// Written by tools/situation-icons.mjs from the registry in src/content/situationIcons.ts.
+// Lucide shapes: lucide-static 1.77.0 (ISC license, docs/licenses/lucide.txt). The seashell is the game's own glyph.
+import { SEASHELL_PATH } from "./icons";
+
 export type IconNode = [tag: string, attrs: Record<string, string | number>];
 export const SITUATION_ICON_NODES: Record<string, IconNode[]> = {
   "alarm-clock": [["circle",{"cx":"12","cy":"13","r":"8"}],["path",{"d":"M12 9v4l2 2"}],["path",{"d":"M5 3 2 6"}],["path",{"d":"m22 6-3-3"}],["path",{"d":"M6.38 18.7 4 21"}],["path",{"d":"M17.64 18.67 20 21"}]],
@@ -46,6 +48,7 @@ export const SITUATION_ICON_NODES: Record<string, IconNode[]> = {
   "route": [["circle",{"cx":"6","cy":"18","r":"2"}],["path",{"d":"M9 18h6.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H15"}],["circle",{"cx":"18","cy":"4","r":"2"}]],
   "scale": [["path",{"d":"M12 3v18"}],["path",{"d":"m19 8 3 8a5 5 0 0 1-6 0zV7"}],["path",{"d":"M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"}],["path",{"d":"m5 8 3 8a5 5 0 0 1-6 0zV7"}],["path",{"d":"M7 21h10"}]],
   "scissors": [["circle",{"cx":"6","cy":"6","r":"3"}],["path",{"d":"M8.12 8.12 12 12"}],["path",{"d":"M20 4 8.12 15.88"}],["circle",{"cx":"6","cy":"18","r":"3"}],["path",{"d":"M14.8 14.8 20 20"}]],
+  "seashell": [["path",{"d":SEASHELL_PATH}]],
   "shirt": [["path",{"d":"M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"}]],
   "shopping-basket": [["path",{"d":"m15 11-1 9"}],["path",{"d":"m19 11-4-7"}],["path",{"d":"M2 11h20"}],["path",{"d":"m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"}],["path",{"d":"M4.5 15.5h15"}],["path",{"d":"m5 11 4-7"}],["path",{"d":"m9 11 1 9"}]],
   "shopping-cart": [["path",{"d":"m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"}],["path",{"d":"M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"}],["circle",{"cx":"18","cy":"20","r":"2"}],["circle",{"cx":"8","cy":"20","r":"2"}]],

@@ -1,8 +1,7 @@
 // Every conversation's own icon: what the situation is about, at a glance, beside its title (the task card, the
-// lists, the map, the phone). One style throughout: Lucide's line icons (ISC license, docs/licenses/lucide.txt), drawn
-// with this game's stroke. The names are Lucide's; their shapes are in src/ui/situationIconNodes.gen.ts, written by
-// tools/situation-icons.mjs from this list. Both towns' conversations are here (the same file in both editions), so a
-// conversation keeps its icon wherever it appears.
+// lists, the map, the phone). The shapes are in src/ui/situationIconNodes.gen.ts, written by tools/situation-icons.mjs
+// from this list. They use Lucide line icons (ISC license, docs/licenses/lucide.txt) and the game's seashell glyph.
+// Both towns' conversations are here, so a conversation keeps its icon wherever it appears.
 export const SITUATION_ICONS: Record<string, string> = {
   // the airport
   "s64a-checkin": "tickets-plane",       // checking in: the boarding pass
@@ -81,5 +80,5 @@ export const SITUATION_ICONS: Record<string, string> = {
   "x02-photo-walk": "camera",          // Hana’s photo book
   "x03-ask-the-way": "route",          // Earl’s directions
   "x01-pool-hall": "circle-dot",         // pool at The Corner Pocket
-  "x14-cenote": "waves-ladder",
+  "x14-cenote": "seashell",
 };

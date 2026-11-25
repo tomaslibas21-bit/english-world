@@ -14,5 +14,5 @@ export const CENOTE_TOUR = SITUATIONS.find((s) => s.id === "x14-cenote" && s.bon
 
 export function pickerSituations(light = false) {
   const route = light ? LIGHT_ROUTE : ORDERED_ROUTE;
-  return CENOTE_TOUR ? [...route, CENOTE_TOUR] : [...route];
+  return route.concat(CENOTE_TOUR ?? []);
 }

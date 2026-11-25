@@ -674,6 +674,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   box-shadow: 0 0 0 1px rgba(31, 42, 51, 0.05), 0 26px 70px -24px rgba(10, 20, 30, 0.6); animation: sheetin 0.25s cubic-bezier(.2,.9,.3,1.1);
 }
 @keyframes sheetin { from { transform: translateY(10px) scale(0.99); opacity: 0; } }
+/* Keep the map's hit targets at full size throughout the entrance. */
+.sheet:where(:has(> .sheet-body > .map-wrap)) { animation-name: map-sheet-in; }
+@keyframes map-sheet-in { from { transform: translateY(10px); opacity: 0; } }
 .sheet.narrow { width: min(620px, 100%); }
 .sheet-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px 14px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #fffefb, rgba(255, 253, 248, 0)); }
 .sheet-ico { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }

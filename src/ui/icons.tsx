@@ -219,6 +219,8 @@ export function Icon({ name, size = 20, className, style, strokeWidth = 1.75, la
   );
 }
 
+export const SEASHELL_PATH = "M16 20H7l2-3C1 15 2 5 9 3c7-2 13 4 11 10-1 4-6 6-10 4-4-2-4-8 0-9 4-1 6 3 4 5-1 1-3 1-3-1";
+
 const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
   cue_chalk: "M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4m-8 4v10",
   passport_stamp: "M12 6Q8 3 3 5v14q5-2 9 1 4-3 9-1V5q-5-2-9 1v14M15 11l2-2 2 2-2 2z",
@@ -241,7 +243,7 @@ const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
   water_bottle: "M9 3h6v4l2 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l2-3zM9 7h6m-8 6h10",
   prescription: "M5 3h10l4 4v14H5zM15 3v5h4m-7 2v7m-3.5-3.5h7",
   wallet: WALLET,
-  seashell: "M16 20H7l2-3C1 15 2 5 9 3c7-2 13 4 11 10-1 4-6 6-10 4-4-2-4-8 0-9 4-1 6 3 4 5-1 1-3 1-3-1",
+  seashell: SEASHELL_PATH,
   pebble: "M4 17c-3-3 0-8 4-10 5-3 10-2 12 2 3 5-2 9-7 10-4 1-7 0-9-2z",
   leaf: "M4 21l13-14M7 18C1 9 10 3 21 3c-1 10-4 17-14 15zM10 15v-4m4 0h4",
 };
