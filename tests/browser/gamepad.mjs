@@ -1359,11 +1359,22 @@ async function detachContract(h, real) {
     await inspectHint(h, "disconnected", "world");
     await turn(100);
     await shot("disconnect");
+    // Count the camera drags the controller makes (the host's orbit path, rig.drag); the camera's own clearance and
+    // follow corrections move its yaw without one, so the yaw itself is not the measure (25 Nov 2026).
+    await page.evaluate(() => {
+      const rig = window.__ew.game.rig;
+      window.__padDrags = 0;
+      const drag = rig.drag;
+      rig.drag = function (...args) { window.__padDrags++; return drag.apply(this, args); };
+      window.__restoreDrag = () => { rig.drag = drag; };
+    });
     await sample([0.92, 0.85, 0.9, 0], { [button.A]: 1, [button.LT]: 1, [button.RT]: 1 });
     await step(22);
     const continued = await state();
-    check("unplug leaves the held real movement source working", horizontal(disconnected, continued) > 0.4 &&
-      !continued.hop.air && Math.abs(angle(disconnected.yaw, continued.yaw)) < 0.02, { disconnected, continued });
+    const drags = await page.evaluate(() => { window.__restoreDrag(); return window.__padDrags; });
+    check("unplug leaves the held real movement source working and the orphan controller still", horizontal(disconnected, continued) > 0.4 &&
+      !continued.hop.air && drags === 0 && !continued.pad.connected && continued.polls === disconnected.polls,
+    { disconnected, continued, drags });
   } finally {
     await real.up();
   }
@@ -1573,6 +1584,12 @@ async function townHudChoices(h) {
     const r = game.rides.find(`parked-${index}`);
     if (!r) return null;
     const { x, z } = game.town.photoSpots.find(({ id }) => id === "mailbox");
+    // The camera aims at the nearest subject still to be photographed (photowalk/mode.ts see): the others near this
+    // car are already in the album, so the mailbox is the one the chip names.
+    window.__ew.store.getState().updateProgress((p) => {
+      p.photoWalk = { ...(p.photoWalk ?? { status: "on" }), status: "on",
+        found: game.town.photoSpots.map(({ id }) => id).filter((id) => id !== "mailbox") };
+    });
     for (const dz of [2, -2, 2.4, -2.4]) for (const dx of [0, -1.5, 1.5, -2.5]) {
       const at = { x: r.m.x + dx, z: r.m.z + dz };
       if (!game.town.walkableAt(at.x, at.z) || game.rides.near(at.x, at.z) !== r ||
@@ -1600,10 +1617,14 @@ async function townHudChoices(h) {
   await tap("B");
   await until("B returns to the camera and car", async () =>
     (await state()).prompt === "drive" && await page.locator(mailbox).isVisible());
-  // Closing the quiz may restore its launcher to the tools. Leave the tools before using the physical X.
-  if (await focused(`${mailbox}[data-pad-focus]`)) await tap("B");
+  // Closing the quiz may restore its launcher to the tools (the drawer, on a phone). Leave the tools, however many
+  // levels they kept, before using X in the world: X belongs to the world only when no pad surface is active.
+  const toolsOpen = () => page.evaluate(() => !!window.__ew.game.pad?.input?.ui?.scope);
+  for (let i = 0; i < 3 && await toolsOpen(); i++) await tap("B");
+  check("the controller is back in the world beside the car", !await toolsOpen(), await state());
   await tap("X");
-  await when("physical X still boards the car beside the mailbox", (s) => s.ride?.id === car && s.phase === "on" && s.prompt === "out");
+  await when("physical X still boards the car beside the mailbox", (s) => s.ride?.id === car && s.phase === "on" && s.prompt === "out",
+    { timeout: 20000 });
   await tap("X");
   await when("a fresh physical X steps out", (s) => !s.ride && s.visible);
 }
@@ -1672,6 +1693,15 @@ async function narrationBack(h) {
   await backOnce("taxi");
 
   h.mark("Road offer narration before choices");
+  // The harness finishes every line at once (Continue reading); hold the lift's narration open, as a slow recording
+  // does, so the answers have not mounted when B arrives (the window is otherwise a frame or two).
+  await page.evaluate(() => {
+    const { audio } = window.__ew;
+    const proceed = audio.continueReading;
+    audio.continueReading = (...args) => (window.__holdNarration ? undefined : proceed.apply(audio, args));
+    window.__holdNarration = true;
+    window.__releaseNarration = () => { window.__holdNarration = false; audio.continueReading = proceed; };
+  });
   const road = await startRoadLift(h);
   await until("Vinnie is offering a lift with no answers mounted yet", async () => {
     const { phase, line, choices } = await road();
@@ -1679,7 +1709,11 @@ async function narrationBack(h) {
       await page.locator('.road-lift-line[data-line="rd_lift"]').isVisible() &&
       await page.locator(".road-choice").count() === 0;
   }, { frames: 1 });
-  await backOnce("road");
+  try {
+    await backOnce("road");
+  } finally {
+    await page.evaluate(() => window.__releaseNarration());
+  }
 }
 
 async function reviewAdjustments(h) {
@@ -1810,9 +1844,11 @@ async function lazyPopoverContract(h) {
   const sameConversation = async () => JSON.stringify(await conversation()) === JSON.stringify(before);
   check("the natural line belongs to the running used-car scene", before.active && before.id === sit, before);
 
-  const npc = page.locator(".convo .transcript .msg.npc").filter({ has: page.locator(".nat-star") }).first();
-  const star = npc.locator(".nat-star").first();
-  const word = npc.locator('.il .u[data-i="0"]:has(.lt:not(.dash)) > .en').first();
+  // The greeting has glossed words; the natural-line stars may sit on it or on the learner's examples below it
+  // (Interlinear shows a star only where a natural line differs): each is looked up on its own (25 Nov 2026).
+  const npc = page.locator(".convo .transcript .msg.npc").filter({ has: page.locator(".il .u .lt:not(.dash)") }).first();
+  const star = page.locator(".convo .nat-star").first();
+  const word = npc.locator(".il .u:has(.lt:not(.dash)) > .en").first();
   const popup = page.locator('body > .wpop[role="dialog"]');
   const actions = popup.locator(".wpop-acts button");
   const openWord = async () => {
@@ -1830,7 +1866,12 @@ async function lazyPopoverContract(h) {
   const visibleTip = () => tooltip.isVisible();
   if (mobile) await activate(star);
   else {
-    await npc.locator(".meta button:enabled").last().focus();
+    // (from the control just before the star in tab order, wherever the star is)
+    await star.evaluate((el) => {
+      const stops = [...document.querySelectorAll('button:not([disabled]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        .filter((x) => x.getClientRects().length && !x.closest("[inert], [hidden]"));
+      (stops[stops.indexOf(el) - 1] ?? document.body).focus();
+    });
     await page.keyboard.press("Tab");
     check("keyboard focus opens the star with its native outline", await star.evaluate((el) => {
       const css = getComputedStyle(el);
@@ -1950,11 +1991,16 @@ async function lightContract(h) {
   await tap("A");
   await startScene(h, cafe);
   await shot("light-scene");
-  // A conversation is closable even if local audio is still finishing. At a typing field B first moves focus.
-  if (await focused(".convo .typebox input")) await tap("B");
-  await tap("B");
-  await until("B closes the light conversation and restores the actual home", () => page.evaluate(() =>
-    !window.__ew.store.getState().conv.active && !!document.querySelector(".lh[data-pad-scope=home]:not([inert])")));
+  // A conversation is closable even if local audio is still finishing. At a typing field B first moves focus out of it,
+  // and the field can take focus a frame after the scene starts: each B is followed by a look at where it went, up to
+  // three presses (field, then the conversation's close), rather than one sample before choosing (25 Nov 2026).
+  const home = () => page.evaluate(() =>
+    !window.__ew.store.getState().conv.active && !!document.querySelector(".lh[data-pad-scope=home]:not([inert])"));
+  for (let i = 0; i < 3 && !await home(); i++) {
+    await tap("B");
+    await step(6);
+  }
+  await until("B closes the light conversation and restores the actual home", home);
   check("the light scene and Back never create a 3D host", await lightOnly());
   await shot("light-back");
 
@@ -1998,8 +2044,12 @@ try {
       ["town", async (h) => { await narrationBack(h); await reviewAdjustments(h); }, "town-narration-review"],
     );
   }
-  for (const [width, height, mobile] of [[390, 844, true], [1280, 800, false]]) {
+  // PAD_CASES (a regular expression over the case names) and PAD_SIZES ("390" or "1280") narrow a local run
+  const only = process.env.PAD_CASES ? new RegExp(process.env.PAD_CASES) : null;
+  const sizes = [[390, 844, true], [1280, 800, false]].filter(([w]) => !process.env.PAD_SIZES || process.env.PAD_SIZES.split(",").includes(String(w)));
+  for (const [width, height, mobile] of sizes) {
     for (const [mode, contract, checkpoint] of contracts) {
+      if (only && !only.test(checkpoint ?? mode)) continue;
       try {
         await run(width, height, mobile, mode, contract, checkpoint);
       } catch (error) {
