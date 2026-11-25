@@ -1964,6 +1964,9 @@ async function naturalPortal(h) {
   await sample();
   await step(2);
   await toggle(true);
+  // (the tooltip a tap just opened is a new surface: the controller re-arms on its first sampled frame, by design;
+  // a thumb reaches the D-pad a few frames later)
+  await step(3);
   await tap("Down");
   await until("D-pad leaves the natural line and continues from its launcher", async () => !await tip.isVisible() &&
     await h.focused(".convo [data-pad-focus]:not(.nat-star)"));
