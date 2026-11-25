@@ -1525,6 +1525,8 @@ async function townHudChoices(h) {
   h.mark("town translation and camera controls");
   const chip = ".photo-chip";
   const bubble = ".street-bubble[data-chatter]";
+  // The bubble is a save row (stones-cards): the controller reaches its translate button.
+  const bubbleText = `${bubble} .street-bubble-text`;
   const scenarios = `:is(${toolbar}) ${scenariosTool}`;
   await page.evaluate(() => {
     const { game, store } = window.__ew;
@@ -1546,14 +1548,14 @@ async function townHudChoices(h) {
   await inspectHint(h, "connected", "world", obstacles);
   await tap("Menu");
   await until("Menu focuses the existing scenarios default", () => focused(scenarios));
-  await focusWith(bubble, "Down", 22);
-  await checkFocusRing(h, bubble, "street-bubble", null);
+  await focusWith(bubbleText, "Down", 22);
+  await checkFocusRing(h, bubbleText, "street-bubble", null);
   const clickProbe = (selector) => page.locator(selector).evaluateHandle((el) => {
     const clicks = { count: 0 };
     el.addEventListener("click", () => { clicks.count++; });
     return clicks;
   });
-  const translated = await clickProbe(bubble);
+  const translated = await clickProbe(bubbleText);
   await press("A");
   await until("A reveals the existing Lithuanian translation", () => page.locator(`${bubble} .street-tr`).isVisible());
   await step(12);
