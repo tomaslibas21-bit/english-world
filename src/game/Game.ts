@@ -19,6 +19,7 @@ import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
+import type { SpeedFeel } from "./rides/speedFeel";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
@@ -374,13 +375,18 @@ export class Game implements GameApi {
   private rideCourse = 0;
   private rideBack = 0;
   private rideFov = 0;
+  private speedFeel?: SpeedFeel;
+  private speedFeelRequest?: object;
+  private speedFeelLoad?: Promise<typeof import("./rides/speedFeel") | undefined>;
+  private speedFeelRetry?: URL;
+  private speedFeelAttempt = 0;
+  private carMotionQuery?: MediaQueryList;
   private road?: RoadEntry;
   private sea?: SeaEntry;
   private seaMooring?: Ride["home"];
   private fpsAverage = 0;
   private lastRender = 0;
   private lastRenderWasRoad = false;
-  private speedShake = 0;
   private hornAt = -Infinity;
   private trafficReplyAt?: number;
   private kicked = false;
@@ -547,6 +553,7 @@ export class Game implements GameApi {
         const hud = useStore.getState();
         hud.setHud({ fade: 1 });
         setTimeout(() => {
+          if (this.rides.riding === ride && this.speedFeel?.release()) this.dust.clearRolling();
           put();
           const car = this.rides.riding;
           if (car) { this.rig.yaw = car.m.heading; this.rig.target.set(car.m.x, 0, car.m.z); this.rig.snap(); }
@@ -585,7 +592,7 @@ export class Game implements GameApi {
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
-      entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
+      entered: (id) => { this.speedFeelRequest = undefined; this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
       left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
@@ -600,6 +607,7 @@ export class Game implements GameApi {
         this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
       },
       snapTaxi: ({ m, mesh }, dimensions) => {
+        if (this.speedFeel?.release()) this.dust.clearRolling();
         this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
@@ -654,12 +662,17 @@ export class Game implements GameApi {
         const state = useStore.getState();
         if (!!state.hud.roadApproach !== roadApproach) state.setHud({ roadApproach });
       },
+      holdTownPose: () => {
+        this.speedFeel?.holdTownPose(this.screenW, this.screenH);
+        this.sky.position.copy(this.rig.cam.position);
+      },
       clearTownHud: () => {
+        this.releaseTownSpeedFeel();
         this.nearest = null;
         this.tagLayer.style.visibility = "hidden";
         useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
       },
-      left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
+      left: (id) => { this.speedFeel?.restoreTownPose(); this.tagLayer.style.visibility = ""; host.left(id); },
       deferLift: () => this.road?.deferLift(),
       returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
     });
@@ -1288,8 +1301,8 @@ export class Game implements GameApi {
     this.keys.clear();
     this.joy.x = this.joy.y = 0;
     this.brake = false;
+    this.speedFeel?.restoreTownPose();
     this.rideFov = 0;
-    this.speedShake = 0;
     this.rig.dist /= 1 + this.rideBack;
     this.rideBack = 0;
     if (onFoot && this.rides.riding === car) this.endRide(true);
@@ -1300,6 +1313,7 @@ export class Game implements GameApi {
       if (!onFoot) this.boardRide(car);
     }
     if (!onFoot && this.rides.riding === car) {
+      this.loadTownSpeedFeel(car);
       this.rides.update(0, this.t, null);
       this.rideCourse = this.rig.yaw = position.rot;
       this.rig.target.set(position.x, 0, position.z);
@@ -1512,8 +1526,54 @@ export class Game implements GameApi {
         this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5);
       }
       this.savePlace();
-    } else this.road?.prefetch(r);
+    } else {
+      if (!this.modes.engaged) this.loadTownSpeedFeel(r);
+      this.road?.prefetch(r);
+    }
     return true;
+  }
+
+  private loadTownSpeedFeel(ride: Ride) {
+    if (this.speedFeel || this.disposed) return;
+    this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const request = this.speedFeelRequest = {}, zone = this.zone, session = this.session;
+    if (!this.speedFeelLoad) {
+      const retry = this.speedFeelRetry;
+      if (retry) retry.searchParams.set("speed-feel-retry", String(++this.speedFeelAttempt));
+      const load: Promise<typeof import("./rides/speedFeel")> = retry ? import(/* @vite-ignore */ retry.href) : import("./rides/speedFeel");
+      this.speedFeelLoad = load.catch((error: unknown) => {
+        this.speedFeelLoad = undefined;
+        if (this.disposed || !(error instanceof TypeError)) return;
+        // A failed module fetch can be cached for the life of the page.
+        const url = /https?:\/\/[^\s]+/.exec(error.message)?.[0];
+        if (url) {
+          const failed = new URL(url);
+          if (failed.origin === location.origin) this.speedFeelRetry = failed;
+        } else if (import.meta.env.DEV) {
+          const source = "./rides/speedFeel.ts";
+          this.speedFeelRetry = new URL(source, import.meta.url);
+        }
+        return undefined;
+      });
+    }
+    void this.speedFeelLoad.then((module) => {
+      if (!module || this.speedFeelRequest !== request || this.disposed || this.speedFeel || this.zone !== zone || this.session !== session
+        || this.session?.active || this.modes.engaged || this.rides.riding !== ride || this.rides.phase === "out") return;
+      const { screen, settings } = useStore.getState();
+      if (screen === "play" && settings.play === "town") {
+        this.speedFeel = new module.SpeedFeel(this.container, this.rig.cam, this.carMotionQuery);
+        this.speedFeelRetry = undefined;
+      }
+    }).catch(() => {});
+  }
+
+  private releaseTownSpeedFeel() {
+    this.speedFeelRequest = undefined;
+    this.dust.clearRolling();
+    if (!this.speedFeel?.release()) {
+      audio.motor(null);
+      audio.rush("wind", 0);
+    }
   }
 
   /** On foot again (Rides.onLeft): where the player stands now, facing away from what they got out of. */
@@ -1554,10 +1614,10 @@ export class Game implements GameApi {
     this.helmSteer.reset();
     this.ambient.riding = false;
     this.nearest = null;
-    audio.motor(null);
-    audio.rush("squeal", 0); audio.rush("wind", 0);
+    this.releaseTownSpeedFeel();
+    audio.rush("squeal", 0);
     // (the camera comes back to where the player had it)
-    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0; this.speedShake = 0;
+    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0;
     this.rig.portraitHelm = false;
     useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
   }
@@ -2857,6 +2917,7 @@ export class Game implements GameApi {
   private syncSize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (w <= 0 || h <= 0 || (w === this.screenW && h === this.screenH)) return;
+    if (!this.modes.owns("road")) this.speedFeel?.clearPose();
     this.renderer.setSize(w, h);
     this.rig.resize(w, h, w > h && h <= 520);
     this.screenW = w;
@@ -2941,7 +3002,15 @@ export class Game implements GameApi {
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
-    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
+    const motor = riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null;
+    const townDriver = motor === "car" && this.zone.id === "town" && !this.modes.engaged;
+    const townFeedback = townDriver && !blocked && st.screen === "play" && st.settings.play === "town";
+    if (townFeedback) this.speedFeel?.sound();
+    else {
+      const released = this.speedFeel?.release();
+      if (released) this.dust.clearRolling();
+      if (!townDriver && (!released || motor)) audio.motor(motor, this.rides.revs);
+    }
     this.updateNpcs(dt, talking, mode ?? undefined);
     if (!this.zone.interior) {
       const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
@@ -2989,10 +3058,6 @@ export class Game implements GameApi {
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
-    if (this.speedShake > 0 && riding?.kind === "car") {
-      this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
-      this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;
-    }
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
       const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
@@ -3003,11 +3068,14 @@ export class Game implements GameApi {
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
-      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
-      const d = fov - this.rig.cam.fov;
-      if (d !== 0) {
-        this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
-        this.rig.cam.updateProjectionMatrix();
+      const { cam } = this.rig, follow = this.rig.mode === "follow", car = riding?.kind === "car";
+      const fov = this.rig.fovFor(w, h, follow && !car && this.vel.lengthSq() > 30) + (follow && !car ? this.rideFov : 0);
+      const base = this.speedFeel?.baseFov ?? cam.fov, d = fov - base;
+      const lens = Math.abs(d) < 0.05 ? fov : base + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
+      const presented = townFeedback ? this.speedFeel?.presentTown(lens, dt, this.t, follow) ?? lens : lens;
+      if (presented !== cam.fov) {
+        cam.fov = presented;
+        cam.updateProjectionMatrix();
       }
     }
     // people and cars far down the street, a few pixels tall in the haze, are left out of the walking view (it is wider
@@ -3088,6 +3156,7 @@ export class Game implements GameApi {
         this.scene.add(probes);
       }
       this.renderer.render(this.scene, this.rig.cam);
+      if (townFeedback) this.speedFeel?.rememberTownPose(w, h);
       this.quests.capture(this.renderer.domElement);
       this.presentWorld("town");
       if (probes) {
@@ -3227,12 +3296,13 @@ export class Game implements GameApi {
   }
 
   /** At a car's wheel or a boat's helm (the town's, or a mini-game's through the kit's `drive`), the player sits in it. */
-  private updateRide(dt: number, controls: Controls | null) {
+  private updateRide(dt: number, controls: Controls | null, townDriver = false) {
     const r = this.rides.riding!, m = r.m;
     this.rides.update(dt, this.t, controls);
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
+    if (car && on && townDriver) this.speedFeel?.stepTown(dt, pace);
     const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
     this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
@@ -3245,53 +3315,56 @@ export class Game implements GameApi {
       const d = Math.atan2(Math.sin(want - this.rideCourse), Math.cos(want - this.rideCourse));
       this.rideCourse += d * Math.min(1, dt * (portraitHelm ? 4 : Math.abs(d) > 2 ? 30 : 7));
     }
-    // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
-    {
+    // At the helm the camera drops back a little and the lens widens, more for the kick.
+    if (!car) {
       const k = on ? Math.max(0, Math.min(1.2, (pace - m.spec.town * 0.8) / (m.spec.max - m.spec.town * 0.8))) : 0, kick = on && m.boost > 0 ? 1 : 0;
-      const back = k * (car ? 0.13 : 0.1) + kick * 0.05;
+      const back = k * 0.1 + kick * 0.05;
       // (the wheel's own zoom stays the player's: only what was added is taken off again)
       const base = this.rig.dist / (1 + this.rideBack);
       this.rideBack += (back - this.rideBack) * Math.min(1, dt * 2.2);
       this.rig.dist = base * (1 + this.rideBack);
-      this.rideFov += (k * (car ? 9 : 6) + kick * 5 - this.rideFov) * Math.min(1, dt * 3);
+      this.rideFov += (k * 6 + kick * 5 - this.rideFov) * Math.min(1, dt * 3);
     }
     // the sounds of it: the tires in a slide (or the hull's rush), the air at speed, a rush at the kick
     {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
       audio.rush("squeal", car && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
-      audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
+      if (!car || this.modes.engaged) audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
       if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || m.boost <= 0) this.kicked = false;
     }
     {
       const fast = on && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
       const hud = useStore.getState();
-      const speedLines = car && !this.modes.active && pace > m.spec.max * 0.7;
-      this.speedShake = car ? Math.max(0, pace / m.spec.max - 0.85) * 0.23 : 0;
-      if (hud.hud.fast !== fast || !!hud.hud.speedLines !== speedLines) hud.setHud({ fast, speedLines });
+      if (hud.hud.fast !== fast) hud.setHud({ fast });
     }
     this.player.moveSpeed = 0;
     this.player.update(dt);
     this.bumpT -= dt;
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
-    // a boat's wake: the water's rings round its hull, wider and brighter the faster it goes; a car's dust at its back
-    // wheels when it goes fast or over open ground, a short skid when it is braked hard
+    // A boat's wake at the hull, and dust behind a car's wheels on loose ground or in a skid.
     if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
-    if (r.kind === "car" && on) {
+    const reduced = car && !!this.carMotionQuery?.matches;
+    if (car && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < -0.35) && v > 0;
       if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
       this.braked = braking;
       this.dustT -= dt;
-      // (smoke off the back wheels in a slide, thick and fast; dust at speed, over open ground, braked hard)
-      const sliding = m.sliding && pace > 3;
-      if (this.dustT <= 0 && (sliding || useStore.getState().settings.quality === "high") && (sliding || pace > 9 || (pace > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && pace > 5))) {
+      const sliding = m.sliding && pace > 3, rolling = !sliding && !(braking && pace > 5);
+      const high = useStore.getState().settings.quality === "high";
+      const rollingAllowed = !reduced && (townDriver || this.modes.engaged);
+      if (this.dustT <= 0 && (sliding || high && (!rolling || rollingAllowed && pace > 3 && !this.rides.asphalt.has(m.x, m.z)))) {
         this.dustT = sliding ? 0.05 : 0.11;
         const s = Math.sign(v) || 1, cx = pace > 0.5 ? -m.vx / pace : -m.fx * s, cz = pace > 0.5 ? -m.vz / pace : -m.fz * s;
-        for (const side of sliding && useStore.getState().settings.quality !== "high" ? [Math.random() < 0.5 ? -0.8 : 0.8] : [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + pace / 15);
+        const fx = m.fx, fz = m.fz;
+        for (let wheel = 0; wheel < (high ? 2 : 1); wheel++) {
+          const side = wheel === 0 && (high || Math.random() < 0.5) ? -0.8 : 0.8;
+          this.dust.puff(m.x - fx * 1.4 * s + fz * side, m.z - fz * 1.4 * s - fx * side, cx, cz, (sliding ? 1.25 : 0.8) + pace / 15, rolling);
+        }
       }
     }
-    this.dust.update(dt);
+    this.dust.update(dt, reduced);
     // (the pigeons on the square take off before a car as before anyone running)
     if (r.kind === "car" && !this.zone.interior) this.pigeons.update(dt, this.player.root.position, Math.abs(v));
     coach.stroll(dt, true);
@@ -3443,7 +3516,7 @@ export class Game implements GameApi {
       const r = this.rides.riding, x0 = r.m.x, z0 = r.m.z, heading0 = r.m.heading;
       const controls = this.townRideControls(dt, blocked);
       const goal = blocked ? null : this.rideGoal;
-      this.updateRide(dt, controls);
+      this.updateRide(dt, controls, !blocked && this.zone.id === "town");
       if (goal) this.followRideGoal(goal, r, dt, x0, z0, heading0);
       return;
     }
@@ -4095,6 +4168,7 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.streetLife?.dispose();
     this.disposed = true;
+    this.speedFeel?.dispose();
     this.modes.dispose();
     this.player?.root.removeFromParent();
     this.normalPlayer?.dispose?.();

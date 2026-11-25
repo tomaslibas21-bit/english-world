@@ -1158,8 +1158,10 @@ export class AudioSystem {
   private noise: AudioBuffer | null = null;
   private surfTarget = 0;
   private windTarget = 0;
+  private windGain = 0;
 
   seaSoundTargets() { return { surf: this.surfTarget, wind: this.windTarget }; }
+  get windGainTarget() { return this.ctx?.state === "running" && this.volume > 0 ? this.windGain : 0; }
   private amb: { nextGull: number; nextBird: number; nextClink: number; nextBell: number; nextHorn: number; nextTune: number } | null = null;
   private ambientSounds = new Set<() => void>();
 
@@ -1605,10 +1607,13 @@ export class AudioSystem {
   // bus (so it is silent in a conversation, under a voice, with a panel open), made when one gets in, its pitch and
   // level following the speed, gone a moment after one gets out. Lower under the radio's music.
   private motorSet: { kind: "car" | "boat"; ctx: AudioContext; o1: OscillatorNode; o2: OscillatorNode; lfo: OscillatorNode; lp: BiquadFilterNode; gain: GainNode } | null = null;
+  private carPitch = 0;
+  get carPitchTarget() { return this.ctx?.state === "running" && this.volume > 0 ? this.carPitch : 0; }
   /** `kind`: what is driven now (null: nothing, the motor stops); `revs` 0–1: how fast it goes. */
   motor(kind: "car" | "boat" | null, revs = 0) {
+    this.carPitch = 0;
     let m = this.motorSet;
-    if (m && (m.kind !== kind || m.ctx !== this.ctx || m.ctx.state === "closed")) {
+    if (m && (m.kind !== kind || m.ctx !== this.ctx || m.ctx.state === "closed" || kind === "car" && this.volume <= 0)) {
       const old = m, at = old.ctx.currentTime;
       this.motorSet = m = null;
       try {
@@ -1636,6 +1641,7 @@ export class AudioSystem {
     const at = ctx.currentTime, k = Math.max(0, Math.min(1, revs)), car = kind === "car";
     const f = car ? 52 + 62 * k : 34 + 26 * k;
     m.o1.frequency.setTargetAtTime(f, at, 0.08);
+    if (car) this.carPitch = f;
     m.o2.frequency.setTargetAtTime(f * 2.01, at, 0.08);
     m.lfo.frequency.setTargetAtTime(car ? f / 2 : 7 + 13 * k, at, 0.1);
     m.lp.frequency.setTargetAtTime(car ? 260 + 620 * k : 220 + 420 * k, at, 0.1);
@@ -1690,7 +1696,7 @@ export class AudioSystem {
    *  screech), the air at speed ("wind": low and wide). `level` 0–1 (0: it fades out and stops), `tone` 0–1: higher. */
   private held = new Map<string, { ctx: AudioContext; src: AudioBufferSourceNode; f: BiquadFilterNode; gain: GainNode }>();
   rush(name: "squeal" | "wind", level: number, tone = 0.5) {
-    if (name === "wind") this.windTarget = level;
+    if (name === "wind") { this.windTarget = level; this.windGain = 0; }
     let h = this.held.get(name);
     const ctx = this.ctx;
     if (h && (h.ctx !== ctx || h.ctx.state === "closed" || level <= 0.01 || this.volume <= 0)) {
@@ -1716,7 +1722,9 @@ export class AudioSystem {
     const at = ctx.currentTime, k = Math.max(0, Math.min(1, level)), tn = Math.max(0, Math.min(1, tone));
     h.f.frequency.setTargetAtTime(squeal ? 1250 + 900 * tn : 260 + 900 * tn, at, 0.07);
     h.src.playbackRate.setTargetAtTime(squeal ? 0.9 + 0.3 * tn : 1, at, 0.1);
-    h.gain.gain.setTargetAtTime(this.volume * (squeal ? 0.05 : 0.035) * k * (0.55 + 0.45 * this.underMusic), at, 0.06);
+    const gain = this.volume * (squeal ? 0.05 : 0.035) * k * (0.55 + 0.45 * this.underMusic);
+    h.gain.gain.setTargetAtTime(gain, at, 0.06);
+    if (!squeal) this.windGain = gain;
   }
 
   /** A short rush of air: the kick out of a slide. */

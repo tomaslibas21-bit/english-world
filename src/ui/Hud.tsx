@@ -130,7 +130,6 @@ export function Hud() {
     : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving)))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
-      {hud.speedLines && !hud.panel && <div className="drive-wind" aria-hidden />}
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}

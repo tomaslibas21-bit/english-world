@@ -151,6 +151,7 @@ export class RoadMode {
     this.pool = Promise.resolve(prepared.pool);
     resetRoadUi();
     this.host.entered("road");
+    this.host.holdTownPose();
     this.host.clearTownHud();
     const setup = prepared.take();
     if (!setup) { this.brief(); return; }

@@ -18,6 +18,7 @@ export interface RoadHost extends ModeHost {
   roadSign(): Object3D | undefined;
   viewport(): { width: number; height: number };
   approach(approaching: boolean): void;
+  holdTownPose(): void;
   clearTownHud(): void;
   returnCar(car: Ride, onFoot: boolean): void;
   deferLift(): void;
