@@ -3,6 +3,8 @@
   outline-offset: 2px !important;
 }
 
+[data-pad-adjusting]:focus { box-shadow: 0 0 0 5px #087c7833; }
+
 .barista-chip[data-repair][data-pad-focus]:focus::after {
   content: "";
   position: absolute;

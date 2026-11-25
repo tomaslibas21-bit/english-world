@@ -7,7 +7,7 @@ import "./street.css";
 
 const HUD_BLOCKERS = ".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, .minimap, " +
   ".toolbar, .toolbar.menu-open .toolbar-drawer, .toolbar.menu-open .toolbar-tools, .toolbar .radio-tool, " +
-  ".joy, .jump-btn, .act-btn, .prompt";
+  ".joy, .jump-btn, .act-btn, .prompt, [data-pad-hint][data-pad-positioned]";
 
 export function StreetBubbles() {
   const [key, id, line, translated, translate] = useStreet(useShallow(({ bubble }) =>
@@ -53,7 +53,7 @@ export function StreetBubbles() {
 
   return <>
     {marker && <span aria-hidden="true" className="street-marker" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />}
-    {line && <button ref={bubbleRef} type="button" key={key} className="street-bubble" data-chatter={id}
+    {line && <button ref={bubbleRef} type="button" key={key} className="street-bubble" data-pad-aux data-chatter={id}
       aria-expanded={translated} onClick={translate}>
       <GlossLine sentence={line.sentence} gloss={false} compact />
       {translated && <small className="street-tr" lang="lt">{line.sentence.nat}</small>}

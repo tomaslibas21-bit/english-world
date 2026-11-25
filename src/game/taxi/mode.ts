@@ -78,6 +78,10 @@ class TaxiMode implements GameMode {
 
   get active() { return this.run !== null; }
   get padDriving() { return this.run?.phase === "drive" || this.run?.phase === "passed"; }
+  get padMenu() {
+    const phase = this.run?.phase;
+    return (phase === "opening" || phase === "wrong" || phase === "closing") && !useTaxi.getState().choices.length;
+  }
   get camera() { return this.run?.phase === "result" && this.host.rig.stage ? "stage" : "follow"; }
   get route() { return this.run?.route; }
 

@@ -112,7 +112,7 @@ export class GamepadInput implements PadScalars {
   private readonly ui: GamepadView;
 
   constructor(private debug: PadDebug, private host?: PadHost) {
-    this.ui = new GamepadView(debug, () => this.cancel());
+    this.ui = new GamepadView(debug, (clearFocus) => this.cancel(clearFocus));
   }
 
   disconnect() {
@@ -174,7 +174,7 @@ export class GamepadInput implements PadScalars {
     }
     const scope = this.readScope();
     if (this.scope !== scope) {
-      this.cancel(false);
+      this.cancel(this.scope === "ui");
       this.scope = scope;
       if (scope === "ui") this.ui.updateFocus();
     }

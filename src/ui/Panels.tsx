@@ -477,12 +477,12 @@ function Settings({ close }: { close: () => void }) {
           <div className="seg">{[1, 1.15, 1.3].map((z, i) => <button key={z} className={s.textSize === z ? "on" : ""} onClick={() => set({ textSize: z })}>{["A", "A+", "A++"][i]}</button>)}</div>
         </div>
         <div className="set-row">
-          <div className="txt"><b>Garsumas</b></div>
-          <input type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
+          <div className="txt"><b id="settings-volume">Garsumas</b></div>
+          <input data-pad-adjust aria-labelledby="settings-volume" type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
         </div>
         <div className="set-row">
           <div className="txt"><b>Garsai</b><span>Žingsniai, jūra, miestelio garsai – tyliau už balsus.</span></div>
-          <input type="range" min={0} max={1} step={0.05} value={s.sounds} aria-label="Garsai" onChange={(e) => { set({ sounds: +e.target.value }); audio.sounds = +e.target.value; if (+e.target.value > 0) audio.sfx("pop"); }} style={{ width: 160 }} />
+          <input data-pad-adjust type="range" min={0} max={1} step={0.05} value={s.sounds} aria-label="Garsai" onChange={(e) => { set({ sounds: +e.target.value }); audio.sounds = +e.target.value; if (+e.target.value > 0) audio.sfx("pop"); }} style={{ width: 160 }} />
         </div>
         {s.play !== "light" && STYLES_ENABLED && <div className="set-row">
           <div className="txt"><b>Pasaulio stilius</b><span>Bandomieji 3D miesto stiliai. Pakeitus puslapis persikrauna.</span></div>

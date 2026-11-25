@@ -155,7 +155,7 @@ function PracticeItems({ items, recovered, label }: { items: GateWord[]; recover
   return <section className="road-missed road-practice">
     <article>
       {items.length === 1 ? <><strong lang="en">{item.en}</strong> · {item.lt}</> :
-        <select aria-label={label} value={index} onChange={(e) => setIndex(Number(e.target.value))}>
+        <select data-pad-adjust aria-label={label} value={index} onChange={(e) => setIndex(Number(e.target.value))}>
           {items.map(({ en, lt, situation }, i) => <option key={`${situation}|${en}`} value={i}>{en} · {lt}</option>)}
         </select>}
       {recovered.some((other) => sameWord(item, other)) && <Comeback />}
@@ -189,7 +189,7 @@ export function WordGateResult({ result, words, actions, children }: {
           <h3 id="road-missed-title">{words.missed}</h3>
           <article>
             {result.missed.length === 1 ? <><strong lang="en">{word.en}</strong> · {word.lt}</> :
-              <select aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
+              <select data-pad-adjust aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
                 {result.missed.map((item, i) => <option key={`${item.situation}|${item.en}`} value={i}>{item.en} · {item.lt}</option>)}
               </select>}
             {result.recovered.some((item) => sameWord(item, word)) && <Comeback />}

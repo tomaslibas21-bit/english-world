@@ -25,7 +25,7 @@ export function PhotoChip() {
   const near = useTownQuests((s) => s.near);
   const { found } = useWalk();
   if (!camera) return null;
-  return <button type="button" className="photo-chip" data-near={near ?? undefined} aria-label={near ? words.shoot : words.open}
+  return <button type="button" className="photo-chip" data-pad-aux data-near={near ?? undefined} aria-label={near ? words.shoot : words.open}
     title={near ? words.shoot : words.open} onClick={() => game?.modeStart("photowalk", "camera")}>
     <span><Icon name="camera" size={18} />{found.length}/{PHOTO_THINGS.length}</span>
     {near && <small>{words.shoot}</small>}

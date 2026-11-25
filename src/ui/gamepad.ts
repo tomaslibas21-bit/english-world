@@ -4,7 +4,8 @@ import type { PopoverElement } from "./Cards";
 import "./gamepad.css";
 
 const SCOPE = "[data-pad-scope]";
-const CONTROL = "button, a[href], summary";
+const ADJUSTABLE = "select[data-pad-adjust]:not([multiple]), input[type=range][data-pad-adjust]";
+const CONTROL = "button, a[href], summary, " + ADJUSTABLE;
 const BLOCKED = "[inert], [hidden], [aria-hidden=true]";
 const UNAVAILABLE = ":disabled, [aria-disabled=true], [data-pad-skip], .bl-power-track, .taxi-action";
 const BACK = "[data-pad-back]";
@@ -60,7 +61,7 @@ const surfaces: Record<string, Surface> = {
 };
 const EXTRA_SCOPES = ".radio-set, .phone-ring, .street-card";
 const ROOTS = SCOPE + ", " + EXTRA_SCOPES;
-const HUD_CONTROLS = ".toolbar, .toolbar-drawer:not([inert]), .ride-menu, .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .view-chip, .lh-tools";
+const HUD_CONTROLS = ".toolbar, .toolbar-drawer:not([inert]), .ride-menu, .joy, .jump-btn, .act-btn, .drive-horn, .prompt, .view-chip, .lh-tools, .photo-chip, .street-bubble";
 const TASK_NOTES = ".objective-card, .zone-banner, .coach, .town-toasts .toast, .directions-card, .text-arrival";
 const NOTICE_HOSTS = ".hud, .convo, .overlay, .lh";
 const NOTICE_ANCHORS = `${ROOTS}, ${NOTES}, ${HUD_CONTROLS}, ${TASK_NOTES}, ${CONTROL}, .sheet, .phone`;
@@ -69,6 +70,7 @@ const WORLD_MAP = [["L", "move"], ["R", "look"], ["A", "jump"], ["X", "interact"
 const MENU_MAP = [["✚/L", "move"], ["A", "choose"], ["B", "back"]] as const;
 
 type Direction = "up" | "down" | "left" | "right";
+type Adjustable = HTMLSelectElement | HTMLInputElement;
 type Launcher = { target: HTMLElement; from: HTMLElement; at: number };
 type OverlayReturn = { root: HTMLElement; anchor: HTMLElement; direction?: Direction };
 
@@ -116,6 +118,31 @@ function onScreen(el: HTMLElement, viewport: DOMRect, whole = false) {
 export function textEntry(el: Element | null): boolean {
   const field = el as HTMLElement | null;
   return !!field && (field.isContentEditable || field.tagName === "INPUT" || field.tagName === "TEXTAREA" || field.tagName === "SELECT");
+}
+
+function enabledOption(option: HTMLOptionElement) {
+  return !option.matches(":disabled, [aria-disabled=true], [hidden]") && !option.closest("optgroup[hidden], optgroup[aria-disabled=true]");
+}
+
+function adjust(target: Adjustable, step: number | string) {
+  const before = target.value;
+  const relative = typeof step === "number";
+  if (target instanceof HTMLSelectElement) {
+    if (relative) {
+      for (let i = target.selectedIndex + step; i >= 0 && i < target.length; i += step) {
+        if (!enabledOption(target.options[i])) continue;
+        target.selectedIndex = i;
+        break;
+      }
+    } else {
+      const option = Array.from(target.options).find((item) => item.value === step && enabledOption(item));
+      if (option) target.selectedIndex = option.index;
+    }
+  } else if (!relative) target.valueAsNumber = Number(step);
+  else if (step > 0) target.stepUp();
+  else target.stepDown();
+  // Native index/step setters bypass React's value tracker. Send the event each existing onChange expects.
+  if (target.value !== before) target.dispatchEvent(new Event(target instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
 }
 
 function gridNeighbor(current: HTMLElement, controls: HTMLElement[], direction: Direction, grid: Element) {
@@ -220,6 +247,7 @@ export class GamepadView {
   private desktop: HTMLElement | null = null;
   private auxiliary?: { root: HTMLElement; under: HTMLElement | null; phase?: string };
   private focused?: HTMLElement;
+  private adjustment?: string;
   private composing = false;
   private openingDrawer = false;
   private launcher?: Launcher;
@@ -239,11 +267,15 @@ export class GamepadView {
   private measured = new Set<Element>();
   private menuMap?: boolean;
 
-  constructor(private debug: PadDebug, private resetInput: () => void) {}
+  constructor(private debug: PadDebug, private resetInput: (clearFocus?: boolean) => void) {}
 
   get scope() { return this.active; }
   updateFocus() { this.syncFocus(); }
-  clearFocus() { this.clearRing(); }
+  clearFocus() {
+    const target = this.focused;
+    this.clearRing();
+    if (target?.matches(ADJUSTABLE) && target === document.activeElement) target.blur();
+  }
 
   connect() {
     const app = document.getElementById?.("root");
@@ -478,8 +510,22 @@ export class GamepadView {
   }
 
   private clearRing() {
+    this.finishAdjustment();
     this.focused?.removeAttribute("data-pad-focus");
     this.focused = undefined;
+  }
+
+  private finishAdjustment() {
+    this.focused?.removeAttribute("data-pad-adjusting");
+    this.adjustment = undefined;
+  }
+
+  private adjustableFocus() {
+    const target = this.focused, root = this.active;
+    if (target === document.activeElement && root && control(target) &&
+        target.matches(ADJUSTABLE) && root.contains(target) && visible(target)) return target as Adjustable;
+    if (this.adjustment !== undefined) this.clearRing();
+    return null;
   }
 
   private otherInput = (event: Event) => {
@@ -516,7 +562,10 @@ export class GamepadView {
     if (root && owner && control(target) && visible(target)) {
       this.lastControl.set(root, target);
       this.debug.focusTarget = focusKey(owner, target);
-    } else this.debug.focusTarget = null;
+    } else {
+      if (target === this.focused) this.clearRing();
+      this.debug.focusTarget = null;
+    }
   };
 
   private hudTools(root: HTMLElement) {
@@ -575,7 +624,15 @@ export class GamepadView {
   private stopFocusOpen = (event: Event) => event.stopPropagation();
 
   navigate(direction: Direction) {
-    if (!this.active || this.composing || textEntry(document.activeElement)) return;
+    if (!this.active || this.composing) return;
+    const widget = this.adjustableFocus();
+    if (widget && this.adjustment !== undefined) {
+      const previous = widget instanceof HTMLSelectElement ? "up" : "down";
+      adjust(widget, direction === previous || direction === "left" ? -1 : 1);
+      this.sync();
+      return;
+    }
+    if (!widget && textEntry(document.activeElement)) return;
     if (this.kind(this.active) === "tooltip") {
       this.closePopover(this.active, direction);
       return;
@@ -609,7 +666,18 @@ export class GamepadView {
 
   confirm() {
     const root = this.active;
-    if (!root || this.composing || textEntry(document.activeElement)) return;
+    if (!root || this.composing) return;
+    const widget = this.adjustableFocus();
+    if (widget) {
+      if (this.adjustment === undefined) {
+        this.adjustment = widget.value;
+        widget.setAttribute("data-pad-adjusting", "");
+      } else this.finishAdjustment();
+      this.debug.lastAction = "confirm";
+      this.resetInput(false);
+      return;
+    }
+    if (textEntry(document.activeElement)) return;
     const current = document.activeElement;
     const kind = this.kind(root);
     const target = this.controlRoot(root, current) && control(current) && (kind !== "popover" || current.matches("button")) ? current :
@@ -628,13 +696,23 @@ export class GamepadView {
     const root = this.active;
     if (!root || this.composing) return;
     if (this.closePopover(root)) return;
+    const widget = this.adjustableFocus();
+    if (widget && this.adjustment !== undefined) {
+      const previous = this.adjustment;
+      this.finishAdjustment();
+      this.debug.lastAction = "back";
+      this.resetInput(false);
+      adjust(widget, previous);
+      this.sync();
+      return;
+    }
     const kind = this.kind(root);
     if (kind === "auxiliary") {
       this.debug.lastAction = "back";
       this.leaveAuxiliary(true);
       return;
     }
-    if (kind !== "info" && textEntry(document.activeElement)) {
+    if (kind !== "info" && !widget && textEntry(document.activeElement)) {
       // Keep the draft and the existing typing state when recognition gave the field focus.
       const field = document.activeElement;
       if (!root.contains(field) || !field?.matches(".typebox input")) return;

@@ -1068,7 +1068,7 @@ async function checkFocusRing(h, selector, key, scope = "convo") {
     const fill = luminance(background);
     const contrast = (Math.max(ring, fill) + 0.05) / (Math.min(ring, fill) + 0.05);
     return {
-      marked: f.hasAttribute("data-pad-focus"), scope: f.closest("[data-pad-scope]")?.dataset.padScope,
+      marked: f.hasAttribute("data-pad-focus"), scope: f.closest("[data-pad-scope]")?.dataset.padScope ?? null,
       key: window.__pad.focusTarget, width: parseFloat(css.outlineWidth), style: css.outlineStyle, contrast,
       color: css.outlineColor, offset: css.outlineOffset,
       onTop: f.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
@@ -1445,6 +1445,339 @@ async function townContract(h) {
   await detachContract(h, real);
 }
 
+async function settingsAdjustments(h) {
+  const { page, step, attach, detach, when, check, until, tap, press, sample, focusWith, focused } = h;
+  h.mark("native settings ranges");
+  if (h.mobile) await page.locator(".toolbar .ride-menu").evaluate((el) => el.click());
+  await page.locator('.toolbar [data-pad-tool="settings"]').evaluate((el) => el.click());
+  const panel = '[data-pad-scope="panel"][data-pad-phase="settings"]';
+  const volume = `${panel} input[aria-labelledby="settings-volume"]`;
+  const sounds = `${panel} input[aria-label="Garsai"]`;
+  await until("both native ranges are in Settings", () => page.locator(`${panel} input[type=range]`).count().then((n) => n === 2));
+  const levels = () => page.locator(`${panel} input[type=range]`).evaluateAll((inputs) => {
+    const { store, audio } = window.__ew;
+    const { volume, sounds } = store.getState().settings;
+    return { dom: inputs.map((el) => el.valueAsNumber), settings: [volume, sounds], audio: [audio.volume, audio.sounds] };
+  });
+  const initial = await levels();
+  await attach();
+  await when("a neutral controller connects in Settings", (s) => s.pad.connected);
+  await step(8);
+  assert.deepEqual(await levels(), initial);
+  check("neutral attachment leaves both settings unadjusted", initial.dom.every((value) => value === 0) &&
+    await page.locator("[data-pad-focus], [data-pad-adjusting]").count() === 0, initial);
+
+  const raised = { dom: [0.05, 0], settings: [0.05, 0], audio: [0.05, 0] };
+  await page.locator(volume).focus();
+  await tap("Right");
+  assert.deepEqual(await levels(), initial, "the pad leaves the native-focused slider alone");
+  await page.keyboard.press("ArrowRight");
+  assert.deepEqual(await levels(), raised, "the physical key uses the native slider step");
+  await page.keyboard.press("ArrowLeft");
+  assert.deepEqual(await levels(), initial);
+  await page.locator(volume).evaluate((el) => el.blur());
+
+  await focusWith(volume, "Down", 30);
+  await checkFocusRing(h, volume, (await h.state()).pad.focusTarget, "panel");
+  await tap("Down");
+  check("a direction before A moves focus to the other range", await focused(sounds));
+  assert.deepEqual(await levels(), initial);
+  await tap("Up");
+  await tap("A");
+  check("A enters adjustment on the real volume input", await focused(`${volume}[data-pad-adjusting]`));
+  await press("Right");
+  await step(12); // Shorter than the existing directional repeat delay.
+  await sample();
+  await step(2);
+  assert.deepEqual(await levels(), raised, "one directional edge changes the DOM, saved setting and live audio by 0.05");
+  await tap("A");
+  await tap("Down");
+  check("A keeps the volume and directions return to panel navigation", await focused(sounds));
+  assert.deepEqual(await levels(), raised);
+
+  await tap("A");
+  await tap("Right");
+  assert.deepEqual(await levels(), { dom: [0.05, 0.05], settings: [0.05, 0.05], audio: [0.05, 0.05] });
+  await press("B");
+  await step(25);
+  assert.deepEqual(await levels(), raised, "the first B restores the original effects level");
+  check("held B leaves the settings panel open and focus on the native slider", await focused(`${sounds}[data-pad-focus]:not([data-pad-adjusting])`));
+  await sample();
+  await step(2);
+  await tap("B");
+  await when("a release and second B close Settings", (s) => !s.panel);
+  await detach();
+}
+
+async function townHudChoices(h) {
+  const { page, step, state, when, until, attach, tap, press, sample, focusWith, focused, check } = h;
+  h.mark("town translation and camera controls");
+  const chip = ".photo-chip";
+  const bubble = ".street-bubble[data-chatter]";
+  const scenarios = `:is(${toolbar}) ${scenariosTool}`;
+  await page.evaluate(() => {
+    const { game, store } = window.__ew;
+    store.getState().updateProgress((p) => { p.photoWalk = { status: "on", found: [] }; });
+    // The same Ambient pair fixture as street.mjs.
+    const walker = game.ambient.walkerRoots.map((root) => game.ambient.walkerFor(root)).find((w) => w.kind === "stand" && w.chat);
+    const p = walker.ch.root.position;
+    game.placeOnFoot(p.x + 3.3, p.z + 1.8, Math.atan2(-3.3, -1.8));
+  });
+  await step(6);
+  check("the real pair begins chatter", await page.evaluate(() => window.__ew.game.streetChatterNow("c_lights")));
+  await until("the camera chip and untranslated speech bubble are visible", async () =>
+    await page.locator(chip).isVisible() && await page.locator(bubble).isVisible());
+  await attach();
+  await when("a neutral controller connects during chatter", (s) => s.pad.connected);
+  check("visible chatter leaves the HUD without controller focus", !(await state()).pad.focusTarget &&
+    await page.locator(`${bubble} .street-tr`).count() === 0);
+  const obstacles = `${chip}, ${bubble}, .toolbar-drawer:not([inert])`;
+  await inspectHint(h, "connected", "world", obstacles);
+  await tap("Menu");
+  await until("Menu focuses the existing scenarios default", () => focused(scenarios));
+  await focusWith(bubble, "Down", 22);
+  await checkFocusRing(h, bubble, "street-bubble", null);
+  const clickProbe = (selector) => page.locator(selector).evaluateHandle((el) => {
+    const clicks = { count: 0 };
+    el.addEventListener("click", () => { clicks.count++; });
+    return clicks;
+  });
+  const translated = await clickProbe(bubble);
+  await press("A");
+  await until("A reveals the existing Lithuanian translation", () => page.locator(`${bubble} .street-tr`).isVisible());
+  await step(12);
+  assert.equal(await translated.evaluate(({ count }) => count), 1, "a held A issues one native bubble click");
+  await translated.dispose();
+  await sample();
+  await step(2);
+  await tap("B");
+
+  // Remove the line while walking with the same stick deflection.
+  const beforeWalk = await state();
+  await sample([0, -0.8, 0, 0]);
+  await step(20);
+  const during = await state();
+  await page.evaluate(() => window.__ew.game.streetLife.clearChatter());
+  await until("the chatter is cleared", () => page.locator(bubble).count().then((n) => n === 0), { frames: 0 });
+  await step(20);
+  const after = await state();
+  check("chatter and its removal preserve walking and never claim focus", horizontal(beforeWalk, during) > 0.2 &&
+    horizontal(during, after) > 0.2 && !during.pad.focusTarget && !after.pad.focusTarget, { beforeWalk, during, after });
+  await sample();
+  await step(2);
+
+  h.mark("camera with a competing car prompt");
+  const car = await page.evaluate(() => {
+    const { game } = window.__ew;
+    const index = game.town.parkedCars.fleet.cars.findIndex(({ spot }) => spot.x === 34 && spot.z === -4.2);
+    const r = game.rides.find(`parked-${index}`);
+    if (!r) return null;
+    const { x, z } = game.town.photoSpots.find(({ id }) => id === "mailbox");
+    for (const dz of [2, -2, 2.4, -2.4]) for (const dx of [0, -1.5, 1.5, -2.5]) {
+      const at = { x: r.m.x + dx, z: r.m.z + dz };
+      if (!game.town.walkableAt(at.x, at.z) || game.rides.near(at.x, at.z) !== r ||
+          Math.hypot(x - at.x, z - at.z) > 8.8) continue;
+      game.enterZone("town", { ...at, rot: Math.atan2(x - at.x, z - at.z) }, true);
+      return r.id;
+    }
+  });
+  check("the curbside car has a reachable viewpoint of the mailbox", car);
+  const mailbox = `${chip}[data-near="mailbox"]`;
+  await until("the camera and drive prompt are available together", async () =>
+    (await state()).prompt === "drive" && await page.locator(mailbox).isVisible());
+  await tap("Menu");
+  await until("Menu still starts on scenarios beside the car", () => focused(scenarios));
+  await focusWith(mailbox, "Down", 22);
+  await checkFocusRing(h, mailbox, "photo-chip", null);
+  const shutter = await clickProbe(mailbox);
+  await press("A");
+  await until("A opens the actual mailbox quiz", () => page.locator('.photo-quiz[data-thing="mailbox"]').isVisible());
+  await step(12);
+  assert.equal(await shutter.evaluate(({ count }) => count), 1, "a held A clicks the original camera chip once");
+  await shutter.dispose();
+  await sample();
+  await step(2);
+  await tap("B");
+  await until("B returns to the camera and car", async () =>
+    (await state()).prompt === "drive" && await page.locator(mailbox).isVisible());
+  // Closing the quiz may restore its launcher to the tools. Leave the tools before using the physical X.
+  if (await focused(`${mailbox}[data-pad-focus]`)) await tap("B");
+  await tap("X");
+  await when("physical X still boards the car beside the mailbox", (s) => s.ride?.id === car && s.phase === "on" && s.prompt === "out");
+  await tap("X");
+  await when("a fresh physical X steps out", (s) => !s.ride && s.visible);
+}
+
+async function startRoadLift(h) {
+  const road = () => h.page.evaluate(() => window.__ew.road.state());
+  await h.page.evaluate(() => {
+    const { game } = window.__ew;
+    // The walking entrance used by road.mjs.
+    game.placeOnFoot(-109.4, -15.6, -Math.PI / 2);
+    game.setJoystick(0, 1);
+  });
+  try {
+    await h.until("walking to the boundary starts the real Road lift", async () => (await road()).phase === "approach");
+  } finally {
+    await h.page.evaluate(() => window.__ew.game.setJoystick(0, 0));
+  }
+  return road;
+}
+
+async function narrationBack(h) {
+  const { page, attach, when, until, step, sample, check } = h;
+  const exitCalls = (id) => page.evaluateHandle((id) => {
+    const mode = window.__ew.game.modes.get(id);
+    const exit = mode.exit;
+    const probe = { calls: 0, restore: () => { mode.exit = exit; } };
+    mode.exit = function (...args) {
+      probe.calls++;
+      return exit.apply(this, args);
+    };
+    return probe;
+  }, id);
+  const both = { [button.A]: 1, [button.B]: 1 };
+  async function backOnce(id) {
+    const probe = await exitCalls(id);
+    try {
+      await sample(undefined, both);
+      await when(`a fresh B leaves ${id} narration`, (s) => !s.mode && !s.transition);
+      await step(24);
+      check(`held B invokes the existing ${id} exit once, with A still held`,
+        await probe.evaluate(({ calls }) => calls) === 1 && !(await h.state()).hop.air, await h.state());
+    } finally {
+      await probe.evaluate(({ restore }) => restore());
+      await probe.dispose();
+      await sample();
+      await step(2);
+    }
+  }
+
+  h.mark("Taxi narration after the real fade");
+  await attach();
+  await when("the controller is ready in town", (s) => s.pad.connected);
+  await place(h, { x: 121, z: -2.4, rot: Math.PI });
+  await page.evaluate(() => window.__ew.game.modeStart("taxi"));
+  await sample(undefined, both);
+  await until("carried A and B leave the Taxi opening greeting on screen after the fade", () => page.evaluate(() => {
+    const { game } = window.__ew;
+    return !game.transitioning && !!document.querySelector('.taxi-cue [data-line="tx_hello"]') &&
+      !document.querySelector(".taxi-choice");
+  }), { frames: 1 });
+  await step(4);
+  check("the carried buttons keep the real narration open", (await h.state()).mode === "taxi" &&
+    await page.locator(".taxi-choice").count() === 0);
+  await sample();
+  await step(2);
+  await backOnce("taxi");
+
+  h.mark("Road offer narration before choices");
+  const road = await startRoadLift(h);
+  await until("Vinnie is offering a lift with no answers mounted yet", async () => {
+    const { phase, line, choices } = await road();
+    return phase === "offer" && line === "rd_lift" && choices.length === 0 &&
+      await page.locator('.road-lift-line[data-line="rd_lift"]').isVisible() &&
+      await page.locator(".road-choice").count() === 0;
+  }, { frames: 1 });
+  await backOnce("road");
+}
+
+async function reviewAdjustments(h) {
+  const { page, step, until, check, press, sample, tap, focused, focusWith, attach, detach, when } = h;
+  h.mark("Road choices following the lift narration");
+  // Start a separate run without waiting out the cooldown from the preceding aborted lift.
+  await page.evaluate(() => { window.__ew.game.modes.get("road").nextLift = 0; });
+  const road = await startRoadLift(h);
+  await step(2);
+  await press("A");
+  const yes = '.road-choice[data-line="rd_a_yes"]';
+  await until("the Road lift offers two actual answers", async () => await page.locator(yes).isVisible() &&
+    await page.locator(".road-choice").count() === 2);
+  await step(20);
+  check("A carried from the approach into the answer panel selects neither answer",
+    (await road()).phase === "offer" && await page.locator(".road-choice").count() === 2);
+  await sample();
+  await step(2);
+  await focusWith(yes);
+  await tap("A");
+  const phrases = '[data-pad-scope="word-setup"] [data-way="phrases"]';
+  await until("the real answer opens the choice of Road games", () => page.locator(phrases).isVisible());
+  await page.locator(phrases).evaluate((el) => el.click());
+  await until("a phrases run starts", async () => (await road()).phase === "drive");
+  await page.evaluate(() => window.__ew.road.jumpTimer(149.95));
+  const score = '[data-pad-scope="score"]';
+  await until("the live Road run opens its result card", () => page.locator(score).isVisible());
+  const review = [
+    { en: "coffee", lt: "kava", situation: cafe },
+    { en: "mailbox", lt: "pašto dėžutė", situation: "s79-post" },
+  ];
+  const practice = [
+    { en: "passport", lt: "pasas", situation: "s65a-passport" },
+    { en: "suitcase", lt: "lagaminas", situation: "s65b-baggage" },
+  ];
+  // Fixture two review categories in the real result surface so no recording or long driving loop is required.
+  await page.evaluate(async ({ url, review, practice }) => {
+    const { useRoad } = await import(url);
+    useRoad.setState(({ result }) => ({
+      result: { ...result, missed: review, phrases: practice, recovered: [practice[1]] },
+    }));
+  }, { url: contentUrl(base.href, "game/road/store"), review, practice });
+  const missed = `${score} .road-missed:not(.road-practice) select`;
+  const practiced = `${score} .road-practice select`;
+  const practicedBadge = page.locator(`${score} .road-practice .road-comeback`);
+  const destination = page.locator(`${score} .road-missed .ended-destination`);
+  const selected = (selector) => page.locator(selector).evaluate((el) => ({
+    index: el.selectedIndex, label: el.selectedOptions[0].label,
+  }));
+  const selection = ({ en, lt }, index) => ({ index, label: `${en} · ${lt}` });
+  await until("the real result card shows both review selectors", async () =>
+    await page.locator(missed).isVisible() && await page.locator(practiced).isVisible());
+  await detach();
+  await attach();
+  await when("a neutral controller reconnects on the result", (s) => s.pad.connected);
+  await step(6);
+  assert.deepEqual(await selected(missed), selection(review[0], 0));
+  assert.deepEqual(await selected(practiced), selection(practice[0], 0));
+  assert.equal(await destination.getAttribute("data-sit"), review[0].situation);
+  check("neutral connection keeps the first results and adds no pad focus", await page.locator("[data-pad-focus]").count() === 0);
+
+  await focusWith(practiced);
+  await tap("A");
+  await tap("Right");
+  assert.deepEqual(await selected(practiced), selection(practice[1], 1));
+  check("the second practice item shows its actual comeback badge", await practicedBadge.isVisible());
+  await tap("A");
+  await focusWith(missed);
+  await checkFocusRing(h, missed, (await h.state()).pad.focusTarget, "score");
+  await tap("A");
+  await tap("Down");
+  assert.deepEqual(await selected(missed), selection(review[1], 1));
+  assert.equal(await destination.getAttribute("data-sit"), review[1].situation);
+  await tap("B");
+  check("one B leaves the result open on the native control", await focused(`${missed}[data-pad-focus]:not([data-pad-adjusting])`));
+  assert.deepEqual(await selected(missed), selection(review[0], 0));
+  assert.equal(await destination.getAttribute("data-sit"), review[0].situation);
+
+  await tap("A");
+  await detach();
+  check("unplug releases a pad-owned selector and clears its adjustment",
+    !(await focused(missed)) && await page.locator("[data-pad-adjusting]").count() === 0);
+  await attach("standard", [button.Right]);
+  await when("the replacement connects with its direction held", (s) => s.pad.connected);
+  await step(12);
+  assert.deepEqual(await selected(missed), selection(review[0], 0));
+  await sample();
+  await step(2);
+  await focusWith(missed);
+  await tap("A");
+  await tap("Right");
+  await tap("A");
+  await focusWith(`${score} .ended-destination button`);
+  await tap("A");
+  check("the chosen word's real destination action sets the second objective",
+    await page.evaluate(() => window.__ew.store.getState().hud.objective?.sitId) === review[1].situation);
+}
+
 async function lazyPopoverContract(h) {
   const { page, mobile, step, when, until, attach, detach, press, sample, tap, check, padRequests, modules } = h;
   h.mark("word and natural-line portals before the first eligible connection");
@@ -1658,7 +1991,13 @@ async function lightContract(h) {
 try {
   let failed = 0;
   const contracts = [["town", townContract], ["light", lightContract]];
-  if (storage !== "puerto-colibri") contracts.unshift(["light", lazyPopoverContract, "light-popovers"]);
+  if (storage !== "puerto-colibri") {
+    contracts.unshift(["light", lazyPopoverContract, "light-popovers"]);
+    contracts.push(
+      ["town", async (h) => { await settingsAdjustments(h); await townHudChoices(h); }, "town-choices"],
+      ["town", async (h) => { await narrationBack(h); await reviewAdjustments(h); }, "town-narration-review"],
+    );
+  }
   for (const [width, height, mobile] of [[390, 844, true], [1280, 800, false]]) {
     for (const [mode, contract, checkpoint] of contracts) {
       try {
