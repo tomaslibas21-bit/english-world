@@ -157,7 +157,7 @@ export const gym: SituationDef = {
     "come on": { reason: "lexical_expression", split: "come → ateik + on → ant is false; the encouragement = nagi.", minimal: "Two words (C-PHR)." },
     "sure thing": { reason: "lexical_expression", split: "sure → tikras + thing → daiktas is false; the cheerful yes = žinoma.", minimal: "Two words." },
     "out of breath": { reason: "lexical_expression", split: "out → lauk, of → iš, breath → kvapas gives a false “out of the breath”; = uždusęs.", minimal: "All three words." },
-    "jumping jacks": { reason: "lexical_expression", split: "Both words name the exercise. The gloss šuoliukai skėčiant kojas describes the jumps with the legs spreading.", minimal: "Two words form the exercise name." },
+    "jumping jacks": { reason: "lexical_expression", split: "Both words name the exercise. The gloss šuoliukai išskečiant kojas describes the jumps with the legs spreading.", minimal: "Two words form the exercise name." },
     "arm circles": { reason: "lexical_expression", split: "In this exercise, the arms trace circles. The gloss ratus rankomis expresses what makes the circles through the instrumental rankomis.", minimal: "Two words form the exercise name. The command “make” has its own gloss." },
     "that's it": { reason: "lexical_expression", split: "Jordan confirms the learner got the move right. Štai taip expresses that encouragement as a whole.", minimal: "Both words form the confirmation." },
     "nice work": { reason: "lexical_expression", split: "Jordan praises the learner for a correct move. Puikiai padirbėjote conveys the whole expression as polite praise.", minimal: "Both words form the praise." },

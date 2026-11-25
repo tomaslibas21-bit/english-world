@@ -63,10 +63,10 @@ const mh = {
     next: "See you tomorrow!", closing: "Thanks, bye!",
   },
   lines: {
-    gy_jacks: ["Jumping jacks!", "Šuoliukai skėčiant kojas!", "Pašokite, praskėskite kojas ir pakelkite rankas!"],
+    gy_jacks: ["Jumping jacks!", "Šuoliukai išskečiant kojas!", "Pašokite, išskėskite kojas ir pakelkite rankas!"],
     gy_toes: ["Touch | your | toes!", "Palieskite | savo | kojų pirštus!", "Pasilenkite ir palieskite kojų pirštus!"],
     gy_squats: ["Do | a | squat!", "Padarykite | — | pritūpimą!", "Pritūpkite!"],
-    gy_circles: ["Make | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!"],
+    gy_circles: ["Do | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!"],
     gy_run: ["Run | in place!", "Bėkite | vietoje!", "Bėkite vietoje!"],
     gy_reach: ["Reach | up!", "Tieskitės | aukštyn!", "Ištieskite rankas virš galvos!"],
     gy_lunges: ["Do | a | lunge!", "Padarykite | — | įtūpstą!", "Ženkite pirmyn ir padarykite įtūpstą!"],
