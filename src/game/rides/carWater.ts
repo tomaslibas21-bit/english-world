@@ -1,5 +1,5 @@
 import type { Quaternion } from "three";
-import { DECKS, floorY, poolAt, SEA_LEVEL, waterY } from "../water";
+import { DECKS, FLOORS, floorY, POOLS, poolAt, SEA_LEVEL, SHORE, waterY } from "../water";
 import type { AABB } from "../world/util";
 import type { WetDriveSettings } from "./drive";
 
@@ -113,6 +113,26 @@ export function carWaterClearanceY({ x, y, z }: { x: number; y: number; z: numbe
   return surface === null ? y : Math.max(y, surface + clearance);
 }
 
+function nearBounds(x: number, z: number, margin: number, b: { x0: number; x1: number; z0: number; z1: number }) {
+  return x > b.x0 - margin && x < b.x1 + margin && z > b.z0 - margin && z < b.z1 + margin;
+}
+
+export function nearWater(x: number, z: number, margin: number) {
+  if (z < SHORE.top + margin) return true;
+  for (const p of POOLS) {
+    if ("bounds" in p ? nearBounds(x, z, margin, p.bounds) : (x - p.x) ** 2 + (z - p.z) ** 2 < (p.r + margin) ** 2) return true;
+  }
+  return false;
+}
+
+function flatCarGround(x: number, z: number, reach: number) {
+  // Include the shore wobble and all registered floor overrides within reach of a rotated corner.
+  if (nearWater(x, z, reach + 0.6)) return false;
+  for (const d of DECKS) if (nearBounds(x, z, reach, d)) return false;
+  for (const f of FLOORS) if (nearBounds(x, z, reach, f)) return false;
+  return true;
+}
+
 /** Raise a proposed chassis pose to support its lower corners and tires. Use the presentation quaternion so the
  *  contacts see the floor and live surface at their pitched and rolled positions. `face` is at the proposed height. */
 export function supportedCarWaterHeight(
@@ -122,8 +142,13 @@ export function supportedCarWaterHeight(
   const W = CAR_WATER;
   const { x: qx, y: qy, z: qz, w: qw } = rotation;
   // The local X and Z axes in world space. All eight contacts are in the mesh's local ground plane.
-  const xx = 1 - 2 * (qy * qy + qz * qz), xy = 2 * (qx * qy + qw * qz), xz = 2 * (qx * qz - qw * qy);
-  const zx = 2 * (qx * qz + qw * qy), zy = 2 * (qy * qz - qw * qx), zz = 1 - 2 * (qx * qx + qy * qy);
+  const xy = 2 * (qx * qy + qw * qz), zy = 2 * (qy * qz - qw * qx);
+  if (!limitImmersion && !face && flatCarGround(x, z, spec.wide + spec.half)) {
+    // The lowest corner bounds every tire on the same plane.
+    return Math.max(y, Math.abs(xy) * spec.wide + Math.abs(zy) * spec.half);
+  }
+  const xx = 1 - 2 * (qy * qy + qz * qz), xz = 2 * (qx * qz - qw * qy);
+  const zx = 2 * (qx * qz + qw * qy), zz = 1 - 2 * (qx * qx + qy * qy);
   let height = Math.max(y, floorY(x, z));
   if (limitImmersion) {
     const surface = waterY(x, z, time);

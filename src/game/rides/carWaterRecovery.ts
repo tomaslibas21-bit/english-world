@@ -6,7 +6,7 @@ import { TRAFFIC_LANES, WORLD } from "../world/layout";
 import type { CarWaterArea, CarWaterPlan } from "../world/rides";
 import type { Colliders } from "../world/util";
 import {
-  CAR_WATER, carFootprintOverlapsBox, createCarWaterProbe, probeCarWater,
+  CAR_WATER, carFootprintOverlapsBox, createCarWaterProbe, nearWater, probeCarWater,
   supportedCarWaterHeight, sweepCarFootprintBox, wetDriveSettings,
 } from "./carWater";
 import { CAR_REACH, type Controls, type MotionImpact, type WetDriveSettings } from "./drive";
@@ -57,17 +57,6 @@ const copyPair = (out: Pair, pair: Pair) => {
 function reach(p: Pose, half: number, wide: number, x: number, z: number) {
   const s = Math.sin(p.heading), c = Math.cos(p.heading), dx = x - p.x, dz = z - p.z;
   return Math.hypot(Math.max(0, Math.abs(dx * s + dz * c) - half), Math.max(0, Math.abs(dx * c - dz * s) - wide));
-}
-
-function nearWater(x: number, z: number, margin: number) {
-  if (z < SHORE.top + margin) return true;
-  for (const p of POOLS) {
-    if ("bounds" in p) {
-      const b = p.bounds;
-      if (x > b.x0 - margin && x < b.x1 + margin && z > b.z0 - margin && z < b.z1 + margin) return true;
-    } else if ((x - p.x) ** 2 + (z - p.z) ** 2 < (p.r + margin) ** 2) return true;
-  }
-  return false;
 }
 
 export interface CarWaterScene {
@@ -1104,10 +1093,16 @@ export class CarWaterRecovery {
 
   private support(r: Ride, time: number, height: number, immersion: boolean) {
     const { m, mesh } = r;
+    if (!immersion) return supportedCarWaterHeight(m, mesh.quaternion, time, height, false);
     const face = this.face.set(CAR_SEATS.driver[0], CAR_SEATS.floor + CAR_SEATS.seat + 0.52, CAR_SEATS.driver[1])
       .applyQuaternion(mesh.quaternion);
     face.x += m.x; face.z += m.z; face.y += height;
-    return supportedCarWaterHeight(m, mesh.quaternion, time, height, immersion, immersion ? face : undefined);
+    return supportedCarWaterHeight(m, mesh.quaternion, time, height, true, face);
+  }
+
+  /** Support the stock dry orientation even if the water probe was flat or skipped. */
+  supportDryPose(r: Ride, time: number) {
+    if (r === this.car && this.host.eligible(r)) r.mesh.position.y = this.support(r, time, r.mesh.position.y, false);
   }
 
   pose(r: Ride, time: number, y: number, pitch: number, roll: number, roadGrade: boolean) {

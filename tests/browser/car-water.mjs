@@ -1235,6 +1235,9 @@ async function mainTrip(run) {
   await reboardInland(run, false);
   await run.coastShot("08-dry-reboard", run.last);
   await boatTrip(run);
+  if (coastShots) assert.deepEqual([...run.coastFrames], [
+    "01-shallow", "02-trail", "03-bow", "04-float", "05-tow", "06-drain", "07-exit", "08-dry-reboard",
+  ], "all eight coast captures from the uninterrupted trip");
 }
 
 async function steering(run, wet) {
@@ -1330,7 +1333,15 @@ async function damagedTrip(run) {
   const trigger = await run.until(recovering, "the damaged car reaches real water recovery");
   assert.equal(trigger.water.reason, "depth");
   await run.drive();
+  let damagedDrainDelta;
+  if (pc) {
+    await run.until(s => s.water.phase === "settle" && s.water.drainLive >= 2, "dented body and active sill drops");
+    damagedDrainDelta = await run.drawDelta();
+    assert.ok(damagedDrainDelta >= 1 && damagedDrainDelta <= 2, "car-water drain draw budget with the dent still rendered");
+  }
   const landing = await finish(run);
+  const damagedIdleDelta = await run.drawDelta();
+  assert.equal(damagedIdleDelta, 0, "zero idle car-water draws with the dent still rendered");
   await dryExit(run, true);
   await reboardInland(run, true);
   assert.ok(await run.evaluate(id => {
@@ -1339,7 +1350,7 @@ async function damagedTrip(run) {
     return geom === f.damaged && a.length === f.positions.length && a.every((x, i) => x === f.positions[i]);
   }, id), "the dent's vertex buffer survived real driving and recovery");
   assert.ok(run.last.now - hit.now < 15000, "dent checked inside normal aging time");
-  run.log({ impact: hit.hit, damage: landing.damage, dentGeometry: dents.dented, damagedDrawDelta });
+  run.log({ impact: hit.hit, damage: landing.damage, dentGeometry: dents.dented, damagedDrawDelta, damagedDrainDelta, damagedIdleDelta });
 }
 
 async function assistedTrip(run, deep, route = deep ? site.west : site.east, roofed = false) {

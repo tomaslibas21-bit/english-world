@@ -1574,6 +1574,7 @@ export class Rides {
       else {
         mesh.position.set(m.x, grade + r.sus.y, m.z);
         mesh.rotation.set(pitch, m.heading, roll);
+        if (driven) this.water?.supportDryPose(r, t);
       }
     } else {
       const k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;

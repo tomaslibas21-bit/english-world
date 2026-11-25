@@ -461,6 +461,7 @@ describe("Puerto Colibrí's built water approaches", () => {
 
   it("uses pitched and rolled contacts and each local waterline through stops, motion and a resumed frame", () => {
     const cases = [
+      { x: -117.4, z: 6, heading: -Math.PI / 2, pitch: 0.06, roll: -0.1, time: 0, wet: false },
       { x: -30, z: -70, heading: 0.42, pitch: 0, roll: 0, time: 0, wet: false },
       { x: -30, z: -90.5, heading: Math.PI, pitch: 0, roll: 0.06, time: 0.05, wet: true },
       { x: 84, z: -76.4, heading: Math.PI / 2, pitch: -0.14, roll: 0.125, time: 2.1, wet: true },
@@ -480,6 +481,7 @@ describe("Puerto Colibrí's built water approaches", () => {
       const support = contacts.map(q => q.y - Math.max(floorY(q.x, q.z), wet ? (waterY(q.x, q.z, time) ?? -Infinity) - 0.42 : -Infinity));
       for (const clearance of support) expect(clearance).toBeGreaterThanOrEqual(-1e-9);
       expect(height).toBeGreaterThanOrEqual(floorY(x, z));
+      if (x === -117.4) expect(Math.min(...support)).toBeCloseTo(0, 10);
       const faceSurface = waterY(face.x, face.z, time);
       if (faceSurface !== null) expect(face.y + (height - y) - faceSurface).toBeGreaterThanOrEqual(0.15 - 1e-9);
       const camera = { x: x + 0.15, z: z - 3, y: -3 };
@@ -740,17 +742,22 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
     expect(f.y).toBeCloseTo(floorY(f.x, f.z), 8);
     expect(rides.near(f.x, f.z)).toBe(car);
   };
-  const supported = () => {
+  const supported = (includeDry = false) => {
     const { mesh, m } = car;
     const p = player.root.position;
-    if (!inspect().active) return;
-    for (const [wide, half] of [[m.spec.wide, m.spec.half], [0.88 * m.spec.wide / 0.95, 1.36 * m.spec.half / 2.15]]) {
+    const wet = inspect().active;
+    if (!wet && !includeDry) return;
+    mesh.updateWorldMatrix(true, false);
+    for (const [kind, wide, half] of [["corner", m.spec.wide, m.spec.half],
+      ["tire", 0.88 * m.spec.wide / 0.95, 1.36 * m.spec.half / 2.15]] as const) {
       for (const end of [-1, 1]) for (const side of [-1, 1]) {
-        const q = new Vector3(side * wide, 0, end * half).applyQuaternion(mesh.quaternion).add(mesh.position);
-        expect(q.y).toBeGreaterThanOrEqual(floorY(q.x, q.z) - 1e-6);
-        expect(q.y).toBeGreaterThanOrEqual((waterY(q.x, q.z, time) ?? -Infinity) - 0.42 - 1e-6);
+        const q = new Vector3(side * wide, 0, end * half).applyMatrix4(mesh.matrixWorld);
+        expect(q.y - floorY(q.x, q.z), `${car.id} ${kind} (${side}, ${end}) at (${m.x}, ${m.z}), t=${time}`)
+          .toBeGreaterThanOrEqual(-1e-6);
+        if (wet) expect(q.y).toBeGreaterThanOrEqual((waterY(q.x, q.z, time) ?? -Infinity) - 0.42 - 1e-6);
       }
     }
+    if (!wet) return;
     expect(Math.abs(mesh.rotation.x)).toBeLessThanOrEqual(W.maxPitch);
     const head = player.headPosition?.(new Vector3()) ?? p.clone().add(new Vector3(0, 1.3, 0));
     expect(head.y).toBeGreaterThanOrEqual((waterY(head.x, head.z, time) ?? -Infinity) + 0.15 - 1e-5);
@@ -764,17 +771,28 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<Car
   };
 }
 
-it("gets out and boards the same convertible on the dry grounds west of town", async () => {
-  const f = occupiedTown(60);
+it.each([60, 20])("brakes, gets out and boards the same convertible on the dry western grounds at %i Hz", async hz => {
+  const f = occupiedTown(hz);
   try {
     const car = f.rides.find("park")!;
     await f.board(car);
     f.stage(-109.5, 6, -Math.PI / 2);
-    for (let i = 0; i < 180 && car.m.x > -116.3; i++) f.frame(go);
+    f.frame();
+    expect(car.mesh.position.y).toBe(0);
+    for (let i = 0; i < 3 * hz && car.m.x > -116.3; i++) {
+      f.frame(go);
+      f.supported(true);
+    }
     expect(car.m.x).toBeLessThanOrEqual(-116.3);
-    for (let i = 0; i < 60 && car.m.pace > 0.02; i++) f.frame({ ...go, throttle: 0, brake: true });
+    expect(car.m.pace).toBeGreaterThan(1.5);
+    for (let i = 0; i < hz && car.m.pace > 0.02; i++) {
+      f.frame({ ...go, throttle: 0, brake: true });
+      f.supported(true);
+    }
     expect(car.m.pace).toBeLessThanOrEqual(0.02);
+    expect(Math.abs(car.m.x + 117.4)).toBeLessThan(0.6);
     expect(car.m.z).toBeCloseTo(6, 5);
+    expect(car.m.heading).toBeCloseTo(-Math.PI / 2, 5);
     expect(f.rides.drivable.has(car.m.x, car.m.z)).toBe(false);
     expect(f.inspect()).toMatchObject({ enabled: true, band: "dry", active: false });
 
@@ -790,9 +808,13 @@ it("gets out and boards the same convertible on the dry grounds west of town", a
     const mesh = car.mesh;
     expect(f.rides.leave()).toBe(true);
     f.frame();
+    f.supported(true);
     expect(f.rides.phase).toBe("out");
     expect(f.player.root.visible).toBe(true);
-    for (let i = 0; i < 90 && f.rides.riding; i++) f.frame();
+    for (let i = 0; i < 1.5 * hz && f.rides.riding; i++) {
+      f.frame();
+      f.supported(true);
+    }
     expect(f.rides.riding).toBeNull();
     expect(f.left).toBe(1);
     expect(car.m).toMatchObject(parked);
@@ -818,10 +840,11 @@ it("gets out and boards the same convertible on the dry grounds west of town", a
     expect(near).toBe(car);
     expect(f.rides.board(near, false)).toBe(true);
     f.rides.prefetchWater(near, f.adapter);
-    for (let i = 0; i < 90 && f.rides.phase !== "on"; i++) f.frame();
+    for (let i = 0; i < 1.5 * hz && f.rides.phase !== "on"; i++) f.frame();
     expect(f.rides.phase).toBe("on");
-    for (let i = 0; i < 180 && parked.x - car.m.x < 2; i++) {
+    for (let i = 0; i < 3 * hz && parked.x - car.m.x < 2; i++) {
       f.frame(go);
+      f.supported(true);
       expect(f.inspect()).toMatchObject({ band: "dry", active: false });
       expect(waterY(car.m.x, car.m.z, f.time)).toBeNull();
     }
@@ -841,17 +864,20 @@ describe.each([60, 20])("live paired recovery at %i Hz", hz => {
   it("drives the uninterrupted coast with the stock fleet and tows back at a bounded pace", async () => {
     const f = occupiedTown(hz);
     try {
-      await f.board(f.rides.find("east"));
+      await f.board(f.rides.find("park"));
       f.stage(128, -55, Math.PI);
+      f.frame();
+      expect(f.car.mesh.position.y).toBe(0);
       const original = f.car.mesh.uuid;
       const boatStart = f.rides.list.filter(r => r.kind === "boat").map(r => [r, r.m.x, r.m.z] as const);
       const bands = new Set<string>();
       for (let i = 0; i < 12 * hz && !f.rides.water!.returning; i++) {
         f.frame(go);
-        f.supported();
+        f.supported(true);
         bands.add(f.inspect().band);
       }
       expect([...bands]).toEqual(["dry", "shallow", "body-deep", "float"]);
+      expect(f.inspect()).toMatchObject({ phase: "float", reason: "depth" });
       expect(f.car.m.z).toBeLessThan(SHORE.limit);
       const started = f.now, expected = f.inspect().spares;
       expect(expected).toHaveLength(2);
@@ -875,6 +901,51 @@ describe.each([60, 20])("live paired recovery at %i Hz", hz => {
       expect(f.car.mesh.uuid).toBe(original);
       expect(boatStart.every(([r, x, z]) => r.m.x === x && r.m.z === z)).toBe(true);
       expect(f.ambient.traffic.every(c => c.mesh.position.z === c.lane)).toBe(true);
+    } finally { f.close(); }
+  }, 20_000);
+
+  it("supports the dented roofed car from dry acceleration through depth and drain", async () => {
+    const f = occupiedTown(hz, RIDES, { drops: new Splashes() });
+    try {
+      const car = f.rides.find("parked-0")!;
+      await f.board(car);
+      expect(f.rides.roofed(car)).toBe(true);
+      const mesh = car.mesh, body = mesh.children[0] as Mesh, original = body.geometry;
+      f.stage(125, -51.4, Math.PI / 2 + 0.45);
+      for (let i = 0; i < 4 * hz && !f.rides.crashes.info(car)?.dentCount; i++) f.frame(go);
+      expect(f.rides.crashes.info(car)?.dentCount).toBeGreaterThan(0);
+      const dent = body.geometry;
+      expect(dent).not.toBe(original);
+
+      f.stage(128, -55, Math.PI);
+      f.frame();
+      const bands = new Set<string>();
+      for (let i = 0; i < 12 * hz && !f.rides.water!.returning; i++) {
+        f.frame(go);
+        f.supported(true);
+        bands.add(f.inspect().band);
+        expect(f.player.root.visible).toBe(false);
+        expect(car.mesh).toBe(mesh);
+        expect((mesh.children[0] as Mesh).geometry).toBe(dent);
+      }
+      expect([...bands]).toEqual(["dry", "shallow", "body-deep", "float"]);
+      expect(f.inspect()).toMatchObject({ phase: "float", reason: "depth" });
+      expect(car.m.x).toBeCloseTo(128, 5);
+      expect(car.m.z).toBeLessThan(SHORE.limit);
+
+      let draining = false;
+      for (let i = 0; i <= 3.5 * hz && f.inspect().active; i++) {
+        f.frame();
+        f.supported(true);
+        const water = f.inspect();
+        draining ||= water.phase === "settle" && (water.drainLive ?? 0) >= 2;
+        expect((mesh.children[0] as Mesh).geometry).toBe(dent);
+      }
+      expect(draining).toBe(true);
+      expect(f.inspect()).toMatchObject({ active: false, landing: "trail" });
+      for (let i = 0; i < Math.ceil(0.75 * hz); i++) f.frame();
+      expect(f.inspect()).toMatchObject({ carDrops: 0, foamVisible: false, pointDrawCount: 0 });
+      expect((mesh.children[0] as Mesh).geometry).toBe(dent);
     } finally { f.close(); }
   }, 20_000);
 
@@ -1201,7 +1272,10 @@ it("returns at the wet deadline under a continuous held brake and crosses the re
   try {
     await f.board(f.rides.find("east"));
     f.stage(84, -55, Math.PI);
-    for (let i = 0; i < 7 * 60 && f.inspect().band === "dry"; i++) f.frame(go);
+    for (let i = 0; i < 7 * 60 && f.inspect().band === "dry"; i++) {
+      f.frame(go);
+      f.supported(true);
+    }
     expect(f.inspect().band).toBe("shallow");
     expect(f.car.m.x).toBeCloseTo(84, 6);
     expect(f.car.m.z).toBeLessThan(-68.65);
