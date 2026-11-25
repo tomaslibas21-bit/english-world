@@ -59,4 +59,6 @@ export interface CaveArt {
   flowers?: readonly string[];
   /** The keeper's little hut by the first gate: roof, wall. */
   hut?: readonly [string, string];
+  /** The fins at the foot of the two great trees (m out, m up): the donor's tall ceiba buttresses when left out. */
+  buttress?: { out: number; up: number; colour: string };
 }

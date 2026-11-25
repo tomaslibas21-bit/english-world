@@ -189,6 +189,7 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
   const pick = <T,>(a: readonly T[]) => a[Math.floor(r() * a.length)];
   const fog = new THREE.FogExp2(FOG, art.density);
   const FLOWERS = art.flowers ?? ["#ffd7ee", "#fff3c4", "#ffffff", "#ffc2dd"];
+  const BUTTRESS = art.buttress ?? { out: 2.1, up: 3.2, colour: "#857560" };
 
   // ---- the lamps the rock's light is worked out from
   const lamp = (x: number, y: number, z: number, c: string, reach: number, power: number) => sink.lamps.push({ x, y, z, c: C(c), reach, power });
@@ -328,8 +329,9 @@ export function buildCave(zoneId: string, art: CaveArt, plan: Pick<CaveQuestConf
       const a = (i / 7) * Math.PI * 2 + r() * 0.5, len = 2.6 + r() * 3.2;
       // a buttress, and the root it runs out into
       const g = new THREE.BufferGeometry();
-      g.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 2.1, 0, 0.16, 0, 3.2, 0, 0, 0, 0, 0, 3.2, 0, 2.1, 0, -0.16, 2.1, 0, 0.16, 2.1, 0, -0.16, 0, 3.2, 0], 3));
-      sink.geo(g.translate(tr * 0.75, 0, 0).rotateY(a).translate(x, base, z), "#857560", 0.06, 0.1);
+      const { out: bo, up: bu, colour: bc } = BUTTRESS, bw = 0.16 * bo / 2.1;
+      g.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, bo, 0, bw, 0, bu, 0, 0, 0, 0, 0, bu, 0, bo, 0, -bw, bo, 0, bw, bo, 0, -bw, 0, bu, 0], 3));
+      sink.geo(g.translate(tr * 0.75, 0, 0).rotateY(a).translate(x, base, z), bc, 0.06, 0.1);
       const ex = x + Math.cos(a) * (tr + len), ez = z - Math.sin(a) * (tr + len);
       if (!P.poolAt(ex, ez, 0.2) || t === P.TREES[1]) sink.geo(new THREE.CylinderGeometry(0.07, 0.26, len, 5).rotateZ(Math.PI / 2).translate(tr + len / 2 + 1.2, 0.09, 0).rotateY(a).translate(x, base, z), art.roots, 0.05, 0.1);
     }

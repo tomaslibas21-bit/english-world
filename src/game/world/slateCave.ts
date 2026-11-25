@@ -74,5 +74,7 @@ export const SLATE_CAVE = {
   crystals: ["#9fd8ff", "#cdeff5", "#8fe3c8", "#b9c8e6"],
   flowers: ["#fff3c4", "#ffffff", "#e6f2d8", "#ffe7a6"],
   hut: ["#8f8a62", "#5f6a6c"],
+  // An old oak's low root collar, not a ceiba's tall buttresses.
+  buttress: { out: 1.5, up: 1.05, colour: "#665342" },
 } satisfies CaveQuestConfig & CaveArt & { visitStat: string; keeperLooks: Record<string, Partial<Look> | undefined>;
   hemi: [string, string, number]; sun: [string, number]; camera: { pitch: number; dist: number } };
