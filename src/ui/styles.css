@@ -299,7 +299,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .startup-error .btn { margin: 4px; }
 
-.fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity 0.3s ease; }
+.fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity var(--scene-fade-time, 0.3s) ease; }
 
 /* ---------- toasts ---------- */
 .toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 10px; width: min(560px, calc(100vw - 32px)); pointer-events: none; }

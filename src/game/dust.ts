@@ -41,6 +41,10 @@ export class Dust {
     p.s.visible = true;
   }
 
+  clear() {
+    for (const p of this.puffs) { p.life = 0; p.s.visible = false; }
+  }
+
   update(dt: number) {
     for (const p of this.puffs) {
       if (p.life <= 0) continue;

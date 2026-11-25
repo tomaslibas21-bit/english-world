@@ -246,7 +246,7 @@ export function malecon(parts: Part[], col: Colliders, atlas: SignAtlas, name: s
     if (len > 0.4) {
       parts.push([box(len, 0.7, 0.36, (a + o0) / 2, 0.35, z), WHITE]);
       parts.push([box(len, 0.08, 0.46, (a + o0) / 2, 0.74, z), STONE]);
-      col.addBox((a + o0) / 2, z, len, 0.5);
+      col.addBox((a + o0) / 2, z, len, 0.5, undefined, "carRim");
       for (let k = 1; k * 6 < len - 1; k++) pillar(a + (len / Math.ceil(len / 6)) * k);
       pillar(a); pillar(o0);
     }
@@ -2426,7 +2426,7 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
     const length = Math.hypot(bx - ax, bz - az);
     const wx = ax === bx ? 0.28 : length, wz = az === bz ? 0.28 : length;
     addBox(flat, tile, (ax + bx) / 2, deep / 2, (az + bz) / 2, wx, -deep, wz);
-    col.addBox(x + (ax + bx) / 2, z + (az + bz) / 2, wx, wz, "edge");
+    col.addBox(x + (ax + bx) / 2, z + (az + bz) / 2, wx, wz, "edge", "carRim");
     const tiles = Math.ceil(length / 0.5);
     // A pale grout bed and a row of glazed blue tiles just under the coping lip.
     const side = ax === bx;

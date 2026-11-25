@@ -4,7 +4,7 @@
 import type { RidesPlan } from "@/game/world/rides";
 import { THEME } from "@/game/world/theme";
 import { GAS_FORECOURT, PARKING_LOTS } from "@/game/world/layout";
-export type { CarSpot, BoatSpot, RidesPlan } from "@/game/world/rides";
+export type { CarSpot, BoatSpot, CarWaterArea, CarWaterPlan, CarWaterSite, RidesPlan } from "@/game/world/rides";
 
 export const RIDES: RidesPlan = {
   cars: [
@@ -22,6 +22,7 @@ export const RIDES: RidesPlan = {
     { id: "muelle", x: -11.5, z: -74.3, rot: Math.PI - 0.25, stripe: "#f6a800" },
     { id: "playa", x: 11.5, z: -74.5, rot: Math.PI + 0.3, stripe: "#e4007c" },
   ],
+  loadCarWater: () => import("./carWaterPlan").then(({ CAR_WATER_PLAN }) => CAR_WATER_PLAN),
   // the airport's, Brotecito's and the gas station's forecourts, and the asphalt parking bays
   lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }, GAS_FORECOURT, ...PARKING_LOTS],
   // the lighthouse's rocks

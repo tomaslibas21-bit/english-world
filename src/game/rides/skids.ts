@@ -54,6 +54,8 @@ export class Skids {
     this.mesh.visible = true;
   }
 
+  breakTracks() { this.last[0] = this.last[1] = null; }
+
   private paint(q: number, a: number) {
     const C = this.col, o = q * 24;
     for (let j = 0; j < 6; j++) { C[o + j * 4] = 0.07; C[o + j * 4 + 1] = 0.07; C[o + j * 4 + 2] = 0.075; C[o + j * 4 + 3] = a; }

@@ -205,16 +205,18 @@ export function rand(seed: number) {
 }
 
 /** `split`: replaced by height-aware pieces for the player. `vault`: the top of a sparse or instanced prop,
- *  supplied by its builder when the height sampler cannot reliably read it. It gives clearance only. */
-export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean; vault?: number }
+ *  supplied by its builder when the height sampler cannot reliably read it. It gives clearance only.
+ *  `deckRail` and `carRim` mark barriers for the car-water collision sweep. */
+export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean; vault?: number; deckRail?: boolean; carRim?: boolean }
 export interface CircleCollider { x: number; z: number; r: number; tag?: string; split?: boolean; vault?: number; npc?: string }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
   boxes: AABB[] = [];
   circles: CircleCollider[] = [];
-  addBox(cx: number, cz: number, w: number, d: number, tag?: string) {
+  addBox(cx: number, cz: number, w: number, d: number, tag?: string, sweep?: "deckRail" | "carRim") {
     const b: AABB = { minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag };
+    if (sweep) b[sweep] = true;
     this.boxes.push(b);
     return b;
   }
@@ -229,11 +231,11 @@ export class Colliders {
   roofs: { minX: number; minZ: number; maxX: number; maxZ: number }[] = [];
   addRoof(cx: number, cz: number, w: number, d: number) { this.roofs.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 }); }
   /** Push a circle of radius r at (x,z) out of all colliders. For the player on foot, skip props handled by ledges.ts
-   *  and open the shore for wading. */
-  resolve(p: THREE.Vector3, r: number, jumper = false, openTownEdge = false) {
+   *  and open the shore for wading. `ignoreSea` opens the sea boxes for an occupied car. */
+  resolve(p: THREE.Vector3, r: number, jumper = false, openTownEdge = false, ignoreSea = false) {
     for (let iter = 0; iter < 2; iter++) {
       for (const b of this.boxes) {
-        if ((jumper && (b.split || b.tag === "sea")) || (openTownEdge && b.tag === "town-edge")) continue;
+        if ((jumper && b.split) || ((jumper || ignoreSea) && b.tag === "sea") || (openTownEdge && b.tag === "town-edge")) continue;
         const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
         const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
         const dx = p.x - cx, dz = p.z - cz;
