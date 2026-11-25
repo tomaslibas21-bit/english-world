@@ -5,7 +5,7 @@ import type { Ctx, EntityDef, SituationDef } from "../types";
 
 export const FERN_INTRO = {
   en: "Fern sits on the bridge over the underground river. She has some riddles for you. Take a guess, ask for a clue, or try another riddle.",
-  lt: "Ant tilto per požeminę upę sėdi Ferna. Ji Jums užmins kelias mįsles. Galite spėti, prašyti užuominos ar rinktis kitą mįslę.",
+  lt: "Ant tilto per požeminę upę sėdi Ferna. Ji tau užmins kelias mįsles. Gali spėti, prašyti užuominos ar rinktis kitą mįslę.",
 };
 
 export const FERN_RIDDLES = [
@@ -127,7 +127,7 @@ const sit: SituationDef = {
   topic: { en: "Solve the riddles", lt: "Įminti mįsles" },
   chapter: 9, order: 14, location: "gruta", npc: "cave_fern", mode: "talk",
   intro: FERN_INTRO.lt,
-  goal: "Pažaiskite su Ferna, kad galėtumėte pereiti tiltą.",
+  goal: "Pažaisk su Ferna, kad galėtum pereiti tiltą.",
   lines: fernLines, hints: { ...hints, ...guessHints }, entities: { thing: things },
   intents: {
     ready_ctx: { patterns: ["[yes] let us play #h:ready_yes", "i am ready #h:ready_now", "let us do it #h:ready_go", "tell me the first one #h:ready_first", "ready", "let us go", "give me a riddle"] },
@@ -154,14 +154,14 @@ const sit: SituationDef = {
     like: { patterns: ["do you like riddles #h:q_like", "do you like this game"] },
   },
   mission: [
-    { lt: "Sutikite žaisti", step: "ready" },
-    { lt: "Pamėginkite įminti mįsles", step: "riddle" },
-    { lt: "Atsisveikinkite", done: (c) => !!c.s.closed },
+    { lt: "Sutik žaisti", step: "ready" },
+    { lt: "Pamėgink įminti mįsles", step: "riddle" },
+    { lt: "Atsisveikink", done: (c) => !!c.s.closed },
   ],
   steps: [
     { id: "ready", done: (c) => !!c.s.ready, expects: ["ready_ctx", "later_ctx"],
       ask(c) { c.say(c.s.askedReady ? "ask_ready2" : c.visits ? "ask_ready" : "rule"); c.s.askedReady = true; },
-      hints: ["ready", "ask"], suggest: [{ lt: "Sutikite žaisti", hint: "ready" }, { lt: "Ko nors paklauskite Fernos", hint: "ask" }], yes: ready, no: wait, help: wait },
+      hints: ["ready", "ask"], suggest: [{ lt: "Sutikti žaisti", hint: "ready" }, { lt: "Ko nors paklausti Fernos", hint: "ask" }], yes: ready, no: wait, help: wait },
     { id: "riddle", done: (c) => !!c.s.passed,
       expects: ["guess_ctx", "not_guess_ctx", "not_guess_unknown_ctx", "repeat_ctx", "unsure_ctx", "hard_ctx", "skip_ctx", "reveal_ctx"],
       ask(c) {
@@ -172,8 +172,8 @@ const sit: SituationDef = {
         const { answer, options } = current(c);
         const hint = `guess_${answer}`;
         return [
-          { lt: "Spėkite atsakymą", hint, options: [...options] },
-          { lt: "Paprašykite pagalbos", hint: "help" }, { lt: "Ko nors paklauskite Fernos", hint: "ask" },
+          { lt: "Spėti atsakymą", hint, options: [...options] },
+          { lt: "Paprašyti pagalbos", hint: "help" }, { lt: "Ko nors paklausti Fernos", hint: "ask" },
         ];
       },
       no: side("think"), help: unsure },
@@ -189,7 +189,7 @@ const sit: SituationDef = {
   finish(c) {
     const end = (cc: Ctx) => { cc.s.closed = true; close(cc); };
     c.expect({ id: "closing", optional: true, hints: ["g_social"],
-      suggest: [{ lt: "Padėkokite ir atsisveikinkite", hint: "g_social" }],
+      suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "g_social" }],
       on: { g_thanks: (cc) => { cc.say("welcome"); end(cc); }, g_bye: end }, yes: end, no: end });
   },
   handlers: {
@@ -201,7 +201,7 @@ const sit: SituationDef = {
       if (!playing(c)) return;
       c.say("hard_offer");
       c.expect({ id: "hint_offer", optional: true, hints: ["g_yesno"],
-        suggest: [{ lt: "Atsakykite „taip“ arba „ne“", hint: "g_yesno" }], yes: clue, no: side("think") });
+        suggest: [{ lt: "Atsakyti: taip arba ne", hint: "g_yesno" }], yes: clue, no: side("think") });
       c.hold();
     },
     skip_ctx(c) { if (playing(c)) { c.say("skip_ok"); finishGuess(c, false); } },

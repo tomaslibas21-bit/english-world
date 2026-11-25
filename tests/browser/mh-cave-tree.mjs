@@ -4,6 +4,7 @@ import {
   DEVICES, STONES, TIDE, TIDE_LINE, at, audioKey, bramTalk, calls, closeRune, crossIn, distance, exitVia,
   fernTalk, forward, inspectPicker, interact, lines, look, oakTalk, openRune, prompt, settled, solve, suite,
   surface, trail, walk, watch,
+  TOAST_WAIT,
 } from "./fixtures/mh-cave.mjs";
 
 const full = { lit: STONES, passed: ["bram", "fern"], seen: true, heart: true };
@@ -148,7 +149,7 @@ async function ordinary(run) {
   assert.equal((await watch(run)).hearts, 1);
   await closeRune(run);
   await surface(run, run.page.locator(".town-toasts .toast").filter({ hasText: "Senasis ąžuolas pabudo!" }),
-    ["Senasis ąžuolas pabudo!", "Šviečia penki akmenys. Saloje Jūsų laukia ąžuolas."]);
+    ["Senasis ąžuolas pabudo!", "Šviečia penki akmenys. Saloje tavęs laukia ąžuolas."], TOAST_WAIT);
   await walk(run, 13, -134);
   assert.equal((await run.state()).card.n, 4);
   await surface(run, run.page.locator(".cave-card"), ["Star Hall", "4 / 5"]);
@@ -202,7 +203,7 @@ async function lastOfRound(run) {
   assert.equal(after.card.count, "4 ratas");
   assert.equal(after.saved.length, 15);
   assert.deepEqual(after.book, ["x08-old-oak:tide_01"]);
-  assert.equal((await watch(run)).toasts["Išgirdote visas 215 frazių!"].length, 1);
+  assert.equal((await watch(run)).toasts["Išgirdai visas 215 frazių!"].length, 1);
   await run.mark("replay-round");
 }
 

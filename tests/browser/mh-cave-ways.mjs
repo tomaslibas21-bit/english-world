@@ -13,7 +13,7 @@ async function roundTrip(run, first) {
   const start = await crossIn(run, first, true);
   assert(start.card.n === 1 && start.card.of === 5 && start.mask === 0 && start.visits === 1);
   await surface(run, run.page.locator(".town-toasts .toast.tip").first(),
-    ["Radote Skalūnų įlankos olą!", "Pasikalbėkite su Bramu ant pilkojo tako."]);
+    ["Radai Skalūnų įlankos olą!", "Pasikalbėk su Bramu ant pilkojo tako."]);
   await surface(run, run.page.locator(".cave-card"), ["Tide Hall", "1 / 5"]);
 
   assert.equal(start.savedPlace.zone, "gruta");

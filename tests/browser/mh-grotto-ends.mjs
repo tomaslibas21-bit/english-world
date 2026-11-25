@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   BRAM, CAVE, DEVICES, RING, TIDE, at, closeRune, conversation, distance, endTalk, heard, lines, oakTalk,
   openMap, openRune, settled, solve, suite, surface, walk,
+  TOAST_WAIT,
 } from "./fixtures/mh-cave.mjs";
 
 const mapState = (run) => run.page.locator(".minimap canvas").evaluate((canvas) => ({
@@ -62,14 +63,14 @@ async function firstGuide(run) {
   await run.visible(bigMap.locator('canvas[data-map="slate-cove"]'));
   await surface(run, bigMap, ["Maple Harbor", "Slate Cove Cave", "Old Stone Ring"]);
   const player = bigMap.locator(".map-me");
-  assert.equal(await player.getAttribute("title"), "Jūs esate čia");
+  assert.equal(await player.getAttribute("title"), "Tu esi čia");
   for (const [name, place] of [["Rodyti įėjimą į olą žemėlapyje", CAVE], ["Rodyti Senąjį akmenų ratą žemėlapyje", RING]]) {
     const pin = bigMap.getByRole("button", { name, exact: true });
     assert.equal(await pin.locator("[lang=en]").innerText(), place[0]);
     assert.equal(await pin.locator("[lang=lt]").innerText(), `· ${place[1]}`);
   }
   assert.equal(await bigMap.locator(".info-box").innerText().then((s) => s.replace(/\s+/gu, " ").trim()),
-    "Pasirinkite vietą žemėlapyje. Geltonas taškas rodo Jūsų užduotį, raudonas – kur esate. Kai kurios užduotys atliekamos telefonu (P).");
+    "Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu. Kai kurios užduotys atliekamos telefonu (P).");
   const mapPin = await player.evaluate((d) => [parseFloat(d.style.left), parseFloat(d.style.top)]);
   assert(mapPin.every((v) => v > 0 && v < 100), JSON.stringify(mapPin));
   await run.mark("cove-local-map");
@@ -93,7 +94,7 @@ async function firstGuide(run) {
   const caveMap = await openMap(run);
   await run.visible(caveMap.locator('canvas[data-map="gruta"][data-gates="0"]'));
   await surface(run, caveMap, [...CAVE, "Kelias oloje", "Nuvesk mane"]);
-  assert.equal(await caveMap.locator(".map-me").getAttribute("title"), "Jūs esate čia");
+  assert.equal(await caveMap.locator(".map-me").getAttribute("title"), "Tu esi čia");
   const cavePin = await caveMap.locator(".map-me").evaluate((d) => [parseFloat(d.style.left), parseFloat(d.style.top)]);
   assert(cavePin.every((v) => v > 0 && v < 100));
   await run.mark("cave-map-closed-gates");
@@ -150,11 +151,11 @@ async function firstGuide(run) {
   if (run.height === 664) {
     // The donor injects a long tip only to test HUD mechanics. Repeat the authored in-game MH tip.
     await run.ev(() => {
-      const line = "Pasikalbėkite su Bramu ant pilkojo tako.";
-      window.__ew.store.getState().toast({ kind: "tip", title: "Radote Skalūnų įlankos olą!", body: [line, line, line].join(" ") });
+      const line = "Pasikalbėk su Bramu ant pilkojo tako.";
+      window.__ew.store.getState().toast({ kind: "tip", title: "Radai Skalūnų įlankos olą!", body: [line, line, line].join(" ") });
     });
     const tip = run.page.locator(".town-toasts .toast.tip");
-    await surface(run, tip, ["Radote Skalūnų įlankos olą!", "Pasikalbėkite su Bramu ant pilkojo tako."]);
+    await surface(run, tip, ["Radai Skalūnų įlankos olą!", "Pasikalbėk su Bramu ant pilkojo tako."]);
     assert.equal(await toggle.getAttribute("aria-expanded"), "false");
     const layout = await foldedLayout(run, true);
     assert(layout.scrollHeight > layout.bodyHeight && layout.bodyHeight <= 3 * layout.lineHeight + 1, JSON.stringify(layout));
@@ -162,7 +163,7 @@ async function firstGuide(run) {
     await run.press(tip.locator(".x"));
     await run.visible(run.page.locator('.cave-toggle[aria-expanded="true"]'));
   }
-  await surface(run, run.page.locator(".cave-card"), ["Tide Hall", "Potvynių menė", "Pasikalbėkite su Bramu", "Išeikite sausuoju taku"]);
+  await surface(run, run.page.locator(".cave-card"), ["Tide Hall", "Potvynių menė", "Pasikalbėk su Bramu", "Išeik sausuoju taku"]);
   await run.press(run.page.locator('.cave-guide button[data-guide="objective"]'));
   await run.wait(() => {
     const g = window.__ew.game;
@@ -172,7 +173,7 @@ async function firstGuide(run) {
     const g = window.__ew.game, p = g.player.root.position;
     return g.zoneId === "town" && Math.hypot(p.x + 121, p.z + 61.8) < 2.5 && p.y >= 0 && !g.swimming;
   }, "cleft returns to the dry trail", 20_000, undefined, 1);
-  await surface(run, run.page.locator(".town-toasts .toast").filter({ hasText: "Vėl ant tako" }), ["Vėl ant tako", "Taku grįšite į miestelį."]);
+  await surface(run, run.page.locator(".town-toasts .toast").filter({ hasText: "Vėl ant tako" }), ["Vėl ant tako", "Taku grįši į miestelį."], TOAST_WAIT);
   await run.mark("course-exit");
   await run.wait(() => {
     const g = window.__ew.game;
@@ -216,7 +217,7 @@ await suite("mh-grotto-ends", async (run) => {
       const after = await view.state();
       assert(after.cave.tree && after.cave.lit.length === 5 && distance(after, [6, -180]) < 3.6 && !after.talk);
       await surface(view, view.page.locator(".town-toasts .toast.tip").filter({ hasText: "Akmenys vėl prabilo" }),
-        ["Akmenys vėl prabilo", "Pasiklausykite, ką dar sako akmenys."]);
+        ["Akmenys vėl prabilo", "Pasiklausyk, ką dar sako akmenys."], TOAST_WAIT);
       await view.mark("oak-after-invitation");
       await walk(view, 6.2, -189.85);
       const assigned = await view.ev(() => window.__ew.game.cave.phrases.get("oak-3").id);

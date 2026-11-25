@@ -5,6 +5,7 @@ import {
   DEVICES, TIDE, TIDE_LINE, CAVE, at, audioKey, bramTalk, calls, cardKey, closeRune, crossIn, cue,
   distance, exitVia, forward, glyph, inspectPicker, interact, openRune, prompt, solve, suite, surface,
   toolbar, trail, watch,
+  TOAST_WAIT,
 } from "./fixtures/mh-cave.mjs";
 
 const tideKey = audioKey("g_coach_m", 1, TIDE_LINE[0]);
@@ -52,7 +53,7 @@ async function firstRune(run) {
   assert(await choice.isDisabled());
   assert.match(await choice.getAttribute("class"), /\bwrong\b/);
   assert.equal(await choice.evaluate((button) => getComputedStyle(button).textDecorationLine), "line-through");
-  await surface(run, card, ["Pamėginkite pasirinkti kitą reikšmę.", TIDE_LINE[1]]);
+  await surface(run, card, ["Pamėgink pasirinkti kitą reikšmę.", TIDE_LINE[1]]);
   await run.mark("tide-wrong");
 
   await run.withoutFrameCapture(() => replayNearDeadline(run, q, card, reading));
@@ -119,7 +120,7 @@ async function main(run) {
   assert(start.card.n === 1 && start.card.of === 5 && start.card.open === 1 && /Bram/.test(start.card.next));
   assert(start.calls > 3 && start.calls < 40, JSON.stringify(start));
   await surface(run, run.page.locator(".cave-card"), ["Tide Hall", "1 / 5"]);
-  await surface(run, run.page.locator(".town-toasts .toast.tip").first(), ["Radote Skalūnų įlankos olą!", "Pasikalbėkite su Bramu ant pilkojo tako."]);
+  await surface(run, run.page.locator(".town-toasts .toast.tip").first(), ["Radai Skalūnų įlankos olą!", "Pasikalbėk su Bramu ant pilkojo tako."]);
 
   await forward(run, async () => {
     await prompt(run, "talk", "cave_bram", ["Pasikalbėti su Bramu"]);
@@ -170,7 +171,7 @@ async function main(run) {
   assert(cut.end - cut.at < 1200);
   assert.deepEqual((await watch(run)).hush, [true, false, true, false]);
   await surface(run, run.page.locator(".town-toasts .toast").filter({ hasText: "Šviečia visi trys akmenys!" }),
-    ["Šviečia visi trys akmenys!", "Kelias į Šaknų sodą atviras."]);
+    ["Šviečia visi trys akmenys!", "Kelias į Šaknų sodą atviras."], TOAST_WAIT);
   await run.wait(() => window.__ew.store.getState().hud.cave?.open === 2, "Tide opens Root Garden", 15_000);
   await wall(4300);
   await run.step(20);
@@ -229,14 +230,14 @@ async function missingMedia(run, listed) {
   assert(run.requests.some((r) => r.manifest === (listed ? "listed-missing" : "no-manifest")));
   assert.equal(await run.ev(() => typeof speechSynthesis), "undefined");
   await cue(run, run.page.locator(".glyph-text"), TIDE_LINE[0]);
-  await surface(run, run.page.locator(".glyph-card"), ["Perskaitykite žodžius ir pasirinkite jų reikšmę.", TIDE_LINE[1]]);
+  await surface(run, run.page.locator(".glyph-card"), ["Perskaityk žodžius ir pasirink jų reikšmę.", TIDE_LINE[1]]);
   if (listed) {
     const played = (await calls(run)).filter((c) => c.glyph === "tide-1");
     assert.equal(played.length, 1);
     assert.deepEqual([played[0].text, played[0].voice, played[0].result], [TIDE_LINE[0], "g_coach_m", false]);
   }
   await solve(run, q, TIDE_LINE);
-  await surface(run, run.page.locator(".glyph-card"), ["Čia galite dar kartą perskaityti frazę.", TIDE_LINE[1]]);
+  await surface(run, run.page.locator(".glyph-card"), ["Čia gali dar kartą perskaityti frazę.", TIDE_LINE[1]]);
   const attempts = (await calls(run)).length;
   await run.press(run.page.locator(".glyph-play"));
   assert.equal((await calls(run)).length, attempts);

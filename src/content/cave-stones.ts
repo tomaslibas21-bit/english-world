@@ -228,7 +228,7 @@ export const CAVE_STONE_HINTS = {
     { id: "oak_37", s: t("The | oak | remembers | you.", "— | ąžuolas | prisimena | Jus.", "Ąžuolas Jus prisimena.") },
     { id: "oak_38", s: t("Kind | hands | help | small | things | grow.", "Geros | rankos | padeda | mažiems | dalykams | augti.", "Gerų rankų globojama auga visa, kas maža.") },
     { id: "oak_39", s: t("Keep | this | secret | with | a | friend.", "Saugokite | šią | paslaptį | su | — | draugu.", "Kartu su draugu saugokite šią paslaptį.") },
-    { id: "oak_40", s: t("Come back. | The | stones | have | more | to | say.", "Sugrįžkite. | — | akmenys | turi | daugiau | ką | pasakyti.", "Sugrįžkite. Akmenys dar turi ką pasakyti.") },
+    { id: "oak_40", s: t("Come back. | The | stones | have | more | to | say.", "Sugrįžkite. | — | akmenys | turi | dar | ką | pasakyti.", "Sugrįžkite. Akmenys dar turi ką pasakyti.") },
     { id: "oak_41", s: t("A | small | cave | can | hold | a | great | heart.", "— | maža | ola | gali | talpinti | — | didelę | širdį.", "Mažoje oloje telpa didelė širdis.") },
     { id: "oak_42", s: t("One | night | you'll | dream | in | English.", "Vieną | naktį | Jūs | sapnuosite | — | angliškai.", "Vieną naktį sapnuosite angliškai.") },
     { id: "oak_43", s: t("One | word | is | a | beginning.", "Vienas | žodis | yra | — | pradžia.", "Viskas prasideda nuo vieno žodžio.") },

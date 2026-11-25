@@ -1,13 +1,8 @@
 import type { CaveGate } from "./cave-copy";
 import type { ConversationCopy, Ctx, HintGroup, SentSrc } from "./types";
 
-export const caveConversationCopy = {
-  guides: { g_howareyou: "Pasakykite, kaip Jums sekasi, ir paklauskite, kaip sekasi pašnekovui." },
-  ownName: "Pasakykite savo vardą.",
-  clarification: "Visada pravers: paprašyti pakartoti, kalbėti lėčiau ar pasakyti žodį paraidžiui.",
-  bestPhrase: { spoken: "Geriausiai pasakėte", typed: "Jūsų frazė" },
-  received: "Gavote",
-} satisfies ConversationCopy;
+// The cave's chats use MH's own conversation labels (tu, like every other chat); only the Oak adds its Ending.
+export const caveConversationCopy = {} satisfies ConversationCopy;
 
 export function caveHints<M extends Record<string, SentSrc>>(
   models: M, lt: string, ids: (keyof M & string)[],

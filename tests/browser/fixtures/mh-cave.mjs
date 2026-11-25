@@ -350,8 +350,26 @@ async function checkCanvasLabels(ev) {
   assert(!labels.some((label) => forbidden.test(normalize(label))), `PC vocabulary on scene labels: ${labels}`);
 }
 
-export async function surface(run, locator, expected) {
-  await run.visible(locator);
+// MH's town toasts take turns (playing-screen.mjs): a later one can wait behind earlier ones.
+export const TOAST_WAIT = 60_000;
+export async function surface(run, locator, expected, timeout) {
+  await run.visible(locator, timeout);
+  // A toast or card can still be fading in (opacity 0) when it first becomes visible: read again for a moment.
+  const limit = performance.now() + 4000;
+  for (;;) {
+    const text = await surfaceText(locator);
+    const ok = expected.every((term) => text.normalize("NFC").replace(/\s+/gu, " ").includes(term.normalize("NFC")));
+    if (ok || performance.now() > limit) break;
+    await run.layout(() => wall(120));
+  }
+  const text = await surfaceText(locator);
+  assert(!forbidden.test(normalize(text)), `PC vocabulary in ${locator}: ${text}`);
+  for (const term of expected) {
+    assert(text.normalize("NFC").replace(/\s+/gu, " ").includes(term.normalize("NFC")), `${locator} shows “${term}”: ${text}`);
+  }
+}
+
+async function surfaceText(locator) {
   const values = await locator.evaluate((root) => {
     const shown = (el) => {
       for (let a = el; a; a = a.parentElement) {
@@ -376,11 +394,7 @@ export async function surface(run, locator, expected) {
     });
     return { text: chunks.join(" "), names };
   });
-  const text = [values.text, ...values.names].join(" ");
-  assert(!forbidden.test(normalize(text)), `PC vocabulary in ${locator}: ${text}`);
-  for (const term of expected) {
-    assert(text.normalize("NFC").replace(/\s+/gu, " ").includes(term.normalize("NFC")), `${locator} shows “${term}”: ${text}`);
-  }
+  return [values.text, ...values.names].join(" ");
 }
 
 export const glyph = (run) => run.ev(() => window.__ew.store.getState().hud.glyph);
@@ -527,7 +541,7 @@ export async function conversation(run, who, timeout = 15_000) {
   await run.visible(dialog);
   const intro = dialog.locator(".scene-intro");
   if (await run.ev(() => window.__ew.store.getState().conv.introOpen)) {
-    await surface(run, intro, [who === BRAM ? "Prisistatykite" : who === FERN ? "Ji Jums užmins kelias mįsles" : "Penki akmenys jau šviečia", "Pradėti"]);
+    await surface(run, intro, [who === BRAM ? "Prisistatyk" : who === FERN ? "Ji tau užmins kelias mįsles" : "Penki akmenys jau šviečia", "Pradėti"]);
     const visit = await run.ev(() => window.__ew.store.getState().conv.run);
     await run.mark(`${who.id}-intro-${visit}`);
     await run.press(intro.getByRole("button", { name: "Pradėti", exact: true }));
@@ -567,9 +581,9 @@ export async function ended(run, who, gift) {
   assert(phrase?.en && phrase.nat);
   assert.equal(await end.locator(".ended-phrase [lang=en]").innerText(), phrase.en);
   assert.equal(await end.locator(".ended-phrase [lang=lt]").innerText(), phrase.nat);
-  assert.equal(await end.locator(".ended-phrase-label").innerText(), "Jūsų frazė");
+  assert.equal(await end.locator(".ended-phrase-label").innerText(), "Tavo frazė");
   assert.equal(await end.locator(".ended-keepsake").innerText(), gift);
-  await surface(run, end, [phrase.en, phrase.nat, gift, "Jūsų frazė"]);
+  await surface(run, end, [phrase.en, phrase.nat, gift, "Tavo frazė"]);
   return end;
 }
 
@@ -663,9 +677,11 @@ export async function exitVia(run, id, { action = false, hold = false, timeout =
   const s = await run.state();
   assert(s.y >= 0 && !s.swim && !s.card && distance(s, d.out) < (id === "main" ? 3 : 2.5), JSON.stringify(s));
   assert.equal(s.visits, before.visits);
-  await surface(run, run.page.locator(".minimap .label"), ["Maple Harbor"]);
+  // (the phone layout hides the minimap's town name; its map region says where one is)
+  if (run.phone) assert.notEqual(await run.page.locator(".minimap").getAttribute("data-map"), "gruta");
+  else await surface(run, run.page.locator(".minimap .label"), ["Maple Harbor"]);
   await surface(run, run.page.locator(".town-toasts .toast").filter({ hasText: "Vėl ant tako" }).first(),
-    ["Vėl ant tako", "Taku grįšite į miestelį."]);
+    ["Vėl ant tako", "Taku grįši į miestelį."], TOAST_WAIT);
   await run.mark(`${id}-outside-v${s.visits}`);
   return s;
 }
@@ -816,7 +832,7 @@ export async function bramTalk(run, { first = true } = {}) {
     }
   }
   await run.wait(() => window.__ew.store.getState().progress.cave?.passed?.includes("bram"), "Bram's release is saved", 30_000);
-  await ended(run, BRAM, "Gavote mažą skalūno akmenėlį");
+  await ended(run, BRAM, "Gavai mažą skalūno akmenėlį");
   await run.mark("bram-end");
   await endTalk(run);
 }
@@ -830,7 +846,7 @@ export async function fernTalk(run, { clues = true } = {}) {
   await heard(run, ["I wear a little cap. An oak sleeps inside me.", "Dėviu mažą kepurėlę. Manyje miega ąžuolas."]);
   await surface(run, dialog.locator(".guide .chips"), ["gilė", "riešutas", "akmuo", "kriauklė"]);
   if (clues) {
-    await alternative(run, "Paprašyk pagalbos", ["Can I have a clue?", "užuominą?"]);
+    await alternative(run, "Paprašyti pagalbos", ["Can I have a clue?", "užuominą?"]);
     await answer(run, "Can I have a clue?");
     await turn(run);
     await heard(run, ["Look under an oak in the fall.", "Rudenį paieškokite po ąžuolu."]);
@@ -844,7 +860,7 @@ export async function fernTalk(run, { clues = true } = {}) {
   await turn(run);
   await heard(run, ["The bridge is yours. Go ahead.", "Tiltas Jūsų. Pereikite."]);
   await answer(run, "Thanks!");
-  await ended(run, FERN, "Gavote mažą skalūno akmenėlį");
+  await ended(run, FERN, "Gavai mažą skalūno akmenėlį");
   assert.equal(await run.ev(() => window.__ew.store.getState().progress.sits["x07-fern"].completions), 1);
   await run.mark("fern-end");
   await endTalk(run);
@@ -896,7 +912,7 @@ export async function oakClosing(run, { leaveByGuide = false } = {}) {
   assert(await run.ev(() => window.__ew.store.getState().conv.transcript.filter((l) => l.who === "npc").length >= 9));
   await run.mark("oak-closing-words");
   await answer(run, "Goodbye!", 90_000);
-  const end = await ended(run, OAK, "Gavote ąžuolo lapą");
+  const end = await ended(run, OAK, "Gavai ąžuolo lapą");
   const expected = {
     "Who are you?": "Kas Jūs?",
     "I feel at home here.": "Čia jaučiuosi kaip namie.",
@@ -909,7 +925,7 @@ export async function oakClosing(run, { leaveByGuide = false } = {}) {
   const ending = end.locator(".cave-ending");
   await run.visible(ending);
   assert.equal(await ending.locator("[lang=en]").innerText(), "Follow the lights to the dry exit.");
-  assert.equal(await ending.locator("[lang=lt]").innerText(), "Sekite žiburėlius iki išėjimo į sausą taką.");
+  assert.equal(await ending.locator("[lang=lt]").innerText(), "Sek žiburėlius iki išėjimo į sausą taką.");
   const guide = ending.getByRole("button", { name: "Nuvesk mane", exact: true });
   assert.equal(await guide.count(), light ? 0 : 1);
   if (!light) await run.visible(guide);

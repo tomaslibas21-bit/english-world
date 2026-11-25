@@ -32,8 +32,8 @@ function close(c: Ctx) {
 
 const hints = {
   who: caveHints(oakModels, "Atsakyti ąžuolui", ["w_who", "w_oak"]),
-  feel: caveHints(oakModels, "Pasakyti, kaip čia jaučiatės", ["th_home", "th_like", "th_thanks", "th_new"]),
-  promise: caveHints(oakModels, "Atsakyti, ar mokysitės toliau", ["p_keep", "p_little", "p_promise", "p_sure", "p_rest"]),
+  feel: caveHints(oakModels, "Pasakyti, kaip čia jautiesi", ["th_home", "th_like", "th_thanks", "th_new"]),
+  promise: caveHints(oakModels, "Atsakyti, ar mokysiesi toliau", ["p_keep", "p_little", "p_promise", "p_sure", "p_rest"]),
   ask: caveHints(oakModels, "Ko nors paklausti ąžuolo", ["q_age", "q_spirits"]),
 };
 
@@ -43,8 +43,8 @@ const sit: SituationDef = {
   title: { en: "The Old Oak", lt: "Senasis ąžuolas" },
   topic: { en: "Listen to the oak", lt: "Pasiklausyti ąžuolo" },
   chapter: 9, order: 15, location: "gruta", npc: "cave_oak", mode: "talk",
-  intro: "Penki akmenys jau šviečia. Saloje sujuda senojo ąžuolo lapai. Prieikite ir pasiklausykite, ką jis Jums pasakys.",
-  goal: "Pasiklausykite senojo ąžuolo ir jam atsakykite.",
+  intro: "Penki akmenys jau šviečia. Saloje sujuda senojo ąžuolo lapai. Prieik ir pasiklausyk, ką jis tau pasakys.",
+  goal: "Pasiklausyk senojo ąžuolo ir jam atsakyk.",
   lines: oakLines,
   hints: { ...hints, ...CAVE_STONE_HINTS },
   intents: {
@@ -63,14 +63,14 @@ const sit: SituationDef = {
     stone: { patterns: CAVE_STONE_PATTERNS },
   },
   mission: [
-    { lt: "Sužinokite, kas kalba", step: "who" },
-    { lt: "Pasakykite, kaip čia jaučiatės", step: "home" },
-    { lt: "Atsakykite, ar mokysitės toliau", step: "promise" },
+    { lt: "Sužinok, kas kalba", step: "who" },
+    { lt: "Pasakyk, kaip čia jautiesi", step: "home" },
+    { lt: "Atsakyk, ar mokysiesi toliau", step: "promise" },
   ],
   steps: [
     { id: "who", done: (c) => !!c.s.known, expects: ["who", "know", "know_ctx"],
       ask: (c) => c.say("ask_who"), hints: ["who", "ask", "g_yesno"],
-      suggest: [{ lt: "Atsakykite ąžuolui", hint: "who" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
+      suggest: [{ lt: "Atsakyti ąžuolui", hint: "who" }, { lt: "Ko nors paklausti ąžuolo", hint: "ask" }],
       yes: (c) => tellWho(c, true), no: (c) => tellWho(c), help: (c) => tellWho(c) },
     { id: "home", done: (c) => !!c.s.felt, expects: ["feel_home", "feel_like", "feel_thanks", "feel_new"],
       ask(c) {
@@ -78,7 +78,7 @@ const sit: SituationDef = {
         else { c.s.homeSaid = true; c.say("root"); c.say("home"); }
         c.say("ask_feel");
       },
-      hints: ["feel", "ask"], suggest: [{ lt: "Pasakykite, kaip čia jaučiatės", hint: "feel" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
+      hints: ["feel", "ask"], suggest: [{ lt: "Pasakyti, kaip čia jautiesi", hint: "feel" }, { lt: "Ko nors paklausti ąžuolo", hint: "ask" }],
       yes: (c) => feel(c, "like_back"), no: (c) => feel(c, "feel_space"), help: (c) => feel(c, "feel_space") },
     { id: "promise", done: (c) => !!c.s.promised, expects: ["promise", "promise_ctx", "rest_ctx"],
       ask(c) {
@@ -86,7 +86,7 @@ const sit: SituationDef = {
         c.s.goAsked = true;
         c.say("ask_go");
       },
-      hints: ["promise", "ask"], suggest: [{ lt: "Atsakykite, ar mokysitės toliau", hint: "promise" }, { lt: "Ko nors paklauskite ąžuolo", hint: "ask" }],
+      hints: ["promise", "ask"], suggest: [{ lt: "Atsakyti, ar mokysiesi toliau", hint: "promise" }, { lt: "Ko nors paklausti ąžuolo", hint: "ask" }],
       yes: (c) => farewell(c), no: (c) => farewell(c, true), help: (c) => farewell(c, true) },
   ],
   init(c) { Object.assign(c.s, { known: c.memory.known === true, felt: false, promised: false, closed: false }); },
@@ -107,7 +107,7 @@ const sit: SituationDef = {
   },
   finish(c) {
     c.expect({ id: "closing", optional: true, hints: ["g_social"],
-      suggest: [{ lt: "Padėkokite ir atsisveikinkite", hint: "g_social" }],
+      suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "g_social" }],
       on: { feel_thanks: close, g_thanks: close, g_bye: close }, yes: close, no: close });
   },
   merges: {

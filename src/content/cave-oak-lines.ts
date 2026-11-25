@@ -21,7 +21,7 @@ export const oakLines = {
   glad: [t("I'm | glad | to | hear | it.", "Man | malonu | — | girdėti | tai.", "Gera tai girdėti.")],
   rest: [t("Rest | now. | Your | words | will | wait.", "Pailsėkite | dabar. | Jūsų | žodžiai | — | palauks.", "Dabar pailsėkite. Jūsų žodžiai palauks.")],
   keep: [t("Keep | one | word | close. | Let | it | grow.", "Laikykite | vieną | žodį | arti. | Leiskite | jam | augti.", "Pasilikite vieną žodį širdyje. Leiskite jam augti.")],
-  back: [t("Come back. | The | stones | have | more | to | say.", "Sugrįžkite. | — | akmenys | turi | daugiau | ką | pasakyti.", "Sugrįžkite. Akmenys dar turi ką pasakyti.")],
+  back: [t("Come back. | The | stones | have | more | to | say.", "Sugrįžkite. | — | akmenys | turi | dar | ką | pasakyti.", "Sugrįžkite. Akmenys dar turi ką pasakyti.")],
   bye: [t("Walk | home | in | peace. | I'll | be | here.", "Keliaukite | namo | — | ramybėje. | Aš | būsiu | čia.", "Ramiai keliaukite namo. Aš būsiu čia.")],
   age: [t("I | stopped | counting | winters | long ago.", "Aš | nustojau | skaičiuoti | žiemas | seniai.", "Jau seniai nebeskaičiuoju žiemų.")],
   spirits: [t("By | the | path | and | the | bridge. | Listen | for | laughter.", "Prie | — | tako | ir | — | tilto. | Įsiklausykite | — | juoko.", "Prie tako ir prie tilto. Įsiklausykite – gal išgirsite juoką.")],

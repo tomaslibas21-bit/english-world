@@ -5,7 +5,7 @@ import type { Ctx, Handler, SituationDef } from "../types";
 
 export const BRAM_INTRO = {
   en: "Bram, in his wool cap, waits for you on the gray path. Introduce yourself and find out where the first three speaking stones are.",
-  lt: "Ant pilkojo tako Jūsų laukia Bramas su vilnone kepure. Prisistatykite ir sužinokite, kur rasti pirmuosius tris kalbančius akmenis.",
+  lt: "Ant pilkojo tako tavęs laukia Bramas su vilnone kepure. Prisistatyk ir sužinok, kur rasti pirmuosius tris kalbančius akmenis.",
 };
 
 const countries = [
@@ -19,15 +19,15 @@ const countries = [
 const hints = {
   name: caveHints(bramModels, "Pasakyti savo vardą", ["n_im", "n_my_name", "n_call"]),
   from: {
-    ...caveHints(bramModels, "Pasakyti, iš kur atvykote", ["f_from", "f_come"]),
+    ...caveHints(bramModels, "Pasakyti, iš kur esi", ["f_from", "f_come"]),
     slot: "country", examples: countries.map(({ id }) => id),
   },
   origin: caveHints(bramModels, "Atsakyti kitaip", ["f_town", "f_near", "f_far", "f_unsure"]),
-  why: caveHints(bramModels, "Pasakyti, kodėl atėjote", ["w_see", "w_learn", "w_stones", "w_curious", "w_lost", "w_unsure", "w_other"]),
+  why: caveHints(bramModels, "Pasakyti, kodėl atėjai", ["w_see", "w_learn", "w_stones", "w_curious", "w_lost", "w_unsure", "w_other"]),
   way: caveHints(bramModels, "Paklausti, kur akmenys", ["a_where", "a_which", "a_how", "a_first", "a_second", "a_third"]),
-  more: caveHints(bramModels, "Atsakyti Bramui", ["m_no", "m_ok", "m_todo", "m_si"]),
+  more: caveHints(bramModels, "Atsakyti Bramui", ["m_no", "m_ok", "m_todo", "m_yes"]),
   solve: caveHints(bramModels, "Paklausti, ką daryti", ["t_stones", "t_next"]),
-  ask: caveHints(bramModels, "Ko nors paklausti Bramo", ["q_who", "q_name", "q_spirit", "q_place", "q_lugar", "q_slate", "q_live", "q_age", "q_hat", "q_tree", "q_far"]),
+  ask: caveHints(bramModels, "Ko nors paklausti Bramo", ["q_who", "q_name", "q_spirit", "q_place", "q_this", "q_slate", "q_live", "q_age", "q_hat", "q_tree", "q_far"]),
 };
 
 const side = (line: keyof typeof bramLines): Handler => (c) => c.say(line);
@@ -77,7 +77,7 @@ const sit: SituationDef = {
   topic: { en: "Ask the way to the stones", lt: "Paklausti, kur akmenys" },
   chapter: 9, order: 13, location: "gruta", npc: "cave_bram", mode: "talk",
   intro: BRAM_INTRO.lt,
-  goal: "Prisistatykite Bramui ir paklauskite, kur akmenys.",
+  goal: "Prisistatyk Bramui ir paklausk, kur akmenys.",
   lines: bramLines,
   entities: { country: countries },
   hints,
@@ -114,11 +114,11 @@ const sit: SituationDef = {
     first_ctx: { patterns: ["[and] [the] first [stone | one] #h:a_first"] },
     second_ctx: { patterns: ["[and] [the] second [stone | one] #h:a_second"] },
     third_ctx: { patterns: ["[the] third [stone | one]"] },
-    solve: { patterns: ["what do i do with the stones #h:t_stones", "what do i do next #h:t_next", "what do i do", "[yes] what do i do at a stone #h:m_si", "how do i light the stones"] },
+    solve: { patterns: ["what do i do with the stones #h:t_stones", "what do i do next #h:t_next", "what do i do", "[yes] what do i do at a stone #h:m_yes", "how do i light the stones"] },
     who: { patterns: ["who are you #h:q_who", "what are you", "are you bram"] },
     ask_name: { patterns: ["what is your name #h:q_name", "what should i call you"] },
     spirit: { patterns: ["what is a cave spirit #h:q_spirit", "what is a spirit"] },
-    place: { patterns: ["where am i #h:q_place", "what is this place #h:q_lugar", "where are we"] },
+    place: { patterns: ["where am i #h:q_place", "what is this place #h:q_this", "where are we"] },
     slate: { patterns: ["what is slate #h:q_slate", "what is the path made of"] },
     live: { patterns: ["do you live here #h:q_live", "is this your home"] },
     age: { patterns: ["how old are you #h:q_age"] },
@@ -128,36 +128,36 @@ const sit: SituationDef = {
     all_set: { patterns: ["no thanks #h:m_no", "i am all set [thanks] #h:m_ok", "no that is all #h:m_todo", "that is all [thanks]", "nothing else [thanks]"] },
   },
   mission: [
-    { lt: "Pasakykite savo vardą", step: "name" },
-    { lt: "Pasakykite, iš kur atvykote", step: "from" },
-    { lt: "Pasakykite, kodėl atėjote", step: "why" },
-    { lt: "Paklauskite, kur akmenys", step: "way" },
-    { lt: "Užbaikite pokalbį", step: "more" },
+    { lt: "Pasakyk savo vardą", step: "name" },
+    { lt: "Pasakyk, iš kur esi", step: "from" },
+    { lt: "Pasakyk, kodėl atėjai", step: "why" },
+    { lt: "Paklausk, kur akmenys", step: "way" },
+    { lt: "Užbaik pokalbį", step: "more" },
   ],
   steps: [
     { id: "name", done: (c) => !!c.s.named, expects: ["name", "bare_name_ctx"],
       ask(c) {
         c.say(c.s.askedName ? "ask_name" : c.visits ? "halt_again" : "halt");
         c.s.askedName = true;
-      }, hints: ["name", "ask"], suggest: [{ lt: "Pasakykite savo vardą", hint: "name" }, { lt: "Ko nors paklauskite Bramo", hint: "ask" }] },
+      }, hints: ["name", "ask"], suggest: [{ lt: "Pasakyti savo vardą", hint: "name" }, { lt: "Ko nors paklausti Bramo", hint: "ask" }] },
     { id: "from", done: (c) => !!c.s.from,
       expects: ["origin", "origin_bare_ctx", "town_bare_ctx", "origin_unsure_ctx", "origin_near", "origin_far", "origin_town"],
       ask(c) { c.say(c.s.askedFrom ? "ask_from_again" : "ask_from"); c.s.askedFrom = true; },
       hints: ["from", "origin", "ask"],
-      suggest: [{ lt: "Pasakykite, iš kur atvykote", hint: "from", options: "country" }, { lt: "Atsakykite kitaip", hint: "origin" }],
+      suggest: [{ lt: "Pasakyti, iš kur esi", hint: "from", options: "country" }, { lt: "Atsakyti kitaip", hint: "origin" }],
       help: (c) => origin(c, "from_other") },
     { id: "why", done: (c) => !!c.s.why,
       expects: ["why_see", "why_learn", "why_stones", "why_stones_ctx", "why_curious", "why_curious_ctx", "why_lost", "why_lost_ctx", "why_unsure_ctx", "why_other_unknown"],
       ask: (c) => c.say("ask_why"), hints: ["why", "ask"],
-      suggest: [{ lt: "Pasakykite, kodėl atėjote", hint: "why" }, { lt: "Ko nors paklauskite Bramo", hint: "ask" }],
+      suggest: [{ lt: "Pasakyti, kodėl atėjai", hint: "why" }, { lt: "Ko nors paklausti Bramo", hint: "ask" }],
       help: (c) => reason(c, "why_help") },
     { id: "way", done: (c) => !!c.s.way, expects: ["way", "recap", "first_ctx", "second_ctx", "third_ctx"],
       ask(c) { c.say(c.s.askedWay ? "way_nudge" : "stones_intro"); c.s.askedWay = true; },
-      hints: ["way", "solve", "ask"], suggest: [{ lt: "Paklauskite, kur akmenys", hint: "way" }, { lt: "Ko nors paklauskite Bramo", hint: "ask" }], no: (c) => { c.say("way_nudge"); c.hold(); },
+      hints: ["way", "solve", "ask"], suggest: [{ lt: "Paklausti, kur akmenys", hint: "way" }, { lt: "Ko nors paklausti Bramo", hint: "ask" }], no: (c) => { c.say("way_nudge"); c.hold(); },
       yes: (c) => { c.say("way_hint"); c.hold(); }, help: (c) => { c.say("way_hint"); c.hold(); } },
     { id: "more", done: (c) => !!c.s.closed, expects: ["all_set", "first_ctx", "second_ctx", "third_ctx"],
       ask: (c) => c.say("ask_more"), hints: ["more", "solve", "way", "ask"],
-      suggest: [{ lt: "Atsakykite Bramui", hint: "more" }, { lt: "Paklauskite, ką daryti", hint: "solve" }],
+      suggest: [{ lt: "Atsakyti Bramui", hint: "more" }, { lt: "Paklausti, ką daryti", hint: "solve" }],
       no: allSet, yes: (c) => { c.say("more_yes"); c.hold(); }, help: (c) => { c.say("what_tip"); c.hold(); } },
   ],
   start: (c) => c.ask("name"),

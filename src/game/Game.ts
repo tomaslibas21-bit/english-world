@@ -1362,6 +1362,8 @@ export class Game implements GameApi {
     if (!this.road || this.zone.interior || this.modes.active || this.modes.modal || this.swimming) return;
     if (this.rides.riding) return;
     const p = this.player.root.position;
+    // (the west edge beside Slate Cove is the dry trail and its cliffs, not the open road)
+    if (p.x < WORLD.minX + 1 && p.z >= SLATE_COVE.minZ - 1 && p.z <= SLATE_COVE.maxZ + 1) return;
     const edge = walkEdge(p.x, p.z, this.vel.x, this.vel.z);
     if (edge && this.road.offer(edge)) this.modes.start("road", "walk");
   }
