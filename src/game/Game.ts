@@ -19,7 +19,7 @@ import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
-import type { SpeedFeel } from "./rides/speedFeel";
+import { SpeedFeelLoader } from "./rides/speedFeelLoader";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
@@ -375,13 +375,9 @@ export class Game implements GameApi {
   private rideCourse = 0;
   private rideBack = 0;
   private rideFov = 0;
-  private speedFeel?: SpeedFeel;
-  private speedFeelRequest?: object;
-  private speedFeelLoad?: Promise<typeof import("./rides/speedFeel") | undefined>;
-  private speedFeelRetry?: URL;
-  private speedFeelAttempt = 0;
+  private speedFeelLoader?: SpeedFeelLoader;
+  private get speedFeel() { return this.speedFeelLoader?.current; }
   private roadTownView?: THREE.PerspectiveCamera;
-  private carMotionQuery?: MediaQueryList;
   private road?: RoadEntry;
   private sea?: SeaEntry;
   private seaMooring?: Ride["home"];
@@ -593,7 +589,7 @@ export class Game implements GameApi {
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
-      entered: (id) => { this.speedFeelRequest = undefined; this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
+      entered: (id) => { this.speedFeelLoader?.cancel(); this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
       left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
@@ -1540,46 +1536,22 @@ export class Game implements GameApi {
   }
 
   private loadTownSpeedFeel(ride: Ride) {
-    if (this.speedFeel || this.disposed) return;
-    const request = this.speedFeelRequest = {}, zone = this.zone, session = this.session;
-    this.loadSpeedFeel(() => this.speedFeelRequest === request && this.zone === zone && this.session === session
-      && !this.session?.active && !this.modes.engaged && this.rides.riding === ride && this.rides.phase !== "out");
+    this.loadSpeedFeel(() => !this.modes.engaged && this.rides.phase !== "out", ride);
   }
 
-  private loadSpeedFeel(accept: () => boolean) {
+  private loadSpeedFeel(accept: () => boolean, ride = this.rides.riding) {
     if (this.speedFeel || this.disposed) return;
-    this.carMotionQuery ??= window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (!this.speedFeelLoad) {
-      const retry = this.speedFeelRetry;
-      if (retry) retry.searchParams.set("speed-feel-retry", String(++this.speedFeelAttempt));
-      const load: Promise<typeof import("./rides/speedFeel")> = retry ? import(/* @vite-ignore */ retry.href) : import("./rides/speedFeel");
-      this.speedFeelLoad = load.catch((error: unknown) => {
-        this.speedFeelLoad = undefined;
-        if (this.disposed || !(error instanceof TypeError)) return;
-        // A failed module fetch can be cached for the life of the page.
-        const url = /https?:\/\/[^\s]+/.exec(error.message)?.[0];
-        if (url) {
-          const failed = new URL(url);
-          if (failed.origin === location.origin) this.speedFeelRetry = failed;
-        } else if (import.meta.env.DEV) {
-          const source = "./rides/speedFeel.ts";
-          this.speedFeelRetry = new URL(source, import.meta.url);
-        }
-        return undefined;
-      });
-    }
-    void this.speedFeelLoad.then((module) => {
-      if (!module || this.disposed || this.speedFeel || !accept()) return;
+    const { zone, session } = this;
+    const loader = this.speedFeelLoader ??= new SpeedFeelLoader(this.container, this.rig.cam);
+    void loader.acquire(() => import("./rides/speedFeel"), () => {
       const { screen, settings } = useStore.getState();
-      if (screen === "play" && settings.play === "town") {
-        this.speedFeel = new module.SpeedFeel(this.container, this.rig.cam, this.carMotionQuery);
-        this.speedFeelRetry = undefined;
-      }
-    }).catch(() => {});
+      return !this.disposed && this.zone === zone && this.session === session && !session?.active
+        && this.rides.riding === ride && screen === "play" && settings.play === "town" && accept();
+    });
   }
 
   private releaseTownSpeedFeel() {
-    this.speedFeelRequest = undefined;
+    this.speedFeelLoader?.cancel();
     this.dust.clearRolling();
     if (!this.speedFeel?.release()) {
       audio.motor(null);
@@ -3362,7 +3334,7 @@ export class Game implements GameApi {
     // A boat's wake at the hull, and dust behind a car's wheels on loose ground or in a skid.
     if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
-    const reduced = car && !!this.carMotionQuery?.matches;
+    const reduced = car && !!this.speedFeelLoader?.reducedMotion;
     if (car && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < -0.35) && v > 0;
       if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
@@ -4185,7 +4157,7 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.streetLife?.dispose();
     this.disposed = true;
-    this.speedFeel?.dispose();
+    this.speedFeelLoader?.dispose();
     this.modes.dispose();
     this.player?.root.removeFromParent();
     this.normalPlayer?.dispose?.();
