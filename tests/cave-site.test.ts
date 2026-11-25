@@ -4,7 +4,7 @@ import { BAY, floorY, sandY } from "../src/game/water";
 import { Group, Vector3 } from "three";
 import { buildTown, HILL_MARGIN, type Town } from "../src/game/world/town";
 import { NavGrid } from "../src/game/nav";
-import { COVE_APPROACH, COVE_DOORS, RING_TARGET, SLATE_COVE, RING_STAIRS, filterSlateCoveNav, inSlateCove } from "../src/game/world/slateCovePlan";
+import { COVE_APPROACH, COVE_DOORS, RING_MAPLES, RING_TARGET, SLATE_COVE, RING_STAIRS, STONE_RING, filterSlateCoveNav, inSlateCove } from "../src/game/world/slateCovePlan";
 import { buildSlateCove } from "../src/game/world/slateCove";
 import * as caveCode from "../src/game/cave/zone";
 import { applyCaveEvent, buildCaveZone, caveRouting, caveRules, countCaveVisit, type CaveZone } from "../src/game/cave/zone";
@@ -85,6 +85,20 @@ describe("the dry headland and ring", () => {
     }
     checkRoute(RING_TARGET);
     checkRoute({ x: -117, z: -48 });
+  });
+
+  it("keeps the ring's maples out of reach: beyond the town's edge, south of the cove and clear of the desert road", () => {
+    const road = ROADS[1], half = road.w / 2;
+    expect(RING_MAPLES.length).toBeGreaterThan(20);
+    for (const [x, z, scale] of RING_MAPLES) {
+      const r = 0.35 * scale;
+      expect(x + r, `${x},${z}`).toBeLessThan(WORLD.minX - 0.5);
+      expect(z - r, `${x},${z}`).toBeGreaterThan(SLATE_COVE.maxZ + 6);
+      expect(z + r, `${x},${z}`).toBeLessThan(road.z1 - half - 5);
+      expect(inSlateCove(x, z)).toBe(false);
+      expect(nav.free(nav.idx(x, z))).toBe(false);
+    }
+    expect(Math.min(...RING_MAPLES.map(([, z]) => z))).toBeGreaterThan(STONE_RING.maxZ + 6);
   });
 
   it("seals the pocket and leaves the old road exit outside pedestrian navigation", () => {

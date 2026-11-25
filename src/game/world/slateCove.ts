@@ -151,6 +151,8 @@ export function buildSlateCove() {
     crag(-155 - q() * 2, z + (q() - 0.5) * 2, 6 + q() * 2.5, 9 + q() * 4, 5.5 + q() * 2.5);
     crag(-162 - q() * 2, z + 1.4 + (q() - 0.5) * 2, 8 + q() * 3, 12 + q() * 4.5, 7 + q() * 3);
   }
+  // (one more at its southern tail, in front of the desert crest's cactus there; the ring's maples do the rest)
+  crag(-151.4, -32.4, 4.6, 5.6, 4.2);
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(colourMerge(parts), material);
   mesh.name = "slate-cove";

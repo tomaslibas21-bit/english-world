@@ -52,6 +52,29 @@ export const RING_STONES = [
 ] as const;
 
 export const RING_GABLE = { x: S.x, z: -56.86, w: 4.4, d: 0.66 };
+/** Old fall maples south of the ring, beyond the town's west edge and the cove's south rocks (out of reach): from the
+ *  ring gate, the lawn and the trail into the ring they hide the desert road's mesa. x, z, scale, foot y (the dunes'
+ *  crest rises to the west). Drawn with the town's street maples (town.ts addTrees). */
+export const RING_MAPLES = [
+  [-113.4, -35.5, 1.75, 0], [-117.2, -34.2, 1.9, 0], [-121, -35.8, 1.8, 0], [-124.8, -34, 1.85, 0.43],
+  [-115, -28.5, 2, 0], [-119.1, -27.4, 1.95, 0], [-123, -29, 2.05, 0.31], [-127.2, -27.8, 1.9, 0.58],
+  [-129.5, -34.8, 1.8, 0.74], [-131.5, -27.5, 1.9, 0.86],
+  // (and on along the headland's end: from the gate the road's mesa and its cactus stand west-south-west)
+  [-134.5, -33.5, 1.9, 1.06], [-138.5, -29.5, 2, 1.2], [-135.5, -25, 2, 1.1], [-142.5, -33, 1.9, 1.25],
+  [-141.5, -24.5, 2.05, 1.22], [-145.5, -28.5, 1.95, 1.3], [-133, -21.5, 1.85, 0.98], [-148, -23.5, 2, 1.3],
+  [-139, -20.5, 1.9, 1.22],
+  // younger ones between them, so the low sky between the old trunks is leaves too, and two more at the headland's end
+  [-117, -31.2, 1.25, 0], [-121.1, -31.6, 1.3, 0], [-125.2, -31.4, 1.2, 0.48], [-129.3, -31, 1.3, 0.75],
+  [-133.1, -29.4, 1.25, 0.98], [-137, -33.2, 1.3, 1.17], [-140.4, -28.6, 1.2, 1.25], [-144.2, -31.8, 1.3, 1.32],
+  [-148.6, -31.6, 1.35, 1.5], [-152, -30.8, 1.95, 1.82], [-155.6, -26.6, 2.05, 1.55], [-151.6, -25.4, 1.3, 1.33],
+  [-147.4, -27.6, 1.25, 1.39], [-144, -22.6, 1.9, 1.2], [-136.2, -22.2, 1.25, 1.12],
+  [-155, -32.6, 1.9, 2.05], [-158.5, -29.5, 2, 1.8], [-160, -24.5, 2, 1.18], [-153, -21, 1.3, 1.05],
+  [-152.4, -31.2, 1.5, 1.85],
+  // saplings along the grove's south side, so the desert crest's cacti don't show between the old trunks
+  [-118.5, -21.5, 1, 0.12], [-123.2, -21.8, 0.95, 0.38], [-127.4, -20.6, 1.05, 0.64], [-131.2, -24.6, 1, 0.89],
+  [-138.6, -25.2, 0.95, 1.22], [-141.6, -20.2, 1.05, 1.25], [-146.8, -20.6, 1, 1.2], [-150.2, -22.4, 0.95, 1.22],
+  [-156.6, -20.4, 1.05, 0.92], [-149.2, -29.4, 1, 1.53], [-143.2, -27.6, 0.95, 1.27], [-134.8, -27.2, 1, 1.09],
+] as const;
 export function ringStairY(_x: number, z: number) {
   return S.rise * Math.min(1, Math.max(0, (S.foot - z) / (S.foot - S.top)));
 }
