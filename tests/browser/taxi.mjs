@@ -363,8 +363,10 @@ try {
     if (!phone) {
       await page.evaluate(() => window.__ew.game.startScenario("s66-taxi"));
       await waitFor(async () => { await real(10); return page.evaluate(() => window.__ew.game.activeSession?.active); }, "s66 opens");
+      await press(page.locator(".scene-start"));
       await page.evaluate(() => {
         const game = window.__ew.game;
+        window.__ew.audio.stop();
         game.onSessionEvent("taxi-ride", { to: "bank" });
         game.player.root.position.set(0, 0, -8);
         window.__ew.store.getState().setConv({ phase: "ended", completed: true });

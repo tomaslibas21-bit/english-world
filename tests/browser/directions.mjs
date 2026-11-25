@@ -24,7 +24,7 @@ try {
       });
       const card = page.locator(".directions-card");
       assert.equal(await card.count(), 0);
-      await talkTo(page, npc);
+      await talkTo(page, npc, press);
       await answer(page, "where", ask);
       assert.equal(await card.count(), 0);
       await answer(page, "thanks", thank);

@@ -95,6 +95,7 @@ try {
     finally { done = true; await frames; }
   }
   const press = (locator) => duringFrames(() => mobile ? locator.tap() : locator.click());
+  const sceneStart = page.locator(".scene-intro").getByRole("button", { name: "Pradėti" });
   const state = () => page.evaluate(() => window.__ew.game.phoneState());
   const force = () => page.evaluate(() => window.__ew.game.phoneDueNow());
   const conv = (id) => page.evaluate((sit) => {
@@ -149,13 +150,17 @@ try {
   await waitFor(() => header.locator("img").isVisible(), "answered call shows the ringing portrait");
   assert.equal(await header.locator("strong").innerText(), "Lizzie");
   assert.equal(await page.locator(".convo .transcript").isVisible(), false, "no space reserved before the first line");
+  await press(sceneStart);
   await waitFor(async () => (await header.getByRole("timer").innerText()) !== "0:00", "call clock runs");
   await shot("answered", page.locator(".convo"));
 
   await page.evaluate((done) => window.__ew.store.getState().updateProgress((p) => { p.sits["p18-startup"] = done; }), completed);
   await force();
   await noCardFor("open conversation blocks a due card");
-  await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended" }));
+  await page.evaluate(() => {
+    window.__ew.audio.stop();
+    window.__ew.store.getState().setConv({ phase: "ended" });
+  });
   const endCard = page.locator('.convo[data-phase="ended"]');
   await waitFor(() => endCard.isVisible(), "end card is shown");
   assert.equal(await header.count(), 0, "the live header clears at the end");
@@ -251,7 +256,7 @@ try {
   await press(card.getByRole("button", { name: "Atsiliepti" }));
   await waitFor(() => conv(flood), "answering the incoming call opens it");
   assert.match(await page.locator(".scene-intro").innerText(), /Skambina Lizzie/);
-  await press(page.locator(".scene-intro").getByRole("button", { name: "Pradėti" }));
+  await press(sceneStart);
   await waitFor(() => page.locator(".transcript .msg.npc").first().isVisible(), "first spoken line appears");
   assert(await header.isVisible());
   assert(await page.locator(".yourturn").isVisible());
@@ -264,6 +269,7 @@ try {
   assert.match(await office.innerText(), /Skubėk į biurą – susirinkimas jau prasidėjo/);
   await page.evaluate(() => window.__ew.game.teleportTo("office"));
   await waitFor(() => conv("s34-meeting"), "arriving at the office starts the meeting");
+  await press(sceneStart);
   assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.phone.office), undefined);
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ floodIntro: "incoming and returned", officeMeeting: true, answered: invite, declined: flood, returned: true, blockedBy: ["conversation", "convertible", "taxi", "meeting"], invitation, meetingCompleted: true, screenshots }));

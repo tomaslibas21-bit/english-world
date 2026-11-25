@@ -205,8 +205,9 @@ export class ModeDialogue {
 
   private listen() {
     const turn = this.turn;
-    if (!turn || turn.choosing || this.playback || this.paused || this.micHeld || !this.micOn || !speechSupported() || document.hidden) return;
-    this.stopListening();
+    if (!turn || turn.choosing || this.attempt || this.playback || this.paused || this.micHeld || !this.micOn ||
+        !speechSupported() || document.hidden) return;
+    this.retryIn = 0;
     const { phrases, read } = turn.speech;
     const attempt = createSpeechAttempt({
       phrases, preferLocal: useStore.getState().settings.onDevice,

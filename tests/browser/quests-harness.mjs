@@ -82,7 +82,7 @@ export async function openQuestTown(browser, width, height, speech = false) {
   }
 }
 
-export async function talkTo(page, id) {
+export async function talkTo(page, id, press) {
   await page.evaluate((id) => {
     const { game } = window.__ew;
     const actor = game.npcs.find((npc) => npc.id === id);
@@ -94,7 +94,7 @@ export async function talkTo(page, id) {
     const { active, hostId } = window.__ew.store.getState().conv;
     return active && hostId === id;
   }, id);
-  await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
+  await press(page.locator(".scene-start"));
 }
 
 export async function answer(page, step, text) {

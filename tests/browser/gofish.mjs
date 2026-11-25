@@ -351,7 +351,11 @@ try {
     if (!phone) {
       await page.evaluate((id) => window.__ew.game.startScenario(id), dinner);
       await wait(() => page.evaluate(() => !!window.__ew.game.activeSession?.active), "dinner conversation loads");
-      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
+      await press(page.locator(".scene-start"));
+      await page.evaluate(() => {
+        window.__ew.audio.stop();
+        window.__ew.store.getState().setConv({ phase: "ended", completed: true });
+      });
       await press(page.locator(".ended-box").getByRole("button", { name: start }));
       await wait(() => page.locator(".gofish-overlay[data-deck=animals] .gofish-card:enabled").first().isVisible(),
         "the dinner end card starts the next deck");

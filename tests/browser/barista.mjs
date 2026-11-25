@@ -408,7 +408,11 @@ try {
     if (!phone) {
       await page.evaluate((id) => window.__ew.game.startScenario(id), cafe);
       await page.waitForFunction(() => !!window.__ew.game.activeSession?.active, null, { polling: 25 });
-      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
+      await press(page.locator(".scene-start"));
+      await page.evaluate(() => {
+        window.__ew.audio.stop();
+        window.__ew.store.getState().setConv({ phase: "ended", completed: true });
+      });
       await press(page.locator(".ended-box").getByRole("button", { name: startLabel }));
       await wait(() => choice("bs_a_hi").isVisible(), "the A3 payoff launches the shift directly");
       await page.keyboard.press("1");

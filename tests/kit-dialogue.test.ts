@@ -7,6 +7,7 @@ import { GOFISH_ACCEPT, GOFISH_LINES } from "../src/content/gofish-lines";
 import { parseCall } from "../src/game/billiards/calls";
 import { ModeDialogue } from "../src/game/kit/dialogue";
 
+const abortEndDelay = 10;
 const mocks = vi.hoisted(() => ({
   duration: vi.fn<() => number | null>(),
   play: vi.fn<() => Promise<boolean>>(),
@@ -24,7 +25,7 @@ vi.mock("../src/convo/speech", async (load) => {
     return speech.createSpeechAttempt({ ...options, createRecognition: () => {
       const rec = {
         start() { mocks.recognition = rec; },
-        abort() { if (mocks.recognition === rec) mocks.recognition = null; setTimeout(() => rec.onend?.(), 0); },
+        abort() { if (mocks.recognition === rec) mocks.recognition = null; setTimeout(() => rec.onend?.(), abortEndDelay); },
       } as SpeechRecognizer;
       return rec;
     } });
@@ -41,7 +42,8 @@ function setup() {
   return { dialogue: new ModeDialogue(ui), ui };
 }
 
-function speak(...transcripts: string[]) {
+async function speak(...transcripts: string[]) {
+  if (!mocks.recognition) await vi.advanceTimersByTimeAsync(abortEndDelay);
   const recognition = mocks.recognition!;
   recognition.onstart?.();
   recognition.onspeechstart?.();
@@ -57,7 +59,7 @@ beforeEach(() => {
   vi.stubGlobal("document", Object.assign(new EventTarget(), { hidden: false }));
 });
 afterEach(async () => {
-  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(abortEndDelay);
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -82,7 +84,7 @@ describe("mini-game dialogue", () => {
     void turn.then(completed);
     const chip = text("tx_a_where");
     expect(mocks.speech.mock.calls[0][0].evaluate(chip)).toBe("complete");
-    speak(chip);
+    await speak(chip);
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.finishedAnswer - 1);
     expect(completed).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -96,7 +98,7 @@ describe("mini-game dialogue", () => {
       for (const phrase of [text(key), ...variants]) {
         const turn = dialogue.expect(situation, npc, [key], TAXI_LINES, TAXI_ACCEPT);
         expect(mocks.speech.mock.lastCall?.[0].phrases).toContain(phrase);
-        speak(phrase);
+        await speak(phrase);
         await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
         expect(await turn).toMatchObject({ key, sentence: { en: text(key) } });
       }
@@ -109,13 +111,33 @@ describe("mini-game dialogue", () => {
     const evaluate = mocks.speech.mock.lastCall![0].evaluate;
     expect(evaluate("That's")).toBe("prefix");
     expect(evaluate("That's $25.50")).toBe("none");
-    speak("That's $25.50");
+    await speak("That's $25.50");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.unclear);
     expect(ui.mic).toHaveBeenLastCalledWith({ status: "unclear", heard: "That's $25.50" });
     dialogue.update(1.3, false);
-    speak("That's $25.50", "$21");
+    await speak("That's $25.50", "$21");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(await turn).toMatchObject({ key: "tx_r2_a_fare" });
+  });
+
+  it("keeps the current recogniser on repeated enable and waits for its end when toggled off and on", async () => {
+    const { dialogue } = setup();
+    const turn = dialogue.expect(situation, npc, ["tx_a_where"], TAXI_LINES);
+    const first = mocks.recognition!;
+    dialogue.setMic(true);
+    expect(mocks.speech).toHaveBeenCalledOnce();
+    expect(mocks.recognition).toBe(first);
+
+    dialogue.setMic(false);
+    dialogue.setMic(true);
+    await vi.advanceTimersByTimeAsync(abortEndDelay - 1);
+    expect(mocks.recognition).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.recognition).not.toBeNull();
+    expect(mocks.recognition).not.toBe(first);
+
+    dialogue.cancel();
+    await expect(turn).resolves.toBeNull();
   });
 
   it("uses stepped time for silent lines, accepts keys and taps, and cancels a pending turn", async () => {
@@ -148,11 +170,11 @@ describe("mini-game dialogue", () => {
       { names: ["dan", "nora"], select });
     expect(mocks.speech.mock.lastCall![0].evaluate("Dan, do you have any bananas?")).toBe("none");
     expect(ui.choices.mock.lastCall![0]).toHaveLength(1);
-    speak("Nora");
+    await speak("Nora");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(select).toHaveBeenCalledWith("nora");
     dialogue.update(0.15, false);
-    speak("Dan, apples please");
+    await speak("Dan, apples please");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(select).toHaveBeenLastCalledWith("dan");
     expect(await turn).toMatchObject({ key: "gf_ask_apple", sentence: { en: "Do you have any apples?" } });
@@ -175,7 +197,7 @@ describe("mini-game dialogue", () => {
         return { answer, verdict: answer ? "complete" : "prefix" };
       },
     });
-    speak("7 top left corner");
+    await speak("7 top left corner");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     await expect(turn).resolves.toBe(option);
     expect(mocks.play).not.toHaveBeenCalled();
@@ -193,7 +215,7 @@ describe("mini-game dialogue", () => {
     dialogue.update(4, false);
     await replay;
     expect(ui.choices).toHaveBeenCalledTimes(1);
-    speak("Go fish!");
+    await speak("Go fish!");
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(await turn).toMatchObject({ key: "gf_nope" });
   });

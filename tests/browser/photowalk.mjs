@@ -17,11 +17,11 @@ try {
         });
         const chip = page.locator(".photo-chip");
         assert.equal(await chip.count(), 0);
-        await talkTo(page, npc);
+        await talkTo(page, npc, press);
         await answer(page, "help", later);
         await closeChat(page);
         assert.equal(await chip.count(), 0);
-        await talkTo(page, npc);
+        await talkTo(page, npc, press);
         await answer(page, "help", accept);
         await closeChat(page);
         await chip.waitFor();
