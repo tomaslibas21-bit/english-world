@@ -77,7 +77,15 @@ try {
       const path = new URL(route.request().url()).pathname;
       return path.endsWith("/G01.json") ? route.fulfill({ json: lyric }) : route.fulfill({ status: 404, body: "" });
     });
-    await page.route(/\/songs\/audio\/G01\.mp3(?:\?.*)?$/, (route) => route.fulfill({ contentType: "audio/mpeg", body: recording }));
+    await page.route(/\/songs\/audio\/G01\.mp3(?:\?.*)?$/, (route) => {
+      // Serve byte ranges like the files Worker does, so the media element can seek.
+      const size = recording.length, m = /bytes=(\d*)-(\d*)/.exec(route.request().headers().range || "");
+      if (!m) return route.fulfill({ status: 200, contentType: "audio/mpeg", headers: { "accept-ranges": "bytes" }, body: recording });
+      const start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2]));
+      const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+      return route.fulfill({ status: 206, contentType: "audio/mpeg", body: recording.subarray(start, end + 1),
+        headers: { "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${size}` } });
+    });
     await page.route("**/art/s/songs/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       const name = path.split("/").at(-1);
