@@ -2,6 +2,8 @@
 // with pillars, bumpers, a grille, lights, mirrors and wheels with hubcaps. Vertex-coloured, one geometry, so a car is
 // one draw call. Used while the car models load, and for the miniature display in the rental shop.
 import * as THREE from "three";
+import { EDITION } from "../../edition";
+import { cityBusFrontParts } from "./cityBusFront";
 import { colourMerge } from "./util";
 import { mergedVertexCount } from "../rides/crashGeometry";
 
@@ -155,6 +157,7 @@ export function busParts(color: string, stripe: string, route: number): Parts {
     parts.push([new THREE.BoxGeometry(0.34, 0.16, 0.05).translate(x, 0.8, L / 2 + 0.02), "#fff4c2"]);
     parts.push([new THREE.BoxGeometry(0.22, 0.4, 0.05).translate(x, 1.0, -L / 2 - 0.02), "#d8343a"]);
   }
+  if (EDITION.id === "es") parts.push(...cityBusFrontParts());
   wheels(parts, [[-1.05, 3.1], [1.05, 3.1], [-1.05, -2.9], [1.05, -2.9]], 0.5, 0.32);
   return parts;
 }

@@ -11,6 +11,7 @@ import { floorMaterial, floorColor } from "./styled";
 import { BILLIARDS_NPC } from "../../content/billiards-lines";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
 import { rack } from "../billiards/rules";
+import { cantinaStoolParts } from "./cantinaStool";
 import { Ledges } from "../ledges";
 import { Hop } from "../movement";
 
@@ -900,10 +901,12 @@ function poolHall(c: Ctx) {
 
   counter(c, -3.05, -4.15, 3.82, 0.94, walnut, edge);
   for (const x of [-4.25, -3.05, -1.85]) {
-    cyl(0.24, 0.24, 0.09, x, 0.695, -3.05, "#9d493d");
+    if (THEME.roomExtras.cantina) {
+      for (const [g, ink] of cantinaStoolParts()) M.add("cantina-stool", mat(String(ink)), g.translate(x, 0, -3.05));
+    } else cyl(0.24, 0.24, 0.09, x, 0.695, -3.05, "#9d493d");
     cyl(0.052, 0.075, 0.62, x, 0.35, -3.05, walnut);
     cyl(0.19, 0.21, 0.045, x, 0.035, -3.05, brass);
-    cyl(0.13, 0.13, 0.025, x, 0.34, -3.05, brass);
+    if (!THEME.roomExtras.cantina) cyl(0.13, 0.13, 0.025, x, 0.34, -3.05, brass);
     col.addCircle(x, -3.05, 0.25);
   }
   if (THEME.roomExtras.cantina) {

@@ -13,6 +13,7 @@ import { Colliders, rand } from "../world/util";
 import { groundFace } from "../world/shapes";
 import { lilyBloom, lilyPadVeins } from "./lilies";
 import { finishMushroomCap } from "./mushrooms";
+import { stelaCarvings } from "./stelae";
 import * as P from "./plan";
 
 const FOG = "#05232c";
@@ -521,6 +522,7 @@ export function buildCave(): CaveView {
     sink.geo(new THREE.BoxGeometry(1.0, 1.9, 0.42).rotateY(s.rot).translate(s.x, 1.25, s.z), ROCK[2]);
     sink.geo(new THREE.CylinderGeometry(0.5, 0.5, 0.42, 10, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2).rotateY(s.rot).translate(s.x, 2.2, s.z), ROCK[2]);
     sink.geo(new THREE.BoxGeometry(0.8, 0.8, 0.04).rotateY(s.rot).translate(s.x + fx * 0.2, 1.45, s.z + fz * 0.2), "#3a3f3c");
+    for (const [g, ink] of stelaCarvings()) sink.geo(g.rotateY(s.rot).translate(s.x, 0, s.z), ink, 0.12);
     const qd = quad(s.x + fx * 0.235, 1.45, s.z + fz * 0.235, s.rot, 0.74, 0.74, cell++ % 16, WAIT, r() * 6.28);
     const halo = sparks.add(2, s.x + fx * 0.3, 1.45, s.z + fz * 0.3, "#3fd9ff", 3.4, 0, r);
     stones.push({ id: s.id, x: s.x, z: s.z, halo, quad: qd });

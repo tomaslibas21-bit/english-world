@@ -1687,10 +1687,26 @@ export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, ro
   const cx = (c.x0 + c.x1) / 2, cz = (c.z0 + c.z1) / 2, hw = (c.x1 - c.x0) / 2 + 0.5, hd = (c.z1 - c.z0) / 2 + 0.5, k = Math.SQRT2;
   roofs.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
   roofs.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
-  roofs.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
+  const height = c.top - c.y;
+  // Coplanar palm-leaf courses replace the old smooth hip; its original underside stays closed.
+  const underside = new THREE.ConeGeometry(1, height, 4).rotateY(Math.PI / 4)
+    .scale(hw * k, 1, hd * k).translate(cx, c.y + height / 2, cz);
+  // A four-sided cone has four side triangles followed by four underside triangles.
+  underside.setIndex(Array.from(underside.index!.array).slice(12));
+  underside.clearGroups();
+  roofs.push([underside, THATCH]);
+  for (const [lo, hi, ink] of [[0, 0.34, "#b89258"], [0.34, 0.39, "#80643e"], [0.39, 0.68, "#a88955"],
+    [0.68, 0.73, "#80643e"], [0.73, 1, "#b89258"]] as const) {
+    roofs.push([new THREE.CylinderGeometry(1 - hi, 1 - lo, height * (hi - lo), 4, 1, true)
+      .rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + height * (lo + hi) / 2, cz), ink]);
+  }
   // the fringe's ragged lower edge all round
   const edge = (len: number, at: (u: number) => [number, number]) => {
-    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); roofs.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
+    for (let u = -len / 2 + 0.15, i = 0; u < len / 2; u += 0.3, i++) {
+      const [x, z] = at(u), length = [0.28, 0.36, 0.42][i % 3];
+      roofs.push([new THREE.ConeGeometry(0.13, length, 4).rotateX(Math.PI)
+        .translate(x, c.y - 0.11 - length / 2, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]);
+    }
   };
   for (const s of [-1, 1]) { edge(hw * 2, (u) => [cx + u, cz + s * hd]); edge(hd * 2, (u) => [cx + s * hw, cz + u]); }
   planter(parts, col, c.x0 + 2.3, c.z0 - 8, Math.PI / 2, 6);
