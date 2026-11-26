@@ -318,6 +318,7 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
     if (!card || handled.current === p) return; // a double tap answers once
     handled.current = p;
     const id = card.id;
+    if (!useCards.getState().cards.some((c) => c.id === id)) { setPos(p + 1); return; }
     if (!failed.current.has(id)) {
       useCards.getState().answer(id, knew);
       setStats((s) => (knew ? { ...s, knew: s.knew + 1 } : { ...s, again: s.again + 1 }));
@@ -346,7 +347,7 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
     );
   }
 
-  const sit = SITUATION_BY_ID[card.situationId];
+  const sit = Object.hasOwn(SITUATION_BY_ID, card.situationId) ? SITUATION_BY_ID[card.situationId] : undefined;
   const source = sourceName(card.situationId, card.sourceLabel);
   const isSentence = cardKey(card.en) === cardKey(card.sentence.en);
   const long = card.lt.length > 42 || card.en.length > 42;

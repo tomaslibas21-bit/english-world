@@ -24,7 +24,7 @@ const empty = {
 
 function Source({ id, label }: { id: string; label?: string }) {
   const name = sourceName(id, label);
-  return name ? <span className="nb-source">{SITUATION_BY_ID[id] && <SitIcon id={id} size="16" />}{name}</span> : null;
+  return name ? <span className="nb-source">{Object.hasOwn(SITUATION_BY_ID, id) && <SitIcon id={id} size="16" />}{name}</span> : null;
 }
 
 function Reading({ card, phrase, now, afterRemove }: { card?: Card; phrase?: PracticedPhrase; now: number; afterRemove: () => void }) {
@@ -72,6 +72,7 @@ function CourseLink() {
 
 export function Notebook({ close }: { close: () => void }) {
   const [leaf, setLeaf] = useState(lastLeaf);
+  const visit = (tab: Leaf) => { lastLeaf = tab; setLeaf(tab); };
   const [selection, select] = useState<string | null>(null);
   const [source, setSource] = useState<{ id: string; pocket: KeepsakeKind } | null>(null);
   const [limit, setLimit] = useState(BATCH);
@@ -98,7 +99,7 @@ export function Notebook({ close }: { close: () => void }) {
   const counts = { cards: cards.length, phrases: source ? rows.length : phraseCount, keepsakes: pockets.size };
   const returnTo = (id: string) => { nextFocus.current = '[data-entry="' + CSS.escape(id) + '"]'; };
   const changeLeaf = (tab: Leaf) => {
-    setLeaf(lastLeaf = tab);
+    visit(tab);
     setSource(null); select(null); setRound(null); setLimit(BATCH);
     nextFocus.current = '[aria-selected="true"]';
   };
@@ -120,14 +121,14 @@ export function Notebook({ close }: { close: () => void }) {
     if (round) { endReview(); return; }
     if (selection) { returnTo(selection); select(null); return; }
     if (source) {
-      setLeaf(lastLeaf = "keepsakes"); select(source.pocket);
+      visit("keepsakes"); select(source.pocket);
       nextFocus.current = '[data-source="' + CSS.escape(source.id) + '"]';
       setSource(null); setLimit(BATCH); return;
     }
     close();
   };
   const filteredPhrases = (pocket: KeepsakeKind, id: string) => {
-    setSource({ id, pocket }); setLeaf(lastLeaf = "phrases");
+    setSource({ id, pocket }); visit("phrases");
     setLimit(BATCH); select(null); nextFocus.current = "[data-source-title]";
   };
   const card = saved.find((c) => c.id === selection) ?? saved[0];
@@ -142,8 +143,17 @@ export function Notebook({ close }: { close: () => void }) {
     (node ?? sheet.current?.querySelector<HTMLElement>('[aria-selected="true"]'))?.focus();
     nextFocus.current = null;
   });
+  // A controller disconnect or a removed row can briefly put focus outside the dialog.
+  useLayoutEffect(() => {
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      sheet.current?.querySelector<HTMLButtonElement>("[data-pad-back]")?.click();
+    };
+    window.addEventListener("keydown", escape, true);
+    return () => window.removeEventListener("keydown", escape, true);
+  }, []);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); back(); }
     if (e.key !== "Tab") return;
     const buttons = [...e.currentTarget.querySelectorAll<HTMLElement>("button:enabled, a[href]")]
       .filter((el) => el.getClientRects().length && !el.closest("[inert]"));
@@ -169,7 +179,13 @@ export function Notebook({ close }: { close: () => void }) {
       <button aria-label="Uždaryti" onClick={close}><Icon name="close" size={20} /></button></header>
     <div className="nb-tabs pb-tabs" role="tablist" aria-label="Mano užrašinė">
       {(Object.keys(leaves) as Leaf[]).map((tab) => <button key={tab} role="tab" id={"nb-tab-" + tab}
-        aria-selected={leaf === tab} aria-controls="nb-page" onClick={() => changeLeaf(tab)}>
+        aria-selected={leaf === tab} aria-controls="nb-page" onClick={() => changeLeaf(tab)}
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          const tabs = Object.keys(leaves) as Leaf[];
+          changeLeaf(tabs[(tabs.indexOf(tab) + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length]);
+        }}>
         {leaves[tab]} <span>{counts[tab]}</span></button>)}
     </div>
     <div id="nb-page" role="tabpanel" aria-labelledby={"nb-tab-" + leaf} className={"nb-spread" + (hasDetail || round ? " reading" : "")}>
@@ -190,7 +206,7 @@ export function Notebook({ close }: { close: () => void }) {
           </>}
         </>}
         {leaf === "phrases" && <>
-          {source && <h3 data-source-title tabIndex={-1}><Source id={source.id} /></h3>}
+          {source && <h3 data-source-title tabIndex={-1} aria-label={`${leaves.phrases} ${rows.length} · ${sourceName(source.id)}`}><Source id={source.id} /></h3>}
           {rows.some(([, v]) => !keys.has(cardKey(v.en))) &&
             <button className="nb-primary" onClick={() => useCards.getState().addMany(rows
               .filter(([, v]) => !keys.has(cardKey(v.en))).map(([, v]) => phraseCard(v)))}>

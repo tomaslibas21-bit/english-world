@@ -100,3 +100,14 @@
   .notebook .rv-top { min-height: 24px; }
   .notebook .rv-count { color: #384a56; }
 }
+.sheet.notebook { position: relative; }
+.sheet.notebook::before, .sheet.notebook::after {
+  content: ""; pointer-events: none; position: absolute; right: 0; width: 13px; height: 13px;
+  background: linear-gradient(135deg,#f2d68c,#997539); z-index: 1;
+}
+.sheet.notebook::before { top: 0; clip-path: polygon(0 0,100% 0,100% 100%); }
+.sheet.notebook::after { bottom: 0; clip-path: polygon(100% 0,100% 100%,0 100%); }
+.nb-reading {
+  background: radial-gradient(ellipse 39px 26px at calc(100% + 18px) -4px,transparent 82%,#ac82492b 88%,#ac824919 96%,transparent 100%), #fffaf0;
+}
+.nb-reading > .nb-source { padding: 3px 9px; background: #efe6d1; border-radius: 0 7px 7px 0; border-inline-start: 2px solid var(--brass); }

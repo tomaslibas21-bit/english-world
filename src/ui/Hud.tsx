@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { useReviewDay } from "./useReviewDay";
@@ -65,7 +65,8 @@ function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconN
 /** How many saved cards are due for review today. */
 export function useDueCards(): number {
   const cards = useCards((c) => c.cards);
-  return dueCards(cards, useReviewDay()).length;
+  const now = useReviewDay();
+  return useMemo(() => dueCards(cards, now).length, [cards, now]);
 }
 
 const TaxiOverlay = lazy(() => import("./Taxi").then(({ TaxiOverlay }) => ({ default: TaxiOverlay })));
