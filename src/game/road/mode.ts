@@ -15,7 +15,7 @@ import type { ModeFrame, ModeInput } from "../kit/modes";
 import { PadButton } from "../padButtons";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
-import { carHasRoof, carModelEntry } from "../world/carModels";
+import { carHasRoof, carModelEntry, loadCarModel } from "../world/carModels";
 import { exitCoordinates } from "../world/roadExit";
 import { TAXI } from "../world/layout";
 import type { RoadHost, WalkEdge } from "./entry";
@@ -117,6 +117,7 @@ export class PreparedRoad {
 export class RoadMode {
   private phase: "town" | "briefing" | "loading" | "approach" | "offer" | "depart" | "drive" | "result" | "unavailable" = "town";
   private source?: Ride;
+  private cabinet = false;
   private run?: Run;
   private lift?: Lift;
   private returnedTaxi?: { lift: Lift; ride: Ride };
@@ -186,6 +187,13 @@ export class RoadMode {
     useRoad.setState({ phase: "lift" });
   }
 
+  startFromCabinet() {
+    this.session = {};
+    this.cabinet = true;
+    resetRoadUi();
+    this.brief();
+  }
+
   startFromCrest(prepared: PreparedRoad) {
     this.session = {};
     this.source = prepared.source;
@@ -226,7 +234,8 @@ export class RoadMode {
   private async begin(session: object, way: PlayWay) {
     this.phase = "loading";
     useRoad.setState({ phase: "loading", way });
-    const pool = await (way === "phrases" ? loadPhrasePool().catch(() => undefined) : this.pool);
+    if (way === "words") this.pool ??= loadWordPrompts();
+    const pool = way === "phrases" ? await loadPhrasePool().catch(() => undefined) : await this.pool;
     if (this.session !== session) return;
     const pick = pool && runPicker(pool, edition, way);
     const first = pick?.([], 18);
@@ -234,12 +243,14 @@ export class RoadMode {
     if (this.session !== session) return;
     if (!first || !pick) { this.unavailable(); return; }
     if (this.driveFromCrest(way, pick, first)) return;
-    const mesh = this.source?.mesh ?? this.lift?.take();
+    const sedan = this.cabinet ? await loadCarModel("sedan") : undefined;
+    if (this.session !== session) return;
+    const mesh = sedan?.createInstance("#b9573f") ?? this.source?.mesh ?? this.lift?.take();
     if (!mesh) { this.unavailable(); return; }
-    const size = this.source ? rideSize(this.source) : taxiSize;
+    const size = this.source ? rideSize(this.source) : sedan?.entry.collisionBox ?? taxiSize;
     const seat = this.run?.view.seatedPose();
     this.clearRun();
-    const model = carModelEntry(this.source?.model ?? TAXI.model);
+    const model = sedan?.entry ?? carModelEntry(this.source?.model ?? TAXI.model);
     const track = new Track(this.host.roadOpening()), view = new RoadView(mesh, size, model), car = new RoadCar();
     view.scene.add(track.group);
     if (seat) view.seatPlayer(this.host.player().root, seat.position, seat.rotation);
@@ -541,7 +552,12 @@ export class RoadMode {
     if (way === "phrases") audio.primeFile();
     const first = this.run?.gate?.prompt;
     if (way === "words" && this.crest && first) return this.driveFromCrest(way, runPicker(this.crest, edition, way), first);
-    void this.begin(this.session, way);
+    const session = this.session;
+    void this.begin(session, way).catch((error) => {
+      if (this.session !== session) return;
+      console.warn("Road game could not start", error);
+      this.unavailable();
+    });
     return true;
   }
 
@@ -579,6 +595,7 @@ export class RoadMode {
     } else if (this.source && !immediate) this.host.returnCar(this.source, onFoot);
     this.lift = undefined;
     this.source = undefined;
+    this.cabinet = false;
     this.pool = undefined;
     this.crest = undefined;
     resetRoadUi();

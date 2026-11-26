@@ -35,6 +35,7 @@ type Run = {
 const { situation, npc } = TAXI_CONVERSATION;
 const drivingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", " "]);
 const Assist = { pointer: 1, space: 2, enter: 4, pad: 8 } as const;
+export const TAXI_APPROACH = { x: TAXI_CAR.x, z: TAXI_CAR.z + 1.85, rot: Math.PI };
 const taxiModel = carModelEntry(TAXI_CAR.model);
 const wheelRadius = 0.3 * taxiModel.scale[2];
 
@@ -80,7 +81,7 @@ class TaxiMode implements GameMode {
 
   constructor(private host: ModeHost, private stand: StandTaxi) {
     this.car = host.rides.createModeCar(TAXI_CAR, stand.root);
-    this.marker.position.set(this.car.home.x, 0.04, this.car.home.z + 1.85);
+    this.marker.position.set(TAXI_APPROACH.x, 0.04, TAXI_APPROACH.z);
     this.marker.add(this.ring, this.halo);
     this.highlight.visible = false;
     this.highlight.scale.set(2.15, 1, 8);

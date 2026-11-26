@@ -1576,3 +1576,22 @@ body.scene-on .tag-layer { display: none; }
 .cave-guide .arrow { width: 16px; height: 16px; flex: none; }
 .cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }
 .cave-guide :is(p, small) { min-width: 0; overflow-wrap: anywhere; }
+
+/* Place the cabinet tag below its painted screen. The little brass pin stays on the
+   machine when the tag itself has to move inward at the edge of the phone. */
+.hud .prompt.cabinet-prompt {
+  --tag-width: min(10.5em, 76vw);
+  --tag-center: clamp(calc(env(safe-area-inset-left) + 8px + var(--tag-width) / 2), var(--cabinet-x, 50vw),
+    calc(100vw - env(safe-area-inset-right) - 8px - var(--tag-width) / 2));
+  box-sizing: border-box; width: var(--tag-width); max-width: none; min-height: 44px;
+  left: var(--tag-center); top: calc(var(--cabinet-y, 66%) + 10px); bottom: auto; right: auto;
+  transform: translateX(-50%); animation: none; border: 1px solid #e0bb77; border-radius: 9px;
+  padding: 5px 10px; gap: 8px; justify-content: center; color: #fff4dd; background: #175652;
+  box-shadow: 0 3px 10px #20191465; font-size: 0.90em;
+}
+.hud .cabinet-prompt::before {
+  content: ""; position: absolute; bottom: 100%; width: 2px; height: 10px; background: #fce2a0;
+  left: clamp(5px, calc(50% + var(--cabinet-x, 50vw) - var(--tag-center)), calc(100% - 5px));
+}
+.hud .cabinet-prompt kbd { min-width: 24px; min-height: 24px; padding: 1px 5px; background: #d8af6d; color: #30291e; border-radius: 5px; }
+.hud .cabinet-prompt small { color: #ead7af; }

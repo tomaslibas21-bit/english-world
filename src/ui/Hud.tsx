@@ -1,3 +1,5 @@
+import { useRoad } from "../game/road/store";
+import { RETURN_TO_ARCADE } from "../game/arcade/mode";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { ROAD_UI } from "../content/road";
 import { townRide, usesTownNotes, useStore, type HudState } from "../state/store";
@@ -88,7 +90,7 @@ const BaristaOffer = lazy(() => import("./Barista").then(({ BaristaOffer }) => (
 const PhotoWalkOverlay = lazy(() => import("./PhotoWalk").then(({ PhotoWalkOverlay }) => ({ default: PhotoWalkOverlay })));
 const DirectionsCard = lazy(() => import("./PhotoWalk").then(({ DirectionsCard }) => ({ default: DirectionsCard })));
 const StreetBubbles = lazy(() => import("./street/StreetBubbles"));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay(), gym: GymOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { arcade: lazy(() => import("./Arcade")), photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay(), gym: GymOverlay };
 
 function StreetBubbleLayer() {
   const marker = useStreet((s) => s.marker);
@@ -104,6 +106,7 @@ export function Hud() {
   const inConversation = useStore((s) => s.conv.active);
   const screen = useScreen();
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
+  const loadingCabinet = useRoad((s) => s.loadingCabinet);
   const surfing = useSurf((s) => s.active);
   const picking = useSurf((s) => s.picking);
   const baristaOffered = useBarista((s) => s.offered);
@@ -149,12 +152,15 @@ export function Hud() {
     const { id, exitLabel } = hud.modeScreen;
     const road = id === "road";
     const sea = id === "sea";
-    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[id];
+    const Overlay = road && loadingCabinet ? undefined : road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[id];
     const gym = id === "gym";
     const cenote = id === "cenote-tour";
-    const tools = !road && !sea && !gym && !cenote && id !== "barista" && id !== "loteria" && id !== "billiards" && id !== "photowalk";
+    const tools = id !== "arcade" && !road && !sea && !gym && !cenote && id !== "barista" && id !== "loteria" && id !== "billiards" && id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
+        {road && loadingCabinet && <div className="arcade-loading" data-pad-scope="choice">
+          <strong role="status">{L("Įkeliama…")}</strong><button className="btn" autoFocus data-pad-back onClick={() => game?.modeExit()}>{RETURN_TO_ARCADE}</button>
+        </div>}
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
         {cenote && <button type="button" className="cenote-tour-leave" data-action="leave"
           aria-label={L("Baigti išvyką ir grįžti prie trobelės")} onClick={() => game?.modeExit()} lang={HL}>{L("Išeiti")}</button>}
@@ -172,10 +178,10 @@ export function Hud() {
   const rideControls = !hud.modeScreen && (ride === "car" || ride === "boat" || (game as Game | null)?.rides?.riding)
     ? kind === "out" && !hud.panel && !hud.glyph && !picking : undefined;
   const talk = kind === "talk";
-  const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards";
+  const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards" || kind === "arcade";
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
   const foldForContext = portrait && !hud.panel && target !== undefined && target !== zone
-    && ((zone !== "town" && localOffer) || (talk && note === "guide" && !hud.roadApproach));
+    && ((zone === "pool-hall" && EDITION.id === "es") || (zone !== "town" && localOffer) || (talk && note === "guide" && !hud.roadApproach));
   const moving = hud.walking || riding;
   const step = hud.coach?.step;
   const compactGuide = portrait && (compactForPhoto || ((moving || talk) && step !== "walk" && step !== "list"));
@@ -206,9 +212,9 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "arcade" ? " cabinet-prompt" : "")} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.kind === "drive" && hud.prompt.label === L(ROAD_UI.drive) ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
-          <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
+          <span className="prompt-text" lang={kind === "arcade" ? TL : undefined}>{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
       {riding && hud.rideStartedAt !== null && !hud.showTouch && (
@@ -699,7 +705,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
+      {prompt && prompt.kind !== "arcade" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
         // Ending a second touch while holding the brake or stick may produce no click.
         e.preventDefault();
         const touch = e.changedTouches[0];
