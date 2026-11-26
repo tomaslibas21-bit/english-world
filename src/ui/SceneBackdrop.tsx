@@ -18,7 +18,8 @@ export function SceneBackdrop() {
   let stem: string | undefined;
   if (art) {
     const kept = last.current?.run === conv.run ? last.current.stem : undefined;
-    stem = (kept && art.sticky?.includes(kept) && kept) || (conv.stepId && art.phases[conv.stepId]) || (conv.completed && art.done) || kept || art.start;
+    const phase = (conv.stepId === "closing" && conv.endScene) || conv.stepId;
+    stem = (kept && art.sticky?.includes(kept) && kept) || (phase && art.phases[phase]) || (conv.completed && art.done) || kept || art.start;
     last.current = { run: conv.run, stem };
   }
 

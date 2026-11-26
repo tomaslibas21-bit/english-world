@@ -112,8 +112,9 @@ export interface Ctx {
   tip(t: Tip): void;
   /** Mark the situation's goal as reached (stamp, stars). */
   complete(): void;
-  /** End the conversation after the NPC finishes speaking. */
-  end(): void;
+  /** End the conversation after the NPC finishes speaking. `scene`: the phase picture key for that last moment
+   *  (src/ui/scene-data), when it isn't the goodbye ("closing"): the surf school's "go" after a wave is accepted. */
+  end(scene?: string): void;
   /** The learner's profile. `datePartner` = "sam" | "emma" (song 84), chosen in settings. */
   player: { name: string; surname: string; gender: Gender; datePartner?: string };
   /** Current step id (the last question asked). */

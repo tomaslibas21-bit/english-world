@@ -47,7 +47,7 @@ function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, p
     let kept: string | undefined;
     playSim(sit, sim, seed, {
       onTurn: (conv) => {
-        const stepId = conv.ended ? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
+        const stepId = conv.ended ? conv.endScene ?? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
         const pic = (kept && f.sticky?.includes(kept) && kept) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
         kept = pic;
         onTurn(stepId, pic, sim.name, seed);

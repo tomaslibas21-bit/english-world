@@ -123,6 +123,8 @@ export class Conversation {
   pending: Pending | null = null;
   completed = false;
   ended = false;
+  /** The phase picture key of the ending moment, when it isn't "closing" (Ctx.end). */
+  endScene: string | null = null;
   speakerId: string;
   slow = false;
   failures = 0;
@@ -189,7 +191,7 @@ export class Conversation {
       expect: (p) => { self.pending = p; self.held = true; },
       tip: (t) => self.tip(t),
       complete: () => { if (!self.completed) { self.completed = true; self.out.completed = true; } },
-      end: () => { self.ended = true; self.out.ended = true; },
+      end: (scene) => { self.ended = true; self.out.ended = true; if (scene) self.endScene = scene; },
       twist: (id) => { self.twists.add(id); },
       event: (name, data) => { self.out.events.push({ name, data, at: self.out.lines.length }); },
       memory: self.opt.memory || {},

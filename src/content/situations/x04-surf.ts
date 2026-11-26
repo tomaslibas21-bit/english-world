@@ -809,6 +809,11 @@ const surf: SituationDef = {
       expect: { state: { gear: "board", hours: 2, rentPaid: true, doc: "passport", invited: true, surfing: true, level: "beginner" } },
     },
     {
+      name: "asks to rent, names a surfboard at Maren's question, no wave today",
+      turns: ["Hi! I'd like to rent some gear.", "A surfboard, please.", "For one hour.", "Here's my passport.", "In cash.", "Not today, thanks.", "Thanks, bye!"],
+      expect: { state: { gear: "board", hours: 1, rentPaid: true, doc: "passport", invited: false, surfing: false } },
+    },
+    {
       name: "lesson questions and a first wave",
       setup: (s) => { s.noSignal = false; },
       turns: ["Hi! How much is a surf lesson?", "I'd like a lesson.", "No, I've never surfed.", "Is it hard?", "Yes, I'm in.", "By card.", "What if I fall?", "Yes, I'm with you.", "Is it deep?", "All clear.", "Are there sharks?", "No, none.", "Yes, let's go!"],
@@ -1115,7 +1120,7 @@ function goSurf(c: Ctx) {
   c.s.level = c.s.surfer ? "advanced" : "beginner";
   c.say(renterInvite(c) && c.s.gear !== "board" ? "go_lend" : "go");
   c.event("surf", { level: c.s.level });
-  close(c);
+  close(c, "go");
 }
 
 function notToday(c: Ctx) {
@@ -1134,10 +1139,10 @@ function closeOffer(c: Ctx) {
   else if (c.s.invited === undefined && !c.s.noDeal) c.say("bye");
 }
 
-function close(c: Ctx) {
+function close(c: Ctx, scene?: string) {
   if (c.s.surfing || c.s.rentPaid || c.s.lessonNo || c.s.safetyDone || (c.s.advanced && c.s.invited === false)) c.complete();
   c.s.closed = true;
-  c.end();
+  c.end(scene);
   c.hold();
 }
 

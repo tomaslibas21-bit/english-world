@@ -139,6 +139,7 @@ export class Session {
     st.setConv({
       phase: "npc",
       stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null,
+      endScene: this.conv.ended ? this.conv.endScene : null,
       stepProgress: this.stepProgress(st.conv.stepProgress),
       ...(optionalVoice ? { checklist: this.conv.checklist() } : {}),
     });

@@ -122,6 +122,8 @@ export interface ConvUI {
   focus: number;
   /** The step or pending question the conversation is at (drives the phase pictures). */
   stepId: string | null;
+  /** With stepId "closing": the phase picture of that ending when it isn't the goodbye (Ctx.end). */
+  endScene?: string | null;
   /** Position in the situation's authored steps, independent of pending questions and checklist labels. */
   stepProgress: { step: number; of: number } | null;
   /** "Did you mean…?" after an answer that wasn't understood (src/convo/suggest.ts). */
