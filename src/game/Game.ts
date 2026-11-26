@@ -17,7 +17,7 @@ import type { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
 import { HARBOR_SURF_PLATE } from "./world/harborSurf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
@@ -634,6 +634,7 @@ export class Game implements GameApi {
         this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
+        this.applyWalkingViewShift(this.screenW, this.screenH, false);
       },
       scoreShot: (beside) => {
         const { root: { position: p }, height } = this.player;
@@ -3229,7 +3230,14 @@ export class Game implements GameApi {
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
     const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
-    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? this.rig.standView?.shiftY ?? -shift));
+  }
+
+  private taxiStandFrame() {
+    // A mode owns its pending launch too, before active/riding are set by the fade callback.
+    if (this.zone.id !== "town" || this.rides.riding || this.modes.engaged || this.transitioning || this.session?.active || this.aloft) return undefined;
+    const { x, z } = this.player.root.position;
+    return taxiStandFrameAt(x, z, this.rig.cam.aspect);
   }
 
   private updateViewLights() {
@@ -3379,7 +3387,10 @@ export class Game implements GameApi {
     if (actorTalk) this.talkCamera?.update(dt);
     // Keep the visible view while the talk chunk or measured panel is pending.
     const awaitingShot = actorTalk && !this.rig.talk;
-    if (!awaitingShot) this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    if (!awaitingShot) {
+      const standFrame = this.taxiStandFrame();
+      this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down, standFrame);
+    }
     this.frameKeeper(dt, blocked || !!mode);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
