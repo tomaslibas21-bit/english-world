@@ -28,7 +28,7 @@ export function withSungTranslations(lines: SongLine[]): SongLine[] {
   for (const line of lines) {
     const en = line.en;
     const words = typeof line.lt === "string" ? line.lt.split(/\s+/).filter(Boolean) : [];
-    if (en && Number.isFinite(en.s) && Number.isFinite(en.e) && words.length) {
+    if (en && Number.isFinite(en.s) && Number.isFinite(en.e) && en.s >= 0 && en.e > en.s && words.length) {
       const timed = Array.isArray(en.w) && en.w.length === words.length;
       rows.push({ s: en.s, e: en.e, src: line.lt, lt: "", u: words.map((w): [string, string, number] => [w, "", 1]), w: timed ? en.w! : [], wt: words, part: "translation", i: line.i });
     }
@@ -84,4 +84,29 @@ export function unitAt(line: SongLine, t: number): number {
 export function shortGloss(gloss: string): string {
   const whole = String(gloss || "").trim();
   return whole.replace(/\s*\([^)]*\)/g, "").replace(/\s{2,}/g, " ").trim() || whole;
+}
+
+/** The booth only bounces words when the entire row is aligned to its displayed text. */
+export function karaokeWordTiming(line: SongLine): boolean {
+  if (!line.w.length || line.w.length !== line.wt?.length || line.wt.join(" ").trim() !== line.src.trim()) return false;
+  let previous = line.s;
+  for (const pair of line.w) {
+    if (!Array.isArray(pair) || !Number.isFinite(pair[0]) || !Number.isFinite(pair[1]) ||
+      pair[0] < previous || pair[1] <= pair[0] || pair[0] < line.s - 0.05 || pair[1] > line.e + 0.05) return false;
+    previous = pair[0];
+  }
+  return true;
+}
+
+/** A word's own end removes its underline, including a silence inside a line. */
+export function karaokeWordAt(line: SongLine, seconds: number): number {
+  if (!karaokeWordTiming(line)) return -1;
+  return line.w.findIndex(([start, end]) => seconds >= start - LEAD && seconds < end);
+}
+
+/** A preview belongs to a visible line. A long instrumental break keeps the card clear. */
+export function karaokeReading(timeline: Timeline, seconds: number) {
+  const singing = timeline.lines.findLastIndex((line) => seconds >= line.s && seconds < line.e);
+  const current = singing >= 0 ? singing : lineAt(timeline, seconds);
+  return { current, next: current >= 0 && current + 1 < timeline.lines.length ? current + 1 : -1 };
 }

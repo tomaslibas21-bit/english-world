@@ -13,6 +13,13 @@
 //   VITE_RADIO_RECORDINGS   another folder the list's recordings may be named in, which the files Worker reads for
 //                           this course (Spanish Master English: "https://audio.dvikalbesdainos.lt/spanish-master").
 
+import { EDITION } from "../edition";
+
+let covers: ReadonlyMap<string, string> | undefined;
+export async function loadKaraokeCovers() {
+  covers ??= (await import("../content/songCovers")).SONG_COVERS;
+}
+
 /** One song of the list (public/songs/index.json). */
 export interface SongMeta {
   id: string;
@@ -38,6 +45,8 @@ export interface SongLine {
   /** sung from / to (seconds) */
   s: number;
   e: number;
+  /** The course's section, used for the booth audience's quiet reactions. */
+  sec?: number;
   src: string;
   /** the line in the learner's language */
   lt: string;
@@ -57,7 +66,12 @@ export interface SongLine {
 
 export interface Song extends SongMeta { L: SongLine[] }
 
-export interface RadioConfig { index: string; files: string | null; recordings: string | null }
+export interface RadioConfig {
+  index: string;
+  files: string | null;
+  recordings: string | null;
+  karaokeText?: "site";
+}
 
 const trimmed = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().replace(/\/+$/, "") : null);
 
@@ -65,19 +79,59 @@ const trimmed = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().re
 export function radioConfig(env: Record<string, unknown> = import.meta.env ?? {}): RadioConfig | null {
   const index = typeof env.VITE_RADIO_INDEX === "string" ? env.VITE_RADIO_INDEX.trim() : "";
   if (!index) return null;
-  return { index, files: trimmed(env.VITE_RADIO_FILES), recordings: trimmed(env.VITE_RADIO_RECORDINGS) };
+  // Spanish Master English serves its lesson JSON on its app origin. Its audio still lives on the files Worker.
+  const karaokeText = EDITION.id === "es" && EDITION.helper === "en" ? "site" : undefined;
+  return { index, files: trimmed(env.VITE_RADIO_FILES), recordings: trimmed(env.VITE_RADIO_RECORDINGS), karaokeText };
 }
 
-const withToken = (url: string, token?: string | null) =>
-  token ? `${url}${url.includes("?") ? "&" : "?"}t=${encodeURIComponent(token)}` : url;
+const withToken = (url: string, token?: string | null) => {
+  if (!token) return url;
+  const hash = url.indexOf("#");
+  const address = hash < 0 ? url : url.slice(0, hash);
+  return `${address}${address.includes("?") ? "&" : "?"}t=${encodeURIComponent(token)}${hash < 0 ? "" : url.slice(hash)}`;
+};
 
 /** The list's site, for a song file read from there (no files folder: a local trial). */
-const site = (cfg: RadioConfig) => cfg.index.replace(/\/songs\/[^/]*$/, "");
+const site = (cfg: RadioConfig) => cfg.index.split(/[?#]/, 1)[0].replace(/\/songs\/[^/]*$/, "");
+
+/** Public jackets belong to the index's course origin. A missing lookup uses the paper sleeve. */
+export function songCoverUrl(cfg: RadioConfig, id: string, width: 160 | 320 | 640 = 160): string | null {
+  const hash = covers?.get(id);
+  if (!hash) return null;
+  const path = `/art/s/songs/${id}.${hash}.${width}.webp`;
+  if (cfg.index.startsWith("//")) return `//${new URL(cfg.index, "https://localhost").host}${path}`;
+  return /^https?:\/\//i.test(cfg.index) ? new URL(cfg.index).origin + path : path;
+}
+
+export interface KaraokeCatalogEntry {
+  song: SongMeta;
+  thumbnail: string | null;
+  jacket: string | null;
+}
+
+export function karaokeCatalog(cfg: RadioConfig | null, songs: readonly SongMeta[]): KaraokeCatalogEntry[] {
+  return cfg ? songs.map((song) => ({
+    song, thumbnail: songCoverUrl(cfg, song.id), jacket: songCoverUrl(cfg, song.id, 320),
+  })) : [];
+}
 
 /** Where a song's words and timing are: the addresses to try, in order. */
 export function songDataUrls(cfg: RadioConfig, id: string, token?: string | null): string[] {
   const path = `/songs/data/${encodeURIComponent(id)}.json`;
   return cfg.files ? [withToken(cfg.files + path, token), site(cfg) + path] : [site(cfg) + path];
+}
+
+export async function fetchSongJson(
+  cfg: RadioConfig, id: string, token: string | null,
+  fetchJson: (url: string, signal?: AbortSignal) => Promise<unknown>, signal?: AbortSignal,
+  source?: RadioConfig["karaokeText"],
+): Promise<unknown> {
+  const [first, fallback] = songDataUrls(source === "site" ? { ...cfg, files: null } : cfg, id, token);
+  try { return await fetchJson(first, signal); }
+  catch (error) {
+    if (!fallback || signal?.aborted) throw error;
+    return fetchJson(fallback, signal);
+  }
 }
 
 /** Where the course's notes on a song's lines are ("Paaiškinimai", extras.ts): a course file like its words. */
@@ -90,28 +144,56 @@ export function songNotesUrls(cfg: RadioConfig, id: string, token?: string | nul
  *  never to another address. */
 export function songAudioUrls(cfg: RadioConfig, song: Pick<SongMeta, "a">, token?: string | null): string[] {
   const a = song.a;
-  if (a.startsWith("/") && !a.startsWith("//")) return cfg.files ? [withToken(cfg.files + a, token), site(cfg) + a] : [site(cfg) + a];
+  if (a.startsWith("/") && !a.startsWith("//")) {
+    const fallback = site(cfg) + a;
+    const signed = cfg.files && scopedAudioUrl(cfg.files, a, token);
+    return signed ? [signed, fallback] : [fallback];
+  }
   if (cfg.files) {
     for (const root of [cfg.files, cfg.recordings]) {
-      if (root && a.startsWith(root + "/")) return [withToken(cfg.files + a.slice(root.length), token)];
+      if (root && a.startsWith(root + "/")) return [scopedAudioUrl(cfg.files, a.slice(root.length), token) ?? a];
     }
   }
   return [a];
+}
+
+/** Resolve dot segments before deciding whether an indexed path can receive the files token. */
+function scopedAudioUrl(root: string, path: string, token?: string | null): string | null {
+  const base = new URL(root, "https://localhost"), target = new URL(root + path, base);
+  return target.origin === base.origin && target.pathname.startsWith(base.pathname.replace(/\/$/, "") + "/")
+    ? withToken(root + path, token) : null;
 }
 
 /** The songs of a list file that can be played (anything else in it is skipped). */
 export function readSongList(data: unknown): SongMeta[] {
   const songs = (data as { songs?: unknown } | null)?.songs;
   if (!Array.isArray(songs)) return [];
-  return songs.filter((s): s is SongMeta =>
-    !!s && typeof s.id === "string" && typeof s.a === "string" && typeof s.t === "string")
+  const seen = new Set<string>();
+  return songs.filter((s): s is SongMeta => {
+    if (!s || typeof s.id !== "string" || !/^[\w-]+$/.test(s.id) || seen.has(s.id) ||
+      typeof s.a !== "string" || !s.a.trim() || typeof s.t !== "string" || !s.t.trim()) return false;
+    seen.add(s.id);
+    return true;
+  })
     .map((s) => ({ ...s, tl: typeof s.tl === "string" ? s.tl : "", tp: typeof s.tp === "string" ? s.tp : "", g: typeof s.g === "string" ? s.g : "", d: Number(s.d) || 0 }));
 }
 
 /** A song file's lines, with the ones that can't be shown in time left out. */
-export function readSongLines(data: unknown): SongLine[] {
+export function readSongLines(data: unknown, wholeLineFallback = false): SongLine[] {
   const lines = (data as { L?: unknown } | null)?.L;
   if (!Array.isArray(lines)) return [];
-  return lines.map((l, i) => (l && typeof l === "object" ? { ...l, i } : l)).filter((l): l is SongLine =>
+  return lines.map((l, i) => {
+    if (!l || typeof l !== "object") return null;
+    if (!wholeLineFallback) return { ...l, i };
+    if (typeof l.src !== "string" || !l.src.trim() || l.s < 0 || l.e <= l.s) return null;
+    const units = Array.isArray(l.u) ? l.u.filter((unit: unknown) =>
+      Array.isArray(unit) && typeof unit[0] === "string" && typeof unit[1] === "string") : [];
+    return {
+      ...l, i, lt: typeof l.lt === "string" ? l.lt : "",
+      u: units.length ? units : [[l.src, "", 1]],
+      w: Array.isArray(l.w) ? l.w : [],
+      wt: Array.isArray(l.wt) && l.wt.every((word: unknown) => typeof word === "string") ? l.wt : [],
+    };
+  }).filter((l): l is SongLine =>
     !!l && Number.isFinite(l.s) && Number.isFinite(l.e) && Array.isArray(l.u) && l.u.length > 0 && Array.isArray(l.w));
 }

@@ -287,6 +287,7 @@ export interface TownTheme {
   tianguis: { lonas: string[]; signs: Record<string, [string, string]>; stalls: { x: number; z: number; rot: number; goods: TianguisGoods }[] } | null;
   /** The rooms' looks in this edition, by room id: floor and wall colors, the floor's kind, the accent (baseboards). */
   roomLooks: Record<string, RoomLook>;
+  karaoke?: { panel: string; trim: string; floor: string; stand: string };
   /** Diego and Natalia's house (s85, p30) as a Yucatecan home: a ceiling fan, a family altar, plants in clay pots, a
    *  hammock, a water jug on its stand (and since round 2 a petate and the television on its stand). */
   homeMx: boolean;

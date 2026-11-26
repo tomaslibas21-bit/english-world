@@ -13,4 +13,9 @@ import { initVariety } from "./state/variety";
 
 // the Spanish edition: Mexican or neutral Spanish, as the learner chose (nothing in the English edition)
 initVariety();
-createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
+if (import.meta.env.DEV && new URLSearchParams(location.search).get("karaokeHarness") === "1") {
+  void import("./dev/KaraokeHarness").then(({ KaraokeHarness }) => root.render(<KaraokeHarness />));
+} else {
+  root.render(<App />);
+}

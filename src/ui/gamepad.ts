@@ -52,6 +52,8 @@ const POLICIES: Record<string, Policy> = {
   score: { rank: 65, flow: ".mode-score-card" },
   choice: { rank: 60, first: ".barista-choice, [data-line].taxi-choice, .road-choice, .surf-choice", back: CLOSE },
   radio: { rank: 55, first: ".rs-knob", back: ".rs-x" },
+  karaoke: { rank: 60, first: `${DEFAULT}, [data-song], select`, back: BACK },
+  "karaoke-stage": { rank: 60, first: DEFAULT, back: BACK },
   "phone-ring": { rank: 50, first: DEFAULT },
   street: { rank: 50, first: ".street-choice, .street-line", back: ".street-head button" },
   drawer: { rank: 20, first: "[data-pad-tool=scenarios]" },

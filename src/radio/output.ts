@@ -12,12 +12,16 @@ export class NeedsTap extends Error { constructor() { super("the browser wants a
 export interface RadioOutput {
   /** Start the recording at `url` from `at` seconds. Settles when it sounds; rejects with NeedsTap, or with another
    *  error when the recording can't be played. A later play() or pause() makes an unfinished one settle quietly. */
-  play(url: string, at: number): Promise<boolean>;
+  play(url: string, at: number, exact?: boolean): Promise<boolean>;
   /** Silence now. The place in the song is kept for position(). */
   pause(): void;
   /** Seconds into the song. */
   position(): number;
   duration?(): number;
+  playbackRate?(): number;
+  setPlaybackRate?(rate: number): void;
+  /** Release the borrowed recording and any prefetched bytes. */
+  clear?(): void;
   /** 0–1, at once or over `ms`. */
   setVolume(volume: number, ms?: number): void;
   /** In a tap: whatever lets a later play() sound without one. */
@@ -40,9 +44,11 @@ export class HtmlOutput implements RadioOutput {
   /** The radio means the element to sound. Anything else that starts it (a headset key, the system's media
    *  controls) is stopped again: during a conversation the element must stay silent whatever asks. */
   private wanted = false;
+  private run = 0;
   private unlocked = false;
   private level = 1;
   private fade: ReturnType<typeof setInterval> | undefined;
+  private settleSeek?: () => void;
 
   private media(): HTMLAudioElement {
     if (this.el) return this.el;
@@ -68,32 +74,60 @@ export class HtmlOutput implements RadioOutput {
     void el.play().then(() => { this.unlocked = true; if (el.src === SILENCE) el.pause(); }).catch(() => { /* the next tap tries again */ });
   }
 
-  async play(url: string, at: number): Promise<boolean> {
+  async play(url: string, at: number, exact = false): Promise<boolean> {
     const el = this.media();
+    const run = ++this.run;
+    this.settleSeek?.();
     this.wanted = true;
-    if (this.url !== url || el.src === SILENCE || !el.src) {
+    const changed = this.url !== url || el.src === SILENCE || !el.src;
+    if (changed) {
       this.url = url;
       el.src = url;
-      if (at > 0) { try { el.currentTime = at; } catch { /* starts from the beginning */ } }
-    } else if (Math.abs(el.currentTime - at) > 1) {
-      try { el.currentTime = at; } catch { /* stays where it is */ }
+    }
+    if (exact || (changed ? at > 0 : Math.abs(el.currentTime - at) > 1)) {
+      try { el.currentTime = at; }
+      catch (error) {
+        if (exact) { this.wanted = false; throw error; }
+      }
     }
     this.apply();
     try {
       await el.play();
+      if (run !== this.run) return false;
+      if (exact) {
+        // Loading a source can replace a pre-metadata currentTime assignment. Apply it to the loaded source too.
+        if (Math.abs(el.currentTime - at) > 0.15) el.currentTime = at;
+        // play() may settle while a same-source seek is still pending. A caller may pause as soon as we return.
+        if (el.seeking) await new Promise<void>((resolve) => {
+          const done = () => {
+            el.removeEventListener("seeked", done);
+            el.removeEventListener("error", done);
+            if (this.settleSeek === done) this.settleSeek = undefined;
+            resolve();
+          };
+          this.settleSeek = done;
+          el.addEventListener("seeked", done);
+          el.addEventListener("error", done);
+          if (!el.seeking || run !== this.run) done();
+        });
+        if (run !== this.run) return false;
+        if (el.error) throw el.error;
+      }
       this.unlocked = true;
       return this.wanted && this.url === url;
     } catch (error) {
-      if (!this.wanted || this.url !== url) return false; // paused or replaced meanwhile
+      if (run !== this.run) return false; // paused or replaced meanwhile
       const name = (error as { name?: string } | null)?.name;
-      if (name === "AbortError") return false;
       this.wanted = false;
+      if (name === "AbortError") return false;
       if (name === "NotAllowedError") throw new NeedsTap();
       throw error;
     }
   }
 
   pause() {
+    this.run++;
+    this.settleSeek?.();
     this.wanted = false;
     clearInterval(this.fade);
     try { this.el?.pause(); } catch { /* nothing was playing */ }
@@ -101,6 +135,21 @@ export class HtmlOutput implements RadioOutput {
 
   position() { return this.el && this.el.src !== SILENCE ? this.el.currentTime || 0 : 0; }
   duration() { return this.el && Number.isFinite(this.el.duration) ? this.el.duration : 0; }
+  playbackRate() { return this.el?.playbackRate ?? 1; }
+  setPlaybackRate(rate: number) {
+    const el = this.media();
+    el.defaultPlaybackRate = rate;
+    el.playbackRate = rate;
+  }
+
+  clear() {
+    this.pause();
+    this.url = "";
+    if (this.el) {
+      this.el.removeAttribute("src");
+      this.el.load();
+    }
+  }
 
   private apply() { try { if (this.el) this.el.volume = Math.max(0, Math.min(1, this.level)); } catch { /* a fixed-volume device */ } }
 
@@ -163,7 +212,7 @@ export class BufferOutput implements RadioOutput {
     });
   }
 
-  async play(url: string, at: number): Promise<boolean> {
+  async play(url: string, at: number, exact = false): Promise<boolean> {
     const run = ++this.run;
     this.stopSource();
     // the place asked for is the place from now on, also for a pause that comes while the song is still loading
@@ -174,10 +223,11 @@ export class BufferOutput implements RadioOutput {
       this.url = url;
       const ahead = this.ahead?.url === url ? this.ahead.bytes : null;
       this.ahead = null;
-      const buffer = await this.decode(await (ahead ?? this.fetchBytes(url)));
-      if (this.url !== url) return false;
-      this.buffer = buffer;
+      const bytes = await (ahead ?? this.fetchBytes(url));
       if (run !== this.run) return false;
+      const buffer = await this.decode(bytes);
+      if (run !== this.run) return false;
+      this.buffer = buffer;
     }
     const ctx = this.context();
     if (!ctx) throw new Error("no audio output");
@@ -193,12 +243,15 @@ export class BufferOutput implements RadioOutput {
     source.buffer = buffer;
     gain.gain.value = this.level;
     source.connect(gain); gain.connect(ctx.destination);
-    this.offset = Math.max(0, Math.min(at, buffer.duration - 0.05));
+    this.offset = Math.max(0, Math.min(at, buffer.duration - (exact ? 0 : 0.05)));
     source.onended = () => {
       if (this.source !== source) return;
       // stop() and an interruption end a source too: only the clock reaching the song's end is its end
       const done = this.position() + 0.05 >= buffer.duration;
       this.settle();
+      source.disconnect();
+      gain.disconnect();
+      this.gain = null;
       if (done) { this.offset = 0; this.onEnded?.(); } else this.onStopped?.("interrupted");
     };
     this.source = source; this.gain = gain;
@@ -213,7 +266,7 @@ export class BufferOutput implements RadioOutput {
     if (this.ctx === ctx) return;
     this.ctx = ctx;
     ctx.addEventListener("statechange", () => {
-      if (!this.sounding || ctx.state === "running") return;
+      if (this.ctx !== ctx || !this.sounding || ctx.state === "running") return;
       this.stopSource();
       this.onStopped?.("interrupted");
     });
@@ -236,6 +289,13 @@ export class BufferOutput implements RadioOutput {
   }
 
   pause() { this.run++; this.stopSource(); }
+
+  clear() {
+    this.pause();
+    this.buffer = this.ahead = null;
+    this.url = "";
+    this.offset = 0;
+  }
 
   position() {
     return this.sounding && this.ctx ? this.offset + Math.max(0, this.ctx.currentTime - this.startedAt) : this.offset;

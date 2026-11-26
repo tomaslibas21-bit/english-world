@@ -83,6 +83,8 @@ import { NavGrid } from "./nav";
 import { Session } from "./session";
 import { Ambient, Chatter, walkerLook } from "./ambient";
 import { ROOM_PEOPLE } from "./world/roomPeople";
+import { KaraokeMode } from "./karaoke/mode";
+import { KARAOKE_PLACE } from "./karaoke/stage";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
@@ -289,6 +291,7 @@ export class Game implements GameApi {
   private transitioning = false;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
+  private karaoke: KaraokeMode | null = null;
   private taxi: ReturnType<typeof createTaxiMode> = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
   private readonly phone = new TownPhone();
@@ -744,6 +747,17 @@ export class Game implements GameApi {
       savePlace: () => this.savePlace(),
     });
     this.modes.register(this.barista);
+    this.modes.register(this.karaoke = new KaraokeMode({
+      ...host,
+      canStart: () => host.canStart(true) && !useStore.getState().conv.active && !this.conversationLoads && !radio.store.getState().open,
+      prepare: () => { host.prepare(); this.resetFootInput(); },
+      entered: (id) => this.modes.entered(id),
+      left: (id) => { this.modes.left(id); if (!this.disposed) this.updateHud(); },
+    }, {
+      room: () => this.zone.id === KARAOKE_PLACE ? this.zone.group : null,
+      audience: () => this.extras.slice(0, 2),
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+    }, radio));
     this.modes.register(createPoolMode(host));
     if (SEA_EDITION.enabled) {
       this.sea = new SeaEntry({
@@ -1483,6 +1497,7 @@ export class Game implements GameApi {
     const el = this.renderer.domElement;
     // one pointer at a time: while the first finger is down, a second one neither drags nor clicks
     el.addEventListener("pointerdown", (e) => {
+      if (this.karaoke?.active) return;
       if (this.pointer.down && e.pointerId !== this.pointer.id && el.hasPointerCapture(this.pointer.id)) return;
       this.pointer = { down: true, id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0, button: e.button };
       el.setPointerCapture(e.pointerId);
@@ -1504,7 +1519,7 @@ export class Game implements GameApi {
     const release = (e: PointerEvent) => { if (e.pointerId === this.pointer.id) this.pointer.down = false; };
     el.addEventListener("pointercancel", release);
     el.addEventListener("lostpointercapture", release);
-    el.addEventListener("wheel", (e) => { if (this.rig.mode === "follow") this.rig.zoom(e.deltaY); }, { passive: true });
+    el.addEventListener("wheel", (e) => { if (!this.karaoke?.active && this.rig.mode === "follow") this.rig.zoom(e.deltaY); }, { passive: true });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
@@ -1514,6 +1529,10 @@ export class Game implements GameApi {
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
+    if (this.karaoke?.active) {
+      if (e.key === "Escape" && !e.repeat) { e.preventDefault(); this.karaoke.action("back"); }
+      return;
+    }
     if (this.typingInField(e)) return;
     // (any key ends the first visit's flight over the town)
     if (this.flight) { if (!e.metaKey && !e.ctrlKey && !e.altKey) { this.endFlight(); e.preventDefault(); } return; }
@@ -2519,7 +2538,7 @@ export class Game implements GameApi {
       enabled: st.settings.phoneCalls,
       conversation: !!this.session?.active || st.conv.active,
       panel: !!hud.panel,
-      dialog: !!hud.glyph || radio.store.getState().open || (this.debugAudio && audioDiagnosticsPaused()),
+      dialog: !!hud.glyph || !!this.karaoke?.active || radio.store.getState().open || (this.debugAudio && audioDiagnosticsPaused()),
       guide: !!hud.coach && !hud.phoneCard,
       banner: !!hud.zoneBanner,
       cardOpen: !!hud.phoneCard,
@@ -3361,6 +3380,8 @@ export class Game implements GameApi {
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
+      } else if (mode === this.karaoke && this.karaoke?.performing) {
+        this.karaoke.frameView(w, h, document.querySelector(".karaoke-stage-head")?.getBoundingClientRect().bottom);
       } else if (mode?.frameStage) {
         mode.frameStage(w, h);
       } else {
@@ -4157,8 +4178,10 @@ export class Game implements GameApi {
     this.learnerAt.set(p.x, p.y + (this.player.lift ?? 0) + 1.5, p.z);
     const partner = talking ? this.talkNpc : null;
     if (partner) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
-    this.player.watch = partner ? this.talkAt : null;
-    this.player.steady = !!partner;
+    if (!this.karaoke?.performing) {
+      this.player.watch = partner ? this.talkAt : null;
+      this.player.steady = !!partner;
+    }
     for (const n of this.npcs) {
       if ((this.barista && mode === this.barista && n.id === BARISTA_CONVERSATION.npc) || mode?.controlsNpc?.(n.id)) continue;
       if (n.alux) {
@@ -4208,7 +4231,7 @@ export class Game implements GameApi {
       }
       n.ch.update(dt);
     }
-    for (const c of this.extraChats) c.update(dt);
+    if (!this.karaoke?.performing) for (const c of this.extraChats) c.update(dt);
     for (const ch of this.extras) ch.update(dt);
   }
 
@@ -4423,7 +4446,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.initialDrawn || this.enteringFirstExterior || !this.player || !this.zone) return;
+    if (!this.initialDrawn || this.enteringFirstExterior || !this.player || !this.zone || this.karaoke?.performing) return;
     const safe = this.zone.id === "town" ? this.rides.water?.safeSave() : undefined;
     const p = safe ?? this.player.root.position;
     useStore.getState().updateProgress((pr) => {

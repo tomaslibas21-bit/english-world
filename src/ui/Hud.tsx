@@ -71,6 +71,7 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
 const GymOverlay = lazy(() => import("./Gym"));
+const KaraokeOverlay = lazy(() => import("./KaraokePicker").then(({ KaraokeOverlay }) => ({ default: KaraokeOverlay })));
 function cenoteTourOverlay() {
   return lazy<ComponentType<{ touch: boolean }>>(() => import("./CenoteTour").catch(() => {
     // The mode owner recovers the run. The next run can try loading the overlay again.
@@ -88,7 +89,7 @@ const BaristaOffer = lazy(() => import("./Barista").then(({ BaristaOffer }) => (
 const PhotoWalkOverlay = lazy(() => import("./PhotoWalk").then(({ PhotoWalkOverlay }) => ({ default: PhotoWalkOverlay })));
 const DirectionsCard = lazy(() => import("./PhotoWalk").then(({ DirectionsCard }) => ({ default: DirectionsCard })));
 const StreetBubbles = lazy(() => import("./street/StreetBubbles"));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay(), gym: GymOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay(), gym: GymOverlay, karaoke: KaraokeOverlay };
 
 function StreetBubbleLayer() {
   const marker = useStreet((s) => s.marker);
@@ -152,7 +153,7 @@ export function Hud() {
     const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[id];
     const gym = id === "gym";
     const cenote = id === "cenote-tour";
-    const tools = !road && !sea && !gym && !cenote && id !== "barista" && id !== "loteria" && id !== "billiards" && id !== "photowalk";
+    const tools = !road && !sea && !gym && !cenote && id !== "barista" && id !== "loteria" && id !== "billiards" && id !== "photowalk" && id !== "karaoke";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
@@ -172,7 +173,7 @@ export function Hud() {
   const rideControls = !hud.modeScreen && (ride === "car" || ride === "boat" || (game as Game | null)?.rides?.riding)
     ? kind === "out" && !hud.panel && !hud.glyph && !picking : undefined;
   const talk = kind === "talk";
-  const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards";
+  const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards" || kind === "karaoke";
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
   const foldForContext = portrait && !hud.panel && target !== undefined && target !== zone
     && ((zone !== "town" && localOffer) || (talk && note === "guide" && !hud.roadApproach));
@@ -704,7 +705,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
         e.preventDefault();
         const touch = e.changedTouches[0];
         if (touch && e.currentTarget.contains(document.elementFromPoint(touch.clientX, touch.clientY))) game?.interact();
-      } : undefined}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
+      } : undefined}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym" || prompt.kind === "karaoke") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* Removing a held free-ride brake during exit or a panel also releases it. */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>

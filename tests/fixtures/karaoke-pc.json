@@ -1,0 +1,386 @@
+{
+  "sme": {
+    "ids": "SG01 SG02 SG03 SG04 SG05 SG06 SG07 SG08 SG09 SG10 SG11 SG12 SG13 SG14 SG15 SG16 SG17 SG18 SG19 SG20 SG21 SG22 SG23 SG24 SG25 SG26 SG27 SG28 SG29 SG30 SV01 SV02 SV03 SV04 SV05 SV06 SV07 SV08 SV09 SV10 SV11 SV12 SV13 SV14 SV15 SV16 SV17 SV18 SV19 SV20 SV21 SV22 SV23 SV24 SV25 SV26 SV27 SV28 SV29 SV30 SV31 SV32 SV33 SV34 SV35 SV36 SV37 SV38 SV39 SV40 SV41 SV42 SV43 SV44 SV45 SV46 SV47 SV48 SV49 SV50 SV51 SV52 SV53 SV54 SV55 SV56 SV57 SV58 SV59 SV60 SV61 SV62 SV63 SV64 SV65 SS01 SS02 SS03 SS04 SS05 SS06 SS07 SS08 SS09 SS10 SS11 SS12 SS13 SS14 SS15 SS16 SS17 SS18 SS19 SS20 SS21 SS22 SS23 SS24 SS25 SS26 SS27 SS28 SS29 SS30 SS31 SS32 SS33 SS34 SS35 SB01 SB02 SB03 SB04 SB05 SB06 SB07 SB08 SB09 SB10 SB11 SB12 SB13 SB14 SB15 SB16 SB17 SB18 SB19 SB20 SB21 SB22 SB23 SB24 SB25 SB26 SB27 SB28 SB29 SB30 SB31 SB32 SB33 SB34 SB35 SB36 SB37 SB38 SB39 SB40 SB41 SB42 SB43 SB44 SB45 SB46 SB47 SB48 SB49 SB50 SB51 SB52 SB53 SB54 SB55 SB56",
+    "songs": {
+      "SG01": {
+        "meta": {
+          "id": "SG01",
+          "c": "g",
+          "n": 1,
+          "t": "La cumbia del panadero",
+          "tl": "The Baker’s Cumbia",
+          "tp": "present tense",
+          "g": "cumbia",
+          "d": 207.6,
+          "a": "https://audio.dvikalbesdainos.lt/spanish-master/songs/v1/SG01.mp3"
+        },
+        "first": {
+          "s": 6.79,
+          "e": 10.41,
+          "sec": 0,
+          "lab": "Intro",
+          "src": "¡Wepa! Que suene la cumbia",
+          "lt": "Woo-hoo! Let the cumbia play",
+          "u": [
+            [
+              "¡Wepa!",
+              "Woo-hoo (Caribbean shout)!",
+              1,
+              "Opa! (Karibų šūksnis)"
+            ],
+            [
+              "Que",
+              "Let",
+              1,
+              "Tegul"
+            ],
+            [
+              "suene",
+              "play (lit. sound)",
+              1,
+              "skamba"
+            ],
+            [
+              "la",
+              "the",
+              1,
+              "ją"
+            ],
+            [
+              "cumbia",
+              "cumbia",
+              1,
+              "Kumbija"
+            ]
+          ],
+          "w": [
+            [
+              6.79,
+              7.82
+            ],
+            [
+              8.89,
+              9.01
+            ],
+            [
+              9.03,
+              9.45
+            ],
+            [
+              9.47,
+              9.67
+            ],
+            [
+              9.69,
+              10.41
+            ]
+          ],
+          "wt": [
+            "¡Wepa!",
+            "Que",
+            "suene",
+            "la",
+            "cumbia"
+          ]
+        }
+      },
+      "SV64": {
+        "meta": {
+          "id": "SV64",
+          "c": "v",
+          "n": 64,
+          "t": "Dancehall del extranjero",
+          "tl": "The Foreigner’s Dancehall",
+          "tp": "countries and languages",
+          "g": "dancehall latino",
+          "d": 199.14,
+          "a": "https://audio.dvikalbesdainos.lt/spanish-master/songs/v1/SV64-en.mp3"
+        },
+        "first": {
+          "s": 3.07,
+          "e": 4.97,
+          "sec": 0,
+          "lab": "Intro",
+          "src": "¿De dónde eres, amigo?",
+          "lt": "Where are you from, friend?",
+          "u": [
+            [
+              "¿De",
+              "From",
+              1,
+              "Iš"
+            ],
+            [
+              "dónde",
+              "where",
+              1,
+              "kur"
+            ],
+            [
+              "eres,",
+              "are you,",
+              1,
+              "esi,"
+            ],
+            [
+              "amigo?",
+              "friend?",
+              1,
+              "drauge?"
+            ]
+          ],
+          "w": [
+            [
+              3.07,
+              3.19
+            ],
+            [
+              3.21,
+              3.55
+            ],
+            [
+              3.57,
+              3.93
+            ],
+            [
+              3.95,
+              4.97
+            ]
+          ],
+          "wt": [
+            "¿De",
+            "dónde",
+            "eres,",
+            "amigo?"
+          ]
+        }
+      },
+      "SB01": {
+        "meta": {
+          "id": "SB01",
+          "c": "b",
+          "n": 1,
+          "t": "Mucho gusto",
+          "tl": "Nice to Meet You",
+          "tp": "greetings and introductions",
+          "g": "vallenato",
+          "d": 163.68,
+          "a": "https://audio.dvikalbesdainos.lt/spanish-master/songs/v1/SB01.mp3"
+        },
+        "first": {
+          "s": 8.09,
+          "e": 9.25,
+          "sec": 0,
+          "lab": "Intro",
+          "src": "Hola, ¿cómo estás?",
+          "lt": "Hello, how are you?",
+          "u": [
+            [
+              "Hola,",
+              "Hello,",
+              1,
+              "„Laba diena,"
+            ],
+            [
+              "¿cómo",
+              "how",
+              1,
+              "kaip"
+            ],
+            [
+              "estás?",
+              "are you?",
+              1,
+              "esi"
+            ]
+          ],
+          "w": [
+            [
+              8.09,
+              8.69
+            ],
+            [
+              8.71,
+              8.93
+            ],
+            [
+              8.95,
+              9.25
+            ]
+          ],
+          "wt": [
+            "Hola,",
+            "¿cómo",
+            "estás?"
+          ],
+          "en": {
+            "s": 5.29,
+            "e": 6.75,
+            "w": [
+              [
+                5.29,
+                5.53
+              ],
+              [
+                6.23,
+                6.43
+              ],
+              [
+                6.45,
+                6.55
+              ],
+              [
+                6.57,
+                6.75
+              ]
+            ]
+          }
+        }
+      }
+    }
+  },
+  "sm": {
+    "ids": "SG01 SG02 SG03 SG04 SG05 SG06 SG07 SG08 SG09 SG10 SG11 SG12 SG13 SG14 SG15 SG16 SG17 SG18 SG19 SG20 SG21 SG22 SG23 SG24 SG25 SG26 SG27 SG28 SG29 SG30 SV01 SV02 SV03 SV04 SV05 SV06 SV07 SV08 SV09 SV10 SV11 SV12 SV13 SV14 SV15 SV16 SV17 SV18 SV19 SV20 SV21 SV22 SV23 SV24 SV25 SV26 SV27 SV28 SV29 SV30 SV31 SV32 SV33 SV34 SV35 SV36 SV37 SV38 SV39 SV40 SV41 SV42 SV43 SV44 SV45 SV46 SV47 SV48 SV49 SV50 SV51 SV52 SV53 SV54 SV55 SV56 SV57 SV58 SV59 SV60 SV61 SV62 SV63 SV64 SV65 SS01 SS02 SS03 SS04 SS05 SS06 SS07 SS08 SS09 SS10 SS11 SS12 SS13 SS14 SS15 SS16 SS17 SS18 SS19 SS20 SS21 SS22 SS23 SS24 SS25 SS26 SS27 SS28 SS29 SS30 SS31 SS32 SS33 SS34 SS35",
+    "songs": {
+      "SG01": {
+        "meta": {
+          "id": "SG01",
+          "c": "g",
+          "n": 1,
+          "t": "La cumbia del panadero",
+          "tl": "Kepėjo kumbija",
+          "tp": "esamasis laikas",
+          "g": "cumbia",
+          "d": 207.6,
+          "a": "https://audio.dvikalbesdainos.lt/spanish-master/songs/v1/SG01.mp3"
+        },
+        "first": {
+          "s": 6.79,
+          "e": 10.41,
+          "sec": 0,
+          "lab": "Įžanga",
+          "src": "¡Wepa! Que suene la cumbia",
+          "lt": "Opa! Tegul skamba kumbija",
+          "u": [
+            [
+              "¡Wepa!",
+              "Opa! (Karibų šūksnis)",
+              1
+            ],
+            [
+              "Que",
+              "Tegul",
+              1
+            ],
+            [
+              "suene",
+              "skamba",
+              1
+            ],
+            [
+              "la cumbia",
+              "kumbija",
+              2
+            ]
+          ],
+          "w": [
+            [
+              6.79,
+              7.82
+            ],
+            [
+              8.89,
+              9.01
+            ],
+            [
+              9.03,
+              9.45
+            ],
+            [
+              9.47,
+              9.67
+            ],
+            [
+              9.69,
+              10.41
+            ]
+          ],
+          "wt": [
+            "¡Wepa!",
+            "Que",
+            "suene",
+            "la",
+            "cumbia"
+          ]
+        }
+      },
+      "SV64": {
+        "meta": {
+          "id": "SV64",
+          "c": "v",
+          "n": 64,
+          "t": "Dancehall del lituano",
+          "tl": "Lietuvio dancehall",
+          "tp": "šalys ir kalbos",
+          "g": "dancehall latino",
+          "d": 210.48,
+          "a": "https://audio.dvikalbesdainos.lt/spanish-master/songs/v1/SV64.mp3"
+        },
+        "first": {
+          "s": 3.54,
+          "e": 5.78,
+          "sec": 0,
+          "lab": "Įžanga",
+          "src": "¿De dónde eres, amigo?",
+          "lt": "Iš kur tu, drauge?",
+          "u": [
+            [
+              "¿De",
+              "Iš",
+              1
+            ],
+            [
+              "dónde",
+              "kur",
+              1
+            ],
+            [
+              "eres,",
+              "esi,",
+              1
+            ],
+            [
+              "amigo?",
+              "drauge?",
+              1
+            ]
+          ],
+          "w": [
+            [
+              3.54,
+              3.68
+            ],
+            [
+              3.7,
+              4.08
+            ],
+            [
+              4.1,
+              4.56
+            ],
+            [
+              4.58,
+              5.78
+            ]
+          ],
+          "wt": [
+            "¿De",
+            "dónde",
+            "eres,",
+            "amigo?"
+          ]
+        }
+      }
+    }
+  }
+}

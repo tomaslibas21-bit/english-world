@@ -53,7 +53,7 @@ export interface GameCharacter {
   readonly stepPhase?: number;
   /** A nod when the learner's answer was understood, a puzzled look when not, applause when the task is done (the
    *  original Character). */
-  react?(kind: "nod" | "puzzled" | "clap"): void;
+  react?(kind: "nod" | "puzzled" | "clap" | null): void;
   /** The seat top's height for the "sit" pose (the original Character; StyledCharacter assumes 0.5 m). */
   seatY?: number;
   /** The little things people do while they wait (the original Character): `attentive` stops them (the player is

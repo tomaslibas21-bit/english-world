@@ -137,6 +137,32 @@ export class CameraRig {
     this.cam = new THREE.PerspectiveCamera(50, aspect, 0.1, 900);
   }
 
+  /** Park an indoor view while a temporary activity borrows the camera. */
+  parkView() {
+    const saved = {
+      mode: this.mode, lastMode: this.lastMode, stage: this.stage, talk: this.talk,
+      yaw: this.yaw, pitch: this.pitch, dist: this.dist, blendT: this.blendT,
+      target: this.target.clone(), position: this.curPos.clone(), look: this.curLook.clone(),
+      fov: this.cam.fov, zoom: this.cam.zoom, shift: { ...this.viewShift },
+      view: this.cam.view ? { ...this.cam.view } : null,
+    };
+    return () => {
+      Object.assign(this, {
+        mode: saved.mode, lastMode: saved.lastMode, stage: saved.stage, talk: saved.talk,
+        yaw: saved.yaw, pitch: saved.pitch, dist: saved.dist, blendT: saved.blendT,
+      });
+      this.target.copy(saved.target);
+      this.curPos.copy(saved.position);
+      this.curLook.copy(saved.look);
+      this.cam.fov = saved.fov;
+      this.cam.zoom = saved.zoom;
+      this.cam.view = saved.view ? { ...saved.view } : null;
+      this.viewShift = { ...saved.shift };
+      this.cam.updateProjectionMatrix();
+      this.applyPose();
+    };
+  }
+
   resize(w: number, h: number, sidewaysPhone: boolean) {
     const aspect = w / h;
     this.cam.aspect = aspect;

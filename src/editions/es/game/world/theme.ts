@@ -352,7 +352,9 @@ export const THEME: TownTheme = {
       { x: 10, z: -38, rot: Math.PI / 2, goods: "hammocks" }, { x: 10, z: -28, rot: Math.PI / 2, goods: "textiles" },
     ],
   },
+  karaoke: { panel: "#16494b", trim: "#d76e5b", floor: "#b96949", stand: "#fbefdb" },
   roomLooks: {
+    "sunny-cup": { floor: "#cb8b65", floorKind: "barro" },
     "pool-hall": { floor: "#d39365", floorKind: "barro", wall: "#f5daa8", dado: "#32756c", dadoH: 1.12, accent: "#81482f" },
     // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
     "post-office": { accent: "#c2006a" },

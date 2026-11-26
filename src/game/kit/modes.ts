@@ -22,7 +22,7 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
-  kind: "surf" | "taxi" | "barista" | "pool" | "billiards" | "gym";
+  kind: "surf" | "taxi" | "barista" | "pool" | "billiards" | "gym" | "karaoke";
 }
 
 export interface GameMode extends PadScope {
