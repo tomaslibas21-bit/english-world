@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { audioKey } from "../src/audio-key";
+import { townDirectory, practiceTurns, missionUrl, type PracticeId } from "../src/content/phoneBooth";
+import manifest from "../public/audio-v2/manifest.json";
 import { concertInvitation, invitationLocation, invitationTitle } from "../src/content/phoneCalls";
 import inviteCall from "../src/content/situations/s83-invite-call";
 import { SITUATIONS } from "../src/content/situations/catalog";
@@ -154,5 +157,43 @@ describe("follow-up save", () => {
     };
     saveProgress(progress);
     expect(loadProgress()).toEqual(progress);
+  });
+});
+
+describe("Union Station directory", () => {
+  it("groups by person, separates remote businesses from places, and puts both practices first", () => {
+    const rows = townDirectory();
+    expect(rows.slice(0, 2).map(row => row.npc.id)).toEqual(["lizzie", "harris"]);
+    const names = rows.slice(2).map(row => row.npc.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "en")));
+    expect(new Set(rows.map(row => row.npc.id)).size).toBe(rows.length);
+    expect(rows[0].calls.map(s => s.id).sort()).toEqual(["p24-flood", "s83-invite-call"]);
+    expect(rows.find(r => r.npc.id === "linda")).toMatchObject({ organizations: ["Green Street Dental"], places: [] });
+    expect(rows.find(r => r.npc.id === "kate")?.places.map(p => p.id)).toEqual(["office"]);
+    expect(rows.find(r => r.npc.id === "walter")?.places.map(p => p.id)).toEqual(["station"]);
+    expect(rows.find(r => r.npc.id === "mr_grant")?.calls).toEqual([]);
+  });
+
+  const cases = [
+    ["s83-invite-call", ["8414938a6ee1", "5fb44353be01", "4a39bf19d87f", "008f0031cc52"], ["8414938a6ee1", "e6086c3c84ee", "4a39bf19d87f", "6a5b1b12a38b"]],
+    ["s90-running-late", ["d3be99fe43d4", "2b740a4fab29", "933dcda8650b", "af14a40186fe"], ["d3be99fe43d4", "bfd047e02215", "933dcda8650b", "c627968cb959"]],
+  ] as const;
+  it.each(cases)("resolves four exact recorded turns for both coaches in %s", async (id, female, male) => {
+    for (const gender of ["f", "m"] as const) {
+      const turns = await practiceTurns(id, gender);
+      expect(turns.map(t => t.learner)).toEqual([false, true, false, true]);
+      const keys = turns.map(t => audioKey(t.voice, 1, t.sentence.say));
+      expect(keys).toEqual(gender === "f" ? female : male);
+      for (const key of keys) expect(manifest).toHaveProperty(key);
+      expect(turns[id === "s83-invite-call" ? 1 : 2].sentence.nat)
+        .toBe(id === "s83-invite-call" ? "Ar turi laiko penktadienį?" : "Kada, Jūsų manymu, atvyksite?");
+    }
+  });
+
+  it.each([["s83-invite-call", "S83"], ["s90-running-late", "S90"]] as const)("links %s only on a configured course", (id: PracticeId, mission) => {
+    const here = "https://game.example/game/";
+    expect(missionUrl(id, undefined, here)).toBeUndefined();
+    expect(missionUrl(id, "/", here)).toBe("https://game.example/situacijos/" + mission);
+    expect(missionUrl(id, "https://course.example/home", here)).toBe("https://course.example/situacijos/" + mission);
   });
 });
