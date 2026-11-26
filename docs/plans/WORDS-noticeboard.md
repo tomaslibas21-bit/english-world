@@ -12,6 +12,7 @@ The square shows the English heading and target. The reading sheet uses Lithuani
 | Save | Save to cards | Išsaugoti kortelėse |
 | Saved check and save announcement | In your cards | Tavo kortelėse |
 | Missing posting | No phrase is posted today. | Šiandien frazės lentoje nėra. |
+| Browser storage unavailable after Save | Your card is saved for this visit only. | Kortelė išsaugota tik šiam kartui. |
 | Loading | Loading… | Įkeliama… |
 | Failed voice request | Audio unavailable | Nepavyko paleisti garso įrašo |
 | Close button | Close | Uždaryti |

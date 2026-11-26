@@ -368,7 +368,7 @@ interface CardsState {
   /** cardKey of every saved card (for the "saved" dots and buttons). */
   keys: Set<string>;
   /** Saves a card (or finds the one already saved); returns it (null for an empty input). */
-  add(input: CardInput): Card | null;
+  add(input: CardInput, onAdded?: (persisted: boolean) => void): Card | null;
   /** Saves the ones not saved yet; returns how many were new. */
   addMany(inputs: CardInput[]): number;
   answer(id: string, knew: boolean): void;
@@ -378,12 +378,16 @@ interface CardsState {
 const withKeys = (cards: Card[]) => ({ cards, keys: new Set(cards.map((c) => cardKey(c.en))) });
 
 export const useCards = create<CardsState>((set, get) => {
-  const commit = (cards: Card[]) => { set(withKeys(cards)); saveCards(cards); };
+  const commit = (cards: Card[]) => { set(withKeys(cards)); return saveCards(cards); };
   return {
     ...withKeys(loadCards()),
-    add: (input) => {
+    add: (input, onAdded) => {
       const { cards, added } = addCards(get().cards, [input], Date.now());
-      if (added.length) { commit(cards); if (TO_FLUENT) mirrorToFluentSteps(added); }
+      if (added.length) {
+        const persisted = commit(cards);
+        if (TO_FLUENT) mirrorToFluentSteps(added);
+        onAdded?.(persisted);
+      }
       return added[0] ?? get().cards.find((c) => cardKey(c.en) === cardKey(input.en)) ?? null;
     },
     addMany: (inputs) => {

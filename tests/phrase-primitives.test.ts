@@ -172,6 +172,7 @@ describe("phrase review and saving", () => {
     expect(useCards.getState().cards).toEqual([kept]);
     expect(useCards.getState().cards[0]).toBe(kept);
     expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(onSaved).toHaveBeenCalledWith(false); // Retained for this visit when browser storage is unavailable.
     expect(useStore.getState().progress.phrases).toBe(progress);
   });
 });

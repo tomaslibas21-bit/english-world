@@ -79,8 +79,34 @@ try {
   assert.equal(deckRequests.length, 1);
   assert.equal(clips.length, 0);
   console.log("Ten silent visits", { before, after, decks: deckRequests.length, clips: clips.length });
-  // A real gesture unlocks the media element. The controller owns all subsequent board actions.
-  await page.keyboard.press("Shift");
+  // A storage refusal keeps the new card in memory and explains its lifetime once.
+  await page.clock.setFixedTime(new Date("2026-11-27T12:00:00Z"));
+  await page.evaluate(key => {
+    window.normalWrite = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (name, value) {
+      if (name === key) throw new DOMException("Full", "QuotaExceededError");
+      return window.normalWrite.call(this, name, value);
+    };
+  }, storage);
+  await page.keyboard.press("e");
+  await page.locator("[data-phrase-save]").click();
+  assert.equal(await page.locator(".posting-paper footer small").innerText(), "Kortelė išsaugota tik šiam kartui.");
+  assert.match(await page.locator("[data-phrase-save]").innerText(), /Tavo kortelėse/);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => { Storage.prototype.setItem = window.normalWrite; });
+  await page.clock.setFixedTime(new Date("2026-11-26T12:00:00Z"));
+  await page.keyboard.press("e");
+  await until(() => document.activeElement?.matches(".posting-line") && document.activeElement.textContent.includes("Is it far?"));
+  await page.keyboard.press("Tab");
+  assert.match(await page.locator(":focus").innerText(), /Ar toli/);
+  await page.keyboard.press("Tab");
+  assert.equal(await page.locator(":focus").getAttribute("aria-label"), "Tavo kortelėse");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Shift+Tab");
+  assert.equal(await page.locator(":focus").getAttribute("aria-label"), "Uždaryti");
+  await page.keyboard.press("Enter");
+  await until(() => document.activeElement?.matches(".hud .prompt"));
+  // The keyboard gesture unlocked media. The controller owns the remaining board actions.
   await page.evaluate(() => window.__ew.radio.setOn(true));
   await until(() => window.__ew.radio.store.getState().playing);
   await press(2); // X from the reading mark

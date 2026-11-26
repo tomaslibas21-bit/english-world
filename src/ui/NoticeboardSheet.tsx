@@ -14,6 +14,7 @@ export function NoticeboardSheet({ board, close }: { board: DailyBoard; close: (
   const dialog = useRef<HTMLDialogElement>(null);
   const clip = useRef<FilePlayback | null>(null);
   const [failed, setFailed] = useState(false);
+  const [sessionOnly, setSessionOnly] = useState(false);
 
   function stop() {
     const playing = clip.current;
@@ -77,7 +78,8 @@ export function NoticeboardSheet({ board, close }: { board: DailyBoard; close: (
     </div>
     {row && <footer aria-live="polite" aria-atomic="true">
       <PhraseSave labels={labels} sentence={{ en: row.f, nat: row.p, say: row.f, units: [{ en: row.f, lt: row.p }] }}
-        situationId="" sourceLabel={"Dienos frazė · " + row.src} />
+        situationId="" sourceLabel={"Dienos frazė · " + row.src} onSaved={persisted => setSessionOnly(!persisted)} />
+      {sessionOnly && <small>Kortelė išsaugota tik šiam kartui.</small>}
     </footer>}
   </dialog>;
 }
