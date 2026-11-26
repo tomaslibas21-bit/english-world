@@ -409,7 +409,7 @@ export interface AABB {
   minX: number; minZ: number; maxX: number; maxZ: number;
   tag?: string; split?: boolean; vault?: number; deckRail?: true;
 }
-export interface CircleCollider { x: number; z: number; r: number; split?: boolean; vault?: number; npc?: string }
+export interface CircleCollider { x: number; z: number; r: number; split?: boolean; vault?: number; npc?: string; tag?: string }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
@@ -420,8 +420,9 @@ export class Colliders {
     this.boxes.push(b);
     return b;
   }
-  addCircle(x: number, z: number, r: number) {
+  addCircle(x: number, z: number, r: number, tag?: string) {
     const c: CircleCollider = { x, z, r };
+    if (tag !== undefined) c.tag = tag;
     this.circles.push(c);
     return c;
   }

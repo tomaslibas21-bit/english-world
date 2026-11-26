@@ -1,11 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { BEACH_Z, ROADS, SEA_Z, WORLD } from "../src/game/world/layout";
 import { BAY, floorY, sandY } from "../src/game/water";
-import { Group, Vector3 } from "three";
+import { Group, Raycaster, Vector3 } from "three";
 import { buildTown, HILL_MARGIN, type Town } from "../src/game/world/town";
 import { NavGrid } from "../src/game/nav";
-import { COVE_APPROACH, COVE_DOORS, RING_MAPLES, RING_TARGET, SLATE_COVE, RING_STAIRS, STONE_RING, filterSlateCoveNav, inSlateCove } from "../src/game/world/slateCovePlan";
+import {
+  COVE_APPROACH, COVE_DOORS, RING_MAPLES, RING_STAIRS, RING_STONES, RING_TARGET, RING_WALL_CIRCLES,
+  SLATE_COVE, STONE_RING, filterSlateCoveNav, inSlateCove,
+} from "../src/game/world/slateCovePlan";
+import { Colliders } from "../src/game/world/util";
 import { buildSlateCove } from "../src/game/world/slateCove";
+import { Ledges } from "../src/game/ledges";
 import * as caveCode from "../src/game/cave/zone";
 import { applyCaveEvent, buildCaveZone, caveRouting, caveRules, countCaveVisit, type CaveZone } from "../src/game/cave/zone";
 import { CaveLoader, CaveTravel, coveDoorNear } from "../src/game/cave/travel";
@@ -55,7 +60,7 @@ describe("the dry headland and ring", () => {
   });
   afterAll(() => vi.unstubAllGlobals());
 
-  const checkRoute = (goal: { x: number; z: number }, start = COVE_APPROACH) => {
+  const checkRoute = (goal: { x: number; z: number }, start = COVE_APPROACH, radius = 0.38) => {
     const path = nav.path(start.x, start.z, goal.x, goal.z);
     expect(path, JSON.stringify(goal)).not.toBeNull();
     expect(path!.at(-1)).toEqual([goal.x, goal.z]);
@@ -66,7 +71,7 @@ describe("the dry headland and ring", () => {
         const d = Math.hypot(x - p.x, z - p.z);
         p.x += (x - p.x) / d * 0.073;
         p.z += (z - p.z) / d * 0.073;
-        town.colliders.resolve(p, 0.38, true);
+        town.colliders.resolve(p, radius, true);
         hop.update(1 / 60, floorY(p.x, p.z));
       }
       expect(Math.hypot(x - p.x, z - p.z), JSON.stringify({ x, z, p })).toBeLessThan(0.19);
@@ -87,6 +92,62 @@ describe("the dry headland and ring", () => {
     checkRoute({ x: -117, z: -48 });
   });
 
+  it("closes the round wall around the lawn except at the east gateway and south breach", () => {
+    const wall = new Colliders(), { x, z, radius, gateZ, gateWidth } = STONE_RING;
+    wall.circles = town.colliders.circles.filter((c) => c.tag === "ring-wall");
+    wall.boxes = town.colliders.boxes.filter((b) => b.tag === "ring-edge");
+    const clearance = (a: { x: number; z: number; r: number }, b: typeof a) =>
+      Math.hypot(a.x - b.x, a.z - b.z) - a.r - b.r;
+    for (const arc of RING_WALL_CIRCLES) {
+      for (let i = 1; i < arc.length; i++) expect(clearance(arc[i - 1], arc[i])).toBeLessThan(0);
+    }
+    for (const stone of RING_STONES) {
+      const obstacle = { ...stone, r: Math.hypot(stone.w, stone.d) / 2 };
+      expect(Math.min(...wall.circles.map((c) => clearance(c, obstacle)))).toBeGreaterThanOrEqual(1.2);
+    }
+    const open: number[] = [];
+    for (let deg = 0; deg < 360; deg++) {
+      const angle = deg * Math.PI / 180;
+      const crossesWall = Array.from({ length: 81 }, (_, i) => radius - 0.9 + i * 0.025).some((r) =>
+        wall.blocked(x + r * Math.cos(angle), z + r * Math.sin(angle), 0));
+      if (!crossesWall) open.push(deg);
+    }
+    expect(open).toEqual([
+      ...Array.from({ length: 26 }, (_, i) => i + 6),
+      ...Array.from({ length: 69 }, (_, i) => i + 54),
+    ]);
+    const [south, west, east] = RING_WALL_CIRCLES;
+    expect(south[0].z - south[0].r - (east.at(-1)!.z + east.at(-1)!.r)).toBeCloseTo(gateWidth);
+    expect(clearance(south.at(-1)!, west[0])).toBeGreaterThanOrEqual(1.6);
+    for (let z = -43.5; z >= -48; z -= 0.025) expect(town.colliders.blocked(-126, z, 0.45)).toBe(false);
+
+    const gateX = x + Math.sqrt(radius ** 2 - (gateZ - z) ** 2);
+    const crossesGate = (from: typeof RING_TARGET, to: typeof from) => {
+      const route = nav.path(from.x, from.z, to.x, to.z, true)!;
+      expect(route.at(-1)).toEqual([to.x, to.z]);
+      const i = route.findIndex(([x], i) => i > 0 && (x > gateX) !== (route[i - 1][0] > gateX));
+      expect(i).toBeGreaterThan(0);
+      const [ax, az] = route[i - 1], [bx, bz] = route[i];
+      expect(Math.abs(az + (bz - az) * (gateX - ax) / (bx - ax) - gateZ)).toBeLessThan(gateWidth / 2);
+    };
+    crossesGate(COVE_APPROACH, RING_TARGET);
+    crossesGate({ x: RING_STAIRS.x, z: RING_STAIRS.foot + 2 }, { x: -108, z: -59 });
+    const outside = { x: -118.5, z: gateZ };
+    const approaches = [[-122.5, -51.5], [-129.5, -51.5], [-129.5, -50.5], [-129.5, -48.5],
+      [-127.5, -46.5], [-125.5, -46.5], [-123.5, -47.5]];
+    for (const [i, [x, z]] of approaches.entries()) {
+      expect(Math.hypot(x - RING_STONES[i].x, z - RING_STONES[i].z)).toBeLessThan(1.8);
+      checkRoute({ x, z }, outside, 0.45);
+      checkRoute(outside, { x, z }, 0.45);
+    }
+    const foot = { x: RING_STAIRS.x, z: RING_STAIRS.foot + 1.2 };
+    checkRoute(foot, outside, 0.45);
+    checkRoute(outside, foot, 0.45);
+    const art = buildSlateCove();
+    expect(Ledges.build(art, wall).things).toHaveLength(0);
+    art.geometry.dispose(); art.material.dispose();
+  });
+
   it("keeps the ring's maples out of reach: beyond the town's edge, south of the cove and clear of the desert road", () => {
     const road = ROADS[1], half = road.w / 2;
     expect(RING_MAPLES.length).toBeGreaterThan(20);
@@ -98,7 +159,7 @@ describe("the dry headland and ring", () => {
       expect(inSlateCove(x, z)).toBe(false);
       expect(nav.free(nav.idx(x, z))).toBe(false);
     }
-    expect(Math.min(...RING_MAPLES.map(([, z]) => z))).toBeGreaterThan(STONE_RING.maxZ + 6);
+    expect(Math.min(...RING_MAPLES.map(([, z]) => z))).toBeGreaterThan(STONE_RING.z + STONE_RING.radius + 6);
   });
 
   it("seals the pocket and leaves the old road exit outside pedestrian navigation", () => {
@@ -114,16 +175,25 @@ describe("the dry headland and ring", () => {
   });
 
   it("walks up eighteen treads on a continuous floor and walks back down", () => {
-    const { x, foot, top } = RING_STAIRS;
+    const { x, foot, top, back, treads, half, rise } = RING_STAIRS;
     expect(floorY(x, foot)).toBe(0);
     expect(floorY(x, (foot + top) / 2)).toBeCloseTo(1.8, 8);
     expect(floorY(x, top - 0.3)).toBeCloseTo(3.6, 8);
-    expect(checkRoute({ x, z: -56 }, RING_TARGET)).toBeCloseTo(3.6, 1);
-    expect(checkRoute(RING_TARGET, { x, z: -56 })).toBeCloseTo(0, 1);
+    expect(checkRoute({ x, z: -56 }, RING_TARGET, 0.45)).toBeCloseTo(3.6, 1);
+    expect(checkRoute(RING_TARGET, { x, z: -56 }, 0.45)).toBeCloseTo(0, 1);
     expect(nav.free(nav.idx(x, -56.9))).toBe(false);
     expect(town.colliders.blocked(x, -56.9, 0.38)).toBe(true);
     const art = buildSlateCove();
-    expect(art.geometry.attributes.position.count).toBeGreaterThan(2000);
+    const ray = new Raycaster(), origin = new Vector3(), down = new Vector3(0, -1, 0);
+    for (let i = 0; i <= treads; i++) {
+      const z = i === treads ? top + (back - top) / 3 : foot + (top - foot) * (i + 0.5) / treads;
+      const y = Math.min(i + 1, treads) * rise / treads - 0.045;
+      ray.set(origin.set(x, 8, z), down);
+      expect(ray.intersectObject(art)[0]?.point.y).toBeCloseTo(y, 4);
+      for (const dx of [-half + 0.46, 0, half - 0.46]) {
+        expect(town.colliders.blocked(x + dx, z, 0.45)).toBe(false);
+      }
+    }
     art.geometry.dispose(); art.material.dispose();
   });
 });
