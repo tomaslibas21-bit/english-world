@@ -82,7 +82,7 @@ try {
   assert.equal((await hud()).phoneCard, "p24-flood");
   await page.evaluate(() => window.__ew.store.getState().setHud({ phoneCard: null }));
   const mark = await world(), baseline = await snapshot(), idleHolds = await holds();
-  await during(() => page.locator(".hud .prompt").tap());
+  await during(() => page.getByRole("button", { name: "Viešasis telefonas", exact: true }).tap());
   await waitFor(() => book.isVisible(), "named directory opens");
   assert.deepEqual(await holds(), idleHolds);
   assert.equal(await contact("lizzie").count(), 1);
