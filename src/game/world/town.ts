@@ -1,7 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
-import { finishBank, finishHydrant, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishStreetBin } from "./townFinishes";
+import { finishBank, finishHydrant, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishSalonFront, finishStreetBin, finishThreadsDisplay } from "./townFinishes";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -898,6 +898,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   M.add(`trim-${b.trim}`, trimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
   const atDoor = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08);
   if (b.id === "police") finishPoliceEntry(M, dx, dz, rotY, doorW);
+  if (b.id === "salon" && !STYLED) finishSalonFront(M, dx, dz, rotY, b.w, doorW);
   for (const sd of [-1, 1]) M.add(`trim-${b.trim}`, trimMat, atDoor(boxGeo(0.14, 2.5, 0.22, sd * (doorW / 2 + 0.07), 1.25, 0)), false);
   if (b.style === "house") M.add("door-handle", mat("#c9a54a"), atDoor(boxGeo(0.07, 0.07, 0.1, doorW * 0.36, 1.05, 0.06)), false);
   else M.add("door-handle", mat("#c9ced3"), atDoor(boxGeo(doorW * 0.7, 0.06, 0.08, 0, 1.05, 0.08)), false);
@@ -1247,6 +1248,7 @@ function shopWindow(b: BuildingDef, M: Merger, col: Colliders, fx: number, fz: n
   add(new THREE.BoxGeometry(ww, 0.06, D - 0.04).translate(0, -0.03, D / 2 - 0.02), "#c9a57a");
   GOODS[b.id](add, k);
   if (b.id === "rental") finishRentalDisplay(M, px, pz, rot, ww, wh, y0);
+  if (b.id === "threads") finishThreadsDisplay(M, px, pz, rot, ww, y0);
   col.addBox(px + fx * D / 2, pz + fz * D / 2, Math.abs(tx) * (ww + 0.3) + Math.abs(fx) * D, Math.abs(tz) * (ww + 0.3) + Math.abs(fz) * D);
 }
 

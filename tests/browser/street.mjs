@@ -5,6 +5,7 @@
 // WORLD_GLOW_B8=1 captures the street bin/post office and fresh entry views of the practice table/living-room sofa.
 // WORLD_GLOW_B9=1 captures the police entry and rental displays; rides.mjs supplies the two vehicle comparisons.
 // WORLD_GLOW_B10=1 captures harvest bales, standing tables, a curb barrel and a hydrant.
+// WORLD_GLOW_B11=1 captures Threads/salon finishes and logs the normal wallet/musician frames.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -97,6 +98,14 @@ async function withGame([width, height], settings, check, params = "", place = p
     };
     const shot = async (name) => {
       await real(250);
+      if (process.env.WORLD_GLOW_B11 === "1" && ["scene", "choices", "musician"].includes(name)) {
+        const frame = await page.evaluate(() => {
+          const g = window.__ew.game;
+          return { player: g.player.root.position.toArray(), camera: g.rig.cam.position.toArray(),
+            active: g.streetState().active, calls: g.renderer.info.render.calls, triangles: g.renderer.info.render.triangles };
+        });
+        console.log(JSON.stringify({ glow: name, viewport: [width, height], ...frame }));
+      }
       await page.screenshot({ path: join(shots, `street-${name}-${width}x${height}.png`) });
     };
     await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "game is ready");
@@ -278,8 +287,13 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9", "WORLD_GLOW_B10"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
-      const poses = process.env.WORLD_GLOW_B10 === "1" ? [
+    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9", "WORLD_GLOW_B10", "WORLD_GLOW_B11"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B11 === "1" ? [
+        ["glow-threads-west", -28.5, -2.1, 0],
+        ["glow-threads-east", -19.5, -2.1, 0],
+        ["glow-salon-front", -10, -3.3, 0],
+        ["glow-salon-panels", -7, -2.8, 0],
+      ] : process.env.WORLD_GLOW_B10 === "1" ? [
         ["glow-harvest-bales", 20, -41.7, Math.PI],
         ["glow-harvest-bales-east", 32, -41.8, Math.PI],
         ["glow-standing-tables", 18.4, -33.4, -Math.PI / 2],

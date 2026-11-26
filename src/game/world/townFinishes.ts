@@ -252,3 +252,43 @@ export function finishHydrant(M: Merger, x: number, z: number) {
   M.addVisual("glow-b10-hydrant-nut", brass, place(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 6).translate(0, 0.9, 0)));
   M.addVisual("glow-b10-hydrant-foot", mat("#596b62"), place(new THREE.CylinderGeometry(0.205, 0.212, 0.06, 8, 1, true).translate(0, 0.09, 0)));
 }
+
+/** Fabric details remain behind the display glass, on the existing mannequins and folded shirts. */
+export function finishThreadsDisplay(M: Merger, x: number, z: number, rotation: number, width: number, sill: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  const face = (key: string, color: string, w: number, h: number, px: number, y: number, depth: number) =>
+    M.addVisual("glow-b11-threads-" + key, mat(color), place(new THREE.PlaneGeometry(w, h).translate(px, y, depth)));
+  const base = sill + 0.06;
+  face("linen", "#9f8da8", width - 0.14, 0.24, 0, sill / 2, 0.506);
+  face("toe", "#5a5264", width - 0.14, 0.04, 0, 0.08, 0.509);
+  for (const px of [-0.65, 0.2]) {
+    face("seam", "#d7d0be", 0.013, 0.24, px, base + 1.13, 0.365);
+    face("seam", "#d7d0be", 0.23, 0.018, px, base + 0.9, 0.365);
+    face("seam", "#d7d0be", 0.09, 0.022, px, base + 1.31, 0.347);
+    for (const y of [1.08, 1.16, 1.24]) M.addVisual("glow-b11-threads-button", mat("#93836f"),
+      place(new THREE.CircleGeometry(0.008, 6).translate(px, base + y, 0.368)));
+  }
+  for (let i = 0; i < 4; i++) face("seam", "#d7d0be", 0.28, 0.006, 0.85, base + 0.322 + i * 0.047, 0.352);
+}
+
+/** The north-facing salon's single ground-floor window is in the opposite bay; keep its pane and the door clear. */
+export function finishSalonFront(M: Merger, x: number, z: number, rotation: number, width: number, doorWidth: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  const face = (key: string, color: string, w: number, h: number, px: number, y: number, depth: number) =>
+    M.addVisual("glow-b11-salon-" + key, mat(color), place(new THREE.PlaneGeometry(w, h).translate(px, y, depth)));
+  const inner = doorWidth / 2 + 0.25, span = width / 2 - 0.2 - inner;
+  for (const side of [-1, 1]) {
+    face("base", "#9a6578", span, 0.3, side * (inner + span / 2), 0.23, 0.158);
+    face("rail", "#e1c6bb", span, 0.04, side * (inner + span / 2), 0.402, 0.162);
+  }
+  const panelWidth = span / 2 - 0.13;
+  for (const fraction of [0.25, 0.75]) {
+    const cx = -(inner + span * fraction);
+    face("panel", "#c68f99", panelWidth, 1.52, cx, 1.51, 0.018);
+    for (const side of [-1, 1]) {
+      face("border", "#ead7ce", 0.035, 1.52, cx + side * (panelWidth / 2 - 0.03), 1.51, 0.022);
+      face("border", "#ead7ce", panelWidth, 0.035, cx, 1.51 + side * 0.7425, 0.022);
+    }
+    for (const offset of [-0.25, 0, 0.25]) face("reed", "#b77f8c", 0.018, 1.35, cx + offset * panelWidth, 1.51, 0.021);
+  }
+}

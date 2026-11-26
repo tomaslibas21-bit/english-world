@@ -3,6 +3,7 @@ import { Dog } from "../dog";
 import { vertexColorMaterial } from "../style";
 import { colourMerge } from "../world/util";
 import type { StreetProp } from "./types";
+import { guitarFinishParts, walletFinishParts } from "./finishes";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 const wood = "#a96f43", dark = "#344048", paper = "#fcf0d8", red = "#c65e4d", green = "#548865";
@@ -73,7 +74,7 @@ const catalog = {
     stick([0.12, -0.035, 0], [0.34, 0.16, 0], 0.029, green), ball(0.043, metal, 0.34, 0.16)],
   coconuts: () => [ball(0.13, wood, -0.13, 0.01), ball(0.14, "#82964c", 0.1, 0.03), ball(0.075, paper, -0.13, 0.1)],
   shoeshine_box: () => [...packageBox(0.55, 0.32, 0.38, wood), box(0.32, 0.09, 0.2, dark, 0, 0.2)],
-  wallet: () => [box(0.22, 0.065, 0.14, "#74483d"), box(0.21, 0.012, 0.126, "#ac6a53", 0, 0.036), box(0.09, 0.025, 0.055, paper, 0.035, 0.008, 0.044)],
+  wallet: () => [box(0.22, 0.065, 0.14, "#74483d"), box(0.21, 0.012, 0.126, "#ac6a53", 0, 0.036), box(0.09, 0.025, 0.055, paper, 0.035, 0.008, 0.044), ...walletFinishParts()],
   keys: () => [ring(0.052, 0.013, metal, -0.07), box(0.15, 0.04, 0.032, "#ceb471"),
     box(0.043, 0.046, 0.076, "#ceb471", 0.055, 0, 0.023)],
   glove: () => [box(0.16, 0.052, 0.14, red), box(0.065, 0.045, 0.18, red, 0.07),
@@ -120,6 +121,7 @@ function guitar(scale: number): Part[] {
   const parts = [ball(0.21, "#bf7f42", -0.14), ball(0.145, "#d99d58", 0.05), box(0.39, 0.064, 0.04, wood, 0.26, 0, 0.08),
     box(0.12, 0.1, 0.055, dark, 0.46, 0, 0.08), ball(0.057, dark, -0.05, 0.035, 0.163),
     stick([-0.22, 0.01, 0.17], [0.39, 0.01, 0.115], 0.008, paper)];
+  parts.push(...guitarFinishParts());
   return parts.map(([g, c]) => [g.scale(scale, scale, scale * 0.6), c]);
 }
 
