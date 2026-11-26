@@ -898,7 +898,10 @@ async function checkGateScore(run, mode) {
     const after = await state((s) => s.totalGates === current.totalGates + 1, "crosses exactly one answer line");
     assert.equal(after.rightGates, current.rightGates + Number(correct));
     await waitFor(async () => run.requests.slice(from).includes(`/audio-es/${item.fClip}`), "Spanish response recording requested");
-    assert.equal(await overlay.locator(".road-karaoke").textContent(), item.f);
+    // The sung line; the "Not quite" badge beside it shows only on a correction (data-correction).
+    const karaoke = overlay.locator(".road-karaoke");
+    assert.equal(await karaoke.locator(".road-karaoke-line").textContent(), item.f);
+    assert.equal(await karaoke.getAttribute("data-correction") !== null, !correct, "the correction badge shows only after a wrong line");
   }
 
   async function result(total, right) {
@@ -1235,9 +1238,11 @@ async function main() {
     ] : []),
     ["wallet", {}, checkWallet],
   ];
+  // WORLD_CASES=road,sea runs only those cases (all by default).
+  const only = env.WORLD_CASES?.split(",").filter(Boolean);
   try {
     for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
-      for (const [name, options, check] of cases) {
+      for (const [name, options, check] of cases.filter(([name]) => !only?.length || only.includes(name))) {
         try { await withTown(browser, viewport, name, options, check); }
         catch (error) {
           console.error(error);
