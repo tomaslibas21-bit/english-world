@@ -86,10 +86,13 @@ function Details({ contact, detailOpen, back, start }: { contact: Contact; detai
       <p>{[npc.role.lt, ...contact.organizations.filter(org => !npc.role.lt.includes(org))].join(" · ")}</p>
       {places.length > 0 && <section><h4>Galima sutikti mieste</h4>{places.map(p =>
         <p key={p.id}><span lang="en">{p.name}</span><br />{p.lt}</p>)}</section>}
-      <section><h4>Mokomieji skambučiai</h4>
-        <p>{practice ? PRACTICES[practice].topic : "Mokomojo skambučio nėra"}</p>
+      <section className="booth-offer"><h4>Mokomieji skambučiai</h4>
+        {practice ? <div className="booth-offer-row">
+          <p>{PRACTICES[practice].topic}</p>
+          <button className="booth-primary" data-entry-focus onClick={start}>Pradėti mokomąjį skambutį</button>
+        </div> : <p>Mokomojo skambučio nėra</p>}
       </section>
-      {!!calls.length && <section><h4>Telefonas</h4>{calls.map(s => <div className="booth-personal" key={s.id}>
+      {!!calls.length && <section><h4>Tavo telefone</h4>{calls.map(s => <div className="booth-personal" key={s.id}>
         <span>{s.title.lt}{s.mode === "video" && " · Vaizdo skambutis"}</span>
         {phone?.missed[s.id] && <button onClick={() => {
           const st = useStore.getState();
@@ -97,10 +100,9 @@ function Details({ contact, detailOpen, back, start }: { contact: Contact; detai
         }} aria-label={`Atverti savo telefone · ${s.title.lt}`}>Atverti savo telefone</button>}
       </div>)}</section>}
     </div>
-    <footer className="booth-actions">
-      {practice && <button className="booth-primary" data-entry-focus onClick={start}>Pradėti mokomąjį skambutį</button>}
-      {detailOpen && <button data-pad-back data-entry-focus={!practice || undefined} onClick={back}>Grįžti į telefonų knygą</button>}
-    </footer>
+    {detailOpen && <footer className="booth-actions">
+      <button data-pad-back data-entry-focus={!practice || undefined} onClick={back}>Grįžti į telefonų knygą</button>
+    </footer>}
   </>;
 }
 
@@ -120,6 +122,7 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
   const href = missionUrl(id, import.meta.env.VITE_BACK_URL, location.href);
   const firstAction = useRef<HTMLButtonElement>(null);
   const dialogue = useRef<HTMLDivElement>(null);
+  const translation = useRef<HTMLParagraphElement>(null);
 
   useLayoutEffect(() => {
     radio.hold("phonebooth", true);
@@ -170,6 +173,9 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
     if (dialogue.current) dialogue.current.scrollTop = 0;
     firstAction.current?.focus();
   }, [line, complete, paused, loadFailed]);
+  useLayoutEffect(() => {
+    if (meaning) translation.current?.scrollIntoView({ block: "nearest" });
+  }, [meaning]);
   const speaker = line?.learner ? "Tavo eilė" : contact.npc.name;
   return <>
     <div ref={dialogue} className="booth-body">
@@ -181,20 +187,20 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
           {line.learner && <p>Pabandyk pasakyti garsiai.</p>}</>}
         {complete && <h4>Praktika baigta</h4>}
       </div>
-      {line && <>
-        {meaning && <p className="booth-meaning">{line.sentence.nat}</p>}
-        <button aria-expanded={meaning} onClick={() => setMeaning(!meaning)}>{meaning ? "Slėpti reikšmę" : "Rodyti reikšmę"}</button>
-        {failed && !paused && <p role="status">Garso įrašas nepasiekiamas</p>}
-        {paused
-          ? <button ref={firstAction} onClick={() => { setFailed(false); setPaused(false); }}>Tęsti</button>
-          : <button onClick={replay}><Icon name="speaker" size={18} />
-            {failed ? "Bandyti dar kartą" : line.learner ? "Klausytis atsakymo pavyzdžio" : "Dar kartą klausytis eilutės"}</button>}
-      </>}
+      {line && meaning && <p ref={translation} className="booth-meaning">{line.sentence.nat}</p>}
+      {line && failed && !paused && <p role="status">Garso įrašas nepasiekiamas</p>}
       {!line && !complete && (loadFailed ? <><p role="status">Nepavyko atsisiųsti pokalbio</p>
         <button ref={firstAction} onClick={() => { setLoadFailed(false); reload(n => n + 1); }}>Bandyti dar kartą</button></> : <p role="status">Kraunamas pokalbis…</p>)}
       {complete && href && <a href={href} target="_blank" rel="noopener noreferrer" onClick={hangUp}>
         Atverti kurse · {contact.calls.find(s => s.id === id)?.topic.lt}</a>}
     </div>
+    {line && <div className="booth-tools">
+      <button aria-expanded={meaning} onClick={() => setMeaning(!meaning)}>{meaning ? "Slėpti reikšmę" : "Rodyti reikšmę"}</button>
+      {paused
+        ? <button ref={firstAction} onClick={() => { setFailed(false); setPaused(false); }}>Tęsti</button>
+        : <button onClick={replay}><Icon name="speaker" size={18} />
+          {failed ? "Bandyti dar kartą" : line.learner ? "Klausytis atsakymo pavyzdžio" : "Dar kartą klausytis eilutės"}</button>}
+    </div>}
     <footer className="booth-actions">
       <button data-pad-back data-entry-focus onClick={hangUp}>Padėti ragelį</button>
       {line && <button ref={paused ? undefined : firstAction} className="booth-primary" disabled={paused} onClick={() => move(index + 1)}>Pereiti prie kitos replikos</button>}

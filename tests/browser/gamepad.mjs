@@ -1451,7 +1451,7 @@ async function stationPhoneContract({ page, attach, when, tap, focusWith, focuse
   await until("X opens the directory", () => page.locator(".booth-book").isVisible());
   await focusWith('[data-contact="harris"]');
   await tap("A");
-  await focusWith(".booth-actions .booth-primary");
+  await focusWith(".booth-offer-row .booth-primary");
   await tap("A");
   await until("A starts Harris's call", () => page.locator(".booth-line").textContent().then(s => s === "Hello, this is Harris."));
   await focusWith(".booth-actions .booth-primary");

@@ -65,6 +65,14 @@ try {
   await waitFor(async () => (await hud()).minimap.zone === "station" && !(await hud()).zoneBanner, "inside Union Station");
   await showTouch(false);
   await shot("doorway");
+  const sign = await page.evaluate(() => {
+    const sign = window.__ew.game.zone.interior.group.getObjectByName("public-phone-sign");
+    const { normal } = sign.geometry.attributes;
+    const canvas = sign.material.map.image;
+    return { faces: Array.from({ length: normal.count }, (_, i) => normal.getZ(i)), size: [canvas.width, canvas.height] };
+  });
+  assert.deepEqual(sign.size, [256, 128]);
+  assert(sign.faces.some(z => z > 0.99) && sign.faces.some(z => z < -0.99), "both sides carry the painted face");
   await walk(-5.2, 6.65);
   await waitFor(async () => (await hud()).prompt?.kind === "phonebooth", "listening mark");
   await step(10);
@@ -95,6 +103,14 @@ try {
   await page.keyboard.press("Escape");
   await click(contact("lizzie"));
   assert.equal(await book.getByRole("button", { name: /Atverti savo telefone/ }).count(), 0);
+  const practiceTopic = book.getByText("Pakviesti draugę", { exact: true });
+  const personal = book.getByRole("heading", { name: "Tavo telefone" });
+  const [topicBox, startBox, personalBox] = await Promise.all([
+    practiceTopic.boundingBox(), button("Pradėti mokomąjį skambutį").boundingBox(), personal.boundingBox(),
+  ]);
+  assert(topicBox.x + topicBox.width <= startBox.x && topicBox.y < startBox.y + startBox.height,
+    "the practice topic sits beside its start action at 390 × 664 A++");
+  assert(startBox.y + startBox.height <= personalBox.y, "personal-phone topics follow the practice action");
   await shot("lizzie");
   await start();
   await waitFor(() => line.isVisible(), "Friday hello");
@@ -141,6 +157,24 @@ try {
   await next();
   await click(button("Rodyti reikšmę"));
   assert.match(await book.innerText(), /Kada, Jūsų manymu, atvyksite\?/);
+  const replay = button("Dar kartą klausytis eilutės");
+  const [dialogueBox, meaningBox, replayBox, hangBox] = await Promise.all([
+    book.locator(".booth-body").boundingBox(), button("Slėpti reikšmę").boundingBox(),
+    replay.boundingBox(), button("Padėti ragelį").boundingBox(),
+  ]);
+  assert.equal(meaningBox.height, 44);
+  assert.equal(replayBox.height, 44);
+  assert.equal(meaningBox.y, replayBox.y);
+  assert(dialogueBox.y + dialogueBox.height <= replayBox.y && replayBox.y + replayBox.height <= hangBox.y);
+  // A visible bounding box can still be covered. Hit-test each corner and activate Replay with the meaning open.
+  for (const control of [button("Slėpti reikšmę"), replay]) {
+    assert(await control.evaluate(el => {
+      const { left, right, top, bottom } = el.getBoundingClientRect();
+      return [left + 5, right - 5].every(x => [top + 5, bottom - 5].every(y => el.contains(document.elementFromPoint(x, y))));
+    }));
+  }
+  await click(replay);
+  assert.equal(await book.locator(".booth-meaning").innerText(), "Kada, Jūsų manymu, atvyksite?");
   await shot("eta");
   await next();
   assert.equal(await line.innerText(), "In about half an hour.");

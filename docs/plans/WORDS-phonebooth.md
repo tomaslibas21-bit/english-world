@@ -14,7 +14,7 @@ The station sign is English. The actions, instructions and navigation below are 
 | Lizzie’s practice topic | Invite a friend | Pakviesti draugę |
 | Mr. Harris’s practice topic | Call about being late | Pranešti apie vėlavimą |
 | Main action | Start practice call | Pradėti mokomąjį skambutį |
-| Personal calls heading | Phone | Telefonas |
+| Personal calls heading | On your phone | Tavo telefone |
 | Video label in the directory and personal phone | Video call | Vaizdo skambutis |
 | Outstanding missed call | Open on my phone | Atverti savo telefone |
 | Accessible callback destination | Open on my phone · {situation title} | Atverti savo telefone · {situacijos pavadinimas} |
