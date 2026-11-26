@@ -2433,16 +2433,24 @@ function makePalms(col: Colliders, photo: AddPhotoSpot, extra: [number, number][
  *  the horizontal and arching down under its weight; its two halves fold down from the midrib, it narrows to the stalk
  *  at the crown and to a point at its tip. */
 function palmFrond(len: number, w: number, rise: number) {
-  const N = 4, pos: number[] = [];
-  const at = (t: number) => {
+  const N = 6, pos: number[] = [];
+  const profile = (t: number) => {
     const d = len * t, y = Math.sin(rise) * d - 0.55 * d * d / len, z = Math.cos(rise) * d * (1 - 0.08 * t);
     const half = (w / 2) * Math.min(1, Math.sin(Math.PI * Math.min(1, t * 1.05)) * 1.25) * (t < 0.12 ? t / 0.12 : 1);
     return { y, z, half, fold: half * 0.55 };
   };
+  // Follow the old four-segment envelope. Detached outer edges leave six broad leaflet pairs,
+  // with their roots meeting along the folded midrib rather than opening holes at the crown.
+  const at = (t: number) => {
+    const i = Math.min(3, Math.floor(t * 4)), f = t * 4 - i, a = profile(i / 4), b = profile((i + 1) / 4);
+    return { y: a.y + (b.y - a.y) * f, z: a.z + (b.z - a.z) * f,
+      half: a.half + (b.half - a.half) * f, fold: a.fold + (b.fold - a.fold) * f };
+  };
   for (let i = 0; i < N; i++) {
     const a = at(i / N), b = at((i + 1) / N);
+    const c = at((i + 0.78) / N), d = at((i + 0.16) / N);
     for (const s of [-1, 1]) {
-      const A = [0, a.y, a.z], B = [0, b.y, b.z], C = [s * b.half, b.y - b.fold, b.z], D = [s * a.half, a.y - a.fold, a.z];
+      const A = [0, a.y, a.z], B = [0, b.y, b.z], C = [s * c.half, c.y - c.fold, c.z], D = [s * d.half, d.y - d.fold, d.z];
       // (wound so each half faces up)
       if (s > 0) pos.push(...A, ...B, ...C, ...A, ...C, ...D); else pos.push(...A, ...C, ...B, ...A, ...D, ...C);
     }

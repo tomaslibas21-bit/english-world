@@ -11,7 +11,7 @@ import * as GROUNDS from "../cave/grounds";
 import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { colourMerge, rand, roundRect, type Colliders } from "./util";
-import { groundFace } from "./shapes";
+import { boxTopBands, groundFace } from "./shapes";
 import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, hotelPoolDeckPads, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods, TownTheme } from "./theme";
@@ -322,8 +322,12 @@ export function palapas(parts: Part[], col: Colliders, spots: [number, number][]
     col.addCircle(x, z, 0.16);
     for (const s of [-1, 1]) {
       const lx = x + s * 0.95, lz = z - 0.9; // in front of the pole, towards the sea (-z)
-      parts.push([box(0.62, 0.08, 1.4, lx, 0.32, lz - 0.2), "#b07a46"]);
-      parts.push([box(0.62, 0.07, 0.75, 0, 0, 0).rotateX(-0.6).translate(lx, 0.55, lz + 0.72), "#b07a46"]);
+      const planks: [number, THREE.ColorRepresentation][] = [[0.19, "#bc8d59"], [0.025, "#805a3e"],
+        [0.19, "#c59b6b"], [0.025, "#805a3e"], [0.19, "#bc8d59"]];
+      for (const [g, color] of boxTopBands(0.62, 0.08, 1.4, "#b07a46", planks))
+        parts.push([g.translate(lx, 0.32, lz - 0.2), color]);
+      for (const [g, color] of boxTopBands(0.62, 0.07, 0.75, "#b07a46", planks))
+        parts.push([g.rotateX(-0.6).translate(lx, 0.55, lz + 0.72), color]);
       for (const dz of [-0.8, 0.45]) parts.push([box(0.56, 0.3, 0.05, lx, 0.15, lz + dz), "#7a5236"]);
       if ((i + (s > 0 ? 1 : 0)) % 2 === 0) parts.push([box(0.5, 0.02, 1.3, lx, 0.37, lz - 0.15), towels[Math.floor(r() * towels.length)]]);
       col.addBox(lx, lz, 0.7, 2.0);

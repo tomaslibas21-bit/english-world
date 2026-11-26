@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { EDITION } from "../../edition";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { EXIT_ASPHALT, EXIT_SHARED_LENGTH, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
 import { colourMerge, rand } from "../world/util";
@@ -157,16 +158,42 @@ const add = (parts: Part[], g: THREE.BufferGeometry, color: THREE.ColorRepresent
   parts.push([plain, color]);
 };
 
-function cactus(): Part[] {
+export function cactusParts(): Part[] {
   const make = (r: number, h: number, x: number, y: number, angle = 0) =>
     new THREE.CylinderGeometry(r * 0.82, r, h, 6).rotateZ(angle).translate(x, y, 0);
-  return [
+  const parts: Part[] = [
     [make(0.24, 2.5, 0, 1.25), "#498663"],
     [make(0.15, 0.72, -0.32, 1.08, -Math.PI / 2.8), "#619869"],
     [make(0.145, 0.72, -0.63, 1.51), "#619869"],
     [make(0.13, 0.6, 0.34, 1.56, Math.PI / 2.9), "#427956"],
     [make(0.12, 0.58, 0.58, 1.97), "#427956"],
   ];
+  if (EDITION.id !== "es") return parts;
+  // Paint fluting into each original flat face. Subdivide in its own plane so the opening's
+  // baked cactus obstacles retain exactly the old closed surface, bounds and shoulder clearance.
+  return parts.flatMap(([original, color]) => {
+    const g = original.toNonIndexed(), p = g.attributes.position;
+    const stripes: number[][] = [[], [], []];
+    const v = (i: number) => new THREE.Vector3().fromBufferAttribute(p, i);
+    for (let face = 0; face < 6; face++) {
+      const at = face * 6, a = v(at), b = v(at + 1), d = v(at + 2), c = v(at + 4);
+      for (const [i, [lo, hi]] of [[0, 0.12], [0.12, 0.84], [0.84, 1]].entries()) {
+        const tl = a.clone().lerp(d, lo), tr = a.clone().lerp(d, hi), bl = b.clone().lerp(c, lo), br = b.clone().lerp(c, hi);
+        for (const point of [tl, bl, tr, bl, br, tr]) stripes[i].push(point.x, point.y, point.z);
+      }
+    }
+    const toned = stripes.map((positions, i): Part => {
+      const stripe = new THREE.BufferGeometry();
+      stripe.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      stripe.computeVertexNormals();
+      return [stripe, new THREE.Color(color).multiplyScalar([0.61, 1, 1.20][i])];
+    });
+    const caps = new THREE.BufferGeometry();
+    caps.setAttribute("position", new THREE.Float32BufferAttribute(Array.from(p.array).slice(36 * 3), 3));
+    caps.computeVertexNormals();
+    original.dispose(); g.dispose();
+    return [...toned, [caps, new THREE.Color(color).multiplyScalar(1.08)] as Part];
+  });
 }
 
 function pole(): Part[] {
@@ -186,7 +213,7 @@ function sign(): Part[] {
 }
 
 const sceneryParts = {
-  cactus,
+  cactus: cactusParts,
   pole,
   sign,
   rock: (): Part[] => [[new THREE.DodecahedronGeometry(1), "#ad7960"]],

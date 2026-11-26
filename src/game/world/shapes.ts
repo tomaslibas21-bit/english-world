@@ -4,6 +4,25 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 type V3 = [number, number, number];
+/** A box with flush painted/planked bands replacing its top. No overlapping cap or change in height. */
+export function boxTopBands(w: number, h: number, d: number, body: THREE.ColorRepresentation,
+  bands: [number, THREE.ColorRepresentation][], axis: "x" | "z" = "x"): [THREE.BufferGeometry, THREE.ColorRepresentation][] {
+  const base = new THREE.BoxGeometry(w, h, d);
+  // BoxGeometry's third face is +Y. Replace that cap while retaining all five other faces.
+  base.setIndex(Array.from(base.index!.array).filter((_, i) => i < 12 || i >= 18));
+  base.clearGroups();
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [[base, body]];
+  const span = axis === "x" ? w : d, total = bands.reduce((sum, [size]) => sum + size, 0);
+  let edge = -span / 2;
+  for (const [weight, color] of bands) {
+    const size = span * weight / total, mid = edge + size / 2;
+    parts.push([new THREE.PlaneGeometry(axis === "x" ? size : w, axis === "z" ? size : d)
+      .rotateX(-Math.PI / 2).translate(axis === "x" ? mid : 0, h / 2, axis === "z" ? mid : 0), color]);
+    edge += size;
+  }
+  return parts;
+}
+
 /** An upward-facing patch cut from an outline in the x/z plane. */
 export function groundFace(outline: [number, number][], holes: [number, number][][] = []) {
   const points = (loop: [number, number][]) => loop.map(([x, z]) => new THREE.Vector2(x, -z));

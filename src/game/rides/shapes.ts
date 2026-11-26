@@ -1,7 +1,9 @@
 // What one can drive: a convertible with its top down and a small open motorboat. Each is one vertex-coloured
 // geometry (forward = +Z, the wheels or the keel on y = 0), so each is one draw call, like the town's other cars.
 import * as THREE from "three";
+import { EDITION } from "../../edition";
 import { colourMerge } from "../world/util";
+import { boxTopBands } from "../world/shapes";
 import { mergedVertexCount } from "./crashGeometry";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
@@ -120,7 +122,13 @@ export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   add(ext(ring(-0.02, 0.1), 0.08, 0.7), "#c9a27a"); // the wooden rim
   add(ext(boatOutline(0.09), 0.05, 0.2), "#b07a4c"); // the floor
   for (const x of [-0.48, -0.24, 0, 0.24, 0.48]) add(box(0.014, 0.004, 3.75, x, 0.25, -0.31), "#805538");
-  for (const z of [-1.05, 0.55]) add(box(1.58, 0.06, 0.34, 0, 0.5, z), "#b8895a");
+  for (const z of [-1.05, 0.55]) {
+    if (EDITION.id === "es") {
+      const bands: [number, THREE.ColorRepresentation][] = [[0.08, "#e5d4ae"], [0.04, "#487c79"], [0.28, "#be9464"],
+        [0.02, "#806044"], [0.46, "#c99f70"], [0.04, "#487c79"], [0.08, "#e5d4ae"]];
+      for (const [g, color] of boxTopBands(1.58, 0.06, 0.34, "#b8895a", bands, "z")) add(g.translate(0, 0.5, z), color);
+    } else add(box(1.58, 0.06, 0.34, 0, 0.5, z), "#b8895a");
+  }
   add(profile([[1.5, 0.2], [2.3, 0.2], [2.3, 0.62], [1.5, 0.62]], 0.9).scale(1, 1, 1), "#c9a27a"); // the bow's locker
   // the outboard: its cowl, its leg down to the propeller, the tiller forward to the helm
   add(box(0.36, 0.44, 0.42, 0, 1.04, -2.42), "#2f3136");
@@ -131,6 +139,13 @@ export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   add(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 5).translate(0, 1.0, 2.2), "#dfe4e8");
   add(new THREE.SphereGeometry(0.06, 6, 5).translate(0, 1.38, 2.2), "#fff2b0");
   add(new THREE.TorusGeometry(0.16, 0.045, 5, 10).rotateX(Math.PI / 2).translate(-0.3, 0.66, 1.75), "#d9c9a3");
+  if (EDITION.id === "es") {
+    // Small working fittings stay below the existing light and inside the original hull envelope.
+    for (const y of [0.98, 1.04, 1.10]) add(new THREE.PlaneGeometry(0.24, 0.02).translate(0, y, -2.208), "#83928f");
+    for (const x of [-0.28, 0.28]) add(new THREE.PlaneGeometry(0.055, 0.20).rotateX(-Math.PI / 2)
+      .translate(x, 0.622, 1.58), "#487c79");
+    add(box(0.22, 0.028, 0.05, 0, 0.64, 2.03), "#78634e");
+  }
   return colourMerge(parts);
 }
 
