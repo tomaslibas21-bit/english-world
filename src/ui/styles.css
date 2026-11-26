@@ -349,6 +349,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @media (max-width: 900px) and (max-height: 700px), (max-height: 520px) and (orientation: landscape) {
   .convo-tools .toasts { max-height: 56px; }
+  /* the end card repeats this conversation's stamp: the closing reply keeps the room (Toasts.tsx) */
+  .convo-tools .toasts .toast.end-card-stamp { display: none; }
 }
 
 /* Leave a lane for the toast between the task and the map, including as the map changes size indoors. */

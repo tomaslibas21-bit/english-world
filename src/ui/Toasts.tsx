@@ -22,9 +22,12 @@ export function Toasts({ placement = "root" }: { placement?: "root" | "conversat
   const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
   const inConversation = useStore((s) => s.conv.active && !s.hud.panel);
   const visitingKeeper = useStore((s) => s.conv.active && s.conv.sitId === KEEPER_SIT);
+  // the end card says the same as this conversation's own stamp ("Užduotis įvykdyta!", the stars): a short screen
+  // hides the stamp under it (styles.css), so the closing reply keeps its room in the transcript
+  const endedSit = useStore((s) => s.conv.active && s.conv.phase === "ended" ? s.conv.sitId : null);
   if (inConversation !== (placement === "conversation")) return null;
   const visible = toasts?.filter((t) => (!modeMenu || t.rideHint) && (!visitingKeeper || t.source !== "keeper-greeting"));
-  return <ToastList toasts={visible ?? []} inConversation={inConversation} />;
+  return <ToastList toasts={visible ?? []} inConversation={inConversation} endedSit={endedSit} />;
 }
 
 export function useTownToast() {
@@ -43,7 +46,7 @@ const SpokenToastSave = memo(function SpokenToastSave({ phrase }: { phrase: NonN
   return sentence && <PhraseSave sentence={sentence} situationId="street" sourceLabel={STREET_WORDS.overheard} />;
 });
 
-function ToastList({ toasts, town, inConversation }: { toasts: Toast[]; town?: boolean; inConversation?: boolean }) {
+function ToastList({ toasts, town, inConversation, endedSit }: { toasts: Toast[]; town?: boolean; inConversation?: boolean; endedSit?: string | null }) {
   const dismiss = useStore((s) => s.dismissToast);
   return (
     <div className={"toasts" + (town ? " town-toasts" : "")} aria-live="polite" tabIndex={inConversation && toasts.length > 0 ? 0 : undefined}>
@@ -51,7 +54,7 @@ function ToastList({ toasts, town, inConversation }: { toasts: Toast[]; town?: b
         const lead = splitLead(t.title);
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";
         return (
-          <div key={t.id} className={"toast " + t.kind} data-ride-hint={t.rideHint}>
+          <div key={t.id} className={"toast " + t.kind + (endedSit && t.kind === "stamp" && t.sitId === endedSit ? " end-card-stamp" : "")} data-ride-hint={t.rideHint}>
             {t.sitId
               ? <SitIcon id={t.sitId} size="1.25em" className="t-situation" />
               : <span className="t-icon"><Icon name={icon} size={22} /></span>}
