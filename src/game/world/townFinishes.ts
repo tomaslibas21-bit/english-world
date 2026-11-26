@@ -146,3 +146,35 @@ export function finishLivingSofa(M: Merger, x: number, z: number) {
   M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(new THREE.PlaneGeometry(0.21, 0.018)
     .rotateX(-Math.PI / 2).translate(-1.1, 0.829, 0.36)));
 }
+
+export function finishPoliceEntry(M: Merger, x: number, z: number, rotation: number, doorWidth: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  for (const side of [-1, 1]) {
+    M.addVisual("glow-b9-police-frame", mat("#536f7d"), place(new THREE.PlaneGeometry(0.16, 2.5)
+      .translate(side * (doorWidth / 2 + 0.12), 1.3, 0.208)));
+    M.addVisual("glow-b9-police-tile", mat("#809697"), place(new THREE.PlaneGeometry(0.95, 0.8)
+      .rotateX(-Math.PI / 2).translate(side * 0.5, 0.043, 0.7)));
+    M.addVisual("glow-b9-police-edge", mat("#c6beac"), place(new THREE.PlaneGeometry(0.05, 0.9)
+      .rotateX(-Math.PI / 2).translate(side * 1.03, 0.045, 0.7)));
+  }
+  M.addVisual("glow-b9-police-frame", mat("#536f7d"), place(new THREE.PlaneGeometry(doorWidth + 0.36, 0.10).translate(0, 2.62, 0.208)));
+  M.addVisual("glow-b9-police-kick", mat("#7c9197"), place(new THREE.PlaneGeometry(doorWidth - 0.28, 0.38).translate(0, 0.78, 0.138)));
+}
+
+/** Basswood case fronts and recognizable key stems, around the original miniature cars and key heads. */
+export function finishRentalDisplay(M: Merger, x: number, z: number, rotation: number, width: number, height: number, sill: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  const face = (key: string, color: string, w: number, h: number, px: number, y: number, depth: number) =>
+    M.addVisual("glow-b9-rental-" + key, mat(color), place(new THREE.PlaneGeometry(w, h).translate(px, y, depth)));
+  face("wood", "#b79a71", width - 0.14, 0.26, 0, sill / 2, 0.506);
+  face("rail", "#cfb377", width, 0.035, 0, sill - 0.06, 0.510);
+  for (const side of [-1, 1]) {
+    face("joint", "#7b826c", 0.018, 0.22, side * 0.75, sill / 2, 0.509);
+    face("cheek", "#ac946c", 0.07, height - 0.14, side * (width / 2 - 0.025), sill + height / 2, 0.484);
+  }
+  for (let i = 0; i < 6; i++) {
+    const px = 0.65 + (i % 3) * 0.15, y = sill + 0.06 + 1.13 + Math.floor(i / 3) * 0.14;
+    face("key", "#c3a25a", 0.018, 0.075, px, y - 0.053, 0.079);
+    face("key", "#c3a25a", 0.028, 0.014, px + 0.012, y - 0.082, 0.079);
+  }
+}

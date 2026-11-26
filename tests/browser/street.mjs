@@ -3,6 +3,7 @@
 // WORLD_GLOW_B6=1 adds four stationary town-art comparisons before the normal checks, with the HUD visible.
 // WORLD_GLOW_B7=1 captures the square bench, bank frontage, Corner Pocket entry and square planter instead.
 // WORLD_GLOW_B8=1 captures the street bin/post office and fresh entry views of the practice table/living-room sofa.
+// WORLD_GLOW_B9=1 captures the police entry and rental displays; rides.mjs supplies the two vehicle comparisons.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -276,8 +277,11 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
-      const poses = process.env.WORLD_GLOW_B8 === "1" ? [
+    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B9 === "1" ? [
+        ["glow-police-entry", 58, -16.4, Math.PI],
+        ["glow-rental-display", 77, -1.6, 0],
+      ] : process.env.WORLD_GLOW_B8 === "1" ? [
         ["glow-directions-bin", 5.8, -15.3, Math.PI / 2],
         ["glow-post-front", 27, -1.8, 0],
       ] : process.env.WORLD_GLOW_B7 === "1" ? [

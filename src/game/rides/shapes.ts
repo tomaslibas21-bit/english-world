@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { colourMerge } from "../world/util";
 import { mergedVertexCount } from "./crashGeometry";
+import { convertibleFinishParts, motorboatFinishParts } from "./finishes";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 
@@ -73,6 +74,7 @@ export function convertibleGeometry(paint: string, inside = "#f3e6cf") {
     add(box(0.3, 0.16, 0.06, x, 0.74, -2.15), "#d8343a");
   }
   for (const z of [-2.265, 2.265]) add(box(0.46, 0.14, 0.02, 0, 0.42, z), "#f6f3ea");
+  parts.push(...convertibleFinishParts());
   // the wheels: a tire, a white wall, a chrome cap
   const wheelStart = mergedVertexCount(parts);
   for (const [x, z] of [[-0.88, 1.36], [0.88, 1.36], [-0.88, -1.36], [0.88, -1.36]]) {
@@ -130,6 +132,7 @@ export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   add(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 5).translate(0, 1.0, 2.2), "#dfe4e8");
   add(new THREE.SphereGeometry(0.06, 6, 5).translate(0, 1.38, 2.2), "#fff2b0");
   add(new THREE.TorusGeometry(0.16, 0.045, 5, 10).rotateX(Math.PI / 2).translate(-0.3, 0.66, 1.75), "#d9c9a3");
+  parts.push(...motorboatFinishParts());
   return colourMerge(parts);
 }
 

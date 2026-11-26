@@ -3,6 +3,8 @@
 // the same from a phone's buttons. Against a dev server or a built game, either town:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/rides.mjs
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -18,6 +20,21 @@ const progress = {
   coach: { done: true, run: true },
 };
 const LIMIT = -77.4; // water.ts SHORE.limit: as far as one wades
+
+// Optional stopped boarding comparisons, retaining the normal HUD and existing ride checks.
+async function glowShot(page, label, name) {
+  if (process.env.WORLD_GLOW_B9 !== "1") return;
+  const shots = process.env.WORLD_SHOTS || "/tmp/glow-b9-rides";
+  await mkdir(shots, { recursive: true });
+  await page.waitForTimeout(400);
+  const frame = await page.evaluate(() => {
+    const g = window.__ew.game, r = g.rides.riding;
+    return { ride: r?.id, x: r?.m.x, z: r?.m.z, heading: r?.m.heading, speed: r?.m.speed,
+      camera: g.rig.cam.position.toArray(), calls: g.renderer.info.render.calls, triangles: g.renderer.info.render.triangles };
+  });
+  console.log(JSON.stringify({ glow: name, label, ...frame }));
+  await page.screenshot({ path: join(shots, `rides-${name}-${label}.png`) });
+}
 
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
@@ -66,6 +83,7 @@ try {
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "out", null, { timeout: 3000 });
     check(`${label}: from the wheel only the way out is offered`, (await state()).hud === "car");
     if (phone) check("phone: the jump button is the brake", await page.locator(".brake-btn").count() === 1);
+    await glowShot(page, label, "glow-convertible");
     await go(true);
     await page.waitForTimeout(1800);
     s = await state();
@@ -183,6 +201,7 @@ try {
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "boat", null, { timeout: 5000 });
     await press();
     await page.waitForFunction(() => { const g = window.__ew.game; return g.rides.riding?.kind === "boat" && g.rides.phase === "on"; }, null, { timeout: 5000 });
+    await glowShot(page, label, "glow-motorboat");
     await go(true);
     await page.waitForTimeout(3200);
     await go(false);
