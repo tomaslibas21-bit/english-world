@@ -30,6 +30,7 @@ Each directory card names the place before the learner selects Visit. An unfinis
 ## Verification
 
 - TypeScript passed with `npx tsc --noEmit`. The Vite production build passed.
+- The full Vitest run passed **1,705 tests in 124 files** with three workers and a 60-second command-line test timeout.
 - All 394 related tests passed in 29 files, covering the cabinets, camera, movement, audio, input, records and native games.
 - Regression tests project all four table corners, Tina and the outer cabinet edges at each of the four review sizes. A formatting test covers zero, singular, plural, teens, 21 and 100, plus non-point metrics and empty records.
 - From the hall doorway, the room navigation grid found clear paths to both cabinets, the main table and Tina. The cabinet started a native Pool round, accepted a called eight ball, displayed a win and returned to Pool. An early quit from the original table left the player at its own prompt.
