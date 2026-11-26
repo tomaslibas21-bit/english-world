@@ -2,11 +2,12 @@
 import assert from "node:assert/strict";
 import { DEVICES, RING, distance, forward, look, openMap, suite, surface, walk } from "./fixtures/mh-cave.mjs";
 
-const GATE = { x: -117, z: -48, half: 1.6 };
+const GATE = { x: -119.61, z: -48, half: 1.6 };
 const LAWN = [-120, -48];
 const STAIR = { x: -126, foot: -49.6, middle: -52.5, top: -55.4, back: -56.9, y: 3.6 };
+const RING_CENTER = { x: -126.22, z: -50.23, radius: 6.98 };
 const inHeadland = (x, z) => x >= -140 && x <= -112 && z >= -68 && z <= -43;
-const inRing = (x, z) => x >= -134 && x <= -117 && z >= -57.5 && z <= -43.8;
+const inRing = (x, z) => Math.hypot(x - RING_CENTER.x, z - RING_CENTER.z) <= RING_CENTER.radius;
 
 function checkRoute(points, { throughGate = false } = {}) {
   let gate = false;
@@ -58,20 +59,20 @@ async function ring(run) {
   assert.deepEqual([way.target.x, way.target.z], LAWN);
   checkRoute([way.from, ...way.path], { throughGate: true });
   await surface(run, run.page.locator(".objective-card"), [RING[0]]);
-  await run.wait(() => {
+  await run.wait(({ x, z, half }) => {
     const g = window.__ew.game, p = g.player.root.position;
-    return Math.abs(p.x + 117) < 0.8 && Math.abs(p.z + 48) < 1.6 && g.zoneId === "town" && !g.swimming;
-  }, "guide walks through the gap in the ring wall", 30_000, undefined, 1);
+    return Math.abs(p.x - x) < 0.32 && Math.abs(p.z - z) < half && g.zoneId === "town" && !g.swimming;
+  }, "guide walks through the gap in the ring wall", 30_000, GATE, 1);
   await run.mark("ring-gateway");
   await run.wait(() => {
     const { game: g, store } = window.__ew, p = g.player.root.position;
-    return !g.autoPath && g.zoneId === "town" && p.x < -117.8 && Math.hypot(p.x + 120, p.z + 48) < 0.65 &&
+    return !g.autoPath && g.zoneId === "town" && Math.hypot(p.x + 120, p.z + 48) < 0.65 &&
       !store.getState().conv.active && !g.swimming;
   }, "guide actually arrives on the lawn", 50_000);
   const lawn = await run.state();
   assert(lawn.y === 0 && inRing(lawn.x, lawn.z));
-  assert(await run.ev(() => !window.__ew.game.npcs.some(({ home }) =>
-    home.x > -134 && home.x < -117 && home.z > -57.5 && home.z < -43.8)));
+  assert(await run.ev(({ x, z, radius }) => !window.__ew.game.npcs.some(({ home }) =>
+    Math.hypot(home.x - x, home.z - z) < radius), RING_CENTER));
   await stairsGeometry(run);
   await run.mark("ring-lawn");
 

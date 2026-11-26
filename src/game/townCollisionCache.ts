@@ -19,7 +19,7 @@ const cells = TOWN_COLLISION_FORMAT.nx * TOWN_COLLISION_FORMAT.nz;
 export function townColliderLayout({ boxes, circles, roofs }: Colliders) {
   return JSON.stringify([
     boxes.map(({ minX, maxX, minZ, maxZ, tag, split }) => [minX, maxX, minZ, maxZ, tag, split]),
-    circles.map(({ x, z, r, split }) => [x, z, r, split]),
+    circles.map(({ x, z, r, split, tag }) => [x, z, r, split, tag]),
     roofs.map(({ minX, maxX, minZ, maxZ }) => [minX, maxX, minZ, maxZ]),
   ]);
 }

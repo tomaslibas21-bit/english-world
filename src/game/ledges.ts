@@ -174,7 +174,7 @@ export class Ledges {
       const w = b.maxX - b.minX, d = b.maxZ - b.minZ;
       return Math.min(w, d) <= 4 && w * d <= 60;
     });
-    const circles = col.circles.filter((c) => !c.split && c.r <= 4.5 && !c.npc);
+    const circles = col.circles.filter((c) => !c.split && c.r <= 4.5 && !c.npc && c.tag !== "ring-wall");
     /** The roofs the town lists as ones to stand on (a shelter's, a stall's). */
     const listed = (col as { roofs?: Box[] }).roofs ?? [];
     if (!boxes.length && !circles.length && !listed.length) { led.ready = true; return led; }

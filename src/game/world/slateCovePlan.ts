@@ -28,18 +28,56 @@ export const COVE_TRAILS = [
   [[-116, -59], [-119, -60], [-121, -61.8], [-121, -65]],
   [[-116, -59], [-115, -55], [-114.8, -48], [-117, -48], [-120, -48]],
 ] as const;
-export const STONE_RING = { minX: -134, maxX: -117, minZ: -57.5, maxZ: -43.8, gateZ: -48, gateWidth: 3.2, x: -126, z: -49.8 };
+export const STONE_RING = { x: -126.22, z: -50.23, radius: 6.98, gateZ: -48, gateWidth: 3.2 };
 export const RING_TARGET = { x: -120, z: -48 };
 export const RING_STAIRS = { x: -126, half: 1.7, foot: -49.6, top: -55.4, back: -56.9, rise: 3.6, treads: 18 };
 
 const R = STONE_RING, S = RING_STAIRS;
+export const RING_GABLE = { x: S.x, z: -56.86, w: 4.4, d: 0.66 };
+const radians = Math.PI / 180;
+const gatePostRadius = 0.43;
+const gateHalf = R.gateWidth / 2 + gatePostRadius;
+const southJambRadius = 7.56;
+const gateSouth = Math.asin((R.gateZ + gateHalf - R.z) / southJambRadius);
+const gateNorth = 2 * Math.PI + Math.asin((R.gateZ - gateHalf - R.z) / R.radius);
+const gableAngle = (x: number) => 2 * Math.PI - Math.acos((x - R.x) / R.radius);
+
+// Bearings run clockwise from east toward +z. The short arc south of the gate flares out
+// past the nearest standing stone. Both northern runs sink into the sides of the gable.
 export const RING_WALLS = [
-  [R.minX, R.minZ, R.minX, R.maxZ],
-  [R.minX, R.maxZ, R.maxX, R.maxZ],
-  [R.minX, R.minZ, R.maxX, R.minZ],
-  [R.maxX, R.minZ, R.maxX, R.gateZ - R.gateWidth / 2],
-  [R.maxX, R.gateZ + R.gateWidth / 2, R.maxX, R.maxZ],
+  { from: gateSouth, to: 51 * radians, radius: southJambRadius, start: "gate", end: "rubble" },
+  { from: 125 * radians, to: gableAngle(S.x - 1.96), radius: R.radius, start: "rubble", end: "gable" },
+  { from: gableAngle(S.x + 1.96), to: gateNorth, radius: R.radius, start: "gable", end: "gate" },
 ] as const;
+
+const tumbledSections = [
+  { center: 145 * radians, half: 20 * radians, offset: 0.29 },
+  { center: 330 * radians, half: 19 * radians, offset: 0.18 },
+];
+
+export function ringWallPoint({ radius }: (typeof RING_WALLS)[number], angle: number) {
+  const section = tumbledSections.find(({ center, half }) => Math.abs(angle - center) < half);
+  if (section) radius += section.offset * (1 + Math.cos(Math.PI * (angle - section.center) / section.half)) / 2;
+  return { x: R.x + radius * Math.cos(angle), z: R.z + radius * Math.sin(angle),
+    low: !!section && Math.abs(angle - section.center) < section.half * 0.55 };
+}
+
+const wallRadius = 0.34;
+export const RING_WALL_CIRCLES = RING_WALLS.map((arc) => {
+  const steps = Math.ceil((arc.to - arc.from) * arc.radius / 0.33);
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const end = i === 0 ? arc.start : i === steps ? arc.end : undefined;
+    const { x, z } = ringWallPoint(arc, arc.from + (arc.to - arc.from) * i / steps);
+    return { x, z, r: end === "gate" ? gatePostRadius : wallRadius };
+  });
+});
+
+// Each fallen block overlaps the wall's footprint on the outside of a tumbled section.
+export const RING_DEBRIS = [138, 151, 324, 334].map((degrees) => {
+  const angle = degrees * radians;
+  const { x, z } = ringWallPoint(RING_WALLS[degrees < 180 ? 1 : 2], angle);
+  return { x: x + 0.4 * Math.cos(angle), z: z + 0.4 * Math.sin(angle), r: 0.24, angle };
+});
 
 export const RING_STONES = [
   { x: -122.15, z: -52.68, w: 1.22, h: 2.22, d: 0.67, rot: 0.3, rune: 3 },
@@ -51,7 +89,6 @@ export const RING_STONES = [
   { x: -122.13, z: -46.95, w: 1.28, h: 2.08, d: 0.59, rot: -0.65 },
 ] as const;
 
-export const RING_GABLE = { x: S.x, z: -56.86, w: 4.4, d: 0.66 };
 /** Old fall maples south of the ring, beyond the town's west edge and the cove's south rocks (out of reach): from the
  *  ring gate, the lawn and the trail into the ring they hide the desert road's mesa. x, z, scale, foot y (the dunes'
  *  crest rises to the west). Drawn with the town's street maples (town.ts addTrees). */
@@ -96,7 +133,8 @@ export function addSlateCoveColliders(col: Colliders) {
     col.addBox(x - 1.6 * dx, z - 1.6 * dz, dx ? 0.8 : width + 2.6, dx ? width + 2.6 : 0.8, "cove-rock");
   }
   for (const stone of MOUTH_UPRIGHTS) col.addCircle(stone.x, stone.z, Math.hypot(stone.w, stone.d) / 2);
-  for (const [x0, z0, x1, z1] of RING_WALLS) col.addBox((x0 + x1) / 2, (z0 + z1) / 2, Math.abs(x1 - x0) || 0.7, Math.abs(z1 - z0) || 0.7, "ring-wall");
+  for (const arc of RING_WALL_CIRCLES) for (const { x, z, r } of arc) col.addCircle(x, z, r, "ring-wall");
+  for (const { x, z, r } of RING_DEBRIS) col.addCircle(x, z, r, "ring-wall");
   for (const stone of RING_STONES) col.addCircle(stone.x, stone.z, Math.hypot(stone.w, stone.d) / 2);
   for (const side of [-1, 1]) col.addBox(S.x + side * (S.half + 0.18), (S.foot + S.back) / 2, 0.36, S.foot - S.back, "ring-edge");
   col.addBox(RING_GABLE.x, RING_GABLE.z, RING_GABLE.w, RING_GABLE.d, "ring-edge");
@@ -136,7 +174,15 @@ export function drawSlateCoveMap(ctx: CanvasRenderingContext2D, west: number, no
     for (let i = 1; i < trail.length; i++) ctx.lineTo(x(trail[i][0]), z(trail[i][1]));
     ctx.stroke();
   }
-  ctx.fillStyle = "#425362";
+  ctx.strokeStyle = ctx.fillStyle = "#425362";
+  ctx.lineWidth = scale * 0.65;
+  ctx.beginPath();
+  for (const [first, ...arc] of RING_WALL_CIRCLES) {
+    ctx.moveTo(x(first.x), z(first.z));
+    for (const point of arc) ctx.lineTo(x(point.x), z(point.z));
+  }
+  ctx.stroke();
+  ctx.fillRect(x(RING_GABLE.x - RING_GABLE.w / 2), z(RING_GABLE.z - RING_GABLE.d / 2), scale * RING_GABLE.w, scale * RING_GABLE.d);
   for (const stone of RING_STONES) ctx.fillRect(x(stone.x - 0.45), z(stone.z - 0.45), scale * 0.9, scale * 0.9);
   for (const door of Object.values(COVE_DOORS)) ctx.fillRect(x(door.x - 0.8), z(door.z - 0.8), scale * 1.6, scale * 1.6);
   ctx.restore();

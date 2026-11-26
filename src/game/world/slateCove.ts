@@ -2,12 +2,15 @@ import * as THREE from "three";
 import { CAVE_COPY } from "../../content/cave-copy";
 import { floorY } from "../water";
 import { boxGeo, colourMerge, rand } from "./util";
-import { COVE_DOORS, COVE_GAP, COVE_TRAILS, MOUTH_UPRIGHTS, SLATE_COVE, RING_GABLE, RING_STAIRS, RING_STONES, RING_WALLS, STONE_RING } from "./slateCovePlan";
+import {
+  COVE_DOORS, COVE_GAP, COVE_TRAILS, MOUTH_UPRIGHTS, SLATE_COVE,
+  RING_DEBRIS, RING_GABLE, RING_STAIRS, RING_STONES, RING_WALLS, STONE_RING, ringWallPoint,
+} from "./slateCovePlan";
 import { slateRune } from "./slateRunes";
 
 export function buildSlateCove() {
   const parts: [THREE.BufferGeometry, string][] = [];
-  const r = rand(28651);
+  let r = rand(28651);
   const rock = ["#43525c", "#626d72", "#56636c", "#4c5761"];
   const moss = ["#72845c", "#61734e", "#829167"];
   const pick = (colors: string[]) => colors[Math.floor(r() * colors.length)];
@@ -80,15 +83,42 @@ export function buildSlateCove() {
   }
 
   const R = STONE_RING, S = RING_STAIRS;
-  box(R.maxX - R.minX, 0.045, R.maxZ - R.minZ, (R.minX + R.maxX) / 2, -0.04, (R.minZ + R.maxZ) / 2, "#7e9c5e");
-  for (const [ax, az, bx, bz] of RING_WALLS) {
-    const len = Math.hypot(bx - ax, bz - az), n = Math.ceil(len / 0.92), rot = Math.atan2(az - bz, bx - ax);
+  parts.push([new THREE.CircleGeometry(R.radius - 0.65, 48).rotateX(-Math.PI / 2).translate(R.x, -0.0175, R.z), "#7e9c5e"]);
+  for (const arc of RING_WALLS) {
+    const n = Math.ceil((arc.to - arc.from) * arc.radius / 0.96);
     for (let i = 0; i < n; i++) {
-      const t = (i + 0.5) / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t, h = 0.65 + r() * 0.35;
-      box(len / n + 0.014, h, 0.7, x, h / 2, z, pick(rock), rot);
-      if (r() < 0.5) slab(x, h + 0.015, z, len / n * 0.9, 0.07, 0.45, rot, pick(moss));
+      const a = arc.from + (arc.to - arc.from) * i / n, b = arc.from + (arc.to - arc.from) * (i + 1) / n;
+      const angle = (a + b) / 2;
+      const p = ringWallPoint(arc, a), q = ringWallPoint(arc, b);
+      const { x, z, low } = ringWallPoint(arc, angle);
+      const w = Math.hypot(q.x - p.x, q.z - p.z);
+      const rot = Math.atan2(p.z - q.z, q.x - p.x) + (r() - 0.5) * 0.12;
+      const offset = (r() - 0.5) * 0.06;
+      const cx = x + offset * Math.cos(angle), cz = z + offset * Math.sin(angle);
+      if (low) {
+        const h = 0.24 + r() * 0.11;
+        slab(cx, h * 0.44, cz, w + 0.1, h, 0.58, rot);
+        continue;
+      }
+      const h = 0.45 + r() * 0.62;
+      box(w + 0.06, h, 0.56, cx, h / 2 - 0.025, cz, pick(rock), rot);
+      if (r() < 0.48) slab(cx, h - 0.01, cz, w * 0.8, 0.07, 0.41, rot, pick(moss));
+    }
+    for (const [angle, end] of [[arc.from, arc.start], [arc.to, arc.end]] as const) {
+      const { x, z } = ringWallPoint(arc, angle), rot = Math.PI / 2 - angle;
+      if (end === "gate") {
+        const h = arc.start === "gate" ? 1.46 : 1.72;
+        slab(x, h * 0.4, z, 0.77, h * 0.88, 0.67, rot + 0.12);
+        slab(x, h * 0.82, z, 0.59, h * 0.36, 0.57, rot - 0.09);
+      }
+      if (end === "rubble") slab(x, 0.13, z, 0.62, 0.32, 0.58, rot + 0.19);
     }
   }
+  for (const { x, z, r: radius, angle } of RING_DEBRIS) {
+    slab(x, 0.11, z, radius * 2, 0.29, radius * 1.6, angle + 0.38);
+  }
+  // Resume the original cove sequence at the standing stones to preserve their and the stair's decoration.
+  r = rand(1267030788);
   for (const s of RING_STONES) {
     const { x, z, w, h, d, rot } = s;
     box(w, h * 0.79, d, x, h * 0.395, z, pick(rock), rot);
