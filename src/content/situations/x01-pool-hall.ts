@@ -46,7 +46,7 @@ const poolHall: SituationDef = {
   location: "pool-hall",
   npc: "tina",
   mode: "talk",
-  goal: "Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.",
+  goal: "Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaisk su Tina partiją.",
   intro: "„The Corner Pocket“ – nedidelė biliardo salė Ąžuolų alėjoje. Šeimininkė Tina kreiduoja lazdą prie stalo ir pamoja tau prieiti.",
 
   merges: {
