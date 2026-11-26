@@ -371,6 +371,8 @@ export class GamepadView {
       // (React can keep an element and drop its marker: the walking toolbar becomes the folding one in a ride)
       if (!node.matches(ROOTS)) { this.roots.delete(node); continue; }
       if (node.matches(PORTAL) || (node.matches(TOOLBAR) && !this.desktop)) continue;
+      // A native modal that holds a scope of ours (the stone's card in its <dialog>) leaves the choice to that scope.
+      if (!node.dataset.padScope && node.matches("dialog[open]") && node.querySelector("[data-pad-scope]")) continue;
       const priority = policy(node).rank;
       if (priority < rank || !visible(node)) continue;
       if (priority === rank && active &&

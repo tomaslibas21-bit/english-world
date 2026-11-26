@@ -15,7 +15,8 @@ export default function FriendMeeting() {
   const gloss = useStore((s) => s.settings.lt);
   const answerGloss = useStore((s) => s.settings.sayLt);
   return (
-    <section className="friend-meeting" data-pad-scope="meeting" data-pad-phase={choices[0]?.key} aria-label={NPCS.lizzie.name}>
+    // (a grid for the controller: up and down go from answer to answer, right to the answer's save beside it)
+    <section className="friend-meeting" data-pad-scope="meeting" data-pad-grid="" data-pad-phase={choices[0]?.key} aria-label={NPCS.lizzie.name}>
       <header>
         <b>{NPCS.lizzie.name}</b>
         {choices.length > 0 && speechSupported() && (

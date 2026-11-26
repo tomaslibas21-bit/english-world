@@ -1264,7 +1264,8 @@ async function startScene(h, sit) {
 async function checkFocusRing(h, selector, key, scope = "convo") {
   const effect = await h.page.evaluate((selector) => {
     const f = document.activeElement;
-    if (!f?.matches(selector)) return null;
+    if (!f?.matches(selector)) return { focused: f?.outerHTML.slice(0, 160) ?? null, padTarget: window.__pad?.focusTarget ?? null,
+      rects: [...(f?.closest("[data-pad-scope]")?.querySelectorAll("button") ?? [])].map((b) => { const r = b.getBoundingClientRect(); return `${b === f ? "*" : ""}${b.dataset.meetingAnswer ?? b.className}:${[r.x, r.y, r.width, r.height].map(Math.round)}`; }) };
     const css = getComputedStyle(f);
     const r = f.getBoundingClientRect();
     const rgb = (value) => value.match(/[\d.]+/g)?.map(Number) ?? [];
@@ -1891,12 +1892,17 @@ async function wordPortal(h) {
   await checkFocusRing(h, second, secondId, "popover");
   await h.shot("word-actions");
   await tap("A");
-  await until("A saves the sentence in the real card store", async () => await page.locator(actions).count() === 1 &&
-    (await page.locator(`${popup} .wpop-in`).innerText()).includes(words("Sentence in cards", "Sakinys kortelėse")));
-  await h.focusWith(actions);
+  // (since stones-cards the sentence's save stays a button, checked, with the other label: PhraseSave reads the
+  // real card store for aria-pressed)
+  const sentenceSave = page.locator(`${actions}[data-phrase-save]`);
+  await until("A saves the sentence in the real card store", async () => await page.locator(actions).count() === 2 &&
+    await sentenceSave.getAttribute("aria-pressed") === "true" &&
+    (await sentenceSave.innerText()).includes(words("Sentence in cards", "Sakinys kortelėse")));
+  await h.focusWith(first);
   await tap("A");
-  await until("A saves the word too and leaves the buttonless dialog open", async () =>
-    await page.locator(actions).count() === 0 && await page.locator(`${popup} .wpop-in`).count() === 2);
+  await until("A saves the word too and leaves the dialog open with the checked sentence", async () =>
+    await page.locator(actions).count() === 1 && await sentenceSave.count() === 1 &&
+    (await page.locator(`${popup} .wpop-in`).innerText()).includes(words("In cards", "Kortelėse")));
   await press("B");
   await step(32);
   await until("B closes the upper dialog", async () => await page.locator(popup).count() === 0);
@@ -2636,7 +2642,9 @@ async function cenoteContract(h) {
   assert(typeof opened.text === "string" && opened.text.trim().length > 3, JSON.stringify(opened));
   assert.equal(opened.options.length, 3);
   assert.equal(opened.options[opened.answer], opened.lt);
-  // (each option shows its number key before the meaning: the meaning is the option's text span)
+  // (each option shows its number key before the meaning: the meaning is the option's text span; the stone's card
+  // is a lazy chunk, so its buttons arrive a few frames after the store has the glyph)
+  await until("the stone's card shows its three meanings", async () => await page.locator(".glyph-card .glyph-opt").count() === 3);
   assert.deepEqual(await page.locator(".glyph-opt").evaluateAll((els) => els.map((el) => [el.lang, (el.querySelector("span") ?? el).textContent.trim()])),
     opened.options.map((meaning) => [learner, meaning]));
   const before = await state();
