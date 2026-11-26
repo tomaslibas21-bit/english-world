@@ -4,6 +4,7 @@
 // WORLD_GLOW_B7=1 captures the square bench, bank frontage, Corner Pocket entry and square planter instead.
 // WORLD_GLOW_B8=1 captures the street bin/post office and fresh entry views of the practice table/living-room sofa.
 // WORLD_GLOW_B9=1 captures the police entry and rental displays; rides.mjs supplies the two vehicle comparisons.
+// WORLD_GLOW_B10=1 captures harvest bales, standing tables, a curb barrel and a hydrant.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -277,8 +278,15 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
-      const poses = process.env.WORLD_GLOW_B9 === "1" ? [
+    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9", "WORLD_GLOW_B10"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B10 === "1" ? [
+        ["glow-harvest-bales", 20, -41.7, Math.PI],
+        ["glow-harvest-bales-east", 32, -41.8, Math.PI],
+        ["glow-standing-tables", 18.4, -33.4, -Math.PI / 2],
+        ["glow-standing-table-south", 18.6, -29.3, -Math.PI / 2],
+        ["glow-curb-barrel", 93.8, -2.7, 0],
+        ["glow-hydrant", -68, -3.6, 0],
+      ] : process.env.WORLD_GLOW_B9 === "1" ? [
         ["glow-police-entry", 58, -16.4, Math.PI],
         ["glow-rental-display", 77, -1.6, 0],
       ] : process.env.WORLD_GLOW_B8 === "1" ? [

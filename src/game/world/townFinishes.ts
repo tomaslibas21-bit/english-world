@@ -178,3 +178,77 @@ export function finishRentalDisplay(M: Merger, x: number, z: number, rotation: n
     face("key", "#c3a25a", 0.028, 0.014, px + 0.012, y - 0.082, 0.079);
   }
 }
+
+/** Straw faces stop short of the original raised binding straps; the stacked boxes remain the physical bales. */
+export function finishHarvestBale(M: Merger, x: number, y: number, z: number, rotation: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, y, z);
+  for (const [left, right] of [[-0.48, -0.31], [-0.25, 0.25], [0.31, 0.48]]) {
+    const width = right - left, center = (left + right) / 2;
+    for (const side of [-1, 1]) {
+      const face = (g: THREE.BufferGeometry) => place(g.rotateY(side === 1 ? 0 : Math.PI).translate(center, 0, side * 0.278));
+      M.addVisual("glow-b10-bale-straw", mat("#d7bb7e"), face(new THREE.PlaneGeometry(width, 0.38).translate(0, 0.25, 0)));
+      for (const h of [0.15, 0.29]) M.addVisual("glow-b10-bale-grain", mat("#b69b62"),
+        face(new THREE.PlaneGeometry(width * 0.92, 0.012).translate(0, h, 0.003)));
+    }
+    M.addVisual("glow-b10-bale-top", mat("#e4cb91"), place(new THREE.PlaneGeometry(width, 0.5)
+      .rotateX(-Math.PI / 2).translate(center, 0.502, 0)));
+  }
+  for (const side of [-1, 1]) M.addVisual("glow-b10-bale-end", mat("#c4a66c"), place(new THREE.PlaneGeometry(0.48, 0.4)
+    .rotateY(side * Math.PI / 2).translate(side * 0.502, 0.25, 0)));
+}
+
+/** Inset timber on the truck's two existing standing tables; condiments and the original round slabs stay put. */
+export function finishStandingTable(M: Merger, x: number, z: number) {
+  const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
+  M.addVisual("glow-b10-standing-top", mat("#c5a97c"), place(new THREE.CircleGeometry(0.386, 12).rotateX(-Math.PI / 2).translate(0, 1.088, 0)));
+  M.addVisual("glow-b10-standing-rim", mat("#8b785c"), place(new THREE.RingGeometry(0.386, 0.415, 12).rotateX(-Math.PI / 2).translate(0, 1.09, 0)));
+  for (const depth of [-0.13, 0.13]) M.addVisual("glow-b10-standing-joint", mat("#998465"),
+    place(new THREE.PlaneGeometry(0.68, 0.012).rotateX(-Math.PI / 2).translate(0, 1.091, depth)));
+  for (const [height, center] of [[0.09, 0.98], [0.12, 0.1]]) M.addVisual("glow-b10-standing-collar", mat("#5e6e69"),
+    place(new THREE.CylinderGeometry(0.068, 0.068, height, 6, 1, true).translate(0, center, 0)));
+}
+
+/** Ten tapered stave faces follow the old barrel facets, leaving both original hoops in front. */
+export function finishCurbBarrel(M: Merger, x: number, z: number) {
+  const face = (angle: number, low: number, high: number, half: number, center = 0.5, offset = 0.003) => {
+    const points: number[] = [];
+    // Interpolate the existing ten-sided cone's facet, with a small outward offset to avoid coincident faces.
+    const point = (y: number, side: number) => {
+      const radius = 0.3 + y * 0.12, a = angle - Math.PI / 10, b = angle + Math.PI / 10;
+      const mix = center + side * half;
+      return [x + radius * (Math.sin(a) * (1 - mix) + Math.sin(b) * mix) + Math.sin(angle) * offset,
+        y, z + radius * (Math.cos(a) * (1 - mix) + Math.cos(b) * mix) + Math.cos(angle) * offset];
+    };
+    const q = [point(low, -1), point(low, 1), point(high, 1), point(high, -1)];
+    for (const i of [0, 1, 2, 0, 2, 3]) points.push(...q[i]);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
+    g.computeVertexNormals();
+    return g;
+  };
+  for (let i = 0; i < 10; i++) {
+    const angle = (i + 0.5) * Math.PI / 5;
+    M.addVisual("glow-b10-barrel-stave", mat(i % 2 ? "#af835c" : "#b58e66"), face(angle, 0.16, 0.365, 0.46));
+    M.addVisual("glow-b10-barrel-grain", mat("#876c50"), face(angle, 0.185, 0.34, 0.025, 0.72, 0.006));
+  }
+  M.addVisual("glow-b10-barrel-lip", mat("#637367"), new THREE.RingGeometry(0.325, 0.357, 10)
+    .rotateX(-Math.PI / 2).translate(x, 0.503, z));
+}
+
+/** Compact hose bosses fit inside the original 0.22 m blocking radius; the old red body and photo target remain. */
+export function finishHydrant(M: Merger, x: number, z: number) {
+  const body = mat("#bd594a"), cap = mat("#9eaca7"), brass = mat("#d3c6a8");
+  const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
+  for (const side of [-1, 1]) {
+    M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.062, 0.062, 0.05, 8, 1, true)
+      .rotateZ(-side * Math.PI / 2).translate(side * 0.18, 0.5, 0)));
+    M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.062, 8)
+      .rotateY(side * Math.PI / 2).translate(side * 0.2055, 0.5, 0)));
+  }
+  M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.065, 0.065, 0.05, 8, 1, true)
+    .rotateX(Math.PI / 2).translate(0, 0.5, -0.18)));
+  M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.065, 8).rotateY(Math.PI).translate(0, 0.5, -0.2055)));
+  M.addVisual("glow-b10-hydrant-nut", brass, place(new THREE.CircleGeometry(0.025, 6).rotateY(Math.PI).translate(0, 0.5, -0.2085)));
+  M.addVisual("glow-b10-hydrant-nut", brass, place(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 6).translate(0, 0.9, 0)));
+  M.addVisual("glow-b10-hydrant-foot", mat("#596b62"), place(new THREE.CylinderGeometry(0.205, 0.212, 0.06, 8, 1, true).translate(0, 0.09, 0)));
+}

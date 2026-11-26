@@ -19,7 +19,7 @@ import { MAPLE_BLOCKS } from "./styled";
 import { addHarborSurf } from "./harborSurf";
 import { HARBOR_SURF, SURF_SPOT } from "./surf";
 import { visualOnly } from "../collisionGeometry";
-import { finishSquarePlanter } from "./townFinishes";
+import { finishCurbBarrel, finishHarvestBale, finishSquarePlanter, finishStandingTable } from "./townFinishes";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -54,9 +54,10 @@ function pumpkin(add: Add, x: number, y: number, z: number, r: number, k = 0) {
   add(boxGeo(r * 0.22, r * 0.4, r * 0.22, x, y + r * 1.6, z), "#5d7a3a");
 }
 /** A hay bale (a metre long, along x before turning by `rot`). */
-function bale(add: Add, x: number, y: number, z: number, rot: number) {
+function bale(add: Add, M: Merger, x: number, y: number, z: number, rot: number) {
   add(boxGeo(1.0, 0.5, 0.55, 0, 0.25, 0).rotateY(rot).translate(x, y, z), "#d9b96a", { flat: true });
   for (const u of [-0.28, 0.28]) add(boxGeo(0.04, 0.52, 0.57, u, 0.25, 0).rotateY(rot).translate(x, y, z), "#b08f45");
+  finishHarvestBale(M, x, y, z, rot);
 }
 /** A clump of mums: a green mound with blooms on it, `r` across, its foot at y. */
 export function mums(add: Add, x: number, y: number, z: number, r: number, k: number) {
@@ -150,7 +151,7 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
   };
   if (STYLED) {
     addDoorPumpkins(placePumpkin);
-    addLobsterTruck(add, col, group, photo, placePumpkin);
+    addLobsterTruck(add, col, group, photo, placePumpkin, M);
     addBoats();
     return () => {};
   }
@@ -321,6 +322,7 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
           add(cylGeo(0.36, 0.3, 0.5, bx, 0.25, z, 10), "#8a5a3c");
           for (const y of [0.12, 0.4]) add(cylGeo(0.37, 0.37, 0.05, bx, y, z, 10), "#3d4a44", { cast: false });
           mums(add, bx, 0.44, z, 0.42, i);
+          finishCurbBarrel(M, bx, z);
           col.addCircle(bx, z, 0.38);
         }
         return [x, z];
@@ -373,7 +375,7 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
 
   addDoorPumpkins(placePumpkin);
   addSquare(add, col, placePumpkin, M);
-  addLobsterTruck(add, col, group, photo, placePumpkin);
+  addLobsterTruck(add, col, group, photo, placePumpkin, M);
   addBoats();
   if (!LIGHTHOUSE_ISLAND) addLighthouse(add, LIGHTHOUSE);
   addHarborGear(add, col, group, updates);
@@ -412,7 +414,7 @@ function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin, M: Merg
   }
   // between the stalls (behind the line the shoppers walk): bales with pumpkins on and around them, corn stalks
   for (const [x, z, k] of [[20, -43.9, 0], [32, -44.1, 1]] as [number, number, number][]) {
-    bale(add, x - 0.55, 0, z, 0.06); bale(add, x + 0.55, 0, z, -0.05); bale(add, x, 0.5, z, 0.2);
+    bale(add, M, x - 0.55, 0, z, 0.06); bale(add, M, x + 0.55, 0, z, -0.05); bale(add, M, x, 0.5, z, 0.2);
     placePumpkin(x - 0.7, 0.5, z, 0.22, k); placePumpkin(x + 0.75, 0.5, z + 0.05, 0.18, k + 1); placePumpkin(x, 1.0, z, 0.24, k + 2);
     placePumpkin(x - 1.35, 0, z + 0.5, 0.3, k + 1); placePumpkin(x + 1.4, 0, z + 0.45, 0.24, k); placePumpkin(x + 0.2, 0, z + 0.62, 0.2, k + 3);
     for (let i = 0; i < 5; i++) add(new THREE.ConeGeometry(0.1, 2.3, 4).translate(x - 1.5 + (i % 3) * 0.09, 1.15, z - 0.25 + i * 0.07), i % 2 ? "#c9a55a" : "#b8934a", { flat: true });
@@ -422,7 +424,7 @@ function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin, M: Merg
   for (const s of STALLS) { placePumpkin(s.x - 2.35, 0, s.z + 0.55, 0.26, s.x); placePumpkin(s.x + 2.4, 0, s.z + 0.5, 0.2, s.x + 1); }
 }
 
-function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: AddPhotoSpot, placePumpkin: PlacePumpkin) {
+function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: AddPhotoSpot, placePumpkin: PlacePumpkin, M: Merger) {
   // the truck: its cab to the north, the serving window on the east side under a striped awning
   const X = 11.4, Z = -31;
   photo("food_truck", X, 1.9, Z);
@@ -477,6 +479,7 @@ function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: Ad
     add(cylGeo(0.42, 0.42, 0.05, tx, 1.06, tz, 12), cream); add(cylGeo(0.04, 0.04, 1.05, tx, 0.52, tz, 6), "#3a3d42"); add(cylGeo(0.26, 0.28, 0.04, tx, 0.02, tz, 10), "#3a3d42", { cast: false });
     add(cylGeo(0.035, 0.035, 0.16, tx + 0.12, 1.16, tz - 0.08, 6), "#c8392f", { cast: false }); add(cylGeo(0.035, 0.035, 0.16, tx + 0.02, 1.16, tz + 0.1, 6), "#f2c14e", { cast: false });
     add(boxGeo(0.14, 0.1, 0.12, tx - 0.14, 1.13, tz), "#e9e2d2", { cast: false });
+    if (!STYLED) finishStandingTable(M, tx, tz);
     col.addCircle(tx, tz, 0.44);
   }
   for (const s of [-1, 1]) add(boxGeo(0.62, 1.0, 0.04, 0, 0.5, 0).rotateX(s * 0.2).translate(14.1, 0, -27.3 + s * 0.14), "#2f3a33");

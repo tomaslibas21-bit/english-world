@@ -1,7 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
-import { finishBank, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishStreetBin } from "./townFinishes";
+import { finishBank, finishHydrant, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishStreetBin } from "./townFinishes";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -1652,6 +1652,7 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
     photo("hydrant", x, 0.55, z);
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));
     M.add("hydrant", mat("#d63b2f"), new THREE.SphereGeometry(0.18, 8, 6).translate(x, 0.72, z));
+    finishHydrant(M, x, z);
     col.addCircle(x, z, 0.22);
   };
   for (const [x, z] of [[-68, -1.5], [-2, -1.5], [44, -14.5], [-78, 43], [66, 43]]) hydrant(x, z);
