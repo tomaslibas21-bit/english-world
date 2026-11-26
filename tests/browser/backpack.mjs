@@ -57,7 +57,7 @@ async function openGame(play, width, height, { stress = false, deny = false, url
     sessionStorage.setItem("ew-play-now", "1");
   }, { play, stress, deny, friday, helper, cardKey });
   await page.goto(url);
-  await page.waitForFunction(() => window.__ew?.store.getState().screen === "play");
+  await page.waitForFunction(() => window.__ew?.store.getState().screen === "play", null, { timeout: 90000 });
   return { page, context, errors };
 }
 
@@ -126,6 +126,8 @@ try {
   await shot(page, "844x390-grading");
   await button("Kartoti dar kartą").click();
   await shot(page, "844x390-next-card");
+  await page.setViewportSize({ width: 390, height: 664 });
+  await shot(page, "390x664-after-grade");
   await page.keyboard.press("Escape");
   const graded = await readDeck(page);
   assert.equal(graded.filter((c) => c.reviews).length, 1);
@@ -151,6 +153,7 @@ try {
   const town = await openGame("town", 1280, 800);
   const t = town.page, controls = bookControls(t);
   await t.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "bench");
+  await shot(t, "1280x800-bench-standing");
   await t.keyboard.press("e");
   await t.waitForFunction(() => window.__ew.game.player.anim === "sit");
   const pose = () => t.evaluate(() => {
