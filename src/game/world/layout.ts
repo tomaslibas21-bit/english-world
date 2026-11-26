@@ -164,10 +164,16 @@ export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }
 
 export const TAXI: CarPlacement = { model: "taxi", x: 121, z: -4.8, rot: -Math.PI / 2, color: "#f5c518" };
 
-/** From the open side of the stand, east of the forecourt and below its roofline. */
-const TAXI_STAND_FRAME = { eye: [132, 3.7, 11.5], look: [122.4, 1.05, -1.6] } as const;
-export function taxiStandFrameAt(x: number, z: number) {
-  return Math.hypot(x - 122.5, z + 1.45) <= 3.2 ? TAXI_STAND_FRAME : undefined;
+/** Three-quarter views from beyond the traffic, below the terminal roof. The map arrival needs more sidewalk. */
+const TAXI_STAND_FRAME = { eye: [127.5, 5, -0.5], look: [123, 1, -3], fov: 51, shiftY: 0.05 } as const;
+const TAXI_STAND_MAP = { eye: [125.5, 4, 5.5], look: [121, 1, -1], fov: 49, shiftY: 0.05 } as const;
+const TAXI_STAND_SIDEWAYS = { eye: [126, 7, -4], look: [124, 3, -3] } as const;
+/** The tall lens needs room for both people beside the cab, clear of both canopies. */
+const TAXI_STAND_PORTRAIT = { eye: [124.5, 8.7, 12], look: [122, 2.2, -3.5] } as const;
+export function taxiStandFrameAt(x: number, z: number, aspect: number) {
+  if (Math.hypot(x - 122.5, z + 1.45) > 3.2) return undefined;
+  if (aspect < 0.87) return TAXI_STAND_PORTRAIT;
+  return aspect > 1.9 ? TAXI_STAND_SIDEWAYS : z > 0 ? TAXI_STAND_MAP : TAXI_STAND_FRAME;
 }
 
 const gas = BUILDINGS.find(({ id }) => id === "gas");

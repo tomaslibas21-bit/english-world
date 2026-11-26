@@ -50,7 +50,7 @@ type TaxiSubject = {
   height: number;
 };
 type Sightline = (from: THREE.Vector3, to: THREE.Vector3) => boolean;
-type StandFrame = { eye: readonly [number, number, number]; look: readonly [number, number, number] };
+type StandFrame = { eye: readonly [number, number, number]; look: readonly [number, number, number]; fov?: number; shiftY?: number };
 
 export class CameraRig {
   cam: THREE.PerspectiveCamera;
@@ -121,7 +121,7 @@ export class CameraRig {
   private slideT = 0;
   /** Standing still and boxed in: the yaw with a proper view the camera is on its way to, kept until it gets there. */
   private standYaw: number | null = null;
-  private standFrameActive = false;
+  private standFrameActive?: StandFrame;
   private standFrameDismissed = false;
   private readonly reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
   /** After a change of mode (the end of a conversation) or a door: how long the camera still glides to its place (s). */
@@ -160,11 +160,13 @@ export class CameraRig {
   }
   get manuallyAiming() { return this.dragging || this.manualT > 0; }
   get presentedLook(): THREE.Vector3 { return this.curLook; }
+  get standView() { return this.mode === "follow" && !this.taxiShot ? this.standFrameActive : undefined; }
 
   /** Snap to the target. An authored yaw cancels any unfinished turn from the previous view. */
   snap(yaw?: number) {
     if (this.standFrameActive || this.standFrameDismissed) this.slideYaw = this.standYaw = null;
-    this.standFrameActive = this.standFrameDismissed = false;
+    this.standFrameActive = undefined;
+    this.standFrameDismissed = false;
     if (yaw !== undefined) {
       this.yaw = yaw;
       this.yawVel = 0;
@@ -197,6 +199,8 @@ export class CameraRig {
 
   /** Pick a view under the pickup/retry fade, with at most five positions and four rays each. */
   snapTaxi(subject: TaxiSubject, clear: Sightline) {
+    this.standFrameActive = undefined;
+    this.standFrameDismissed = false;
     this.mode = this.lastMode = "follow";
     this.blendT = this.manualT = this.yawVel = 0;
     this.slideYaw = this.standYaw = null;
@@ -219,10 +223,8 @@ export class CameraRig {
     }
     this.taxiShot = { subject, clear, offset, distance: 0, elapsed: 0, nextCheck: 0, last: subject.position.clone() };
     this.placeTaxiShot(subject, offset, 0);
-    if (this.cam.aspect < 0.87) {
-      this.cam.fov = this.portraitFollowFov(this.cam.aspect, false);
-      this.cam.updateProjectionMatrix();
-    }
+    this.cam.fov = this.fovFor(this.cam.aspect, 1, false);
+    this.cam.updateProjectionMatrix();
     this.cam.position.copy(this.curPos);
     this.cam.lookAt(this.curLook);
     this.cam.updateMatrixWorld();
@@ -474,6 +476,7 @@ export class CameraRig {
       if (aspect > 1.9) return clamp(verticalFov(36, aspect), 36, 50);
       return aspect < 0.87 ? clamp(verticalFov(15, aspect), 50, 66) : 50;
     }
+    if (this.standView?.fov !== undefined) return this.standView.fov;
     if (aspect < 0.87) return this.portraitFollowFov(aspect, running);
     return wideFollowFov(aspect) + (running ? 3 : 0);
   }
@@ -523,7 +526,12 @@ export class CameraRig {
     }
     const framingStand = atStand && m.speed <= 0.15 && !this.hold && !this.standFrameDismissed;
     if (this.standFrameActive && !framingStand && atStand && !this.manuallyAiming && !this.reducedMotion?.matches) this.blendT = 0.6;
-    this.standFrameActive = framingStand;
+    this.standFrameActive = framingStand ? {
+      ...standFrame,
+      shiftY: standFrame.shiftY === undefined || this.reducedMotion?.matches ? standFrame.shiftY : ease(
+        (this.cam.view?.offsetY ?? 0) / (this.cam.view?.fullHeight || 1), standFrame.shiftY, 8, dt,
+      ),
+    } : undefined;
     if (taxiShot) this.updateTaxiShot(dt);
     else if (this.mode === "follow" && !framingStand) {
       // (on the move: the time since they set off, or since they last turned sharply: the swing waits a moment)

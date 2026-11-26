@@ -634,6 +634,7 @@ export class Game implements GameApi {
         this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
+        this.applyWalkingViewShift(this.screenW, this.screenH, false);
       },
       scoreShot: (beside) => {
         const { root: { position: p }, height } = this.player;
@@ -3229,7 +3230,14 @@ export class Game implements GameApi {
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
     const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
-    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? this.rig.standView?.shiftY ?? -shift));
+  }
+
+  private taxiStandFrame() {
+    // A mode owns its pending launch too, before active/riding are set by the fade callback.
+    if (this.zone.id !== "town" || this.rides.riding || this.modes.engaged || this.transitioning || this.session?.active || this.aloft) return undefined;
+    const { x, z } = this.player.root.position;
+    return taxiStandFrameAt(x, z, this.rig.cam.aspect);
   }
 
   private updateViewLights() {
@@ -3380,8 +3388,7 @@ export class Game implements GameApi {
     // Keep the visible view while the talk chunk or measured panel is pending.
     const awaitingShot = actorTalk && !this.rig.talk;
     if (!awaitingShot) {
-      const standFrame = this.zone.id === "town" && !riding && !mode && !this.aloft
-        ? taxiStandFrameAt(position.x, position.z) : undefined;
+      const standFrame = this.taxiStandFrame();
       this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down, standFrame);
     }
     this.frameKeeper(dt, blocked || !!mode);
