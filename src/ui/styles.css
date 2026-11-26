@@ -328,6 +328,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toast .better { font-family: var(--en); font-size: 1.15em; color: var(--ink); margin-top: 4px; }
 .toast .x { flex: none; margin: -2px -2px 0 auto; background: none; border: 0; color: var(--ink-faint); width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; transition: background-color 0.15s, color 0.15s; }
 .toast .x:hover { background: rgba(31, 42, 51, 0.07); color: var(--ink); }
+/* A notice with a save: two separate 44 px tap targets side by side. */
+.toast:has(> [data-phrase-save]) .x { width: 44px; height: 44px; margin: 0; }
 @keyframes drop { from { opacity: 0; transform: translateY(-10px); } }
 
 .convo-tools .toasts {

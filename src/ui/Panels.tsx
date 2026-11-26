@@ -337,14 +337,16 @@ function MapPanel({ close }: { close: () => void }) {
     const overlay = map.parentElement!;
     const opener = takeMapOpener() ?? document.activeElement;
     const others = [...overlay.parentElement!.children].filter(
-      (el): el is HTMLElement => el instanceof HTMLElement && el !== overlay && !el.inert,
+      // Notices stay above the map and keep their save and close buttons.
+      (el): el is HTMLElement => el instanceof HTMLElement && el !== overlay && !el.inert && !el.classList.contains("toasts"),
     );
     const closeButton = map.querySelector<HTMLButtonElement>(".close-x")!;
     const focusClose = () => closeButton.focus({ preventScroll: true });
     focusClose();
     for (const el of others) el.inert = true;
     const keepFocus = (e: FocusEvent) => {
-      if (!map.contains(e.target as Node)) focusClose();
+      const target = e.target as Element;
+      if (!map.contains(target) && !target.closest?.(".toasts")) focusClose();
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

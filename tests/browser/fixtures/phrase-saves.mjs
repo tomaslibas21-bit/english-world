@@ -78,7 +78,8 @@ export async function activatePhraseControl(page, control, touch, key = "Enter")
     const x = left + width / 2, y = top + height / 2;
     return { x, y, width, height, hit: element.contains(document.elementFromPoint(x, y)) };
   });
-  assert(bounds.width >= 44 && bounds.height >= 44 && bounds.hit, JSON.stringify(bounds));
+  // (A sliding notice can measure 43.999996 px: compare at a hundredth of a pixel.)
+  assert(Math.round(bounds.width * 100) >= 4400 && Math.round(bounds.height * 100) >= 4400 && bounds.hit, JSON.stringify(bounds));
   if (touch) await page.touchscreen.tap(bounds.x, bounds.y);
   else await control.press(key);
 }

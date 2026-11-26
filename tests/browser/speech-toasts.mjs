@@ -79,11 +79,14 @@ try {
         const box = () => button.evaluate((el) => {
           const r = el.getBoundingClientRect(), dismiss = el.nextElementSibling;
           const x = dismiss.getBoundingClientRect();
-          return { width: r.width, height: r.height, gutter: x.left - r.right,
-            target: dismiss.contains(document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2)) };
+          const hit = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2);
+          const px = (value) => Math.round(value * 100) / 100; // a sliding notice measures 43.999996 px
+          return { width: px(r.width), height: px(r.height), dismiss: [px(x.width), px(x.height)], gutter: px(x.left - r.right), target: dismiss.contains(hit),
+            ...(dismiss.contains(hit) ? {} : { hit: hit && `${hit.tagName}.${hit.className}` }) };
         });
         const before = await box();
-        assert(before.target && before.width === 44 && before.height === 44 && before.gutter >= 4 && before.gutter <= 8,
+        assert(before.target && before.width === 44 && before.height === 44 && before.dismiss.every((side) => side >= 44)
+          && before.gutter >= 4 && before.gutter <= 8,
           `the speech save and dismiss have distinct hit areas (${JSON.stringify(before)})`);
         const card = await checkManualSave(page, button, touch, phrase.en, "street", snapshot);
         if (!touch) {
