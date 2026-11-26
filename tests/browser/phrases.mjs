@@ -176,7 +176,7 @@ export async function openGame(browser, game, size) {
   }
 
   return { page, context, phone, overlay, choice, choose, cue, karaoke, mp3Urls,
-    reachChoice, step, read, gate, approach, answer, waitState, waitForClip, reveal };
+    reachChoice, step, read, wait, gate, approach, answer, waitState, waitForClip, reveal };
 }
 
 export function phraseFor(state) {
@@ -355,7 +355,8 @@ async function testGame(browser, game, size, budget) {
       const from = run.mp3Urls.length;
       await run.choose("phrases");
       first = phraseFor(await run.gate(0));
-      await run.cue.waitFor();
+      // (at sea the first cue and its clip come once the 1.2 s crossing title has gone: the clock is stepped to it)
+      await run.wait(() => run.cue.isVisible(), "the first cue shows", 4);
       assert.equal(await run.cue.innerText(), first.p);
       await run.waitForClip(first.pClip, from);
     }],
