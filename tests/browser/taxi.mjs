@@ -106,23 +106,31 @@ function atTaxiStand(routeId) {
     && (routeId ? game.rides.riding === mode.car && mode.route?.id === routeId : !game.rides.riding);
 }
 
-function taxiStandView() {
+async function taxiStandView() {
   const game = window.__ew.game, camera = game.rig.cam, ray = game.raycaster;
-  const taxi = game.town.parkedCars.taxi.root.position.clone().setY(0.9);
+  const { CUT } = await import("/src/game/cutout.ts");
+  const root = game.town.parkedCars.taxi.root;
+  const taxi = root.position.clone().setY(0.9);
   const point = taxi.clone().project(camera);
   const taxiInFrame = [point.x, point.y, point.z].every((coordinate) => Math.abs(coordinate) < 1);
+  // The gas-station canopy no longer fades near the camera: its roof stays, and the follow camera looks through it
+  // where it stands on the line to the learner (cutout.ts; Sol's 01-gas-canopy-camera, 24 Nov 2026, the same rule as
+  // tests/taxi-camera.test.ts). So whatever of it is between the camera and the taxi (its roof, middle and both ends)
+  // must be inside that see-through tube.
   const canopy = game.town.group.getObjectByName("gas-canopy-assembly");
-  const visibleRoof = canopy.children.filter((o) => !o.material.alphaHash || o.material.opacity > 0);
-  const taxiDepth = camera.position.distanceTo(taxi);
-  if (visibleRoof.length) {
-    const samples = [-0.9, -0.75, -0.5, 0, 0.5, 0.75, 0.9];
-    for (const x of samples) {
-      for (const y of samples) {
-        ray.setFromCamera({ x, y }, camera);
-        const hit = ray.intersectObjects(visibleRoof, false)[0];
-        if (hit && hit.distance < taxiDepth) return { taxiInFrame, canopyClear: false };
-      }
-    }
+  const roof = canopy.children.filter((o) => !o.material.alphaHash || o.material.opacity > 0);
+  const a = CUT.a.value, b = CUT.b.value, r = CUT.r.value, ab = b.clone().sub(a);
+  const inTube = (p) => {
+    const t = Math.min(1, Math.max(0, p.clone().sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-4)));
+    return r > 0 && t > 0.03 && t < 0.9 && a.clone().addScaledVector(ab, t).distanceTo(p) < r;
+  };
+  for (const [along, y] of [[0, 0.5], [0, 1.3], [-1.6, 0.8], [1.6, 0.8]]) {
+    const target = root.localToWorld(root.position.clone().set(0, y, along));
+    const direction = target.clone().sub(camera.position);
+    const depth = direction.length();
+    ray.set(camera.position, direction.normalize());
+    const hits = ray.intersectObjects(roof, false).filter((hit) => hit.distance < depth && !inTube(hit.point));
+    if (hits.length) return { taxiInFrame, canopyClear: false, blocked: [along, y], at: hits[0].point.toArray() };
   }
   return { taxiInFrame, canopyClear: true };
 }
@@ -212,7 +220,7 @@ try {
     assert(await page.evaluate(() => !window.__ew.game.rides.list.some((ride) => ride.id === "taxi")), "the parked taxi is outside the town rides");
     await waitFor(() => page.evaluate(() => {
       const game = window.__ew.game, stand = game.town.parkedCars.taxi;
-      return stand && stand.instance?.parent === stand.root && !stand.fallback.parent;
+      return stand && stand.instance?.parent === stand.root && !stand.fallback?.parent; // (no fallback when the model is ready first)
     }), "the Kenney model replaces the stand taxi's fallback");
     // Let the standing follow camera finish its swing before checking the framing.
     await step(80);
