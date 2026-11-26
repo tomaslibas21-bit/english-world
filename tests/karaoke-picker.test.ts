@@ -74,6 +74,6 @@ describe("the silent song stand", () => {
 
   it("provides matching EN/LT copy keys and infinitive action labels", () => {
     expect(Object.keys(KARAOKE_COPY.en)).toEqual(Object.keys(KARAOKE_COPY.lt));
-    expect(KARAOKE_COPY.lt).toMatchObject({ enter: "Dainuoti karaokę", start: "Pradėti dainą", back: "Grįžti", leave: "Nulipti nuo scenos" });
+    expect(KARAOKE_COPY.lt).toMatchObject({ enter: "Dainuoti karaokę", start: "Pradėti dainą", back: "Grįžti", leave: "Nulipti nuo scenos", replay: "Klausytis dar kartą" });
   });
 });

@@ -31,7 +31,7 @@ export const KARAOKE_COPY = {
     start: "Pradėti dainą", pause: "Pristabdyti", resume: "Tęsti", leave: "Nulipti nuo scenos", another: "Pasirinkti kitą dainą",
     finished: "Daina baigėsi.", held: "Laukiama, kol bus galima tęsti.",
     lyrics: "Dainos tekstas", next: "Kita eilutė", showMeaning: "Rodyti reikšmę", hideMeaning: "Slėpti reikšmę",
-    yourTurn: "Tavo eilė", replay: "Išklausyti eilutę dar kartą", continue: "Tęsti", applause: "Plojimai tau!",
+    yourTurn: "Tavo eilė", replay: "Klausytis dar kartą", continue: "Tęsti", applause: "Plojimai tau!",
     tally: "Pakartotos eilutės · {done} iš {total}",
     microphone: "Naudoti mikrofoną šiai eilutei", privacy: "Tavo balsas lieka šiame įrenginyje. Jis neįrašomas ir niekur nesiunčiamas.",
     listening: "Klausau…", stopMicrophone: "Išjungti mikrofoną", heard: "Girdžiu tave!",

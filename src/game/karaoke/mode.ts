@@ -186,8 +186,9 @@ export class KaraokeMode implements GameMode {
     player.steady = true;
     if (this.mic) poseKaraokeSinger(player, this.mic);
     const shot = this.host.rig.stage!, portrait = this.host.rig.cam.aspect < 0.9;
-    const z = portrait ? 2.3 : 1.3, moved = shot.pos.z !== z;
-    shot.pos.z = z; shot.fov = portrait ? 48 : 43;
+    const x = portrait ? 0.65 : 1.5, z = portrait ? 2.3 : 3;
+    const moved = shot.pos.x !== x || shot.pos.z !== z;
+    shot.pos.x = x; shot.pos.z = z; shot.fov = portrait ? 48 : 43;
     if (moved && typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) {
       this.host.rig.stageSnap(); this.host.rig.applyPose(); this.host.rig.cam.updateMatrixWorld(true);
     }

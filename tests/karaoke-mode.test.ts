@@ -265,18 +265,22 @@ describe("the café karaoke mode", () => {
     player.dispose(); guests.forEach((guest) => guest.dispose?.());
   });
 
-  it("updates portrait framing on rotation and snaps the new shot with reduced motion", async () => {
+  it("updates both camera coordinates on rotation and snaps the new shot with reduced motion", async () => {
     const f = await fixture();
     f.registry.start("karaoke"); await flush();
     f.mode.action("select", "G01"); f.mode.action("start"); await flush();
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    f.rig.cam.aspect = 390 / 844;
-    f.mode.update({ dt: 0.05, time: 1, x: 0, y: 0, blocked: true, brake: false });
-    expect(f.rig.stage!.pos.z).toBe(2.3); expect(f.rig.cam.position).toEqual(f.rig.stage!.pos);
+    for (const aspect of [390 / 844, 0.9, 844 / 390, 390 / 664]) {
+      f.rig.cam.aspect = aspect;
+      f.mode.update({ dt: 0.05, time: 1, x: 0, y: 0, blocked: true, brake: false });
+      expect(f.rig.stage!.pos.toArray()).toEqual(aspect < 0.9 ? [0.65, 1.5, 2.3] : [1.5, 1.5, 3]);
+      expect(f.rig.stage!.fov).toBe(aspect < 0.9 ? 48 : 43);
+      expect(f.rig.cam.position).toEqual(f.rig.stage!.pos);
+    }
     f.registry.exit(true);
   });
 
-  it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames a singer with a clear portrait picture and a wide-view shoulder at %s × %s", async (w, h) => {
+  it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames a clear singer with the foreground shoulder at the edge at %s × %s", async (w, h) => {
     const f = await fixture();
     f.rig.cam.aspect = w / h;
     f.rig.stage = karaokeShot(w / h);
@@ -293,7 +297,7 @@ describe("the café karaoke mode", () => {
     const head = project(KARAOKE_MARK.x, KARAOKE_MARK.y + f.player.height, KARAOKE_MARK.z);
     const knees = project(KARAOKE_MARK.x, 0.55, KARAOKE_MARK.z);
     const nearShoulder = project(2.67, 1.15, 1.45);
-    expect(head.y).toBeGreaterThan(0.12);
+    expect(head.y).toBeGreaterThan(titleBottom / h);
     expect(head.y).toBeLessThan(0.3);
     expect(knees.y - head.y).toBeLessThan(0.4);
     expect(knees.y).toBeLessThan(0.56);
@@ -301,11 +305,9 @@ describe("the café karaoke mode", () => {
       expect(f.rig.stage.pos.z).toBe(2.3);
       expect(nearShoulder.x).toBeLessThan(0.05); // the foreground guest stays outside the narrow singer picture
     } else {
-      expect(f.rig.stage.pos.z).toBe(1.3);
-      expect(nearShoulder.x).toBeGreaterThan(0);
-      expect(nearShoulder.x).toBeLessThan(head.x);
-      expect(nearShoulder.y).toBeGreaterThan(0.3);
-      expect(nearShoulder.y).toBeLessThan(0.55);
+      expect(f.rig.stage.pos.toArray()).toEqual([1.5, 1.5, 3]);
+      expect(nearShoulder.x).toBeLessThan(0.05);
+      expect(head.x - nearShoulder.x).toBeGreaterThan(0.2);
     }
     if (w < h) expect(head.y * h).toBeGreaterThanOrEqual(titleBottom + 11.9);
     if (w > h && h < 520) expect(head.x).toBeLessThan(0.34);

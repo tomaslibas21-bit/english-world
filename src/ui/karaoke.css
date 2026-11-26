@@ -102,6 +102,9 @@
 .karaoke-finish h2 { font: 500 calc(38px * var(--scale, 1))/1.15 var(--en); margin: 0; }
 .karaoke-finish > p[lang] { font: 500 calc(24px * var(--scale, 1))/1.2 var(--en); margin: 12px 0; }
 .karaoke-tally { color: var(--kk-soft); margin: 16px 0 22px; }
+@media (min-width: 901px) {
+  .karaoke-picker:has(.karaoke-detail) { height: auto; max-height: min(720px, 100%); }
+}
 @media (max-width: 600px) {
   .karaoke-picker { height: 100%; }
   .karaoke-catalog { grid-template-columns: 1fr; }
@@ -128,7 +131,7 @@
   .karaoke-units { display: block; text-wrap: balance; font-size: calc(32px * var(--scale, 1)); }
   .karaoke-next { font-size: calc(21px * var(--scale, 1)); }
   .karaoke-stage-actions button { padding: 8px 12px; }
-  .karaoke-transport-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "replay primary" "speed more"; grid-template-rows: minmax(72px, auto) 48px; align-items: stretch; }
+  .karaoke-transport-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "replay primary" "speed more"; grid-template-rows: minmax(48px, auto) 48px; align-items: stretch; }
   .karaoke-transport-grid > button { padding: 8px 10px; min-width: 0; }
   .karaoke-transport-replay { grid-area: replay; }
   .karaoke-transport-primary { grid-area: primary; }

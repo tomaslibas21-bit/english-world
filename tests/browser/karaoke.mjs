@@ -304,7 +304,7 @@ try {
         await shot("mic-heard");
         assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused");
       }
-      await press(page.getByRole("button", { name: "Išklausyti eilutę dar kartą", exact: true }));
+      await press(page.getByRole("button", { name: "Klausytis dar kartą", exact: true }));
       await page.locator(".karaoke-turn").waitFor({ state: "detached" });
       await page.locator(".karaoke-turn").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1, "replaying a line adds no second point");
