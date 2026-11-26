@@ -2945,8 +2945,9 @@ export class Game implements GameApi {
         break;
       }
       case "sea": {
-        const boat = this.rides.find("playa");
-        if (boat) this.enterZone("town", inFrontOf(boat.m.x, boat.m.z, boat.m.heading + Math.PI, boat.m.spec.half + 0.7));
+        const beach = this.rides.find("playa")!.home;
+        const shore = inFrontOf(beach.x, beach.z, beach.rot + Math.PI, BOAT.half + 0.7);
+        this.enterZone("town", this.rides.boatApproach(shore.x, shore.z) ?? shore);
         break;
       }
     }

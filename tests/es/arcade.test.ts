@@ -8,6 +8,10 @@ import type { ModeHost } from "../../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../../src/game/kit/modes";
 import { saveBest } from "../../src/game/road/ghost";
 import { Vector3 } from "three";
+import { Rides, type RideHost } from "../../src/game/rides/Rides";
+import { NavGrid } from "../../src/game/nav";
+import { RIDES } from "../../src/game/world/rides";
+import { Colliders } from "../../src/game/world/util";
 import { CameraRig } from "../../src/game/camera";
 import { TABLE_X, TABLE_Z, TINA_HOME } from "../../src/game/billiards/table";
 import { emptyPlayStats } from "../../src/state/playStats";
@@ -44,6 +48,21 @@ it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames the hall door
     expect(Math.abs(ndc.x)).toBeLessThan(1);
     expect(Math.abs(ndc.y)).toBeLessThan(1);
   }
+});
+
+it("visits a reachable boat even when the beach lancha is offshore", () => {
+  const colliders = new Colliders();
+  const nav = new NavGrid(-30, -72, 30, -50, 1, colliders);
+  const host = { colliders, nav, ambient: { rideBoxes: [] } } as unknown as RideHost;
+  const rides = new Rides(host, { ...RIDES, cars: [] }, []);
+  const beach = rides.find("playa")!;
+  for (const id of ["playa", "muelle"]) {
+    const step = rides.boatApproach(beach.home.x, beach.home.z + 3)!;
+    expect(nav.free(nav.idx(step.x, step.z))).toBe(true);
+    expect(rides.near(step.x, step.z)?.id).toBe(id);
+    rides.resetPosition(rides.find(id)!, { x: 0, z: -120, rot: Math.PI });
+  }
+  expect(rides.boatApproach(beach.home.x, beach.home.z + 3)).toBeUndefined();
 });
 
 it("shows this town's titles and the current helper", () => {

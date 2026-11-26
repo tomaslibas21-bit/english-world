@@ -878,6 +878,32 @@ export class Rides {
     return _v.setY(floorY(_v.x, _v.z));
   }
 
+  /** Find a walkable boarding point for the boat closest to the beach entrance. */
+  boatApproach(x: number, z: number) {
+    const nav = this.host.nav;
+    let best: Ride["home"] | undefined;
+    let boatDistance = Infinity;
+    for (const boat of this.list) {
+      if (boat.kind !== "boat") continue;
+      const distance = Math.hypot(boat.m.x - x, boat.m.z - z);
+      if (distance >= boatDistance) continue;
+      let stepDistance = Infinity;
+      for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
+        const cell = nav.idx(boat.m.x + dx, boat.m.z + dz);
+        if (!nav.free(cell)) continue;
+        const [cx, cz] = nav.center(cell);
+        const fromHull = this.reach(boat, cx, cz);
+        if (fromHull < 0.45 || fromHull >= BOAT.reach) continue;
+        const fromBeach = Math.hypot(cx - x, cz - z);
+        if (fromBeach >= stepDistance || this.near(cx, cz) !== boat) continue;
+        best = { x: cx, z: cz, rot: Math.atan2(boat.m.x - cx, boat.m.z - cz) };
+        boatDistance = distance;
+        stepDistance = fromBeach;
+      }
+    }
+    return best;
+  }
+
   /** A door, a ride across town, a conversation started from the list: the player is on foot at once, wherever they
    *  are put next, and what they drove goes back to its place. */
   abandon(keep = false) {
