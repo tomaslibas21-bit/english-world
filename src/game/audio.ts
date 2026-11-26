@@ -87,8 +87,12 @@ export function filesToken(): string | null {
 
 /** A clip's address: its folder and key, the version of a re-recorded clip, and the files token when there is one. */
 export function clipUrl(base: string, key: string, version?: string, token?: string | null): string {
+  return audioFileUrl(base, key + ".mp3", version, token);
+}
+
+function audioFileUrl(base: string, file: string, version?: string, token?: string | null): string {
   const query = [version ? `v=${version.slice(0, 12)}` : "", token ? `t=${encodeURIComponent(token)}` : ""].filter(Boolean).join("&");
-  return base + key + ".mp3" + (query ? `?${query}` : "");
+  return base + file + (query ? `?${query}` : "");
 }
 
 export class AudioSystem {
@@ -660,7 +664,8 @@ export class AudioSystem {
       if (request.done) return;
       const cached = file ? undefined : this.recordings.get(this.cacheKey(key));
       // Keep the gesture-unlocked element across every sentence, retry, and offline recording.
-      a.src = file ? this.base + file : cached ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
+      a.src = file ? audioFileUrl(this.base, file, undefined, filesToken())
+        : cached ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
       a.volume = this.volume;
       a.preservesPitch = true;
       a.playbackRate = opts.slow ? 0.82 : 1;

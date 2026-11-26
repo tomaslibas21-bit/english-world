@@ -1,4 +1,4 @@
-import { EDITION } from "../../edition";
+import { loadPcPhraseDeck } from "../../editions/es/content/phrases/deck";
 import { shufflePrompt, type Phrase, type Prompt, type PromptPool } from "./words";
 
 const form = (text: string) => text.normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -28,9 +28,7 @@ export function phrasePrompt(phrase: Phrase, pool: readonly Phrase[], rng: () =>
 }
 
 export async function loadPhrasePool(rng = Math.random): Promise<PromptPool> {
-  const { default: { items } } = await (EDITION.helper === "lt"
-    ? import("../../editions/es/content/phrases/phrase-game.pc-lt.json")
-    : import("../../editions/es/content/phrases/phrase-game.pc-en.json"));
+  const items = await loadPcPhraseDeck();
   const phrases: Phrase[] = items.map((item) => ({ ...item, t: item.t.map(([start, end]) => [start, end]) }));
   return { listen: phrases.flatMap((phrase) => phrasePrompt(phrase, phrases, rng) ?? []), gaps: [] };
 }

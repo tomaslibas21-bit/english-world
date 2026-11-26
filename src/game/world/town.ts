@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
+import { BOARD, makeNoticeboard } from "../noticeboard/prop";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
@@ -57,6 +58,7 @@ export interface Town {
   colliders: Colliders;
   doors: Door[];
   photoSpots: PhotoSpot[];
+  noticeboard?: ReturnType<typeof makeNoticeboard>;
   parkedCars: ParkedCars;
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
@@ -247,6 +249,11 @@ export function buildTown({ movableParking = false, finalParking = false } = {})
   addStreetProps(M, colliders, photo);
   addTrees(group, colliders, r, photo);
   addSquareAndMarket(M, colliders, group, r, photo);
+  const noticeboard = EDITION.id === "es" ? makeNoticeboard() : undefined;
+  if (noticeboard) {
+    group.add(noticeboard.mesh);
+    colliders.addBox(BOARD.x, BOARD.z, BOARD.width, BOARD.depth, "edge");
+  }
   if (EDITION.id === "es") group.add(loteriaTables(colliders));
   // the edition's own additions (theme.ts): none in Maple Harbor
   addTownMx(M, colliders, photo);
@@ -374,7 +381,7 @@ export function buildTown({ movableParking = false, finalParking = false } = {})
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening, portals: [...portals],
+    group, colliders, doors, photoSpots, noticeboard, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       poolWater?.update(t);

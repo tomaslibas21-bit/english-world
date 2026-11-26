@@ -73,6 +73,8 @@ import type { PropFader } from "./fade";
 import { STYLED } from "./style";
 import { TOWN_WEST, townLedgeDynamics } from "./townCollision";
 import { initTownCollision, TOWN_COLLISION_METADATA_OFFSET } from "./townCollisionCache";
+import { DailyBoard } from "./noticeboard/posting";
+import { BOARD } from "./noticeboard/prop";
 import { prepareTownCollision } from "./townCollisionPreparation";
 import { CUT, withCutout } from "./cutout";
 import type { TalkPresentation } from "./talkFraming";
@@ -199,6 +201,7 @@ export class Game implements GameApi {
   scene = new THREE.Scene();
   rig: CameraRig;
   town!: Town;
+  readonly noticeboard = EDITION.id === "es" ? new DailyBoard(phrase => this.town.noticeboard?.paint(phrase)) : undefined;
   zone!: ZoneState;
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
@@ -267,7 +270,7 @@ export class Game implements GameApi {
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
   private placedNametags: PlacedNametag[] = [];
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
+  private nearest: { kind: "noticeboard" | "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -862,8 +865,10 @@ export class Game implements GameApi {
       else this.enterZone("airport", ARRIVAL, true);
     }
     this.phoneWatch.push(useStore.subscribe((state, previous) => {
+      const h = state.hud, before = previous.hud;
+      if (before.panel === "noticeboard" && h.panel !== before.panel) this.noticeboard?.close();
+      if (h.panel === "noticeboard" && state.conv.active) state.setHud({ panel: null });
       if (this.pad?.input) {
-        const h = state.hud, before = previous.hud;
         if (h.panel !== before.panel || !!h.glyph !== !!before.glyph || h.modeScreen !== before.modeScreen ||
             !!h.fade !== !!before.fade || h.phoneCard !== before.phoneCard || h.flight !== before.flight ||
             state.conv.active !== previous.conv.active || state.screen !== previous.screen) this.pad.cancel();
@@ -1549,13 +1554,13 @@ export class Game implements GameApi {
     if (k === " " && (this.rides.riding || this.rides.water?.returning)) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") {
       if (!this.keys.has(" ")) {
-        if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump();
+        if (this.nearest && !this.hop.air && !this.swimming) this.interact(e.repeat); else if (!e.repeat) this.jump();
       }
       e.preventDefault(); return;
     }
     if (k === "e" || k === "enter") {
       const returning = !!this.rides.water?.returning;
-      if (!e.repeat || !this.waterActionHeld) this.interact();
+      if (!e.repeat || !this.waterActionHeld) this.interact(e.repeat);
       this.waterActionHeld ||= returning || !!this.rides.water?.returning;
       e.preventDefault(); return;
     }
@@ -2241,7 +2246,7 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ interaction
 
-  interact() {
+  interact(repeat = false) {
     if (this.rides.water?.returning || this.rides.water?.owns(this.rides.riding)) {
       const st = useStore.getState();
       if (this.rides.riding && !this.session?.active && !st.conv.active && !st.hud.panel
@@ -2269,6 +2274,15 @@ export class Game implements GameApi {
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "noticeboard" && this.noticeboard) {
+      const state = useStore.getState();
+      if (repeat || state.hud.panel || state.conv.active || this.session?.active || this.flight || this.transitioning) return;
+      this.stopAutoWalk();
+      this.resetFootInput();
+      this.placeOnFoot(BOARD.x, BOARD.readZ, Math.PI);
+      this.noticeboard.open();
+      state.setHud({ panel: "noticeboard" });
+    }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -4315,6 +4329,9 @@ export class Game implements GameApi {
     if (this.cenoteTour?.active) { this.saveAtHudTick(); return; }
     const st = useStore.getState();
     const p = this.player.root.position;
+    const boardDistance = this.noticeboard && this.zone.id === "town" && !this.flight && !this.modes.active
+      ? Math.hypot(p.x - BOARD.x, p.z - BOARD.readZ) : Infinity;
+    this.noticeboard?.setNearby(boardDistance < 16);
     // nearest interactable
     let best: Game["nearest"] = null;
     let bd = Infinity;
@@ -4341,6 +4358,10 @@ export class Game implements GameApi {
         else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: L("Užlipti ant prieplaukos") }; }
       }
       if (!this.swimming && !this.hop.air && this.diveK < 0.3) {
+        if (boardDistance < 1.8 && boardDistance < bd && p.z > BOARD.z) {
+          bd = boardDistance;
+          best = { kind: "noticeboard", id: "noticeboard", label: L("Skaityti dienos frazę") };
+        }
         const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd, !!this.zone.interior);
         if (m) {
           bd = m.distance;
@@ -4376,7 +4397,7 @@ export class Game implements GameApi {
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
     this.nearest = best;
     if (changed) {
-      if (best) audio.sfx("tick");
+      if (best && best.kind !== "noticeboard") audio.sfx("tick");
       const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
         : best.kind === "ride" ? (best.label === "parked" ? { label: L(ROAD_UI.drive), kind: "drive" }
@@ -4388,6 +4409,7 @@ export class Game implements GameApi {
         : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
+        : best.kind === "noticeboard" ? { label: best.label, kind: "read" }
         : best.kind === "mode" ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
@@ -4522,6 +4544,8 @@ export class Game implements GameApi {
     this.rides?.disposeWater();
     this.rides?.disposeCrashes();
     this.carVisuals?.dispose();
+    this.noticeboard?.setNearby(false);
+    this.town?.noticeboard?.dispose();
     this.town?.parkedCars.fleet.dispose();
     this.rides?.disposeParkingKeys();
     useStore.getState().setHud({ coach: null });
