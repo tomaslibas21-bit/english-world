@@ -15,6 +15,7 @@ import {
 } from "../src/game/townCollisionTransport";
 import { sandY } from "../src/game/water";
 import { LIGHTHOUSE_ISLAND } from "../src/game/world/island";
+import { LIBRARY_ENABLED } from "../src/content/library";
 import { BUS_STOP } from "../src/game/world/layout";
 import { buildLighthouseIsland } from "../src/game/world/lighthouseIsland";
 import { HARBOR_SURF } from "../src/game/world/surf";
@@ -98,8 +99,14 @@ describe("Maple Harbor collision asset", () => {
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
     // Pin the camera field with the west ridge, the surf school and Slate Cove's headland, ring and maples (mh-cave).
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("ade894ac3ff4ec33d8ca85e35b0cb5b85df42c98a046a4f81181fe0feb77c652");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(LIBRARY_ENABLED
+      ? "429f7f4e22a17ab1fd7a1ebb652fdd954988ce67bf1a14bf3c33dac02d2b2ddd"
+      : "ade894ac3ff4ec33d8ca85e35b0cb5b85df42c98a046a4f81181fe0feb77c652");
     expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
+    if (LIBRARY_ENABLED) {
+      expect(restored.field.solidAt(22, 1.6, 46.8)).toBe(false);
+      expect(restored.ledges.clear(22, 43.4, 22, 48.5, 0)).toBe(true);
+    }
     const { approach, shack } = HARBOR_SURF;
     const ridgeY = sandY(shack.x, shack.z) + shack.ridge;
     expect(restored.field.solidAt(shack.x, ridgeY - 0.05, shack.z)).toBe(true);

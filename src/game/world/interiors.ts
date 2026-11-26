@@ -13,6 +13,8 @@ import { floorMaterial, floorColor } from "./styled";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
 import { rack } from "../billiards/rules";
 import { Ledges } from "../ledges";
+import { LIBRARY_ENABLED } from "../../content/library";
+import { furnishLibrary, mountLibraryCovers, LIBRARY_VIEW, LIBRARY_STOPS } from "./libraryRoom";
 import { Hop } from "../movement";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
@@ -32,6 +34,9 @@ export interface Interior {
   /** optional named spots for scripted moves */
   spots?: Record<string, { x: number; z: number }>;
   warm?: boolean;
+  camera?: import("../camera").InteriorView;
+  /** Attach visit-owned art after the zone transition, and release it on departure. */
+  onEnter?(group: THREE.Group): () => void;
   /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
   update?(t: number, dt: number): void;
   wild?: {
@@ -810,6 +815,13 @@ function poolHall(c: Ctx) {
 }
 
 const B: Record<string, () => Interior> = {
+  ...(LIBRARY_ENABLED && { library: () => {
+    const it = room("library", 12, 10, "#b28c69", "#f6eedc", furnishLibrary, [], { accent: "#a67c56", warm: true });
+    it.onEnter = mountLibraryCovers;
+    it.camera = LIBRARY_VIEW;
+    it.spots = Object.fromEntries(LIBRARY_STOPS.map(({ id, approach }) => [id, approach]));
+    return it;
+  } }),
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: "tina", ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {

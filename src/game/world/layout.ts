@@ -1,6 +1,7 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
 import { QUEST_PEOPLE_SPOTS } from "../../content/townQuests";
 import { ROAD_EDITION } from "../../content/road";
+import { LIBRARY_ENABLED } from "../../content/library";
 import { LOCATIONS } from "../../content/locations";
 import type { CarModelName, CarPlacement } from "./carModels";
 import { SURF } from "../../content/surf";
@@ -66,7 +67,10 @@ export const BUILDINGS: BuildingDef[] = [
   { id: "apartments", loc: "apartments", sign: "Maple Street Apartments", x: -86, z: 55, w: 22, d: 18, h: 16, face: "n", color: "#c9785b", trim: "#f3e9dc", roof: "flat", style: "apartments" },
   { id: "sophie", sign: "", x: -54, z: 53, w: 13, d: 11, h: 7, face: "n", color: "#b8d8d8", trim: "#ffffff", roof: "gable", roofColor: "#5c6b7a", style: "house" },
   { id: "dan", loc: "dans-house", sign: "", x: -30, z: 53, w: 13, d: 11, h: 7, face: "n", color: "#f2d492", trim: "#ffffff", roof: "gable", roofColor: "#8a4b3a", style: "house" },
-  { id: "house3", sign: "", x: 22, z: 54, w: 12, d: 10, h: 7, face: "n", color: "#d7c0e0", trim: "#ffffff", roof: "gable", roofColor: "#4b5563", style: "house" },
+  { id: "house3", x: 22, z: 54, w: 12, d: 10, h: 7, face: "n", roof: "gable", roofColor: "#4b5563",
+    ...(LIBRARY_ENABLED
+      ? { loc: "library", sign: LOCATIONS.library.name, color: "#e8ddc7", trim: "#223b52", style: "civic" as const }
+      : { sign: "", color: "#d7c0e0", trim: "#ffffff", style: "house" as const }) },
   { id: "station", loc: "station", sign: "Union Station", x: 45, z: 57, w: 34, d: 16, h: 10, face: "n", color: "#d8b48a", trim: "#7a2e2e", roof: "gable", roofColor: "#7a2e2e", style: "station" },
   { id: "house4", sign: "", x: 90, z: 54, w: 12, d: 10, h: 7, face: "n", color: "#cfe3c3", trim: "#ffffff", roof: "gable", roofColor: "#6b4f3a", style: "house" },
   { id: "house5", sign: "", x: 108, z: 54, w: 11, d: 10, h: 7, face: "n", color: "#f0c4b4", trim: "#ffffff", roof: "gable", roofColor: "#5c6b7a", style: "house" },

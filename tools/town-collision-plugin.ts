@@ -22,7 +22,9 @@ export function townCollisionAsset(): Plugin {
         bundle: true,
         format: "cjs",
         platform: "node",
-        define: { "import.meta.env": JSON.stringify({ DEV: false, PROD: true, BASE_URL: config.base }) },
+        define: { "import.meta.env": JSON.stringify({ DEV: false, PROD: true, BASE_URL: config.base,
+          VITE_RADIO_FILES: config.env.VITE_RADIO_FILES, VITE_BOOK_REVIEW: config.env.VITE_BOOK_REVIEW,
+          VITE_BOOK_PROFILE: config.env.VITE_BOOK_PROFILE }) },
         metafile: true,
         write: false,
       });

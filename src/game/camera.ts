@@ -13,6 +13,14 @@
 import * as THREE from "three";
 import { angleDiff, smoothstep, springStep } from "./movement";
 
+export interface InteriorView {
+  look: readonly [number, number, number];
+  pitch: number;
+  distance: number;
+  /** Half of the room width to keep visible, including its near furniture. */
+  halfWidth: number;
+}
+
 export type CamMode = "follow" | "interior" | "talk" | "stage";
 /** The lens of a staged shot (the surf lesson, a mini-game's score): taller on an upright phone, the walking lens
  *  elsewhere (`wideFollowFov`, below). */
@@ -73,6 +81,7 @@ export class CameraRig {
   taxiSnapRays = 0;
   private manualT = 0;
   interiorBounds = { w: 16, d: 12 };
+  interiorView?: InteriorView;
   talk: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
@@ -310,7 +319,7 @@ export class CameraRig {
       this.look.set(this.target.x + this.ahead.x, this.target.y + 1.45, this.target.z + this.ahead.z);
       this.curLook.copy(this.look);
       this.blendT = 0;
-    } else if (this.mode === "interior") {
+    } else if (this.mode === "interior" && !this.interiorView) {
       this.curPos.lerp(this.curLook, 0.22);
       this.blendT = 0.9;
     }
@@ -318,6 +327,7 @@ export class CameraRig {
 
   /** Indoors the view stays centred inside the room (never on the dark area beyond the open front). */
   private interiorLook() {
+    if (this.interiorView) return new THREE.Vector3(...this.interiorView.look);
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
     const tx = THREE.MathUtils.clamp(this.target.x, -Math.max(0, halfW), Math.max(0, halfW));
     // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
@@ -336,8 +346,11 @@ export class CameraRig {
   private desiredPos() {
     if (this.mode === "talk" && this.talk) return this.talk.pos;
     if (this.mode === "interior") {
-      const d = Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
-      const pitch = 0.78;
+      const view = this.interiorView;
+      const tangent = Math.tan(degToRad(this.fovFor(this.cam.aspect, 1, false) / 2));
+      const d = view ? Math.max(view.distance, view.halfWidth / (tangent * this.cam.aspect))
+        : Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
+      const pitch = view?.pitch ?? 0.78;
       const L = this.interiorLook();
       return new THREE.Vector3(L.x, L.y + Math.sin(pitch) * d, L.z + Math.cos(pitch) * d);
     }

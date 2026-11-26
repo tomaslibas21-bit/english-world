@@ -6,6 +6,7 @@ import { ROUTE } from "../content/route";
 import * as THREE from "three";
 import townCollisionURL from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
+import { LIBRARY_STOPS, LIBRARY_DISPLAY, LIBRARY_CHAIRS } from "./world/libraryRoom";
 import { buildTown, type Town, type Door } from "./world/town";
 import { CAVE_ZONE, COVE_DOORS, PREFERRED_COVE_DOOR, SLATE_COVE, filterSlateCoveNav, inSlateCove, type CoveDoor } from "./world/slateCovePlan";
 import { SlateCoveArt } from "./world/slateCoveArt";
@@ -217,7 +218,7 @@ export class Game implements GameApi {
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
   private autoTarget: {
-    kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "cave-exit" | "glyph" | "tree";
+    kind: "npc" | "library" | "door" | "exit" | "point" | "cave-entry" | "cave-exit" | "glyph" | "tree";
     id?: string;
     directions?: Destination | null;
     rot?: number;
@@ -253,7 +254,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "library" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -417,6 +418,8 @@ export class Game implements GameApi {
   private field!: OcclusionField;
   private collisionPreparation?: ReturnType<typeof prepareTownCollision>;
   private fader!: PropFader;
+  onLibraryAction?: GameApi["onLibraryAction"];
+  private releaseRoomArt?: () => void;
   onReady?: () => void;
 
   constructor(private container: HTMLElement, tagLayer: HTMLDivElement,
@@ -1137,6 +1140,8 @@ export class Game implements GameApi {
         this.steer.reset();
         audio.stopAmbience();
       }
+      this.releaseRoomArt?.();
+      this.releaseRoomArt = z.interior?.onEnter?.(z.group);
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
@@ -1181,6 +1186,7 @@ export class Game implements GameApi {
         this.restoreCaveScene?.();
         this.restoreCaveScene = undefined;
       }
+      this.rig.interiorView = z.interior?.camera;
       this.rig.mode = this.walkCamera;
       if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
@@ -2134,6 +2140,17 @@ export class Game implements GameApi {
       this.clickMarker(p.x, p.z);
       return;
     }
+    if (this.zone.id === "library") {
+      // Hit the visible surface, so a tap on a raised book or cushion stops in the aisle.
+      const hit = this.raycaster.intersectObjects(this.zone.group.children)[0];
+      if (hit) {
+        const { x, y, z } = hit.point, display = LIBRARY_DISPLAY;
+        const chair = LIBRARY_CHAIRS.findIndex((c) => Math.hypot(c.x - x, c.z - z) < 0.86);
+        const stop = y > 0.14 && (Math.abs(x - display.x) < display.w / 2 && Math.abs(z - display.z) < display.d / 2 + 0.02
+          ? LIBRARY_STOPS[0] : chair >= 0 ? LIBRARY_STOPS[chair + 1] : undefined);
+        if (stop) { this.walkTo(stop.approach.x, stop.approach.z, { kind: "library", id: stop.id }); return; }
+      }
+    }
     // a passer-by?
     if (!this.zone.interior) {
       const wh = this.raycaster.intersectObjects(this.ambient.walkerRoots, true);
@@ -2343,6 +2360,7 @@ export class Game implements GameApi {
       if (n.id !== LIGHTHOUSE_ISLAND?.keeper.says) this.staffSays(+n.id);
       else if (!repeat) this.interactKeeper();
     }
+    else if (n.kind === "library" && !repeat) this.libraryAction(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.wild ? this.leaveCave(n.id) : this.exitInterior();
     else if (n.kind === "cave-entry") void this.openCave(n.id as CoveDoor, undefined, false, true);
@@ -2362,6 +2380,11 @@ export class Game implements GameApi {
     this.afterRide();
     audio.splash(0.6);
     audio.land(this.underfoot(true), 0.6);
+  }
+
+  private libraryAction(id: string) {
+    const stop = LIBRARY_STOPS.find((s) => s.id === id);
+    if (this.zone.id === "library" && stop) this.onLibraryAction?.(stop.action, stop.chairIndex);
   }
 
   private enterDoor(loc: string) {
@@ -4072,6 +4095,7 @@ export class Game implements GameApi {
     this.autoPath = null;
     if (!t) return;
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
+    else if (t.kind === "library" && t.id) this.libraryAction(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
     else if (t.kind === "glyph" && t.id) this.openGlyph(t.id);
     else if (t.kind === "tree") this.talkToTree();
@@ -4335,6 +4359,15 @@ export class Game implements GameApi {
       } else if (this.caveZone) {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
+        if (this.zone.id === "library") {
+          for (const stop of LIBRARY_STOPS) {
+            const d = Math.hypot(stop.approach.x - p.x, stop.approach.z - p.z);
+            if (d < 1.15 && d < bd) {
+              bd = d;
+              best = { kind: "library", id: stop.id, label: stop.label, prompt: { kind: "library", label: stop.label, lt: stop.lt } };
+            }
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
@@ -4440,6 +4473,8 @@ export class Game implements GameApi {
     if (this.disposed) return;
     if (this.session?.sit.location === CAVE_ZONE) this.session.close();
     this.disposed = true;
+    this.releaseRoomArt?.();
+    this.releaseRoomArt = undefined;
     this.pad?.dispose();
     this.watchNametagLayout(null);
     this.firstExteriorDraw?.();
