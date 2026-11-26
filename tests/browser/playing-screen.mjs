@@ -192,7 +192,7 @@ try {
     const phoneLayout = { width, columns: label.startsWith("short") ? 2 : 1, radio: true, course: await toolbar.locator(".course-link").count() > 0 };
     const menu = toolbar.locator(".ride-menu");
     const radio = toolbar.locator(".radio-btn");
-    const phrasebook = englishUi ? "Phrasebook" : "Frazių knygelė";
+    const phrasebook = englishUi ? "Backpack" : "Kuprinė";
     const due = toolbar.locator(`button[title="${phrasebook}"] .due-badge`);
     const firstAction = toolbar.locator(".toolbar-tools button.icon-btn:not(.radio-btn)").first();
     const visibleTools = toolbar.locator(".icon-btn:visible");

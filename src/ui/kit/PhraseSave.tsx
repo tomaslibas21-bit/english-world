@@ -18,7 +18,7 @@ function keepActivation(event: KeyboardEvent) {
   if (event.key === " " || event.key === "Enter") event.stopPropagation();
 }
 
-export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, className, labels = PHRASE_CARD_UI }: PhraseSaveProps) {
+export function PhraseSave({ sentence, situationId, sourceLabel, speakerId, onSaved, popover, className, labels = PHRASE_CARD_UI }: PhraseSaveProps) {
   const key = cardKey(sentence.en);
   const saved = useCards((cards) => cards.keys.has(key));
   const fresh = popover ? PHRASE_CARD_UI.whole : labels.add;
@@ -32,7 +32,7 @@ export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popove
     onClick={(event) => {
       event.stopPropagation();
       const cards = useCards.getState();
-      if (!cards.keys.has(key) && cards.add({ ...sentenceInput(sentence, situationId), sourceLabel })) onSaved?.();
+      if (!cards.keys.has(key) && cards.add({ ...sentenceInput(sentence, situationId), sourceLabel, speakerId })) onSaved?.();
     }}>
     <Icon name={saved ? "check" : "plus"} size={18} strokeWidth={saved ? 2.25 : 1.75} />
     {popover && <bdi>{label}</bdi>}

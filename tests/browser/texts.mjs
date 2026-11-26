@@ -379,10 +379,10 @@ try {
       await checkCardList(page, { learner: helperLang, target: targetLang, cards: saved, press: tap });
       for (const card of saved) assert.deepEqual(await cardsFor(page, card.en), [card], "the exact pair and source survive reload");
       const captions = await page.evaluate(async (ids) => {
-        const { SITUATION_BY_ID } = await import("/src/content/situations/catalog.ts");
-        return Object.fromEntries(ids.map((id) => [id, SITUATION_BY_ID[id].title.lt]));
+        const { sourceName } = await import("/src/ui/notebookData.ts");
+        return Object.fromEntries(ids.map((id) => [id, sourceName(id)]));
       }, [...new Set(saved.map((card) => card.situationId))]);
-      await tap(page.locator(".cards-hero button"));
+      await tap(page.locator(".notebook [data-review]"));
       const review = page.locator(".review");
       const remaining = new Map(saved.map((card) => [card.en, card]));
       for (const _ of saved) {

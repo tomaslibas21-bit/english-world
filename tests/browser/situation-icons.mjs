@@ -169,12 +169,14 @@ try {
       await shot("map", ".map-wrap .sit-card");
 
       await panel("phrasebook");
-      await page.locator('.chapter h3 svg[data-sit-icon="car-taxi-front"]').waitFor();
+      await page.locator(".nb-tabs [role=tab]").nth(1).click();
+      await page.locator('.nb-group svg[data-sit-icon="car-taxi-front"]').waitFor();
+      await page.locator('.nb-group svg[data-sit-icon="cup-soda"]').waitFor();
       await shot("phrasebook");
-      await page.locator('.chapter h3 svg[data-sit-icon="cup-soda"]').waitFor();
-      await page.locator(".chapter").filter({ has: page.locator('h3 svg[data-sit-icon="car-taxi-front"]') }).locator(".pb-acts .add").click();
-      await page.locator(".pb-tabs [role=tab]").nth(1).click();
-      await page.locator(".cards-hero button").click();
+      await page.locator('[data-entry="change"]').click();
+      await page.locator(".nb-reading > button").last().click();
+      await page.locator(".nb-tabs [role=tab]").first().click();
+      await page.locator(".notebook [data-review]").click();
       await page.locator('.rv-sit svg[data-sit-icon="car-taxi-front"]').waitFor();
       await shot("review");
 

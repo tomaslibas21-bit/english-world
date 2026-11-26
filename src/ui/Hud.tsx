@@ -1,4 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useReviewDay } from "./useReviewDay";
+import { BackpackTool } from "./BackpackTool";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { ROAD_UI } from "../content/road";
 import { townRide, usesTownNotes, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
@@ -47,10 +49,10 @@ import "./townPhone.css";
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
-function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
+function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
   const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} data-pad-tool={panel} data-map-tool={panel === "map" || undefined} onClick={(e) => panel === "map" ? openMap(e.currentTarget) : useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
+    <button className="icon-btn" data-pad-tool={panel} data-map-tool={panel === "map" || undefined} onClick={(e) => panel === "map" ? openMap(e.currentTarget) : useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
       <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -60,7 +62,8 @@ function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = tru
 /** How many saved cards are due for review today. */
 export function useDueCards(): number {
   const cards = useCards((c) => c.cards);
-  return dueCards(cards, Date.now()).length;
+  const now = useReviewDay();
+  return useMemo(() => dueCards(cards, now).length, [cards, now]);
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -360,7 +363,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   useLayoutEffect(() => {
     if (!folds) setMenuOpen(false);
     else if (panel || (phone && radioOpen)) {
-      closeMenu();
+      if (panel !== "phrasebook") closeMenu();
       if (panel && radioOpen) radio.setOpen(false);
     }
   }, [folds, phone, panel, radioOpen, closeMenu]);
@@ -373,7 +376,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
     <ToolButton key="map" icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" shortcuts={!surf} />,
     <ToolButton key="journal" icon={phone && !surf ? "clipboard" : "journal"} title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />,
     <ToolButton key="phone" icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} shortcuts={!surf} />,
-    <ToolButton key="phrasebook" icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />,
+    <BackpackTool key="phrasebook" due={due} />,
     <ToolButton key="settings" icon="settings" title={L("Nustatymai (Esc)")} panel="settings" shortcuts={!surf} />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
   ];
@@ -704,7 +707,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
         e.preventDefault();
         const touch = e.changedTouches[0];
         if (touch && e.currentTarget.contains(document.elementFromPoint(touch.clientX, touch.clientY))) game?.interact();
-      } : undefined}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
+      } : undefined}>{(prompt.kind === "bench" || prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* Removing a held free-ride brake during exit or a panel also releases it. */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>

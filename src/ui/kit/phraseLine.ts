@@ -2,7 +2,7 @@ import type { Sentence } from "../../convo/compose";
 import { cardKey } from "../../state/cards";
 import { glossLine } from "../natTip";
 
-export type PhraseSource = { situationId: string; sourceLabel?: string };
+export type PhraseSource = { situationId: string; sourceLabel?: string; speakerId?: string };
 export type PhraseLine = { sentence: Sentence } | { targetText: string; helperText: string; actualSay?: string };
 export type PhraseReviewEntry = PhraseSource & { sentence: Sentence };
 

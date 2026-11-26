@@ -1,7 +1,8 @@
+import { BackpackTool } from "./BackpackTool";
 // The light mode (no 3D town): the situation list is the home screen, and a tap starts the conversation
 // at once. Face-to-face conversations show their illustrated pictures (SceneBackdrop); calls, and
 // conversations without a picture, a calm call screen (CallBackdrop).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
@@ -91,8 +92,12 @@ export function LightPlay() {
 }
 
 function LightHome() {
-  const progress = useStore((s) => s.progress);
   const covered = useStore((s) => s.conv.active || !!s.hud.panel);
+  return <div className="lh" data-pad-scope="home" inert={covered} aria-hidden={covered || undefined}><LightHomeContents /></div>;
+}
+
+const LightHomeContents = memo(function LightHomeContents() {
+  const progress = useStore((s) => s.progress);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
     for (const s of pickerSituations(true)) {
@@ -103,10 +108,9 @@ function LightHome() {
   const isDone = (s: SituationMeta) => sitProgress(progress, s.id).completions > 0;
   const done = SITUATIONS.filter(isDone).length;
   const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
-  const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
+  const open = (panel: "journal" | "settings") => useStore.getState().setHud({ panel });
   const due = useDueCards();
   return (
-    <div className="lh" data-pad-scope="home" inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">{EDITION.brand}</span><span className="lh-town">{EDITION.town === EDITION.brand ? L("Maple Harbor · JAV") : EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
@@ -114,7 +118,7 @@ function LightHome() {
             <button className="lh-tool lh-3d" data-pad-tool="town" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
             <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title={L("Grįžti į kursą")}><Icon name="home" size={24} /><span>{L("Kursas")}</span></a>}
-            <button className="lh-tool" data-pad-tool="phrasebook" onClick={() => open("phrasebook")} title={L("Frazių knygelė")} aria-label={due ? L("Frazių knygelė ({n})", { n: due }) : L("Frazių knygelė")}><Icon name="bookOpen" size={24} /><span>{L("Frazės")}</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
+            <BackpackTool due={due} picture />
             <button className="lh-tool" data-pad-tool="journal" onClick={() => open("journal")} title={L("Užduotys")} aria-label={L("Užduotys")}><Icon name="journal" size={24} /><span>{L("Užduotys")}</span></button>
             <button className="lh-tool" data-pad-tool="settings" onClick={() => open("settings")} title={L("Nustatymai")} aria-label={L("Nustatymai")}><Icon name="settings" size={24} /><span>{L("Nustatymai")}</span></button>
           </nav>
@@ -160,9 +164,8 @@ function LightHome() {
           <span>{L("Vaikščiok po Maple Harbor ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.")}</span>
         </footer>
       </div>
-    </div>
   );
-}
+});
 
 function SitCard({ s }: { s: SituationMeta }) {
   const progress = useStore((st) => st.progress);

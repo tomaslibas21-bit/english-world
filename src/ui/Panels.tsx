@@ -15,7 +15,6 @@ import { PHONE_CALLS } from "../content/phoneCalls";
 import { TEXT_THREADS } from "../content/texts";
 import { TextList, TextThread } from "./TextThread";
 import { NPCS } from "../content/npcs";
-import { coachVoice } from "../content/voices";
 import { AIRPORT_EXIT, OUTDOOR_NPCS } from "../game/world/layout";
 import { CAVE_ZONE, preferredCaveEntry } from "../game/cave/groundsPlan";
 import { drawTownMap, groundBounds, mapPoint, townBounds } from "./worldMap";
@@ -29,10 +28,8 @@ import { isPhone, locIcon, walkToSituation } from "./objective";
 import { SitIcon } from "./SitIcon";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
-import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
-import { MyCards, Glyph } from "./Cards";
-import { PhraseSave } from "./kit/PhraseSave";
-import { showToast, Toasts } from "./Toasts";
+import { Notebook } from "./Notebook";
+import { Toasts } from "./Toasts";
 import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
@@ -81,7 +78,7 @@ export function Panels() {
       {panel === "journal" && <Journal close={close} />}
       {panel === "phone" && <Phone close={close} />}
       {panel === "settings" && <Settings close={close} />}
-      {panel === "phrasebook" && <Phrasebook close={close} />}
+      {panel === "phrasebook" && <Notebook close={close} />}
       {panel === "scenarios" && <Scenarios close={close} />}
       {panel === "help" && <Help close={close} />}
     </div>
@@ -186,7 +183,7 @@ function HowToPlay({ open }: { open?: boolean }) {
         <li>{(keyboardHints ? Lx("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. {mic} (arba tarpo klavišu) gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti {keyboard}.", micKeys) : Lx("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. {mic} gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti {keyboard}.", micKeys))}</li>
         <li>{Lx("Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžiai – {speaker} juos perskaito. „Daugiau frazių“ – dar daugiau būdų tai pasakyti.", { speaker: <InlineIcon name="speaker" label={L("garsiakalbio mygtukas")} /> })}</li>
         <li>{Lx("Viršuje {lt} ir {ipa} įjungia pašnekovo sakinių vertimą ir tarimą, o prie „Tavo eilė“ esantys {translation} ir {ipa} – tavo atsakymų pavyzdžių. {restart} – pradėti iš naujo, {list} – kitos situacijos.", { lt: <b>{L("LT")}</b>, ipa: <b>IPA</b>, translation: <b>{L("Vertimas")}</b>, restart: <InlineIcon name="restart" label={L("Rodyklė ratu")} />, list: <InlineIcon name="list" label={L("Sąrašas")} /> })}</li>
-        <li>{Lx("Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti ({book} → „Mano kortelės“).", { book: <InlineIcon name="bookOpen" label={L("Frazių knygelė")} /> })}</li>
+        <li>{Lx("Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti ({book} → „Išsaugotos kortelės“).", { book: <InlineIcon name="backpack" label={L("Kuprinė")} /> })}</li>
         <li>{Lx("Jei žaidimas tavęs nesupranta – spausk {copy} ir atsiųsk pokalbį mokytojui.", { copy: <b><InlineIcon name="clipboard" /> {L("Kopijuoti")}</b> })}</li>
       </ol>
     </details>
@@ -552,71 +549,6 @@ function Settings({ close }: { close: () => void }) {
             location.reload();
           }}>{L("Ištrinti")}</button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/** The phrasebook's last tab (kept while the game runs). */
-let pbTab: "phrases" | "cards" = "phrases";
-
-function Phrasebook({ close }: { close: () => void }) {
-  const phrases = useStore((s) => s.progress.phrases);
-  const lt = useStore((s) => s.settings.lt);
-  const cardKeys = useCards((c) => c.keys);
-  const cardCount = useCards((c) => c.cards.length);
-  const dueCount = useCards((c) => dueCards(c.cards, Date.now()).length);
-  const [tab, setTabState] = useState(pbTab);
-  const setTab = (t: typeof pbTab) => { pbTab = t; setTabState(t); };
-  const entries = Object.entries(phrases).sort((a, b) => b[1].last - a[1].last);
-  const bySit = new Map<string, typeof entries>();
-  for (const e of entries) { const l = bySit.get(e[1].sitId) ?? []; l.push(e); bySit.set(e[1].sitId, l); }
-  const asCard = (v: (typeof entries)[number][1]): CardInput => ({ en: v.en, lt: v.lt, ipa: ipaFor(v.en), sentence: { en: v.en, lt: v.lt }, situationId: v.sitId });
-  const missing = entries.filter(([, v]) => !cardKeys.has(cardKey(v.en)));
-  const addAll = () => {
-    const n = useCards.getState().addMany(missing.map(([, v]) => asCard(v)));
-    if (n) showToast({ kind: "success", title: L("Į korteles pridėta: {n}", { n }), body: L("Kartok {it} skiltyje „Mano kortelės“.", { it: n === 1 ? L("ją") : L("jas") }) });
-  };
-  return (
-    <div className="sheet narrow">
-      <SheetHead icon="bookOpen" title={L("Frazių knygelė")} close={close} />
-      <div className="pb-tabs" role="tablist" aria-label={L("Frazių knygelė")}>
-        <button role="tab" aria-selected={tab === "phrases"} className={"pb-tab" + (tab === "phrases" ? " on" : "")} onClick={() => setTab("phrases")}>
-          {L("Frazės")} <span className="n">{entries.length}</span>
-        </button>
-        <button role="tab" aria-selected={tab === "cards"} className={"pb-tab" + (tab === "cards" ? " on" : "")} onClick={() => setTab("cards")}>
-          <Glyph name="cards" size={19} /> {L("Mano kortelės")}
-          {dueCount > 0 ? <span className="due" title={L("Šiandien kartoti")} aria-label={L("šiandien kartoti: {n}", { n: dueCount })}>{dueCount}</span> : <span className="n">{cardCount}</span>}
-        </button>
-      </div>
-      <div className="sheet-body">
-        {tab === "cards" ? <MyCards /> : (
-          <>
-            {entries.length === 0 && <div className="info-box">{L("Čia atsiras frazės, kurias sėkmingai pasakysi pokalbiuose. Stenkis kaskart pasakyti kitaip – taip surinksi daugiau žvaigždučių!")}</div>}
-            {entries.length > 0 && (
-              <div className="pb-bar">
-                <p>{L("Frazės, kurias jau pasakei pokalbiuose. Pridėk jas prie kortelių ir kartok.")}</p>
-                {missing.length > 0
-                  ? <button className="btn soft small" onClick={addAll}><Glyph name="plus" size={16} /> {L("Visas į korteles")}</button>
-                  : <span className="all-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Visos kortelėse")}</span>}
-              </div>
-            )}
-            {[...bySit.entries()].map(([sid, list]) => (
-              <div key={sid} className="chapter">
-                <h3><SitIcon id={sid} size="1.15em" />{SITUATION_BY_ID[sid]?.title.lt ?? sid}</h3>
-                {list.map(([k, v]) => (
-                  <div key={k} className="hint-row">
-                    <div className="ex"><div style={{ fontFamily: "var(--en)", fontSize: "1.25em" }}>{v.en}</div>{lt && <div className="nat">{v.lt}</div>}</div>
-                    <div className="pb-acts">
-                      <button className="play" onClick={() => audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, v.en)} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
-                      <PhraseSave className="add" sentence={{ en: v.en, say: v.en, nat: v.lt, units: [] }} situationId={v.sitId} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </>
-        )}
       </div>
     </div>
   );
