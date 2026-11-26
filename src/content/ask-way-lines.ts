@@ -75,6 +75,6 @@ export const ASK_WAY_UI = {
   replay: "Klausyti dar kartą",
   guide: "Nuvesk mane",
   close: "Užverti nurodymus",
-  arrived: "Radote!",
+  arrived: "Radai!",
 } as const;
 

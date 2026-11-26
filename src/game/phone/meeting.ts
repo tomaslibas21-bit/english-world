@@ -126,7 +126,7 @@ export class LizzieMeeting implements GameMode {
     }
     this.exit();
     this.done();
-    st.toast({ kind: "success", title: "Susitikote su Lizzie. Gero koncerto!" });
+    st.toast({ kind: "success", title: "Susitikai su Lizzie. Gero koncerto!" });
   }
 
   update(frame: ModeFrame) {

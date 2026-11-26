@@ -429,7 +429,7 @@ try {
           if (m && moveT > 2) {
             const o = moves.get(t.do) ?? { n: 0, ok: true, replayFits: true, gapMax: 0, clearMin: Infinity, inView: true, over: false };
             const [name, keys] = MOVES[t.do];
-            const instruction = t.do === "steady" ? (phone ? "atleiskite rodykles" : "atleiskite klavišus") : (phone ? "bakstelėkite" : "spauskite");
+            const instruction = t.do === "steady" ? (phone ? "atleisk rodykles" : "atleisk klavišus") : (phone ? "bakstelėk" : "spausk");
             const right = m.text.replace(/[↑←↓→]/g, "").trim() === `${name} – ${instruction}` && keys.join("") === m.keys.join("");
             if (phone) {
               assert.deepEqual(m.asked, keys, `${label}: highlighted arrows for ${t.do}`);

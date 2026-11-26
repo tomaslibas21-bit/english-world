@@ -88,7 +88,7 @@ try {
     check(`${label}: coming near Harbor Surf, the hint about the lesson`, h.coach?.step === "surf", h.coach);
     await page.locator(".coach").waitFor();
     const hint = await page.locator(".coach .coach-text p").innerText();
-    const action = phone ? "bakstelėkite „Banglentė“" : "spauskite E";
+    const action = phone ? "bakstelėk „Banglentė“" : "spausk E";
     assert.equal(hint, `Prie „Harbor Surf“ lentų ${action}. Maren pakvies pagauti bangą ir pokalbio pabaigoje.`);
     await shot("hint");
     await page.locator(".coach-next").click();

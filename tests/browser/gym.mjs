@@ -122,7 +122,7 @@ async function fixtureFor(page, manifests) {
     sceneStart: learner === "lt" ? mh.sceneStart : "Start",
     taskComplete: learner === "lt" ? mh.taskComplete : "Task completed!",
     ui: { ...source.ui, progress: (i) => source.progressPattern.replace("{current}", i).replace("{total}", "10") },
-    speech: learner === "lt" ? { ...mh.speech, miss: "Beveik! Galite bandyti dar" } : {
+    speech: learner === "lt" ? { ...mh.speech, miss: "Beveik! Gali bandyti dar" } : {
       mic: "Say it aloud", micStop: "Stop listening", hit: "Well said! +1", miss: "Almost! You can try again", stat: "Said aloud",
     },
     dialogue: {

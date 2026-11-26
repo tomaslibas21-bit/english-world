@@ -11,8 +11,8 @@ const games = (process.env.SAY_IT_GAMES || "road,sea,billiards,gofish").split(",
 const shots = process.env.SAY_IT_SHOTS;
 if (shots) await mkdir(shots, { recursive: true });
 const words = {
-  mic: "Pasakyti garsiai", hit: "Puikiai pasakyta! +1", miss: "Beveik! Galite bandyti dar",
-  tip: "Pasakykite garsiai – gausite +1", stat: "Pasakyta garsiai",
+  mic: "Pasakyti garsiai", hit: "Puikiai pasakyta! +1", miss: "Beveik! Gali bandyti dar",
+  tip: "Pasakyk garsiai – gausi +1", stat: "Pasakyta garsiai",
 };
 const finished = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
 const progress = {

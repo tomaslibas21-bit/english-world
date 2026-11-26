@@ -83,13 +83,13 @@ it.each([
   attempts[0].options.onUpdate({ status, heard: "" });
   expect(cue.getSnapshot()).toBe(status);
   expect(render()).toContain(message);
-  expect(render()).not.toContain("Beveik! Galite bandyti dar");
+  expect(render()).not.toContain("Beveik! Gali bandyti dar");
   expect(score.points).toBe(0);
   expect(attempts[0].dispose).toHaveBeenCalledOnce();
 
   cue.toggle();
   attempts[1].options.onCommit("banana", []);
-  expect(render()).toContain("Beveik! Galite bandyti dar");
+  expect(render()).toContain("Beveik! Gali bandyti dar");
   score.sayIt.close();
 });
 

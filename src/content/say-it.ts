@@ -5,7 +5,7 @@ export const SAY_IT_UI = {
   mic: "Pasakyti garsiai",
   micStop: "Nebeklausyti",
   hit: "Puikiai pasakyta! +1",
-  miss: "Beveik! Galite bandyti dar",
+  miss: "Beveik! Gali bandyti dar",
   stat: "Pasakyta garsiai",
-  tip: "Pasakykite garsiai – gausite +1",
+  tip: "Pasakyk garsiai – gausi +1",
 } as const;
