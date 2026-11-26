@@ -28,11 +28,11 @@ const token = "karaoke-pc+fixture &";
 const words = lt ? {
   enter: "Dainuoti karaokę", start: "Pradėti dainą", show: "Rodyti reikšmę", hide: "Slėpti reikšmę",
   back: "Grįžti", mode: "Praktikos būdas", repeat: "Išklausyti eilutę dar kartą",
-  next: "Tęsti", leave: "Nulipti nuo scenos",
+  next: "Tęsti", leave: "Nulipti nuo scenos", missing: "Praleistas žodis", reveal: "Parodyti žodį", speed: "Greitis",
 } : {
   enter: "Sing karaoke", start: "Start song", show: "Show meaning", hide: "Hide meaning",
   back: "Go back", mode: "Practice mode", repeat: "Replay line",
-  next: "Continue", leave: "Leave stage",
+  next: "Continue", leave: "Leave stage", missing: "Missing word", reveal: "Reveal word", speed: "Speed",
 };
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
 await mkdir(shots, { recursive: true });
@@ -54,13 +54,21 @@ function install({ token, short }) {
 }
 
 async function serveTrack(route, recording) {
-  const headers = { "content-type": "audio/wav", "accept-ranges": "bytes" };
+  const headers = {
+    "content-type": "audio/wav", "accept-ranges": "bytes", "content-length": String(recording.length),
+  };
   const range = /^bytes=(\d+)-(\d*)$/.exec(route.request().headers().range ?? "");
   if (!range) return route.fulfill({ headers, body: recording });
   const start = Number(range[1]), end = Math.min(range[2] ? Number(range[2]) : recording.length - 1, recording.length - 1);
-  if (start > end) return route.fulfill({ status: 416, headers: { "content-range": `bytes */${recording.length}` } });
-  return route.fulfill({ status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${recording.length}` },
-    body: recording.subarray(start, end + 1) });
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end) {
+    return route.fulfill({ status: 416, headers: {
+      "accept-ranges": "bytes", "content-range": `bytes */${recording.length}`, "content-length": "0",
+    }, body: "" });
+  }
+  // The recording is requested at its indexed MP3 URL. Chromium seeks with Range and needs a partial response.
+  return route.fulfill({ status: 206, headers: {
+    ...headers, "content-range": `bytes ${start}-${end}/${recording.length}`, "content-length": String(end - start + 1),
+  }, body: recording.subarray(start, end + 1) });
 }
 
 const browser = await chromium.launch({
@@ -182,10 +190,62 @@ try {
 
       await press(button(words.back));
       await picker.waitFor();
+      await picker.getByRole("combobox", { name: words.mode }).selectOption("word");
+      await press(button(words.start));
+      await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
+      await pauseAt(7.1);
+      const blank = page.locator('.karaoke-current-line[data-line="0"] .karaoke-blank');
+      await blank.waitFor();
+      assert.equal((await blank.textContent()).trim(), "");
+      assert.equal(await page.locator(".karaoke-natural, .karaoke-next").count(), 0);
+      assert((await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent()).includes(words.missing));
+      const widthBefore = (await blank.boundingBox()).width;
+      await shot("word-blank");
+      await press(button(words.reveal));
+      await blank.waitFor({ state: "detached" });
+      const revealed = page.locator('.karaoke-current-line[data-line="0"] .karaoke-revealed');
+      await revealed.waitFor();
+      assert(Math.abs((await revealed.boundingBox()).width - widthBefore) < 1);
+      assert.equal(await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent(), texts.get("SG01").L[0].src);
+      await until(() => document.activeElement?.classList.contains("karaoke-reading"));
+      await shot("word-revealed");
+      await page.evaluate(async (at) => {
+        const take = window.__ew.radio.store.getState().karaoke;
+        await take.seek(at);
+        await take.resume();
+      }, texts.get("SG01").L[1].s);
+      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-blank').waitFor();
+      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-revealed').waitFor();
+      await page.evaluate(() => window.__ew.radio.store.getState().karaoke.pause());
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
+      await pauseAt(7.1);
+      const speed = page.getByRole("combobox", { name: words.speed, exact: true });
+      const canSlow = await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().canSlow);
+      if (canSlow) {
+        await speed.selectOption("0.8");
+        const clock = await page.evaluate(async () => {
+          const take = window.__ew.radio.store.getState().karaoke;
+          await take.resume();
+          const from = take.position(), wall = performance.now();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const elapsed = (performance.now() - wall) / 1000, media = take.position() - from;
+          take.pause();
+          return { elapsed, media, rate: take.store.getState().rate };
+        });
+        assert.equal(clock.rate, 0.8);
+        assert(Math.abs(clock.media / clock.elapsed - 0.8) < 0.15);
+      } else {
+        assert(await speed.isDisabled());
+        assert.equal(await speed.locator('option[value="0.8"]').count(), 0);
+      }
+      await shot("slow");
+      await press(button(words.back));
+      await picker.waitFor();
       await press(picker.locator("[data-pad-back]"));
       await choose("SV64");
       await press(button(words.start));
       await page.locator(".karaoke-performance").waitFor();
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1);
       const alternate = lt ? "SV64.mp3" : "SV64-en.mp3";
       assert(routes.some((request) => request.path.endsWith("/songs/v1/" + alternate) && request.signed));
       const sv64 = texts.get("SV64").L[0];

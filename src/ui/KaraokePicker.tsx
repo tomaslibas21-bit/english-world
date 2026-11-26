@@ -70,11 +70,12 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
               <span className="karaoke-length">{karaokeDuration(selected.song.d)}</span>
               <fieldset className="karaoke-modes" disabled={waiting}>
                 <legend>{words.mode}</legend>
-                <select data-pad-adjust aria-label={words.mode} aria-describedby="karaoke-echo-note" value={view.mode} onChange={(event) => act("mode", event.target.value)}>
+                <select data-pad-adjust aria-label={words.mode} aria-describedby="karaoke-mode-note" value={view.mode} onChange={(event) => act("mode", event.target.value)}>
                   <option value="along">{words.along}</option>
                   <option value="echo">{words.echo}</option>
+                  <option value="word">{words.word}</option>
                 </select>
-                <small id="karaoke-echo-note">{words.echoHelp}</small>
+                <small id="karaoke-mode-note">{view.mode === "word" ? words.wordHelp : words.echoHelp}</small>
               </fieldset>
               <p className="karaoke-status" role="status">{karaokeStatus(selectedTake)}</p>
             </div>

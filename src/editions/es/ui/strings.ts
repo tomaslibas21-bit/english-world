@@ -4,6 +4,12 @@ import { LOTERIA_UI_EN } from "../content/loteria";
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
   // Karaoke
+  "Atspėti praleistą žodį": "Fill in a word",
+  "Klausykis ir pabandyk atspėti praleistą žodį.": "Think of the missing word as you listen.",
+  "Praleistas žodis": "Missing word",
+  "Parodyti žodį": "Reveal word",
+  "Greitis": "Speed",
+  "Šiame įrenginyje daina groja įprastu greičiu.": "This device plays at normal speed.",
   "Dainuoti karaokę": "Sing karaoke",
   "Pasirinkti dainą": "Choose a song",
   "Dainų rinkinys": "Song collection",

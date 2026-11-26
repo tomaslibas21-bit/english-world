@@ -1,5 +1,5 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { buildTimeline, withSungTranslations, type Timeline } from "./lyrics";
+import { buildTimeline, karaokeReading, withSungTranslations, type Timeline } from "./lyrics";
 import { NeedsTap, type RadioOutput } from "./output";
 import { fetchSongJson, readSongLines, songAudioUrls, type RadioConfig, type SongMeta } from "./songs";
 import { KaraokePractice, type KaraokePracticeMode, type PracticeSnapshot } from "../game/karaoke/practice";
@@ -12,6 +12,8 @@ export interface KaraokeState {
   issue: "audio" | "timing" | null;
   practice?: PracticeSnapshot;
   turnPaused?: boolean;
+  rate?: 1 | 0.8;
+  canSlow?: boolean;
 }
 
 interface SessionDeps {
@@ -46,25 +48,28 @@ export class KaraokeSession {
 
   constructor(private deps: SessionDeps) {
     this.store = createStore<KaraokeState>(() => ({
-      status: "idle", song: null, timeline: null, held: deps.held, issue: null,
+      status: "idle", song: null, timeline: null, held: deps.held, issue: null, rate: 1, canSlow: this.canSlow(),
     }));
   }
 
   private get state() { return this.store.getState(); }
   position() { return this.state.status === "playing" ? this.deps.output.position() : this.at; }
   duration() { return this.length || this.state.song?.d || 0; }
+  private canSlow() { return !!this.deps.output.setPlaybackRate && !!this.deps.output.playbackRate && this.deps.output.canPreservePitch?.() === true; }
+  private resetRate() { try { this.deps.output.setPlaybackRate?.(1); } catch { /* keep the normal-speed path usable */ } }
 
   start(id: string, mode: KaraokePracticeMode = "along") {
     const song = this.deps.song(id);
     if (!song || this.state.status === "closed") return;
     this.cancel();
+    this.resetRate();
     this.at = this.length = this.address = 0;
     this.sampledAt = 0;
     this.practice = undefined;
     this.mode = mode;
     this.endedInTurn = this.reading = false;
     this.wantsPlay = true;
-    this.store.setState({ song, timeline: null, practice: undefined, turnPaused: false, issue: null, status: "paused" });
+    this.store.setState({ song, timeline: null, practice: undefined, turnPaused: false, issue: null, status: "paused", rate: 1, canSlow: this.canSlow() });
     return this.resume();
   }
 
@@ -138,6 +143,29 @@ export class KaraokeSession {
     return this.resume();
   }
 
+  revealWord() {
+    if (!this.state.timeline || this.state.status === "closed" || this.state.status === "ended") return;
+    const row = karaokeReading(this.state.timeline, this.position()).current;
+    this.practice?.reveal(row);
+    this.publishPractice();
+  }
+
+  /** Change the same output in place: media seconds, play intent, holds and an existing quiet turn stay intact. */
+  setRate(rate: number) {
+    if (!this.state.song || ["closed", "ended"].includes(this.state.status) || (rate !== 1 && rate !== 0.8)) return;
+    const capable = this.canSlow();
+    if (rate !== 1 && !capable) return;
+    this.sample();
+    const out = this.deps.output;
+    let actual: 1 | 0.8 = 1;
+    try {
+      out.setPlaybackRate?.(rate);
+      if (capable && out.playbackRate?.() === 0.8) actual = 0.8;
+      else if (out.playbackRate?.() !== 1) out.setPlaybackRate?.(1);
+    } catch { try { out.setPlaybackRate?.(1); } catch { /* normal-speed-only output */ } }
+    this.store.setState({ rate: actual, canSlow: capable && (rate === 1 || actual === rate) });
+  }
+
   /** A compact meaning card borrows silence without overriding a later explicit pause. */
   setReading(reading: boolean) {
     if (this.reading === reading || this.state.status === "closed") return;
@@ -204,10 +232,11 @@ export class KaraokeSession {
     if (this.state.status === "closed") return;
     this.wantsPlay = false;
     this.cancel();
+    this.resetRate();
     this.at = this.length = 0;
     this.practice = undefined;
     this.reading = false;
-    this.store.setState({ status: "closed", song: null, timeline: null, practice: undefined, turnPaused: false, issue: null, held: false });
+    this.store.setState({ status: "closed", song: null, timeline: null, practice: undefined, turnPaused: false, issue: null, held: false, rate: 1 });
     this.deps.close(resumeStreet);
   }
 

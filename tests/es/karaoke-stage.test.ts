@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import { EDITION } from "../../src/edition";
 import { KARAOKE_UI } from "../../src/content/karaokeCopy";
 import { LOCATIONS } from "../../src/content/locations";
-import { KaraokePractice, echoGap } from "../../src/game/karaoke/practice";
+import { KaraokePractice, echoGap, lineGap, wordGap } from "../../src/game/karaoke/practice";
 import { useKaraoke } from "../../src/game/karaoke/store";
 import { buildTimeline, karaokeReading, karaokeWordAt, withSungTranslations } from "../../src/radio/lyrics";
+import { KaraokeSession } from "../../src/radio/karaokeSession";
+import type { RadioOutput } from "../../src/radio/output";
 import { readSongLines } from "../../src/radio/songs";
 import { KaraokePicker } from "../../src/ui/KaraokePicker";
-import { KaraokeLyricLine } from "../../src/ui/KaraokeStage";
+import { KaraokeLyricLine, KaraokeNextLine, KaraokeSpeed, KaraokeStage } from "../../src/ui/KaraokeStage";
 import fixture from "../fixtures/karaoke-pc.json";
 
 const lithuanian = EDITION.helper === "lt";
@@ -31,6 +33,110 @@ describe("Café La Ceiba performance", () => {
     expect(html).toContain(lithuanian ? "Pradėti dainą" : "Start song");
     expect(KARAOKE_UI.enter).toBe(lithuanian ? "Dainuoti karaokę" : "Sing karaoke");
     expect(KARAOKE_UI.lyrics).toBe(lithuanian ? "Dainos tekstas" : "Lyrics");
+  });
+
+  it("offers word mode and formats speed in the active learner layer", () => {
+    const html = renderToStaticMarkup(createElement(KaraokePicker, {
+      view: { ...useKaraoke.getState(), phase: "picker", detail: "SG01", mode: "word" },
+      entries: [{ song: course.songs.SG01.meta, thumbnail: null, jacket: null }], favorites: [], act() {},
+    }));
+    expect(html).toContain('value="word" selected=""');
+    expect(html).toContain(lithuanian ? "Atspėti praleistą žodį" : "Fill in a word");
+    expect(html).toContain(lithuanian ? "Klausykis ir pabandyk atspėti praleistą žodį." : "Think of the missing word as you listen.");
+    const speed = renderToStaticMarkup(createElement(KaraokeSpeed, {
+      take: { status: "paused", song: null, timeline: null, held: false, issue: null, rate: 0.8, canSlow: true }, act() {},
+    }));
+    expect(speed).toContain(lithuanian ? 'aria-label="Greitis"' : 'aria-label="Speed"');
+    expect(speed).toContain(lithuanian ? "0,8×" : "0.8×");
+  });
+
+  it("masks a Spanish word from each course and restores that layer's gloss after reveal", async () => {
+    let at = 0;
+    const output: RadioOutput = {
+      play: async (_url, offset) => { at = offset; return true; },
+      pause() {}, position: () => at, duration: () => course.songs.SG01.meta.d,
+      setVolume() {}, unlock() {}, onEnded: null, onStopped: null,
+    };
+    const session = new KaraokeSession({
+      config: { index: "/songs/index.json", files: null, recordings: null },
+      output, song: () => course.songs.SG01.meta, token: () => null,
+      fetchJson: async () => ({ L: [course.songs.SG01.first] }), level: () => 1,
+      held: false, resumeDelay: 0, close() {},
+    });
+    await session.start("SG01", "word");
+    const state = () => session.store.getState();
+    const line = state().timeline!.lines[0], gap = wordGap(line)!;
+    expect(line.wt[gap.word]).toBe(gap.prefix + gap.answer + gap.suffix);
+    expect(wordGap(structuredClone(line))).toEqual(gap);
+    at = line.s + 0.1;
+    session.tick();
+    const render = () => renderToStaticMarkup(createElement(KaraokeStage, { take: state(), session }));
+    const hidden = render();
+    expect(hidden).toContain('class="karaoke-accessible" lang="es-MX"');
+    expect(hidden).toContain(lithuanian ? "Praleistas žodis" : "Missing word");
+    expect(hidden).not.toContain(gap.answer);
+    expect(hidden).not.toContain(line.lt);
+    expect(hidden).not.toContain("karaoke-natural");
+    session.revealWord();
+    expect(render()).toContain(gap.answer);
+    expect(state().practice?.completed).toBe(0);
+    const revealed = renderToStaticMarkup(createElement(KaraokeLyricLine, {
+      line, word: -1, meaning: true, gap: lineGap(line, 0, state().practice, at),
+    }));
+    expect(revealed).toContain(`class="karaoke-natural" lang="${EDITION.helper}"`);
+    expect(revealed).toContain(line.u[gap.unit][1]);
+    expect(revealed).toContain(line.lt);
+    await session.replayLine();
+    expect(render()).not.toContain(gap.answer);
+    at = line.e;
+    session.tick();
+    expect(state().practice).toMatchObject({ completed: 1, total: 1, revealed: [0] });
+    expect(render()).not.toContain("karaoke-blank");
+    expect(render()).toContain(gap.answer);
+    session.close();
+  });
+
+  it.each(["señor!", "canción."])("preserves Spanish letters and punctuation around the blank for %s", (word) => {
+    const [line] = readSongLines({ L: [{
+      s: 1, e: 4, src: "¡Qué bien, " + word, lt: lithuanian ? "Vertimas." : "Translation.",
+      wt: ["¡Qué", "bien,", word], w: [[1, 2], [2, 3], [3, 4]],
+      u: [["¡Qué bien,", lithuanian ? "Kaip gerai," : "How nice,", 2], [word, lithuanian ? "reikšmė" : "meaning", 1]],
+    }] }, true);
+    const gap = wordGap(line)!;
+    expect(gap).toMatchObject({ word: 2, answer: word.slice(0, -1), suffix: word.at(-1) });
+    const hidden = renderToStaticMarkup(createElement(KaraokeLyricLine, {
+      line, word: 2, meaning: true, gap: { gap, hidden: true },
+    }));
+    expect(hidden).toContain('lang="es-MX"');
+    expect(hidden).not.toContain(gap.answer);
+    expect(hidden).not.toContain(line.lt);
+    expect(hidden).toContain(gap.suffix);
+  });
+
+  it.skipIf(lithuanian)("hides SB helper previews until sung and masks only the Spanish target", () => {
+    const lines = withSungTranslations(readSongLines({ L: [fixture.sme.songs.SB01.first] }, true));
+    const take = {
+      status: "paused" as const, song: fixture.sme.songs.SB01.meta, timeline: buildTimeline(lines),
+      held: false, issue: null, practice: new KaraokePractice(lines, "word").snapshot(),
+    };
+    const preview = (row: number) => renderToStaticMarkup(createElement(KaraokeNextLine, { take, row, seconds: 0 }));
+    expect(preview(0)).toBe("");
+    const gap = wordGap(lines[1])!;
+    expect(preview(1)).not.toContain(gap.answer);
+    expect(preview(1)).toContain("Missing word");
+    expect(preview(1)).toContain('lang="es-MX"');
+    expect(wordGap(lines[0])).toBeNull();
+    const sung = renderToStaticMarkup(createElement(KaraokeStage, {
+      take, session: { position: () => 5.29 } as KaraokeSession,
+    }));
+    expect(sung).toContain('lang="en">Hello, how are you?');
+    expect(sung).not.toContain("karaoke-blank");
+    const target = renderToStaticMarkup(createElement(KaraokeStage, {
+      take, session: { position: () => 8.09 } as KaraokeSession,
+    }));
+    expect(target).toContain("karaoke-blank");
+    expect(target).not.toContain(gap.answer);
+    expect(target).not.toContain("Hello, how are you?");
   });
 
   it("preserves accents, ñ and punctuation while keeping glosses and natural text hidden until revealed", () => {

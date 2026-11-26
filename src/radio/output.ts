@@ -20,6 +20,8 @@ export interface RadioOutput {
   duration?(): number;
   playbackRate?(): number;
   setPlaybackRate?(rate: number): void;
+  /** Read-back-verified pitch preservation. Absence means that the booth offers normal speed only. */
+  canPreservePitch?(): boolean;
   /** Release the borrowed recording and any prefetched bytes. */
   clear?(): void;
   /** 0–1, at once or over `ms`. */
@@ -136,8 +138,15 @@ export class HtmlOutput implements RadioOutput {
   position() { return this.el && this.el.src !== SILENCE ? this.el.currentTime || 0 : 0; }
   duration() { return this.el && Number.isFinite(this.el.duration) ? this.el.duration : 0; }
   playbackRate() { return this.el?.playbackRate ?? 1; }
+  canPreservePitch() {
+    const el = this.media();
+    if (!("preservesPitch" in el)) return false;
+    try { el.preservesPitch = true; return el.preservesPitch === true; }
+    catch { return false; }
+  }
   setPlaybackRate(rate: number) {
     const el = this.media();
+    this.canPreservePitch();
     el.defaultPlaybackRate = rate;
     el.playbackRate = rate;
   }
@@ -172,6 +181,7 @@ type Decoder = BaseAudioContext & { decodeAudioData(data: ArrayBuffer, ok?: (b: 
 const DECODE_RATE = 32000;
 
 export class BufferOutput implements RadioOutput {
+  canPreservePitch() { return false; }
   onEnded: (() => void) | null = null;
   onStopped: ((reason: "error" | "interrupted") => void) | null = null;
   private buffer: AudioBuffer | null = null;
