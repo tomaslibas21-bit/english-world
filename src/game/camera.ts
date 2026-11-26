@@ -19,6 +19,8 @@ export interface InteriorView {
   distance: number;
   /** Half of the room width to keep visible, including its near furniture. */
   halfWidth: number;
+  /** A closer upright view can follow the reader across a wide room. Other rooms keep their authored framing. */
+  portrait?: { halfWidth: number; trackX: number };
 }
 
 export type CamMode = "follow" | "interior" | "talk" | "stage";
@@ -327,7 +329,11 @@ export class CameraRig {
 
   /** Indoors the view stays centred inside the room (never on the dark area beyond the open front). */
   private interiorLook() {
-    if (this.interiorView) return new THREE.Vector3(...this.interiorView.look);
+    if (this.interiorView) {
+      const view = this.interiorView, look = new THREE.Vector3(...view.look);
+      if (this.cam.aspect < 0.87 && view.portrait) look.x = THREE.MathUtils.clamp(this.target.x, -view.portrait.trackX, view.portrait.trackX);
+      return look;
+    }
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
     const tx = THREE.MathUtils.clamp(this.target.x, -Math.max(0, halfW), Math.max(0, halfW));
     // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
@@ -348,7 +354,8 @@ export class CameraRig {
     if (this.mode === "interior") {
       const view = this.interiorView;
       const tangent = Math.tan(degToRad(this.fovFor(this.cam.aspect, 1, false) / 2));
-      const d = view ? Math.max(view.distance, view.halfWidth / (tangent * this.cam.aspect))
+      const halfWidth = this.cam.aspect < 0.87 ? view?.portrait?.halfWidth ?? view?.halfWidth : view?.halfWidth;
+      const d = view ? Math.max(view.distance, (halfWidth ?? view.halfWidth) / (tangent * this.cam.aspect))
         : Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
       const pitch = view?.pitch ?? 0.78;
       const L = this.interiorLook();

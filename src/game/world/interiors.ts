@@ -158,7 +158,11 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   const gap = 2.4;
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, -(w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, (w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
-  M.add("front-top", base, boxGeo(w + 0.6, 0.12, 0.4, 0, 0.95, d / 2 + 0.15), false);
+  if (id === "library") {
+    const capWidth = (w + 0.6 - gap) / 2;
+    for (const side of [-1, 1]) M.add("front-top", base,
+      boxGeo(capWidth, 0.12, 0.4, side * (gap / 2 + capWidth / 2), 0.95, d / 2 + 0.15), false);
+  } else M.add("front-top", base, boxGeo(w + 0.6, 0.12, 0.4, 0, 0.95, d / 2 + 0.15), false);
   col.addBox(0, -d / 2 - 0.3, w + 2, 0.6, "edge");
   col.addBox(-w / 2 - 0.3, 0, 0.6, d + 2, "edge");
   col.addBox(w / 2 + 0.3, 0, 0.6, d + 2, "edge");

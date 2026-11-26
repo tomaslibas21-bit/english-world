@@ -7,6 +7,7 @@ import { colourMerge, type Colliders } from "./util";
 
 export const LIBRARY_VIEW = {
   look: [0.2, 1.2, 0.15] as const, pitch: 0.74, distance: 15.2, halfWidth: 7.1,
+  portrait: { halfWidth: 4.7, trackX: 1.8 },
 };
 
 export type LibraryAction = "browse" | "sit";

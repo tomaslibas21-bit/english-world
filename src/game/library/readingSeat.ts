@@ -144,7 +144,7 @@ export class ReadingSeat implements GameMode {
     const camera = { mode: rig.mode, stage: rig.stage, zoom: rig.cam.zoom, fov: rig.cam.fov,
       view: rig.cam.view ? { ...rig.cam.view } : null, yaw: rig.yaw, pitch: rig.pitch, dist: rig.dist };
     this.host.prepare();
-    this.host.place(c.x, c.z, c.rot);
+    this.host.place(c.x + 0.25 * Math.sin(c.rot), c.z + 0.25 * Math.cos(c.rot), c.rot);
     player.seatY = c.seatY;
     player.busy = player.watch = null;
     player.steady = player.attentive = true;

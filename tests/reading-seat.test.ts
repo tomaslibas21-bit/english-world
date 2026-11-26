@@ -72,7 +72,10 @@ it.each([0, 1])("walks to chair %i before posing and opening the reader exactly 
   expect(f.player.anim).not.toBe("sit");
   expect(f.host.reader).not.toHaveBeenCalled();
   expect(f.arrive(index)).toBe(true);
-  expect(f.player.root.position.toArray()).toEqual([chair.x, 0, chair.z]);
+  const dx = f.player.root.position.x - chair.x, dz = f.player.root.position.z - chair.z;
+  expect(dx * Math.sin(chair.rot) + dz * Math.cos(chair.rot)).toBeCloseTo(0.25);
+  expect(dx * Math.cos(chair.rot) - dz * Math.sin(chair.rot)).toBeCloseTo(0);
+  expect(f.player.root.position.y).toBe(0);
   expect(f.player.root.rotation.y).toBe(chair.rot);
   expect(f.player.seatY).toBe(chair.seatY);
   expect(f.player.anim).toBe("sit");
@@ -310,7 +313,9 @@ it("keeps the seated pose on the exact walking-arrival frame before walking coll
   game["autoTarget"] = { kind: "library-seat", id: "0" };
   game["updatePlayer"](1 / 60, false);
   expect(f.player.anim).toBe("sit");
-  expect(f.player.root.position.toArray()).toEqual([c.x, 0, c.z]);
+  expect(f.player.root.position.x).toBeCloseTo(c.x + 0.25 * Math.sin(c.rot));
+  expect(f.player.root.position.y).toBe(0);
+  expect(f.player.root.position.z).toBeCloseTo(c.z + 0.25 * Math.cos(c.rot));
   expect(f.player.root.getObjectByName("library-headphones")).toBeDefined();
 });
 

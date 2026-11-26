@@ -1,6 +1,7 @@
 import { Group, Mesh, Light, Vector3, type MeshBasicMaterial, type MeshLambertMaterial, type BufferGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { hasLibraryShelf } from "../src/content/library";
+import { useStore } from "../src/state/store";
+import { LIBRARY_COPY, hasLibraryShelf } from "../src/content/library";
 import { LOCATIONS } from "../src/content/locations";
 import { iconForEmoji } from "../src/ui/icons";
 import { Game } from "../src/game/Game";
@@ -16,7 +17,7 @@ import { BUILDINGS, ROADS, WORLD } from "../src/game/world/layout";
 import { SLATE_COVE, filterSlateCoveNav } from "../src/game/world/slateCovePlan";
 import { buildTown } from "../src/game/world/town";
 import { getInterior } from "../src/game/world/interiors";
-import { LIBRARY_CHAIRS, LIBRARY_STOPS } from "../src/game/world/libraryRoom";
+import { LIBRARY_CHAIRS, LIBRARY_STOPS, LIBRARY_VIEW } from "../src/game/world/libraryRoom";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 
 vi.mock("../src/content/library", async (original) => ({
@@ -152,9 +153,9 @@ it("keeps the center aisle, exit and all three approaches free at avatar width",
 });
 
 
-it("shows the shelves, jackets and both reading lamps in the doorway composition at every review size", () => {
+it("keeps the complete reading room composition on landscape phones and computers", () => {
   const room = getInterior("library")!;
-  for (const [width, height] of [[390, 844], [844, 390], [1280, 800]]) {
+  for (const [width, height] of [[844, 390], [1280, 800]]) {
     const rig = new CameraRig(width / height);
     rig.mode = "interior"; rig.interiorBounds = { w: room.w, d: room.d }; rig.interiorView = room.camera;
     rig.target.set(room.spawn.x, 0, room.spawn.z);
@@ -172,6 +173,100 @@ it("shows the shelves, jackets and both reading lamps in the doorway composition
       }
     }
   }
+});
+
+it("uses a closer 4.7 m portrait half-width and follows the reader across the room within ±1.8 m", () => {
+  const room = getInterior("library")!, rig = new CameraRig(390 / 844);
+  rig.mode = "interior"; rig.interiorView = room.camera;
+  rig.cam.fov = rig.fovFor(390, 844, false); rig.cam.updateProjectionMatrix();
+  const points = [
+    { x: 0, z: room.spawn.z, features: [[-4.51, 1.8, -4.15], [2.7, 1.8, -1.6]] },
+    { x: LIBRARY_STOPS[0].approach.x, z: LIBRARY_STOPS[0].approach.z, features: [[-4.51, 1.8, -4.15], [-1.21, 1.8, -4.15]] },
+    { ...LIBRARY_CHAIRS[1].approach, features: [[4.1, 1.3, 1.1], [4.72, 1.9, 2.33]] },
+  ];
+  for (const { x, z, features } of points) {
+    rig.target.set(x, 0, z); rig.snap(); rig.applyPose(); rig.cam.updateMatrixWorld(true);
+    expect(rig.presentedLook.x).toBeCloseTo(Math.max(-1.8, Math.min(1.8, x)));
+    const distance = rig.cam.position.distanceTo(rig.presentedLook);
+    const tangent = Math.tan(rig.cam.fov * Math.PI / 360);
+    expect(distance).toBeCloseTo(Math.max(LIBRARY_VIEW.distance, 4.7 / (tangent * rig.cam.aspect)));
+    for (const feature of features) {
+      const projected = new Vector3(feature[0], feature[1], feature[2]).project(rig.cam);
+      expect(Math.abs(projected.x)).toBeLessThan(0.98);
+      expect(Math.abs(projected.y)).toBeLessThan(0.98);
+      expect(Math.abs(projected.z)).toBeLessThan(1);
+    }
+  }
+  for (const x of [-8, 8]) {
+    rig.target.x = x; rig.snap();
+    expect(rig.presentedLook.x).toBeCloseTo(Math.sign(x) * 1.8);
+  }
+  // Rotating back to landscape restores the authored wide view without X tracking.
+  rig.cam.aspect = 844 / 390; rig.cam.fov = rig.fovFor(844, 390, false); rig.cam.updateProjectionMatrix(); rig.snap(); rig.applyPose();
+  expect(rig.presentedLook.toArray()).toEqual([...LIBRARY_VIEW.look]);
+  expect(rig.cam.position.distanceTo(rig.presentedLook)).toBeCloseTo(LIBRARY_VIEW.distance);
+});
+
+it("leaves the library's 2.4 m entrance visibly open between both front-top caps", () => {
+  const room = getInterior("library")!;
+  let topTriangles = 0;
+  room.group.traverse((mesh) => {
+    if (!(mesh instanceof Mesh)) return;
+    const g = mesh.geometry, p = g.attributes.position, count = g.index?.count ?? p.count;
+    for (let i = 0; i < count; i += 3) {
+      const triangle = [0, 1, 2].map((k) => new Vector3().fromBufferAttribute(p, g.index?.getX(i + k) ?? i + k));
+      if (!triangle.every((v) => v.y > 0.88 && v.y < 1.02 && v.z > 4.94 && v.z < 5.36)) continue;
+      topTriangles++;
+      const xs = triangle.map((v) => v.x);
+      expect(Math.max(...xs) <= -1.2 + 1e-5 || Math.min(...xs) >= 1.2 - 1e-5).toBe(true);
+    }
+  });
+  expect(topTriangles).toBeGreaterThanOrEqual(24);
+  for (const x of [-0.8, 0, 0.8]) expect(room.colliders.blocked(x, 4.5, 0.38)).toBe(false);
+});
+
+it("adds the navy divided fanlight above the civic fascia in the existing town detail batch", () => {
+  const town = buildTown(), points: Vector3[] = [];
+  town.group.traverse((mesh) => {
+    if (!(mesh instanceof Mesh) || !mesh.geometry.attributes.color) return;
+    const p = mesh.geometry.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const v = new Vector3().fromBufferAttribute(p, i);
+      if (Math.abs(v.x - 22) < 1.401 && v.y > 4.149 && v.y < 5.651 && v.z > 48.6 && v.z < 48.99) points.push(v);
+    }
+  });
+  expect(points.length).toBeGreaterThan(100);
+  expect(Math.min(...points.map((p) => p.x))).toBeCloseTo(22 - 1.4);
+  expect(Math.max(...points.map((p) => p.x))).toBeCloseTo(22 + 1.4);
+  expect(Math.min(...points.map((p) => p.y))).toBeCloseTo(4.9 - 0.75);
+  expect(Math.max(...points.map((p) => p.y))).toBeCloseTo(4.9 + 0.75);
+  expect(points.filter((p) => p.y > 5.55).every((p) => Math.abs(p.x - 22) < 1)).toBe(true);
+});
+
+it("offers the library's Lithuanian door actions through their typed prompts", () => {
+  const before = useStore.getState().hud;
+  const room = getInterior("library")!, root = new Group(); root.position.set(0, 0, 3.4);
+  const door = { loc: "library", outX: 22, outZ: 46.8, name: LOCATIONS.library.name };
+  const game: Game = Object.assign(Object.create(Game.prototype), {
+    zone: { id: "library", interior: room }, player: { root }, npcs: [], staff: [], hop: new Hop(),
+    rides: { riding: null, near: () => null }, modes: { active: null, prompt: () => null },
+    town: { doors: [door] }, coveArt: { ready: false }, caveGuide: { questTarget: () => null },
+    objectiveTarget: () => null, routeVisualTarget: () => null, heading: 0, saveT: 5,
+  });
+  vi.spyOn(audio, "sfx").mockImplementation(() => {});
+  try {
+    useStore.getState().setHud({ objective: null, glyph: null, prompt: null });
+    game["updateHud"]();
+    expect(useStore.getState().hud.prompt).toEqual({ kind: "library-exit", ...LIBRARY_COPY.exit });
+    game["zone"] = { id: "town" } as Game["zone"];
+    root.position.set(22, 0, 46.8);
+    game["updateHud"]();
+    expect(useStore.getState().hud.prompt).toEqual({ kind: "library-enter", ...LIBRARY_COPY.enter });
+    // Another building keeps its ordinary enter prompt.
+    door.loc = "bank"; door.name = "Bank";
+    game["updateHud"]();
+    expect(useStore.getState().hud.prompt?.kind).toBe("enter");
+  } finally { useStore.setState({ hud: before }); }
 });
 
 const ids = ["BOOK-CANT", "BOOK-NOTE", "BOOK-OZ", "BOOK-JEKYLL"];

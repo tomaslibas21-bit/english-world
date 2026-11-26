@@ -1413,3 +1413,26 @@ body.scene-on .tag-layer { display: none; }
 .hud.has-touch .prompt.touch.library-prompt .prompt-text { min-width: 0; align-items: center; text-align: center; white-space: normal; overflow-wrap: anywhere; }
 .jump-btn.beside.library-prompt-beside { right: calc(152px + env(safe-area-inset-right)); }
 .hud.has-touch .prompt.touch.library-prompt .prompt-text small { font-size: calc(14px * var(--scale)); }
+
+/* Quiet library chrome keeps the room, its jackets and the seated reader in view. */
+.hud .objective-card.collapsed.library-task { width: 44px; min-width: 44px; height: 44px; }
+.hud .objective-card.library-task .objective-summary {
+  width: 44px; height: 44px; min-height: 44px; padding: 0; margin: 0;
+  display: grid; grid-template-columns: 1fr; grid-template-areas: none; place-items: center; gap: 0;
+}
+.hud .objective-card.library-task .objective-summary > svg { grid-area: auto; }
+.hud .objective-card.library-task .objective-ico { padding: 0; }
+.minimap.library-arrival .mm-card {
+  box-sizing: border-box; width: min(246px, calc(100vw - 76px)); max-width: none; padding: 10px 12px;
+  grid-template-columns: minmax(0, 1fr); grid-template-areas: "name" "sub"; gap: 4px; text-align: left;
+}
+.minimap.library-arrival .mm-card :is(.mm-ico, .mm-go) { display: none; }
+.minimap.library-arrival .mm-card b { justify-self: start; max-width: 100%; font-size: calc(16px * var(--scale)); line-height: 1.2; }
+.mm-arrival-sub { grid-area: sub; font-size: calc(13px * var(--scale)); line-height: 1.2; color: var(--ink-soft); overflow-wrap: anywhere; text-wrap: balance; }
+.hud.has-touch .prompt.touch.library-door-prompt {
+  right: calc(16px + env(safe-area-inset-right)); bottom: calc(26px + env(safe-area-inset-bottom));
+  box-sizing: border-box; width: 144px; max-width: 144px; min-height: 52px;
+  padding: 8px 10px; justify-content: center; line-height: 1.2;
+}
+.hud.has-touch .prompt.touch.library-door-prompt .prompt-text { min-width: 0; white-space: normal; text-align: center; }
+.jump-btn.beside.library-door-prompt-beside { right: calc(168px + env(safe-area-inset-right)); }

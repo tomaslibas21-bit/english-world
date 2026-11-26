@@ -943,6 +943,25 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       detail(boxGeo(0.028, 0.33, 0.022, side * 0.24, 1.646, 0.125), "#e0bf7a");
     }
     detail(boxGeo(0.029, 0.33, 0.022, 0, 1.6, 0.125), "#e0bf7a");
+    // A 2.8 × 1.5 m divided fanlight, centred at 4.9 m. It shares the town's vertex-colour detail batch.
+    // Its painted glass and slender cream muntins echo the reading room's back-wall sashes.
+    detail(boxGeo(2.8, 0.9, 0.09, 0, 4.6, 0.09), "#223b52");
+    detail(new THREE.CircleGeometry(1, 20, 0, Math.PI).scale(1.4, 0.6, 1).translate(0, 5.05, 0.14), "#223b52");
+    detail(new THREE.CircleGeometry(1, 20, 0, Math.PI).scale(1.29, 0.49, 1).translate(0, 5.05, 0.151), "#c2d5cc");
+    for (const side of [-1, 1]) {
+      detail(boxGeo(1.22, 0.73, 0.018, side * 0.665, 4.6, 0.145), "#c2d5cc");
+      detail(boxGeo(1.22, 0.2, 0.012, side * 0.665, 4.335, 0.16), "#95b2ad");
+      detail(boxGeo(1.22, 0.035, 0.028, side * 0.665, 4.62, 0.172), "#ebdec5");
+      detail(boxGeo(0.035, 0.73, 0.028, side * 0.665, 4.6, 0.172), "#ebdec5");
+    }
+    for (const angle of [Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4]) {
+      const x = 1.29 * Math.cos(angle), y = 0.49 * Math.sin(angle);
+      detail(boxGeo(0.035, Math.hypot(x, y), 0.025, 0, 0, 0).rotateZ(-Math.atan2(x, y))
+        .translate(x / 2, 5.05 + y / 2, 0.175), "#ebdec5");
+    }
+    detail(boxGeo(0.065, 0.9, 0.065, 0, 4.6, 0.15), "#223b52");
+    detail(boxGeo(2.8, 0.065, 0.09, 0, 5.05, 0.16), "#223b52");
+    detail(boxGeo(2.8, 0.09, 0.18, 0, 4.195, 0.15), "#bc9757");
   }
   if (b.loc) {
     const out = 2.2;

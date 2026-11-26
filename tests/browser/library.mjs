@@ -13,6 +13,7 @@ const artRoot = process.env.WORLD_LIBRARY_ART_ROOT || join(homedir(), "fluent-st
 const index = await readFile(resolve(artRoot, "../../knygos/index.json"));
 const sizes = [[390, 844], [844, 390], [1280, 800]];
 const repeats = 10;
+const chairs = [{ x: 2.7, z: -1.6, rot: -0.82 }, { x: 4.1, z: 1.1, rot: -1.95 }];
 const progress = {
   version: 1,
   profile: { name: "Test", surname: "Tester", gender: "f", lookId: "f1",
@@ -158,6 +159,24 @@ try {
         await settle();
         const { townGeometryNames, ...reading } = await sample();
         try {
+          if (["street", "doorstep", "display", "chair", "seated", "stood-up", "exit"].includes(state)) {
+            const task = page.locator(".objective-card.collapsed.library-task .objective-summary");
+            assert.equal(await task.count(), 1, "The library folds the unrelated task to one icon");
+            assert((await task.getAttribute("aria-label"))?.length > 0, "The icon retains the accessible task name");
+            assert.equal(await task.getAttribute("aria-expanded"), "false");
+            const box = await task.boundingBox();
+            assert(box && Math.abs(box.width - 44) < 0.5 && Math.abs(box.height - 44) < 0.5, "A 44 px task button");
+            assert.equal(await task.locator(".objective-title, .objective-meta").count(), 0);
+          }
+          if (phone && ["street", "doorstep", "exit"].includes(state)) {
+            const doorPrompt = page.locator(".prompt.touch.library-door-prompt");
+            assert.equal(await doorPrompt.count(), 1, "One library door action in the lower-right slot");
+            assert.equal(await doorPrompt.getAttribute("lang"), "lt");
+            assert.equal(await doorPrompt.locator(".prompt-text").innerText(), state === "doorstep" ? "Išeiti į lauką" : "Įeiti į biblioteką");
+            assert.equal(await page.locator(".act-btn").count(), 0, "No duplicate door button");
+            const box = await doorPrompt.boundingBox();
+            assert(box && box.width <= 144.5 && box.height >= 52, "The library door action fits its touch slot");
+          }
           if (["doorstep", "display", "chair", "stood-up"].includes(state)) {
             assert(reading.calls <= 50, `${label} ${state} draw calls ${reading.calls}`);
             assert.equal(await page.locator(".objective-card.collapsed").count(), 1, "The unrelated task starts folded");
@@ -168,6 +187,11 @@ try {
                 && g.guidance.ring.scale.x === 0.72 && g.guidance.ring.material.opacity === 0.4
                 && (!g.rig.cam.view || g.rig.cam.view.offsetY === 0);
             }), "The library has a floor exit ring and a vertically centered view");
+            if (width === 390) assert(await page.evaluate(() => {
+              const g = window.__ew.game, x = g.player.root.position.x;
+              return g.rig.interiorView.portrait.halfWidth === 4.7
+                && Math.abs(g.rig.presentedLook.x - Math.max(-1.8, Math.min(1.8, x))) < 0.25;
+            }), "The upright view follows the reader within the ±1.8 m range");
           }
           if (state === "seated") {
             assert(reading.calls <= 50, `${label} seated draw calls ${reading.calls}`);
@@ -204,17 +228,30 @@ try {
           await page.keyboard.press("e");
         }
       };
-      const enter = async () => {
+      const enter = async (reviewArrival = false) => {
         await walk(door.outX, door.outZ, 0);
-        await activate(door.name);
+        await activate("Įeiti į biblioteką");
+        if (reviewArrival) {
+          const card = page.locator(".minimap.library-arrival .mm-card");
+          await card.waitFor({ state: "visible", timeout: 30_000 });
+          assert.equal(await card.locator("b").innerText(), "Maple Harbor Public Library");
+          assert.equal(await card.locator(".mm-arrival-sub[lang=lt]").innerText(), "Meipl Harboro viešoji biblioteka");
+          assert.deepEqual(await card.evaluate((el) => [
+            parseFloat(getComputedStyle(el.querySelector("b")).fontSize),
+            parseFloat(getComputedStyle(el.querySelector(".mm-arrival-sub")).fontSize),
+          ]), [16, 13]);
+          assert.equal(await page.locator(".zone-banner").count(), 0, "The title stays in the location card");
+        }
         await waitZone("library");
         await artReady();
       };
       const exit = async () => {
-        await page.evaluate(() => {
-          const g = window.__ew.game, ex = g.zone.interior.exit;
-          g.walkTo(ex.x, ex.z - 0.6, { kind: "exit" });
+        const approach = await page.evaluate(() => {
+          const ex = window.__ew.game.zone.interior.exit;
+          return { x: ex.x, z: ex.z - 0.6 };
         });
+        await walk(approach.x, approach.z);
+        await activate("Išeiti į lauką");
         await waitZone("town");
         assert(await page.evaluate(() => {
           const g = window.__ew.game, p = g.player.root.position;
@@ -223,11 +260,14 @@ try {
         }), "The outside return is walkable and the visit atlas has been detached");
       };
 
-      const seated = (index) => page.waitForFunction((chair) => {
-        const g = window.__ew.game;
-        return g.libraryChair === chair && g.player.anim === "sit"
+      const seated = (index) => page.waitForFunction(({ index, chair }) => {
+        const g = window.__ew.game, p = g.player.root.position;
+        const dx = p.x - chair.x, dz = p.z - chair.z;
+        return g.libraryChair === index && g.player.anim === "sit"
+          && Math.abs(dx * Math.sin(chair.rot) + dz * Math.cos(chair.rot) - 0.25) < 0.001
+          && Math.abs(dx * Math.cos(chair.rot) - dz * Math.sin(chair.rot)) < 0.001
           && !!g.player.root.getObjectByName("library-headphones");
-      }, index, { timeout: 30_000 });
+      }, { index, chair: chairs[index] }, { timeout: 30_000 });
       const stood = () => page.waitForFunction(() => {
         const g = window.__ew.game, p = g.player.root.position;
         return g.libraryChair === null && !g.modes.engaged && g.player.anim !== "sit"
@@ -237,12 +277,21 @@ try {
       // All movement after the saved Union Station start uses the ordinary walking path and door actions.
       await walk(22, 44.4, 0);
       await capture("street");
-      await enter();
+      await enter(true);
       await capture("doorstep");
+      await page.waitForFunction(() => !window.__ew.store.getState().hud.zoneBanner, null, { timeout: 4000 });
+      assert.equal(await page.locator(".minimap.library-arrival").count(), 0, "The arrival returns to the compact location card");
+      assert.equal(await page.locator(".minimap .mm-arrival-sub").count(), 0);
       const spots = await page.evaluate(() => window.__ew.game.zone.interior.spots);
       await walk(spots.display.x, spots.display.z);
       await activate("Browse books");
       await capture("display");
+      const task = page.locator(".library-task .objective-summary");
+      if (phone) await task.tap(); else await task.click();
+      await page.locator(".objective-card:not(.collapsed)").waitFor();
+      const fold = page.locator('.objective-card button[aria-label="Suskleisti"]');
+      if (phone) await fold.tap(); else await fold.click();
+      await page.locator(".library-task .objective-summary").waitFor();
       await walk(spots["chair-0"].x, spots["chair-0"].z);
       await capture("chair");
       await activate("Sit and read");
