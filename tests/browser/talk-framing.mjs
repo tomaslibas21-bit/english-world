@@ -96,7 +96,9 @@ function openingState(startName) {
     liveSpeaker: !!actor && game.npcs?.includes(actor) && !!actor.ch?.root,
     panelVisible, panelAnimating, fontsReady, layoutReady,
     box: rect && [rect.x, rect.y, rect.width, rect.height],
-    openingText: !!panel?.querySelector(".transcript .msg.npc.speaking .bubble")?.textContent.trim(),
+    // (this build marks the speaking line's part of the bubble, .bubble-part.speaking; older builds marked the .msg)
+    openingText: !!panel?.querySelector(".transcript .msg.npc .bubble-part.speaking, .transcript .msg.npc.speaking .bubble")
+      ?.textContent.trim(),
     picture: !!document.querySelector(".scene-backdrop"),
   };
 }
