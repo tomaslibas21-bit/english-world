@@ -248,7 +248,9 @@ try {
       await blank.waitFor();
       assert.equal((await blank.textContent()).trim(), "");
       assert.equal(await page.locator(".karaoke-natural, .karaoke-next").count(), 0);
-      assert((await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent()).includes(words.missing));
+      const missing = page.locator(".karaoke-current-line .karaoke-accessible").first().locator("span");
+      assert.equal(await missing.textContent(), words.missing);
+      assert.equal(await missing.getAttribute("lang"), lt ? "lt" : "en");
       const widthBefore = (await blank.boundingBox()).width;
       await shot("word-blank");
       await press(button(words.reveal));
@@ -290,6 +292,10 @@ try {
       }
       await shot("slow");
       await anotherSong("SV64");
+      // Practice mode carries between songs; this recording check needs the full lyric.
+      const practiceMode = picker.getByRole("combobox", { name: words.mode });
+      assert.equal(await practiceMode.inputValue(), "word");
+      await practiceMode.selectOption("along");
       await press(button(words.start));
       await page.locator(".karaoke-performance").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1);

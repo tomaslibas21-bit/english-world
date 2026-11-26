@@ -13,6 +13,7 @@ interface KaraokeUi {
   loading: boolean;
   failed: boolean;
   take: KaraokeSession | null;
+  // Keep the learner's practice choice between songs until they leave the booth.
   mode: KaraokePracticeMode;
 }
 

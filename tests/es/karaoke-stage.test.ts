@@ -64,20 +64,21 @@ describe("Café La Ceiba performance", () => {
     expect(speed).toContain(lithuanian ? "0,8×" : "0.8×");
   });
 
-  it("masks a Spanish word from each course and restores that layer's gloss after reveal", async () => {
+  it.each(["SG01", "SV64"] as const)("masks a Spanish word in %s with the learner's label and restores their gloss after reveal", async (id) => {
+    const song = course.songs[id];
     let at = 0;
     const output: RadioOutput = {
       play: async (_url, offset) => { at = offset; return true; },
-      pause() {}, position: () => at, duration: () => course.songs.SG01.meta.d,
+      pause() {}, position: () => at, duration: () => song.meta.d,
       setVolume() {}, unlock() {}, onEnded: null, onStopped: null,
     };
     const session = new KaraokeSession({
       config: { index: "/songs/index.json", files: null, recordings: null },
-      output, song: () => course.songs.SG01.meta, token: () => null,
-      fetchJson: async () => ({ L: [course.songs.SG01.first] }), level: () => 1,
+      output, song: () => song.meta, token: () => null,
+      fetchJson: async () => ({ L: [song.first] }), level: () => 1,
       held: false, resumeDelay: 0, close() {},
     });
-    await session.start("SG01", "word");
+    await session.start(id, "word");
     const state = () => session.store.getState();
     const line = state().timeline!.lines[0], gap = wordGap(line)!;
     expect(line.wt[gap.word]).toBe(gap.prefix + gap.answer + gap.suffix);
@@ -87,7 +88,8 @@ describe("Café La Ceiba performance", () => {
     const render = () => renderToStaticMarkup(createElement(KaraokeStage, { take: state(), session }));
     const hidden = render();
     expect(hidden).toContain('class="karaoke-accessible" lang="es-MX"');
-    expect(hidden).toContain(lithuanian ? "Praleistas žodis" : "Missing word");
+    expect(hidden).toContain(`<span lang="${EDITION.helper}">${lithuanian ? "Praleistas žodis" : "Missing word"}</span>`);
+    expect(hidden).not.toContain(lithuanian ? "Missing word" : "Praleistas žodis");
     expect(hidden).not.toContain(gap.answer);
     expect(hidden).not.toContain(line.lt);
     expect(hidden).not.toContain("karaoke-natural");

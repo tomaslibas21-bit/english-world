@@ -41,6 +41,7 @@ async function fixture({ configured = true, ready = true, player = actor() } = {
     stations: [{ id: "grammar", name: "Grammar", freq: 94, lt: "", has: () => true }],
     fetchJson: async (url) => url.includes("index") ? { songs: [
       { id: "G01", c: "g", n: 1, t: "Home", a: "/G01.mp3", d: 20 },
+      { id: "G02", c: "g", n: 2, t: "Away", a: "/G02.mp3", d: 20 },
     ] } : { L: [{ s: 1, e: 5, src: "Every evening", u: [["Every", "Kiekvieną", 1], ["evening", "vakarą", 1]], w: [[1, 2], [2, 5]] }] },
   });
   if (ready) await radio.init();
@@ -114,6 +115,23 @@ describe("the café karaoke mode", () => {
     const reveal = vi.spyOn(take, "revealWord"), rate = vi.spyOn(take, "setRate");
     f.mode.action("reveal"); f.mode.action("rate", "0.8");
     expect(reveal).toHaveBeenCalledOnce(); expect(rate).toHaveBeenCalledExactlyOnceWith(0.8);
+    f.registry.exit(true);
+  });
+
+  it.each(["back", "another"])("keeps word mode for the next song after %s and resets it on a new booth visit", async (action) => {
+    const f = await fixture();
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01"); f.mode.action("mode", "word"); f.mode.action("start"); await flush();
+    expect(f.radio.store.getState().karaoke!.store.getState().practice?.mode).toBe("word");
+    f.mode.action(action);
+    expect(useKaraoke.getState()).toMatchObject({ phase: "picker", mode: "word" });
+    f.mode.action("select", "G02"); f.mode.action("start"); await flush();
+    expect(f.radio.store.getState().karaoke!.store.getState()).toMatchObject({
+      song: { id: "G02" }, practice: { mode: "word" },
+    });
+    f.registry.exit(true);
+    f.registry.start("karaoke"); await flush();
+    expect(useKaraoke.getState()).toMatchObject({ phase: "picker", mode: "along" });
     f.registry.exit(true);
   });
 
