@@ -29,8 +29,8 @@ interface FitInput {
   presented?: { pos: THREE.Vector3; look: THREE.Vector3 };
   allowNear?: boolean;
   hint?: THREE.Vector3;
-  /** An authored shot with room for scenery beside the speaker. */
-  composition?: Pick<Shot, "pos" | "look">;
+  /** An authored shot with room for scenery beside the speaker (`fov`: its own lens, else 50°). */
+  composition?: Pick<Shot, "pos" | "look"> & { fov?: number };
   report?: (stats: FitStats) => void;
 }
 
@@ -459,14 +459,14 @@ export class TalkFraming {
         - (desktop ? Math.max(0, 245 - f.tall) * 0.14 : 0);
     };
     const centre = feet.clone().setY(head.middle.y);
-    const add = (pos: THREE.Vector3, look: THREE.Vector3, kind: Candidate["kind"], yaw: number, oldFov?: number) => {
+    const add = (pos: THREE.Vector3, look: THREE.Vector3, kind: Candidate["kind"], yaw: number, oldFov?: number, ownFov?: number) => {
       if (pos.distanceToSquared(centre) > input.max ** 2) return;
       const closeLens = kind !== "composition" && (short || kind !== "normal");
       const targetSize = short && kind === "counter" ? 10.1 : preferred;
       const pixels = screen.viewportHeight * targetSize / 100;
       const focal = pixels * pos.distanceTo(head.middle) / (head.crown.y - head.chin.y);
       const maxFov = portrait && (kind === "front" || kind === "close") ? 114 : short ? 94 : 80;
-      const fov = oldFov ?? (closeLens ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
+      const fov = oldFov ?? ownFov ?? (closeLens ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
       const f: Candidate = { pos, look, kind, yaw, prior: oldFov !== undefined, fov, dx: 0, dy: 0, clearance: 0, size: 0, tall: 0, angle: 0, facing: 0,
         shoulder: 0, quality: 0, penalty: 0, safeLens: false, open: false };
       stats.poses++;
@@ -509,7 +509,7 @@ export class TalkFraming {
     add(straight, focus, "front", 0);
     pose(0, 2.45, 29, "raised");
     if (input.hint) add(input.hint, focus, "hint", 0);
-    if (input.composition) add(input.composition.pos, input.composition.look, "composition", 0);
+    if (input.composition) add(input.composition.pos, input.composition.look, "composition", 0, undefined, input.composition.fov);
     if (!candidates.length) return null;
 
     const screenedAt = input.report ? performance.now() : 0;

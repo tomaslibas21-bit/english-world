@@ -2768,8 +2768,11 @@ export class Game implements GameApi {
           room: zone.interior?.wild ? undefined : zone.interior, wild: zone.interior?.wild?.space,
           field: zone.interior ? undefined : this.field, max: THEME.talkCamera?.max ?? 30,
           hint: hint && new THREE.Vector3(...hint),
+          // An upright phone keeps the wide lens (her face 6.6 % of the height, inside its 6–32 % band); a wider screen
+          // narrows it so her face reaches its 8–38 % band (about 9 %) with the sign still beside her.
           composition: seaward ? {
             pos: new THREE.Vector3(-103.25, 3, -74.7), look: new THREE.Vector3(-100.65, 1.61, shop.coach.z),
+            fov: this.screenW < this.screenH && this.screenW < 768 ? undefined : 38,
           } : undefined,
         };
       }, () => this.transitioning || (hasArt && picturesOn(useStore.getState().settings)));
