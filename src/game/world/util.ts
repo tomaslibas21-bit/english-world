@@ -98,6 +98,13 @@ export function cylGeo(rt: number, rb: number, h: number, x: number, y: number, 
   return g;
 }
 
+/** A canvas drawn by `draw` as a texture. */
+export function canvasTex(w: number, h: number, draw: (x: CanvasRenderingContext2D) => void) {
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+  draw(cv.getContext("2d")!);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
 /** Text sign as a canvas texture. `lines`: the text may be broken at its spaces onto up to that many lines, whichever
  *  way its letters come out biggest (a small board with a long text, a tall banner). */
 export function textTexture(text: string, opts: { bg?: string; fg?: string; font?: string; w?: number; h?: number; border?: string; script?: boolean; lines?: number } = {}) {

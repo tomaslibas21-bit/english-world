@@ -1,7 +1,7 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge } from "./util";
+import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge, canvasTex } from "./util";
 import { STYLED } from "../style";
 import { busParts, carParts } from "./car";
 import * as MX from "./mexican";
@@ -557,13 +557,6 @@ function desk(c: Ctx, x: number, z: number, rot = 0) {
 }
 function sign(c: Ctx, text: string, x: number, y: number, z: number, w: number, bg: string, fg: string, rotY = 0) {
   wallPanel(c, textTexture(text, { bg, fg, w: 512, h: 128 }), x, y, z, w, w / 4, rotY);
-}
-/** A canvas drawn by `draw` as a texture. */
-function canvasTex(w: number, h: number, draw: (x: CanvasRenderingContext2D) => void) {
-  const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
-  draw(cv.getContext("2d")!);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  return t;
 }
 /** The eye chart in the exam room. */
 function eyeChart() {

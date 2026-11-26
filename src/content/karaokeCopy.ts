@@ -42,7 +42,7 @@ export const KARAOKE_UI = {
   showMeaning: L("Rodyti reikšmę"),
   hideMeaning: L("Slėpti reikšmę"),
   yourTurn: L("Tavo eilė"),
-  replay: L("Išklausyti eilutę dar kartą"),
+  replay: L("Klausytis dar kartą"),
   continue: L("Tęsti"),
   applause: L("Plojimai tau!"),
   microphone: L("Naudoti mikrofoną šiai eilutei"),

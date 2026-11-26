@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { EDITION } from "../../edition";
 import { KARAOKE_UI } from "../../content/karaokeCopy";
 import type { Radio } from "../../radio/radio";
 import type { KaraokeSession } from "../../radio/karaokeSession";
@@ -185,8 +186,9 @@ export class KaraokeMode implements GameMode {
     player.steady = true;
     if (this.mic) poseKaraokeSinger(player, this.mic);
     const shot = this.host.rig.stage!, portrait = this.host.rig.cam.aspect < 0.9;
-    const z = portrait ? 2.3 : 1.3, moved = shot.pos.z !== z;
-    shot.pos.z = z; shot.fov = portrait ? 48 : 43;
+    const x = portrait ? 0.65 : 1.5, z = portrait ? 2.3 : 3;
+    const moved = shot.pos.x !== x || shot.pos.z !== z;
+    shot.pos.x = x; shot.pos.z = z; shot.fov = portrait ? 48 : 43;
     if (moved && typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) {
       this.host.rig.stageSnap(); this.host.rig.applyPose(); this.host.rig.cam.updateMatrixWorld(true);
     }
@@ -195,7 +197,8 @@ export class KaraokeMode implements GameMode {
   /** Keep the face below the real title at large text sizes; the lyric card owns the lower picture. */
   frameView(w: number, h: number, headerBottom = 0) {
     const sideways = w > h && h < 520;
-    const shiftX = sideways ? w * 0.2 : 0, shiftY = sideways ? 0 : h * 0.06;
+    // Centre the singer in La Ceiba's left 39% beside the lyric sheet and transport.
+    const shiftX = sideways ? w * (EDITION.id === "es" && w >= 700 ? 0.305 : 0.2) : 0, shiftY = sideways ? 0 : h * 0.06;
     const rig = this.host.rig;
     rig.applyViewShift(w, h, shiftX, shiftY);
     rig.cam.updateMatrixWorld(true);
