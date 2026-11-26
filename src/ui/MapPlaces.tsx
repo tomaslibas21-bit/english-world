@@ -64,10 +64,10 @@ export function resolveMapPlaces(doors: Parameters<typeof locationPoint>[1], lig
     const sits = source.filter((s) => s.location === id && !isPhone(s) && (
       id === caveZone ? s.npc === "alux_kin" || s.npc === "alux_nikte" : !light || !isTownQuest(s.id)
     ));
-    const point = sits.length && locationPoint(id, doors, data);
+    const point = (sits.length || (id === "library" && !light)) && locationPoint(id, doors, data);
     if (!point) return [];
     const tour = id === cenoteTour?.location ? cenoteTour : undefined;
-    const reserved = id === "airport" || id === caveZone || id === "pool-hall" || !!tour;
+    const reserved = id === "airport" || id === caveZone || id === "pool-hall" || id === "library" || !!tour;
     return [{ ...loc, ...project(point, data), sits, reserved, tour }];
   });
 }
@@ -306,6 +306,10 @@ export default function MapPlaces({ close, town, townName, data, groundBounds, d
                   <Icon name="walk" size={17} /> {L("Nuvesk mane")}
                 </button>
               )}
+              {chosen.id === "library" && zone !== "library" && <div className="sit-actions">
+                <button className="btn soft small" onClick={() => { close(); town?.guideToPlace?.("library"); }}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+                <button className="btn ghost small" onClick={() => { close(); town?.teleportTo("library"); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>
+              </div>}
               {chosen.sits.map((s) => (
                 <div key={s.id}>
                   <SitCard s={s} open onClick={() => {}} />

@@ -135,14 +135,16 @@ export class Guidance {
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }
   /** The beacon over (x, z), its gem at `height`. With `stand` (where to stand to talk to the person under it, across a
    *  counter), a smaller ring lies there instead of round the beacon's foot. */
-  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, hideBeam = false) {
+  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, hideBeam = false, floorOnly = false) {
     if (x === null || z === undefined) { this.beacon.visible = false; return; }
     this.beacon.visible = true;
-    this.beam.visible = !hideBeam;
+    this.beam.visible = !hideBeam && !floorOnly;
+    this.gem.visible = !floorOnly;
+    (this.ring.material as THREE.MeshBasicMaterial).opacity = floorOnly ? 0.4 : 0.8;
     this.beacon.position.set(x, 0, z);
     this.gem.position.y = height;
     this.ring.position.set(stand ? stand.x - x : 0, 0.04, stand ? stand.z - z : 0);
-    this.ring.scale.setScalar(stand ? 0.6 : 1);
+    this.ring.scale.setScalar(floorOnly ? 0.72 : stand ? 0.6 : 1);
   }
 
   /** `ground`: how high the ground lies at (x, z) (a pier's boards, the sand by the sea); the street's level without. */

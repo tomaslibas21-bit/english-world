@@ -126,7 +126,11 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
   const current = state.cue?.sentenceId ?? sentences.keys().next().value;
   const track = item?.tracks[state.prefs.mode];
   const seek = useCallback((id: string) => channel.player.seekSentence(id), [channel]);
-  const play = () => state.playIntent ? radio.pause() : radio.play();
+  const play = () => {
+    if (!radio.onBooks && state.selection) radio.read(state.selection);
+    else if (state.playIntent) radio.pause();
+    else radio.play();
+  };
 
   useLayoutEffect(() => {
     const el = dialog.current!;
@@ -194,7 +198,7 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
         onKeyDown={(event) => { if (["PageUp", "PageDown", "Home", "End"].includes(event.key)) suspend(); }}>
         {state.status === "loading" && <p className="reader-message" role="status">{w("finding")}</p>}
         {state.status === "error" && <div className="reader-message" role="status"><p>{w("audioError")}</p>
-          {!channel.output.unavailable && <button className="quiet" onClick={() => radio.play()}>{w("retry")}</button>}</div>}
+          {!channel.output.unavailable && <button className="quiet" onClick={play}>{w("retry")}</button>}</div>}
         {item && <ReaderPage item={item} state={state} word={word} roving={roving} setRoving={setRoving}
           seek={seek} expanded={state.prefs.interlinear} translation={translation} />}
       </div>
@@ -202,10 +206,10 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
         {!following && <button className="rejoin quiet" onClick={rejoin}><Icon name="arrowDown" />{w("rejoin")}</button>}
         <div className="timeline" aria-hidden><span>{time(seconds)}</span><span className="track"><i style={{ width: `${track ? Math.min(100, state.position / track.duration * 100) : 0}%` }} /></span><span>{time(track?.duration ?? 0)}</span></div>
         <div className="transport">
-          <button className="round" disabled={!state.cue} aria-label={w("previous")} title={w("previous")} onClick={() => radio.previous()}><Icon name="skipBack" /></button>
+          <button className="round" disabled={!state.cue} aria-label={w("previous")} title={w("previous")} onClick={() => channel.player.stepSentence(-1)}><Icon name="skipBack" /></button>
           <button className="play-key round" disabled={!!channel.output.unavailable} data-pad-default aria-label={w(state.playIntent ? "pause" : "play")} aria-pressed={state.playIntent}
             onClick={play}><Icon name={state.playIntent ? "pause" : "play"} /></button>
-          <button className="round" disabled={!state.cue} aria-label={w("next")} title={w("next")} onClick={() => radio.next()}><Icon name="skipNext" /></button>
+          <button className="round" disabled={!state.cue} aria-label={w("next")} title={w("next")} onClick={() => channel.player.stepSentence(1)}><Icon name="skipNext" /></button>
         </div>
         <div className="reader-tools">
           {state.prefs.mode !== "helper" && <button className="meanings" aria-expanded={state.prefs.interlinear}

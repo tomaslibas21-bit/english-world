@@ -116,13 +116,13 @@ function watchWide(notify: () => void) {
   return () => query.removeEventListener("change", notify);
 }
 
-export function BookPicker({ channel, covered = false }: { channel: BookChannel; covered?: boolean }) {
+export function BookPicker({ channel, bookId, covered = false }: { channel: BookChannel; bookId?: string; covered?: boolean }) {
   const [entries, setEntries] = useState<ShelfEntry[]>();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [collection, setCollection] = useState<ShelfEntry["kind"]>("books");
-  const [selectedId, select] = useState("");
-  const [detail, setDetail] = useState(false);
+  const [selectedId, select] = useState(bookId ?? "");
+  const [detail, setDetail] = useState(!!bookId);
   const [visible, setVisible] = useState<Set<string>>(() => new Set());
   const dialog = useRef<HTMLDialogElement>(null);
   const pane = useRef<HTMLDivElement>(null);
@@ -132,7 +132,7 @@ export function BookPicker({ channel, covered = false }: { channel: BookChannel;
   const large = useStore((state) => state.settings.textSize >= 1.3);
   const wide = useSyncExternalStore(watchWide, () => matchMedia(wideQuery).matches, () => false);
   const list = useMemo(() => entries?.filter((entry) => entry.kind === collection) ?? [], [entries, collection]);
-  const selected = list.find((entry) => entry.id === selectedId) ?? list[0];
+  const selected = list.find((entry) => entry.id === selectedId) ?? (detail ? undefined : list[0]);
   const progress = useSyncExternalStore(channel.progress.subscribe, channel.progress.getSnapshot, channel.progress.getSnapshot);
   const resume = useMemo(() => continueEntry(entries ?? [], progress), [entries, progress]);
   const langs = TALK_LANGUAGES[channel.source.profile];

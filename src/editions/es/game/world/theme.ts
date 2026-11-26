@@ -10,6 +10,11 @@ export type { BuildingLook, FloorKind, OutdoorSpot, RoomLook, TianguisGoods, Tow
 const cenoteGuide = { npc: "ines", x: -122.4, z: -1.4, rot: Math.PI / 2, ax: -120.65, az: -1.4 };
 
 export const THEME: TownTheme = {
+  library: {
+    door: "#167570", surround: "#d77861", fascia: "#155956", lettering: "#fff0ce",
+    shelf: "#70462f", endGrain: "#53382c", shade: "#ffd04e",
+    upholstery: { base: "#24504c", seat: "#397e79", back: "#235d59", cushion: "#42847a", arm: "#316e67", seam: "#85aca0" },
+  },
   // The first visit's flight (game/flyover.ts): in from the Caribbean over the beach and the malecón, along the shore
   // with the zócalo and its kiosco below, and down to the airport
   flyover: [
@@ -186,6 +191,7 @@ export const THEME: TownTheme = {
       signLines: ["El Muelle", "Restaurante · Mariscos"] },
     sophie: { color: "#5fbfb0", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     dan: { color: "#f6bd60", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
+    library: { color: "#f3d9b7", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house3: { color: "#e5989b", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house4: { color: "#90be6d", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house5: { color: "#8ecae6", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
@@ -353,6 +359,7 @@ export const THEME: TownTheme = {
     ],
   },
   roomLooks: {
+    library: { floor: "#d0a480", floorKind: "barro", wall: "#f7e7ca", dado: "#e7c6a5", accent: "#ad7758" },
     "pool-hall": { floor: "#d39365", floorKind: "barro", wall: "#f5daa8", dado: "#32756c", dadoH: 1.12, accent: "#81482f" },
     // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
     "post-office": { accent: "#c2006a" },
