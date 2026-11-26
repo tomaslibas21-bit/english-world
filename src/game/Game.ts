@@ -2261,6 +2261,9 @@ export class Game implements GameApi {
       }
       return;
     }
+    // (the HUD looks for what is near only every 0.12 s, and a step to a new spot (placeOnFoot) forgets it while the
+    // prompt still shows: E or the Talk button pressed in that moment looks now)
+    if (!this.nearest) this.updateHud();
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }

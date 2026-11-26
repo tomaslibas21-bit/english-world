@@ -655,6 +655,9 @@ class Route {
         await real(12);
       }
     }
+    // (the walk-up is read from the frames after the learner is placed: walking up again to someone just talked to,
+    // the frames before it still show the old prompt)
+    const placedAt = this.frames.length;
     await this.page.evaluate(({ actor, id, spot }) => {
       const { game, store } = window.__ew;
       store.getState().updateProgress((progress) => { progress.objective = id; });
@@ -710,7 +713,7 @@ class Route {
     const before = await this.wait((f) => f.scene.nearest === actor && f.scene.prompt === "talk"
       && !f.scene.walking && !f.scene.transition && !f.conv.phone
       && (actor !== "vinnie" || (!f.scene.banner && !f.scene.coach)), `walk-up prompt for ${actor}`, 20_000,
-    { from: this.approachAt });
+    { from: actor === "vinnie" ? this.approachAt : placedAt });
     assertGameplayLens(before.scene.lens, this.size, `before ${id}`);
     this.gameplay = before.scene.lens;
     if (actor === "vinnie") this.row.approach.prompt = compact(before);
