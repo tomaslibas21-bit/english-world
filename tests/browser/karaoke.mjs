@@ -103,6 +103,28 @@ try {
       await press(page.locator(".karaoke-more").getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
     };
     const until = (predicate, timeout = 30000) => page.waitForFunction(predicate, null, { timeout });
+    const coffeeTurn = async () => {
+      const deadline = Date.now() + 30000;
+      do {
+        await until(() => {
+          const { conv } = window.__ew.store.getState();
+          return conv.completed || conv.phase === "you" ||
+            (conv.phase === "npc" && ["unavailable", "blocked"].includes(window.__ew.audio.getState()));
+        }, Math.max(1, deadline - Date.now()));
+        const state = await page.evaluate(() => {
+          const { active, sitId, completed, phase, stepId } = window.__ew.store.getState().conv;
+          return { active, sitId, completed, phase, stepId, audio: window.__ew.audio.getState() };
+        });
+        assert(state.active && state.sitId === "s72-cafe", `the café conversation stays active: ${JSON.stringify(state)}`);
+        if (state.completed || state.phase === "you") return state;
+        // The fixture supplies song MP3s, not café voice clips. Keep the real Session/input path and use its
+        // visible recovery action for every missing line instead of waiting forever for the learner's turn.
+        await press(page.locator(".audio-recovery").getByRole("button", {
+          name: state.audio === "unavailable" ? "Tęsti skaitant" : "Klausyti", exact: true,
+        }));
+      } while (Date.now() < deadline);
+      assert.fail("the café did not reach a learner turn after audio recovery");
+    };
     try {
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(() => window.__ew?.store.getState().screen === "play", 90000);
@@ -334,19 +356,13 @@ try {
       await page.locator(".convo").waitFor();
       await press(page.locator(".scene-start"));
       const replies = {
+        howareyou: "Good, thanks. And you?",
         order: "A latte, please", kind: "A latte", size: "Medium", milk: "Whole milk", whole_ok: "Yes",
         alt_milk: "Yes, that's fine", temp: "Hot, please", warm: "Yes, please", more: "That's all",
         dine: "For here", name: "Test", pay: "Card", receipt: "No, thanks", usual: "Yes, please", closing: "Thank you!",
       };
       for (let turn = 0; turn < 16; turn++) {
-        await until(() => {
-          const conv = window.__ew.store.getState().conv;
-          return conv.completed || conv.phase === "you";
-        });
-        const turnState = await page.evaluate(() => {
-          const { completed, stepId } = window.__ew.store.getState().conv;
-          return { completed, stepId };
-        });
+        const turnState = await coffeeTurn();
         if (turnState.completed) break;
         assert(replies[turnState.stepId], `known café turn ${turnState.stepId}`);
         await page.locator(".typebox input").fill(replies[turnState.stepId]);
