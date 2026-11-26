@@ -2515,6 +2515,19 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
   }
 }
 
+/** A woven band on the original closed ten-sided roll; the open sections share only their rim edges. */
+export function rolledTowelParts(color: string): Part[] {
+  const parts: Part[] = [];
+  const stripe = color === "#fff6e5" ? "#557d77" : "#e7d8b6";
+  for (const [lo, hi, ink] of [[-0.22, 0.08, color], [0.08, 0.15, stripe], [0.15, 0.22, color]] as const) {
+    parts.push([new THREE.CylinderGeometry(0.115, 0.115, hi - lo, 10, 1, true).translate(0, (lo + hi) / 2, 0), ink]);
+  }
+  // Rotate the circles to the cylinder's sin/cos vertex phase, retaining its two original end faces.
+  parts.push([new THREE.CircleGeometry(0.115, 10).rotateX(-Math.PI / 2).rotateY(-Math.PI / 2).translate(0, 0.22, 0), color]);
+  parts.push([new THREE.CircleGeometry(0.115, 10).rotateX(Math.PI / 2).rotateY(-Math.PI / 2).translate(0, -0.22, 0), color]);
+  return parts;
+}
+
 /** All opaque pool furniture and the tiled basin join the town's existing static batches. */
 export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   const { x, z, steps, deck, bench, halfWidth: w, halfLength: d, shallow, deep, water } = HOTEL_POOL;
@@ -2630,19 +2643,23 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
     const ribs = 10;
     for (let i = 0; i < ribs; i++) {
       const a = i * Math.PI * 2 / ribs, b = (i + 1) * Math.PI * 2 / ribs;
-      const canopy = new THREE.BufferGeometry();
-      canopy.setAttribute("position", new THREE.Float32BufferAttribute([
-        x + px, 2.85, z + pz,
-        x + px + Math.cos(b) * 1.55, 2.3, z + pz + Math.sin(b) * 1.55,
-        x + px + Math.cos(a) * 1.55, 2.3, z + pz + Math.sin(a) * 1.55,
-      ], 3));
       const color = i % 2 ? "#fff4df" : px < 0 ? "#239b9a" : "#ed7954";
-      const underside = canopy.clone();
-      canopy.setIndex([0, 1, 2]);
-      underside.setIndex([0, 2, 1]);
-      canopy.computeVertexNormals();
-      underside.computeVertexNormals();
-      parts.push([canopy, color], [underside, color]);
+      const hem = i % 2 ? "#dfd2bb" : px < 0 ? "#80c1b2" : "#e8b08a";
+      const below = i % 2 ? "#bcb59e" : px < 0 ? "#438e83" : "#bb7859";
+      const point = (angle: number, t: number) => [x + px + Math.cos(angle) * 1.55 * t, 2.85 - 0.55 * t, z + pz + Math.sin(angle) * 1.55 * t];
+      // Split the old planar wedge at 90% radius: a fabric hem, with the same peak and rim.
+      for (const [positions, indices, top, bottom] of [
+        [[x + px, 2.85, z + pz, ...point(b, 0.9), ...point(a, 0.9)], [0, 1, 2], color, color],
+        [[...point(a, 0.9), ...point(b, 0.9), ...point(b, 1), ...point(a, 1)], [0, 1, 2, 0, 2, 3], hem, below],
+      ] as [number[], number[], string, string][]) {
+        const canopy = new THREE.BufferGeometry();
+        canopy.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        canopy.setIndex(indices);
+        const underside = canopy.clone();
+        underside.setIndex(indices.flatMap((_, j) => j % 3 ? [] : [indices[j], indices[j + 2], indices[j + 1]]));
+        canopy.computeVertexNormals(); underside.computeVertexNormals();
+        parts.push([canopy, top], [underside, bottom]);
+      }
     }
     col.addCircle(x + px, z + pz, 0.3);
   }
@@ -2651,8 +2668,8 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   for (const h of [0.23, 0.61, 0.99]) {
     addBox(parts, "#bc8258", towelX, h, towelZ, 1.12, 0.09, 0.58);
     for (const [j, color] of ["#fff6e5", "#38aab4", "#f6a853"].entries()) {
-      parts.push([new THREE.CylinderGeometry(0.115, 0.115, 0.44, 10).rotateX(Math.PI / 2)
-        .translate(x + towelX + (j - 1) * 0.31, h + 0.155, z + towelZ), color]);
+      for (const [g, ink] of rolledTowelParts(color)) parts.push([g.rotateX(Math.PI / 2)
+        .translate(x + towelX + (j - 1) * 0.31, h + 0.155, z + towelZ), ink]);
     }
   }
   for (const dx of [-0.49, 0.49]) addBox(parts, "#995e40", towelX + dx, 0.57, towelZ, 0.12, 1.14, 0.6);

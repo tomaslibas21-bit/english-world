@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { Colliders, rand } from "../world/util";
 import { groundFace } from "../world/shapes";
 import { lilyBloom, lilyPadVeins } from "./lilies";
+import { finishMushroomCap } from "./mushrooms";
 import * as P from "./plan";
 
 const FOG = "#05232c";
@@ -80,12 +81,13 @@ class Sink {
     for (let k = 0; k < 3; k++) this.col[i].push(R, G, B);
   }
   /** A whole shape. */
-  geo(g0: THREE.BufferGeometry, colour: THREE.ColorRepresentation, glow = 0, vary = 0) {
+  geo(g0: THREE.BufferGeometry, colour: THREE.ColorRepresentation, glow = 0, vary = 0, paint?: (color: THREE.Color, triangle: number) => void) {
     const g = g0.index ? g0.toNonIndexed() : g0, p = g.attributes.position.array as ArrayLike<number>, c0 = new THREE.Color(colour), c = new THREE.Color();
     for (let i = 0; i < p.length; i += 9) {
       // (`vary`: each face a little lighter or darker than the next, as bark and rough stone are)
       c.copy(c0);
       if (vary) c.offsetHSL(0, 0, (Math.sin(i * 12.9898 + p[i] * 78.233 + p[i + 2] * 37.7) * 0.5) * vary);
+      paint?.(c, i / 9);
       this.tri([p[i], p[i + 1], p[i + 2]], [p[i + 3], p[i + 4], p[i + 5]], [p[i + 6], p[i + 7], p[i + 8]], c, glow);
     }
     g.dispose(); if (g !== g0) g0.dispose();
@@ -407,7 +409,7 @@ export function buildCave(): CaveView {
   }
   const mush = (x: number, z: number, s: number, colour: string, y = 0) => {
     sink.geo(new THREE.CylinderGeometry(0.035 * s, 0.05 * s, 0.3 * s, 5).translate(x, y + 0.15 * s, z), "#e9f3e2", 0.5);
-    sink.geo(new THREE.SphereGeometry(0.2 * s, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.7, 1).translate(x, y + 0.28 * s, z), colour, 1, 0.12);
+    sink.geo(new THREE.SphereGeometry(0.2 * s, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.7, 1).translate(x, y + 0.28 * s, z), colour, 1, 0.12, finishMushroomCap);
   };
   const GLOWS = ["#58f0ff", "#7dffb0", "#c79bff", "#ff9bd6", "#ffe37a"];
   const pillars: [number, number][] = [[-20.5, -57.2], [-11.8, -62.8], [-17.2, -68.4], [-22.4, -70.2], [-9.4, -66.6], [-14.2, -55.6]];

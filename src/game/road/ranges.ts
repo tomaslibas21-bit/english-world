@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { EDITION } from "../../edition";
 import { rand } from "../world/util";
 
 // The mesas beside the desert road, three rows deep on each side. They stand still in the world while you drive, so
@@ -86,14 +87,20 @@ void main() {
 
 const fragment = /* glsl */ `
 uniform vec3 lit, shadow, haze, tint;
-uniform float opacity;
+uniform float opacity, uStrata;
 varying float vShade;
 varying float vTone;
 varying float vFar;
 varying float vHeight;
 void main() {
   vec3 rock = mix(shadow, lit, smoothstep(0.18, 0.86, vShade)) * (0.90 + 0.20 * vTone);
-  rock *= 1.0 + 0.05 * sin(vHeight * 1.15 + vTone * 9.0);      // the strata
+  float grain = 1.0 + 0.05 * sin(vHeight * 1.15 + vTone * 9.0);
+  // PC's broad sediment beds follow world height continuously across each cliff's flat facets.
+  float bed = fract((vHeight + vTone * 6.0) / 8.5);
+  float seam = smoothstep(0.015, 0.075, bed);
+  vec3 strata = mix(vec3(0.78, 0.74, 0.70), vec3(1.04, 1.01, 0.95), smoothstep(0.08, 0.32, bed));
+  strata *= mix(0.88, 1.0, seam);
+  rock *= mix(vec3(grain), strata, uStrata);
   rock *= tint;
   float air = smoothstep(130.0, 900.0, vFar) * 0.84;
   float mist = smoothstep(90.0, 300.0, vFar) * (1.0 - smoothstep(-2.0, 11.0, vHeight));
@@ -111,7 +118,8 @@ export class Ranges {
     const material = new THREE.ShaderMaterial({
       vertexShader: vertex, fragmentShader: fragment, fog: false, transparent: true,
       uniforms: {
-        opacity: { value: 1 }, lit: { value: new THREE.Color(rock[0]) }, shadow: { value: new THREE.Color(rock[1]) },
+        opacity: { value: 1 }, uStrata: { value: EDITION.id === "es" ? 1 : 0 },
+        lit: { value: new THREE.Color(rock[0]) }, shadow: { value: new THREE.Color(rock[1]) },
         haze: { value: new THREE.Color() }, tint: { value: new THREE.Color() },
       },
     });
