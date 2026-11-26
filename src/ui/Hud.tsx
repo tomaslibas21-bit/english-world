@@ -168,6 +168,7 @@ export function Hud() {
   const subtitle = hud.zoneBanner?.sub?.trim();
   const zone = hud.minimap.zone;
   const kind = hud.prompt?.kind;
+  const libraryAction = kind === "library" || kind === "library-stand" || hud.prompt?.libraryDoor;
   // Boarding clears the prompt before the next HUD update publishes the ride kind.
   const rideControls = !hud.modeScreen && (ride === "car" || ride === "boat" || (game as Game | null)?.rides?.riding)
     ? kind === "out" && !hud.panel && !hud.glyph && !picking : undefined;
@@ -209,10 +210,10 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "library" || kind === "library-stand" ? " library-prompt" : "")}
-          data-library-stand={kind === "library-stand" || undefined} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (libraryAction ? " library-prompt" : "")}
+          data-library-door={hud.prompt.libraryDoor} data-library-stand={kind === "library-stand" || undefined} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.kind === "drive" && hud.prompt.label === L(ROAD_UI.drive) ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
-          <span className="prompt-text" lang={kind === "library" || kind === "library-stand" ? TL : undefined}>{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
+          <span className="prompt-text" lang={libraryAction ? TL : undefined}>{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
       {riding && hud.rideStartedAt !== null && !hud.showTouch && (
@@ -270,7 +271,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible, .street-bubble:focus-visible, [data-library-stand]")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible, .street-bubble:focus-visible, [data-library-stand], [data-library-door]")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
@@ -705,7 +706,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && prompt.kind !== "library" && prompt.kind !== "library-stand" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
+      {prompt && !prompt.libraryDoor && prompt.kind !== "library" && prompt.kind !== "library-stand" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
         // Ending a second touch while holding the brake or stick may produce no click.
         e.preventDefault();
         const touch = e.changedTouches[0];
@@ -717,7 +718,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : prompt?.kind === "library-stand" ? null
-          : <button className={"jump-btn" + (prompt ? " beside" : "") + (prompt?.kind === "library" ? " library-prompt-beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
+          : <button className={"jump-btn" + (prompt ? " beside" : "") + (prompt?.kind === "library" || prompt?.libraryDoor ? " library-prompt-beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );
 }

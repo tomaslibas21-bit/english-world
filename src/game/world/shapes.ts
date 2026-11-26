@@ -149,3 +149,15 @@ export function paint(g: THREE.BufferGeometry, color: THREE.Color): THREE.Buffer
   g.setAttribute("color", new THREE.BufferAttribute(arr, 3));
   return g;
 }
+
+/** The town emblem on the municipal shield and the library tiles. */
+export function hummingbirdShapes() {
+  // the hummingbird, flying to the right: its body, head and long beak, a wing raised, the forked tail
+  const bird: THREE.Shape[] = [];
+  const body = new THREE.Shape(); body.absellipse(-0.05, -0.12, 0.25, 0.1, 0, Math.PI * 2, false, 0.45); bird.push(body);
+  const head = new THREE.Shape(); head.absarc(0.2, 0.06, 0.09, 0, Math.PI * 2, false); bird.push(head);
+  const beak = new THREE.Shape(); beak.moveTo(0.27, 0.09); beak.lineTo(0.62, 0.17); beak.lineTo(0.28, 0.04); beak.closePath(); bird.push(beak);
+  const wing = new THREE.Shape(); wing.moveTo(-0.08, -0.04); wing.lineTo(-0.36, 0.42); wing.lineTo(-0.12, 0.36); wing.lineTo(0.1, 0.0); wing.closePath(); bird.push(wing);
+  const tail = new THREE.Shape(); tail.moveTo(-0.22, -0.2); tail.lineTo(-0.5, -0.5); tail.lineTo(-0.36, -0.28); tail.lineTo(-0.44, -0.18); tail.closePath(); bird.push(tail);
+  return bird;
+}

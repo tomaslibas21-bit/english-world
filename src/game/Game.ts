@@ -202,6 +202,7 @@ export class Game implements GameApi {
   scene = new THREE.Scene();
   rig: CameraRig;
   town!: Town;
+  private libraryDoor?: Door;
   zone!: ZoneState;
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
@@ -521,6 +522,7 @@ export class Game implements GameApi {
       if (this.disposed) return;
       this.setupLights();
       this.town = buildTown({ movableParking: true, finalParking: true });
+      if (EDITION.id === "es") this.libraryDoor = this.town.doors.find((door) => door.loc === "library");
       await startupTask();
       if (this.disposed) return;
       if (collision) collisionBytes = await collision.join();
@@ -1238,6 +1240,7 @@ export class Game implements GameApi {
       this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.interiorView = z.interior?.camera;
+      this.rig.libraryEntrance = id === "town" ? this.libraryDoor : undefined;
       this.rig.mode = indoor && !wild ? "interior" : "follow";
       if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
@@ -3366,6 +3369,8 @@ export class Game implements GameApi {
     }
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);
+    this.rig.libraryEntrance = this.libraryDoor && this.zone.id === "town" && !riding && !mode && !this.aloft
+      ? this.libraryDoor : undefined;
     // (at a wheel the camera stays behind the car, backing up too; on an upright phone heading out over the desert
     // road's crest it swings a little toward the bend beyond, so the crest frame has sand on both sides: road/entry.ts)
     const crestAim = riding && !mode && h > w * 1.15 ? this.road?.crestAim ?? 0 : 0;
@@ -4486,6 +4491,9 @@ export class Game implements GameApi {
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : best.kind === "glyph" ? { label: L("Klausytis: kalbantis akmuo"), kind: "listen" }
         : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
+        : EDITION.id === "es" && ((best.kind === "door" && best.id === "library") || (best.kind === "exit" && this.zone.id === "library"))
+          ? { kind: best.kind === "door" ? "enter" : "exit", libraryDoor: true, label: LOCATIONS.library.name,
+              lt: best.kind === "door" ? L("Įeiti į Kolibrių uosto biblioteką") : L("Išeiti iš Kolibrių uosto bibliotekos") }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
         : (best.kind === "mode" || best.kind === "library") ? best.prompt!

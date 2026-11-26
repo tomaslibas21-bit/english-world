@@ -1583,6 +1583,19 @@ body.scene-on .tag-layer { display: none; }
 .hud.has-touch .prompt.touch.library-prompt .prompt-text { min-width: 0; align-items: center; text-align: center; white-space: normal; overflow-wrap: anywhere; }
 .jump-btn.beside.library-prompt-beside { right: calc(152px + env(safe-area-inset-right)); }
 .hud.has-touch .prompt.touch.library-prompt .prompt-text small { font-size: calc(14px * var(--scale)); }
+.hud.has-touch:has([data-library-door]) {
+  /* Leave room for the stick and jump. Wider screens can show each name in one line. */
+  --door-card-width: clamp(128px, calc(100vw - 248px - env(safe-area-inset-left) - env(safe-area-inset-right)), 235px);
+}
+.hud.has-touch .prompt.touch[data-library-door] {
+  width: var(--door-card-width); max-width: var(--door-card-width); border-radius: 16px;
+  touch-action: manipulation;
+}
+.hud:has([data-library-door]) .jump-btn.beside { right: calc(var(--door-card-width) + 24px + env(safe-area-inset-right)); }
+@media (max-width: 374px) {
+  .hud.has-touch .prompt.touch[data-library-door] { bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .hud:has([data-library-door]) .jump-btn.beside { right: calc(26px + env(safe-area-inset-right)); bottom: calc(28px + env(safe-area-inset-bottom)); }
+}
 .cave-guide { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
 .cave-guide .arrow { width: 16px; height: 16px; flex: none; }
 .cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }

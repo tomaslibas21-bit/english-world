@@ -15,6 +15,7 @@ import { Ledges } from "../ledges";
 import { LIBRARY_ENABLED } from "../../content/library";
 import { furnishLibrary, mountLibraryCovers, LIBRARY_VIEW, LIBRARY_STOPS } from "./libraryRoom";
 import { Hop } from "../movement";
+import { hummingbirdShapes } from "./shapes";
 import { papelPicadoWall } from "./papelPicado";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
@@ -3205,14 +3206,7 @@ function policeShield(S: Smalls, x: number, z: number, s = 1) {
   S.add(flat(new THREE.ShapeGeometry(shield(1.5, 1.8), 8), 0.026), "#f4f1ea");
   S.add(flat(new THREE.ShapeGeometry(shield(1.38, 1.68), 8), 0.028), "#1f3358");
   ["#006847", "#f8f8f4", "#ce1126"].forEach((col, i) => S.add(flat(new THREE.PlaneGeometry(0.4, 0.2).translate((i - 1) * 0.4, 0.58, 0), 0.031), col));
-  // the hummingbird, flying to the right: its body, head and long beak, a wing raised, the forked tail
-  const bird: THREE.Shape[] = [];
-  const body = new THREE.Shape(); body.absellipse(-0.05, -0.12, 0.25, 0.1, 0, Math.PI * 2, false, 0.45); bird.push(body);
-  const head = new THREE.Shape(); head.absarc(0.2, 0.06, 0.09, 0, Math.PI * 2, false); bird.push(head);
-  const beak = new THREE.Shape(); beak.moveTo(0.27, 0.09); beak.lineTo(0.62, 0.17); beak.lineTo(0.28, 0.04); beak.closePath(); bird.push(beak);
-  const wing = new THREE.Shape(); wing.moveTo(-0.08, -0.04); wing.lineTo(-0.36, 0.42); wing.lineTo(-0.12, 0.36); wing.lineTo(0.1, 0.0); wing.closePath(); bird.push(wing);
-  const tail = new THREE.Shape(); tail.moveTo(-0.22, -0.2); tail.lineTo(-0.5, -0.5); tail.lineTo(-0.36, -0.28); tail.lineTo(-0.44, -0.18); tail.closePath(); bird.push(tail);
-  for (const sh of bird) S.add(flat(new THREE.ShapeGeometry(sh, 10).translate(0, -0.05, 0), 0.034), "#e0b83a");
+  for (const sh of hummingbirdShapes()) S.add(flat(new THREE.ShapeGeometry(sh, 10).translate(0, -0.05, 0), 0.034), "#e0b83a");
   S.add(flat(new THREE.CircleGeometry(0.022, 8).translate(0.23, 0.03, 0), 0.036), "#1f3358"); // its eye
 }
 

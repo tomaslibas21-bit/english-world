@@ -1,5 +1,5 @@
 import { Box3, CylinderGeometry, Mesh, TorusGeometry, Vector3, type Group, type Material } from "three";
-import { LIBRARY_CHAIRS } from "../world/libraryRoom";
+import { LIBRARY_CHAIRS, LIBRARY_PANEL } from "../world/libraryRoom";
 import { colourMerge, type Colliders } from "../world/util";
 import { CameraRig, stageFov } from "../camera";
 import type { GameCharacter } from "../characters";
@@ -81,9 +81,14 @@ export function readingSeatShot(index: number, aspect: number, headY = 1.65) {
   const right = new Vector3(Math.cos(bearing), 0, -Math.sin(bearing)), up = new Vector3().crossVectors(back, right);
   const fov = stageFov(aspect), tan = Math.tan(fov * Math.PI / 360);
   let distance = 4.2;
-  for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) {
+  const include = (x: number, y: number, z: number) => {
     const d = new Vector3(x, y, z).sub(look);
     distance = Math.max(distance, d.dot(back) + Math.max(Math.abs(d.dot(right)) / (tan * aspect * 0.82), Math.abs(d.dot(up)) / (tan * 0.82)));
+  };
+  for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) include(x, y, z);
+  if (index === 0 && LIBRARY_PANEL) {
+    const { x, y, z, w, h } = LIBRARY_PANEL;
+    for (const side of [-1, 1]) include(x + side * w / 2, y + h / 2, z + 0.05);
   }
   return { pos: look.clone().addScaledVector(back, distance), look, rate: 4, fov, shiftY: 0 };
 }

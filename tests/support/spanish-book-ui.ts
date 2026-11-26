@@ -218,6 +218,8 @@ export function spanishBookUiTests(helper: "en" | "lt", fixtures: URL, copy: Exp
       await player.select(chapter.selection);
       const withBreak: BookItem = { ...item, paragraphs: [item.paragraphs[0], { kind: "break" }, ...item.paragraphs.slice(1)] };
       const paired = renderPage({}, withBreak);
+      expect(paired).toContain('data-narrated-title="true"');
+      expect(paired).toMatch(/data-reader-line="BK01-01-title"[^>]*aria-disabled="false"/);
       expect(paired).toContain('class="natural audible"');
       expect(paired).toContain("data-paragraph-break");
       expect(paired).toContain(`class="il expanded" lang="es"`);

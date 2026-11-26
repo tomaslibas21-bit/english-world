@@ -316,6 +316,8 @@ export const STRINGS: Record<string, string> = {
   "Kalbėti": "Talk",
   "Išeiti": "Exit",
   "Įeiti": "Enter",
+  "Įeiti į Kolibrių uosto biblioteką": "Enter the Puerto Colibrí Library",
+  "Išeiti iš Kolibrių uosto bibliotekos": "Leave the Puerto Colibrí Library",
   "Pašokti": "Jump",
 
   // The conversation panel (src/ui/Conversation.tsx)

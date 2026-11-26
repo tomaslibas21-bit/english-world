@@ -13,12 +13,16 @@
 import * as THREE from "three";
 import { angleDiff, smoothstep, springStep } from "./movement";
 
-export interface InteriorView {
+interface RoomFrame {
   look: readonly [number, number, number];
   pitch: number;
   distance: number;
   /** Half of the room width to keep visible, including its near furniture. */
   halfWidth: number;
+}
+
+export interface InteriorView extends RoomFrame {
+  display?: RoomFrame & { approach: { x: number; z: number }; span: number };
 }
 
 export type CamMode = "follow" | "interior" | "talk" | "stage";
@@ -84,6 +88,9 @@ export class CameraRig {
   get hasTaxiShot() { return this.taxiShot !== null; }
   private manualT = 0;
   interiorView?: InteriorView;
+  libraryEntrance?: { outX: number; outZ: number; rot: number };
+  private entranceBlend = 0;
+  private entranceDistance = 0;
   interiorBounds = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
@@ -148,6 +155,14 @@ export class CameraRig {
 
   resize(w: number, h: number, sidewaysPhone: boolean) {
     const aspect = w / h;
+    this.entranceDistance = 0;
+    if ((w < h && w <= 600) || sidewaysPhone) {
+      // Fit the 8.25 m fascia with 16 CSS px on each side at the resting follow lens.
+      const tan = Math.tan(degToRad((aspect < 0.87 ? 50 : wideFollowFov(aspect)) / 2));
+      const reach = 4.125 / (tan * aspect * Math.max(0.5, 1 - 32 / w));
+      this.entranceDistance = Math.max(11, reach + 1);
+    }
+    this.lastKey = "";
     this.cam.aspect = aspect;
     this.cam.updateProjectionMatrix();
     // Keep the player about as tall as with the narrowest sideways lens, even on shorter, less wide phones.
@@ -168,6 +183,8 @@ export class CameraRig {
   }
   snap() {
     if (this.mode === "follow") {
+      this.entranceBlend = this.entranceWeight();
+      if (this.entranceBlend) this.yaw += angleDiff(this.libraryEntrance!.rot + Math.PI, this.yaw) * this.entranceBlend;
       this.ahead.set(0, 0, 0);
       this.curPos.copy(this.placeFollow(0, true));
       this.curLook.copy(this.look);
@@ -331,8 +348,20 @@ export class CameraRig {
   }
 
   /** Indoors the view stays centred inside the room (never on the dark area beyond the open front). */
-  private interiorLook() {
-    if (this.interiorView) return new THREE.Vector3(...this.interiorView.look);
+  private displayWeight() {
+    const display = this.interiorView?.display;
+    if (!display) return 0;
+    const dx = Math.max(0, Math.abs(this.target.x - display.approach.x) - display.span / 2);
+    const dz = Math.max(0, this.target.z - display.approach.z);
+    return 1 - smoothstep(0, 2, Math.hypot(dx, dz));
+  }
+
+  private interiorLook(weight = this.displayWeight()) {
+    if (this.interiorView) {
+      const look = new THREE.Vector3(...this.interiorView.look);
+      if (weight) look.lerp(this.v1.set(...this.interiorView.display!.look), weight);
+      return look;
+    }
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
     const tx = THREE.MathUtils.clamp(this.target.x, -Math.max(0, halfW), Math.max(0, halfW));
     // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
@@ -353,10 +382,16 @@ export class CameraRig {
     if (this.mode === "interior") {
       const view = this.interiorView;
       const tangent = Math.tan(degToRad(this.fovFor(this.cam.aspect, 1, false) / 2));
-      const d = view ? Math.max(view.distance, view.halfWidth / (tangent * this.cam.aspect))
+      const fit = (frame: RoomFrame) => Math.max(frame.distance, frame.halfWidth / (tangent * this.cam.aspect));
+      let d = view ? fit(view)
         : Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
-      const pitch = view?.pitch ?? 0.78;
-      const L = this.interiorLook();
+      let pitch = view?.pitch ?? 0.78;
+      const weight = this.displayWeight();
+      if (view?.display && weight) {
+        d = THREE.MathUtils.lerp(d, fit(view.display), weight);
+        pitch = THREE.MathUtils.lerp(pitch, view.display.pitch, weight);
+      }
+      const L = this.interiorLook(weight);
       return new THREE.Vector3(L.x, L.y + Math.sin(pitch) * d, L.z + Math.cos(pitch) * d);
     }
     const h = Math.sin(this.pitch) * this.dist, r = Math.cos(this.pitch) * this.dist;
@@ -397,8 +432,12 @@ export class CameraRig {
    *  head only if no arm is clear for 3 m. */
   private bestArm(yaw: number) {
     this.evalYaw = yaw;
-    const pitch = this.pitch + (this.portraitHelm ? this.helmFrame.pitch : 0);
-    const dist = this.dist * this.followScale + (this.portraitHelm ? this.helmFrame.dist : 0);
+    let pitch = this.pitch + (this.portraitHelm ? this.helmFrame.pitch : 0);
+    let dist = this.dist * this.followScale + (this.portraitHelm ? this.helmFrame.dist : 0);
+    if (this.entranceBlend) {
+      dist = THREE.MathUtils.lerp(dist, this.entranceDistance, this.entranceBlend);
+      pitch = THREE.MathUtils.lerp(pitch, 0.22, this.entranceBlend);
+    }
     let bestP = Math.min(1.3, pitch), bestL = dist, score = -1;
     for (const r of RAISES) {
       const p = THREE.MathUtils.clamp(pitch + r, 0.12, 1.3), fl = this.armLen(p, dist), sc = Math.min(fl, 7) * (1 - (r > 0 ? 0.9 : 1.4) * Math.abs(r));
@@ -417,9 +456,13 @@ export class CameraRig {
     const t = this.target, a = this.ahead;
     this.chest.set(t.x, t.y + 1.35, t.z);
     this.look.set(t.x + a.x, t.y + 1.45, t.z + a.z);
+    if (this.entranceBlend && this.libraryEntrance) {
+      const door = this.libraryEntrance;
+      this.look.lerp(this.v1.set(door.outX, 0.5, door.outZ), this.entranceBlend);
+    }
     // (the same question as last frame, standing still with the camera settled: the same answer)
     const m = this.motion, moving = Math.abs(this.yawVel) > 0.15 || m.speed > 0.8;
-    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist * this.followScale, +this.portraitHelm].map((v) => v.toFixed(3)).join();
+    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist * this.followScale, +this.portraitHelm, this.entranceBlend].map((v) => v.toFixed(3)).join();
     let best: { p: number; l: number };
     if (this.lastBest && ((key && key === this.lastKey) || (this.hold && !snap))) best = { ...this.lastBest };
     else {
@@ -471,6 +514,12 @@ export class CameraRig {
     return pos;
   }
 
+  private entranceWeight() {
+    const door = this.libraryEntrance;
+    if (!door || !this.entranceDistance || this.dragging || this.manualT > 0) return 0;
+    return 1 - smoothstep(2.6, 4, Math.hypot(this.target.x - door.outX, this.target.z - door.outZ));
+  }
+
   /** The conversation uses 50° throughout. Very wide screens keep roughly the desktop's horizontal view, while
    *  upright phones keep the taller framing of the town and the rooms. */
   fovFor(w: number, h: number, running: boolean) {
@@ -488,6 +537,9 @@ export class CameraRig {
   update(dt: number, playerHeading: number, moving: boolean, forwardish: boolean, follow: boolean, recover = false) {
     void playerHeading; void moving; void forwardish;
     this.manualT -= dt;
+    this.entranceBlend = this.mode === "follow" && this.libraryEntrance && this.entranceDistance
+      ? ease(this.entranceBlend, this.entranceWeight(), 8, dt) : 0;
+    if (this.entranceBlend < 0.001) this.entranceBlend = 0;
     if (this.mode !== this.lastMode) { this.blendT = this.mode === "follow" ? 0.8 : 0; this.lastMode = this.mode; }
     this.blendT = Math.max(0, this.blendT - dt);
     const m = this.motion;
@@ -534,12 +586,17 @@ export class CameraRig {
         }
         this.evalYaw = this.yaw;
       }
-      if (swinging || this.slideYaw !== null) {
+      if (swinging || this.slideYaw !== null || this.entranceBlend) {
         // after a moment on the move, swing in behind where they are heading, eased (or round to where there is room)
         if (this.slideYaw !== null) gap = angleDiff(this.slideYaw, this.yaw);
         else if (Math.abs(gap) >= 2.9) gap = this.gapSign * Math.abs(gap);
         const w = this.slideYaw !== null ? 1 : smoothstep(0.15, 0.85, this.movingT);
-        const [step, v] = springStep(0, this.yawVel, gap * w, 3.3, dt);
+        let turn = gap * w;
+        if (this.entranceBlend) {
+          const facing = angleDiff(this.libraryEntrance!.rot + Math.PI, this.yaw);
+          turn = THREE.MathUtils.lerp(turn, facing, this.entranceBlend);
+        }
+        const [step, v] = springStep(0, this.yawVel, turn, 3.3, dt);
         this.yawVel = THREE.MathUtils.clamp(v, -2.3, 2.3);
         this.yaw = angleDiff(this.yaw + step, 0);
         // and back to the usual lean, if a drag changed it

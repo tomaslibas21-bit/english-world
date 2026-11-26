@@ -4,15 +4,20 @@ import { THEME } from "./theme";
 import { papelPicadoWall } from "./papelPicado";
 import { LIBRARY_PROFILE, LIBRARY_COPY } from "../../content/library";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { chamferBox } from "./shapes";
+import { chamferBox, hummingbirdShapes } from "./shapes";
 import { colourMerge, type Colliders } from "./util";
 
+export const LIBRARY_DISPLAY = { x: -2.58, z: -4.15, w: 5.4, d: 1.08, approach: { x: -2.58, z: -2.65 } };
 export const LIBRARY_VIEW = {
   look: [0.2, 1.2, 0.15] as const, pitch: 0.74, distance: 15.2, halfWidth: 7.1,
+  display: THEME.mexican ? {
+    approach: LIBRARY_DISPLAY.approach, span: LIBRARY_DISPLAY.w,
+    look: [LIBRARY_DISPLAY.x, 1.48, LIBRARY_DISPLAY.z + 0.25] as const,
+    pitch: 0.68, distance: 6.8, halfWidth: 2.85,
+  } : undefined,
 };
 
 export type LibraryAction = "browse" | "sit";
-export const LIBRARY_DISPLAY = { x: -2.58, z: -4.15, w: 5.4, d: 1.08, approach: { x: -2.58, z: -2.65 } };
 function readingChair(x: number, z: number, rot: number, tableX: number, tableZ: number) {
   return { x, z, rot, seatY: 0.55, tableX, tableZ,
     approach: { x: x + 1.8 * Math.sin(rot), z: z + 1.8 * Math.cos(rot) } };
@@ -21,6 +26,9 @@ export const LIBRARY_CHAIRS = [
   readingChair(2.7, -1.6, -0.82, 3.98, -2.25),
   readingChair(4.1, 1.1, -1.95, 4.72, 2.33),
 ];
+export const LIBRARY_PANEL = THEME.mexican ? {
+  x: LIBRARY_CHAIRS[0].x + 0.5, y: 2.8, z: -4.96, w: 2.4, h: 1.2,
+} : undefined;
 export const LIBRARY_STOPS = [
   { id: "display", action: "browse", chairIndex: undefined, approach: LIBRARY_DISPLAY.approach, ...LIBRARY_COPY.browse },
   ...LIBRARY_CHAIRS.map(({ approach }, i) => ({
@@ -180,12 +188,28 @@ function sashWindow(parts: Pieces) {
   c.board(3.73, 0.115, 0.31, 0, 1.53, 0.12, SHELF);
 }
 
+function hummingbirdPanel(parts: Pieces, mural: NonNullable<typeof LIBRARY_PANEL>) {
+  const panel = joinery(parts, mural.x, mural.z);
+  const { fascia: teal, lettering: cream } = THEME.library;
+  panel.board(mural.w, mural.h, 0.06, 0, mural.y, 0, teal);
+  // A glazed cream field inside the teal rim. The grout crosses the bird as well as the field.
+  const face = (w: number, h: number, x: number, y: number, depth: number, color: string) =>
+    panel.add(new THREE.PlaneGeometry(w, h).translate(x, y, depth), color);
+  face(2.32, 1.12, 0, 2.8, 0.032, cream);
+  for (const shape of hummingbirdShapes()) {
+    panel.add(new THREE.ShapeGeometry(shape, 10).scale(1.34, 1.04, 1).translate(-0.08, 2.86, 0.036), teal);
+  }
+  for (let i = -2; i <= 2; i++) face(0.012, 1.2, i * 0.4, 2.8, 0.04, "#c9bfa1");
+  for (const y of [2.6, 3]) face(2.4, 0.012, 0, y, 0.042, "#c9bfa1");
+}
+
 export function furnishLibrary({ g, col }: { g: THREE.Group; col: Colliders }) {
   const parts: Pieces = [], lights: Pieces = [];
   bookcase(parts, col, -2.2, 2);
   bookcase(parts, col, 0.98, 11);
   display(parts, col);
   if (THEME.mexican) {
+    if (LIBRARY_PANEL) hummingbirdPanel(parts, LIBRARY_PANEL);
     papelPicadoWall({ add: (g, color) => parts.push([g.translate(LIBRARY_DISPLAY.x, 0, 0), color]) },
       LIBRARY_DISPLAY.w + 1, 3.65, -4.90, 1);
     // A row of inset diamonds marks the threshold just inside the exit mat.

@@ -1,10 +1,13 @@
-import { Group, Matrix4, Mesh, Light, Raycaster, Vector3, type MeshBasicMaterial, type MeshLambertMaterial, type BufferGeometry } from "three";
+import { Box3, Group, Matrix4, Mesh, Light, Raycaster, Vector3, type MeshBasicMaterial, type MeshLambertMaterial, type BufferGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { useStore } from "../../src/state/store";
 import { hasLibraryShelf, LIBRARY_PROFILE, LIBRARY_COPY } from "../../src/content/library";
 import { LOCATIONS } from "../../src/content/locations";
 import { iconForEmoji } from "../../src/ui/icons";
 import { Game } from "../../src/game/Game";
-import { readingHeadphones } from "../../src/game/library/readingSeat";
+import { readingHeadphones, readingSeatShot } from "../../src/game/library/readingSeat";
 import { Gait, Hop, Steer } from "../../src/game/movement";
 import { audio } from "../../src/game/audio";
 import { coach } from "../../src/game/coach";
@@ -23,11 +26,51 @@ import { townCanvasDocument } from "../../tools/town-canvas-stub";
 vi.mock("../../src/content/library", async (original) => ({
   ...await original<typeof import("../../src/content/library")>(), LIBRARY_ENABLED: true,
 }));
+vi.mock("../../src/state/store", async (load) => {
+  const store = await load<typeof import("../../src/state/store")>();
+  type State = ReturnType<typeof store.useStore.getState>;
+  return { ...store, useStore: Object.assign((select: (state: State) => unknown) => select(store.useStore.getState()), store.useStore) };
+});
 
 beforeEach(() => vi.stubGlobal("document", townCanvasDocument()));
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 export function checkLibraryLayer(profile: "sme-en" | "sm-lt", name: string, browse: string) {
+  it("renders one bilingual touch action on each side of the library door", async () => {
+    vi.stubGlobal("location", { search: "" });
+    const { Hud } = await import("../../src/ui/Hud");
+    vi.stubGlobal("window", { innerWidth: 390, innerHeight: 844, matchMedia: (q: string) => ({ matches: q.includes("portrait") }) });
+    const prior = useStore.getState().hud;
+    const p = new Vector3(22, 0, 46.8);
+    const enterDoor = vi.fn(), exitInterior = vi.fn();
+    const game: Game = Object.assign(Object.create(Game.prototype), {
+      player: { root: { position: p } }, zone: { id: "town" }, npcs: [], staff: [], rides: { near: () => null },
+      town: { doors: [{ loc: "library", name: LOCATIONS.library.name, outX: p.x, outZ: p.z }] },
+      hop: new Hop(), diveK: 0, modes: { prompt: () => null }, routeVisualTarget: () => null,
+      guidanceTarget: () => null, saveAtHudTick: () => {}, enterDoor, exitInterior,
+    });
+    vi.spyOn(audio, "sfx").mockImplementation(() => {});
+    const lt = profile === "sm-lt";
+    try {
+      useStore.getState().setHud({ showTouch: true, objective: null });
+      for (const side of ["enter", "exit"]) {
+        game["updateHud"]();
+        const gloss = side === "enter" ? (lt ? "Įeiti į Kolibrių uosto biblioteką" : "Enter the Puerto Colibrí Library")
+          : (lt ? "Išeiti iš Kolibrių uosto bibliotekos" : "Leave the Puerto Colibrí Library");
+        expect(useStore.getState().hud.prompt?.kind).toBe(side);
+        const html = renderToStaticMarkup(createElement(Hud));
+        expect(html.match(/<button[^>]*data-library-door="true"/g)).toHaveLength(1);
+        expect(html).toContain(`lang="es">Biblioteca de Puerto Colibrí<small lang="${lt ? "lt" : "en"}">${gloss}</small>`);
+        expect(html).not.toContain('class="act-btn"');
+        game.interact();
+        Object.assign(game, { zone: { id: "library", interior: { exit: { x: 0, z: 4.8 } } } });
+        p.set(0, 0, 4.4);
+      }
+      expect(enterDoor).toHaveBeenCalledExactlyOnceWith("library");
+      expect(exitInterior).toHaveBeenCalledOnce();
+    } finally { useStore.getState().setHud(prior); }
+  });
+
   it("opens only with this learner's course or review shelf", () => {
     const other = profile === "sm-lt" ? "sme-en" : "sm-lt";
     const root = "https://audio.dvikalbesdainos.lt/spanish-master";
@@ -155,6 +198,35 @@ it("walks from the saved station start to the library using Game's own navigatio
   }
 });
 
+it("fits the fascia with 16 px to spare and keeps feet above the touch card on approach", () => {
+  const town = buildTown(), door = town.doors.find((d) => d.loc === "library")!;
+  const field = buildTownField(town);
+  for (const [w, h] of [[390, 844], [390, 664], [844, 390]]) {
+    const rig = new CameraRig(w / h);
+    rig.resize(w, h, w > h);
+    rig.libraryEntrance = door;
+    rig.space = { free: (a, b) => field.free(a, b), inside: (p) => field.solidAt(p.x, p.y, p.z, 0.15),
+      overSolid: (x, z) => field.overSolid(x, z) };
+    rig.cam.fov = rig.fovFor(w, h, false);
+    rig.cam.updateProjectionMatrix();
+    rig.applyViewShift(w, h, 0, -h * (w > h ? 0.1 : 0.12));
+    rig.target.set(door.x, 0, door.outZ - 4.5);
+    rig.snap();
+    for (const [dx, dz] of [[0, -2.4], [1.5, 0], [0, 1.5]]) {
+      rig.target.set(door.x + dx, 0, door.outZ + dz);
+      for (let i = 0; i < 240; i++) rig.update(1 / 60, 0, false, false, true);
+      rig.cam.updateMatrixWorld();
+      for (const edge of [-4.125, 4.125]) for (const y of [2.88, 3.66]) {
+        const corner = new Vector3(door.x + edge, y, door.z - 0.64).project(rig.cam);
+        expect((1 - Math.abs(corner.x)) * w / 2, `${w}x${h} at ${dx}, ${dz}`).toBeGreaterThanOrEqual(16);
+        expect(Math.abs(corner.y)).toBeLessThan(1);
+      }
+      // Reserve the bottom 150 CSS pixels for the wrapped bilingual card and its inset.
+      expect((1 - rig.target.clone().project(rig.cam).y) * h / 2).toBeLessThan(h - (w > h ? 100 : 150));
+    }
+  }
+});
+
 it("keeps the center aisle, exit and all three approaches free at avatar width", () => {
   const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
   const room = getInterior("library")!;
@@ -196,6 +268,33 @@ it("shows the shelves, jackets and both reading lamps in the doorway composition
       }
       expect(maxX).toBeLessThan(0.98); expect(maxY).toBeLessThan(0.98); expect(maxZ).toBeLessThan(1);
     }
+  }
+});
+
+it("frames the tiled bird on the back wall above the first chair and lamp", () => {
+  const room = getInterior("library")!;
+  const vertices = (room.group.getObjectByName("library-furniture") as Mesh).geometry.attributes.position;
+  const panel = new Box3();
+  for (let i = 0; i < vertices.count; i++) {
+    const p = new Vector3().fromBufferAttribute(vertices, i);
+    if (p.x > 1.5 && p.z < -4.9 && p.y >= 2) panel.expandByPoint(p);
+  }
+  const size = panel.getSize(new Vector3());
+  expect(size.x).toBeCloseTo(2.4); expect(size.y).toBeCloseTo(1.2);
+  expect(panel.getCenter(new Vector3()).y).toBeCloseTo(2.8);
+  const chair = LIBRARY_CHAIRS[0];
+  for (const [w, h] of [[390, 844], [390, 664], [844, 390], [1280, 800]]) {
+    const rig = new CameraRig(w / h);
+    rig.mode = "stage"; rig.stage = readingSeatShot(0, w / h, 1.95);
+    rig.stageSnap(); rig.applyPose(); rig.cam.updateMatrixWorld();
+    const lowest = panel.min.clone().project(rig.cam).y;
+    for (const p of [panel.min, panel.max]) {
+      const corner = p.clone().project(rig.cam);
+      expect(Math.abs(corner.y)).toBeLessThan(1);
+      expect(Math.abs(corner.x)).toBeLessThan(1);
+    }
+    expect(lowest).toBeGreaterThan(new Vector3(chair.x, 1.95, chair.z).project(rig.cam).y);
+    expect(lowest).toBeGreaterThan(new Vector3(chair.tableX, 2, chair.tableZ).project(rig.cam).y);
   }
 });
 
@@ -301,6 +400,41 @@ it("selects each face-out jacket from the doorway and opens that book at the dis
       game["autoTarget"] = walkTo.mock.lastCall![2];
       game["arrived"]();
       expect(shelf).toHaveBeenLastCalledWith(bookId);
+    }
+  } finally { leave(); }
+});
+
+it("enlarges every jacket over the last two metres and returns to the doorway view on retreat", async () => {
+  const room = getInterior("library")!, stop = LIBRARY_STOPS[0].approach;
+  shelfRequests();
+  vi.stubGlobal("createImageBitmap", async () => ({ width: 160, height: 250, close() {} }));
+  const leave = room.onEnter!(room.group);
+  try {
+    await vi.waitFor(() => expect(room.group.getObjectByName("library-jackets")).toBeDefined());
+    const vertices = (room.group.getObjectByName("library-jackets") as Mesh).geometry.attributes.position;
+    for (const [w, h] of [[390, 844], [390, 664], [844, 390], [1280, 800]]) {
+      const rig = new CameraRig(w / h);
+      rig.mode = "interior"; rig.interiorView = room.camera;
+      rig.cam.fov = rig.fovFor(w, h, false); rig.cam.updateProjectionMatrix();
+      rig.target.set(room.spawn.x, 0, room.spawn.z); rig.snap();
+      const widths = (z: number) => {
+        rig.target.set(stop.x, 0, z);
+        for (let i = 0; i < 120; i++) rig.update(1 / 60, 0, false, false, true);
+        rig.cam.updateMatrixWorld();
+        return ids.map((_, i) => {
+          const corners = [0, 1, 2, 3].map((j) => new Vector3().fromBufferAttribute(vertices, i * 4 + j).project(rig.cam));
+          expect(corners.every((p) => Math.abs(p.x) < 1 && Math.abs(p.y) < 1 && Math.abs(p.z) < 1)).toBe(true);
+          return Math.min(corners[1].x - corners[0].x, corners[3].x - corners[2].x) * w / 2;
+        });
+      };
+      const wide = widths(stop.z + 2), halfway = widths(stop.z + 1), near = widths(stop.z + 0.3);
+      const retreat = widths(stop.z + 2);
+      for (const i of ids.keys()) {
+        expect(halfway[i]).toBeGreaterThan(wide[i]);
+        expect(near[i]).toBeGreaterThan(halfway[i]);
+        expect(near[i]).toBeGreaterThanOrEqual(w >= 1000 ? 70 : 44);
+        expect(retreat[i]).toBeCloseTo(wide[i], 3);
+      }
     }
   } finally { leave(); }
 });
