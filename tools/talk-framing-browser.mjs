@@ -241,7 +241,8 @@ function openingState({ startName, host }) {
   const date = host === "sam" || host === "emma";
   const profile = progress.profile;
   const expectedHost = date ? profile?.datePartner ?? (profile?.gender === "f" ? "sam" : "emma") : host;
-  const bubble = panel?.querySelector(".transcript .msg.npc.speaking .bubble");
+  // (the speaking mark is on the line's part of the bubble: .bubble-part.speaking; older builds marked the .msg)
+  const bubble = panel?.querySelector(".transcript .msg.npc .bubble-part.speaking, .transcript .msg.npc.speaking .bubble");
   const hold = window.__talkFramingHold;
   return {
     active: conv.active, sitId: conv.sitId, run: conv.run, host: conv.hostId, speaker: conv.npcId, expectedHost,

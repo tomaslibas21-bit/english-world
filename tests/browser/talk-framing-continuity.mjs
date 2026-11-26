@@ -177,7 +177,7 @@ function installTrace({ route, source, portrait, wide, checkpoints }) {
       return;
     }
     if (phase === "handoff" && conv.npcId !== route.waiter) return;
-    const paintedLine = panel.querySelector(".transcript .msg.npc.speaking");
+    const paintedLine = panel.querySelector(".transcript .msg.npc:has(.bubble-part.speaking), .transcript .msg.npc.speaking");
     const speakerName = game.talkCast.find(({ id }) => id === conv.npcId)?.tag.querySelector("b")?.textContent.trim();
     if (!paintedLine?.querySelector(".bubble")?.textContent.trim()
       || paintedLine.querySelector(".meta > span")?.textContent.trim() !== speakerName) {
