@@ -49,6 +49,7 @@ const surfaces: Record<string, Surface> = {
   "gofish-offer": { priority: 60, first: "button:not([data-pad-back])" },
   barista: { priority: 60, first: ".barista-choice, .barista-chip, .barista-give button, .barista-listen-actions button", slot: ".barista-header" },
   gofish: { priority: 60, first: ".gofish-card, .gofish-choice, .gofish-fish, [data-target]", slot: ".gofish-header" },
+  arcade: { priority: 60, first: ".arcade-primary" },
   billiards: { priority: 60, first: ".bl-ball-option, .bl-choice", slot: ".bl-header" },
   photo: { priority: 60, first: "[data-choice], .photo-choices [data-line], .photo-quiz > button" },
   radio: { priority: 50, back: ".rs-x", slot: ".radio-set" },

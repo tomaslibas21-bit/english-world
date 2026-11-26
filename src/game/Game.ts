@@ -38,6 +38,7 @@ import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
+import { ArcadeMode } from "./arcade/mode";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
 import { SEA_EDITION } from "../content/sea";
@@ -256,6 +257,7 @@ export class Game implements GameApi {
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
+  private arcade?: ArcadeMode;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private gofish: ReturnType<typeof createGoFishMode> | null = null;
@@ -616,7 +618,12 @@ export class Game implements GameApi {
       },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
       entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
-      left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
+      left: (id) => {
+        if (!this.modes.owns(id)) return;
+        this.modes.left(id);
+        audio.bed(null);
+        this.arcade?.returnedFrom(id);
+      }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
       place: (x, z, rot) => this.placeOnFoot(x, z, rot),
@@ -687,6 +694,19 @@ export class Game implements GameApi {
       tina: () => this.npcs.find((actor) => actor.id === "tina")?.ch,
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       save: () => this.savePlace(),
+    }));
+    this.modes.register(this.arcade = new ArcadeMode(host, {
+      here: () => this.zone.id === BILLIARDS_PLACE,
+      place: ({ x, z, rot }) => this.placeOnFoot(x, z, rot, true),
+      start: (id, option) => this.modes.start(id, option),
+      refocus: () => {
+        if (this.disposed) return;
+        this.updateHud();
+        requestAnimationFrame(() => {
+          if (useStore.getState().hud.prompt?.kind === "arcade" && !this.modes.engaged)
+            document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus({ preventScroll: true });
+        });
+      },
     }));
     if (ROAD_EDITION.enabled) {
       this.road = new RoadEntry({
@@ -1098,6 +1118,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z || (!instant && this.transitioning)) return;
     if (id !== CAVE_ZONE) this.caveTravel.cancel();
+    this.arcade?.forgetReturn();
     if (this.modes.owns("surf")) this.modes.exit(true);
     this.pad?.cancel();
     const doIt = () => {
@@ -4351,7 +4372,7 @@ export class Game implements GameApi {
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
       }
     }
-    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id;
+    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id || best?.label !== this.nearest?.label;
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
       if (changed && best) audio.sfx("tick");
