@@ -32,6 +32,12 @@ export interface RadioOutput {
 
 const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==";
 
+export function streamingAudio(): HTMLAudioElement {
+  const el = new Audio();
+  el.preload = "auto";
+  return el;
+}
+
 export class HtmlOutput implements RadioOutput {
   onEnded: (() => void) | null = null;
   onStopped: ((reason: "error" | "interrupted") => void) | null = null;
@@ -46,8 +52,7 @@ export class HtmlOutput implements RadioOutput {
 
   private media(): HTMLAudioElement {
     if (this.el) return this.el;
-    const el = this.el = new Audio();
-    el.preload = "auto";
+    const el = this.el = streamingAudio();
     el.addEventListener("ended", () => { if (this.wanted && el.ended && el.src !== SILENCE) this.onEnded?.(); });
     // el.error is cleared when another recording is set: a late event of the one before is not this one's failure
     el.addEventListener("error", () => { if (this.wanted && el.error && el.src !== SILENCE) { this.wanted = false; this.onStopped?.("error"); } });
