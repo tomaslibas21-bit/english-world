@@ -182,19 +182,56 @@ try {
   await shot("ringing", card);
   await press(card.getByRole("button", { name: "Atmesti", exact: true }));
   assert.equal((await state()).missed[flood]?.presentations, 1);
-  await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind Meniu)
+  await duringFrames(() => openPhoneMenu(page)); // (batch 0: on a phone the town's tools fold behind Meniu)
   const toolbarPhone = page.locator('.toolbar button[title="Telefonas (P)"]');
   assert.equal(await toolbarPhone.locator(".due-badge").innerText(), "1");
   await press(toolbarPhone);
   const missed = page.locator(".missed-calls");
   assert.match(await missed.innerText(), /Praleisti skambučiai/);
   await shot("missed", missed);
-  await press(missed.getByRole("button", { name: "Perskambinti" }));
+  await press(page.locator(".phone-close"));
+
+  const support = "s80-support-call";
+  await page.evaluate(id => {
+    window.__ew.store.getState().updateProgress(p => { delete p.sits[id]; });
+    window.__ew.game.phoneDueNow();
+  }, support);
+  await calmThen(support);
+  await press(card.getByRole("button", { name: "Vėliau" }));
+  await page.evaluate(() => window.__ew.game.enterZone("station", { x: -5.2, z: 6.65, rot: 0 }, true));
+  await waitFor(() => page.evaluate(() => window.__ew.store.getState().hud.prompt?.kind === "phonebooth"), "station phone");
+  // Restore the common old-save case where a genuine missed item reached its automatic retry cap.
+  await page.evaluate(id => window.__ew.store.getState().updateProgress(p => { p.phone.missed[id].presentations = 3; }), flood);
+  const waiting = (await state()).missed;
+  await page.keyboard.press("e");
+  const book = page.getByRole("dialog", { name: "Miesto telefonų knyga" });
+  await press(book.locator('[data-contact="lizzie"]'));
+  await press(book.getByRole("button", { name: "Pradėti mokomąjį skambutį" }));
+  await waitFor(() => book.locator(".booth-line").isVisible(), "practice at the booth");
+  await noCardFor("a practice panel blocks new cards");
+  await press(book.getByRole("button", { name: "Padėti ragelį" }));
+  assert.deepEqual((await state()).missed, waiting);
+  assert.deepEqual((await state()).invitation, invitation);
+  await press(book.locator('[data-contact="lizzie"]'));
+  await press(book.getByRole("button", { name: /Atverti savo telefone/ }));
+  const callback = missed.locator(`[data-call="${flood}"] button`);
+  assert(await callback.evaluate(el => el === document.activeElement));
+  assert.equal(await missed.locator(".missed-call").count(), 2);
+  await shot("booth-handoff", missed);
+  await press(callback);
   await waitFor(() => conv(flood), "returning a missed call opens it");
   await waitFor(() => page.locator(".scene-intro").isVisible(), "regular flood intro");
   assert.match(await page.locator(".scene-intro").innerText(), /Pirmiausia paskambink/);
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id), flood));
+  assert.deepEqual((await state()).missed, { [support]: waiting[support] });
+  await page.keyboard.press("p");
+  const supportRow = missed.locator(`[data-call="${support}"] button`);
+  await shot("booth-returned", missed);
+  await press(supportRow);
+  await waitFor(() => conv(support), "other callback remains available");
+  assert(await page.evaluate(id => window.__ew.game.finishPhoneCallForTest(id), support));
   assert.deepEqual((await state()).missed, {});
+  await page.evaluate(() => window.__ew.game.enterZone("town", { x: 28, z: -20, rot: Math.PI }, true));
 
   await page.evaluate((id) => {
     const { game, store } = window.__ew;
@@ -267,6 +304,7 @@ try {
   assert(await page.evaluate(() => window.__ew.game.finishPhoneCallForTest("s90-running-late")));
   const office = page.locator('.objective-card[data-target-location="office"]');
   assert.match(await office.innerText(), /Skubėk į biurą – susirinkimas jau prasidėjo/);
+  await shot("office", office);
   await page.evaluate(() => window.__ew.game.teleportTo("office"));
   await waitFor(() => conv("s34-meeting"), "arriving at the office starts the meeting");
   await press(sceneStart);
