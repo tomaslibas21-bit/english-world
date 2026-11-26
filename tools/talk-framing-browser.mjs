@@ -3,6 +3,9 @@ const CAVE_SPOTS = {
   // First approaches from the Puerto Colibrí cave-talk browser test.
   "x02-alux-kin": { x: 0.2, z: -1.6, rot: 0 },
   "x03-alux-nikte": { x: -6.2, z: -98.6, rot: 0 },
+  // Maple Harbor's Slate Cove Cave: the same first approaches (tests/browser/mh-cave-talk.mjs).
+  "x06-bram": { x: 0.2, z: -1.6, rot: 0 },
+  "x07-fern": { x: -6.2, z: -98.6, rot: 0 },
 };
 const RETURNING = {
   version: 1,

@@ -112,6 +112,7 @@ function skipReason(sit) {
   if (["light", "picture"].includes(sit.mode)) return "picture-only";
   if (sit.mode === "narration") return "narration";
   if (sit.id === "x04-yaxche" && sit.npc === "yaxche") return "the speaking tree has no character head";
+  if (sit.id === "x08-old-oak" && sit.npc === "cave_oak") return "the speaking tree has no character head";
   return null;
 }
 
