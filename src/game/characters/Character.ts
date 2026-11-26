@@ -2099,9 +2099,10 @@ export class Character {
   express(kind: Mood, seconds = 4) { if (!this.talkPose) this.moodNow = { kind, t: seconds }; }
 
   /** React to the learner's answer: a nod when understood, a puzzled look when not; applause when the task is done
-   *  (after a nod under way). */
-  react(kind: "nod" | "puzzled" | "clap") {
+   *  (after a nod under way). Null clears a temporary activity's unfinished reaction. */
+  react(kind: "nod" | "puzzled" | "clap" | null) {
     if (this.talkPose) return;
+    if (kind === null) { this.reaction = null; this.clapNext = false; return; }
     if (kind === "clap" && this.reaction?.kind === "nod") { this.clapNext = true; return; }
     this.reaction = { kind, t: 0 };
   }

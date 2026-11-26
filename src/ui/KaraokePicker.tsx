@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { KARAOKE_UI as words } from "../content/karaokeCopy";
 import { STATIONS } from "../content/radio";
 import { game } from "../game/gameRef";
@@ -7,7 +7,7 @@ import { radio, useRadio } from "../radio";
 import type { KaraokeState } from "../radio/karaokeSession";
 import type { KaraokeCatalogEntry } from "../radio/songs";
 import { Icon } from "./icons";
-import { LyricStrip } from "./Radio";
+import { KaraokeStage, karaokeDialogKeys, karaokeStatus } from "./KaraokeStage";
 import { SongCover } from "./SongCover";
 import "./karaoke.css";
 
@@ -20,25 +20,6 @@ const noSubscription = () => () => {};
 export function karaokeDuration(seconds: number) {
   const whole = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
-}
-
-function takeMessage(take: KaraokeState) {
-  if (take.status === "loading") return words.preparing;
-  if (take.status === "error") return take.issue === "timing" ? words.timingError : words.audioError;
-  if (take.status === "ended") return words.finished;
-  if (take.held) return words.held;
-  return "";
-}
-
-/** Modal keyboard handling stays on the visible surface, above the world's shortcuts. */
-function dialogKeys(event: KeyboardEvent<HTMLElement>, act: Action) {
-  event.stopPropagation();
-  if (event.key === "Escape") { event.preventDefault(); act("back"); }
-  if (event.key !== "Tab") return;
-  const controls = [...event.currentTarget.querySelectorAll<HTMLElement>("button:not(:disabled), select:not(:disabled), input:not(:disabled)")];
-  const first = controls[0], last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
 }
 
 interface PickerProps {
@@ -74,7 +55,7 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
   return (
     <div className="karaoke-shade">
       <section className="karaoke-picker" role="dialog" aria-modal="true" aria-labelledby="karaoke-heading"
-        lang="lt" data-pad-scope="karaoke" data-detail={!!selected} onKeyDown={(event) => dialogKeys(event, act)}>
+        lang="lt" data-pad-scope="karaoke" data-detail={!!selected} onKeyDown={(event) => karaokeDialogKeys(event, act)}>
         <header className="karaoke-mast">
           <button type="button" className="karaoke-back" data-pad-back onClick={() => act("back")} aria-label={words.back}><Icon name="arrowLeft" /></button>
           <Icon name="mic" /><h1 id="karaoke-heading">{words.sign}</h1>
@@ -86,18 +67,20 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
               <h2 lang="en">{selected.song.t}</h2>
               {selected.song.tl && <p>{selected.song.tl}</p>}
               <span className="karaoke-length">{karaokeDuration(selected.song.d)}</span>
-              <fieldset className="karaoke-modes">
+              <fieldset className="karaoke-modes" disabled={waiting}>
                 <legend>{words.mode}</legend>
-                <label><input type="radio" name="karaoke-mode" value="along" defaultChecked />{words.along}</label>
-                <label className="karaoke-upcoming"><input type="radio" name="karaoke-mode" value="echo" disabled aria-describedby="karaoke-echo-note" />{words.echo}</label>
-                <small id="karaoke-echo-note">{words.echoSoon}</small>
+                <select data-pad-adjust aria-label={words.mode} aria-describedby="karaoke-echo-note" value={view.mode} onChange={(event) => act("mode", event.target.value)}>
+                  <option value="along">{words.along}</option>
+                  <option value="echo">{words.echo}</option>
+                </select>
+                <small id="karaoke-echo-note">{words.echoHelp}</small>
               </fieldset>
-              <p className="karaoke-status" role="status">{takeMessage(selectedTake)}</p>
+              <p className="karaoke-status" role="status">{karaokeStatus(selectedTake)}</p>
             </div>
           </div>
           <footer className="karaoke-picker-foot">
             <button ref={start} type="button" className="karaoke-primary" data-pad-default disabled={waiting}
-              onClick={() => act(selectedTake.status === "error" ? "retry" : selectedTake.status === "blocked" ? "resume" : "start")}>
+              onClick={() => act(selectedTake.status === "blocked" && selectedTake.practice?.mode === view.mode ? "resume" : "start")}>
               <Icon name="play" />{selectedTake.status === "error" ? words.retry : selectedTake.status === "blocked" ? words.resume : words.start}
             </button>
           </footer>
@@ -132,30 +115,6 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
   );
 }
 
-function KaraokePerformance({ take }: { take: KaraokeState }) {
-  const leave = useRef<HTMLButtonElement>(null);
-  useLayoutEffect(() => { leave.current?.focus(); }, []);
-  const playing = take.status === "playing";
-  return <section className="karaoke-performance" role="dialog" aria-modal="true" aria-labelledby="karaoke-song-title"
-    data-pad-scope="karaoke-stage" onKeyDown={(event) => dialogKeys(event, action)} lang="lt">
-    <header className="karaoke-stage-head">
-      <div><span>{words.sign}</span><h1 id="karaoke-song-title" lang="en">{take.song?.t}</h1></div>
-      <button ref={leave} type="button" data-pad-default onClick={() => action("leave")}>{words.leave}</button>
-    </header>
-    <div className="karaoke-stage-bottom">
-      <p className="karaoke-status" role="status">{takeMessage(take)}</p>
-      <div className="karaoke-stage-actions">
-        <button type="button" data-pad-back onClick={() => action("back")}>{words.another}</button>
-        {take.status !== "ended" && <button type="button" className="karaoke-primary" disabled={take.held || take.status === "loading"}
-          onClick={() => action(take.status === "error" ? "retry" : playing ? "pause" : "resume")}>
-          {take.status === "error" ? words.retry : playing ? words.pause : words.resume}
-        </button>}
-      </div>
-    </div>
-    <LyricStrip sidewaysPhone={false} karaoke />
-  </section>;
-}
-
 export function KaraokeOverlay() {
   const view = useKaraoke();
   useRadio((s) => s);
@@ -165,6 +124,6 @@ export function KaraokeOverlay() {
     queueMicrotask(() => document.querySelector<HTMLElement>(".prompt")?.focus({ preventScroll: true }));
   }, []);
   if (view.phase === "closed") return null;
-  return view.phase === "stage" ? <KaraokePerformance take={take} />
+  return view.phase === "stage" && view.take ? <KaraokeStage session={view.take} take={take} />
     : <KaraokePicker entries={radio.karaokeCatalog()} favorites={radio.karaokeFavorites()} view={view} take={take} act={action} />;
 }

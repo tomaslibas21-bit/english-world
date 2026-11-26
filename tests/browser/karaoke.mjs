@@ -1,6 +1,6 @@
-// Claude's K2 review. Run against an already running game configured with
+// Claude's K2 + K3 review. Run against an already running game configured with
 // VITE_RADIO_INDEX=/songs/index.json and VITE_RADIO_FILES=/karaoke-files.
-// WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_SHOTS=/tmp/karaoke-k2 \
+// WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_SHOTS=/tmp/karaoke-k3 \
 // WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/karaoke.mjs
 // Course files are read locally. No course or Worker writes, or external media downloads.
 import assert from "node:assert/strict";
@@ -10,7 +10,7 @@ import { join } from "node:path";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
-const shots = process.env.WORLD_SHOTS || "/tmp/karaoke-k2";
+const shots = process.env.WORLD_SHOTS || "/tmp/karaoke-k3";
 const course = process.env.WORLD_COURSE_PUBLIC || join(homedir(), "fluent-steps/public");
 const index = JSON.parse(await readFile(join(course, "songs/index.json"), "utf8"));
 const lyric = JSON.parse(await readFile(join(course, "songs/data/G01.json"), "utf8"));
@@ -111,14 +111,53 @@ try {
       await press(start);
       await page.locator(".karaoke-performance").waitFor();
       await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
-      await page.evaluate(async () => { await window.__ew.radio.store.getState().karaoke.seek(7.1); });
-      await page.locator(".karaoke-performance .radio-line").waitFor();
+      await page.evaluate(async () => {
+        const take = window.__ew.radio.store.getState().karaoke;
+        await take.seek(7.1); take.pause();
+      });
+      await page.locator('.karaoke-current-line[data-line="0"] .karaoke-word.now').waitFor();
       await until(() => {
         const { game } = window.__ew, stage = game.rig.stage;
         return stage && game.rig.cam.position.distanceTo(stage.pos) < 0.03;
       });
       assert(await page.evaluate(() => !!window.__ew.game.player.rightHand.getObjectByName("karaoke-hand-mic")));
       await shot("stage");
+      await shot("first-line");
+      await press(page.getByRole("button", { name: "Rodyti reikšmę", exact: true }));
+      await page.locator(".karaoke-natural").waitFor();
+      assert.equal(await page.locator(".karaoke-natural").textContent(), lyric.L[0].lt);
+      await shot("meaning");
+      await press(page.getByRole("button", { name: "Slėpti reikšmę", exact: true }));
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused", "closing meanings preserves a manual pause");
+      await press(page.getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
+      await picker.waitFor();
+      await picker.getByRole("combobox", { name: "Praktikos būdas", exact: true }).selectOption("echo");
+      await press(picker.getByRole("button", { name: "Pradėti dainą", exact: true }));
+      await page.locator(".karaoke-turn").waitFor();
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
+      await shot("echo-turn");
+      await press(page.getByRole("button", { name: "Išklausyti eilutę dar kartą", exact: true }));
+      await page.locator(".karaoke-turn").waitFor({ state: "detached" });
+      await page.locator(".karaoke-turn").waitFor();
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1, "replaying a line adds no second point");
+      await page.evaluate(() => {
+        const audio = window.__ew.audio, sfx = audio.sfx.bind(audio);
+        window.__karaokeCheers = 0;
+        audio.sfx = (name, ...args) => { if (name === "crowdCheer") window.__karaokeCheers++; return sfx(name, ...args); };
+      });
+      await press(page.getByRole("button", { name: "Tęsti", exact: true }));
+      const lastLine = lyric.L.at(-1);
+      await page.evaluate(async (seconds) => { await window.__ew.radio.store.getState().karaoke.seek(seconds); }, lastLine.s);
+      await page.waitForFunction((last) => window.__ew.radio.store.getState().karaoke?.store.getState().practice.turn?.rows.includes(last), lyric.L.length - 1);
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused", "the last sung line gets its turn");
+      await press(page.getByRole("button", { name: "Tęsti", exact: true }));
+      await page.locator(".karaoke-finish").waitFor({ timeout: 40000 });
+      const result = await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice);
+      assert.equal(result.total, lyric.L.length);
+      assert(result.completed >= 2 && result.completed < result.total, "skipped rows receive no practice credit");
+      assert.equal(await page.evaluate(() => window.__karaokeCheers), 1);
+      await page.locator(".confetti").waitFor();
+      await shot("finish");
       await press(page.getByRole("button", { name: "Nulipti nuo scenos", exact: true }));
       await picker.waitFor({ state: "detached" });
       await until(() => window.__ew.store.getState().hud.prompt?.kind === "karaoke");

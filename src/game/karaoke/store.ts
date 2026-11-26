@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { KaraokeCatalogEntry } from "../../radio/songs";
 import type { Station } from "../../radio/playlist";
 import type { KaraokeSession } from "../../radio/karaokeSession";
+import type { KaraokePracticeMode } from "./practice";
 
 interface KaraokeUi {
   phase: "closed" | "picker" | "stage";
@@ -12,10 +13,11 @@ interface KaraokeUi {
   loading: boolean;
   failed: boolean;
   take: KaraokeSession | null;
+  mode: KaraokePracticeMode;
 }
 
 const empty: KaraokeUi = {
-  phase: "closed", detail: null, selected: null, filter: "all", scroll: 0, loading: false, failed: false, take: null,
+  phase: "closed", detail: null, selected: null, filter: "all", scroll: 0, loading: false, failed: false, take: null, mode: "along",
 };
 export const useKaraoke = create<KaraokeUi>(() => empty);
 export function resetKaraokeUi() { useKaraoke.setState(empty); }

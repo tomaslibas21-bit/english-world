@@ -15,6 +15,7 @@ import { NavGrid } from "../src/game/nav";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 import { Radio } from "../src/radio/radio";
 import type { RadioOutput } from "../src/radio/output";
+import { audio } from "../src/game/audio";
 
 function actor() {
   const root = new Group(), rightHand = new Group(), joints = new Map<CharacterJoint, Group>();
@@ -74,9 +75,34 @@ async function fixture({ configured = true, ready = true, player = actor() } = {
     screen: () => screen, setInside: (value: boolean) => { inside = value; }, setCanStart: (value: boolean) => { canStart = value; } };
 }
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
-afterEach(() => { resetKaraokeUi(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+afterEach(() => { resetKaraokeUi(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe("the café karaoke mode", () => {
+  it("celebrates a natural finish once, waits for a hold to clear and uses still feedback with reduced motion", async () => {
+    const cheer = vi.spyOn(audio, "sfx").mockImplementation(() => {});
+    const f = await fixture();
+    f.guests.forEach((guest) => { guest.react = vi.fn(); });
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01"); f.mode.action("start"); await flush();
+    const take = f.radio.store.getState().karaoke!;
+    take.store.setState({ held: true });
+    const ended = f.out.onEnded!;
+    ended();
+    expect(cheer).not.toHaveBeenCalledWith("crowdCheer", 0.5);
+    take.store.setState({ held: false });
+    expect(cheer).toHaveBeenCalledExactlyOnceWith("crowdCheer", 0.5);
+    expect(f.guests[0].react).toHaveBeenCalledExactlyOnceWith("clap");
+    ended(); take.store.setState({ held: false });
+    expect(cheer).toHaveBeenCalledTimes(1);
+    f.mode.action("back");
+    expect(f.guests[0].react).toHaveBeenLastCalledWith(null);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    f.mode.action("start"); await flush();
+    f.out.onEnded!();
+    expect(vi.mocked(f.guests[0].react!).mock.calls.filter(([reaction]) => reaction === "clap")).toHaveLength(1);
+    expect(cheer).toHaveBeenCalledTimes(2);
+    f.registry.exit(true);
+  });
   it("offers only the configured indoor stand and refuses another conversation or mode", async () => {
     const f = await fixture();
     expect(f.registry.prompt(KARAOKE_PROMPT.x, KARAOKE_PROMPT.z, Infinity, false)).toBeNull();

@@ -40,6 +40,8 @@ export interface SongLine {
   /** sung from / to (seconds) */
   s: number;
   e: number;
+  /** The course's section, used for the booth audience's quiet reactions. */
+  sec?: number;
   src: string;
   /** the line in the learner's language */
   lt: string;

@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import { buildTimeline, withSungTranslations, type Timeline } from "./lyrics";
 import { NeedsTap, type RadioOutput } from "./output";
 import { fetchSongJson, readSongLines, songAudioUrls, type RadioConfig, type SongMeta } from "./songs";
+import { KaraokePractice, type KaraokePracticeMode, type PracticeSnapshot } from "../game/karaoke/practice";
 
 export interface KaraokeState {
   status: "idle" | "loading" | "playing" | "paused" | "blocked" | "ended" | "error" | "closed";
@@ -9,6 +10,8 @@ export interface KaraokeState {
   timeline: Timeline | null;
   held: boolean;
   issue: "audio" | "timing" | null;
+  practice?: PracticeSnapshot;
+  turnPaused?: boolean;
 }
 
 interface SessionDeps {
@@ -33,6 +36,13 @@ export class KaraokeSession {
   private run = 0;
   private load?: AbortController;
   private resumeTimer?: ReturnType<typeof setTimeout>;
+  private practice?: KaraokePractice;
+  private mode: KaraokePracticeMode = "along";
+  private sampledAt = 0;
+  private endedInTurn = false;
+  private reading = false;
+  private resumePending = false;
+  private tickAt = performance.now();
 
   constructor(private deps: SessionDeps) {
     this.store = createStore<KaraokeState>(() => ({
@@ -44,28 +54,37 @@ export class KaraokeSession {
   position() { return this.state.status === "playing" ? this.deps.output.position() : this.at; }
   duration() { return this.length || this.state.song?.d || 0; }
 
-  start(id: string) {
+  start(id: string, mode: KaraokePracticeMode = "along") {
     const song = this.deps.song(id);
     if (!song || this.state.status === "closed") return;
     this.cancel();
     this.at = this.length = this.address = 0;
+    this.sampledAt = 0;
+    this.practice = undefined;
+    this.mode = mode;
+    this.endedInTurn = this.reading = false;
     this.wantsPlay = true;
-    this.store.setState({ song, timeline: null, issue: null, status: "paused" });
+    this.store.setState({ song, timeline: null, practice: undefined, turnPaused: false, issue: null, status: "paused" });
     return this.resume();
   }
 
   pause() {
     if (this.state.status === "closed") return;
+    this.tickAt = performance.now();
+    this.sample();
     this.wantsPlay = false;
-    this.cancel();
+    this.cancel(this.sampledAt);
     if (["loading", "playing", "blocked"].includes(this.state.status)) this.store.setState({ status: "paused" });
+    this.publishPractice();
   }
 
   resume() {
     const { song, status, held } = this.state;
     if (!song || (status !== "paused" && status !== "blocked")) return;
+    this.tickAt = performance.now();
     this.wantsPlay = true;
-    if (held) return;
+    this.publishPractice();
+    if (held || this.reading || this.resumePending || this.practice?.snapshot().turn) return;
     this.deps.output.unlock();
     return this.play(song);
   }
@@ -81,10 +100,75 @@ export class KaraokeSession {
     const { song, status } = this.state;
     if (!song || !Number.isFinite(seconds) || ["error", "closed"].includes(status)) return;
     const requested = this.wantsPlay;
+    this.sample();
     this.cancel();
     this.at = Math.max(0, this.length ? Math.min(seconds, this.length) : seconds);
-    this.store.setState({ status: status === "blocked" ? "blocked" : "paused" });
-    if (requested && !this.state.held) return this.play(song);
+    this.sampledAt = this.at;
+    this.endedInTurn = false;
+    this.practice?.seek(this.at);
+    this.store.setState({ status: status === "blocked" ? "blocked" : "paused", practice: this.practice?.snapshot() });
+    if (requested && !this.state.held && !this.reading) return this.play(song);
+  }
+
+  /** Called from the mode's existing frame loop, including while its controls own input. */
+  tick(seconds?: number) {
+    const now = performance.now();
+    const elapsed = seconds ?? Math.max(0, (now - this.tickAt) / 1000);
+    this.tickAt = now;
+    if (this.state.status === "playing") this.sample();
+    else if (this.state.status === "paused" && this.wantsPlay && !this.state.held && !this.reading && !this.resumePending) {
+      if (this.practice?.elapse(elapsed)) { this.continueTurn(); return; }
+      this.publishPractice();
+    }
+  }
+
+  continueTurn() {
+    if (!this.practice?.snapshot().turn) return;
+    this.practice.continue();
+    this.publishPractice();
+    if (this.endedInTurn) { this.finish(); return; }
+    return this.resume();
+  }
+
+  replayLine() {
+    const call = this.practice?.replayAt(this.position());
+    if (!call) return;
+    this.pause();
+    void this.seek(call.start);
+    return this.resume();
+  }
+
+  /** A compact meaning card borrows silence without overriding a later explicit pause. */
+  setReading(reading: boolean) {
+    if (this.reading === reading || this.state.status === "closed") return;
+    this.tickAt = performance.now();
+    this.reading = reading;
+    if (reading) {
+      this.sample();
+      this.cancel(this.sampledAt);
+      if (this.state.status === "playing" || this.state.status === "loading") this.store.setState({ status: "paused" });
+    } else if (this.wantsPlay && !this.state.held && !this.resumePending && !this.practice?.snapshot().turn && this.state.song) {
+      return this.play(this.state.song);
+    }
+  }
+
+  private publishPractice() {
+    const practice = this.practice?.snapshot();
+    const turnPaused = !!practice?.turn && !this.wantsPlay;
+    if (practice !== this.state.practice || turnPaused !== this.state.turnPaused) this.store.setState({ practice, turnPaused });
+  }
+
+  private sample(until = this.deps.output.position()) {
+    if (this.state.status !== "playing" || !this.practice) return;
+    const boundary = this.practice.advance(this.sampledAt, until, this.deps.output.playbackRate?.() ?? 1);
+    this.sampledAt = boundary ?? until;
+    this.publishPractice();
+    if (boundary !== null) {
+      this.cancel(boundary);
+      this.at = boundary;
+      this.store.setState({ status: "paused" });
+    }
+    return boundary;
   }
 
   /** An OS interruption or a hidden page always needs a new play request. */
@@ -95,16 +179,22 @@ export class KaraokeSession {
   /** The radio still owns the hold set, including overlapping voice, bed and microphone holds. */
   setHeld(held: boolean) {
     if (this.state.held === held || this.state.status === "closed") return;
+    this.tickAt = performance.now();
     if (held && this.wantsPlay) {
-      this.cancel();
+      this.store.setState({ held });
+      this.sample();
+      this.cancel(this.sampledAt);
       this.store.setState({ held, status: "paused" });
       return;
     }
     this.store.setState({ held });
     if (!held && this.wantsPlay) {
+      this.resumePending = true;
       this.resumeTimer = setTimeout(() => {
+        this.resumePending = false;
+        this.tickAt = performance.now();
         const { song, held } = this.state;
-        if (song && !held && this.wantsPlay) void this.play(song);
+        if (song && !held && !this.reading && this.wantsPlay && !this.practice?.snapshot().turn) void this.play(song);
       }, this.deps.resumeDelay);
     }
   }
@@ -114,24 +204,27 @@ export class KaraokeSession {
     this.wantsPlay = false;
     this.cancel();
     this.at = this.length = 0;
-    this.store.setState({ status: "closed", song: null, timeline: null, issue: null, held: false });
+    this.practice = undefined;
+    this.reading = false;
+    this.store.setState({ status: "closed", song: null, timeline: null, practice: undefined, turnPaused: false, issue: null, held: false });
     this.deps.close(resumeStreet);
   }
 
-  private cancel() {
+  private cancel(at?: number) {
     const out = this.deps.output;
     clearTimeout(this.resumeTimer);
+    this.resumePending = false;
     this.run++;
     this.load?.abort();
     this.load = undefined;
-    if (this.state.status === "playing") this.at = out.position();
+    if (this.state.status === "playing") this.at = at ?? out.position();
     out.pause();
     out.onEnded = null;
     out.onStopped = null;
   }
 
   private async play(song: SongMeta) {
-    if (this.state.held || !this.wantsPlay) return;
+    if (this.state.held || this.reading || !this.wantsPlay) return;
     this.cancel();
     const run = this.run;
     const { config, output: out } = this.deps;
@@ -150,7 +243,9 @@ export class KaraokeSession {
         const lines = readSongLines(data, true);
         if (!lines.length) { this.fail("timing"); return; }
         timeline = buildTimeline(withSungTranslations(lines));
-        this.store.setState({ timeline });
+        this.practice = new KaraokePractice(timeline.lines, this.mode);
+        this.practice.seek(this.at);
+        this.store.setState({ timeline, practice: this.practice.snapshot() });
       } catch {
         if (run === this.run) this.fail("audio");
         return;
@@ -166,10 +261,9 @@ export class KaraokeSession {
       out.onEnded = () => {
         if (run !== this.run || !current) return;
         this.length = out.duration?.() || this.duration();
-        this.wantsPlay = false;
-        this.cancel();
-        this.at = this.length;
-        this.store.setState({ status: "ended" });
+        const boundary = this.sample(this.length);
+        if (boundary != null) { this.endedInTurn = boundary >= this.length - 0.001; return; }
+        this.finish();
       };
       out.onStopped = (reason) => {
         if (run !== this.run || !current) return;
@@ -182,6 +276,7 @@ export class KaraokeSession {
         if (!playing) { this.interrupt(); return; }
         this.address = index;
         this.length = out.duration?.() || 0;
+        this.sampledAt = this.at;
         this.store.setState({ status: "playing" });
         return;
       } catch (error) {
@@ -197,6 +292,13 @@ export class KaraokeSession {
       }
     }
     this.fail("audio");
+  }
+
+  private finish() {
+    this.wantsPlay = false;
+    this.cancel();
+    this.at = this.length;
+    this.store.setState({ status: "ended", practice: this.practice?.snapshot() });
   }
 
   private fail(issue: NonNullable<KaraokeState["issue"]>) {

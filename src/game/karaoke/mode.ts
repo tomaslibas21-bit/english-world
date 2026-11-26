@@ -7,6 +7,8 @@ import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { useKaraoke, resetKaraokeUi } from "./store";
 import { KARAOKE_MARK, KARAOKE_PROMPT, disposeKaraokeMic, karaokeShot, makeKaraokeMic } from "./stage";
+import { audio } from "../audio";
+import { karaokeReading } from "../../radio/lyrics";
 
 interface CafeHost {
   room(): THREE.Group | null;
@@ -48,6 +50,9 @@ export class KaraokeMode implements GameMode {
   private dockedVisible = true;
   private origin?: { x: number; z: number; rot: number };
   private watched = new THREE.Vector3();
+  private celebrated = false;
+  private section?: number;
+  private reacting = false;
 
   constructor(private host: ModeHost, private cafe: CafeHost, private radio: BoothRadio) {}
 
@@ -93,12 +98,24 @@ export class KaraokeMode implements GameMode {
     this.take ??= this.radio.openKaraoke();
     if (!this.take) return;
     this.unsubscribe?.();
+    this.celebrated = false;
+    this.section = undefined;
     useKaraoke.setState({ take: this.take });
     this.unsubscribe = this.take.store.subscribe((state) => {
       if (this.opened && state.status === "playing" && !this.staged) this.stage();
       if (this.opened && state.status === "closed") this.exit(true);
+      if (this.opened && state.status === "ended" && !state.held && !this.celebrated) {
+        this.celebrated = true;
+        audio.sfx("crowdCheer", 0.5);
+        const reduced = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!reduced) for (const guest of this.cafe.audience()) {
+          this.reacting = true;
+          if (guest.react) guest.react("clap");
+          else guest.root.rotation.y = Math.atan2(KARAOKE_MARK.x - guest.root.position.x, KARAOKE_MARK.z - guest.root.position.z);
+        }
+      }
     });
-    void this.take.start(id);
+    void this.take.start(id, useKaraoke.getState().mode);
   }
 
   private stage() {
@@ -119,13 +136,27 @@ export class KaraokeMode implements GameMode {
     this.host.rig.mode = "stage";
     if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) this.host.rig.stageSnap();
     useKaraoke.setState({ phase: "stage" });
+    audio.preload(["crowdCheer"]);
   }
 
   update(frame: ModeFrame) {
     if (!this.opened) return;
+    this.take?.tick();
     this.host.updatePose(frame.dt, this.staged ? KARAOKE_MARK.rot : this.origin!.rot);
     if (!this.staged) return;
     const player = this.host.player(), guests = this.cafe.audience();
+    const state = this.take?.store.getState();
+    if (state?.status === "playing" && state.timeline) {
+      const seconds = this.take!.position();
+      const row = state.timeline.lines[karaokeReading(state.timeline, seconds).current];
+      if (row && row.part !== "translation" && seconds >= row.s && row.sec !== this.section) {
+        this.section = row.sec;
+        if (!(typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+          this.reacting = true;
+          guests[1]?.react?.("nod");
+        }
+      }
+    }
     this.watched.copy(player.root.position).y += player.height * 0.8;
     for (const guest of guests) {
       guest.watch = this.watched;
@@ -144,6 +175,8 @@ export class KaraokeMode implements GameMode {
     if (this.docked) this.docked.visible = this.dockedVisible;
     this.docked = undefined;
     if (this.origin) this.cafe.place(this.origin.x, this.origin.z, this.origin.rot);
+    if (this.reacting) for (const guest of this.cafe.audience()) guest.react?.(null);
+    this.reacting = false;
     for (const restore of this.restoreActors) restore();
     this.restoreActors = [];
     this.restoreCamera?.();
@@ -171,10 +204,13 @@ export class KaraokeMode implements GameMode {
       const id = useKaraoke.getState().detail;
       if (id) this.startSong(id);
     }
+    if (name === "mode" && (value === "along" || value === "echo")) useKaraoke.setState({ mode: value });
     if (name === "catalog-retry") void this.loadCatalog();
     if (name === "pause") this.take?.pause();
     if (name === "resume") void this.take?.resume();
     if (name === "retry") void this.take?.retry();
+    if (name === "replay") void this.take?.replayLine();
+    if (name === "continue") void this.take?.continueTurn();
   }
 
   input(input: ModeInput) {
