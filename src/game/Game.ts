@@ -165,6 +165,8 @@ function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
 }
 /** Close enough to talk to someone (the "Kalbėtis" prompt shows): `talkDist` under this. */
 const TALK_RANGE = 2.9;
+/** How long a walk to a spot waits at most for a car of the traffic in its way (s), then gives up as when held up. */
+const CAR_WAIT = 12;
 /** How far `p` is from talking to `n`: from them, or from their spot to talk from plus a metre. */
 function talkDist(n: NpcActor, p: { x: number; z: number }) {
   const d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
@@ -233,7 +235,7 @@ export class Game implements GameApi {
   private autoTarget: WalkTarget | null = null;
   private guidedWalk: GuideMode | null = null;
   private caveGuideMode: GuideMode = "objective";
-  private walkCheck = { time: 0, remaining: Infinity };
+  private walkCheck = { time: 0, remaining: Infinity, wait: 0 };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
   private t = 0;
@@ -2204,7 +2206,7 @@ export class Game implements GameApi {
     this.autoPath = [...down, ...path.slice(1)];
     const npc = target?.kind === "npc" ? this.npcs.find((n) => n.id === target.id) : undefined;
     if ((endX === x && endZ === z) || (npc && talkDist(npc, { x: endX, z: endZ }) < TALK_RANGE - 0.35)) this.autoTarget = target;
-    this.walkCheck = { time: 0, remaining: Infinity };
+    this.walkCheck = { time: 0, remaining: Infinity, wait: 0 };
     this.stepOut = 0;
   }
 
@@ -2261,6 +2263,9 @@ export class Game implements GameApi {
       }
       return;
     }
+    // (the HUD looks for what is near only every 0.12 s, and a step to a new spot (placeOnFoot) forgets it while the
+    // prompt still shows: E or the Talk button pressed in that moment looks now)
+    if (!this.nearest) this.updateHud();
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
@@ -3135,13 +3140,22 @@ export class Game implements GameApi {
     else p.easy = 0;
   }
 
+  /** How short an upright phone is for the taxi's greeting shot (0 at 844 px and taller, 1 at 664 px and shorter): Don
+   *  Rigo's words with their glosses fill the top, the stick and the brake the bottom, so the shot widens and sits
+   *  lower to keep the whole taxi between them. */
+  private shortGreeting(w: number, h: number) {
+    return this.sidewaysPhone || h <= w ? 0 : THREE.MathUtils.clamp((844 - h) / 180, 0, 1);
+  }
+
   private applyWalkingViewShift(w: number, h: number, talking: boolean, greetingLift = 0) {
     const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
     const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
     // (the taxi's greeting lift eases toward a higher shot; 0 keeps the plain walking shift)
-    const viewShift = greetingLift ? THREE.MathUtils.lerp(-shift, this.sidewaysPhone ? 0.09 : 0.14, greetingLift) : -shift;
+    // (sideways the stick and the brake keep to the sides: the taxi goes lower, under Don Rigo's words)
+    const lifted = this.sidewaysPhone ? -0.05 : 0.14 - 0.075 * this.shortGreeting(w, h);
+    const viewShift = greetingLift ? THREE.MathUtils.lerp(-shift, lifted, greetingLift) : -shift;
     this.rig.applyViewShift(w, h, 0, h * (stageShift ?? viewShift));
   }
 
@@ -3313,7 +3327,7 @@ export class Game implements GameApi {
     if (!actorTalk) {
       const { cam } = this.rig, follow = this.rig.mode === "follow", car = riding?.kind === "car";
       const fov = this.rig.fovFor(w, h, follow && !car && this.vel.lengthSq() > 30)
-        + (follow ? (car ? 0 : this.rideFov) + greetingLift * (sideways ? 6 : 10) : 0);
+        + (follow ? (car ? 0 : this.rideFov) + greetingLift * (sideways ? 12 : 10 + 16 * this.shortGreeting(w, h)) : 0);
       const base = this.speedFeel?.baseFov ?? cam.fov, d = fov - base;
       const lens = Math.abs(d) < 0.05 ? fov : base + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
       const presented = townFeedback ? this.speedFeel?.presentTown(lens, dt, this.t, follow, taxiShot) ?? lens : lens;
@@ -3861,11 +3875,16 @@ export class Game implements GameApi {
           const npc = this.autoTarget?.kind === "npc" ? this.npcs.find((n) => n.id === this.autoTarget?.id) : undefined;
           const nearNpc = npc && talkDist(npc, p) < TALK_RANGE;
           const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
+          const check = this.walkCheck;
           if (nearNpc && (heldUp || (this.autoPath.length === 1 && d < 1.6 && !npc.approach))) {
             this.arrived();
             want.set(0, 0, 0);
+          } else if (!indoor && !this.swimming && check.wait < CAR_WAIT && this.ambient.carInWay(p.x, p.z, want.x, want.z, 0.38)) {
+            // a car of the traffic in the way (standing on the crosswalk, or going by): wait for it, then walk on
+            check.wait += dt;
+            check.time = 0;
+            want.set(0, 0, 0);
           } else {
-            const check = this.walkCheck;
             if (check.time === 0) check.remaining = remaining;
             check.time += dt;
             if (check.time >= 0.8) {
@@ -3873,7 +3892,7 @@ export class Game implements GameApi {
                 if (!nearNpc) this.autoTarget = null;
                 this.arrived();
                 want.set(0, 0, 0);
-              }
+              } else check.wait = 0;
               check.time = 0;
             }
           }

@@ -10,7 +10,9 @@
   position: absolute;
   display: none;
   left: 3.5%;
-  top: 43%;
+  /* (on a short screen, a phone held sideways, the streaks run above the touch stick, the brake and Get out: the
+     stick's top is 158 px over the bottom, styles.css .joy; the lower pair 44 px over it) */
+  top: min(43%, calc(100% - 262px));
   width: clamp(12px, 2.4vw, 26px);
   height: 1px;
   animation: speed-feel-streak .85s ease-out infinite;
@@ -25,7 +27,7 @@
 }
 
 .speed-feel > span:nth-child(even) { --out: 6px; --angle: -12deg; left: auto; right: 3.5%; }
-.speed-feel > span:nth-child(n+3) { --angle: -18deg; top: 63%; }
+.speed-feel > span:nth-child(n+3) { --angle: -18deg; top: min(63%, calc(100% - 202px)); }
 .speed-feel > span:nth-child(4) { --angle: 18deg; }
 .speed-feel > span:nth-child(2) { animation-delay: -.21s; }
 .speed-feel > span:nth-child(3) { animation-delay: -.42s; }

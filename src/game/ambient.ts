@@ -661,6 +661,9 @@ export class Ambient {
     const ahead = (x - c.x) * c.dir - c.front;
     const reach = c.model ? c.half.z + 0.9 : 1.9;
     if (ahead <= 0 || ahead > 11 || Math.abs(z - c.lane) > reach) return Infinity;
+    // (beside its front half, short of its bumper, is not in its way: a learner waiting there for it to go, the car
+    // waiting for them, stood there for good, 26 Nov 2026)
+    if (ahead < c.half.x - c.front && Math.abs(z - c.lane) > c.half.z) return Infinity;
     return ahead;
   }
 
@@ -764,6 +767,21 @@ export class Ambient {
     c.mesh.scale.setScalar(Math.max(0.001, s));
     c.mesh.position.set(c.x, 0, c.lane);
     if (toEnd <= 0) { c.mesh.visible = false; c.hidden = 2 + this.r() * 6; }
+  }
+
+  /** A car of the traffic just ahead of someone on foot at (x, z) going (dx, dz) (a unit direction), `r` across: one
+   *  standing on the crosswalk, or going by. A walk to a spot waits for it (Game, the walk to a clicked spot). */
+  carInWay(x: number, z: number, dx: number, dz: number, r: number, reach = 0.9) {
+    if (!this.group.visible) return null;
+    for (const c of this.cars) {
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
+      const { x: hx, z: hz } = c.half;
+      for (const k of [0.5, 1]) {
+        const px = x + dx * reach * k, pz = z + dz * reach * k;
+        if (Math.abs(px - c.x) < hx + r && Math.abs(pz - c.lane) < hz + r) return c;
+      }
+    }
+    return null;
   }
 
   nearbyTraffic(x: number, z: number, range: number) {
