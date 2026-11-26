@@ -622,7 +622,8 @@ try {
           inView = await page.evaluate((tagsRequired) => window.__ew.game.streetLife.world.pairs(5).length > 0 &&
             (!tagsRequired || [...document.querySelectorAll(".nametag")].some((tag) => {
               const r = tag.getBoundingClientRect();
-              return tag.checkVisibility({ visibilityProperty: true }) && r.left >= 80 && r.right <= innerWidth - 80;
+              const centre = (r.left + r.right) / 2;
+              return tag.checkVisibility({ visibilityProperty: true }) && centre >= 90 && centre <= innerWidth - 90;
             })), checkMoving);
           if (inView) break;
         }

@@ -269,7 +269,7 @@ try {
     assert(await page.evaluate(() => !window.__ew.game.rides.list.some((ride) => ride.id === "taxi")), "the parked taxi is outside the town rides");
     await waitFor(() => page.evaluate(() => {
       const stand = window.__ew.game.town.parkedCars.taxi;
-      return stand && stand.instance?.parent === stand.root && !stand.fallback.parent;
+      return stand && stand.instance?.parent === stand.root && !stand.fallback?.parent; // (no fallback when the model is ready first)
     }), "the Kenney model replaces the stand taxi's fallback", { attempts: 300 });
     // Let the standing follow camera finish its swing before checking the framing.
     await step(80);

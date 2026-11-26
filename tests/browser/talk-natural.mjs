@@ -663,7 +663,10 @@ class Route {
       const member = game.npcs.find((npc) => npc.id === actor);
       if (!member) throw new Error(`Missing town actor ${actor}`);
       const near = member.approach ?? member.home.clone().add(member.home.clone().set(Math.sin(member.rot) * 2.2, 0, Math.cos(member.rot) * 2.2));
-      return game.enterZone("town", { x: near.x, z: near.z, rot: Math.atan2(member.home.x - near.x, member.home.z - near.z) }, true);
+      const rot = Math.atan2(member.home.x - near.x, member.home.z - near.z);
+      // (already in the town: step there without rebuilding it — a second entry stalls the film for over a second)
+      if (game.zone.id === "town" && !game.transitioning) return game.placeOnFoot(near.x, near.z, rot);
+      return game.enterZone("town", { x: near.x, z: near.z, rot }, true);
     }, { actor, id, spot });
     if (actor === "vinnie") {
       const start = await this.wait((f) => f.scene.zone === "town" && f.scene.mountedZone && !f.scene.transition
