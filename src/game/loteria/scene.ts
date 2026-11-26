@@ -13,6 +13,23 @@ export function loteriaTables(col: Colliders) {
   const table = (x: number, z: number, w: number, d: number, cloth: string) => {
     box(w, 0.12, d, x, 0.88, z, wood);
     box(w - 0.3, 0.025, d + 0.05, x, 0.95, z, cloth);
+    // Woven borders run outside the seated players' boards and beans.
+    for (const side of [-1, 1]) {
+      parts.push(
+        [new THREE.PlaneGeometry(w - 0.3, 0.055).rotateX(-Math.PI / 2)
+          .translate(x, 0.966, z + side * (d / 2 - 0.045)), "#e6cfa2"],
+        [new THREE.PlaneGeometry(w - 0.3, 0.018).rotateX(-Math.PI / 2)
+          .translate(x, 0.966, z + side * (d / 2 - 0.008)), "#465c70"],
+        [new THREE.PlaneGeometry(w - 0.3, 0.14).rotateY(side < 0 ? Math.PI : 0)
+          .translate(x, 0.8925, z + side * (d / 2 + 0.027)), cloth],
+        [new THREE.PlaneGeometry(w - 0.3, 0.025).rotateY(side < 0 ? Math.PI : 0)
+          .translate(x, 0.843, z + side * (d / 2 + 0.030)), "#e6cfa2"],
+      );
+    }
+    for (const offset of [-0.5, 0, 0.5]) {
+      parts.push([new THREE.PlaneGeometry(0.09, 0.09).rotateX(-Math.PI / 2).rotateY(Math.PI / 4)
+        .translate(x + offset, 0.966, z - 0.29), "#e6cfa2"]);
+    }
     for (const dx of [-1, 1]) for (const dz of [-1, 1]) {
       box(0.12, 0.82, 0.12, x + dx * (w / 2 - 0.18), 0.41, z + dz * (d / 2 - 0.15), iron);
     }

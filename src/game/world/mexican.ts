@@ -1016,7 +1016,25 @@ export function cenote(parts: Part[], atlas: SignAtlas, { x, z, sign, open, guid
     );
   }
   parts.push([box(2.2, 1.0, 0.55, hx + 0.6, 0.5, hz), "#2a9d8f"], [box(2.3, 0.06, 0.65, hx + 0.6, 1.03, hz), "#c08a52"]);
-  parts.push([new THREE.ConeGeometry(2.7, 1.6, 4).rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 3.35, hz), THATCH]);
+  // Broad palm courses share the original hip's slope and outline. Narrow overlaps shade each course.
+  const courses = [0, 0.06, 0.35, 0.39, 0.69, 0.73, 1];
+  const straw = ["#765c3b", "#a5814d", "#765c3b", "#987344", "#765c3b", "#a5814d"];
+  for (let i = 0; i < courses.length - 1; i++) {
+    const low = courses[i], high = courses[i + 1];
+    parts.push([new THREE.CylinderGeometry(2.7 * (1 - high), 2.7 * (1 - low), 1.6 * (high - low), 4, 1, true)
+      .rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 2.55 + 0.8 * (low + high), hz), straw[i]]);
+  }
+  parts.push([new THREE.CircleGeometry(2.7, 4).rotateX(Math.PI / 2).rotateY(Math.PI / 4)
+    .scale(1.15, 1, 1).translate(hx, 2.55, hz), "#765c3b"]);
+  // The short east end remains visible beside Inés in the tall crop.
+  for (const y of [0.14, 0.86]) {
+    for (const side of [-1, 1]) {
+      parts.push([new THREE.PlaneGeometry(2.2, 0.045).rotateY(side < 0 ? Math.PI : 0)
+        .translate(hx + 0.6, y, hz + side * 0.277), "#e5d3ab"]);
+    }
+    parts.push([new THREE.PlaneGeometry(0.55, 0.045).rotateY(Math.PI / 2)
+      .translate(hx + 1.702, y, hz), "#e5d3ab"]);
+  }
   parts.push([new THREE.ConeGeometry(0.6, 0.6, 4).rotateY(Math.PI / 4).translate(hx, 4.25, hz), THATCH_DARK]);
   for (let i = 0; i < 4; i++) parts.push([box(0.42, 0.6, 0.06, hx - 1.2 + i * 0.5, 1.6, hz - 1.25), ["#f77f00", "#e63946", "#2a9d8f", "#f2c14e"][i]]); // life vests hung up
   const sx = x + R + 6.2, sz = z - 2.4;

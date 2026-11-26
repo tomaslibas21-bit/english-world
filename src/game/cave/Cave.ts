@@ -10,6 +10,7 @@
 // - fog closes the view after a few dozen metres, so little is ever drawn.
 import * as THREE from "three";
 import { Colliders, rand } from "../world/util";
+import { groundFace } from "../world/shapes";
 import * as P from "./plan";
 
 const FOG = "#05232c";
@@ -217,6 +218,23 @@ export function buildCave(): CaveView {
     c.offsetHSL(0, 0, (r() - 0.5) * 0.035);
     const a = floorAt(x, z), b = floorAt(x + G, z), e = floorAt(x + G, z + G), f = floorAt(x, z + G);
     sink.tri(a, f, b, c); sink.tri(b, f, e, c);
+  }
+  // Worn limestone at Kin's entrance follows the existing sacbé before it reaches the first hall.
+  // Bake a little reflected daylight into the wear so the white road survives the dark approach.
+  for (let segment = 0; segment < 2; segment++) {
+    const [ax, az] = P.SACBE[segment], [bx, bz] = P.SACBE[segment + 1];
+    const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz);
+    const nx = -dz / length, nz = dx / length, count = Math.ceil(length / 1.8);
+    const at = (t: number, across: number): [number, number] => [ax + dx * t + nx * across, az + dz * t + nz * across];
+    for (let k = 0; k < count; k++) {
+      const start = (k + 0.025) / count, end = (k + 0.975) / count, middle = (start + end) / 2;
+      const width = k % 2 ? 2.58 : 2.68;
+      const slab = groundFace([
+        at(start, -width * 0.46), at(middle, -width * 0.5), at(end, -width * 0.45),
+        at(end, width * 0.47), at(middle, width * 0.5), at(start, width * 0.48),
+      ]).translate(0, 0.012, 0);
+      sink.geo(slab, (k + segment) % 2 ? "#d2c9af" : "#dad2b9", 0.12);
+    }
   }
   // the sacbé's edge stones
   for (let i = 0; i + 1 < P.SACBE.length; i++) {

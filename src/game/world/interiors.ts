@@ -194,7 +194,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   } else if (kind === "pasta") {
     pastaTiles(x, look?.pasta);
   } else if (kind === "barro" || kind === "granito" || kind === "ceramic") {
-    floor4(x, kind, floor);
+    floor4(x, kind, floor, id === "pool-hall" && !!THEME.roomExtras.cantina);
   } else {
     for (let i = 0; i < 6; i++) for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,0.1)"; x.strokeRect(i * 86, k * 86, 86, 86); }
   }
@@ -4086,17 +4086,24 @@ function pastaTilesIn(x: CanvasRenderingContext2D, [corner, petal, heart]: [stri
 /** The round's floors on the floor's canvas (512 px for 4 m; no draw call of their own): `barro`, terracotta tiles of
  *  half a metre, each a little lighter or darker, in pale grout; `granito`, terrazzo: chips of stone in the floor's color
  *  and metal strips every metre; `ceramic`, large glazed tiles, each a shade of its own, in thin grout. */
-function floor4(x: CanvasRenderingContext2D, kind: "barro" | "granito" | "ceramic", floor: string) {
+function floor4(x: CanvasRenderingContext2D, kind: "barro" | "granito" | "ceramic", floor: string, cantina = false) {
   const r = rand(kind.length * 131 + 7);
   if (kind === "barro") {
     const T = 64;
-    x.fillStyle = "#dcc7a5"; x.fillRect(0, 0, 512, 512);
+    const inset = cantina ? 1 : 2.5, clay = cantina ? "#b98663" : floor;
+    x.fillStyle = cantina ? "#9b765c" : "#dcc7a5"; x.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 8; i++) for (let k = 0; k < 8; k++) {
-      x.fillStyle = mix(floor, r() < 0.5 ? "#7a3b1e" : "#e9a57a", r() * 0.22);
-      x.fillRect(i * T + 2.5, k * T + 2.5, T - 5, T - 5);
+      x.fillStyle = mix(clay, r() < 0.5 ? "#7a3b1e" : "#e9a57a", r() * (cantina ? 0.09 : 0.22));
+      x.fillRect(i * T + inset, k * T + inset, T - 2 * inset, T - 2 * inset);
       // the clay's clouding and a darker rim where the tile was fired
-      for (let n = 0; n < 3; n++) { x.fillStyle = `rgba(${r() < 0.5 ? "90,40,20" : "240,190,150"},0.12)`; x.beginPath(); x.ellipse(i * T + 10 + r() * 44, k * T + 10 + r() * 44, 8 + r() * 14, 6 + r() * 10, r() * 3, 0, Math.PI * 2); x.fill(); }
-      x.strokeStyle = "rgba(90,40,20,0.22)"; x.lineWidth = 3; x.strokeRect(i * T + 4, k * T + 4, T - 8, T - 8);
+      for (let n = 0; n < 3; n++) {
+        x.fillStyle = `rgba(${r() < 0.5 ? "90,40,20" : "240,190,150"},${cantina ? 0.035 : 0.12})`;
+        x.beginPath();
+        x.ellipse(i * T + 10 + r() * 44, k * T + 10 + r() * 44, 8 + r() * 14, 6 + r() * 10, r() * 3, 0, Math.PI * 2);
+        x.fill();
+      }
+      x.strokeStyle = cantina ? "rgba(90,40,20,0.10)" : "rgba(90,40,20,0.22)";
+      x.lineWidth = cantina ? 1 : 3; x.strokeRect(i * T + 4, k * T + 4, T - 8, T - 8);
     }
   } else if (kind === "granito") {
     const chips = [mix(floor, "#2b2b2e", 0.55), mix(floor, "#ffffff", 0.6), mix(floor, "#b07a3a", 0.5), mix(floor, "#8a8f94", 0.45)];
