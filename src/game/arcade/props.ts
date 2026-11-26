@@ -19,10 +19,17 @@ export function addCabinets(room: THREE.Group, colliders: Colliders) {
     box(0.72, 0.88, 0.77, 0.46, 0, green);
     box(0.77, 0.09, 0.82, 0.94, 0, brass);
     box(0.78, 0.17, 0.78, 1.83, -0.01, walnut);
-    const print = new THREE.PlaneGeometry(0.70, 0.73).translate(x, 1.38, CABINET_Z + 0.236);
-    const uv = print.getAttribute("uv");
-    for (let v = 0; v < uv.count; v++) uv.setX(v, (uv.getX(v) + i) / 2);
-    prints.push(print);
+    // Put the title on the projecting lip, above the recessed screen's sightline.
+    const marquee = new THREE.PlaneGeometry(0.74, 0.17).translate(x, 1.83, CABINET_Z + 0.382);
+    const screen = new THREE.PlaneGeometry(0.70, 0.70).translate(x, 1.38, CABINET_Z + 0.236);
+    for (const print of [marquee, screen]) {
+      const uv = print.getAttribute("uv");
+      for (let v = 0; v < uv.count; v++) {
+        const y = uv.getY(v);
+        uv.setXY(v, (uv.getX(v) + i) / 2, print === marquee ? 0.76 + 0.24 * y : 0.76 * y);
+      }
+      prints.push(print);
+    }
     ctx.save(); ctx.translate(i * 256, 0);
     ctx.fillStyle = "#193a32"; ctx.fillRect(0, 0, 256, 256);
     ctx.strokeStyle = brass; ctx.lineWidth = 5; ctx.strokeRect(5, 5, 246, 246);

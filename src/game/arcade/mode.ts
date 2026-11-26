@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import type { GameMode, ModeInput } from "../kit/modes";
 import type { ModeHost } from "../kit/host";
-import { CABINETS, cabinetNear, cabinetPose, type Cabinet } from "./cabinets";
+import { CABINETS, cabinetNear, cabinetPose, TOWN_GAMES, type TownGame, type Cabinet } from "./cabinets";
 
-export const useArcade = create<{ cabinet: Cabinet | null; playing: Cabinet | null }>(() => ({ cabinet: null, playing: null }));
+type Menu = { cabinet: Cabinet | null; playing: Cabinet | null; page: "featured" | "list" | "detail"; selected: TownGame | null };
+export const useArcade = create<Menu>(() => ({ cabinet: null, playing: null, page: "featured", selected: null }));
 export const RETURN_TO_ARCADE = "Grįžti prie automatų";
 
 export class ArcadeMode implements GameMode {
@@ -17,7 +18,9 @@ export class ArcadeMode implements GameMode {
     here(): boolean;
     place(pose: ReturnType<typeof cabinetPose>): void;
     start(id: string, option?: string): boolean;
+    holdRadio(playing: boolean): void;
     refocus(): void;
+    visit(id: TownGame): void;
   }) {}
 
   get active() { return this.cabinet !== null; }
@@ -35,7 +38,7 @@ export class ArcadeMode implements GameMode {
     if (!near) return false;
     this.cabinet = near.id;
     this.host.prepare();
-    useArcade.setState({ cabinet: near.id });
+    useArcade.setState({ cabinet: near.id, page: "featured", selected: null });
     this.host.entered(this.id);
     return true;
   }
@@ -43,16 +46,41 @@ export class ArcadeMode implements GameMode {
   update() {}
   input(input: ModeInput) {
     if (input.kind === "key" && input.key === "escape") {
-      if (!input.repeat) this.exit();
+      if (!input.repeat) this.back();
       return true;
     }
     return input.kind !== "key";
   }
 
-  action(name: string) {
+  private back() {
+    const { page } = useArcade.getState();
+    if (page === "featured") this.exit();
+    else useArcade.setState({ page: page === "detail" ? "list" : "featured" });
+  }
+
+  action(name: string, value?: string | boolean) {
     const id = this.cabinet;
-    if (name !== "play" || !id) return;
+    if (!id) return;
+    const { selected, page } = useArcade.getState();
+    const games = TOWN_GAMES[id];
+    if (name === "back") return this.back();
+    if (name === "list") {
+      useArcade.setState({ page: "list", selected: selected ?? games[0] });
+      return;
+    }
+    if (name === "select") {
+      const next = games.find((item) => item === value);
+      if (next) useArcade.setState({ page: "detail", selected: next });
+      return;
+    }
+    if (name === "visit" && selected && page === "detail") {
+      this.close();
+      this.room.visit(selected);
+      return;
+    }
+    if (name !== "play" || page !== "featured") return;
     this.returnTo = id;
+    this.room.holdRadio(true);
     useArcade.setState({ playing: id });
     this.close();
     if (!this.room.start(id, "cabinet")) this.returnedFrom(id);
@@ -68,7 +96,9 @@ export class ArcadeMode implements GameMode {
   }
 
   forgetReturn() {
+    if (!this.returnTo) return;
     this.returnTo = null;
+    this.room.holdRadio(false);
     useArcade.setState({ playing: null });
   }
 

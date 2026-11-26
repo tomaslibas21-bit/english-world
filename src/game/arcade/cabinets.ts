@@ -12,3 +12,9 @@ export function cabinetNear(x: number, z: number) {
   const distance = Math.hypot(x - mark.x, z - mark.z);
   return z >= CABINET_Z + 0.4 && distance <= 1.15 ? { id, distance } as const : null;
 }
+
+export type TownGame = "taxi" | "sea" | "surf" | "photowalk" | "gofish" | "barista" | "gym";
+export const TOWN_GAMES: Record<Cabinet, readonly TownGame[]> = {
+  road: ["taxi", "sea", "surf", "photowalk"],
+  billiards: ["gofish", "barista", "gym"],
+};

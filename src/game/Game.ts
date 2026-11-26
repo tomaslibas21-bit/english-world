@@ -38,6 +38,7 @@ import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
+import type { TownGame } from "./arcade/cabinets";
 import { ArcadeMode, useArcade } from "./arcade/mode";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
@@ -61,7 +62,7 @@ import type { LizzieMeeting } from "./phone/meeting";
 import { scoreShot } from "./kit/scoreShot";
 import { useSurf } from "./surf/store";
 import { createSurfMode } from "./surf/mode";
-import { createTaxiMode } from "./taxi/mode";
+import { createTaxiMode, TAXI_APPROACH } from "./taxi/mode";
 import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
 import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
@@ -70,6 +71,8 @@ import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { GYM_MAT } from "./world/gym";
+import { PHOTO_WALK_NPC } from "../content/photo-walk-lines";
 import { createGymMode } from "./gym/entry";
 import type { OcclusionField } from "./occlusion";
 import { STYLED } from "./style";
@@ -697,8 +700,13 @@ export class Game implements GameApi {
     }));
     this.modes.register(this.arcade = new ArcadeMode(host, {
       here: () => this.zone.id === BILLIARDS_PLACE,
-      place: ({ x, z, rot }) => this.placeOnFoot(x, z, rot, true),
+      place: ({ x, z, rot }) => {
+        useStore.getState().setHud({ ride: null, prompt: null });
+        this.placeOnFoot(x, z, rot, true);
+      },
       start: (id, option) => this.modes.start(id, option),
+      holdRadio: (playing) => playing ? radio.hold("arcade") : radio.release("arcade"),
+      visit: (id) => this.visitArcadeGame(id),
       refocus: () => {
         if (this.disposed) return;
         this.updateHud();
@@ -2997,6 +3005,32 @@ export class Game implements GameApi {
     if (DROPOFF[loc]) return DROPOFF[loc];
     const o = OUTDOOR_NPCS.find((n) => this.sitsForNpc(n.npc).some((s) => s.location === loc));
     return o ? { x: o.ax ?? o.x, z: (o.az ?? o.z) + 2.5, rot: Math.PI } : null;
+  }
+
+  private visitArcadeGame(id: TownGame) {
+    // Take the ordinary approach. The room, conversation and mode keep ownership of their offers.
+    if (id === "barista" || id === "gofish") {
+      const cafe = id === "barista";
+      const { location } = cafe ? BARISTA_CONVERSATION : GOFISH_CONVERSATION;
+      const unlocked = cafe ? this.barista?.available() : this.gofish?.available();
+      const host = getInterior(location)?.npcs.find((n) => n.npc === (cafe ? BARISTA_CONVERSATION.npc : GOFISH_CONVERSATION.host));
+      const spawn = !unlocked && host
+        ? { x: host.ax ?? host.x + Math.sin(host.rot), z: host.az ?? host.z + Math.cos(host.rot), rot: host.rot + Math.PI }
+        : cafe ? BARISTA_PROMPT : GOFISH_PROMPT;
+      this.enterZone(location, spawn);
+    } else if (id === "gym") {
+      this.enterZone(GYM_ENTRY.location, { x: GYM_MAT.x, z: GYM_MAT.z, rot: Math.PI / 2 });
+    } else if (id === "surf") {
+      this.enterZone("town", HARBOR_SURF.approach);
+    } else if (id === "photowalk") {
+      const hana = OUTDOOR_NPCS.find((n) => n.npc === PHOTO_WALK_NPC)!;
+      this.enterZone("town", { x: hana.ax!, z: hana.az!, rot: Math.atan2(hana.x - hana.ax!, hana.z - hana.az!) });
+    } else if (id === "taxi") {
+      this.enterZone("town", TAXI_APPROACH);
+    } else {
+      const boat = RIDES.boats.find((b) => b.id === "beach")!;
+      this.enterZone("town", { x: boat.x, z: boat.z + 3, rot: Math.PI });
+    }
   }
 
   teleportTo(loc: string) {
