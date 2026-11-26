@@ -238,7 +238,9 @@ export function parseCards(raw: unknown, now = Date.now()): Card[] {
 export function loadCards(storage: KV | null = defaultStorage()): Card[] {
   try {
     const raw = storage?.getItem(STORAGE_KEY);
-    return raw ? parseCards(JSON.parse(raw)) : [];
+    const saved = raw ? JSON.parse(raw) : null;
+    if (saved?.v !== undefined && saved.v !== 1) return [];
+    return parseCards(saved);
   } catch {
     return [];
   }
