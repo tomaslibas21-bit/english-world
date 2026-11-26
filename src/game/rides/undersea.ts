@@ -5,6 +5,8 @@
 import * as THREE from "three";
 import { colourMerge, rand } from "../world/util";
 import { BAY, SEA_LEVEL, SHORE, floorY, POOLS, poolBedY, type Pool } from "../water";
+import { CENOTE_ROUTE } from "../world/cenoteTour";
+import { groundFace } from "../world/shapes";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 
@@ -121,6 +123,40 @@ export class Undersea {
     for (let i = 0; i < 70; i++) {
       const x = BAY.x0 + r() * (BAY.x1 - BAY.x0), z = SHORE.limit - 1 - r() * (SHORE.limit - 4 - BAY.z0), y = floorY(x, z);
       if (r() < 0.45) star(x, y, z); else if (r() < 0.6) shell(x, y, z); else grass(x, y, z);
+    }
+    // Low broken limestone behind the tour's two stops. Leave open sand under the animals and keep
+    // this after the seeded scatter so every existing reef, shell and grass clump stays in place.
+    if (CENOTE_ROUTE) {
+      const [fx, fz] = CENOTE_ROUTE.fish.center, [tx, tz] = CENOTE_ROUTE.turtles.center;
+      for (const [i, [x, z, width, depth]] of [
+        [fx + 3, fz - 4, 1.8, 0.85], [fx + 6, fz - 0.8, 1.35, 0.7],
+        [tx + 4, tz - 3, 1.7, 0.8], [tx + 6.5, tz + 0.5, 1.15, 0.65],
+      ].entries()) {
+        const outline: [number, number][] = [[-1, -0.22], [-0.48, -0.88], [0.5, -0.72], [1, 0.16], [0.34, 0.92], [-0.72, 0.66]]
+          .map(([u, v]) => [x + u * width, z + v * depth]);
+        const top = groundFace(outline), p = top.attributes.position;
+        for (let j = 0; j < p.count; j++) p.setY(j, floorY(p.getX(j), p.getZ(j)) + 0.18);
+        top.computeVertexNormals();
+        parts.push([top, i % 2 ? "#b9bea0" : "#c7c8ab"]);
+        const side: number[] = [];
+        for (let j = 0; j < outline.length; j++) {
+          const [ax, az] = outline[j], [bx, bz] = outline[(j + 1) % outline.length];
+          const ay = floorY(ax, az), by = floorY(bx, bz);
+          side.push(ax, ay + 0.02, az, ax, ay + 0.18, az, bx, by + 0.02, bz,
+            bx, by + 0.02, bz, ax, ay + 0.18, az, bx, by + 0.18, bz);
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(side, 3));
+        g.computeVertexNormals();
+        parts.push([g, "#899b89"]);
+        if (i === 3) continue;
+        for (let blade = 0; blade < 3; blade++) {
+          const px = x - width * 0.45 + blade * 0.12, pz = z - depth * 0.15;
+          parts.push([new THREE.PlaneGeometry(0.10, 0.28 + blade * 0.04)
+            .rotateZ((blade - 1) * 0.22).rotateY(0.7 + blade * 0.9)
+            .translate(px, floorY(px, pz) + 0.32 + blade * 0.02, pz), "#638e79"]);
+        }
+      }
     }
     for (const p of POOLS) if ("r" in p) this.poolBed(p, parts, r);
     const things = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));

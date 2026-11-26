@@ -2250,6 +2250,21 @@ function addKiosco(M: Merger, col: Colliders, x: number, z: number) {
   M.add("kiosco-stone", stone, cylGeo(4.2, 4.4, 1.0, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 0.5, z));
   M.add("kiosco-band", band, cylGeo(4.45, 4.45, 0.18, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 0.12, z));
   M.add("kiosco-band", band, cylGeo(4.28, 4.28, 0.12, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 1.04, z));
+  // Shallow limestone courses and green inlays on the existing tapered plinth.
+  const joint = mat("#b6a58b"), inlay = mat("#50776b"), q = Math.cos(Math.PI / 8);
+  for (const y of [0.36, 0.67]) {
+    M.add("kiosco-stone", joint, new THREE.CylinderGeometry(4.4 - 0.2 * (y + 0.012) + 0.003,
+      4.4 - 0.2 * (y - 0.012) + 0.003, 0.024, 8, 1, true).rotateY(Math.PI / 8).translate(x, y, z));
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    const face = (g: THREE.BufferGeometry, y: number, offset = 0) => g
+      .rotateX(-Math.atan(0.2 * q)).translate(offset, 0, (4.4 - 0.2 * y) * q + 0.004)
+      .rotateY(a).translate(x, y, z);
+    for (const [y, offset] of [[0.515, -0.65], [0.825, 0.65]])
+      M.add("kiosco-stone", joint, face(new THREE.PlaneGeometry(0.026, 0.27), y, offset));
+    M.add("kiosco-stone", inlay, face(new THREE.PlaneGeometry(0.15, 0.15).rotateZ(Math.PI / 4), 0.835));
+  }
   // steps up on the south side (towards Main Street)
   for (let i = 0; i < 3; i++) M.add("kiosco-stone", stone, boxGeo(2.6, 0.33 * (i + 1), 0.45, x, 0.165 * (i + 1), z + 5.15 - i * 0.45));
   // eight columns and a railing between them (open where the steps arrive)

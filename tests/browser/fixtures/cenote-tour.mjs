@@ -69,7 +69,7 @@ export const outing = {
   elapsed: 76,
   bay: { x0: -106, x1: 176, z0: -146, z1: -77.4, rocks: [[104, -88, 7.5]] },
   meshes: { "cenote-fish": 12, "cenote-fish-tails": 12, "cenote-turtles": 2, "cenote-turtle-flippers": 4 },
-  design: { draws: 4, triangles: 2112 },
+  design: { draws: 4, triangles: 2244 },
   title: { es: "Cenote Ka'an", en: "At Cenote Ka'an", lt: "Prie cenotės Ka'an" },
   intro: {
     en: "You meet Inés by the hut at Cenote Ka'an. She has a snorkel mask for you and knows the path to the bay.",

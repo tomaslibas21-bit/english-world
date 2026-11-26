@@ -1,5 +1,5 @@
 import {
-  Box3, BufferGeometry, DynamicDrawUsage, Euler, Group, InstancedMesh, Matrix4, MeshLambertMaterial,
+  Box3, BufferGeometry, CylinderGeometry, DynamicDrawUsage, Euler, Float32BufferAttribute, Group, InstancedMesh, Matrix4, MeshLambertMaterial,
   Quaternion, SphereGeometry, TetrahedronGeometry, Vector3, type ColorRepresentation, type PerspectiveCamera,
 } from "three";
 import { floorY, waterY } from "../water";
@@ -19,6 +19,21 @@ function geometry(parts: Part[]) {
   for (const [part] of parts) part.dispose();
   mesh.computeBoundingBox();
   return mesh;
+}
+
+/** A six-sided scute following the shell's ellipsoid, with room for a dark seam around it. */
+function scute(x: number, z: number, w: number, l: number) {
+  const surface = (px: number, pz: number) => [px, 0.222 * Math.sqrt(Math.max(0, 1 - (px / 0.35) ** 2 - (pz / 0.5) ** 2)) + 0.0015, pz];
+  const positions: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3, b = (i + 1) * Math.PI / 3;
+    positions.push(...surface(x, z), ...surface(x + Math.cos(b) * w, z + Math.sin(b) * l),
+      ...surface(x + Math.cos(a) * w, z + Math.sin(a) * l));
+  }
+  const g = new BufferGeometry();
+  g.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  g.computeVertexNormals();
+  return g;
 }
 
 export class CenoteAnimals {
@@ -65,7 +80,11 @@ export class CenoteAnimals {
       };
     });
     this.turtles = this.mesh("cenote-turtles", turtles.paths.length, [
-      [new SphereGeometry(1, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.35, 0.222, 0.5), turtles.shell],
+      [new SphereGeometry(1, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.35, 0.222, 0.5), "#425c43"],
+      ...[-0.27, 0, 0.27].map((z, i): Part => [scute(0, z, 0.13, 0.14), i === 1 ? "#839969" : turtles.shell]),
+      ...[-1, 1].flatMap(side => [-0.155, 0.155].map((z): Part => [scute(side * 0.20, z, 0.105, 0.20), "#789261"])),
+      [new CylinderGeometry(0.35 * Math.sin(1.43), 0.35, 0.222 * Math.cos(1.43), 12, 1, true)
+        .scale(1, 1, 0.5 / 0.35).translate(0, 0.111 * Math.cos(1.43), 0), "#b8b380"],
       [new SphereGeometry(1, 12, 3, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2).scale(0.35, 0.102, 0.5), turtles.underside],
       [egg(0.121, 0.107, 0.148, 0, -0.005, 0.492, 8, 4), turtles.flipper],
       [egg(0.035, 0.024, 0.029, 0.094, 0.029, 0.552, 4, 3), eyeColor],

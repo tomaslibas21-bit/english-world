@@ -2647,6 +2647,17 @@ function mercado(): Interior {
 function cocina(): Interior {
   return room("trattoria", 18, 14, "#c0673f", "#f2cf7c", (c) => {
     const S = smalls(c);
+    // Fired-clay dado with an ivory tile cap, behind Lucía and around the dining room.
+    // These still wall pieces join RoomMerger rather than adding a furniture or shadow draw.
+    for (const [w, px, pz, angle] of [[c.w, 0, -c.d / 2, 0], [c.d, -c.w / 2, 0, Math.PI / 2], [c.d, c.w / 2, 0, -Math.PI / 2]]) {
+      const wall = (g: THREE.BufferGeometry) => g.rotateY(angle).translate(px, 0, pz);
+      c.M.add("cocina-dado", mat("#b77955"), wall(new THREE.PlaneGeometry(w, 0.84).translate(0, 0.72, 0.025)), false);
+      c.M.add("cocina-dado", mat("#8b634d"), wall(new THREE.PlaneGeometry(w, 0.05).translate(0, 1.065, 0.028)), false);
+      c.M.add("cocina-dado", mat("#eadbb8"), wall(boxGeo(w, 0.16, 0.055, 0, 1.16, 0.03)), false);
+      for (let u = -w / 2 + 0.75; u < w / 2; u += 1.5)
+        c.M.add("cocina-dado", mat("#416b7a"), wall(new THREE.PlaneGeometry(0.085, 0.085)
+          .rotateZ(Math.PI / 4).translate(u, 1.16, 0.06)), false);
+    }
     // Lucía's stand by the door, with the reservations book
     S.add(boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2), "#7a3b1d");
     S.add(boxGeo(0.98, 0.05, 0.68, -5.5, 1.125, 4.2), "#c79a6b");
