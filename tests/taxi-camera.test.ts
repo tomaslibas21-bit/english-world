@@ -1,9 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
+import { TAXI_ROUTES } from "../src/content/taxi";
 import { CameraRig } from "../src/game/camera";
 import { CUT, withCutout } from "../src/game/cutout";
 import { initTownCollision } from "../src/game/townCollisionCache";
 import { OUTDOOR_NPCS, ROADS, SIDEWALK, TAXI } from "../src/game/world/layout";
+import { carModelEntry } from "../src/game/world/carModels";
 import { buildTown } from "../src/game/world/town";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 
@@ -15,6 +17,7 @@ describe("Gas & Go follow camera", () => {
   let fader: ReturnType<typeof initTownCollision>["fader"];
   let canopy: THREE.Mesh<THREE.BufferGeometry, THREE.Material>[];
   let pavingBatches: THREE.Mesh[];
+  let solidBatches: THREE.Mesh[];
   let brickWalk: THREE.Object3D;
   const ray = new THREE.Raycaster();
   const sample = new THREE.Vector2();
@@ -29,8 +32,8 @@ describe("Gas & Go follow camera", () => {
       withCutout(town.group);
       canopy = town.group.getObjectByName("gas-canopy-assembly")!.children as typeof canopy;
       brickWalk = town.group.getObjectByName("brick-walk")!;
-      pavingBatches = town.group.children.filter((o): o is THREE.Mesh =>
-        o instanceof THREE.Mesh && !o.castShadow && o.name.startsWith("town-solid-"));
+      solidBatches = town.group.children.filter((o): o is THREE.Mesh => o instanceof THREE.Mesh && o.name.startsWith("town-solid-"));
+      pavingBatches = solidBatches.filter((mesh) => !mesh.castShadow);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -98,6 +101,58 @@ describe("Gas & Go follow camera", () => {
       return hit && !insideCutout(hit.point) && (hit.object as typeof canopy[number]).material.opacity === 1;
     }));
   }
+
+  it("keeps Harborview's trim, underside and collared posts inside the original canopy", () => {
+    const roof = new THREE.Box3(), posts = new THREE.Box3();
+    const palette = new Set([0x823d43, 0xead8b5, 0x50363a, 0xaa8153, 0x70584a, 0xbd9860]);
+    const seen = new Set<number>(), p = new THREE.Vector3(), c = new THREE.Color();
+    let vertices = 0;
+    for (const mesh of solidBatches) {
+      const { position, color } = mesh.geometry.attributes;
+      for (let i = 0; i < position.count; i++) {
+        p.fromBufferAttribute(position, i);
+        if (Math.abs(p.x + 87) > 8 || Math.abs(p.z + 16) > 6) continue;
+        const hex = c.setRGB(color.getX(i), color.getY(i), color.getZ(i)).getHex();
+        if (!palette.has(hex)) continue;
+        seen.add(hex);
+        (hex === 0x70584a || hex === 0xbd9860 ? posts : roof).expandByPoint(p);
+        vertices++;
+      }
+    }
+    expect(seen).toEqual(palette);
+    expect(roof.min.x).toBe(-91); expect(roof.max.x).toBe(-83);
+    expect(roof.min.z).toBe(-18); expect(roof.max.z).toBe(-14);
+    expect(roof.min.y).toBeCloseTo(3.225); expect(roof.max.y).toBeCloseTo(3.575);
+    expect(posts.min.x).toBeCloseTo(-90.7 - Math.sin(Math.PI / 3) * 0.08);
+    expect(posts.max.x).toBeCloseTo(-83.3 + Math.sin(Math.PI / 3) * 0.08);
+    expect(posts.min.z).toBeCloseTo(-14.28); expect(posts.max.z).toBeCloseTo(-14.12);
+    expect(posts.min.y).toBeCloseTo(0); expect(posts.max.y).toBeCloseTo(3.4);
+    expect(vertices / 3).toBeLessThanOrEqual(60 + 120); // original slab and two six-sided posts
+  });
+
+  it.each([[1280, 800], [390, 844]])("sees the hotel fascia, cab and stop bay on route 1 at %i×%i", (w, h) => {
+    const stop = TAXI_ROUTES[0].decisions.at(-1)!, via = stop.via!.at(-1)!;
+    const cab = new THREE.Vector3(via.x, 0, via.z);
+    const heading = Math.atan2(stop.at.x - via.x, stop.at.z - via.z);
+    const rig = followCamera(w, h, cab, heading, false);
+    rig.applyPose(); rig.cam.updateMatrixWorld();
+    const targets = [
+      cab.clone().setY(carModelEntry("taxi").collisionBox.height),
+      new THREE.Vector3(stop.at.x, 0.04, stop.at.z),
+      new THREE.Vector3(-85.5, 3.47, -14.02),
+    ];
+    for (const target of targets) {
+      const ndc = target.clone().project(rig.cam);
+      expect(Math.max(Math.abs(ndc.x), Math.abs(ndc.y), Math.abs(ndc.z))).toBeLessThan(1);
+      const toward = target.clone().sub(rig.cam.position);
+      const probe = new THREE.Raycaster(rig.cam.position, toward.clone().normalize(), rig.cam.near, toward.length() - 0.01);
+      expect(probe.intersectObjects(solidBatches, false)).toHaveLength(0);
+    }
+    const fascia = targets[2];
+    ray.set(rig.cam.position, fascia.clone().sub(rig.cam.position).normalize());
+    const [hit] = ray.intersectObjects(solidBatches, false);
+    expect(hit.point.distanceTo(fascia)).toBeLessThan(0.01);
+  });
 
   it("contains both turned ends of the boarding inset on Main Street's brick sidewalk", () => {
     const main = ROADS.find((r) => r.name === "Main Street")!;

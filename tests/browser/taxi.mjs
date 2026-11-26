@@ -202,7 +202,12 @@ try {
       });
       assert.fail(`${label}: ${description}: ${JSON.stringify(state)}`);
     };
-    const shot = async (name) => { if (shots) { await step(2); await real(320); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
+    const shot = async (name, frames = 2) => {
+      if (!shots) return;
+      if (frames) await step(frames);
+      await real(320);
+      await page.screenshot({ path: `${shots}/${label}-${name}.png` });
+    };
     const heard = (key) => page.locator(`.taxi-cue [data-line="${key}"]`).count();
     const choice = (key) => page.locator(`.taxi-choice[data-line="${key}"]`);
     const phase = (value) => page.evaluate((p) => window.__ew.game.modes.get("taxi").run?.phase === p, value);
@@ -368,15 +373,37 @@ try {
       const truck = game.town.parkedCars.placements.find(({ model }) => model === "garbage");
       return mode.run.index === 2 && mode.car.m.x < truck.x - 5;
     }), "the taxi clears the Station Road garbage truck", { steer: true, attempts: 550, frames: 5 });
-    await waitFor(() => heard("tx_r1_c6"), "the stop cue is heard", { steer: true, attempts: 610, frames: 8 });
-    await waitFor(() => page.locator('.taxi-action[data-action="stop"]').count(), "stop chip appears", { steer: true, attempts: 90, frames: 4 });
-    await shot("stop");
+    await waitFor(() => page.evaluate(() => window.__ew.game.modes.get("taxi").run.index === 4),
+      "approach the final left turn", { steer: true, attempts: 610, frames: 8 });
+    await waitFor(() => page.locator('.taxi-action[data-action="stop"]').count(), "first stop chip",
+      { steer: true, attempts: 600, frames: 1 });
+    assert(await heard("tx_r1_c6"), "the stop cue is heard");
+    await shot("stop", 0);
     await waitFor(() => choice("tx_a_here").count(), "learner stops in the zone", { steer: true, attempts: 100 });
     assert(await page.evaluate(() => {
       const { m } = window.__ew.game.rides.riding;
       return Math.abs(m.x + 87) <= 4 && Math.abs(m.z + 11.6) <= 1.8 && m.pace < 0.5;
     }), "the real car has stopped in the curb zone");
     await checkNoRideHints(page, "at the curb");
+    if (shots) {
+      // Look across the stopped cab from the bay. The game clock and its driving lens stay at this tick.
+      await page.evaluate(() => {
+        const { rig, renderer, scene, doors, rides } = window.__ew.game;
+        const door = doors.find((d) => d.loc === "hotel"), { x, z } = rides.riding.m;
+        const camera = rig.cam.clone();
+        camera.clearViewOffset(); camera.fov = 58; camera.updateProjectionMatrix();
+        camera.position.set(x + 1.7, 2.08, z + 1.8);
+        camera.lookAt(door.x, 2.95, door.z);
+        renderer.render(scene, camera);
+      });
+      try { await shot("hotel-door", 0); }
+      finally {
+        await page.evaluate(() => {
+          const { renderer, scene, rig } = window.__ew.game;
+          renderer.render(scene, rig.cam);
+        });
+      }
+    }
     if (phone) await choice("tx_a_here").tap(); else await page.keyboard.press("1");
     await waitFor(() => choice("tx_r1_a_fare").count(), "Vinnie asks what he owes");
     if (phone) await press(choice("tx_r1_a_fare")); else await speak("tx_r1_a_fare", "$24.50");

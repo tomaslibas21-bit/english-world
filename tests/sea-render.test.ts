@@ -1,16 +1,19 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { DirectionalLight, Group, HemisphereLight, Matrix4, Mesh, PlaneGeometry, ShaderMaterial, Vector3, type Object3D } from "three";
+import { Box3, Color, DirectionalLight, Group, HemisphereLight, Matrix4, Mesh, PlaneGeometry, ShaderMaterial, Vector3, type Object3D } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { boardFaces, projectFace } from "../src/game/kit/boardFaces";
+import { OpenSky } from "../src/game/kit/openSky";
 import { audio } from "../src/game/audio";
 import { CameraRig } from "../src/game/camera";
 import { Rides, type RideHost } from "../src/game/rides/Rides";
 import { CRUISE_SPEED, FIRST_GATE } from "../src/game/sea/course";
 import type { SeaHost } from "../src/game/sea/entry";
+import { SEA_VIEW, seaHorizon } from "../src/game/sea/look";
 import { prepareSea, SeaMode } from "../src/game/sea/mode";
 import { useSea } from "../src/game/sea/store";
 import { BAY } from "../src/game/water";
+import { LIGHTHOUSE, SEA_Z } from "../src/game/world/layout";
 import { RIDES } from "../src/game/world/rides";
 import { makeBoats } from "../src/game/world/town";
 import { useStore } from "../src/state/store";
@@ -35,6 +38,45 @@ describe("rendering the first sea approach", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps the seeded Maple Harbor coast in one draw with its original landmark bounds", () => {
+    const sky = new OpenSky(2300, SEA_VIEW.sky, SEA_VIEW.sunAzimuth, 0);
+    const shore = { x0: BAY.x0, x1: BAY.x1, z: SEA_Z, lighthouse: LIGHTHOUSE };
+    const offshore = seaHorizon(sky), a = seaHorizon(sky, shore), b = seaHorizon(sky, shore);
+    try {
+      expect(a.name).toBe("sea-horizon");
+      expect(a.children).toHaveLength(0);
+      expect(Array.isArray(a.material)).toBe(false);
+      for (const key of ["position", "normal", "color"]) {
+        const bytes = (mesh: typeof a) => Buffer.from(mesh.geometry.getAttribute(key).array.buffer);
+        expect(bytes(a).equals(bytes(b)), key).toBe(true);
+      }
+      const first = offshore.geometry.getAttribute("position").count;
+      const pos = a.geometry.getAttribute("position"), colors = a.geometry.getAttribute("color");
+      // B1's same coast: 2 shore slabs, 7 hills, 14 houses, 2 pines, steeple and lighthouse.
+      expect((pos.count - first) / 3).toBeLessThanOrEqual(804 + 480);
+      const lamp = new Box3(), wharf = new Box3(), p = new Vector3(), color = new Color();
+      const towerX = (shore.x0 + shore.x1) / 2 + (shore.x1 - shore.x0) * 0.12;
+      let steeple = false;
+      for (let i = first; i < pos.count; i++) {
+        p.fromBufferAttribute(pos, i);
+        color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
+        if (color.getHex() === 0x3d4a57) lamp.expandByPoint(p);
+        if (color.getHex() === 0x556272) wharf.expandByPoint(p);
+        if (Math.abs(p.x - towerX) < 0.001 && p.y === 27 && p.z === shore.z + 44) steeple = true;
+      }
+      expect(steeple).toBe(true);
+      expect(lamp.min.toArray()).toEqual([LIGHTHOUSE.x - 2, 19.5, LIGHTHOUSE.z - 2]);
+      expect(lamp.max.x).toBe(LIGHTHOUSE.x + 2);
+      expect(lamp.max.y).toBeCloseTo(21.7);
+      expect(lamp.max.z).toBe(LIGHTHOUSE.z + 2);
+      expect(wharf.max.y).toBeCloseTo(4.2);
+      expect(wharf.min.z).toBe(shore.z - 11);
+    } finally {
+      for (const mesh of [a, b, offshore]) { mesh.geometry.dispose(); mesh.material.dispose(); }
+      sky.dispose();
+    }
   });
 
   it.each([[1280, 800], [390, 844], [390, 664], [844, 390]])("draws three boards and mounts three controls at 25 m on %ix%i", async (w, h) => {

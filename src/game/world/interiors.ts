@@ -299,6 +299,39 @@ function menuBoard(lines: string[], title: string, colors = { bg: "#2f3a33", fg:
   (t as any).aspect = 1024 / H;
   return t;
 }
+
+function cafeMenu(c: Ctx, title: string, lines: string[], cx: number, w: number, h: number) {
+  const H = Math.max(640, 150 + lines.length * 50);
+  const texture = canvasTex(1024, H, (x) => {
+    roundRect(x, 0, 0, 1024, H, 28);
+    x.save(); x.clip();
+    x.fillStyle = "#745441"; x.fillRect(0, 0, 1024, H);
+    x.fillStyle = "#394c47"; x.fillRect(9, 9, 1006, H - 18);
+    const railTop = H * (1 - 0.20 / h), railHeight = H * 0.12 / h;
+    x.fillStyle = "#43544c"; x.fillRect(9, H * 0.81, 1006, railTop - H * 0.81);
+    x.fillStyle = "#745441"; x.fillRect(0, railTop, 1024, railHeight);
+    x.fillStyle = "#977660"; x.fillRect(0, railTop, 1024, 3);
+    x.fillStyle = "#544236"; x.fillRect(0, railTop + railHeight, 1024, H - railTop - railHeight);
+    x.restore();
+
+    x.textAlign = "center"; x.fillStyle = "#edc66f"; x.font = "800 56px Nunito, Arial";
+    x.fillText(title, 512, 0.115 * H);
+    const step = Math.min(54, 0.58 * H / (lines.length - 1));
+    x.font = `600 ${Math.min(38, Math.floor(step * 0.83))}px Nunito, Arial`;
+    x.fillStyle = "#e2d5b8";
+    lines.forEach((line, i) => {
+      const [name, price] = line.split("|"), y = 0.195 * H + i * step;
+      if (!price) {
+        x.textAlign = "right"; x.fillText(name.trim(), 928, y);
+        return;
+      }
+      const priceWidth = x.measureText(price).width;
+      x.textAlign = "left"; x.fillText(name, 96, y, 928 - priceWidth - 32 - 96);
+      x.textAlign = "right"; x.fillText(price, 928, y);
+    });
+  });
+  wallPanel(c, texture, cx, 2.75, -c.d / 2 + 0.2, w, h);
+}
 function painting(seed: number, w = 256, h = 200) {
   const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
   const x = cv.getContext("2d")!;
@@ -421,6 +454,39 @@ function smalls(c: Ctx): Smalls {
       c.g.add(m);
     },
   };
+}
+
+function ticketWell(S: Smalls, x: number, y: number, z: number) {
+  // The pressed tray slopes from the lip down to a flat bed just above the sill.
+  const tray = new THREE.PlaneGeometry(1, 1, 3, 3);
+  const points = tray.getAttribute("position");
+  const across = [-0.19, -0.171, 0.171, 0.19], along = [-0.11, -0.09, 0.09, 0.11];
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+    const rim = col === 0 || col === 3 || row === 0 || row === 3;
+    points.setXYZ(row * 4 + col, across[col], rim ? 0.019 : 0.004, along[row]);
+  }
+  tray.computeVertexNormals();
+  S.add(tray.translate(x, y, z), "#526267");
+
+  // One outward ticket and its return coupon. The learner's half rests in the tray.
+  // The raised crease leads to the punched end on Walter's side of the sill, visible above the phone panel.
+  const width = 0.224, nearLength = 0.252, farLength = 0.376;
+  const nearPitch = 0.28, farPitch = -0.20;
+  const front = z + 0.073, base = y + 0.008;
+  S.add(new THREE.PlaneGeometry(width + 0.012, 0.435).rotateX(-Math.PI / 2)
+    .translate(x + 0.009, y + 0.001, z - 0.328), "#673034");
+  S.add(new THREE.PlaneGeometry(width, nearLength).translate(0, nearLength / 2, 0)
+    .rotateX(nearPitch - Math.PI / 2).translate(x, base, front), "#ead1a5");
+  const creaseY = base + nearLength * Math.sin(nearPitch), creaseZ = front - nearLength * Math.cos(nearPitch);
+  const onCoupon = (g: THREE.BufferGeometry) => g.rotateX(farPitch - Math.PI / 2).translate(x, creaseY, creaseZ);
+  const paper = new THREE.Shape();
+  paper.moveTo(-width / 2, 0); paper.lineTo(width / 2, 0); paper.lineTo(width / 2, farLength); paper.lineTo(-width / 2, farLength);
+  paper.closePath();
+  const punch = new THREE.Path();
+  punch.absarc(0.082, farLength - 0.032, 0.016, 0, Math.PI * 2, true);
+  paper.holes.push(punch);
+  S.add(onCoupon(new THREE.ShapeGeometry(paper, 4)), "#f2deb5");
+  S.add(onCoupon(new THREE.PlaneGeometry(0.118, 0.012).translate(-0.025, 0.31, 0.001)), "#826c50");
 }
 /** A till on a counter top at height y, its screen towards the cashier (north). */
 function till(S: Smalls, x: number, y: number, z: number) {
@@ -827,8 +893,12 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 6; i++) M.add("pastry", mat(["#e0a45e", "#8a4b2a", "#f2d49b"][i % 3], { flat: true }), new THREE.SphereGeometry(0.12, 6, 4).scale(1.4, 0.6, 1).translate(-2.4 + i * 0.32, 1.2, -3.1), false);
     M.build(props, { name: "sunny-cup-counter" });
     c.g.add(props);
-    wallPanel(c, menuBoard(["                    small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00", "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50", "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00", "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], "SUNNY CUP · DRINKS"), -3.6, 2.75, -c.d / 2 + 0.2, 4.2, 3.2);
-    wallPanel(c, menuBoard(["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75", "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], "FOOD"), 0.9, 2.75, -c.d / 2 + 0.2, 3.2, 2);
+    cafeMenu(c, "SUNNY CUP · DRINKS", ["small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00",
+      "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50",
+      "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00",
+      "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], -3.6, 4.2, 3.2);
+    cafeMenu(c, "FOOD", ["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75",
+      "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], 0.9, 3.2, 2);
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");
     for (const [tx, tz] of [[3, 0.5], [5.8, -1.8], [5.8, 2.6], [-5.6, 1.5], [0.4, 3]]) table(c, tx, tz, { round: true, cloth: "#f7f1e6", chairs: 2, chairColor: "#e8743b" });
     windowBack(c, 5.2, 3.8);
@@ -1295,7 +1365,7 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
-    counter(c, -6, -6, 6, 1.1, "#7a2e2e", "#efe3d0");
+    counter(c, -6, -6, 6, 1.1, "#8a6249", "#7a2e2e");
     for (const gx of [-7.5, -4.5]) c.M.add("ticket-glass", mat("#dff3fb", { transparent: 0.3 }), boxGeo(2.8, 1.3, 0.05, gx, 1.75, -5.5), false);
     sign(c, "TICKETS", -6, 3.4, -c.d / 2 + 0.2, 3, "#7a2e2e", "#fff8e8");
     const board = document.createElement("canvas"); board.width = 1024; board.height = 512;
@@ -1325,6 +1395,8 @@ const B: Record<string, () => Interior> = {
     // machine, a newsstand by the door, travellers' bags on the benches, a suitcase, trash cans, two big plants.
     // (The ways round the west end of the ticket counter and over to the bus stay free.)
     const S = smalls(c);
+    S.add(new THREE.PlaneGeometry(6.12, 0.05).translate(-6, 1.047, -5.388), "#dfc6a3");
+    ticketWell(S, -6, 1.08, -6);
     rugS(S, -1, 2.5, 12.6, 1.5, "#7a2e2e", "#c9a227", 0.1);
     for (const tx of [-1.55, -0.35]) {
       S.add(boxGeo(0.9, 1.75, 0.6, tx, 0.875, -8.68), "#7a2e2e");

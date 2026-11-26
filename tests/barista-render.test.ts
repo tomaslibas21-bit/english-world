@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Box3, FrontSide, InstancedMesh, Mesh, MeshLambertMaterial, MeshStandardMaterial, Raycaster, Vector3, type Object3D } from "three";
+import { Box3, FrontSide, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Raycaster, Vector3, type Object3D } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { BARISTA_ORDERS } from "../src/content/barista";
 import { cafe } from "../src/content/situations/s72-cafe";
@@ -9,6 +9,7 @@ import { baristaPieceLine } from "../src/game/barista/menu";
 import { CounterProps, disposeBaristaProps, makeServing } from "../src/game/barista/props";
 import { resetBaristaUi, useBarista } from "../src/game/barista/store";
 import { getInterior } from "../src/game/world/interiors";
+import { talkRoomAnchors } from "../src/game/world/talkNatural";
 import { BaristaOverlay } from "../src/ui/Barista";
 
 vi.mock("../src/game/barista/store", async (load) => {
@@ -49,13 +50,27 @@ function meshBudget(root: Object3D) {
   return { meshes, triangles };
 }
 
-it("keeps the Sunny Cup window wall, shift props and ordinary room within their mesh budgets", () => {
+function recordingCanvas() {
+  const text: { value: string; left: number; right: number; baseline: number; color: string }[] = [];
   const draw = () => {};
   const gradient = () => ({ addColorStop: draw });
-  const canvas = new Proxy({
-    measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
+  const ctx = new Proxy({
+    font: "", textAlign: "left", fillStyle: "", createLinearGradient: gradient, createRadialGradient: gradient,
+    measureText(value: string) {
+      const size = Number(this.font.match(/(\d+)px/)?.[1] ?? 16);
+      return { width: value.length * size * 0.58 };
+    },
+    fillText(value: string, x: number, baseline: number, maxWidth = Infinity) {
+      const width = Math.min(maxWidth, this.measureText(value).width);
+      const left = this.textAlign === "right" ? x - width : this.textAlign === "center" ? x - width / 2 : x;
+      text.push({ value, left, right: left + width, baseline, color: this.fillStyle });
+    },
   }, { get: (target, key) => Reflect.get(target, key) ?? draw });
-  vi.stubGlobal("document", { createElement: () => ({ getContext: () => canvas }) });
+  return { width: 0, height: 0, getContext: () => ctx, text };
+}
+
+it("fits the café chalk copy inside both maps and keeps the counter targets and room budgets", () => {
+  vi.stubGlobal("document", { createElement: recordingCanvas });
   let props: CounterProps | undefined;
   try {
     props = new CounterProps();
@@ -72,9 +87,36 @@ it("keeps the Sunny Cup window wall, shift props and ordinary room within their 
     expect(shift.meshes).toBeLessThanOrEqual(33);
     expect(shift.triangles).toBeLessThanOrEqual(3_314);
 
-    const room = meshBudget(getInterior("sunny-cup")!.group);
-    expect(room.meshes).toBeLessThanOrEqual(11);
-    expect(room.triangles).toBeLessThanOrEqual(1_970);
+    const room = getInterior("sunny-cup")!;
+    const budget = meshBudget(room.group);
+    expect(budget.meshes).toBeLessThanOrEqual(11);
+    expect(budget.triangles).toBeLessThanOrEqual(1_970);
+    const anchors = talkRoomAnchors(room.id, room.group);
+    expect(anchors.menu?.toArray()).toEqual([-3.6, 2.75, -5.8]);
+    expect(anchors.handoff?.toArray()).toEqual([-1.2, 1.08, -3.2]);
+    expect(room.npcs.find((n) => n.npc === "mia")).toMatchObject({ x: -1.2, z: -4.2, ax: -1.2, az: -2.05 });
+    for (const [cx, title, longest, price, rows, height] of [
+      [-3.6, "SUNNY CUP · DRINKS", "Tea (black, green, mint, chamomile)", "$3.00", 10, 700],
+      [0.9, "FOOD", "Muffin (blueberry, chocolate)", "$3.50", 6, 640],
+    ] as const) {
+      const panel = room.group.children.find((obj) => obj instanceof Mesh && obj.position.x === cx && obj.position.y === 2.75) as Mesh;
+      const map = (panel.material as MeshBasicMaterial).map!.image as ReturnType<typeof recordingCanvas>;
+      expect([map.width, map.height]).toEqual([1024, height]);
+      expect(map.text[0]).toMatchObject({ value: title, color: "#edc66f" });
+      const prices = map.text.filter((run) => /^[+$]/.test(run.value));
+      expect(prices).toHaveLength(rows);
+      for (const cost of prices) {
+        const item = map.text.find((run) => run !== cost && run.baseline === cost.baseline)!;
+        expect(item.color).toBe("#e2d5b8");
+        expect(cost.color).toBe(item.color);
+        expect(item.left).toBeGreaterThanOrEqual(90);
+        expect(item.right + 30).toBeLessThanOrEqual(cost.left);
+        expect(cost.right).toBeLessThanOrEqual(map.width - 90);
+        expect(cost.baseline + 8).toBeLessThan(map.height * 0.81);
+      }
+      const name = map.text.find((run) => run.value === longest)!;
+      expect(prices.find((run) => run.baseline === name.baseline)?.value).toBe(price);
+    }
   } finally {
     try {
       if (props) disposeBaristaProps(props.root);

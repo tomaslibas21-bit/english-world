@@ -815,12 +815,21 @@ try {
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before turning for shore");
   mark("return input: turn after answering one gate");
   await keyboard("down", "ArrowDown");
-  await waitFor(async () => (await read()).phase === "turn", "turns toward shore after one answer");
+  await waitFor(async () => (await read()).phase === "turn", "turns toward shore after one answer", 600, 1);
   await step(12);
   const turning = await read();
   assert.equal(turning.phase, "turn");
   assertBoatFrame(turning, "return turn");
-  await waitFor(() => visible(result), "shows the score card after turning with one gate answered");
+  // The turn lasts 1.5 s. Hold its 89th frame at 60 Hz, then verify the very next frame ends it.
+  await step(89 - 12);
+  const shore = await read();
+  assert.equal(shore.phase, "turn");
+  assert.ok(Math.cos(shore.heading) > 0.99 && !(await visible(result)));
+  assertBoatFrame(shore, "last shore-facing frame");
+  await shot("shore-turn");
+  await step(1);
+  assert.equal((await read()).phase, "result");
+  await run("score card after one answer", () => result.waitFor({ state: "visible", timeout }));
   await keyboard("up", "ArrowDown");
   const turned = await read();
   assert.equal(turned.result.total, 1);

@@ -38,7 +38,7 @@ const MAPLE_HARBOR: SeaView = {
   water: { deep: "#155968", bright: "#458e96", foam: "#e9eee3" },
   island: { sand: "#cdb892", green: ["#3f6f52", "#a8552f"], rock: "#7f7a78", trees: "pine" },
   sails: ["#ffffff", "#f6e9cf", "#e8553f"],
-  coast: { walls: ["#f3ead8", "#b9523f", "#d9c9a8", "#8fa7b4", "#e7d3a1"], roofs: ["#5b4a44", "#7b3f35", "#3f4d57"], land: "#c9b48a", hills: "#b0683a" },
+  coast: { walls: ["#f3ead8", "#e8d9bd", "#d9c9a8"], roofs: ["#994d3b", "#824638", "#ab6048"], land: "#c9b48a", hills: "#a29987" },
 };
 
 // Puerto Colibrí: Caribbean turquoise under a tall blue sky, then pink and violet.
@@ -137,23 +137,69 @@ function freighter(x: number, z: number, heading: number): Part[] {
   return parts;
 }
 
+function shoreMaple(x: number, z: number, size: number, crown: string): Part[] {
+  return [
+    [at(new THREE.BoxGeometry(size, size * 3.6, size), x, 1 + size * 1.8, z), "#796455"],
+    [at(new THREE.IcosahedronGeometry(size * 2.5).scale(1.24, 1, 1), x, size * 5, z), crown],
+  ];
+}
+
+function mapleWharf(mid: number, wide: number, z: number, land: string): Part[] {
+  const x = mid - wide * 0.16, half = wide * 0.095;
+  // Trace two coves beside the wharf. Extrude the whole bank so its waterline is continuous.
+  const left = mid - wide / 2 - 1600, right = mid + wide / 2 + 1600;
+  const bank = new THREE.Shape();
+  bank.moveTo(left, 5);
+  for (const [along, depth] of [[-2, -5], [-1.6, 9], [-1.1, 9], [-0.8, 1], [0.7, 1], [1.12, 14], [1.7, 14], [2, -5]]) {
+    bank.lineTo(x + along * half, -depth);
+  }
+  bank.lineTo(right, 5); bank.lineTo(right, -65); bank.lineTo(left, -65); bank.closePath();
+  const bankGeo = new THREE.ExtrudeGeometry(bank, { depth: 2.4, bevelEnabled: false }).rotateX(-Math.PI / 2);
+  const parts: Part[] = [
+    [at(bankGeo, 0, -1.6, z), land],
+    [at(new THREE.BoxGeometry(2 * half, 1.5, 13), x, 3.45, z - 4.5), "#556272"],
+  ];
+  for (const along of [-0.92, 0, 0.92]) {
+    parts.push([at(new THREE.BoxGeometry(2.8, 4, 11), x + along * half, 0.7, z - 4.5), "#495361"]);
+  }
+  parts.push(...shoreMaple(x - half * 0.83, z + 53, 2.65, "#be7941"),
+    ...shoreMaple(x + half * 0.23, z + 63, 3.1, "#c99552"),
+    ...shoreMaple(x + half * 1.05, z + 48, 2.4, "#be7941"));
+  return parts;
+}
+
 /** The town from the sea: a strip of shore, low hills, a row of houses and trees, a church or a lighthouse. */
 function coast(view: SeaView, r: () => number, { x0, x1, z, lighthouse }: Coast): Part[] {
   const { walls, roofs, land, hills } = view.coast, { green, trees } = view.island;
   const mid = (x0 + x1) / 2, wide = x1 - x0;
-  const parts: Part[] = [
-    [at(new THREE.BoxGeometry(wide + 3200, 2.4, 70), mid, -0.4, z + 30), land],
-    [at(new THREE.BoxGeometry(wide + 3400, 5, 160), mid, 0.6, z + 140), green[0]],
-  ];
+  const maple = trees === "pine";
+  const parts: Part[] = maple ? mapleWharf(mid, wide, z, land)
+    : [[at(new THREE.BoxGeometry(wide + 3200, 2.4, 70), mid, -0.4, z + 30), land]];
+  parts.push([at(new THREE.BoxGeometry(wide + 3400, 5, 160), mid, 0.6, z + 140), maple ? "#898f7e" : green[0]]);
   for (let i = 0; i < 7; i++) {
     const x = mid + (i - 3) * (wide + 500) / 6 + (r() - 0.5) * 60, radius = 70 + r() * 80;
-    parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : green[1]]);
+    parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : maple ? "#afa391" : green[1]]);
   }
   for (let x = x0 + 6; x < x1 - 6;) {
     const w = 7 + r() * 9, tall = 4.5 + r() * 6.5, deep = 8 + r() * 6, back = z + 18 + r() * 30;
     if (r() < 0.78) {
-      parts.push([at(new THREE.BoxGeometry(w, tall, deep), x + w / 2, 1 + tall / 2, back), walls[Math.floor(r() * walls.length)]]);
-      parts.push([at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roofs[Math.floor(r() * roofs.length)]]);
+      const wall = walls[Math.floor(r() * walls.length)], roof = roofs[Math.floor(r() * roofs.length)];
+      const body = new THREE.BoxGeometry(w, tall, deep);
+      if (maple) {
+        // Turn the ridge slightly to show both a gable end and the seaward slope.
+        const pitch = new THREE.Shape();
+        pitch.moveTo(-w / 2 - 0.5, 0); pitch.lineTo(0, w * 0.48); pitch.lineTo(w / 2 + 0.5, 0); pitch.closePath();
+        const gable = new THREE.ExtrudeGeometry(pitch, { depth: deep + 1, bevelEnabled: false }).translate(0, 0, -(deep + 1) / 2);
+        const angle = (tall - 7) * 0.09;
+        parts.push([at(body.rotateY(angle), x + w / 2, 1 + tall / 2, back), wall],
+          [at(gable.rotateY(angle), x + w / 2, tall + 1, back), roof]);
+      } else {
+        parts.push([at(body, x + w / 2, 1 + tall / 2, back), wall],
+          [at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roof]);
+      }
+    } else if (maple) {
+      const size = 1.8 + r() * 1.2, crown = r() < 0.5 ? "#be7941" : "#c99552";
+      parts.push(...shoreMaple(x + w / 2, back, size, crown));
     } else parts.push(...tree(trees, r, x + w / 2, 1, back, 1.8 + r() * 1.2, green[Math.floor(r() * 2)]));
     x += w + 1.5 + r() * 7;
   }

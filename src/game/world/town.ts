@@ -5,6 +5,7 @@ import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
+import { chamferBox } from "./shapes";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
@@ -1043,9 +1044,22 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     }
   }
   if (b.style === "hotel") {
-    M.add("canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
+    const atCanopy = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2);
+    if (MAPLE_BLOCKS) {
+      M.add("hotel-canopy", mat("#823d43"), atCanopy(boxGeo(7.96, 0.21, 3.96, 0, 3.47, 0)));
+      M.add("hotel-canopy-edge", mat("#ead8b5"), atCanopy(chamferBox(8, 0.13, 4, 0.04).translate(0, 3.31, 0)));
+      M.add("hotel-canopy-soffit", mat("#50363a"), atCanopy(boxGeo(7.86, 0.07, 3.86, 0, 3.264, 0)));
+      // Warmth from the doorway across the recessed underside.
+      M.add("hotel-canopy-reflection", mat("#aa8153"), atCanopy(new THREE.PlaneGeometry(3.8, 2.4)
+        .rotateX(Math.PI / 2).translate(0, 3.225, -0.64)));
+    } else {
+      M.add("canopy", mat("#8a2f3b"), atCanopy(boxGeo(8, 0.35, 4, 0, 3.4, 0)));
+    }
     for (const s of [-1, 1]) {
-      M.add("canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
+      const px = dx + t[0] * s * 3.7 + n[0] * 3.8, pz = dz + t[1] * s * 3.7 + n[1] * 3.8;
+      const radius = MAPLE_BLOCKS ? 0.065 : 0.08;
+      M.add("canopy-post", mat(MAPLE_BLOCKS ? "#70584a" : "#c8a86a"), cylGeo(radius, radius, 3.4, px, 1.7, pz, 6));
+      if (MAPLE_BLOCKS) M.add("hotel-canopy-collar", mat("#bd9860"), cylGeo(0.08, 0.08, 0.25, px, 3.11, pz, 6));
       col.addCircle(dx + t[0] * s * 3.7 + n[0] * 3.8, dz + t[1] * s * 3.7 + n[1] * 3.8, 0.15);
       // flags
       M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx + t[0] * s * 7 + n[0] * 0.8, 9.5, dz + t[1] * s * 7 + n[1] * 0.8, 6));
