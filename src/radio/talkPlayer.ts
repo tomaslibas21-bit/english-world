@@ -82,8 +82,9 @@ export interface TalkSnapshot {
 interface PlayerOptions {
   clock: TalkClock;
   output: TalkOutput;
+  sceneOutput?: TalkOutput;
   progress: TalkProgress;
-  load: (selection: TalkSelection, signal: AbortSignal) => Promise<TalkItem>;
+  load: (selection: TalkSelection, signal: AbortSignal, fresh: boolean) => Promise<TalkItem>;
 }
 
 const sameSelection = (a: TalkSelection | null, b: TalkSelection) =>
@@ -132,6 +133,7 @@ export class TalkPlayer {
   private cancelSleep?: () => void;
   private cancelResume?: () => void;
   private started = false;
+  private freshLoad = false;
   private lastCheckpoint = 0;
 
   constructor(private readonly options: PlayerOptions) {
@@ -148,18 +150,18 @@ export class TalkPlayer {
   };
 
   /** Selection is explicit. Inspecting the catalog can leave the player alone. */
-  select(selection: TalkSelection, play = false): Promise<void> {
+  select(selection: TalkSelection, play = false, fresh = false): Promise<void> {
     this.checkSleep();
-    if (sameSelection(this.state.selection, selection)) {
+    if (!fresh && sameSelection(this.state.selection, selection)) {
       if (play && this.state.status !== "error") this.play();
       return Promise.resolve();
     }
-    return this.loadSelection(selection, play, true);
+    return this.loadSelection(selection, play, !fresh);
   }
 
   async retry(play = false): Promise<void> {
     const selection = this.state.selection;
-    if (selection && this.state.status === "error") await this.loadSelection(selection, play, true, true);
+    if (selection && this.state.status === "error") await this.loadSelection(selection, play, !this.freshLoad, true);
   }
 
   play(): void {
@@ -223,7 +225,7 @@ export class TalkPlayer {
   }
 
   changeMode(mode: TalkMode): void {
-    if (!isTalkMode(mode) || mode === this.state.prefs.mode) return;
+    if (this.isScene || !isTalkMode(mode) || mode === this.state.prefs.mode) return;
     this.checkSleep();
     this.capturePosition();
     const previous = this.position() ?? (this.state.selection ? this.options.progress.get(this.state.selection) : undefined);
@@ -246,7 +248,7 @@ export class TalkPlayer {
     const choices: readonly number[] = language === target ? TALK_RATES.target : language === helper ? TALK_RATES.helper : [];
     if (!choices.includes(rate)) return;
     this.setPreferences({ ...this.state.prefs, rates: { ...this.state.prefs.rates, [language]: rate } });
-    if (this.playing) this.options.output.setRates(this.mediaRates());
+    if (this.playing) this.output.setRates(this.mediaRates());
   }
 
   setAutoplay(autoplay: boolean): void { this.setPreferences({ ...this.state.prefs, autoplay }); }
@@ -299,7 +301,10 @@ export class TalkPlayer {
     if (this.playing && this.options.clock.now() - this.lastCheckpoint >= 5000) this.savePosition();
   }
 
-  private get track(): TalkTrack | undefined { return this.state.item?.tracks[this.state.prefs.mode]; }
+  private get isScene() { return this.state.selection?.itemKey.startsWith("scene/"); }
+  private get output() { return this.isScene && this.options.sceneOutput ? this.options.sceneOutput : this.options.output; }
+  private get mode() { return this.isScene ? "target" : this.state.prefs.mode; }
+  private get track(): TalkTrack | undefined { return this.state.item?.tracks[this.mode]; }
 
   private async loadSelection(selection: TalkSelection, play: boolean, resume: boolean, keepItem = false): Promise<void> {
     this.capturePosition();
@@ -309,20 +314,22 @@ export class TalkPlayer {
     this.loading?.abort();
     const request = new AbortController();
     this.loading = request;
+    this.freshLoad = !resume;
     this.started = false;
     this.patch({
       selection, item: keepItem ? this.state.item : null, position: keepItem ? this.state.position : 0,
       cue: keepItem ? this.state.cue : null, status: "loading", playIntent: play, error: null,
     });
     try {
-      const item = await this.options.load(selection, request.signal);
+      const item = await this.options.load(selection, request.signal, !resume);
       if (this.loading !== request) return;
       if (!sameSelection(item.selection, selection)) {
         this.loading = null;
         this.patch({ status: "error", error: "invalid", playIntent: false });
         return;
       }
-      const mode = this.state.prefs.mode;
+      this.freshLoad = false;
+      const mode = this.mode;
       const track = item.tracks[mode];
       const saved = retryPosition ?? (resume ? this.options.progress.get(selection) : undefined);
       const position = track ? restoredPosition(track, saved) : 0;
@@ -339,7 +346,7 @@ export class TalkPlayer {
   }
 
   private trackError(item: TalkItem, mode: TalkMode): TalkFailure | null {
-    return this.options.output.unavailable ?? (item.tracks[mode] ? null : item.issues?.[mode] ?? "unavailable");
+    return this.output.unavailable ?? (item.tracks[mode] ? null : item.issues?.[mode] ?? "unavailable");
   }
 
   private maybeStart(): void {
@@ -358,7 +365,7 @@ export class TalkPlayer {
     if (this.playing !== request) return;
     const start = async () => {
       try {
-        await this.options.output.start({
+        await this.output.start({
           item: this.state.item!, track: this.track!, position: this.state.position,
           rates: this.mediaRates(), signal: request.signal,
           onTime: () => { if (this.playing === request) this.tick(); },
@@ -395,7 +402,7 @@ export class TalkPlayer {
 
   private capturePosition(): void {
     if (!this.playing || !this.track) return;
-    const position = this.options.output.position();
+    const position = this.output.position();
     if (position !== null && Number.isFinite(position)) this.move(Math.max(0, Math.min(this.track.duration, position)));
   }
 
@@ -424,7 +431,7 @@ export class TalkPlayer {
   private stopOutput(reason: TalkStopReason): void {
     const request = this.playing;
     this.playing = null;
-    if (request || reason === "capture" || reason === "change") this.options.output.stop(reason);
+    if (request || reason === "capture" || reason === "change") this.output.stop(reason);
     request?.abort();
   }
 

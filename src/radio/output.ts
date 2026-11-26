@@ -14,7 +14,7 @@ export class NeedsTap extends Error { constructor() { super("the browser wants a
 export interface RadioOutput {
   /** Start the recording at `url` from `at` seconds. Settles when it sounds; rejects with NeedsTap, or with another
    *  error when the recording can't be played. A later play() or pause() makes an unfinished one settle quietly. */
-  play(url: string, at: number): Promise<boolean>;
+  play(url: string, at: number, exactSeek?: boolean): Promise<boolean>;
   /** Silence now. The place in the song is kept for position(). */
   pause(): void;
   /** Seconds into the song. */
@@ -80,7 +80,7 @@ export class HtmlOutput implements RadioOutput {
     void el.play().then(() => { this.unlocked = true; if (el.src === SILENCE) el.pause(); }).catch(() => { /* the next tap tries again */ });
   }
 
-  async play(url: string, at: number): Promise<boolean> {
+  async play(url: string, at: number, exactSeek = false): Promise<boolean> {
     this.leaveRoute();
     if (!playbackRoute(true)) return false;
     const el = this.media();
@@ -89,7 +89,7 @@ export class HtmlOutput implements RadioOutput {
       this.url = url;
       el.src = url;
       if (at > 0) { try { el.currentTime = at; } catch { /* starts from the beginning */ } }
-    } else if (Math.abs(el.currentTime - at) > 1) {
+    } else if (Math.abs(el.currentTime - at) > (exactSeek ? 0 : 1)) {
       try { el.currentTime = at; } catch { /* stays where it is */ }
     }
     this.apply();

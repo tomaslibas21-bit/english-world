@@ -268,6 +268,9 @@ it("keeps a linked outdoor conversation under the initial logo and ignores compl
   );
   await until(() => expect(current["islandScene"]).toBeDefined());
   expect(current.zoneId).toBeUndefined();
+  // Cards and talk progress can already be watching storage for the lifetime of the page.
+  const startupListeners = win.addEventListener.mock.calls.slice();
+  expect(new Set(startupListeners.map(([event]) => event))).toEqual(new Set(["storage"]));
   current.dispose();
   const state = useStore.getState();
   const bodies = current["ambient"].group.children.slice();
@@ -279,7 +282,7 @@ it("keeps a linked outdoor conversation under the initial logo and ignores compl
   expect(current["ambient"].group.children).toEqual(bodies);
   expect(current["town"].parkedCars.taxi?.instance).toBeUndefined();
   expect(renderer.render).not.toHaveBeenCalled();
-  expect(win.addEventListener.mock.calls.map(([event]) => event)).toEqual(["storage"]);
+  expect(win.addEventListener.mock.calls).toEqual(startupListeners);
   expect(ready).not.toHaveBeenCalled();
   expect(useStore.getState()).toBe(state);
 }, 10000);
