@@ -311,7 +311,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {received} {KIND[kind].accusative}</div>}
-        {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
+        {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių užrašinėje: {newExpressions.length}</div>}
       </div>}
       {completed && Ending && <Suspense fallback={null}><Ending /></Suspense>}
       {!baristaOffer && modeAction}

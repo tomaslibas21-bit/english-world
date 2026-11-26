@@ -225,7 +225,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
           <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel}
             popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
         </div>
-        {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
+        {saved && <div className="wpop-hint">Kortelę rasi kuprinėje.</div>}
       </div>
     </div>,
     portalHost ?? document.body,

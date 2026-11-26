@@ -1148,6 +1148,10 @@ body.scene-on .tag-layer { display: none; }
   .say-toggles .short { display: inline; }
 }
 
+.phrasebook-tool { min-width: 44px; min-height: 44px; }
+.phrasebook-tool > svg { color: #1d3557; }
+.phrasebook-tool > svg .i-soft { fill: var(--pack-fabric); fill-opacity: .72; }
+
 /* saved cards due for review today: a small gold count on the phrasebook button */
 .icon-btn, .lh-tool { position: relative; }
 .due-badge, .unread-badge {

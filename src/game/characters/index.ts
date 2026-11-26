@@ -1,5 +1,6 @@
 // Character factory: the original blocky Character for "blocks", a styled one otherwise.
 import * as THREE from "three";
+import { backpackColor } from "../../content/backpack";
 import type { Look } from "../../content/npcs";
 import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
@@ -80,10 +81,7 @@ export function setBlobShadows(on: boolean) { Character.blobShadows = on; }
 /** The player's look with their backpack, in a colour that stands out from their top (dark navy on warm tops, mustard on
  *  cool ones): no townsperson or NPC carries one, so the player is told apart at a glance. */
 export function withBackpack(look: Look): Look {
-  const hsl = { h: 0, s: 0, l: 0 };
-  new THREE.Color(look.top).getHSL(hsl);
-  const warm = hsl.h < 0.17 || hsl.h > 0.92;
-  return { ...look, backpack: warm ? "#1d3557" : "#e9a23b" };
+  return { ...look, backpack: backpackColor(look.top) };
 }
 
 export function createCharacter(look: Look): GameCharacter {

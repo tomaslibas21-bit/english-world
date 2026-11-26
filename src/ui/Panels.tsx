@@ -181,7 +181,7 @@ function HowToPlay({ open }: { open?: boolean }) {
         <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. <InlineIcon name="mic" label="Mikrofono mygtuku" />{keyboardHints && " (arba tarpo klavišu)"} gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
         <li>Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžiai – <InlineIcon name="speaker" label="garsiakalbio mygtukas" /> juos perskaito. „Daugiau frazių“ – dar daugiau būdų tai pasakyti.</li>
         <li>Viršuje <b>LT</b> ir <b>IPA</b> įjungia pašnekovo sakinių vertimą ir tarimą, o prie „Tavo eilė“ esantys <b>Vertimas</b> ir <b>IPA</b> – tavo atsakymų pavyzdžių. <InlineIcon name="restart" label="Rodyklė ratu" /> – pradėti iš naujo, <InlineIcon name="list" label="Sąrašas" /> – kitos situacijos.</li>
-        <li>Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti (<InlineIcon name="bookOpen" label="Frazių knygelė" /> → „Mano kortelės“).</li>
+        <li>Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti (<InlineIcon name="backpack" label="Kuprinė" /> → „Išsaugotos kortelės“).</li>
         <li>Jei žaidimas tavęs nesupranta – spausk <b><InlineIcon name="clipboard" /> Kopijuoti</b> ir atsiųsk pokalbį mokytojui.</li>
       </ol>
     </details>

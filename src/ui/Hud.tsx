@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
+import { BackpackTool } from "./BackpackTool";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { useBarista } from "../game/barista/store";
@@ -51,9 +52,9 @@ function unreadTextSuffix(unread = 0) {
   return unread ? `, ${unread} neperskaitytos žinutės` : "";
 }
 
-function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
+function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
+    <button className="icon-btn" data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -320,7 +321,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   useLayoutEffect(() => {
     if (!folds) setMenuOpen(false);
     else if (panel || (phone && radioOpen)) {
-      closeMenu();
+      if (panel !== "phrasebook") closeMenu();
       if (panel && radioOpen) radio.setOpen(false);
     }
   }, [folds, phone, panel, radioOpen, closeMenu]);
@@ -333,7 +334,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     <ToolButton key="map" icon="map" title={surf ? "Žemėlapis" : "Žemėlapis (M)"} panel="map" hotkey={surf ? undefined : "M"} />,
     <ToolButton key="journal" icon={phone ? "clipboard" : "journal"} title={surf ? "Užduotys" : "Užduotys (J)"} panel="journal" hotkey={surf ? undefined : "J"} />,
     <ToolButton key="phone" icon="smartphone" title={surf ? "Telefonas" : "Telefonas (P)"} panel="phone" hotkey={surf ? undefined : "P"} badge={missedCalls + unread} unread={unread} />,
-    <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
+    <BackpackTool key="phrasebook" due={due} />,
     <ToolButton key="settings" icon="settings" title={surf ? "Nustatymai" : "Nustatymai (Esc)"} panel="settings" />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
   ];
