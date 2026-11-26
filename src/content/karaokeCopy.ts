@@ -13,6 +13,9 @@ export const KARAOKE_COPY = {
     lyrics: "Lyrics", next: "Next line", showMeaning: "Show meaning", hideMeaning: "Hide meaning",
     yourTurn: "Your turn", replay: "Replay line", continue: "Continue", applause: "A round of applause!",
     tally: "Lines practiced · {done} of {total}",
+    microphone: "Use microphone for this line", privacy: "Your voice stays on this device. Nothing is recorded or sent.",
+    listening: "Listening on this device…", stopMicrophone: "Stop listening", heard: "Heard you!",
+    microphoneOff: "You can keep singing with the mic off.",
   },
   lt: {
     sign: "Karaokė", enter: "Dainuoti karaokę", choose: "Pasirinkti dainą", collection: "Dainų rinkinys",
@@ -28,6 +31,9 @@ export const KARAOKE_COPY = {
     lyrics: "Dainos tekstas", next: "Kita eilutė", showMeaning: "Rodyti reikšmę", hideMeaning: "Slėpti reikšmę",
     yourTurn: "Tavo eilė", replay: "Išklausyti eilutę dar kartą", continue: "Tęsti", applause: "Plojimai tau!",
     tally: "Pakartotos eilutės · {done} iš {total}",
+    microphone: "Naudoti mikrofoną šiai eilutei", privacy: "Tavo balsas lieka šiame įrenginyje. Jis neįrašomas ir niekur nesiunčiamas.",
+    listening: "Klausau…", stopMicrophone: "Išjungti mikrofoną", heard: "Girdžiu tave!",
+    microphoneOff: "Gali toliau dainuoti be mikrofono.",
   },
 } as const;
 

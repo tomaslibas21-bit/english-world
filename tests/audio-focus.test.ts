@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { captureAudio, holdPlaybackRoute, playbackRoute, waitForMicrophone, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
+import { captureAudio, holdPlaybackRoute, playbackRoute, waitForMicrophone, waitForConfirmedCaptureRelease, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
 import { createSpeechAttempt, type SpeechRecognizer } from "../src/convo/speech";
 
 let routes: string[];
@@ -16,6 +16,23 @@ afterEach(async () => {
 });
 
 describe("microphone to speaker handoff", () => {
+  it("keeps a private capture blocked past its watchdog and waits for every actual or late end", async () => {
+    const uncertain = vi.fn();
+    const strict = captureAudio(undefined, { requireEnd: true, onUncertain: uncertain });
+    strict.stopping();
+    const older = captureAudio(); older.stopping();
+    let ready = false;
+    const released = waitForConfirmedCaptureRelease().then(() => { ready = true; });
+    await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
+    expect(uncertain).toHaveBeenCalledOnce();
+    expect(ready).toBe(false); expect(playbackRoute()).toBe(false);
+    strict.ended(); await Promise.resolve();
+    expect(ready).toBe(false); // the legacy watchdog did not confirm the other capture
+    older.ended(); await released;
+    expect(ready).toBe(true);
+    expect(playbackRoute()).toBe(true);
+  });
+
   it("waits for recognition's actual onend after committing, with no late transcript callback", async () => {
     const rec = { start: vi.fn(), abort: vi.fn() } as unknown as SpeechRecognizer;
     const committed = vi.fn();

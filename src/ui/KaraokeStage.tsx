@@ -68,7 +68,7 @@ function watchCompact(notify: () => void) {
 }
 
 /** Word spans are decorative. A stable sentence remains available in reading order. */
-export function KaraokeLyricLine({ line, word, meaning, gap }: { line: SongLine; word: number; meaning: boolean; gap?: { gap: WordGap; hidden: boolean } }) {
+export function KaraokeLyricLine({ line, word, meaning, gap, heard = [] }: { line: SongLine; word: number; meaning: boolean; gap?: { gap: WordGap; hidden: boolean }; heard?: readonly number[] }) {
   const timed = karaokeWordTiming(line);
   const spans = timed && line.u.every((unit) => Number.isInteger(unit[2]) && unit[2] > 0)
     && line.u.reduce((sum, unit) => sum + unit[2], 0) === line.wt.length;
@@ -81,7 +81,7 @@ export function KaraokeLyricLine({ line, word, meaning, gap }: { line: SongLine;
         offset += unit[2];
         return <span className="karaoke-unit" key={index}>
           <span className="karaoke-unit-words" lang="en">{line.wt.slice(from, offset).map((text, w) =>
-            <span className={"karaoke-word" + (from + w === word ? " now" : "")} key={from + w}>{w > 0 && " "}{gap?.gap.word === from + w
+            <span className={"karaoke-word" + (from + w === word ? " now" : "") + (heard.includes(from + w) ? " heard" : "")} key={from + w}>{w > 0 && " "}{gap?.gap.word === from + w
               ? <>{gap.gap.prefix}<span className={"karaoke-word-slot" + (gap.hidden ? " karaoke-blank" : " karaoke-revealed")}
                 style={{ width: `${Math.max(2, Array.from(gap.gap.answer).length)}ch` }}>{gap.hidden ? "\u00a0" : gap.gap.answer}</span>{gap.gap.suffix}</> : text}</span>)}</span>
           {meaning && !gap?.hidden && line.part !== "translation" && <small lang="lt">{unit[1]}</small>}
@@ -125,6 +125,24 @@ export function KaraokeSpeed({ take, act }: { take: KaraokeState; act: KaraokeAc
   </div>;
 }
 
+export function KaraokeMic({ take, act }: { take: KaraokeState; act: KaraokeAction }) {
+  const mic = take.microphone;
+  if (!take.practice?.turn || !mic) return null;
+  const busy = ["starting", "listening", "stopping", "waiting"].includes(mic.phase);
+  if (!mic.available && !busy && !mic.matches.length && mic.phase !== "unavailable") return null;
+  return <div className="karaoke-microphone">
+    {mic.available && !mic.used && <>
+      <button type="button" disabled={take.held} aria-describedby="karaoke-mic-privacy" onFocus={() => act("microphone-focus", true)}
+        onBlur={() => act("microphone-focus", false)} onClick={() => act("microphone")}>{words.microphone}</button>
+      <p id="karaoke-mic-privacy">{words.privacy}</p>
+    </>}
+    {busy && <p role="status">{mic.phase === "starting" || mic.phase === "listening" ? words.listening : words.held}</p>}
+    {(mic.phase === "starting" || mic.phase === "listening") && <button type="button" data-pad-back onClick={() => act("microphone-stop")}>{words.stopMicrophone}</button>}
+    {mic.matches.length > 0 && <p className="karaoke-heard" role="status">{words.heard}</p>}
+    {mic.phase === "unavailable" && <p role="status">{words.microphoneOff}</p>}
+  </div>;
+}
+
 export function KaraokeFinish({ take, act }: { take: KaraokeState; act: KaraokeAction }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -160,8 +178,9 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
   const seconds = session.position();
   const gaps = lines.map((line, index) => lineGap(line, indices[index], take.practice, seconds));
   const hidden = gaps.some((gap) => gap?.hidden);
-  const meaning = !hidden && token !== "" && meaningFor === token && take.status !== "ended";
-  const canReadMeaning = !hidden && lines.some((line) => line.part !== "translation" && (line.lt || line.u.some((unit) => unit[1])));
+  const micBusy = !!take.microphone && ["starting", "listening", "stopping", "waiting"].includes(take.microphone.phase);
+  const meaning = !micBusy && !hidden && token !== "" && meaningFor === token && take.status !== "ended";
+  const canReadMeaning = !micBusy && !hidden && lines.some((line) => line.part !== "translation" && (line.lt || line.u.some((unit) => unit[1])));
   useLayoutEffect(() => {
     if (revealFocus.current && !hidden) { revealFocus.current = false; reading.current?.focus({ preventScroll: true }); }
   }, [hidden]);
@@ -206,8 +225,10 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
       {lines.length > 0 && <section className={"karaoke-reader" + (meaning && small ? " karaoke-meaning-sheet" : "")} aria-label={words.lyrics}>
         {turn && <div className="karaoke-turn"><span role="status">{words.yourTurn}</span><span aria-hidden>{Math.ceil(take.practice!.remaining)}</span></div>}
         <div ref={reading} className="karaoke-reading" tabIndex={-1} onClick={() => { if (canReadMeaning) toggleMeaning(); }}>
-          {lines.map((line, index) => <KaraokeLyricLine key={`${line.i}-${index}`} line={line} word={turn || index > 0 ? -1 : frame.word} meaning={meaning} gap={gaps[index]} />)}
+          {lines.map((line, index) => <KaraokeLyricLine key={`${line.i}-${index}`} line={line} word={turn || index > 0 ? -1 : frame.word} meaning={meaning} gap={gaps[index]}
+            heard={take.microphone?.matches.filter((match) => match.row === indices[index]).map((match) => match.word)} />)}
         </div>
+        <KaraokeMic take={take} act={action} />
         {hidden && <button type="button" className="karaoke-reveal karaoke-primary" onClick={() => { revealFocus.current = true; action("reveal"); }}>{words.reveal}</button>}
         {frame.next >= 0 && !turn && !meaning && !hidden && <KaraokeNextLine take={take} row={frame.next} seconds={seconds} />}
         {canReadMeaning && <button ref={meaningButton} type="button" className="karaoke-meaning-toggle" aria-expanded={meaning}

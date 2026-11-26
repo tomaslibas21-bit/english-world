@@ -77,6 +77,10 @@
 .karaoke-revealed { color: var(--kk-cloth); }
 .karaoke-reader .karaoke-reveal { margin-top: 16px; }
 .karaoke-word.now { color: #74501b; text-decoration: underline; text-decoration-color: var(--kk-cloth); text-decoration-thickness: 3px; text-underline-offset: 5px; }
+.karaoke-word.heard { color: #74501b; text-decoration: underline double; text-decoration-color: #8a622a; text-underline-offset: 5px; }
+.karaoke-microphone { display: grid; justify-items: center; gap: 8px; margin-top: 14px; }
+.karaoke-microphone p { margin: 0; max-width: 35em; color: var(--kk-soft); font-size: .88em; }
+.karaoke-microphone .karaoke-heard { font-weight: 900; color: #74501b; font-size: 1em; }
 .karaoke-word.now::before { content: ""; position: absolute; top: -7px; left: calc(50% - 3px); width: 6px; height: 6px; border-radius: 50%; background: var(--kk-brass); animation: karaoke-hop 220ms ease-out; }
 @keyframes karaoke-hop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-3px); } }
 .karaoke-unit small { color: var(--kk-cloth); font: 700 calc(16px * var(--scale, 1))/1.35 var(--ui); margin: 7px 0 5px; }

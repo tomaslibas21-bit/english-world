@@ -9,13 +9,14 @@ import { useKaraoke, resetKaraokeUi } from "./store";
 import { KARAOKE_MARK, KARAOKE_PROMPT, disposeKaraokeMic, karaokeShot, makeKaraokeMic, poseKaraokeSinger } from "./stage";
 import { audio } from "../audio";
 import { karaokeReading } from "../../radio/lyrics";
+import { KaraokeMicrophone } from "./microphone";
 
 interface CafeHost {
   room(): THREE.Group | null;
   audience(): GameCharacter[];
   place(x: number, z: number, rot: number): void;
 }
-type BoothRadio = Pick<Radio, "store" | "init" | "karaokeCatalog" | "openKaraoke">;
+type BoothRadio = Pick<Radio, "store" | "init" | "karaokeCatalog" | "openKaraoke" | "hold" | "release">;
 
 function parkActor(actor: GameCharacter) {
   const position = actor.root.position.clone(), rotation = actor.root.quaternion.clone(), scale = actor.root.scale.clone();
@@ -54,6 +55,8 @@ export class KaraokeMode implements GameMode {
   private celebrated = false;
   private section?: number;
   private reacting = false;
+  private microphone?: KaraokeMicrophone;
+  private captureId = 0;
 
   constructor(private host: ModeHost, private cafe: CafeHost, private radio: BoothRadio) {}
 
@@ -99,6 +102,15 @@ export class KaraokeMode implements GameMode {
     this.take ??= this.radio.openKaraoke();
     if (!this.take) return;
     this.unsubscribe?.();
+    this.microphone?.dispose();
+    this.microphone = new KaraokeMicrophone(this.take, {
+      silence: () => audio.silenceForPrivateCapture(),
+      hold: () => {
+        const reason = `karaoke-private-${++this.captureId}` as const;
+        this.radio.hold(reason, true);
+        return () => this.radio.release(reason);
+      },
+    });
     this.celebrated = false;
     this.section = undefined;
     useKaraoke.setState({ take: this.take });
@@ -207,6 +219,7 @@ export class KaraokeMode implements GameMode {
     if (name === "leave") { this.exit(false); return; }
     if (name === "back") {
       if (this.staged) {
+        this.microphone?.stop();
         this.take?.pause();
         this.leaveMark();
         useKaraoke.setState({ phase: "picker" });
@@ -233,6 +246,9 @@ export class KaraokeMode implements GameMode {
     if (name === "continue") void this.take?.continueTurn();
     if (name === "reveal") this.take?.revealWord();
     if (name === "rate" && typeof value === "string") this.take?.setRate(Number(value));
+    if (name === "microphone") this.microphone?.start();
+    if (name === "microphone-stop") this.microphone?.stop();
+    if (name === "microphone-focus" && typeof value === "boolean") this.take?.focusMicrophone(value);
   }
 
   input(input: ModeInput) {
@@ -247,6 +263,7 @@ export class KaraokeMode implements GameMode {
     this.request++;
     this.unsubscribe?.();
     this.unsubscribe = undefined;
+    this.microphone?.dispose(); this.microphone = undefined;
     this.take?.close();
     this.take = null;
     this.leaveMark();

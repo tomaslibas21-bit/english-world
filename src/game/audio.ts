@@ -129,6 +129,26 @@ export class AudioSystem {
   /** The "Sounds" setting: how loud everything that is not a voice is, beside the voices (0–1; 0.8 is the level the
    *  sounds were tuned at, 0 none at all). */
   private soundsLevel = 0.8;
+  private privateCaptures = 0;
+  /** A scoped, immediate cut for a private turn. Restore only after its recognizer's real end. */
+  silenceForPrivateCapture() {
+    this.privateCaptures++;
+    this.stopDiagnostic("private-capture");
+    this.stop();
+    this.stopAmbience();
+    const ctx = this.busCtx;
+    if (ctx && ctx.state !== "closed") for (const bus of [this.worldBus, this.fxBus]) if (bus) {
+      bus.gain.cancelScheduledValues(ctx.currentTime);
+      bus.gain.setValueAtTime(0, ctx.currentTime);
+    }
+    let held = true;
+    return () => {
+      if (!held) return;
+      held = false;
+      this.privateCaptures--;
+      this.levelBuses(0.5);
+    };
+  }
   get sounds() { return this.soundsLevel; }
   set sounds(v: number) { this.soundsLevel = Math.max(0, Math.min(1, v)); this.levelBuses(0.05); }
   constructor() {
@@ -307,6 +327,7 @@ export class AudioSystem {
 
   /** Play a named MP3 alongside the manifest-backed voices. Its clock belongs to this request. */
   playFile(file: string): FilePlayback {
+    if (this.privateCaptures) return { status: "unavailable", currentTime: 0, stop() {} };
     this.stopDiagnostic("normal-playback");
     this.stop();
     const a = this.media();
@@ -344,6 +365,7 @@ export class AudioSystem {
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
   play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal; onUnavailable?: () => void; visual?: VoiceVisualOwner } = {}): Promise<boolean> {
+    if (this.privateCaptures) return Promise.resolve(false);
     if (opts.signal?.aborted) return Promise.resolve(false);
     if (this.recordedDialogue) opts = { ...opts, optional: true, recordingOnly: true };
     this.stopDiagnostic("normal-playback");
@@ -917,6 +939,7 @@ export class AudioSystem {
    *  This intentionally does not set audioSession.type: a category reset would contaminate the comparison.
    *  Matching requested gain does not establish matching physical loudness on iOS. */
   playDiagnostic(pipeline: DiagnosticPipeline) {
+    if (this.privateCaptures) return;
     if (!audioDiagnosticsEnabled() || !this.diagnosticSelection) return false;
     if (this.request || microphoneHandoffState().captures) {
       audioDiagnostic("comparison.busy", { pipeline, ...microphoneHandoffState() });
@@ -1028,8 +1051,8 @@ export class AudioSystem {
   private buses(ctx: AudioContext) {
     if (this.busCtx !== ctx || !this.worldBus || !this.fxBus) {
       this.busCtx = ctx;
-      this.worldBus = ctx.createGain(); this.worldBus.gain.value = this.hushed.size ? 0 : this.soundsLevel / 0.8; this.worldBus.connect(ctx.destination);
-      this.fxBus = ctx.createGain(); this.fxBus.gain.value = this.soundsLevel / 0.8; this.fxBus.connect(ctx.destination);
+      this.worldBus = ctx.createGain(); this.worldBus.gain.value = this.hushed.size || this.privateCaptures ? 0 : this.soundsLevel / 0.8; this.worldBus.connect(ctx.destination);
+      this.fxBus = ctx.createGain(); this.fxBus.gain.value = this.privateCaptures ? 0 : this.soundsLevel / 0.8; this.fxBus.connect(ctx.destination);
       // a new context: the recordings stay, what played them in the old one does not
       for (const l of this.loops.values()) { l.src = undefined; l.gain = undefined; l.quietSince = undefined; }
     }
@@ -1046,8 +1069,8 @@ export class AudioSystem {
       bus.gain.cancelScheduledValues(ctx.currentTime);
       bus.gain.setTargetAtTime(v, ctx.currentTime, Math.max(0.005, seconds / 3));
     };
-    set(this.worldBus, this.hushed.size ? 0 : this.soundsLevel / 0.8);
-    set(this.fxBus, this.soundsLevel / 0.8);
+    set(this.worldBus, this.hushed.size || this.privateCaptures ? 0 : this.soundsLevel / 0.8);
+    set(this.fxBus, this.privateCaptures ? 0 : this.soundsLevel / 0.8);
   }
   /** The world falls silent for `reason` ("voice", "microphone", "away": a conversation, a panel, a hidden page) and
    *  comes back when no reason is left: softly, or at once (`now`, for the microphone). */
@@ -1241,7 +1264,7 @@ export class AudioSystem {
     { sea?: number; surf?: number; gulls?: boolean; birds?: number; cafe?: boolean; market?: number; harbor?: number; plaza?: number; tropical?: boolean } = {}) {
     const ctx = this.ctx;
     this.surfTarget = on ? surf : 0;
-    const live = on && !globalThis.document?.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
+    const live = on && !this.privateCaptures && !globalThis.document?.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
     this.hush("away", !live);
     if (!live) {
       this.stopAmbience();
@@ -1776,6 +1799,7 @@ export class AudioSystem {
 
   /** An effect: its recording once loaded (soundscape.ts SAMPLES), else the synthesized sound that stands in for it. */
   sfx(name: SynthName | SampleName, intensity = 1) {
+    if (this.privateCaptures) return;
     if (!isSample(name)) { this.synth(name, intensity); return; }
     if (this.sample(name, intensity)) return;
     const stand = (SAMPLES[name] as SampleDef).synth;
@@ -1801,6 +1825,7 @@ export class AudioSystem {
   }
   /** Play one of a recorded effect's takes on the effects bus; false (and nothing played) while none is loaded. */
   sample(name: SampleName, intensity = 1): boolean {
+    if (this.privateCaptures) return false;
     if (this.volume <= 0) return false;
     const ctx = this.ac();
     if (!ctx) return false;
@@ -1818,6 +1843,7 @@ export class AudioSystem {
   }
 
   private synth(name: SynthName, intensity = 1) {
+    if (this.privateCaptures) return;
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;

@@ -1,4 +1,4 @@
-// Claude's K2–K4 review. Run against an already running game configured with
+// Claude's K2–K5 review. Run against an already running game configured with
 // VITE_RADIO_INDEX=/songs/index.json and VITE_RADIO_FILES=/karaoke-files.
 // WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_SHOTS=/tmp/karaoke-k3 \
 // WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/karaoke.mjs
@@ -19,7 +19,7 @@ const token = "karaoke-k2-fixture";
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
 await mkdir(shots, { recursive: true });
 
-function install({ token, short }) {
+function install({ token, short, microphone }) {
   localStorage.setItem("english-world-progress-v1", JSON.stringify({
     version: 1,
     profile: { name: "Test", surname: "Singer", gender: "f", lookId: "f1",
@@ -33,6 +33,31 @@ function install({ token, short }) {
   sessionStorage.setItem("ew-play-now", "1");
   window.SpeechRecognition = undefined;
   window.webkitSpeechRecognition = undefined;
+  if (microphone) {
+    // A complete fake local service, never the headless browser's native recognizer. Production keeps its guard.
+    Object.defineProperty(navigator, "userAgent", { get: () => "Chrome/143.0" });
+    Object.defineProperty(navigator, "userAgentData", { get: () => ({ brands: [{ brand: "Google Chrome" }] }) });
+    window.__karaokeMicStarts = 0; window.__karaokeRemoteStarts = 0; window.__karaokeMicInstalls = 0;
+    window.SpeechRecognition = class {
+      static async available(options) {
+        assertLocal(options); return "available";
+      }
+      static async install() { window.__karaokeMicInstalls++; return false; }
+      local = false; lang = "";
+      get processLocally() { return this.local; }
+      set processLocally(value) { this.local = value === true; }
+      start() {
+        if (this.processLocally === true && this.lang === "en-US") window.__karaokeMicStarts++;
+        else window.__karaokeRemoteStarts++;
+        window.__karaokeActiveRecognizer = this;
+        queueMicrotask(() => this.onstart?.());
+      }
+      abort() { queueMicrotask(() => this.onend?.()); }
+    };
+    function assertLocal(options) {
+      if (options.processLocally !== true || options.langs.length !== 1 || options.langs[0] !== "en-US") throw new Error("unexpected local pack probe");
+    }
+  }
 }
 
 const browser = await chromium.launch({
@@ -43,7 +68,8 @@ try {
   for (const [width, height] of sizes) {
     const label = `${width}x${height}`, phone = width < 900;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: phone, deviceScaleFactor: 1 });
-    await context.addInitScript(install, { token, short: height === 664 });
+    const microphone = height === 664 || width === 1280;
+    await context.addInitScript(install, { token, short: height === 664, microphone });
     const page = await context.newPage(), errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route("**/songs/index.json", (route) => route.fulfill({ json: index }));
@@ -195,11 +221,39 @@ try {
       await page.locator(".karaoke-turn").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1, "each new performance starts at 1×");
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
+      if (microphone) await page.getByRole("button", { name: "Naudoti mikrofoną šiai eilutei", exact: true }).focus();
       await shot("echo-turn");
+      if (microphone) {
+        const mic = page.getByRole("button", { name: "Naudoti mikrofoną šiai eilutei", exact: true });
+        await mic.waitFor(); await mic.focus(); // the opt-in stays available while a keyboard/controller learner reads
+        await page.locator("#karaoke-mic-privacy").scrollIntoViewIfNeeded();
+        assert(await mic.isVisible());
+        await shot("mic-optin");
+        await press(mic);
+        await until(() => window.__ew.radio.store.getState().karaoke.store.getState().microphone.phase === "listening");
+        assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().held), true);
+        assert.equal(await page.evaluate(() => window.__karaokeMicStarts), 1);
+        assert.equal(await page.evaluate(() => window.__karaokeRemoteStarts), 0);
+        assert.equal(await page.evaluate(() => window.__karaokeMicInstalls), 0);
+        await page.evaluate((sentence) => {
+          const rec = window.__karaokeActiveRecognizer;
+          rec.onresult?.({ results: [Object.assign([{ transcript: sentence }], { isFinal: true })] });
+          rec.onend?.(); // confirmation, not an elapsed timeout, releases this fake capture
+        }, lyric.L[0].src);
+        await until(() => {
+          const take = window.__ew.radio.store.getState().karaoke.store.getState();
+          return !take.held && take.microphone.phase === "done" && take.microphone.matches.length > 0;
+        });
+        await page.locator(".karaoke-word.heard").first().waitFor();
+        await page.locator(".karaoke-heard").scrollIntoViewIfNeeded();
+        await shot("mic-heard");
+        assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused");
+      }
       await press(page.getByRole("button", { name: "Išklausyti eilutę dar kartą", exact: true }));
       await page.locator(".karaoke-turn").waitFor({ state: "detached" });
       await page.locator(".karaoke-turn").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1, "replaying a line adds no second point");
+      if (microphone) assert.equal(await page.evaluate(() => window.__karaokeMicStarts), 1, "Replay never starts the mic again");
       await page.evaluate(() => {
         const audio = window.__ew.audio, sfx = audio.sfx.bind(audio);
         window.__karaokeCheers = 0;
@@ -235,6 +289,8 @@ try {
       await until(() => window.__ew.store.getState().hud.prompt?.kind === "talk" && !window.__ew.game.autoPath);
       await page.keyboard.press("e");
       await until(() => window.__ew.store.getState().conv.active && window.__ew.store.getState().conv.sitId === "s72-cafe");
+      // The fake recognizer makes speech supported; preserve the original script's typed coffee-order path.
+      if (microphone) await page.evaluate(() => window.__ew.store.getState().setConv({ typing: true }));
       await page.locator(".convo").waitFor();
       await press(page.locator(".scene-start"));
       const replies = {
