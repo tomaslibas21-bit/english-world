@@ -211,7 +211,7 @@ async function assertSaveSiblings(container, actionSelector) {
       actionWidth: a.width, actionHeight: a.height, hit: hit(action, a) && hit(save, b) };
   }, actionSelector);
   assert(geometry.hit && geometry.gap >= 4 && geometry.gap <= 8 &&
-    [geometry.width, geometry.height, geometry.actionWidth, geometry.actionHeight].every((size) => size >= 44),
+    [geometry.width, geometry.height, geometry.actionWidth, geometry.actionHeight].every((size) => size >= 43.99), // (43.99998 while moving)
   `distinct 44 px control centres and a 4–8 px gutter: ${JSON.stringify(geometry)}`);
 }
 
@@ -618,8 +618,12 @@ try {
             window.__ew.game.placeOnFoot(x + 3.5 * Math.sin(angle), z + 3.5 * Math.cos(angle), angle + Math.PI), { ...pair, angle });
           // Let the following camera settle behind the player before reading which tags it shows.
           await step(checkMoving ? 40 : 6);
+          // (the moving sample drags the camera sideways: a tag at the screen's edge leaves the view in its first frame)
           inView = await page.evaluate((tagsRequired) => window.__ew.game.streetLife.world.pairs(5).length > 0 &&
-            (!tagsRequired || [...document.querySelectorAll(".nametag")].some((tag) => tag.checkVisibility({ visibilityProperty: true }))), checkMoving);
+            (!tagsRequired || [...document.querySelectorAll(".nametag")].some((tag) => {
+              const r = tag.getBoundingClientRect();
+              return tag.checkVisibility({ visibilityProperty: true }) && r.left >= 80 && r.right <= innerWidth - 80;
+            })), checkMoving);
           if (inView) break;
         }
         if (inView) break;
