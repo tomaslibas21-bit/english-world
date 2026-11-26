@@ -385,6 +385,55 @@ describe("a single booth take on the street output", () => {
 });
 
 describe("the shared audio outputs", () => {
+  it("settles an exact HTML seek before an immediate booth pause, and cancels a pending seek quietly", async () => {
+    const listeners = new Map<string, Set<() => void>>();
+    let at = 0, target = 0;
+    const emit = (name: string) => { for (const listener of [...listeners.get(name) ?? []]) listener(); };
+    const element = {
+      src: "", duration: 252.8, paused: true, ended: false, readyState: 4, seeking: false, error: null,
+      get currentTime() { return at; },
+      set currentTime(seconds: number) { target = seconds; element.seeking = true; },
+      addEventListener(name: string, callback: () => void) {
+        if (!listeners.has(name)) listeners.set(name, new Set());
+        listeners.get(name)!.add(callback);
+      },
+      removeEventListener(name: string, callback: () => void) { listeners.get(name)?.delete(callback); },
+      play: async () => { element.paused = false; },
+      pause: () => { element.paused = true; },
+      removeAttribute: () => { element.src = ""; }, load() {},
+    };
+    vi.stubGlobal("Audio", class { constructor() { return element; } });
+    const output = new HtmlOutput();
+    const radio = fixture({ output });
+    await radio.init();
+    const booth = radio.openKaraoke()!;
+    const starting = booth.start("G01");
+    await settle();
+    at = target; element.seeking = false; emit("seeked");
+    await starting;
+    const sought = booth.seek(7.1);
+    await settle();
+    expect(booth.store.getState().status).toBe("loading");
+    expect(output.position()).toBe(0);
+    at = target; element.seeking = false; emit("seeked");
+    await sought;
+    booth.pause();
+    expect(booth.position()).toBe(7.1);
+    expect(booth.store.getState()).toMatchObject({ status: "paused", timeline: { lines: [{ i: 0 }] } });
+    const resumed = booth.resume();
+    await settle();
+    at = target; element.seeking = false; emit("seeked");
+    await resumed;
+    const pending = booth.seek(8);
+    await settle();
+    booth.pause();
+    await pending;
+    expect(booth.position()).toBe(8);
+    expect(booth.store.getState().status).toBe("paused");
+    expect(listeners.get("seeked")?.size).toBe(0);
+    booth.close();
+  });
+
   it("ignores an older HTML play rejection when the same source is resumed", async () => {
     let rejectFirst!: (error: Error) => void;
     const first = new Promise<void>((_, reject) => { rejectFirst = reject; });

@@ -1,21 +1,47 @@
 import * as THREE from "three";
 import { KARAOKE_COPY } from "../../content/karaokeCopy";
 import type { CameraRig } from "../camera";
+import type { GameCharacter } from "../characters";
 import { Merger, mat, boxGeo, cylGeo, textTexture, type Colliders } from "../world/util";
 
 export const KARAOKE_PLACE = "sunny-cup";
 export const KARAOKE_PROMPT = { x: 4.2, z: 2.8 };
-export const KARAOKE_MARK = { x: 5.7, z: 2.6, y: 0.08, rot: -2.12 };
+export const KARAOKE_MARK = { x: 5.7, z: 2.6, y: 0.08, rot: -2.35 };
 
 export function makeKaraokeMic() {
   const group = new THREE.Group();
   group.name = "karaoke-hand-mic";
   const merger = new Merger();
-  merger.add("mic-handle", mat("#223b52"), cylGeo(0.035, 0.04, 0.22, 0, 0.11, 0, 8), false);
-  merger.add("mic-grille", mat("#c9a45c"), new THREE.SphereGeometry(0.066, 8, 6).scale(1, 1.2, 1).translate(0, 0.26, 0), false);
+  // The origin is the middle of the grip, rather than the bottom of the handle.
+  merger.add("mic-handle", mat("#223b52"), cylGeo(0.035, 0.04, 0.22, 0, 0, 0, 8), false);
+  merger.add("mic-grille", mat("#c9a45c"), new THREE.SphereGeometry(0.066, 8, 6).scale(1, 1.2, 1).translate(0, 0.15, 0), false);
   merger.build(group, { name: "karaoke-mic" });
   group.rotation.x = -0.7;
   return group;
+}
+
+const grip = new THREE.Vector3(), mouth = new THREE.Vector3(), direction = new THREE.Vector3();
+const handRotation = new THREE.Quaternion(), shaftRotation = new THREE.Quaternion();
+const shaftUp = new THREE.Vector3(0, 1, 0);
+
+/** Both rigs' hand sockets are biased forward for cups. Seat the shaft inside the palm and raise it to sing. */
+export function poseKaraokeSinger(player: GameCharacter, mic: THREE.Group) {
+  const arm = player.joint("armR"), fore = player.joint("foreR");
+  // The styled rigs' shoulders sit higher relative to their heads. Use a lower elbow there.
+  const highShoulder = THREE.MathUtils.clamp((arm.position.y / player.height - 0.69) / 0.1, 0, 1);
+  arm.rotation.set(THREE.MathUtils.lerp(-1.05, -0.45, highShoulder), -0.32, 0.08);
+  fore.rotation.set(THREE.MathUtils.lerp(-1.85, -1.45, highShoulder), 0, 0);
+  const hand = player.rightHand;
+  mic.position.set(-hand.position.x, 0, -hand.position.z * 0.55)
+    .applyQuaternion(handRotation.copy(hand.quaternion).invert());
+  player.root.updateMatrixWorld(true);
+  mic.getWorldPosition(grip);
+  mouth.set(0.04, player.height * 0.83, 0.18);
+  player.root.localToWorld(mouth);
+  direction.subVectors(mouth, grip).normalize();
+  shaftRotation.setFromUnitVectors(shaftUp, direction);
+  hand.getWorldQuaternion(handRotation).invert();
+  mic.quaternion.copy(handRotation.multiply(shaftRotation));
 }
 
 /** The café owns these static meshes for the lifetime of its cached interior. */
@@ -44,7 +70,7 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
   merger.build(group, { name: "karaoke-static" });
   const docked = makeKaraokeMic();
   docked.name = "karaoke-docked-mic";
-  docked.position.set(5.7, 1.25, 2.5);
+  docked.position.set(5.7, 1.36, 2.5);
   group.add(docked);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.35, 0.38), new THREE.MeshBasicMaterial({
     map: textTexture(KARAOKE_COPY.en.sign, { bg: "#223b52", fg: "#e0bf7a", w: 512, h: 144 }),
@@ -60,8 +86,9 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
 
 export function karaokeShot(aspect: number): NonNullable<CameraRig["stage"]> {
   return {
-    pos: new THREE.Vector3(3.35, 1.85, 0.9), look: new THREE.Vector3(5.7, 1.2, 2.6),
-    fov: aspect < 0.9 ? 53 : 43, rate: 18,
+    // Across the aisle, beside the seated guests: a three-quarter face, a near shoulder, and room below for lyrics.
+    pos: new THREE.Vector3(0.65, 1.5, 1.3), look: new THREE.Vector3(5.7, 0.6, 2.6),
+    fov: aspect < 0.9 ? 48 : 43, rate: 18,
   };
 }
 

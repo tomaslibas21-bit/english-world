@@ -29,22 +29,30 @@ export function karaokeDialogKeys(event: KeyboardEvent<HTMLElement>, act: Karaok
 }
 
 interface LyricFrame { current: number; next: number; word: number }
-function useLyricFrame(session: KaraokeSession, timeline: Timeline | null, turn?: EchoCall | null) {
-  const [frame, setFrame] = useState<LyricFrame>({ current: -1, next: -1, word: -1 });
+function lyricFrame(session: KaraokeSession, timeline: Timeline | null, turn?: EchoCall | null): LyricFrame {
+  if (!timeline) return { current: -1, next: -1, word: -1 };
+  const time = session.position();
+  const reading = turn ? { current: turn.rows[0], next: -1 } : karaokeReading(timeline, time);
+  const word = reading.current >= 0 && !turn ? karaokeWordAt(timeline.lines[reading.current], time) : -1;
+  return { ...reading, word };
+}
+
+function useLyricFrame(session: KaraokeSession, timeline: Timeline | null, turn: EchoCall | null | undefined, playing: boolean) {
+  // A seek/pause is a store update, not another playing frame. Read its settled clock in that render too.
+  const frame = lyricFrame(session, timeline, turn);
+  const [, setFrame] = useState<LyricFrame>(frame);
   useEffect(() => {
-    if (!timeline) return;
+    if (!timeline || !playing) return;
     let request = 0;
     const read = () => {
-      const time = session.position();
-      const reading = turn ? { current: turn.rows[0], next: -1 } : karaokeReading(timeline, time);
-      const word = reading.current >= 0 && !turn ? karaokeWordAt(timeline.lines[reading.current], time) : -1;
-      setFrame((previous) => previous.current === reading.current && previous.next === reading.next && previous.word === word
-        ? previous : { ...reading, word });
+      const next = lyricFrame(session, timeline, turn);
+      setFrame((previous) => previous.current === next.current && previous.next === next.next && previous.word === next.word
+        ? previous : next);
       request = requestAnimationFrame(read);
     };
     read();
     return () => cancelAnimationFrame(request);
-  }, [session, timeline, turn]);
+  }, [session, timeline, turn, playing]);
   return frame;
 }
 
@@ -110,7 +118,7 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
   const meaningButton = useRef<HTMLButtonElement>(null);
   const small = useSyncExternalStore(watchCompact, compact, () => false);
   const turn = take.practice?.turn;
-  const frame = useLyricFrame(session, take.timeline, turn);
+  const frame = useLyricFrame(session, take.timeline, turn, take.status === "playing");
   const indices = turn ? turn.rows : frame.current < 0 ? [] : [frame.current];
   const token = indices.join(",");
   const [meaningFor, setMeaningFor] = useState<string | null>(null);

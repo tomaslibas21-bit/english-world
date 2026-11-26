@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildTimeline, karaokeReading, karaokeWordAt, karaokeWordTiming } from "../src/radio/lyrics";
 import { readSongLines, type SongLine } from "../src/radio/songs";
-import { KaraokeFinish, KaraokeLyricLine } from "../src/ui/KaraokeStage";
+import { KaraokeFinish, KaraokeLyricLine, KaraokeStage } from "../src/ui/KaraokeStage";
+import { KaraokeSession } from "../src/radio/karaokeSession";
+import type { RadioOutput } from "../src/radio/output";
 import { KARAOKE_UI } from "../src/content/karaokeCopy";
 
 const line: SongLine = {
@@ -13,6 +15,44 @@ const line: SongLine = {
 };
 
 describe("the booth's lyric card", () => {
+  it("renders the G01 word and controls immediately after loading, seeking and pausing, without an animation frame", async () => {
+    let at = 0;
+    const output: RadioOutput = {
+      play: async (_url, seconds) => { at = seconds; return true; }, pause() {}, position: () => at,
+      duration: () => 252.84, unlock() {}, setVolume() {}, onEnded: null, onStopped: null,
+    };
+    // G01's real first row, including its four single-word gloss units and source timing.
+    const first = { ...line, u: [["Every", "Kiekvieną", 1], ["evening,", "vakarą,", 1], ["every", "kiekvieną", 1], ["evening,", "vakarą,", 1]],
+      w: [[6.27, 6.67], [6.69, 7.29], [7.31, 7.71], [7.73, 9.15]] };
+    const fetchJson = vi.fn(async () => ({ L: [first, { ...line, s: 11.16, e: 14.73 }] }));
+    const session = new KaraokeSession({
+      config: { index: "/songs/index.json", files: "/karaoke-files", recordings: null }, output,
+      song: (id) => ({ id, c: "g", n: 1, t: "The Long Way Home", tl: "", tp: "", g: "", d: 252.84, a: "/songs/audio/G01.mp3" }),
+      token: () => "fixture", fetchJson, level: () => 1, held: false, resumeDelay: 700, close() {},
+    });
+    const render = () => renderToStaticMarkup(createElement(KaraokeStage, { session, take: session.store.getState() }));
+    await session.start("G01");
+    session.pause();
+    expect(render()).not.toContain('class="karaoke-current-line"');
+    await session.resume();
+    await session.seek(7.1);
+    session.pause();
+    expect(session.position()).toBe(7.1);
+    expect(session.store.getState().status).toBe("paused");
+    const html = render();
+    expect(html).toContain('class="karaoke-current-line" data-line="0" data-word="1"');
+    expect(html).toContain('class="karaoke-word now">evening,</span>');
+    expect(html).toContain(KARAOKE_UI.showMeaning);
+    expect(html).toContain(KARAOKE_UI.replay);
+    expect(html).toContain(KARAOKE_UI.resume);
+    expect(fetchJson).toHaveBeenCalledExactlyOnceWith("/karaoke-files/songs/data/G01.json?t=fixture", expect.any(AbortSignal));
+    // A paused seek deliberately does not move the audio output: the session's parked clock owns the reader.
+    await session.seek(12);
+    expect(at).toBe(7.1);
+    expect(render()).toContain('data-line="1"');
+    session.close();
+  });
+
   it("uses each word's media clock, its 50 ms lead and its own end", () => {
     expect(karaokeWordTiming(line)).toBe(true);
     expect(karaokeWordAt(line, 6.2)).toBe(-1);

@@ -111,10 +111,16 @@ try {
       await press(start);
       await page.locator(".karaoke-performance").waitFor();
       await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
-      await page.evaluate(async () => {
+      const pausedTake = await page.evaluate(async () => {
         const take = window.__ew.radio.store.getState().karaoke;
         await take.seek(7.1); take.pause();
+        const state = take.store.getState();
+        return { status: state.status, position: take.position(), first: state.timeline?.lines[0]?.src, rows: state.timeline?.lines.length };
       });
+      assert.equal(pausedTake.status, "paused");
+      assert(Math.abs(pausedTake.position - 7.1) < 0.15, `seek/pause clock: ${JSON.stringify(pausedTake)}`);
+      assert.equal(pausedTake.first, lyric.L[0].src, "the stage has G01's loaded lyric data");
+      assert(pausedTake.rows >= lyric.L.length);
       await page.locator('.karaoke-current-line[data-line="0"] .karaoke-word.now').waitFor();
       await until(() => {
         const { game } = window.__ew, stage = game.rig.stage;

@@ -48,6 +48,7 @@ export class HtmlOutput implements RadioOutput {
   private unlocked = false;
   private level = 1;
   private fade: ReturnType<typeof setInterval> | undefined;
+  private settleSeek?: () => void;
 
   private media(): HTMLAudioElement {
     if (this.el) return this.el;
@@ -76,6 +77,7 @@ export class HtmlOutput implements RadioOutput {
   async play(url: string, at: number, exact = false): Promise<boolean> {
     const el = this.media();
     const run = ++this.run;
+    this.settleSeek?.();
     this.wanted = true;
     const changed = this.url !== url || el.src === SILENCE || !el.src;
     if (changed) {
@@ -92,6 +94,25 @@ export class HtmlOutput implements RadioOutput {
     try {
       await el.play();
       if (run !== this.run) return false;
+      if (exact) {
+        // Loading a source can replace a pre-metadata currentTime assignment. Apply it to the loaded source too.
+        if (Math.abs(el.currentTime - at) > 0.15) el.currentTime = at;
+        // play() may settle while a same-source seek is still pending. A caller may pause as soon as we return.
+        if (el.seeking) await new Promise<void>((resolve) => {
+          const done = () => {
+            el.removeEventListener("seeked", done);
+            el.removeEventListener("error", done);
+            if (this.settleSeek === done) this.settleSeek = undefined;
+            resolve();
+          };
+          this.settleSeek = done;
+          el.addEventListener("seeked", done);
+          el.addEventListener("error", done);
+          if (!el.seeking || run !== this.run) done();
+        });
+        if (run !== this.run) return false;
+        if (el.error) throw el.error;
+      }
       this.unlocked = true;
       return this.wanted && this.url === url;
     } catch (error) {
@@ -106,6 +127,7 @@ export class HtmlOutput implements RadioOutput {
 
   pause() {
     this.run++;
+    this.settleSeek?.();
     this.wanted = false;
     clearInterval(this.fade);
     try { this.el?.pause(); } catch { /* nothing was playing */ }

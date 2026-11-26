@@ -3455,7 +3455,7 @@ export class Game implements GameApi {
         const panel = document.querySelector(".gofish-bottom, .gofish-result .mode-score-card")?.getBoundingClientRect();
         this.gofish.frameView(w, h, top ?? 0, tags, panel);
       } else if (this.karaoke?.performing && mode === this.karaoke) {
-        this.rig.applyViewShift(w, h, this.sidewaysPhone ? w * 0.2 : 0, this.sidewaysPhone ? 0 : h * 0.06);
+        this.karaoke.frameView(w, h, document.querySelector(".karaoke-stage-head")?.getBoundingClientRect().bottom);
       } else this.applyWalkingViewShift(w, h, talking);
     }
     this.applySeaReturnView(dt, w, h);

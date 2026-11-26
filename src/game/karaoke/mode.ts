@@ -6,7 +6,7 @@ import type { GameCharacter, CharacterJoint } from "../characters";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { useKaraoke, resetKaraokeUi } from "./store";
-import { KARAOKE_MARK, KARAOKE_PROMPT, disposeKaraokeMic, karaokeShot, makeKaraokeMic } from "./stage";
+import { KARAOKE_MARK, KARAOKE_PROMPT, disposeKaraokeMic, karaokeShot, makeKaraokeMic, poseKaraokeSinger } from "./stage";
 import { audio } from "../audio";
 import { karaokeReading } from "../../radio/lyrics";
 
@@ -50,6 +50,7 @@ export class KaraokeMode implements GameMode {
   private dockedVisible = true;
   private origin?: { x: number; z: number; rot: number };
   private watched = new THREE.Vector3();
+  private pictureHead = new THREE.Vector3();
   private celebrated = false;
   private section?: number;
   private reacting = false;
@@ -130,9 +131,12 @@ export class KaraokeMode implements GameMode {
     player.busy = null;
     this.mic = makeKaraokeMic();
     player.rightHand.add(this.mic);
+    poseKaraokeSinger(player, this.mic);
     this.docked = room.getObjectByName("karaoke-docked-mic");
     if (this.docked) { this.dockedVisible = this.docked.visible; this.docked.visible = false; }
     this.host.rig.stage = karaokeShot(this.host.rig.cam.aspect);
+    this.host.rig.cam.zoom = 1;
+    this.host.rig.cam.updateProjectionMatrix();
     this.host.rig.mode = "stage";
     if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) this.host.rig.stageSnap();
     useKaraoke.setState({ phase: "stage" });
@@ -164,7 +168,23 @@ export class KaraokeMode implements GameMode {
     }
     player.watch = null;
     player.steady = true;
-    this.host.rig.stage!.fov = this.host.rig.cam.aspect < 0.9 ? 53 : 43;
+    if (this.mic) poseKaraokeSinger(player, this.mic);
+    this.host.rig.stage!.fov = this.host.rig.cam.aspect < 0.9 ? 48 : 43;
+  }
+
+  /** Keep the face below the real title at large text sizes; the lyric card owns the lower picture. */
+  frameView(w: number, h: number, headerBottom = 0) {
+    const sideways = w > h && h < 520;
+    const shiftX = sideways ? w * 0.2 : 0, shiftY = sideways ? 0 : h * 0.06;
+    const rig = this.host.rig;
+    rig.applyViewShift(w, h, shiftX, shiftY);
+    rig.cam.updateMatrixWorld(true);
+    if (sideways || !headerBottom) return;
+    const player = this.host.player();
+    this.pictureHead.copy(player.root.position).y += player.height;
+    this.pictureHead.project(rig.cam);
+    const headY = (0.5 - this.pictureHead.y * 0.5) * h;
+    if (headY < headerBottom + 12) rig.applyViewShift(w, h, shiftX, shiftY - (headerBottom + 12 - headY));
   }
 
   private leaveMark() {

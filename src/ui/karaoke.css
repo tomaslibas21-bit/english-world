@@ -118,6 +118,7 @@
   .karaoke-jacket { float: left; width: 104px; padding: 20px 16px 8px 20px; background: transparent; }
   .karaoke-song-info { padding-top: 20px; }
   .karaoke-modes { clear: both; }
+  .karaoke-next { display: none; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .karaoke-shade { padding-top: 8px; padding-bottom: 8px; }

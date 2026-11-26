@@ -6,7 +6,7 @@ import type { GameCharacter, CharacterJoint } from "../src/game/characters";
 import { Character } from "../src/game/characters/Character";
 import { StyledCharacter } from "../src/game/characters/StyledCharacter";
 import { KaraokeMode } from "../src/game/karaoke/mode";
-import { KARAOKE_MARK, KARAOKE_PROMPT, addKaraokeBooth, makeKaraokeMic } from "../src/game/karaoke/stage";
+import { KARAOKE_MARK, KARAOKE_PROMPT, addKaraokeBooth, makeKaraokeMic, karaokeShot } from "../src/game/karaoke/stage";
 import { resetKaraokeUi, useKaraoke } from "../src/game/karaoke/store";
 import type { ModeHost } from "../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../src/game/kit/modes";
@@ -196,12 +196,55 @@ describe("the café karaoke mode", () => {
       const mic = player.rightHand.getObjectByName("karaoke-hand-mic")!;
       expect(mic).toBeTruthy();
       expect(mic.getWorldPosition(new Vector3()).toArray().every(Number.isFinite)).toBe(true);
+      const palm = player.joint("foreR").worldToLocal(mic.getWorldPosition(new Vector3()));
+      expect(palm.x).toBeCloseTo(0);
+      expect(palm.y).toBeCloseTo(player.rightHand.position.y);
+      expect(palm.z).toBeCloseTo(player.rightHand.position.z * 0.45);
+      const grip = mic.getWorldPosition(new Vector3());
+      expect(grip.y - player.root.position.y).toBeGreaterThan(player.height * 0.6);
+      const mouth = player.root.localToWorld(new Vector3(0.04, player.height * 0.83, 0.18));
+      const grille = mic.localToWorld(new Vector3(0, 0.15, 0));
+      expect(grille.distanceTo(mouth)).toBeLessThan(grip.distanceTo(mouth));
+      expect(grille.y).toBeGreaterThan(grip.y);
       f.radio.shutdown();
       expect(f.mode.active).toBe(false);
       expect(f.registry.engaged).toBe(false);
       expect(player.rightHand.getObjectByName("karaoke-hand-mic")).toBeUndefined();
       if (player instanceof Character) player.dispose();
     }
+  });
+
+  it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames a singer and near guest with room for lyrics at %s × %s", async (w, h) => {
+    const f = await fixture();
+    f.rig.cam.aspect = w / h;
+    f.rig.stage = karaokeShot(w / h);
+    f.rig.stageSnap();
+    f.rig.applyPose();
+    f.player.root.position.set(KARAOKE_MARK.x, KARAOKE_MARK.y, KARAOKE_MARK.z);
+    // The short phone's title can grow at A++; the face must remain below that measured header.
+    const titleBottom = h === 664 ? 140 : h * 0.1;
+    f.mode.frameView(w, h, titleBottom);
+    const project = (x: number, y: number, z: number) => {
+      const p = new Vector3(x, y, z).project(f.rig.cam);
+      return { x: p.x * 0.5 + 0.5, y: 0.5 - p.y * 0.5 };
+    };
+    const head = project(KARAOKE_MARK.x, KARAOKE_MARK.y + f.player.height, KARAOKE_MARK.z);
+    const knees = project(KARAOKE_MARK.x, 0.55, KARAOKE_MARK.z);
+    const nearShoulder = project(2.67, 1.15, 1.45);
+    expect(head.y).toBeGreaterThan(0.12);
+    expect(head.y).toBeLessThan(0.3);
+    expect(knees.y - head.y).toBeLessThan(0.4);
+    expect(knees.y).toBeLessThan(0.56);
+    expect(nearShoulder.x).toBeGreaterThan(0);
+    expect(nearShoulder.x).toBeLessThan(head.x);
+    expect(nearShoulder.y).toBeGreaterThan(0.3);
+    expect(nearShoulder.y).toBeLessThan(0.55);
+    if (w < h) expect(head.y * h).toBeGreaterThanOrEqual(titleBottom + 11.9);
+    if (w > h && h < 520) expect(head.x).toBeLessThan(0.34);
+    const front = new Vector3(Math.sin(KARAOKE_MARK.rot), 0, Math.cos(KARAOKE_MARK.rot));
+    const toCamera = f.rig.stage.pos.clone().sub(f.player.root.position).setY(0).normalize();
+    expect(front.angleTo(toCamera)).toBeGreaterThan(Math.PI / 7);
+    expect(front.angleTo(toCamera)).toBeLessThan(Math.PI / 3);
   });
 
   it("keeps the booth and its approach within the small prop budget", () => {
