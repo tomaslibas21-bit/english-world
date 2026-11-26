@@ -68,7 +68,7 @@ export const BUILDINGS: BuildingDef[] = [
   { id: "dan", loc: "dans-house", sign: "", x: -30, z: 53, w: 13, d: 11, h: 7, face: "n", color: "#f2d492", trim: "#ffffff", roof: "gable", roofColor: "#8a4b3a", style: "house" },
   { id: "house3", sign: "", x: 22, z: 54, w: 12, d: 10, h: 7, face: "n", color: "#d7c0e0", trim: "#ffffff", roof: "gable", roofColor: "#4b5563", style: "house" },
   { id: "station", loc: "station", sign: "Union Station", x: 45, z: 57, w: 34, d: 16, h: 10, face: "n", color: "#d8b48a", trim: "#7a2e2e", roof: "gable", roofColor: "#7a2e2e", style: "station" },
-  { id: "house4", sign: "", x: 90, z: 54, w: 12, d: 10, h: 7, face: "n", color: "#cfe3c3", trim: "#ffffff", roof: "gable", roofColor: "#6b4f3a", style: "house" },
+  { id: "house4", loc: "town-hall", sign: "Town Hall", x: 90, z: 54, w: 12, d: 10, h: 7, face: "n", color: "#cfe3c3", trim: "#ffffff", roof: "gable", roofColor: "#6b4f3a", style: "house" },
   { id: "house5", sign: "", x: 108, z: 54, w: 11, d: 10, h: 7, face: "n", color: "#f0c4b4", trim: "#ffffff", roof: "gable", roofColor: "#5c6b7a", style: "house" },
   // Harbor and airport
   { id: "pier", loc: "the-pier", sign: "The Pier", x: -30, z: -80, w: 18, d: 12, h: 6, face: "s", color: "#e9f2f7", trim: "#1d4e6b", roof: "gable", roofColor: "#1d4e6b", style: "restaurant", awning: "#1d4e6b" },

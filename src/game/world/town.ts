@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
+import { townHallLintel } from "./townHallPrint";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
@@ -765,6 +766,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const townHall = b.loc === "town-hall";
   const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -937,8 +939,13 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
           continue;
         }
         M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
-        // a flower box under each of a house's front windows downstairs
-        if (b.style === "house" && isFront && f === 0 && !STYLED) {
+        // Clipped evergreens in the hall's window boxes use the same street batches as its sill.
+        if (townHall && isFront && f === 0) {
+          const sill = (geo: THREE.BufferGeometry) => geo.rotateY(rot).translate(wx, y - wh / 2 - .18, wz);
+          M.add("hall-window-box", mat("#8c6a48"), sill(boxGeo(ww + .18, .22, .30, 0, 0, .13)), false);
+          M.add("hall-window-foliage", mat("#577257"), sill(new THREE.IcosahedronGeometry(1, 0)
+            .scale(ww * .55, .17, .19).translate(0, .16, .13)), false);
+        } else if (b.style === "house" && isFront && f === 0 && !STYLED) {
           const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(wx, 0, wz);
           details.push([at(new THREE.BoxGeometry(ww + 0.14, 0.22, 0.26).translate(0, y - wh / 2 - 0.2, 0.15)), "#7a4b36"]);
           for (let k = 0; k < 6; k++) {
@@ -982,10 +989,14 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // sign
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
-  if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
+  if (townHall) {
+    townHallLintel(M, atDoor);
+    signW = 5.1; signH = 1.07; signY = 4.25;
+  } else if (b.sign) {
     const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({
+        map: textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 }), toneMapped: false,
+      }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     if (poolHall) sy = 4.29;
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
@@ -1062,7 +1073,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (b.style === "house") {
     // porch
-    M.add("porch", mat("#e8e2d6"), boxGeo(6, 0.35, 2.6, 0, 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
+    M.add("porch", mat("#e8e2d6"), boxGeo(6, townHall ? 0.02 : 0.35, 2.6, 0, townHall ? 0.01 : 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
     for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
@@ -1076,10 +1087,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       if (Math.abs(i) < 1.4) continue;
       M.add("fence", mat("#ffffff"), boxGeo(0.1, 0.9, 0.06, dx + t[0] * i + n[0] * 5.6, 0.45, dz + t[1] * i + n[1] * 5.6));
     }
-    M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
+    if (!townHall) M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
     // the fence blocks on both sides of its gate
     for (const sd of [-1, 1]) {
       const len = b.w / 2 - 1.4, u = sd * (1.4 + len / 2), fx = dx + t[0] * u + n[0] * 5.6, fz = dz + t[1] * u + n[1] * 5.6;
+      if (townHall) M.add("fence", mat("#ffffff"), boxGeo(len, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(fx, 0, fz));
       col.addBox(fx, fz, Math.abs(t[0]) * len + Math.abs(n[0]) * 0.16, Math.abs(t[1]) * len + Math.abs(n[1]) * 0.16);
     }
   }

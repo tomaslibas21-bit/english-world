@@ -12,7 +12,7 @@ const BACK = "[data-pad-back]";
 const DEFAULT = "[data-pad-default]";
 const AUXILIARY = "button[data-pad-aux], [data-pad-aux] button";
 const NOTES = ".objective-notes";
-const GRIDS = ".scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
+const GRIDS = ".passport-grid, .scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
 const ANSWERS = "[data-pad-answer], .dym-opt";
 const MEETING_ANSWERS = "[data-meeting-answer]";
 const FOCUS_OPENS = "[data-pad-focus-opens]";
@@ -31,7 +31,7 @@ const surfaces: Record<string, Surface> = {
   tooltip: { priority: 110 },
   intro: { priority: 100, first: DEFAULT },
   thread: { priority: 90, first: ".text-replies button, .text-bubble", slot: ".text-thread" },
-  panel: { priority: 80, first: ".scn-card[data-sit], .contact", slot: ".sheet, .phone" },
+  panel: { priority: 80, first: ".scn-card[data-sit], .contact", slot: ".sheet, .phone, .passport" },
   info: { priority: 78, first: DEFAULT },
   ended: { priority: 75, first: ".ended-destination button, .ended-main button, button[class$='-cta'], .sit-actions button", back: ".convo [data-pad-back]" },
   convo: { priority: 70, first: ANSWERS + ", .guide .chip" },
@@ -987,6 +987,7 @@ export class GamepadView {
     const convoBack = convo?.querySelector<HTMLElement>(".convo-head [data-pad-back]");
     if (convoBack && visible(convoBack)) choices.push(convoBack);
     const panel = kind === "panel" ? active?.querySelector<HTMLElement>(surfaces.panel.slot!) : null;
+    const passportDock = panel?.querySelector<HTMLElement>(".passport-pad-dock");
     const margin = convo ?? panel ?? (kind && !["drawer", "toolbar", "auxiliary", "home"].includes(kind) ? active : null);
     const flowSelector = surface && surface.slot;
     const slot = convo?.querySelector<HTMLElement>(".convo-tools") ?? panel ??
@@ -1029,8 +1030,8 @@ export class GamepadView {
       slot.style.height = `${height}px`;
       const { left, top } = slot.getBoundingClientRect();
       // The opaque picker or phone already covers the HUD notes where this slot is drawn.
-      const surroundingNotes = host === panel ? [] : task;
-      const boxes = [...obstacles(controls, 8), ...obstacles(surroundingNotes, inNotes ? 6 : 8)];
+      const surroundingNotes = host === panel || host === passportDock ? [] : task;
+      const boxes = [...obstacles(host === passportDock ? choices : controls, 8), ...obstacles(surroundingNotes, inNotes ? 6 : 8)];
       if (clear(left, top, width, height, boxes) && onScreen(slot, safe, true)) {
         position(left, top);
         return true;
@@ -1052,6 +1053,12 @@ export class GamepadView {
       }
       return false;
     };
+
+    // Reserve a strip of the cover. The live notice stays outside the dialog's scrollable paper.
+    if (passportDock) {
+      if (!flow(passportDock)) delete notice.dataset.padPositioned;
+      return;
+    }
 
     const underNote = notes && (!kind || ["toolbar", "drawer", "street", "phone-ring"].includes(kind)) &&
       matchMedia("(max-width: 600px) and (orientation: portrait)").matches;

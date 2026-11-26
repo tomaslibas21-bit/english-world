@@ -42,6 +42,7 @@ import { HARBOR_SURF } from "../game/world/surf";
 import { GYM_ENTRY } from "../content/gym-entry";
 import { CavePicker } from "./CavePicker";
 
+const Passport = lazy(() => import("./Passport"));
 const WorldMapPanel = lazy(() => import("./worldMap"));
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
@@ -57,12 +58,18 @@ export function Panels() {
   const panel = useStore((s) => s.hud.panel);
   useEffect(() => {
     if (!panel) return;
+    if (panel === "passport") return () => {
+      if (!useStore.getState().hud.panel) document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus();
+    };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); useStore.getState().setHud({ panel: null }); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
+  if (panel === "passport") return <div className="overlay passport-layer" data-pad-scope="panel" data-pad-phase="passport">
+    <Suspense fallback={<button data-pad-back onClick={close} onKeyDown={e => { if (e.key === "Escape") close(); }} autoFocus>Uždaryti</button>}><Passport close={close} /></Suspense>
+  </div>;
   return (
     <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}
@@ -444,6 +451,7 @@ function TownMapPanel({ close }: { close: () => void }) {
               <div>
                 <h3 className="place-title" tabIndex={0}><span className="place-ico"><MapPlaceIcon loc={sel} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
+                {sel === "town-hall" && <button type="button" className="btn soft" onClick={() => { close(); game?.guideToPlace?.(sel); }}><Icon name="walk" size={17} /> Nuvesk mane</button>}
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 {sel === GYM_ENTRY.location && game?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
                 {landmarks.includes(sel) && <button type="button" className="btn soft" onClick={() => guideTo(sel)}><Icon name="walk" size={17} /> Nuvesk mane</button>}
@@ -454,7 +462,7 @@ function TownMapPanel({ close }: { close: () => void }) {
                       <div style={{ padding: "6px 4px" }}><div style={{ color: "var(--ink-soft)", fontSize: "0.9em" }}>{s.goal}</div><SitActions s={s} close={close} /></div>
                     </div>
                   ))}
-                  {!selSits.length && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
+                  {!selSits.length && sel !== "town-hall" && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
                 </div>
               </div>
             )}

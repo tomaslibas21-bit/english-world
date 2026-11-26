@@ -16,6 +16,7 @@ import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
+import { passportPrompt } from "./world/townHallPrint";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
@@ -253,7 +254,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph" | "passport"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -1138,6 +1139,7 @@ export class Game implements GameApi {
         this.steer.reset();
         audio.stopAmbience();
       }
+      const leavingPassportRoom = this.zone?.id === "town-hall";
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
@@ -1173,17 +1175,25 @@ export class Game implements GameApi {
       this.scene.fog = indoor ? null : new THREE.Fog(THEME.light.haze, 110, 420);
       this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
-      const poolHall = id === BILLIARDS_PLACE;
-      this.hemi.intensity = indoor ? (poolHall ? 1.23 : 1.9) : THEME.light.fill;
-      this.sun.intensity = indoor ? (poolHall ? 0.92 : 1.6) : THEME.light.sunPower;
+      const poolHall = id === BILLIARDS_PLACE, passportRoom = id === "town-hall";
+      this.hemi.intensity = indoor ? (poolHall ? 1.23 : passportRoom ? 1.95 : 1.9) : THEME.light.fill;
+      this.sun.intensity = indoor ? (poolHall ? 0.92 : passportRoom ? .82 : 1.6) : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
+      if (leavingPassportRoom) {
+        this.hemi.groundColor.set(THEME.light.ground);
+        this.sun.color.set(THEME.light.sun);
+      }
       if (wild) this.restoreCaveScene = this.caveCode?.applyCaveScene(wild, this.scene, this.rig, this.hemi, this.sun, this.restoreCaveScene);
       else if (departing) {
         this.restoreCaveScene?.();
         this.restoreCaveScene = undefined;
       }
+      if (passportRoom) {
+        this.hemi.groundColor.set("#d2c3ae");
+        this.sun.color.set("#fff4e5");
+      }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, counter: passportRoom };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -1436,7 +1446,7 @@ export class Game implements GameApi {
     if (gym) this.gymHeldKeys.add(k);
     else if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active || st.hud.glyph) return; // the active reader or conversation handles its own keys
-    if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    if (st.hud.panel) { if (k === "escape" && st.hud.panel !== "passport") st.setHud({ panel: null }); return; }
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
@@ -2344,6 +2354,7 @@ export class Game implements GameApi {
       if (n.id !== LIGHTHOUSE_ISLAND?.keeper.says) this.staffSays(+n.id);
       else if (!repeat) this.interactKeeper();
     }
+    else if (n.kind === "passport" && !repeat) useStore.getState().setHud({ panel: "passport" });
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.wild ? this.leaveCave(n.id) : this.exitInterior();
     else if (n.kind === "cave-entry") void this.openCave(n.id as CoveDoor, undefined, false, true);
@@ -3177,7 +3188,9 @@ export class Game implements GameApi {
   /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
    *  stays over them and its ring lies on that spot, where the trail ends. */
   private showBeacon(tgt: { kind: string; x: number; z: number; person?: { x: number; z: number } } | null) {
-    if (!tgt) { this.guidance.setBeacon(null); return; }
+    // In the small hall the beam over the exit sits between the lens and the open book.
+    // The exit keeps its normal prompt, map marker and guided route.
+    if (!tgt || (this.zone.id === "town-hall" && tgt.kind === "exit")) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     const y = this.islandGuide && LIGHTHOUSE_ISLAND && !this.zone.interior ? islandGroundY(LIGHTHOUSE_ISLAND, over.x, over.z) : undefined;
     this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? tgt : undefined, y);
@@ -4346,6 +4359,13 @@ export class Game implements GameApi {
       } else if (this.caveZone) {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
+        if (this.zone.id === "town-hall" && !this.hop.air) {
+          const distance = Math.hypot(p.x, p.z - 0.1);
+          if (distance < 1.55 && distance < bd) {
+            bd = distance;
+            best = { kind: "passport", id: "passport", label: passportPrompt.label, prompt: passportPrompt };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }

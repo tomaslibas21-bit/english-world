@@ -73,7 +73,7 @@ export class CameraRig {
   } | null = null;
   taxiSnapRays = 0;
   private manualT = 0;
-  interiorBounds = { w: 16, d: 12 };
+  interiorBounds: { w: number; d: number; counter?: boolean } = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
@@ -318,7 +318,7 @@ export class CameraRig {
       this.look.set(this.target.x + this.ahead.x, this.target.y + 1.45, this.target.z + this.ahead.z);
       this.curLook.copy(this.look);
       this.blendT = 0;
-    } else if (this.mode === "interior") {
+    } else if (this.mode === "interior" && !this.interiorBounds.counter) {
       this.curPos.lerp(this.curLook, 0.22);
       this.blendT = 0.9;
     }
@@ -326,6 +326,10 @@ export class CameraRig {
 
   /** Indoors the view stays centred inside the room (never on the dark area beyond the open front). */
   private interiorLook() {
+    if (this.interiorBounds.counter) {
+      // Frame the work surface from the doorway, then track visitors into either aisle.
+      return new THREE.Vector3(this.target.x * .78, 1.08, -.98 + this.target.z * .19);
+    }
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
     const tx = THREE.MathUtils.clamp(this.target.x, -Math.max(0, halfW), Math.max(0, halfW));
     // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
@@ -344,6 +348,10 @@ export class CameraRig {
   private desiredPos() {
     if (this.mode === "talk" && this.talk) return this.talk.pos;
     if (this.mode === "interior") {
+      if (this.interiorBounds.counter) {
+        const upright = this.cam.aspect < .87;
+        return this.interiorLook().add(this.v1.set(upright ? 1.18 : 1.45, upright ? 2.52 : 1.93, upright ? 4.34 : 3.68));
+      }
       const d = Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
       const pitch = 0.78;
       const L = this.interiorLook();

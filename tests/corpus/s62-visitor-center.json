@@ -3,7 +3,7 @@
   {"ctx": "need", "say": "Can I take a map?", "intent": "ask_map"},
   {"ctx": "need", "say": "Do you have maps of the city?", "intent": "ask_map"},
   {"ctx": "need", "say": "A map, please", "intent": "ask_map"},
-  {"ctx": "need", "say": "Give me a city map, please", "intent": "ask_map"},
+  {"ctx": "need", "say": "Give me a town map, please", "intent": "ask_map"},
   {"ctx": "need", "say": "I would like to take one map", "intent": "ask_map"},
   {"ctx": "need", "say": "Maybe you have a map of Maple Harbor?", "intent": "ask_map"},
   {"ctx": "need", "say": "I'm gonna need a map", "intent": "ask_map"},
