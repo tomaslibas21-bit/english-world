@@ -7,7 +7,7 @@ import { talkCounterHeight, talkRoomAnchors } from "../world/talkNatural";
 import type { ClassifiedCue, TalkLineId, VoiceVisualOwner } from "./contract";
 import { inspectTalkNatural, inspectedRequest, snapshotActor } from "./inspection";
 import { lineSeed } from "./seed";
-import { bindConversationPose, type GestureRequest, type TalkRole } from "./pose";
+import { ARM_REST, bindConversationPose, type GestureRequest, type TalkRole } from "./pose";
 
 export { presentExchange } from "./exchange";
 export { lineSeed } from "./seed";
@@ -263,7 +263,7 @@ export class NaturalSession {
     if (!pose) return;
     let kind = peer.personality.farewell;
     if ((kind === "wave" && !pose.canWave) || (kind === "heart" && pose.armOpportunity === 0) ||
-      this.time + delay - this.armAt < 1.6) kind = "yes";
+      this.time + delay - this.armAt < ARM_REST) kind = "yes";
     const side = this.chance(peer, line, 4) < 0.5 ? -1 : 1;
     if (pose.react(kind, side, delay)) {
       if (kind !== "yes") this.armAt = this.time + delay;
@@ -292,8 +292,10 @@ export class NaturalSession {
     let side: -1 | 1 = cue.side ? (cue.side === inLearnerFrame ? 1 : -1) : this.chance(peer, line, 3) < 0.5 ? -1 : 1;
     let kind: GestureRequest["kind"] = cue.family;
     const arms = kind !== "yes" && kind !== "no";
-    if (arms && (this.time + delay - this.armAt < 1.6 ||
-      this.chance(peer, line, 5) >= peer.personality.armChance * pose.armOpportunity || kind === "greeting" && !pose.canWave)) {
+    // A greeting, a direction and a thing handed over belong to their words; the rest depends on the person.
+    const always = (kind === "greeting" || kind === "point" || kind === "offer") && pose.armOpportunity > 0;
+    if (arms && (this.time + delay - this.armAt < ARM_REST ||
+      !always && this.chance(peer, line, 5) >= peer.personality.armChance * pose.armOpportunity || kind === "greeting" && !pose.canWave)) {
       if (kind === "greeting" || kind === "offer") kind = "headGreeting";
       else return;
     }

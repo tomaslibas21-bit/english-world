@@ -196,7 +196,7 @@ describe("the 3D situation presentation", () => {
     expect(sample()?.gaze?.target).not.toBe("menu");
   });
 
-  it("uses the learner's side, leaves 1.6 s between arm beats and keeps one nearby observer", () => {
+  it("uses the learner's side, leaves a rest between arm beats and keeps one nearby observer", () => {
     const s = scene();
     s.near.root.rotation.y = 0.5;
     s.natural.present(s.conv, true);
@@ -212,7 +212,7 @@ describe("the 3D situation presentation", () => {
     s.advance(0.33);
     expect(sample()?.gesture).toBeNull();
     s.waitForLearner();
-    s.advance(0.7);
+    s.advance(1.3);
     s.turn(ids[2], "It's on your right.");
     s.advance(0.33);
     expect(sample()?.deltas?.outL).toBe(0);

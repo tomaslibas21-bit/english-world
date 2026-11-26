@@ -49,7 +49,8 @@ export const ease = (t: number) => { const u = Math.max(0, Math.min(1, t)); retu
 
 export function blockedHands(actor: GameCharacter, rig: NaturalRig) {
   const busy = actor.busy;
-  if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel" || busy === "type" || busy === "wipe") return 3;
+  // Wiping and typing stop when a customer speaks: those hands are free to gesture (above the counter).
+  if (actor.handsOccupied || busy === "paper" || rig.carry === "paper" || busy === "wheel") return 3;
   const left = rig.carry === "bag" || busy === "doorL";
   const right = actor.rightHand.children.length || rig.carry === "coffee" || rig.carry === "cup" ||
     busy === "cup" || busy === "tiller" || busy === "doorR";
