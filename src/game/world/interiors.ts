@@ -421,6 +421,50 @@ function smalls(c: Ctx): Smalls {
     },
   };
 }
+/** Open-front public telephone on the south wall of Union Station. The dark receiver
+ * hangs beside the upright so its silhouette reads from the doorway as well as the bench lane. */
+function stationPhone(c: Ctx, S: Smalls) {
+  const x = -5.2, z = 8.15;
+  const enamel = "#702638", metal = "#b4babb", receiver = "#232329", paper = "#fff0cc";
+  const box = (w: number, h: number, d: number, dx: number, y: number, dz: number, color: string) =>
+    S.add(boxGeo(w, h, d, x + dx, y, z + dz), color);
+  box(0.42, 2.36, 0.18, 0.10, 1.18, 0.31, enamel);
+  box(1.25, 0.12, 0.92, 0, 2.33, 0, enamel);
+  for (const side of [-1, 1]) box(0.065, 0.38, 0.92, side * 0.59, 2.12, 0, enamel);
+  box(1.16, 0.07, 0.75, 0, 1.00, -0.02, metal);
+  box(0.45, 0.76, 0.27, 0.08, 1.58, 0.13, metal);
+  box(0.27, 0.14, 0.025, 0.08, 1.78, -0.016, paper);
+  for (let row = 0; row < 3; row++) for (let col = -1; col <= 1; col++)
+    box(0.043, 0.043, 0.02, 0.08 + col * 0.069, 1.60 - row * 0.068, -0.02, receiver);
+
+  // Earpiece, handle and mouthpiece form a C in the plane of the south wall.
+  box(0.12, 0.46, 0.15, -0.37, 1.61, 0.05, receiver);
+  for (const y of [1.39, 1.83]) box(0.25, 0.13, 0.20, -0.30, y, 0.05, receiver);
+  const tube = (points: number[][], radius: number, color: string) => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([dx, y, dz]) => new THREE.Vector3(x + dx, y, z + dz)));
+    S.add(new THREE.TubeGeometry(curve, 8, radius, 5, false), color);
+  };
+  tube([[-0.37, 1.34, 0.05], [-0.46, 0.88, -0.31], [-0.26, 0.76, -0.40], [-0.09, 1.22, 0.04]], 0.027, receiver);
+  box(0.48, 0.075, 0.38, 0.19, 1.074, -0.18, paper);
+  box(0.045, 0.080, 0.38, -0.037, 1.074, -0.18, enamel);
+  tube([[0.41, 1.09, -0.16], [0.56, 1.06, -0.23], [0.52, 1.05, 0.10], [0.27, 1.18, 0.18]], 0.012, metal);
+  c.col.addBox(x, z, 1.25, 0.92);
+
+  // A projecting sign, legible from either side with the same small painted face.
+  const texture = canvasTex(256, 128, (ctx) => {
+    ctx.fillStyle = paper; ctx.fillRect(0, 0, 256, 128);
+    ctx.strokeStyle = enamel; ctx.lineWidth = 4; ctx.strokeRect(5, 5, 246, 118);
+    ctx.fillStyle = enamel; ctx.textAlign = "center";
+    ctx.font = "bold 59px sans-serif"; ctx.fillText("☎", 128, 64);
+    ctx.font = "bold 34px sans-serif"; ctx.fillText("Public Phone", 128, 103);
+  });
+  const face = (angle: number) => new THREE.PlaneGeometry(1.16, 0.58).rotateY(angle);
+  const angle = Math.PI * 0.35;
+  const faces = mergeGeometries([face(angle), face(angle + Math.PI)])!;
+  const sign = new THREE.Mesh(faces, new THREE.MeshLambertMaterial({ map: texture }));
+  sign.position.set(x, 2.67, z); sign.name = "public-phone-sign";
+  c.g.add(sign);
+}
 /** A till on a counter top at height y, its screen towards the cashier (north). */
 function till(S: Smalls, x: number, y: number, z: number) {
   S.add(boxGeo(0.44, 0.1, 0.36, x, y + 0.05, z), "#3a3d42");
@@ -1324,6 +1368,7 @@ const B: Record<string, () => Interior> = {
     // machine, a newsstand by the door, travellers' bags on the benches, a suitcase, trash cans, two big plants.
     // (The ways round the west end of the ticket counter and over to the bus stay free.)
     const S = smalls(c);
+    stationPhone(c, S);
     rugS(S, -1, 2.5, 12.6, 1.5, "#7a2e2e", "#c9a227", 0.1);
     for (const tx of [-1.55, -0.35]) {
       S.add(boxGeo(0.9, 1.75, 0.6, tx, 0.875, -8.68), "#7a2e2e");

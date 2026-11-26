@@ -167,7 +167,7 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "listen" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "listen" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" | "phonebooth" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
@@ -188,7 +188,7 @@ export interface HudState {
   textArrival?: string | null;
   textThread?: string | null;
   reaction?: import("../game/life/reacts").ReactionLine | null;
-  panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
+  panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios" | "phonebooth";
   showTouch: boolean;
   /** The town guide's hint on show (game/coach.ts): which, and `ok` for the moment it was just done. */
   coach: { step: "walk" | "run" | "jump" | "talk" | "list" | "car" | "boat" | "water" | "surf" | "radio"; ok: boolean } | null;

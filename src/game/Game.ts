@@ -253,7 +253,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph" | "phonebooth"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -2337,6 +2337,15 @@ export class Game implements GameApi {
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "phonebooth") {
+      const st = useStore.getState();
+      if (repeat || this.zone.id !== "station" || st.hud.phoneCard || st.hud.panel || st.conv.active || this.conversationLoads) return;
+      this.autoPath = null;
+      this.autoTarget = null;
+      this.keys.clear();
+      this.setJoystick(0, 0);
+      st.setHud({ panel: "phonebooth" });
+    }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -4346,6 +4355,14 @@ export class Game implements GameApi {
       } else if (this.caveZone) {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
+        if (this.zone.id === "station" && !this.hop.air) {
+          const reach = Math.hypot(p.x + 5.2, p.z - 6.65);
+          if (reach < 1.35 && reach < bd) {
+            bd = reach;
+            const label = "Naudotis viešuoju telefonu";
+            best = { kind: "phonebooth", id: "phonebooth", label, prompt: { kind: "phonebooth", label } };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
