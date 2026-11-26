@@ -28,6 +28,8 @@ export interface RadioState {
   /** Music keeps its own availability and readiness in a books-only build. */
   musicAvailable: boolean;
   shelfOpen: boolean;
+  readerOpen: boolean;
+  settingsOpen: boolean;
   showTalkText: boolean;
   /** the song list has arrived */
   ready: boolean;
@@ -148,7 +150,7 @@ export class Radio {
     const startsOnBooks = books && (!deps.config || this.saved.station === books.station.id);
     this.store = createStore<RadioState>(() => ({
       available: !!books || (!!deps.config && deps.stations.length > 0),
-      musicAvailable: !!deps.config, shelfOpen: false, showTalkText: this.saved.talkText !== false,
+      musicAvailable: !!deps.config, shelfOpen: false, readerOpen: false, settingsOpen: false, showTalkText: this.saved.talkText !== false,
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
       station: startsOnBooks ? books.station.id : station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
       lyrics: this.saved.lyrics, lyricSize: this.saved.size, nat: this.saved.nat, notes: this.saved.notes, pictures: this.saved.pictures,
@@ -267,7 +269,7 @@ export class Radio {
 
   setOpen(open: boolean) {
     this.foldOnPlayback = false;
-    this.set(open ? { open } : { open, shelfOpen: false });
+    this.set(open ? { open } : { open, shelfOpen: false, readerOpen: false, settingsOpen: false });
   }
 
   browse() {
@@ -277,12 +279,41 @@ export class Radio {
     this.set({ open: true, shelfOpen: true });
   }
 
-  closeShelf() { this.set({ shelfOpen: false }); }
+  closeShelf() { this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false }); }
+
+  openReader() {
+    if (!this.onBooks || !this.books!.player.getSnapshot().selection) return;
+    this.foldOnPlayback = false;
+    this.set({ open: true, readerOpen: true });
+  }
+
+  closeReader() { this.set({ readerOpen: false, settingsOpen: false }); }
+
+  openSettings() {
+    if (!this.onBooks) return;
+    this.foldOnPlayback = false;
+    this.set({ open: true, settingsOpen: true });
+  }
+
+  closeSettings() { this.set({ settingsOpen: false }); }
+
+  /** An explicit chapter choice starts listening in the reader, above the same picker. */
+  read(selection: TalkSelection) {
+    if (!this.onBooks) return;
+    this.foldOnPlayback = false;
+    this.set({ on: true, open: true, readerOpen: true });
+    const player = this.books!.player;
+    const current = player.getSnapshot();
+    if (current.selection?.itemKey === selection.itemKey && current.selection.chapterId === selection.chapterId && current.status === "error") {
+      void player.retry(true);
+    } else void player.select(selection, true);
+    this.save();
+  }
 
   listen(selection: TalkSelection) {
     if (!this.onBooks) return;
     const player = this.books!.player;
-    this.set({ on: true, shelfOpen: false });
+    this.set({ on: true, shelfOpen: false, readerOpen: false, settingsOpen: false });
     this.foldOnPlayback = true;
     const current = player.getSnapshot();
     if (current.selection?.itemKey === selection.itemKey && current.selection.chapterId === selection.chapterId && current.status === "error") {
@@ -391,7 +422,7 @@ export class Radio {
     if (this.onBooks) {
       this.foldOnPlayback = false;
       this.books!.player.clear();
-      this.set({ shelfOpen: false, upNext: this.queued ? this.byId.get(this.queued) ?? null : null });
+      this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false, upNext: this.queued ? this.byId.get(this.queued) ?? null : null });
     }
     this.tuneTo(station);
     if (this.state.on && !this.holds.size) this.deps.tune?.();

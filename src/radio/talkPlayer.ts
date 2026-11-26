@@ -60,7 +60,8 @@ export interface TalkClock {
   setTimeout(callback: () => void, delay: number): () => void;
 }
 
-type Sleep = { kind: "timed"; deadline: number } | { kind: "end" } | null;
+export type SleepChoice = "off" | 15 | 30 | "end";
+type Sleep = { kind: "timed"; deadline: number; minutes: 15 | 30 } | { kind: "end" } | null;
 type Status = "idle" | "loading" | "paused" | "held" | "starting" | "playing" | "ended" | "error";
 
 export interface TalkSnapshot {
@@ -274,11 +275,11 @@ export class TalkPlayer {
     }, 700);
   }
 
-  setSleep(choice: "off" | 15 | 30 | "end"): void {
+  setSleep(choice: SleepChoice): void {
     this.cancelSleep?.();
     this.cancelSleep = undefined;
     const sleep: Sleep = choice === "off" ? null : choice === "end" ? { kind: "end" }
-      : { kind: "timed", deadline: this.options.clock.now() + choice * 60_000 };
+      : { kind: "timed", deadline: this.options.clock.now() + choice * 60_000, minutes: choice };
     this.patch({ sleep });
     if (sleep?.kind === "timed") this.scheduleSleep(sleep.deadline);
   }
@@ -421,8 +422,8 @@ export class TalkPlayer {
   private stopOutput(reason: TalkStopReason): void {
     const request = this.playing;
     this.playing = null;
-    request?.abort();
     if (request || reason === "capture" || reason === "change") this.options.output.stop(reason);
+    request?.abort();
   }
 
   private restingStatus(keepEnded = true): Status {

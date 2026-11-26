@@ -2,6 +2,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { bookLocale, bookWord as w } from "../content/bookCopy";
+import { BookReader } from "./BookReader";
+import { TalkSettings } from "./TalkSettings";
 import { BookPicker } from "./BookPicker";
 import { BookRadioControls, WalkingBookLine } from "./BookRadio";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
@@ -169,10 +171,11 @@ function RadioSet() {
       });
     };
   }, []);
+  const childOpen = s.shelfOpen || s.readerOpen || s.settingsOpen;
   const previousShelf = useRef(false);
   const launcher = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
-    if (s.shelfOpen) {
+    if (childOpen) {
       previousShelf.current = true;
       return;
     }
@@ -180,7 +183,7 @@ function RadioSet() {
     const back = previousShelf.current && launcher.current?.isConnected ? launcher.current : null;
     (back ?? ref.current?.querySelector<HTMLElement>(".rs-st.on") ?? selected)?.focus({ preventScroll: true });
     previousShelf.current = false;
-  }, [bank, s.shelfOpen]);
+  }, [bank, childOpen]);
   // what the heart just did, said for a few seconds
   const [hearted, setHearted] = useState<"added" | "removed" | null>(null);
   const [beat, setBeat] = useState(0);
@@ -198,7 +201,8 @@ function RadioSet() {
       radio.setOpen(false);
     };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") {
-      if (radio.store.getState().shelfOpen) return; // native dialog cancel unwinds one picker level
+      const state = radio.store.getState();
+      if (state.shelfOpen || state.readerOpen || state.settingsOpen) return; // native dialog cancel unwinds one picker level
       e.stopPropagation(); radio.setOpen(false);
     } };
     document.addEventListener("pointerdown", away, true);
@@ -221,7 +225,7 @@ function RadioSet() {
   const like = () => { setHearted(s.liked ? "removed" : "added"); setBeat((n) => n + 1); radio.like(); };
   return (
     <>
-    <div inert={s.shelfOpen} data-pad-scope="radio" data-bank={bank} data-book-tuned={talk || undefined} onClickCapture={(e) => { launcher.current = (e.target as Element).closest("button"); }} className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label="Radijas">
+    <div inert={childOpen} data-pad-scope="radio" data-bank={bank} data-book-tuned={talk || undefined} onClickCapture={(e) => { launcher.current = (e.target as Element).closest("button"); }} className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label="Radijas">
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
@@ -306,7 +310,9 @@ function RadioSet() {
         </div>
       </div>
     </div>
-    {s.shelfOpen && radio.books && <BookPicker channel={radio.books} />}
+    {s.shelfOpen && radio.books && <BookPicker channel={radio.books} covered={s.readerOpen || s.settingsOpen} />}
+    {s.readerOpen && radio.books && <BookReader channel={radio.books} covered={s.settingsOpen} />}
+    {s.settingsOpen && radio.books && <TalkSettings channel={radio.books} />}
     </>
   );
 }
@@ -322,7 +328,7 @@ export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const spot = useRadio((s) => s.spot);
   const talk = useRadio((s) => s.station === radio.bookStation?.id);
-  const showBook = useRadio((s) => s.on && s.showTalkText && s.playing && !s.shelfOpen);
+  const showBook = useRadio((s) => s.on && s.showTalkText && s.playing && !s.shelfOpen && !s.readerOpen && !s.settingsOpen);
   if (talk) return showBook ? <WalkingBookLine /> : null;
   if (show && spot) return <SpotStrip key={spot.spot.id} recording={spot} />;
   return <SongStrip show={show} sidewaysPhone={sidewaysPhone} />;

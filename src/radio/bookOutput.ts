@@ -1,7 +1,7 @@
 import { usesBufferRecordings } from "../game/audio";
 import { bookCueIndex } from "./bookTiming";
 import { streamingAudio } from "./output";
-import type { TalkCue, TalkFailure, TalkOutput, TalkTrack } from "./talkPlayer";
+import type { TalkCue, TalkFailure, TalkOutput, TalkStopReason, TalkTrack } from "./talkPlayer";
 
 type Request = Parameters<TalkOutput["start"]>[0];
 type Rates = Request["rates"];
@@ -44,6 +44,8 @@ export class BookOutput implements TalkOutput {
   private generation = 0;
   private volume = 1;
   private current?: Session;
+  private fading?: Part;
+  private finishFade?: () => void;
 
   constructor(private readonly makeAudio = streamingAudio, private readonly fetchStatus: typeof fetch = fetch) {}
 
@@ -75,15 +77,17 @@ export class BookOutput implements TalkOutput {
     }
   }
 
-  stop(): void {
+  stop(reason?: TalkStopReason): void {
+    this.finishFade?.();
     this.generation++;
     const session = this.current;
     this.current = undefined;
     if (!session) return;
     session.abort.abort();
     clearTimeout(session.timer);
-    this.close(session.part);
     this.close(session.next);
+    if (reason === "sleep" && session.part?.playing && !globalThis.document?.hidden) this.fadeSleep(session.part);
+    else this.close(session.part);
   }
 
   position(): number | null {
@@ -101,6 +105,7 @@ export class BookOutput implements TalkOutput {
     this.volume = volume;
     if (this.current?.part) this.current.part.media.volume = volume;
     if (this.current?.next) this.current.next.media.volume = volume;
+    if (this.fading && volume === 0) this.fading.media.volume = 0;
   }
 
   setRates(rates: Rates): void {
@@ -121,6 +126,25 @@ export class BookOutput implements TalkOutput {
       if (changed || !part.playing) this.landRate(session, part, at);
       this.pulse(session, part);
     }
+  }
+
+  private fadeSleep(part: Part): void {
+    this.fading = part;
+    const startedAt = Date.now(), volume = part.media.volume;
+    const interval = setInterval(() => {
+      part.media.volume = Math.min(volume, this.volume) * Math.max(0, 1 - (Date.now() - startedAt) / 180);
+    }, 12);
+    const finish = () => {
+      clearInterval(interval);
+      clearTimeout(deadline);
+      globalThis.document?.removeEventListener("visibilitychange", finish);
+      this.fading = undefined;
+      this.finishFade = undefined;
+      this.close(part);
+    };
+    const deadline = setTimeout(finish, 180);
+    this.finishFade = finish;
+    globalThis.document?.addEventListener("visibilitychange", finish);
   }
 
   private live(session: Session): boolean {

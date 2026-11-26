@@ -112,7 +112,7 @@ function watchWide(notify: () => void) {
   return () => query.removeEventListener("change", notify);
 }
 
-export function BookPicker({ channel }: { channel: BookChannel }) {
+export function BookPicker({ channel, covered = false }: { channel: BookChannel; covered?: boolean }) {
   const [entries, setEntries] = useState<ShelfEntry[]>();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -123,6 +123,7 @@ export function BookPicker({ channel }: { channel: BookChannel }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const pane = useRef<HTMLDivElement>(null);
   const returnTo = useRef("");
+  const returnChapter = useRef("");
   const scrollTop = useRef(0);
   const large = useStore((state) => state.settings.textSize >= 1.3);
   const wide = useSyncExternalStore(watchWide, () => matchMedia(wideQuery).matches, () => false);
@@ -162,11 +163,12 @@ export function BookPicker({ channel }: { channel: BookChannel }) {
   }, [list, detail, !!resume, wide]);
 
   useLayoutEffect(() => {
+    if (covered) return;
     const root = dialog.current!;
     if (!detail && pane.current) pane.current.scrollTop = scrollTop.current;
-    pickerFocus(root, detail ? undefined : returnTo.current)?.focus({ preventScroll: true });
+    pickerFocus(root, detail ? returnChapter.current : returnTo.current)?.focus({ preventScroll: true });
     if (detail) root.querySelector("[data-pad-default]")?.scrollIntoView({ block: "nearest", behavior: "instant" });
-  }, [detail, entries, failed]);
+  }, [detail, entries, failed, covered]);
 
   const back = () => { if (detail) setDetail(false); else radio.closeShelf(); };
   const inspect = (entry: ShelfEntry) => {
@@ -176,8 +178,12 @@ export function BookPicker({ channel }: { channel: BookChannel }) {
     setDetail(true);
     chooseSound();
   };
-  const listen = (row: BookChapter) => { chooseSound(); radio.listen(row.selection); };
-  return <dialog ref={dialog} className={`book-picker radio-skin-${RADIO_SKIN}`} data-large={large || undefined}
+  const listen = (row: BookChapter) => {
+    returnChapter.current = detail ? `chapter-${row.id}` : "";
+    chooseSound();
+    radio.read(row.selection);
+  };
+  return <dialog ref={dialog} inert={covered} className={`book-picker radio-skin-${RADIO_SKIN}`} data-large={large || undefined}
     data-pad-phase={detail ? "detail" : collection} data-pad-scope={detail ? "book-detail" : "book-shelf"} aria-label={detail ? selected?.title : w("library")}
     onCancel={(event) => { event.preventDefault(); back(); }}
     onClick={(event) => { if (event.target === event.currentTarget) back(); }}

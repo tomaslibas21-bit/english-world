@@ -1,23 +1,16 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { BOOK_STATION, RADIO_SKIN } from "../content/radio";
 import { bookLocale, bookPercent, bookWord as w } from "../content/bookCopy";
 import { radio, useRadio } from "../radio";
 import { type BookItem } from "../radio/books";
-import type { TalkSnapshot } from "../radio/talkPlayer";
+import { useBookState } from "./bookHooks";
 import { Icon } from "./icons";
 import { Jacket } from "./BookPicker";
 
-/** The walking HUD subscribes to cue changes. Only the open set needs the time counter. */
-function useTalk<T>(pick: (state: Readonly<TalkSnapshot>) => T) {
-  const player = radio.books!.player;
-  const snapshot = () => pick(player.getSnapshot());
-  return useSyncExternalStore(player.subscribe, snapshot, snapshot);
-}
-
 function SpokenLine({ folded = false }: { folded?: boolean }) {
-  const cue = useTalk((s) => s.cue);
-  const item = useTalk((s) => s.item) as BookItem | null;
-  const mode = useTalk((s) => s.prefs.mode);
+  const cue = useBookState(radio.books!, (s) => s.cue);
+  const item = useBookState(radio.books!, (s) => s.item) as BookItem | null;
+  const mode = useBookState(radio.books!, (s) => s.prefs.mode);
   if (!cue || !item || (folded && mode !== "target")) return null;
   let translation = "";
   if (mode === "target") {
@@ -52,7 +45,7 @@ export function WalkingBookLine() {
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 
 export function BookRadioControls() {
-  const s = useTalk((state) => state);
+  const s = useBookState(radio.books!, (state) => state);
   const showText = useRadio((state) => state.showTalkText);
   const item = s.item as BookItem | null;
   const duration = item?.tracks[s.prefs.mode]?.duration ?? 0;
@@ -98,6 +91,10 @@ export function BookRadioControls() {
       <button className="rs-key" aria-label={w("next")} title={w("next")} disabled={!s.cue} onClick={() => radio.next()}><Icon name="skipNext" size={22} /></button>
       <button className={"rs-key" + (showText ? " on" : "")} aria-label={w("showText")} title={w("showText")} aria-pressed={showText}
         onClick={() => radio.setTalkText(!showText)}><Icon name="lyrics" size={22} /></button>
+    </div>
+    <div className="rs-opts book-actions">
+      <button className="rs-opt" data-book-settings onClick={() => radio.openSettings()}><Icon name="settings" size={18} />{w("settings")}</button>
+      <button className="rs-opt" data-book-reader disabled={!s.selection} onClick={() => radio.openReader()}><Icon name="bookOpen" size={18} />{w(books.output.unavailable ? "readText" : "reader")}</button>
     </div>
     {!showText && s.cue && s.prefs.mode === "target" && <div className="book-folded"><SpokenLine folded /></div>}
     {s.status === "error" && <div className="rs-opts book-errors">
