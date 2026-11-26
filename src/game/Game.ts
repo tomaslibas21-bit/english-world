@@ -145,6 +145,8 @@ function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
 }
 /** Close enough to talk to someone (the "Kalbėtis" prompt shows): `talkDist` under this. */
 const TALK_RANGE = 2.9;
+/** How long a guided walk waits beside a car in its way before giving up (seconds). */
+const CAR_WAIT_MAX = 20;
 /** How far `p` is from talking to `n`: from them, or from their spot to talk from plus a metre. */
 function talkDist(n: NpcActor, p: { x: number; z: number }) {
   const d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
@@ -222,7 +224,7 @@ export class Game implements GameApi {
     alignCamera?: boolean;
     onward?: boolean;
   } | null = null;
-  private walkCheck = { time: 0, remaining: Infinity };
+  private walkCheck = { time: 0, remaining: Infinity, carWait: 0, waited: 0 };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
   private t = 0;
@@ -2268,7 +2270,7 @@ export class Game implements GameApi {
     this.autoPath = [...down, ...path.slice(1)];
     const npc = target?.kind === "npc" ? this.npcs.find((n) => n.id === target.id) : undefined;
     if ((endX === x && endZ === z) || (npc && talkDist(npc, { x: endX, z: endZ }) < TALK_RANGE - 0.35)) this.autoTarget = target;
-    this.walkCheck = { time: 0, remaining: Infinity };
+    this.walkCheck = { time: 0, remaining: Infinity, carWait: 0, waited: 0 };
     this.stepOut = 0;
   }
 
@@ -3840,16 +3842,32 @@ export class Game implements GameApi {
             want.set(0, 0, 0);
           } else {
             const check = this.walkCheck;
-            if (check.time === 0) check.remaining = remaining;
-            check.time += dt;
-            if (check.time >= 0.8) {
-              if (check.remaining - remaining < 0.2) {
-                if (!nearNpc) this.autoTarget = null;
-                this.arrived();
+            // a car in the street held them up (standing on the crosswalk, passing by): they wait at its side and walk
+            // on when it has gone, as the live build did, rather than giving up the walk there (26 Nov 2026); a car
+            // that stays put (or anything else) still ends the walk, after a longer wait
+            if (check.carWait > 0) {
+              if (!indoor && this.ambient.carAt(p.x, p.z, 1.1) && check.carWait < CAR_WAIT_MAX) {
+                check.carWait += dt;
                 want.set(0, 0, 0);
+              } else { check.carWait = 0; check.time = 0; }
+            } else {
+              if (check.time === 0) check.remaining = remaining;
+              check.time += dt;
+              if (check.time >= 0.8) {
+                if (check.remaining - remaining < 0.2) {
+                  if (!indoor && !nearNpc && check.waited < CAR_WAIT_MAX && this.ambient.carAt(p.x, p.z, 1.1)) {
+                    check.carWait = dt;
+                    want.set(0, 0, 0);
+                  } else {
+                    if (!nearNpc) this.autoTarget = null;
+                    this.arrived();
+                    want.set(0, 0, 0);
+                  }
+                }
+                check.time = 0;
               }
-              check.time = 0;
             }
+            if (check.carWait > 0) check.waited += dt;
           }
         }
       }

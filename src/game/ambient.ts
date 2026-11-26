@@ -495,8 +495,11 @@ export class Ambient {
   }
 
   private blockedAhead(c: Car, x: number, z: number): number {
-    const ahead = (x - c.x) * c.dir;
-    if (ahead <= 0 || ahead > 11 || Math.abs(z - c.lane) > c.half.z + 0.9) return Infinity;
+    const ahead = (x - c.x) * c.dir, across = Math.abs(z - c.lane);
+    if (ahead <= 0 || ahead > 11 || across > c.half.z + 0.9) return Infinity;
+    // (someone at its side, not in front of its bumper, is not in its way: it drives on past them rather than standing
+    // beside a learner who waits for it to go, 26 Nov 2026)
+    if (ahead < c.half.x && across > c.half.z) return Infinity;
     return ahead;
   }
 
@@ -792,6 +795,17 @@ export class Ambient {
       out = out.length ? out.concat(d.now) : d.now;
     }
     return out;
+  }
+
+  /** A traffic car (in sight, at full size or nearly) whose box, widened by `reach`, takes in this point: someone on
+   *  foot there is held up by it, not stuck (a guided walk waits for it to go on, 26 Nov 2026). */
+  carAt(x: number, z: number, reach: number) {
+    if (!this.group.visible) return false;
+    for (const c of this.cars) {
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
+      if (Math.abs(x - c.x) < c.half.x + reach && Math.abs(z - c.lane) < c.half.z + reach) return true;
+    }
+    return false;
   }
 
   /** Cars without usable pieces keep their box collision. */
