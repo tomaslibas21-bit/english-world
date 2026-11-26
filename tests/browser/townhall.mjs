@@ -81,17 +81,17 @@ try {
     await page.setViewportSize({ width, height });
     await page.evaluate(value => window.__ew.store.getState().setSettings({ textSize: value }), scale);
     await page.waitForFunction(large => document.querySelector(".passport")?.dataset.large === String(large), scale > 1);
-    await page.waitForFunction(() => {
+    await page.waitForFunction(requireNotice => {
       const proof = document.querySelector(".passport-proof"), paper = document.querySelector(".passport-evidence");
       const toast = document.querySelector("[data-pad-hint][data-pad-positioned]")?.getBoundingClientRect();
       const bounds = paper.getBoundingClientRect();
-      return getComputedStyle(document.querySelector(".passport-layer")).animationName === "none"
+      return (!requireNotice || !!toast) && getComputedStyle(document.querySelector(".passport-layer")).animationName === "none"
         && getComputedStyle(proof).backgroundColor.startsWith("rgb(")
         && [".passport-mark", ".stars", "li"].every(s => {
           const box = proof.querySelector(s).getBoundingClientRect();
           return box.height > 0 && box.top >= bounds.top && box.bottom <= bounds.bottom && (!toast || box.bottom <= toast.top);
         });
-    }, null, { timeout: 5000 });
+    }, height === 844, { timeout: 5000 });
     if (height === 844) await shot(page, "cafe-earned");
   }
   await page.setViewportSize({ width: 390, height: 844 });

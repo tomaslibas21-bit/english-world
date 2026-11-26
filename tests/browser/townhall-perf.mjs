@@ -4,7 +4,8 @@ import { openTown } from "./screen-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const browser = await chromium.launch({
-  executablePath: process.env.WORLD_CHROMIUM, args: ["--enable-unsafe-swiftshader", "--use-angle=swiftshader"],
+  executablePath: process.env.WORLD_CHROMIUM,
+  args: process.env.WORLD_SOFTWARE_GL === "1" ? ["--enable-unsafe-swiftshader", "--use-angle=swiftshader"] : [],
 });
 try {
   // Desktop emulation at phone dimensions keeps DPR at 1, matching the initial review.
