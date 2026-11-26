@@ -69,6 +69,8 @@ const WEST_BACKDROP_EXTENSION = ROAD_EDITION.enabled ? 160 : 0;
 const CROSSING_APPROACH = 1.8;
 const MAIN_CROSSINGS = [-50, 22, 100];
 const MAIN_CROSSING_HALF = 1.6;
+const BASIN_RADIUS = 3.6;
+const APRON_RADIUS = BASIN_RADIUS + 0.55;
 const ROAD_CROWN = [
   [0, "#424d54"], [0.16, "#535e65"], [0.38, "#5e6870"], [0.5, "#616a70"],
   [0.62, "#5e6870"], [0.84, "#535e65"], [1, "#424d54"],
@@ -299,7 +301,7 @@ export function buildTown(): Town {
   colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60, "sea");
   colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60, "sea");
 
-  if (!STYLED) { addMarkings(group); group.add(makeFlowers(rand(41))); }
+  if (!STYLED) { addMarkings(group, M); group.add(makeFlowers(rand(41))); }
   if (details.length) {
     // the houses' flower boxes and the bikes in the gym's rack (one mesh)
     const m = new THREE.Mesh(colourMerge(details), new THREE.MeshLambertMaterial({ vertexColors: true }));
@@ -491,9 +493,9 @@ function swaying(m: THREE.MeshLambertMaterial) {
   return m;
 }
 
-/** Road markings and the plaza's tile lines as thin flat geometry (one mesh per colour), sharp at any distance: the
+/** Road markings and the plaza's tile lines as thin flat geometry, sharp at any distance: the
  *  ground texture has 6 px a metre, so lines thinner than a pixel smeared. Lines stop short of the crossings. */
-function addMarkings(group: THREE.Group) {
+function addMarkings(group: THREE.Group, M: Merger) {
   const P = GROUND_BLOCKS, Y = 0.012;
   const parts: Record<string, THREE.BufferGeometry[]> = { center: [], white: [], plaza: [], curb: [] };
   const quad = (key: string, cx: number, cz: number, w: number, d: number) => parts[key].push(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2).translate(cx, Y, cz));
@@ -554,12 +556,30 @@ function addMarkings(group: THREE.Group) {
       flush(b);
     }
   }
-  // the plaza's tiles: lines every 2 m, a little darker than the paving
+  // Clip the tile joints to the brick apron. Both halves bake into the square's existing non-casting mesh.
   const plazaLine = new THREE.Color(P.plaza).lerp(new THREE.Color(160 / 255, 140 / 255, 110 / 255), 0.35);
-  for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) quad("plaza", gx, (SQUARE.z1 + SQUARE.z2) / 2, 0.06, SQUARE.z2 - SQUARE.z1);
-  for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) quad("plaza", (SQUARE.x1 + SQUARE.x2) / 2, gz, SQUARE.x2 - SQUARE.x1, 0.06);
+  const jointMat = new THREE.MeshLambertMaterial({ color: plazaLine });
+  function joint(fixed: number, alongX: boolean) {
+    const [lo, center, hi] = alongX ? [SQUARE.x1, FOUNTAIN.x, SQUARE.x2] : [SQUARE.z1, FOUNTAIN.z, SQUARE.z2];
+    const offset = Math.max(0, Math.abs(fixed - (alongX ? FOUNTAIN.z : FOUNTAIN.x)) - 0.03);
+    if (offset >= APRON_RADIUS) {
+      const mid = (lo + hi) / 2;
+      quad("plaza", alongX ? mid : fixed, alongX ? fixed : mid, alongX ? hi - lo : 0.06, alongX ? 0.06 : hi - lo);
+      return;
+    }
+    const span = (a: number, b: number) => {
+      const mid = (a + b) / 2;
+      const strip = new THREE.PlaneGeometry(alongX ? b - a : 0.06, alongX ? 0.06 : b - a);
+      M.add("plaza-joint", jointMat, strip.rotateX(-Math.PI / 2).translate(alongX ? mid : fixed, Y, alongX ? fixed : mid), false);
+    };
+    const gap = Math.sqrt(APRON_RADIUS ** 2 - offset ** 2);
+    span(lo, center - gap);
+    span(center + gap, hi);
+  }
+  for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) joint(gx, false);
+  for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) joint(gz, true);
   const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine, curb: "#cbc5b8" };
-  // drawn over the ground (no fighting with it far away), lit and shadowed like it; all four colours in one mesh
+  // A shared offset keeps distant markings clear of the ground.
   const all: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   for (const [key, geos] of Object.entries(parts)) for (const g of geos) all.push([g, colors[key]]);
   if (all.length) {
@@ -1737,12 +1757,44 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   // fountain
   const { x, z } = FOUNTAIN;
   photo("fountain", x, 1.65, z);
-  M.add("fountain", mat("#d8d2c4"), cylGeo(3.4, 3.6, 0.8, x, 0.4, z, 24));
-  M.add("fountain-water", mat("#6cc3dc", { emissive: "#0f3b48" }), cylGeo(3.0, 3.0, 0.1, x, 0.76, z, 24), false);
-  M.add("fountain", mat("#d8d2c4"), cylGeo(0.4, 0.6, 2.2, x, 1.5, z, 12));
-  M.add("fountain", mat("#d8d2c4"), cylGeo(1.2, 0.8, 0.3, x, 2.6, z, 16));
+  // Sharp brick headers survive the phone crop. Four broad joints face the walks, and the stone covers the inner edge.
+  const brick = ["#ae7353", "#b57a59", "#ae7353", "#a97052"];
+  const angle = Math.PI / 10;
+  for (let i = 0; i < 20; i++) {
+    const from = i * angle + (i % 5 === 0 ? 0.045 : 0.008);
+    const to = (i + 1) * angle - ((i + 1) % 5 === 0 ? 0.045 : 0.008);
+    const corners = [[BASIN_RADIUS - 0.10, from], [APRON_RADIUS, from], [BASIN_RADIUS - 0.10, to], [APRON_RADIUS, to]];
+    const header = new THREE.BufferGeometry();
+    header.setAttribute("position", new THREE.Float32BufferAttribute(corners.flatMap(([radius, a]) =>
+      [x + Math.cos(a) * radius, 0.018, z + Math.sin(a) * radius]), 3));
+    header.setIndex([0, 2, 1, 2, 3, 1]);
+    header.computeVertexNormals();
+    M.add("fountain-apron", mat(brick[i % brick.length]), header, false);
+  }
+  const granite = "#929791", cut = "#d5c9ad", wet = "#56696b", teal = "#4c9296";
+  // Each course follows the exposed stone from the foot up and over the cut edge into the water.
+  const course = (color: string, sides: number, ...profile: [radius: number, height: number][]) => {
+    const points = profile.map(([radius, height]) => new THREE.Vector2(radius, height));
+    M.add("fountain", mat(color, { flat: true }), new THREE.LatheGeometry(points, sides).translate(x, 0, z));
+  };
+  const pool = (color: string, radius: number, y: number, sides: number) => {
+    M.add("fountain-water", mat(color, { emissive: "#0f3034" }),
+      new THREE.CircleGeometry(radius, sides).rotateX(-Math.PI / 2).translate(x, y, z), false);
+  };
+  course(granite, 24, [BASIN_RADIUS, 0], [3.43, 0.60]);
+  course(wet, 24, [3.43, 0.60], [3.43, 0.78]);
+  course(cut, 24, [3.43, 0.78], [3.48, 0.82], [3.48, 0.88], [3.20, 0.88]);
+  course(wet, 24, [3.20, 0.88], [3.02, 0.81]);
+  pool(teal, 3.02, 0.81, 24);
+  // A splayed foot and narrow neck open into the upper bowl. Its level rim is the second landing.
+  course(granite, 16, [0.72, 0.81], [0.62, 1.03], [0.38, 1.16], [0.29, 2.22], [0.40, 2.32]);
+  course(granite, 16, [0.40, 2.32], [0.88, 2.42], [1.20, 2.66]);
+  course(cut, 16, [1.20, 2.66], [1.20, 2.75], [0.94, 2.75]);
+  pool(teal, 0.94, 2.75, 16);
+  // The existing droplets leave at radius 0.55, y = 3.05, just above this flat, sky-lit spring.
+  course(wet, 16, [0.67, 2.75], [0.60, 3.02]);
+  pool("#afe0dc", 0.60, 3.02, 16);
   col.addRoof(x, z, 2.5, 2.5); // (the top bowl's rim: from the basin, the second jump)
-  M.add("fountain-water", mat("#9fe0ef", { emissive: "#174a57" }), new THREE.SphereGeometry(0.7, 12, 8).scale(1, 0.6, 1).translate(x, 2.9, z), false);
   col.addCircle(x, z, 3.7);
   if (!STYLED) group.add(makeSpray(x, z));
   // stalls
@@ -1968,7 +2020,28 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   void group;
 }
 
+/** A 4.5 × 0.75 m brick inset along the east–west cab. The cream curb line turns back at both end stones. */
+function addTaxiPaving(M: Merger) {
+  const paver = (along: number, across: number, w: number, d: number, color: string) => {
+    const face = new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2);
+    M.add("taxi-paving", mat(color), face.translate(TAXI.x + along, 0.030, TAXI.z + 2.4 + across), false);
+  };
+  const half = 2.25, depth = 0.75, stone = 0.28, keyline = 0.10;
+  const field = 2 * (half - stone - keyline);
+  for (const end of [-1, 1]) {
+    paver(end * (half - stone / 2), 0, stone, depth, "#52606a");
+    paver(end * (field + keyline) / 2, 0, keyline, depth, "#ecd6ab");
+  }
+  paver(0, -(depth - keyline) / 2, field, keyline, "#ecd6ab");
+  for (let i = 0; i < 6; i++) {
+    // Narrow open joints reveal the brick walk 22 mm below the inset.
+    paver(((i + 0.5) / 6 - 0.5) * field, keyline / 2, field / 6 - 0.025, depth - keyline,
+      i % 3 === 1 ? "#b67741" : "#bb7942");
+  }
+}
+
 function addTransport(M: Merger, col: Colliders, group: THREE.Group, photo: AddPhotoSpot) {
+  addTaxiPaving(M);
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   // (on the street side of the airport canopy's last post: behind it, the post stood in front of its word)
   taxiSign.position.set(126.5, 2.4, 0.55); taxiSign.rotation.y = Math.PI;

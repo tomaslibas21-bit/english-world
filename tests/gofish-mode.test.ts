@@ -1,11 +1,11 @@
-import { Group, PerspectiveCamera, Vector3, type BufferGeometry } from "three";
+import { Color, Group, Mesh, PerspectiveCamera, Raycaster, Vector3, type BufferGeometry, type Intersection } from "three";
 import { expect, it, vi } from "vitest";
 import { GOFISH_UI } from "../src/content/gofish";
 import { GOFISH_SPEAKER_NAMES } from "../src/content/gofish-lines";
 import { NPCS } from "../src/content/npcs";
 import { loadSituation } from "../src/content/situations/catalog";
 import { createCharacter } from "../src/game/characters";
-import { DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, TABLETOP_CORNERS, hostBounds } from "../src/game/gofish/framing";
+import { DINING, DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, TABLETOP_CORNERS, hostBounds } from "../src/game/gofish/framing";
 import { createGoFishMode } from "../src/game/gofish/mode";
 import { targets } from "../src/game/gofish/logic";
 import { useGoFish } from "../src/game/gofish/store";
@@ -13,9 +13,11 @@ import { FrameFade } from "../src/game/kit/frameFade";
 import type { CameraRig } from "../src/game/camera";
 import type { ModeHost } from "../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../src/game/kit/modes";
+import { getInterior } from "../src/game/world/interiors";
 import { useCards } from "../src/state/cards";
 import { readPlayStats } from "../src/state/playStats";
 import { useStore } from "../src/state/store";
+import { townCanvasDocument } from "../tools/town-canvas-stub";
 
 vi.mock("../src/game/audio", () => ({
   audio: { sfx: vi.fn(), clipDuration: () => 1, play: async () => true, stop() {}, getState: () => "playing",
@@ -30,9 +32,34 @@ it("offers from the completed dinner and table, plays a seeded round and restore
   const home = { dan: new Vector3(-1, 0, 2.8), nora: new Vector3(4.2, 0, -4.3) };
   actors.dan.root.position.copy(home.dan);
   actors.nora.root.position.copy(home.nora);
-  const room = new Group(), plates = new Group();
-  plates.name = DINNER_PROPS;
-  room.add(plates, actors.dan.root, actors.nora.root);
+  vi.stubGlobal("document", townCanvasDocument());
+  let room: Group;
+  try { room = getInterior("dans-house")!.group; } finally { vi.unstubAllGlobals(); }
+  const plates = room.getObjectByName(DINNER_PROPS)!;
+  const furniture = room.children.slice();
+  const tableAt = (x: number, z: number) => {
+    const down = new Raycaster(new Vector3(x, 1.25, z), new Vector3(0, -1, 0));
+    return down.intersectObjects(furniture.filter((o) => o.visible), true)[0];
+  };
+  const surfaceColor = (hit: Intersection) => {
+    const attr = (hit.object as Mesh).geometry.getAttribute("color"), v = hit.face!.a;
+    return new Color(attr.getX(v), attr.getY(v), attr.getZ(v)).getHexString();
+  };
+  const expectCardsOnLinen = () => {
+    const pile = room.getObjectByName("gofish-table-cards")!.children[0] as Mesh<BufferGeometry>;
+    expect(pile.visible).toBe(true);
+    const pos = pile.geometry.getAttribute("position");
+    expect(pos.count).toBeGreaterThan(0);
+    // Each card is a quad. Its opposite corners locate the dealt center, including rotated cards in pairs.
+    for (let i = 0; i < pos.count; i += 4) {
+      const center = new Vector3().fromBufferAttribute(pos, i).lerp(new Vector3().fromBufferAttribute(pos, i + 3), 0.5);
+      pile.localToWorld(center);
+      const hit = tableAt(center.x, center.z);
+      expect(surfaceColor(hit)).toBe("d6c4a3");
+      expect(hit.point.y).toBeCloseTo(DINING.surface, 4);
+      expect(center.y - hit.point.y).toBeGreaterThan(0.003);
+    }
+  };
   let currentRoom: Group | null = room;
   let screen: ModeScreen | null = null;
   const registry = new ModeRegistry({ read: () => screen, set: (value) => { screen = value; } });
@@ -77,6 +104,8 @@ it("offers from the completed dinner and table, plays a seeded round and restore
   const key = (key: string) => registry.input({ kind: "key", key, keys: new Set(), repeat: false });
   const prompt = () => registry.prompt(GOFISH_PROMPT.x, GOFISH_PROMPT.z, Infinity, true);
   try {
+    const serving = tableAt(DINING.x, DINING.z);
+    expect(serving.object.parent).toBe(plates);
     standAtTable();
     expect(registry.offer(dinner)).toBeNull();
     expect(prompt()).toBeNull();
@@ -110,6 +139,16 @@ it("offers from the completed dinner and table, plays a seeded round and restore
     await until(ready);
     expect(cues.slice(-3)).toEqual(["gf_intro", "gf_shuffle", "gf_first"]);
     expect(ui()).toMatchObject({ step: "ask", tip: GOFISH_UI.tipAsk, target: "dan", gloss: true });
+    expectCardsOnLinen();
+    for (const side of [-1, 1]) {
+      const edge = DINING.x + side * DINING.width / 2;
+      const hem = tableAt(edge - side * 0.07, DINING.z);
+      const wood = tableAt(edge - side * 0.02, DINING.z);
+      expect(surfaceColor(hem)).toBe("657887");
+      expect(hem.point.y).toBeCloseTo(DINING.surface, 4);
+      expect(surfaceColor(wood)).toBe("926443");
+      expect(wood.point.y).toBeLessThan(DINING.surface);
+    }
     const faces = GOFISH_SPEAKER_NAMES.map((id) => {
       const seat = DINING_SEATS[id];
       return new Vector3(seat.x + Math.sin(seat.rot) * 0.12, actors[id].seatY! + 0.1 * (NPCS[id].look.build ?? 1)
@@ -193,6 +232,7 @@ it("offers from the completed dinner and table, plays a seeded round and restore
     expect(widestAsk).toBe(7);
     expect(ui().result).toEqual({ winner: "learner", right: 1, replies: 2, cards: 6 });
     expect(ui().round?.pairs.learner).toHaveLength(7);
+    expectCardsOnLinen();
     expect(cues).toEqual(expect.arrayContaining(["gf_lucky", "gf_again", "gf_my_turn", "gf_your_turn", "gf_win_you", "gf_bye"]));
     expect(useCards.getState().cards.filter((card) => card.situationId === dinner).map((card) => card.sentence.en))
       .toEqual(expect.arrayContaining(["Do you have any pancakes?", "Yes, here you go.", "Nope. Go fish!", "I got a pair!", "Your turn!", "Lucky me!"]));
@@ -205,6 +245,9 @@ it("offers from the completed dinner and table, plays a seeded round and restore
     await until(() => !fade.active);
     expect(screen).toBeNull();
     expect(plates.visible).toBe(true);
+    const restored = tableAt(DINING.x, DINING.z);
+    expect(restored.object).toBe(serving.object);
+    expect(restored.point.y).toBeCloseTo(serving.point.y, 4);
     expect(room.getObjectByName("gofish-table-cards")).toBeUndefined();
     expect(actors.dan.root.position).toEqual(home.dan);
     expect(actors.nora.root.position).toEqual(home.nora);

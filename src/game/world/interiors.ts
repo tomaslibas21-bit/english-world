@@ -229,10 +229,11 @@ function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string
 }
 /** A table with chairs around it. `from`: the direction of the first chair from the table (radians from +x towards
  *  +z; the default π/2 puts it on the south side, the others follow evenly around). */
-function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; chairs?: number; w?: number; d?: number; chairColor?: string; from?: number; seats?: readonly { x: number; z: number; rot: number }[] } = {}) {
+function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; topGeometry?: THREE.BufferGeometry; chairs?: number; w?: number; d?: number; chairColor?: string; from?: number; seats?: readonly { x: number; z: number; rot: number }[] } = {}) {
   const top = opts.cloth ?? "#e8dccb";
-  if (opts.round) c.M.add("table-" + top, mat(top), cylGeo(0.6, 0.6, 0.06, x, 0.76, z, 16));
-  else c.M.add("table-" + top, mat(top), boxGeo(opts.w ?? 1.4, 0.06, opts.d ?? 0.9, x, 0.76, z));
+  const slab = opts.topGeometry ?? (opts.round ? cylGeo(0.6, 0.6, 0.06, x, 0.76, z, 16)
+    : boxGeo(opts.w ?? 1.4, 0.06, opts.d ?? 0.9, x, 0.76, z));
+  c.M.add("table-" + top, mat(top), slab);
   c.M.add("table-leg", mat("#5a4636"), cylGeo(0.06, 0.08, 0.74, x, 0.37, z, 6));
   const n = opts.seats?.length ?? opts.chairs ?? 2;
   for (let i = 0; i < n; i++) {
@@ -1614,7 +1615,14 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "rita", x: -7, z: -5.2, rot: 0 }, { npc: "patel", x: 3, z: -2.6, rot: Math.PI / 4 }], { floorKind: "wood", accent: "#8a5a44" }),
 
   "dans-house": () => room("dans-house", 16, 12, "#a67c52", "#f7ecdc", (c) => {
-    table(c, DINING.x, DINING.z, { cloth: "#f2efe8", seats: Object.values(DINING_SEATS), w: DINING.width, d: DINING.depth });
+    const { x, z, width, depth, surface } = DINING;
+    const S = smalls(c);
+    const hem = 0.055, clothDepth = depth - 0.08, flaxWidth = width - 2 * (0.045 + hem);
+    const cloth = (w: number, cx: number) => boxGeo(w, 0.012, clothDepth, cx, surface - 0.006, z);
+    table(c, x, z, { cloth: "#d6c4a3", topGeometry: cloth(flaxWidth, x), seats: Object.values(DINING_SEATS), w: width, d: depth });
+    // The selvedges meet the flax edge to edge. Cards and dinner plates keep the same level playing surface.
+    for (const side of [-1, 1]) S.add(cloth(hem, x + side * (flaxWidth + hem) / 2), "#657887");
+    S.add(boxGeo(width, 0.07, depth, x, surface - 0.012 - 0.035, z), "#926443");
     const props = new THREE.Group();
     props.name = DINNER_PROPS;
     const M = new Merger();
@@ -1636,7 +1644,6 @@ const B: Record<string, () => Interior> = {
     // (16 Nov 2026) a home: a rug under the dinner table, books, the TV across from the sofa with a low table between,
     // an armchair and a reading lamp, the fridge and the cupboards over the counter, a sideboard with photographs, an
     // evening window
-    const S = smalls(c);
     rugS(S, 1.5, -1.5, 4.6, 3.4, "#8a4b3a", "#e8c07a", 0.16);
     shelf(c, -2.1, -5.72, 1.7, 1.9, "#8a6a4a", ["#b5452f", "#2f6b4f", "#e8c07a", "#34495e", "#c9785b"]);
     S.add(boxGeo(1.9, 0.5, 0.45, -5, 0.25, -5.7), "#6b4a3a"); S.add(boxGeo(1.5, 0.86, 0.06, -5, 1.0, -5.72), "#1d1d1d"); S.add(boxGeo(1.4, 0.76, 0.01, -5, 1.0, -5.685), "#31455c");
@@ -1654,6 +1661,7 @@ const B: Record<string, () => Interior> = {
     S.add(boxGeo(0.85, 1.9, 0.7, 7.5, 0.95, -5.5), "#e6e9ee"); S.add(boxGeo(0.03, 0.5, 0.04, 7.2, 1.2, -5.13), "#8a939b"); S.add(boxGeo(0.86, 0.02, 0.02, 7.5, 1.35, -5.14), "#aab2ba");
     c.col.addBox(7.5, -5.5, 0.85, 0.7);
     S.add(boxGeo(3.2, 0.7, 0.36, 5.0, 2.6, -5.8), "#f4f4f4");
+    S.add(boxGeo(3.14, 0.05, 0.31, 5.0, 2.225, -5.8), "#827666");
     for (let i = 0; i < 4; i++) S.add(boxGeo(0.03, 0.2, 0.03, 3.8 + i * 0.8, 2.4, -5.6), "#8a939b");
     S.add(boxGeo(0.7, 0.02, 0.44, 6.1, 1.012, -5.3), "#aab2ba"); S.add(boxGeo(0.04, 0.24, 0.04, 6.1, 1.13, -5.5), "#c9cfd4");
     S.add(boxGeo(0.5, 0.9, 1.9, 7.7, 0.45, 1.6), "#8a6a4a"); S.add(boxGeo(0.56, 0.04, 1.96, 7.7, 0.92, 1.6), "#5a4636");

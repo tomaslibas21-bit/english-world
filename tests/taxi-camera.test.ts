@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { CameraRig } from "../src/game/camera";
 import { CUT, withCutout } from "../src/game/cutout";
 import { initTownCollision } from "../src/game/townCollisionCache";
-import { OUTDOOR_NPCS, TAXI } from "../src/game/world/layout";
+import { OUTDOOR_NPCS, ROADS, SIDEWALK, TAXI } from "../src/game/world/layout";
 import { buildTown } from "../src/game/world/town";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 
@@ -14,6 +14,8 @@ describe("Gas & Go follow camera", () => {
   let field: ReturnType<typeof initTownCollision>["field"];
   let fader: ReturnType<typeof initTownCollision>["fader"];
   let canopy: THREE.Mesh<THREE.BufferGeometry, THREE.Material>[];
+  let pavingBatches: THREE.Mesh[];
+  let brickWalk: THREE.Object3D;
   const ray = new THREE.Raycaster();
   const sample = new THREE.Vector2();
   const sightline = new THREE.Line3(CUT.a.value, CUT.b.value);
@@ -26,6 +28,9 @@ describe("Gas & Go follow camera", () => {
       ({ field, fader } = initTownCollision(town, undefined, () => {}));
       withCutout(town.group);
       canopy = town.group.getObjectByName("gas-canopy-assembly")!.children as typeof canopy;
+      brickWalk = town.group.getObjectByName("brick-walk")!;
+      pavingBatches = town.group.children.filter((o): o is THREE.Mesh =>
+        o instanceof THREE.Mesh && !o.castShadow && o.name.startsWith("town-solid-"));
     } finally {
       vi.unstubAllGlobals();
     }
@@ -94,6 +99,42 @@ describe("Gas & Go follow camera", () => {
     }));
   }
 
+  it("contains both turned ends of the boarding inset on Main Street's brick sidewalk", () => {
+    const main = ROADS.find((r) => r.name === "Main Street")!;
+    const curb = main.z1 + main.w / 2;
+    const middle = TAXI.z + 2.4;
+    const down = new THREE.Vector3(0, -1, 0);
+    const surface = (x: number, z: number) => {
+      ray.set(new THREE.Vector3(x, 0.14, z), down);
+      return ray.intersectObjects([brickWalk, ...pavingBatches], false)[0];
+    };
+    const color = (hit: THREE.Intersection) => {
+      const attr = (hit.object as THREE.Mesh).geometry.getAttribute("color");
+      const i = hit.face!.a;
+      return new THREE.Color(attr.getX(i), attr.getY(i), attr.getZ(i)).getHexString();
+    };
+    for (const end of [-1, 1]) {
+      const edgeX = TAXI.x + end * 2.25;
+      expect(edgeX).toBeGreaterThan(main.x1);
+      expect(edgeX).toBeLessThan(main.x2);
+      for (const side of [-1, 1]) {
+        const edgeZ = middle + side * 0.375;
+        expect(edgeZ).toBeGreaterThan(curb);
+        expect(edgeZ).toBeLessThan(curb + SIDEWALK);
+        const x = edgeX - end * 0.01, z = edgeZ - side * 0.01;
+        const stone = surface(x, z);
+        expect(pavingBatches).toContain(stone.object);
+        expect(color(stone)).toBe("52606a");
+        expect(stone.point.y).toBeCloseTo(0.030, 3);
+        expect(surface(edgeX + end * 0.01, z).object).toBe(brickWalk);
+        expect(surface(x, edgeZ + side * 0.01).object).toBe(brickWalk);
+      }
+      expect(color(surface(edgeX - end * 0.33, middle + 0.26))).toBe("ecd6ab");
+    }
+    expect(color(surface(TAXI.x, middle - 0.33))).toBe("ecd6ab");
+    expect(color(surface(TAXI.x + 0.3, middle))).toBe("bb7942");
+  });
+
   it("renders the roof, fascia and sign with the shared sightline shader", () => {
     expect(canopy.map((mesh) => mesh.name)).toEqual(expect.arrayContaining(["gas-canopy", "gas-canopy-trim", "gas-canopy-sign"]));
     for (const mesh of canopy) {
@@ -120,6 +161,12 @@ describe("Gas & Go follow camera", () => {
       expectInView(rig.cam, CUT.b.value, "learner at the taxi prompt");
       expectInView(rig.cam, taxi, "taxi at the prompt");
       expect(hasVisibleRoof(rig.cam)).toBe(true);
+    }
+    for (const subject of [CUT.b.value, taxi]) {
+      const toSubject = subject.clone().sub(rig.cam.position);
+      const check = new THREE.Raycaster(rig.cam.position, toSubject.clone().normalize(), rig.cam.near, toSubject.length() - 0.01);
+      const hits = check.intersectObjects(pavingBatches, false);
+      expect(hits.every((hit) => insideCutout(hit.point))).toBe(true);
     }
   });
 

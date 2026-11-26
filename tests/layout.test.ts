@@ -1,16 +1,17 @@
 // The town's buildings stand clear of the roads, the passing cars' lanes, the parked cars and each other; the newest
 // one, Sproutly's warehouse at the east end of Harbor Road, also keeps its distance from the road's end and sidewalks.
 import { Raycaster, Vector3 } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { Ledges } from "../src/game/ledges";
 import { FIRST_GATE } from "../src/game/road/run";
 import { point } from "../src/game/road/track";
-import { BUILDINGS, PARKED_CARS, PARKING_LOTS, ROADS, SIDEWALK, SPROUTLY_LOT, TRAFFIC_CARS, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
+import { BUILDINGS, FOUNTAIN, PARKED_CARS, PARKING_LOTS, ROADS, SIDEWALK, SPROUTLY_LOT, TRAFFIC_CARS, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
 import { carFootprint, carModelEntry } from "../src/game/world/carModels";
 import { LOCATIONS } from "../src/content/locations";
 
 import { exitToTown } from "../src/game/world/roadExit";
 import { backgroundHillPosition, buildTown, HILL_MARGIN } from "../src/game/world/town";
-import { rand } from "../src/game/world/util";
+import { Colliders, rand } from "../src/game/world/util";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
 
 type Box = { x1: number; x2: number; z1: number; z2: number };
@@ -94,11 +95,56 @@ describe("background hills leave room for the walking camera", () => {
   });
 });
 
-it("keeps the west beach backed by green hills and leaves the Main Street crest open", () => {
+let town: ReturnType<typeof buildTown>;
+beforeAll(() => {
   vi.stubGlobal("document", townCanvasDocument());
-  let town: ReturnType<typeof buildTown>;
   try { town = buildTown(); } finally { vi.unstubAllGlobals(); }
   town.group.updateMatrixWorld(true);
+});
+
+it("fits both fountain bowls around the photo target and keeps both jump landings", () => {
+  const { x, z } = FOUNTAIN;
+  const photo = town.photoSpots.find((p) => p.id === "fountain")!;
+  expect(photo).toEqual({ id: "fountain", x, y: 1.65, z });
+  const circle = town.colliders.circles.find((c) => c.x === x && c.z === z)!;
+  expect(circle.r).toBe(3.7);
+  const roof = town.colliders.roofs.find((b) => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ)!;
+  expect(roof).toEqual({ minX: x - 1.25, maxX: x + 1.25, minZ: z - 1.25, maxZ: z + 1.25 });
+
+  const solids = town.group.children.filter((o) => o.name.startsWith("town-solid-"));
+  const ray = new Raycaster();
+  // Section the built stone on both axes, from outside its collider towards the photo anchor.
+  for (const [dx, dz] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+    const radiusAt = (y: number) => {
+      ray.set(new Vector3(x + dx * 4, y, z + dz * 4), new Vector3(-dx, 0, -dz));
+      return 4 - ray.intersectObjects(solids, false)[0].distance;
+    };
+    expect(radiusAt(0.03)).toBeCloseTo(3.6, 1);
+    expect(radiusAt(photo.y)).toBeCloseTo(0.34, 2);
+    expect(radiusAt(2.70)).toBeCloseTo(1.20, 2);
+  }
+  const surface = (dx: number) => {
+    ray.set(new Vector3(x + dx, 3.5, z + 0.03), new Vector3(0, -1, 0));
+    return ray.intersectObjects(solids, false)[0];
+  };
+  const stone = surface(3.25), water = surface(2.2);
+  expect(stone.point.y).toBeCloseTo(0.88);
+  expect(water.point.y).toBeCloseTo(0.81);
+  expect(surface(1.05).point.y).toBeCloseTo(2.75);
+  expect(surface(0.45).point.y).toBeCloseTo(3.02);
+  // Use the two actual town batches and the fountain's own collider and roof to sample the jump surfaces.
+  const col = new Colliders();
+  col.circles.push({ ...circle }); col.roofs.push(roof);
+  const ledges = Ledges.build(town.group, col, { skip: (o) => o !== town.group && o !== stone.object && o !== water.object });
+  // Ledges coalesces rows within 4 cm and keeps their highest sample, including the sloped wet edge.
+  for (const [dx, height] of [[2.2, 0.81], [1.05, 2.75]]) {
+    const support = ledges.support(x + dx, z, height, true);
+    expect(support).toBeGreaterThanOrEqual(height - 1e-6);
+    expect(support).toBeLessThan(height + 0.04);
+  }
+});
+
+it("keeps the west beach backed by green hills and leaves the Main Street crest open", () => {
   const meadow = town.group.getObjectByName("outer-grass")!;
   const preview = town.group.getObjectByName("desert-road-crest")!;
   const hills = town.exitHills!;
