@@ -25,9 +25,13 @@ function position({ x, y }: MapPoint) {
   return { left: `${x * 100}%`, top: `${y * 100}%` };
 }
 
-function PlayerDot({ north, west }: { north: number; west: number }) {
-  const x = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.px : undefined);
-  const z = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.pz : undefined);
+/** The red "you": where the player is in town, or, inside a building (the gym, a shop), at its door, as the legend
+ *  promises (26 Nov 2026: indoors the map had no red dot at all). */
+function PlayerDot({ north, west, doors }: { north: number; west: number; doors?: Door[] }) {
+  const zone = useStore((s) => s.hud.minimap.zone);
+  const door = zone === "town" ? undefined : doors?.find((d) => d.loc === zone);
+  const x = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.px : undefined) ?? door?.outX;
+  const z = useStore((s) => s.hud.minimap.zone === "town" ? s.hud.minimap.pz : undefined) ?? door?.outZ;
   return x === undefined || z === undefined ? null
     : <div className="map-me" style={position(project({ x, z }, north, west))} title="Tu esi čia" />;
 }
@@ -172,7 +176,7 @@ export default function MapPlaces({ canvas, island, north, west = WORLD.minX, la
 
   return <>
     {portal(<>
-      <PlayerDot north={north} west={west} />
+      <PlayerDot north={north} west={west} doors={doors} />
       {objective && <div className="map-objective" style={position(objective)} aria-hidden />}
       {pins.map((pin) => {
         const place = pin.members[0];

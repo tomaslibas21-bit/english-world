@@ -985,7 +985,12 @@ async function journey(browser, [width, height], audible) {
         await openTool("map");
         const map = page.locator(".sheet").filter({ has: page.locator(".map-wrap") });
         await wait("town map opens", () => map.isVisible());
-        await press(map.getByRole("button", { name: fixture.place, exact: true }));
+        // (the place is on a pin of its own or among a packed pin's places: the pin opens its list first)
+        const pin = map.locator(`.map-pin[aria-label*="${fixture.place}"]`);
+        await wait("the gym's pin is on the map", () => pin.isVisible());
+        assert(await map.locator(".map-me").isVisible(), "indoors the red dot (you) is at the gym's door");
+        await press(pin);
+        if (await pin.getAttribute("aria-expanded") !== null) await press(map.locator(".map-member", { hasText: fixture.place }));
         assert.equal(await map.locator(".place-title").innerText(), fixture.place);
         assert(await map.getByText(entry.mapLabel, { exact: true }).isVisible());
         assert.equal(await map.locator('.sit-card[data-sit="s35-gym"]').count(), 1);
