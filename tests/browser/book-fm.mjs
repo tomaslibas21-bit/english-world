@@ -1,7 +1,9 @@
 // Run against the ordinary Maple Harbor review game with real local narration.
 // WORLD_TEST_URL=http://127.0.0.1:8720 WORLD_SHOTS=... WORLD_PLAYWRIGHT_MODULE=... node tests/browser/book-fm.mjs
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 process.env.WORLD_TEST_URL ||= "http://127.0.0.1:8720";
 const { openTown, openPhoneMenu, shot } = await import("./screen-harness.mjs");
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -18,7 +20,14 @@ try {
     try {
       await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1, volume: 0.65 }));
       const errors = [];
+      const startupMessages = [];
       page.on("pageerror", (e) => errors.push(e.message));
+      page.on("console", (message) => {
+        if (/Game startup failed|WebGL|context lost/i.test(message.text())) {
+          startupMessages.push(message.text());
+          if (startupMessages.length > 10) startupMessages.shift();
+        }
+      });
       const readout = page.locator(".rs-station");
       const picker = page.locator('.book-picker[open]:is([data-pad-scope="book-shelf"], [data-pad-scope="book-detail"])');
       const reader = page.locator(".book-reader[open]");
@@ -40,6 +49,9 @@ try {
       });
       const capture = async (state) => {
         if (state === "set-talk") {
+          await openSet();
+          assert.equal(await page.locator(".book-picker[open]").count(), 0, "Capture the cabinet without book dialogs");
+          assert.equal(await page.locator(".radio-set").getAttribute("inert"), null);
           await page.locator(".radio-set").evaluate((el) => Promise.all(
             el.getAnimations().filter((animation) => animation.animationName === "radio-in").map((animation) => animation.finished.catch(() => {})),
           ));
@@ -55,12 +67,20 @@ try {
         await shot(page, `${width}x${height}-${state}`);
       };
       const openSet = async () => {
+        // Visibility alone also matches a cabinet behind a native dialog. Unwind through the UI first.
+        for (let depth = 0; depth < 4 && await page.locator(".book-picker[open]").count(); depth++) {
+          const top = page.locator(".book-picker[open]:not([inert])");
+          const scope = await top.getAttribute("data-pad-scope");
+          await top.locator("[data-pad-back]").click();
+          await page.waitForFunction((previous) =>
+            document.querySelector(".book-picker[open]:not([inert])")?.getAttribute("data-pad-scope") !== previous, scope);
+        }
+        assert.equal(await page.locator(".book-picker[open]").count(), 0, "Book dialogs must close before opening the cabinet");
         const set = page.locator(".radio-set");
-        if (await set.isVisible()) return;
-        if (phone) {
+        if (!(await set.isVisible()) && phone) {
           await openPhoneMenu(page);
           await page.locator(".radio-btn").tap();
-        } else {
+        } else if (!(await set.isVisible())) {
           const plate = page.locator(".radio-plate");
           // On a returning visit, desktop power resumes sound. The station plate opens the cabinet.
           if (!(await plate.isVisible())) await page.locator(".radio-btn").click();
@@ -68,6 +88,30 @@ try {
           if (!(await set.isVisible())) await plate.click();
         }
         await readout.waitFor();
+        assert.equal(await set.getAttribute("inert"), null);
+      };
+      const courseBackSnapshot = async (state) => {
+        const diagnostic = await page.evaluate(() => {
+          const shown = (selector) => {
+            const el = document.querySelector(selector);
+            return !!el?.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
+          };
+          return {
+            url: location.href, title: document.title, ready: document.readyState, hidden: document.hidden,
+            navigation: performance.getEntriesByType("navigation")[0]?.type,
+            retainedDocument: !!window.__bookPlayer,
+            screen: window.__ew?.store.getState().screen ?? null,
+            titleScreen: shown(".ts"), continueButton: shown(".ts-go"), loading: shown(".ew-loading"), toolbar: shown(".toolbar"),
+            startupError: document.querySelector(".startup-error")?.textContent ?? null,
+            dialogs: [...document.querySelectorAll(".book-picker[open]")].map((el) => el.getAttribute("data-pad-scope")),
+            text: document.body.innerText.slice(0, 700),
+          };
+        });
+        console.log(`${width}×${height} ${state}:`, JSON.stringify({ ...diagnostic, errors, startupMessages }));
+        // Keep failure evidence even when the caller did not request the review screenshots.
+        const directory = process.env.WORLD_SHOTS || fileURLToPath(new URL("../../.b8/review/book-fm/", import.meta.url));
+        await mkdir(directory, { recursive: true });
+        await page.screenshot({ path: join(directory, `${width}x${height}-${state}.png`) });
       };
       const revealReaderOptions = async () => {
         const more = reader.locator("[data-reader-more]");
@@ -91,6 +135,11 @@ try {
       await page.getByRole("radio", { name: /Book FM/ }).click();
       await picker.locator('[data-book="BOOK-CANT"] img').waitFor();
       assert.equal(await picker.locator(".resume").count(), 0);
+      if (width >= 1000) {
+        assert.equal(await picker.locator(".rail").count(), 0);
+        const bounds = await picker.locator(".book-sheet").boundingBox();
+        assert.ok(bounds.width <= 720 && bounds.height <= 560);
+      }
       await capture("shelf-new");
       await detail();
       assert.equal(await picker.locator(".primary").textContent(), "Pradėti klausytis");
@@ -161,8 +210,32 @@ try {
       await revealReaderOptions();
       await reader.getByRole("link", { name: "Atverti kurse", exact: true }).click();
       await page.waitForURL("**/knygos/audio/BOOK-CANT-01?mode=english");
-      await page.goBack();
-      await page.waitForFunction(() => window.__ew?.store.getState().screen === "play", null, { timeout: 90000 });
+      try {
+        await page.goBack({ waitUntil: "domcontentloaded" });
+        if (width >= 1000) await courseBackSnapshot("course-back");
+        // A history reload may show Title after the one-shot auto-start flag was consumed.
+        // Continue is a learner action, not a broken radio; never wait for __ew on that screen.
+        const returned = await page.waitForFunction(() => {
+          const shown = (selector) => {
+            const el = document.querySelector(selector);
+            return !!el?.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
+          };
+          if (shown(".startup-error")) return "startup-error";
+          if (shown(".ts-go")) return "title";
+          if (shown(".ts")) return "profile";
+          return window.__ew?.store.getState().screen === "play" && shown(".toolbar") ? "play" : null;
+        }, null, { timeout: 90000 });
+        const screen = await returned.jsonValue();
+        console.log(`${width}×${height} course Back reached ${screen}`);
+        if (screen === "title") {
+          await courseBackSnapshot("course-back-title");
+          await page.locator(".ts-go").click();
+        } else assert.equal(screen, "play", `Unexpected screen after course Back: ${screen}`);
+        await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && document.querySelector(".toolbar"), null, { timeout: 90000 });
+      } catch (error) {
+        await courseBackSnapshot("course-back-failed").catch((captureError) => console.error("Course Back capture failed:", captureError.message));
+        throw error;
+      }
       // A full reload can end the native dialog. Open reader through the set again when needed.
       if (!(await reader.count())) {
         await openSet();

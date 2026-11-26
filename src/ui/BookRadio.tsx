@@ -84,7 +84,7 @@ export function BookRadioControls() {
         aria-valuetext={bookPercent(fraction)}><i style={{ width: `${fraction * 100}%` }} /></i>
     </div>
     <div className="rs-keys">
-      <button className="rs-key" data-book-browse aria-label={w("browse")} title={w("browse")} onClick={() => radio.browse()}><Icon name="bookOpen" size={22} /></button>
+      <button className="rs-key" data-book-settings aria-label={w("settings")} title={w("settings")} onClick={() => radio.openSettings()}><Icon name="settings" size={22} /></button>
       <button className="rs-key" aria-label={w("previous")} title={w("previous")} disabled={!s.cue} onClick={() => radio.previous()}><Icon name="skipBack" size={22} /></button>
       <button className="rs-key rs-knob" aria-label={toggleLabel} title={toggleLabel} aria-pressed={s.playIntent}
         onClick={() => s.playIntent ? radio.pause() : radio.play()}><Icon name={s.playIntent ? "pause" : "play"} size={26} /></button>
@@ -93,7 +93,7 @@ export function BookRadioControls() {
         onClick={() => radio.setTalkText(!showText)}><Icon name="lyrics" size={22} /></button>
     </div>
     <div className="rs-opts book-actions">
-      <button className="rs-opt" data-book-settings onClick={() => radio.openSettings()}><Icon name="settings" size={18} />{w("settings")}</button>
+      <button className="rs-opt" data-book-browse onClick={() => radio.browse()}><Icon name="bookOpen" size={18} />{w("browse")}</button>
       <button className="rs-opt" data-book-reader disabled={!s.selection} onClick={() => radio.openReader()}><Icon name="bookOpen" size={18} />{w(books.output.unavailable ? "readText" : "reader")}</button>
     </div>
     {!showText && s.cue && s.prefs.mode === "target" && <div className="book-folded"><SpokenLine folded /></div>}

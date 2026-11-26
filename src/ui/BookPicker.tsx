@@ -144,11 +144,13 @@ export function BookPicker({ channel, covered = false }: { channel: BookChannel;
   const textSize = useStore((state) => state.settings.textSize);
   const large = textSize >= 1.3;
   const wide = useBookMedia(wideQuery);
+  const desktop = useBookMedia("(min-width: 1000px)");
   const landscape = useBookMedia("(min-width: 600px) and (max-height: 500px)");
   const list = useMemo(() => entries?.filter((entry) => entry.kind === collection) ?? [], [entries, collection]);
   const selected = list.find((entry) => entry.id === selectedId) ?? list[0];
   const progress = useSyncExternalStore(channel.progress.subscribe, channel.progress.getSnapshot, channel.progress.getSnapshot);
   const resume = useMemo(() => continueEntry(entries ?? [], progress), [entries, progress]);
+  const twoBookShelf = desktop && collection === "books" && list.length === 2 && !resume;
   const langs = TALK_LANGUAGES[channel.source.profile];
 
   useLayoutEffect(() => {
@@ -204,6 +206,7 @@ export function BookPicker({ channel, covered = false }: { channel: BookChannel;
   const resumeCard = resume && <ResumeCard resume={resume} channel={channel} listen={listen} />;
   return <dialog ref={dialog} inert={covered} className={`book-picker radio-skin-${RADIO_SKIN}`} data-large={large || undefined}
     data-default-size={textSize === 1 || undefined} data-sparse={entries && (detail ? selected && selected.chapters.length <= 2 : list.length <= 2) || undefined}
+    data-two-book-shelf={twoBookShelf || undefined}
     data-pad-phase={detail ? "detail" : collection} data-pad-scope={detail ? "book-detail" : "book-shelf"} aria-label={detail ? selected?.title : w("library")}
     onCancel={(event) => { event.preventDefault(); back(); }}
     onClick={(event) => { if (event.target === event.currentTarget) back(); }}
@@ -233,7 +236,7 @@ export function BookPicker({ channel, covered = false }: { channel: BookChannel;
                   const place = chapterPlace(entry, progress);
                   return <button className="catalog-card" key={entry.id} data-book={entry.id} data-cover-expected={entry.kind === "books" && !!entry.cover[160] || undefined} id={coverButtonId(entry.id)}
                     data-pad-default={(!resume && index === 0) || undefined} aria-current={selected === entry || undefined}
-                    onClick={(event) => { if (!wide || landscape || event.detail === 0) inspect(entry); else { select(entry.id); chooseSound(); } }}>
+                    onClick={(event) => { if (!wide || landscape || twoBookShelf || event.detail === 0) inspect(entry); else { select(entry.id); chooseSound(); } }}>
                     <span className="cover-well"><Cover entry={entry} source={channel.source} size={160} visible={list.length <= 2 || visible.has(entry.id)} /></span>
                     <span className="catalog-type"><span className="target-title" lang={langs.target}>{entry.title}</span>
                       <span className="translation" lang={langs.helper}>{entry.helperTitle}</span>
@@ -245,7 +248,7 @@ export function BookPicker({ channel, covered = false }: { channel: BookChannel;
                 })}
               </div>}
           </div>
-          {wide && selected && <aside className="rail scroll" aria-label={w(landscape && resume ? "resume" : "selected")}>
+          {wide && !twoBookShelf && selected && <aside className="rail scroll" aria-label={w(landscape && resume ? "resume" : "selected")}>
             {landscape && resume ? resumeCard : <>
               <div className="rail-hero"><Hero channel={channel} entry={selected} /></div>
               <button className="rail-action" onClick={() => inspect(selected)}><Icon name="chevronRight" />{w(selected.kind === "stories" ? "stories" : "chapters")}</button>
