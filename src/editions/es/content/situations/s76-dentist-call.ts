@@ -50,7 +50,7 @@ const REASONS: EntityDef[] = [
 
 interface Offer { d: string; h: number; m: number }
 /** The hour "de la noche" starts: Spain's tarde runs to about nine ("las siete de la tarde"), Mexico's to seven. */
-const eveningFrom = () => (variety() === "spain" ? 21 : 19);
+const eveningFrom = (v = variety()) => (v === "spain" ? 21 : 19);
 const DAY_ES: Record<string, [string, string]> = {
   tomorrow: ["mañana", "tomorrow"], day_after_tomorrow: ["pasado mañana", "the day after tomorrow"],
   monday: ["el lunes", "Monday"], tuesday: ["el martes", "Tuesday"], wednesday: ["el miércoles", "Wednesday"],
@@ -59,16 +59,16 @@ const DAY_ES: Record<string, [string, string]> = {
 };
 const HOURS = ["doce", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once"];
 const MINS: Record<number, string> = { 0: "", 15: " y cuarto", 30: " y media" };
-function clockVal(h: number, m: number): { en: string; lt: string; say: string } {
+function clockVal(h: number, m: number, v = variety()): { en: string; lt: string; say: string } {
   const h12 = h % 12 === 0 ? 12 : h % 12, art = h12 === 1 ? "la" : "las";
-  const part = h < 12 ? "de la mañana" : h < eveningFrom() ? "de la tarde" : "de la noche";
+  const part = h < 12 ? "de la mañana" : h < eveningFrom(v) ? "de la tarde" : "de la noche";
   const ap = h < 12 ? "AM" : "PM";
   const mm = String(m).padStart(2, "0");
   return { en: `${art} ${h12}:${mm} ${part}`, lt: m ? `${h12}:${mm} ${ap}` : `${h12} ${ap}`, say: `${art} ${HOURS[h % 12]}${MINS[m] ?? ` ${m}`} ${part}` };
 }
-const slotVal = (o: Offer) => {
+const slotVal = (o: Offer, v = variety()) => {
   const [es, en] = DAY_ES[o.d];
-  const c = clockVal(o.h, o.m);
+  const c = clockVal(o.h, o.m, v);
   return { en: `${es} a ${c.en}`, lt: `${en} at ${c.lt}`, say: `${es} a ${c.say}` };
 };
 const dayVal = (d: string) => ({ en: DAY_ES[d][0], lt: DAY_ES[d][1], say: DAY_ES[d][0] });
@@ -211,7 +211,7 @@ function choiceHits(c: Ctx, slots: any, seg?: { tags: string[] }): string[] {
     const o = OFFERS[k];
     if (d && !onDay(k, d, nx)) return false;
     if (tm && !(o.h % 12 === tm.h % 12 && o.m === tm.m && !(tm.ampm === "am" && o.h >= 12) && !(tm.ampm === "pm" && o.h < 12))) return false;
-    if (tarde && !(o.h >= 12 && o.h < eveningFrom())) return false;
+    if (tarde && !(o.h >= 12 && o.h < eveningFrom(c.variety))) return false;
     if (noche && o.h < 19) return false;
     return fitsPart(k, part);
   });
@@ -278,7 +278,7 @@ const onlyNow = (c: Ctx) => !!c.s.onlyTwist && !moving(c) && !c.s.onlyRejected &
 /** After the appointment is set, another day or time only gets a reminder of it ("Su cita ya quedó…"). */
 function booked(c: Ctx): boolean {
   if (!c.s.appt) return false;
-  c.say("appt_set", { slot: slotVal(OFFERS[c.s.appt]) });
+  c.say("appt_set", { slot: slotVal(OFFERS[c.s.appt], c.variety) });
   return true;
 }
 /** "Está bien, gracias" / "Vale, gracias" could be a yes or a polite goodbye: the first time, Lorena asks again. */
@@ -294,7 +294,7 @@ function keepOld(c: Ctx): boolean {
   const old = c.s.prevAppt as string | undefined;
   if (!old || c.s.appt) return false;
   c.s.offer = old; c.s.appt = old; c.s.prevAppt = undefined; c.s.moreDone = false; c.s.choice = undefined;
-  c.say("appt_set", { slot: slotVal(OFFERS[old]) });
+  c.say("appt_set", { slot: slotVal(OFFERS[old], c.variety) });
   return true;
 }
 
@@ -311,7 +311,7 @@ function offer(c: Ctx, key: string, again = false) {
   const repeat = again && c.s.lastAgain === key;
   c.s.lastAgain = again && !repeat ? key : undefined;
   if (key === "move" && !again) { c.say("move_offer"); return; }
-  c.say(again && !repeat ? "offer_again" : "offer", { slot: slotVal(o) });
+  c.say(again && !repeat ? "offer_again" : "offer", { slot: slotVal(o, c.variety) });
 }
 
 function accept(c: Ctx) {
@@ -321,7 +321,7 @@ function accept(c: Ctx) {
   c.s.choice = undefined;
   c.s.appt = key;
   c.s.prevAppt = undefined;
-  c.say(moving(c) ? "moved" : "booked", { slot: slotVal(o) });
+  c.say(moving(c) ? "moved" : "booked", { slot: slotVal(o, c.variety) });
   // said once per call, even when the appointment is booked again after a change
   if (!c.s.toldArrive) {
     c.s.toldArrive = true;
@@ -1068,8 +1068,8 @@ export const dentist: SituationDef = {
   },
 
   domains: {
-    slot: () => Object.values(OFFERS).map(slotVal).concat([slotVal(EXISTING)]),
-    slot2: () => Object.values(OFFERS).map(slotVal),
+    slot: () => Object.values(OFFERS).map((o) => slotVal(o)).concat([slotVal(EXISTING)]),
+    slot2: () => Object.values(OFFERS).map((o) => slotVal(o)),
     at: () => [clockVal(OFFERS.late.h, OFFERS.late.m)],
     day: () => [...new Set(Object.values(OFFERS).map((o) => o.d))].map(dayVal),
     price: () => [40000],
@@ -1357,7 +1357,7 @@ export const dentist: SituationDef = {
     { id: "slot", when: (c) => readyForSlot(c) && !c.s.canceled, done: (c) => !!c.s.appt,
       ask: (c) => {
         if (moving(c) && !c.s.foundAppt) {
-          c.s.foundAppt = true; c.say("found_appt", { slot: slotVal(EXISTING) });
+          c.s.foundAppt = true; c.say("found_appt", { slot: slotVal(EXISTING, c.variety) });
           // keep an offer Lorena already made (during the hold) or a day the learner asked for; otherwise Thursday
           const want = c.s.offer ?? (c.s.wantDay !== "early" ? c.s.wantDay : undefined) ?? (c.s.urgent ? earliest(c) : c.s.wantMorning ? "morning" : undefined);
           offer(c, want ?? "move", !!c.s.offer);
@@ -1368,7 +1368,7 @@ export const dentist: SituationDef = {
         if (!c.s.offer && c.s.onlyTwist) {
           c.twist("only_slot");
           c.s.offer = "only"; c.s.offered = ["only"];
-          c.say("only_offer", { slot: slotVal(OFFERS.only) });
+          c.say("only_offer", { slot: slotVal(OFFERS.only, c.variety) });
           return;
         }
         if (!c.s.offer) {
@@ -1561,7 +1561,7 @@ export const dentist: SituationDef = {
         if (next) { offer(c, next, (c.s.offered || []).includes(next)); c.hold(); return; }
         weekFullAgain(c); return;
       }
-      if (c.s.offer === "late") { c.say("latest", { at: clockVal(OFFERS.late.h, OFFERS.late.m) }); c.hold(); return; }
+      if (c.s.offer === "late") { c.say("latest", { at: clockVal(OFFERS.late.h, OFFERS.late.m, c.variety) }); c.hold(); return; }
       offer(c, "late"); c.hold();
     },
     morning(c) {
@@ -1741,7 +1741,7 @@ export const dentist: SituationDef = {
       if (c.s.onlyTwist && !moving(c) && !c.s.onlyRejected) {
         c.s.onlyRejected = true;
         c.s.offer = "monday"; c.s.offered = [...(c.s.offered || []), "monday"];
-        c.say("only_next", { slot: slotVal(OFFERS.monday) }); c.hold(); return;
+        c.say("only_next", { slot: slotVal(OFFERS.monday, c.variety) }); c.hold(); return;
       }
       if (weekFull(c)) {
         const next = NEXT_WEEK.find((k) => !(c.s.offered || []).includes(k)) ?? NEXT_WEEK[(NEXT_WEEK.indexOf(c.s.offer) + 1) % NEXT_WEEK.length];
@@ -1761,7 +1761,7 @@ export const dentist: SituationDef = {
       c.s.offer = a;
       c.s.offered = [...new Set([...(c.s.offered || []), a, b])];
       c.s.choice = [a, b];
-      c.say("availability", { slot: slotVal(OFFERS[a]), slot2: slotVal(OFFERS[b]) });
+      c.say("availability", { slot: slotVal(OFFERS[a], c.variety), slot2: slotVal(OFFERS[b], c.variety) });
       c.hold();
     },
     choose_ctx(c, slots, seg) {
@@ -1797,11 +1797,11 @@ export const dentist: SituationDef = {
     },
     when_q(c) {
       // "¿A qué hora?", "¿Me repite el día y la hora?": the time on offer, or the appointment once it is set
-      if (c.s.appt) { c.say("appt_set", { slot: slotVal(OFFERS[c.s.appt]) }); return; }
+      if (c.s.appt) { c.say("appt_set", { slot: slotVal(OFFERS[c.s.appt], c.variety) }); return; }
       if (c.s.canceled) { c.say("canceled"); return; }
       if (!readyForSlot(c) || !c.s.offer) return;
       const ch = c.s.choice as string[] | undefined;
-      if (ch) { c.say("availability", { slot: slotVal(OFFERS[ch[0]]), slot2: slotVal(OFFERS[ch[1]]) }); c.hold(); return; }
+      if (ch) { c.say("availability", { slot: slotVal(OFFERS[ch[0]], c.variety), slot2: slotVal(OFFERS[ch[1]], c.variety) }); c.hold(); return; }
       takeOrAsk(c, c.s.offer, true);
     },
     date_ctx(c) {
@@ -1899,7 +1899,7 @@ export const dentist: SituationDef = {
       // moving tomorrow's appointment, "Mejor la dejo como está" keeps it after all (once Lorena has found it)
       if (moving(c) && !c.s.appt && c.s.foundAppt && !d && !tm) {
         c.s.offer = "early"; c.s.appt = "early"; c.s.choice = undefined; c.s.keptOld = true;
-        c.say("appt_set", { slot: slotVal(EXISTING) });
+        c.say("appt_set", { slot: slotVal(EXISTING, c.variety) });
         c.s.donePath = c.s.donePath || "move";
         c.complete();
         return;

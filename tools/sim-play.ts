@@ -120,6 +120,7 @@ export interface PlayOptions {
   /** Default: seed % 3 (0 = first visit). */
   visits?: number;
   datePartner?: string;
+  variety?: import("../src/convo/compose").Variety;
   /** Called after the opening (turn null) and after every turn. */
   onTurn?: (conv: Conversation, turn: SimTurn | null, out: TurnOut) => void;
 }
@@ -129,7 +130,7 @@ export function playSim(sit: SituationDef, sim: SimTest, seed: number, opt: Play
   const def: SituationDef = setup ? { ...sit, init: (c) => { sit.init?.(c); setup(c.s); } } : sit;
   const conv = new Conversation(def, {
     global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender: opt.gender ?? "m", datePartner: opt.datePartner },
-    visits: opt.visits ?? seed % 3, seed, memory: {},
+    visits: opt.visits ?? seed % 3, seed, variety: opt.variety, memory: {},
   });
   const defaults: Record<string, string> = { ...DEFAULT_AUTO, ...(sim.auto ?? {}) };
   const start = conv.start();

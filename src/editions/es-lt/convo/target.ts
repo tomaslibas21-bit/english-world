@@ -5,14 +5,14 @@
 // (src/editions/es-lt/tables/), put in place when the content loads.
 import type { EntityDef } from "@/content/types";
 import { agree, caseIndex, parseForms, type Case, type Gender } from "@/convo/lt-morph";
-import type { EntityLookup, NpBinding } from "@/convo/compose";
+import type { EntityLookup, NpBinding, Variety } from "@/convo/compose";
 import { ltCount } from "@/ui/lt-lithuanian";
-import * as ES from "@/convo/target";
+import * as ES from "../../es/convo/target";
 import { getValueText } from "../tables/loaded";
 
 // everything else is the Spanish edition's (its own names too: pluralEs, agreeEs, neutralNoun); the declarations
 // below take precedence over these
-export * from "@/convo/target";
+export * from "../../es/convo/target";
 type NpParts = ES.NpParts;
 
 /** A gloss placeholder carries its Lithuanian case: {X:acc}, {X.np:gen}. */
@@ -39,12 +39,12 @@ function countWord(n: number, g: Gender, c: Case): string {
 }
 
 /** The Spanish units (the Spanish edition's) and their Lithuanian gloss in case `c`. */
-export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", c: Case | undefined, look: EntityLookup, fem = false): NpParts {
-  const sp = ES.npUnits(b, kind, c as Case, look, fem);
+export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", c: Case | undefined, look: EntityLookup, fem = false, v?: Variety): NpParts {
+  const sp = ES.npUnits(b, kind, c as Case, look, fem, v);
   const base = look(b.id);
   if (!base) throw new Error(`Unknown entity "${b.id}"`);
   // the Spanish chosen now may name it with other units ("cuenta | corriente"): its own Lithuanian gloss then
-  const e = (ES as unknown as { neutralNoun: (e: EntityDef, f?: boolean) => EntityDef }).neutralNoun(entityForPlayer(base, fem), fem && !!base.enF);
+  const e = ES.neutralNoun(entityForPlayer(base, fem), fem && !!base.enF, v);
   const qty = b.qty ?? 1;
   const plural = kind === "pl" || qty > 1;
   const g = ltGender(e);
@@ -140,8 +140,8 @@ function timeOrDayLt(en: string): string | undefined {
 }
 
 /** A value in the Spanish text, the Lithuanian gloss and the spoken Spanish. */
-export function valueDisplay(kind: string, v: any, c?: Case): { en: string; lt: string; say: string } {
-  const r = ES.valueDisplay(kind, v);
+export function valueDisplay(kind: string, v: any, c?: Case, dialect?: Variety): { en: string; lt: string; say: string } {
+  const r = ES.valueDisplay(kind, v, c, dialect);
   // a time: Lithuanian says the 24-hour clock (19:00), never 7:00 PM
   if (v && (kind === "time" || kind.endsWith("Time")) && typeof v.h === "number") return { ...r, lt: `${v.h}:${String(v.m ?? 0).padStart(2, "0")}` };
   if (v && typeof v === "object" && typeof v.lt === "string") {

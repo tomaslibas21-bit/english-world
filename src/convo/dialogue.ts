@@ -9,7 +9,7 @@
 
 import { learnerLabel } from "../content/learner";
 import type { Ctx, EntityDef, Handler, HintGroup, Pending, SentSrc, SituationDef, StepDef, Suggestion, Tip } from "../content/types";
-import { addressInformal, compose, type Sentence, type Vars } from "./compose";
+import { addressInformal, compose, variety, type Sentence, type Vars, type Variety } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
 import { soundRepair } from "./soundalike";
 import { isConfirmation } from "./normalize";
@@ -72,6 +72,7 @@ export interface ConvOptions {
   player: { name: string; surname: string; gender: Gender; datePartner?: string };
   visits: number;
   seed?: number;
+  variety?: Variety;
   sharedNlu?: Map<string, Nlu>;
   /** Memory saved from earlier visits of this situation. */
   memory?: Record<string, any>;
@@ -177,6 +178,7 @@ export class Conversation {
       conv: self,
       s: self.s,
       visits: self.opt.visits,
+      get variety() { return self.opt.variety ?? variety(); },
       player: self.opt.player,
       get step() { return self.step; },
       heard,
@@ -218,7 +220,7 @@ export class Conversation {
   pushLine(lineId: string, idx: number, vars: Vars, slow = false) {
     const variants = this.sit.lines[lineId] ?? this.opt.global.lines[lineId];
     const npc = this.opt.npcs[this.speakerId];
-    const sentence = compose(variants[idx], vars, { look: this.look, addressee: this.opt.player.gender, speaker: npc?.gender ?? "f", formal: !addressInformal(npc) });
+    const sentence = compose(variants[idx], vars, { look: this.look, addressee: this.opt.player.gender, speaker: npc?.gender ?? "f", formal: !addressInformal(npc, this.opt.variety), variety: this.opt.variety });
     const line: SpokenLine = { npc: this.speakerId, lineId, variant: idx, vars, sentence, slow: slow || this.slow };
     this.out.lines.push(line);
   }
@@ -517,7 +519,7 @@ export class Conversation {
       if (t.startsWith("tip:")) {
         const key = t.slice(4);
         // (Spain's Spanish: tú to the café's or the shop's staff is what Spain says, so no tip about it)
-        if (key === "tu_staff" && addressInformal(this.opt.npcs[this.speakerId])) continue;
+        if (key === "tu_staff" && addressInformal(this.opt.npcs[this.speakerId], this.opt.variety)) continue;
         const tip = this.opt.global.tips[key] ?? this.sit.tips?.[key];
         if (tip) this.tip(tip);
       }
@@ -565,10 +567,13 @@ export class Conversation {
   markSlow() { this.slow = true; }
   addNote(note: { en: string; lt?: string }) { this.out.note = note; }
   showMeaning() { this.out.showMeaning = true; }
+  replayLine(line: SpokenLine, slow: boolean) {
+    this.out.lines.push({ ...line, slow: slow || line.slow || this.slow });
+  }
   replayLast(slow: boolean) {
     this.replayed = true;
     // (after "Slower, please" the conversation stays slow, also for lines said before it)
-    for (const l of this.lastTurn) this.out.lines.push({ ...l, slow: slow || l.slow || this.slow });
+    for (const l of this.lastTurn) this.replayLine(l, slow);
   }
 }
 

@@ -5,7 +5,7 @@
 
 import type { EntityDef } from "../content/types";
 import { agree, parseForms, caseIndex, type Case } from "./lt-morph";
-import type { EntityLookup, NpBinding } from "./compose";
+import type { EntityLookup, NpBinding, Variety } from "./compose";
 
 /** The units of a noun phrase: the practised language (`en`), the gloss (`lt`), the natural gloss (`natLt`). */
 export interface NpParts { en: string[]; lt: string[]; natLt: string[]; flags: Record<number, string> }
@@ -29,7 +29,7 @@ function vowelSound(word: string): boolean {
 }
 
 /** Build the units of a noun phrase for entity binding b in the given Lithuanian case. */
-export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", c: Case, look: EntityLookup, fem = false): NpParts {
+export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", c: Case, look: EntityLookup, fem = false, _variety?: Variety): NpParts {
   const base = look(b.id);
   if (!base) throw new Error(`Unknown entity "${b.id}"`);
   const e = entityForPlayer(base, fem);
@@ -92,7 +92,7 @@ export const joinUnits = <U extends { en: string; lt: string; flag?: string }>(u
 /** The same in the spoken text: none in English. */
 export const joinText = (s: string) => s;
 /** Agreement written into the practised language's text (the Spanish edition's {frío@X}): none in English. */
-export const agreeTarget = (s: string, _bind: (name: string) => { e: EntityDef; plural: boolean } | null) => s;
+export const agreeTarget = (s: string, _bind: (name: string) => { e: EntityDef; plural: boolean } | null, _variety?: Variety) => s;
 
 /** How a hint example binds the item it is about (suggest.ts composeFull): English binds the bare id. */
 export const hintBinding = (_e: EntityDef | undefined, id: string): string | NpBinding => id;
@@ -132,7 +132,7 @@ export function timeSay(t: { h: number; m: number }): string {
 }
 
 /** A value ({$price}, {$time}, {$num}, {$letters}…) in the practised language, the gloss and the spoken form. */
-export function valueDisplay(kind: string, v: any, _c?: Case): { en: string; lt: string; say: string } {
+export function valueDisplay(kind: string, v: any, _c?: Case, _variety?: Variety): { en: string; lt: string; say: string } {
   if (v == null) return { en: "…", lt: "…", say: "" };
   if (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit") {
     return { en: priceEn(v), lt: priceLt(v), say: priceSay(v) };

@@ -5,7 +5,7 @@
 import type { SentSrc } from "../content/types";
 import { genderChoice, type Case, type Gender } from "./lt-morph";
 import { learnerNote } from "../content/notes-lt";
-import { PH_AGREE, PH_AGREE_TARGET, PH_LT, agreeGloss, agreeTarget, entityForPlayer, joinText, joinUnits, npUnits, resolveTarget, splitUnits, valueDisplay } from "./target";
+import * as TARGET from "./target";
 
 // the practised language's noun phrases and values (./target.ts), also used from here
 export { entityForPlayer, npUnits, numberWords, priceEn, priceLt, priceSay, splitUnits, timeEn, timeSay } from "./target";
@@ -46,15 +46,29 @@ export function roleSaid(npc: { role: { en: string }; roleSpain?: string } | und
 
 /** Whether a character says tú to the learner: `informal`, or in Spain's Spanish also `informalSpain` (Spain's tú in
  *  casual service: the café, the shop, the salon, the gym; docs/es/STYLE.md "Spain Spanish"). */
-export function addressInformal(npc: { informal?: boolean; informalSpain?: boolean } | undefined): boolean {
-  return !!npc?.informal || (VARIETY === "spain" && !!npc?.informalSpain);
+export function addressInformal(npc: { informal?: boolean; informalSpain?: boolean } | undefined, v = variety()): boolean {
+  return !!npc?.informal || (v === "spain" && !!npc?.informalSpain);
 }
 
-export interface ComposeOpts { look: EntityLookup; addressee?: Gender; speaker?: Gender; /** jūs (true, default) or tu (false) */ formal?: boolean }
+type ComposeTarget = Pick<typeof TARGET, "PH_LT" | "PH_AGREE" | "agreeGloss" | "entityForPlayer" | "npUnits" | "valueDisplay">;
+
+export interface ComposeOpts {
+  look: EntityLookup;
+  addressee?: Gender;
+  speaker?: Gender;
+  /** jūs (true, default) or tu (false) */
+  formal?: boolean;
+  variety?: Variety;
+  /** Alternate helper-language rendering of the same target utterance. */
+  target?: ComposeTarget;
+}
 
 /** Compose a concrete sentence. Throws on authoring errors (validated at build time). */
 export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
-  const src: SentSrc = VARIETY === "spain" ? src0.spain ?? src0.neutral ?? src0 : VARIETY === "neutral" ? src0.neutral ?? src0 : src0;
+  const v = opts.variety ?? variety();
+  const { PH_LT, PH_AGREE, agreeGloss, entityForPlayer, npUnits, valueDisplay } = opts.target ?? TARGET;
+  const { agreeTarget, joinText, joinUnits, resolveTarget, splitUnits } = TARGET;
+  const src: SentSrc = v === "spain" ? src0.spain ?? src0.neutral ?? src0 : v === "neutral" ? src0.neutral ?? src0 : src0;
   const g = opts.addressee ?? "m";
   const sp = opts.speaker ?? "f";
   const formal = opts.formal ?? true;
@@ -79,8 +93,8 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
     const b = binding(vars, name);
     const e0 = b ? opts.look(b.id) : undefined;
     return e0 ? { e: entityForPlayer(e0, g === "f"), plural: (b?.qty ?? 1) > 1 } : null;
-  });
-  const valuesIn = (s: string, which: "en" | "lt" | "say") => s.replace(PH_VAL, (_m, name: string, c?: Case) => valueDisplay(name, vars[name], c)[which]);
+  }, v);
+  const valuesIn = (s: string, which: "en" | "lt" | "say") => s.replace(PH_VAL, (_m, name: string, c?: Case) => valueDisplay(name, vars[name], c, v)[which]);
 
   for (let i = 0; i < enU.length; i++) {
     const en = enU[i], lt = ltU[i];
@@ -97,7 +111,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
         units.push({ en: `${pre}…${post}`, lt: `${ltPre}…${ltPost}` });
         continue;
       }
-      const np = npUnits(b, kind, c, opts.look, g === "f");
+      const np = npUnits(b, kind, c, opts.look, g === "f", v);
       // a placeholder that begins a new sentence mid-line starts with a capital ("The usual? A medium latte?"), also
       // after a Spanish opening ¿ or ¡ ("¿Lo de siempre? ¿Un latte?")
       const newSentence = i > 0 && (!pre || /^[¿¡]+$/.test(pre)) && /[.?!]["”')]*$/.test(units[units.length - 1]?.en ?? "");
@@ -123,7 +137,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
   nat = nat.replace(new RegExp(PH_LT.source, "g"), (_m, name: string, kind: string | undefined, c: Case) => {
     const b = binding(vars, name);
     if (!b) return "…";
-    const np = npUnits(b, (kind || "head") as any, c, opts.look, g === "f");
+    const np = npUnits(b, (kind || "head") as any, c, opts.look, g === "f", v);
     return np.natLt.join(" ");
   });
   nat = valuesIn(agreeIn(nat), "lt");
@@ -141,7 +155,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
     say = say.replace(/\{([A-Za-z_]\w*)(?:\.(np|the|pl|bare))?\}/g, (_m, name: string, kind?: string) => {
       const b = binding(vars, name);
       if (!b) return "";
-      return npUnits(b, (kind || "head") as any, "nom", opts.look, g === "f").en.join(" ");
+      return npUnits(b, (kind || "head") as any, "nom", opts.look, g === "f", v).en.join(" ");
     });
   }
   return { units, en: enClean, nat, say: joinText(say.replace(/\s+/g, " ").trim()) };
@@ -158,6 +172,7 @@ export function gapSentence(src: SentSrc, opts: ComposeOpts): Sentence {
 
 /** Placeholder names used by a sentence (for enumeration and validation). */
 export function placeholders(src: SentSrc): { entities: string[]; values: string[] } {
+  const { splitUnits, PH_AGREE, PH_AGREE_TARGET } = TARGET;
   const entities = new Set<string>(), values = new Set<string>();
   for (const u of splitUnits(src.en)) { const m = u.match(PH_EN); if (m) entities.add(m[2]); }
   for (const m of (src.en + " " + src.lt + " " + src.nat + " " + (src.say || "")).matchAll(PH_VAL)) values.add(m[1]);

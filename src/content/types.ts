@@ -114,6 +114,8 @@ export interface Ctx {
   s: Record<string, any>;
   /** How many times this situation was completed before (0 on the first visit). */
   visits: number;
+  /** The conversation’s target variety, if specified by its caller. */
+  variety?: import("../convo/compose").Variety;
   rng(): number;
   chance(p: number): boolean;
   pick<T>(arr: readonly T[]): T;
