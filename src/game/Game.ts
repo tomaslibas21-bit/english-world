@@ -253,7 +253,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph" | "passport"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -1436,7 +1436,7 @@ export class Game implements GameApi {
     if (gym) this.gymHeldKeys.add(k);
     else if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active || st.hud.glyph) return; // the active reader or conversation handles its own keys
-    if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    if (st.hud.panel) { if (k === "escape" && st.hud.panel !== "passport") st.setHud({ panel: null }); return; }
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
@@ -2344,6 +2344,7 @@ export class Game implements GameApi {
       if (n.id !== LIGHTHOUSE_ISLAND?.keeper.says) this.staffSays(+n.id);
       else if (!repeat) this.interactKeeper();
     }
+    else if (n.kind === "passport" && !repeat) useStore.getState().setHud({ panel: "passport" });
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.wild ? this.leaveCave(n.id) : this.exitInterior();
     else if (n.kind === "cave-entry") void this.openCave(n.id as CoveDoor, undefined, false, true);
@@ -4346,6 +4347,14 @@ export class Game implements GameApi {
       } else if (this.caveZone) {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
+        if (this.zone.id === "town-hall" && !this.hop.air) {
+          const distance = Math.hypot(p.x, p.z - 0.1);
+          if (distance < 1.55 && distance < bd) {
+            bd = distance;
+            best = { kind: "passport", id: "passport", label: "Open passport",
+              prompt: { kind: "passport", label: "Open passport", lt: "Atversti pasą" } };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
