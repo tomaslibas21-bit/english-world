@@ -78,6 +78,18 @@ const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve()
 afterEach(() => { resetKaraokeUi(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe("the café karaoke mode", () => {
+  it("starts the word mode and routes its Reveal and native speed actions to the borrowed take", async () => {
+    const f = await fixture();
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01"); f.mode.action("mode", "word"); f.mode.action("start"); await flush();
+    const take = f.radio.store.getState().karaoke!;
+    expect(take.store.getState().practice?.mode).toBe("word");
+    const reveal = vi.spyOn(take, "revealWord"), rate = vi.spyOn(take, "setRate");
+    f.mode.action("reveal"); f.mode.action("rate", "0.8");
+    expect(reveal).toHaveBeenCalledOnce(); expect(rate).toHaveBeenCalledExactlyOnceWith(0.8);
+    f.registry.exit(true);
+  });
+
   it("celebrates a natural finish once, waits for a hold to clear and uses still feedback with reduced motion", async () => {
     const cheer = vi.spyOn(audio, "sfx").mockImplementation(() => {});
     const f = await fixture();

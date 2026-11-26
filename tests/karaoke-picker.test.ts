@@ -41,7 +41,7 @@ describe("the silent song stand", () => {
     expect(html).not.toMatch(/<audio|<video|toggleFavorite|aria-pressed/);
   });
 
-  it("gives selection a full jacket, both practice modes and a start action", () => {
+  it("gives selection a full jacket, all three practice modes and a start action", () => {
     const html = render({ detail: "G01", selected: "G01", scroll: 418 });
     expect(html).toContain('data-song-detail="G01"');
     expect(html).toContain('G01.adb9ab38.320.webp');
@@ -49,6 +49,10 @@ describe("the silent song stand", () => {
     expect(html.match(/<option[^>]*value="echo"[^>]*>/)?.[0]).not.toContain('disabled=""');
     expect(html).toContain(KARAOKE_COPY.lt.echoHelp);
     expect(render({ detail: "G01", mode: "echo" }).match(/<option[^>]*value="echo"[^>]*>/)?.[0]).toContain('selected=""');
+    const word = render({ detail: "G01", mode: "word" });
+    expect(word.match(/<option[^>]*value="word"[^>]*>/)?.[0]).toContain('selected=""');
+    expect(word).toContain(KARAOKE_COPY.lt.wordHelp);
+    expect(word).not.toContain(KARAOKE_COPY.lt.echoHelp);
     expect(html).toContain(KARAOKE_COPY.lt.start);
     expect(html).not.toContain('data-song="V32"');
   });

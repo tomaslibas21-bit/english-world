@@ -224,13 +224,15 @@ export class KaraokeMode implements GameMode {
       const id = useKaraoke.getState().detail;
       if (id) this.startSong(id);
     }
-    if (name === "mode" && (value === "along" || value === "echo")) useKaraoke.setState({ mode: value });
+    if (name === "mode" && (value === "along" || value === "echo" || value === "word")) useKaraoke.setState({ mode: value });
     if (name === "catalog-retry") void this.loadCatalog();
     if (name === "pause") this.take?.pause();
     if (name === "resume") void this.take?.resume();
     if (name === "retry") void this.take?.retry();
     if (name === "replay") void this.take?.replayLine();
     if (name === "continue") void this.take?.continueTurn();
+    if (name === "reveal") this.take?.revealWord();
+    if (name === "rate" && typeof value === "string") this.take?.setRate(Number(value));
   }
 
   input(input: ModeInput) {

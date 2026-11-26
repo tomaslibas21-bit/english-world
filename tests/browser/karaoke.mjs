@@ -1,4 +1,4 @@
-// Claude's K2 + K3 review. Run against an already running game configured with
+// Claude's K2–K4 review. Run against an already running game configured with
 // VITE_RADIO_INDEX=/songs/index.json and VITE_RADIO_FILES=/karaoke-files.
 // WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_SHOTS=/tmp/karaoke-k3 \
 // WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/karaoke.mjs
@@ -137,9 +137,63 @@ try {
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused", "closing meanings preserves a manual pause");
       await press(page.getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
       await picker.waitFor();
+      await picker.getByRole("combobox", { name: "Praktikos būdas", exact: true }).selectOption("word");
+      await press(picker.getByRole("button", { name: "Pradėti dainą", exact: true }));
+      await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
+      await page.evaluate(async () => {
+        const take = window.__ew.radio.store.getState().karaoke;
+        await take.seek(7.1); take.pause();
+      });
+      const blank = page.locator('.karaoke-current-line[data-line="0"] .karaoke-blank');
+      await blank.waitFor();
+      assert.equal((await blank.textContent()).trim(), "", "the blank contains no hidden answer text");
+      assert.equal(await page.locator(".karaoke-natural, .karaoke-next").count(), 0, "no meaning or preview gives the answer away");
+      assert((await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent()).includes("Praleistas žodis"));
+      const slotWidth = (await blank.boundingBox()).width;
+      await shot("blank");
+      await press(page.getByRole("button", { name: "Parodyti žodį", exact: true }));
+      await blank.waitFor({ state: "detached" });
+      const revealed = page.locator('.karaoke-current-line[data-line="0"] .karaoke-revealed');
+      await revealed.waitFor();
+      assert(Math.abs((await revealed.boundingBox()).width - slotWidth) < 1, "reveal reserves the blank's width");
+      assert.equal(await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent(), lyric.L[0].src);
+      await until(() => document.activeElement?.classList.contains("karaoke-reading"));
+      await shot("revealed");
+      // No tap is needed for the next line's reveal or its ordinary practiced-line tally.
+      await page.evaluate(async (seconds) => {
+        const take = window.__ew.radio.store.getState().karaoke;
+        await take.seek(seconds); await take.resume();
+      }, lyric.L[1].s);
+      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-blank').waitFor();
+      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-revealed').waitFor();
+      await page.evaluate(() => window.__ew.radio.store.getState().karaoke.pause());
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
+      await page.evaluate(async () => { await window.__ew.radio.store.getState().karaoke.seek(7.1); });
+      const speed = page.getByRole("combobox", { name: "Greitis", exact: true });
+      const canSlow = await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().canSlow);
+      if (canSlow) {
+        await speed.selectOption("0.8");
+        assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 0.8);
+        const clock = await page.evaluate(async () => {
+          const take = window.__ew.radio.store.getState().karaoke;
+          await take.resume();
+          const before = take.position(), wall = performance.now();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const elapsed = (performance.now() - wall) / 1000, media = take.position() - before;
+          take.pause(); return { elapsed, media };
+        });
+        assert(Math.abs(clock.media / clock.elapsed - 0.8) < 0.15, `slow media clock: ${JSON.stringify(clock)}`);
+      } else {
+        assert(await speed.isDisabled());
+        assert.equal(await speed.locator('option[value="0.8"]').count(), 0, "buffer/unverified output offers only 1×");
+      }
+      await shot("slow");
+      await press(page.getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
+      await picker.waitFor();
       await picker.getByRole("combobox", { name: "Praktikos būdas", exact: true }).selectOption("echo");
       await press(picker.getByRole("button", { name: "Pradėti dainą", exact: true }));
       await page.locator(".karaoke-turn").waitFor();
+      assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1, "each new performance starts at 1×");
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
       await shot("echo-turn");
       await press(page.getByRole("button", { name: "Išklausyti eilutę dar kartą", exact: true }));

@@ -1,6 +1,39 @@
 import type { SongLine } from "../../radio/songs";
+import { karaokeWordTiming } from "../../radio/lyrics";
 
-export type KaraokePracticeMode = "along" | "echo";
+export type KaraokePracticeMode = "along" | "echo" | "word";
+export interface WordGap {
+  word: number;
+  unit: number;
+  prefix: string;
+  answer: string;
+  suffix: string;
+}
+
+/** One repeatable single-word unit. The source text and every unit must agree with the word clock. */
+export function wordGap(line: SongLine): WordGap | null {
+  if (line.part === "translation" || line.wt.length < 3 || !karaokeWordTiming(line)) return null;
+  const choices: WordGap[] = [];
+  let from = 0;
+  for (let unit = 0; unit < line.u.length; unit++) {
+    const [text, , count] = line.u[unit];
+    if (!Number.isInteger(count) || count < 1 || line.wt.slice(from, from + count).join(" ") !== text.trim()) return null;
+    if (count === 1) {
+      const match = /^([^\p{L}\p{N}]*)([\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*)([^\p{L}\p{N}]*)$/u.exec(line.wt[from]);
+      if (match) choices.push({ word: from, unit, prefix: match[1], answer: match[2], suffix: match[3] });
+    }
+    from += count;
+  }
+  if (from !== line.wt.length || !choices.length) return null;
+  let seed = 2166136261;
+  for (const char of `${line.i}:${line.src}`) seed = Math.imul(seed ^ char.codePointAt(0)!, 16777619) >>> 0;
+  return choices[seed % choices.length];
+}
+
+export function lineGap(line: SongLine, row: number, practice: PracticeSnapshot | undefined, seconds: number) {
+  const gap = practice?.mode === "word" ? wordGap(line) : null;
+  return gap ? { gap, hidden: seconds < line.e && !practice?.revealed?.includes(row) } : undefined;
+}
 export interface EchoCall {
   start: number;
   targetStart: number;
@@ -14,6 +47,8 @@ export interface PracticeSnapshot {
   remaining: number;
   completed: number;
   total: number;
+  /** Flattened target rows revealed in this pass. Contains no answer text. */
+  revealed?: readonly number[];
 }
 
 export function echoGap(call: EchoCall, rate = 1) {
@@ -46,6 +81,7 @@ export class KaraokePractice {
   private turn: EchoCall | null = null;
   private left = 0;
   private previous?: PracticeSnapshot;
+  private revealed: readonly number[] = [];
 
   constructor(private lines: readonly SongLine[], readonly mode: KaraokePracticeMode) {
     this.calls = echoCalls(lines);
@@ -55,8 +91,9 @@ export class KaraokePractice {
   snapshot(): PracticeSnapshot {
     const remaining = Math.ceil(Math.max(0, this.left - 1e-9) * 10) / 10;
     const completed = this.completed.size;
-    if (this.previous?.turn === this.turn && this.previous.remaining === remaining && this.previous.completed === completed) return this.previous;
-    return this.previous = { mode: this.mode, turn: this.turn, remaining, completed, total: this.total };
+    if (this.previous?.turn === this.turn && this.previous.remaining === remaining && this.previous.completed === completed
+      && this.previous.revealed === this.revealed) return this.previous;
+    return this.previous = { mode: this.mode, turn: this.turn, remaining, completed, total: this.total, revealed: this.revealed };
   }
 
   /** Return the next boundary at which the shared output must pause. */
@@ -67,6 +104,7 @@ export class KaraokePractice {
     const end = boundary ?? to;
     this.lines.forEach((line, row) => {
       if (line.part === "translation") return;
+      if (from <= line.e && end >= line.e) this.reveal(row);
       const id = line.i ?? row;
       if (this.completed.has(id) || end < line.s || from >= line.e) return;
       const covered = this.coverage.get(id);
@@ -91,10 +129,16 @@ export class KaraokePractice {
 
   continue() { this.turn = null; this.left = 0; }
 
+  reveal(row: number) {
+    if (this.mode !== "word" || this.revealed.includes(row) || !this.lines[row] || !wordGap(this.lines[row])) return;
+    this.revealed = [...this.revealed, row];
+  }
+
   /** A seek has no audible coverage and cannot complete the rows it jumps over. */
   seek(seconds: number) {
     this.continue();
     this.coverage.clear();
+    this.revealed = [];
     const next = this.calls.findIndex((call) => call.end > seconds);
     this.cursor = next < 0 ? this.calls.length : next;
   }
