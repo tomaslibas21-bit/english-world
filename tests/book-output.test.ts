@@ -83,6 +83,39 @@ afterEach(() => {
 const settle = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
 describe("HTML chapter output", () => {
+  it("fades timed sleep, then closes its source, while capture can cut the fade immediately", async () => {
+    vi.useFakeTimers();
+    const { output, parts, request } = setup();
+    const start = request(chapter(), "target");
+    await output.start(start);
+    const media = parts[0];
+    output.stop("sleep");
+    start.controller.abort(); // The player's canceled request must allow the requested fade to finish.
+    expect(media.paused).toBe(false);
+    await vi.advanceTimersByTimeAsync(90);
+    expect((media as unknown as HTMLAudioElement).volume).toBeLessThan(1);
+    output.stop("capture");
+    expect(media.paused).toBe(true);
+    expect(media.src).toBe("");
+    await vi.advanceTimersByTimeAsync(200);
+    expect(media.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("finishes the sleep fade and silences background playback without waiting for a visible-page fade", async () => {
+    vi.useFakeTimers();
+    const { output, parts, request } = setup();
+    await output.start(request(chapter(), "target"));
+    output.stop("sleep");
+    await vi.advanceTimersByTimeAsync(180);
+    expect(parts[0].paused).toBe(true);
+    expect(parts[0].src).toBe("");
+    vi.stubGlobal("document", Object.assign(new EventTarget(), { hidden: true }));
+    await output.start(request(chapter(), "target"));
+    output.stop("sleep");
+    expect(parts[1].paused).toBe(true);
+    expect(parts[1].src).toBe("");
+  });
+
   it.each([
     ["helper", 0.75, 0.75], ["helper", 2, 2], ["target", 0.75, 1], ["target", 1, 1 / 0.75],
   ] as const)("uses the %s master at %s requested rate, including exact first/middle/last cue seeks", async (mode, rate, mediaRate) => {

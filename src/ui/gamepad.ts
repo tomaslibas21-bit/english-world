@@ -18,7 +18,7 @@ const ANSWER = "[data-pad-answer]";
 const TOOLBAR = "[data-pad-toolbar]";
 const OPENER = ".toolbar .ride-menu";
 const PORTAL = ".wpop, .nat-tipbox";
-const GRID = "[data-pad-grid], .scn-grid, .lh-grid, .lh-tools, .map-canvas, .guide-chips, .barista-chips, .surf-levels, .word-gate-ways";
+const GRID = "[data-pad-grid], .catalog-grid, .rs-keys, .rs-bank, .scn-grid, .lh-grid, .lh-tools, .map-canvas, .guide-chips, .barista-chips, .surf-levels, .word-gate-ways";
 const AUX = "[data-pad-tool], .objective-card button, .cave-card button, .directions-card button, .text-arrival button";
 const MODE_TOOLS = "[data-pad-tools]";
 const AUXILIARY = "[data-pad-aux], [data-pad-aux] button";
@@ -52,6 +52,10 @@ const POLICIES: Record<string, Policy> = {
   score: { rank: 65, flow: ".mode-score-card" },
   choice: { rank: 60, first: ".barista-choice, [data-line].taxi-choice, .road-choice, .surf-choice", back: CLOSE },
   radio: { rank: 55, first: ".rs-knob", back: ".rs-x" },
+  "book-shelf": { rank: 56, first: DEFAULT, back: BACK, flow: ".catalog-pane" },
+  "book-detail": { rank: 57, first: DEFAULT, back: BACK, flow: ".contents" },
+  "book-reader": { rank: 58, first: DEFAULT, back: BACK, flow: ".reading" },
+  "book-settings": { rank: 59, first: DEFAULT, back: BACK, flow: ".settings-form" },
   "phone-ring": { rank: 50, first: DEFAULT },
   street: { rank: 50, first: ".street-choice, .street-line", back: ".street-head button" },
   drawer: { rank: 20, first: "[data-pad-tool=scenarios]" },

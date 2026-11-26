@@ -1,4 +1,5 @@
 import { filesToken } from "../../../game/audio";
+import { createBookReviewSource } from "../../../content/bookReviewSource";
 import { createBookSource, type BookProfile } from "../../../radio/books";
 import covers from "./book-covers/books.json";
 
@@ -33,6 +34,9 @@ export const SME_BOOK_PROFILE = spanishBookProfile("sme-en", {
 const trimRoot = (value: unknown) => typeof value === "string" ? value.trim().replace(/\/+$/, "") : "";
 
 export function spanishBookSource(profile: BookProfile, env: Record<string, unknown>, site?: string) {
+  if (import.meta.env.VITE_BOOK_REVIEW === "1") {
+    return env.VITE_BOOK_PROFILE === profile.id ? createBookReviewSource(env, site) : null;
+  }
   const sme = profile.id === "sme-en";
   const files = trimRoot(env.VITE_RADIO_FILES);
   if (!site || files !== (sme ? SME_FILES : SM_FILES)) return null;

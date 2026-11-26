@@ -197,6 +197,12 @@ export class TalkProgress {
     this.events?.addEventListener("storage", this.onStorage);
   }
 
+  private readonly listeners = new Set<() => void>();
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
+
   getSnapshot = (): Readonly<TalkProgressData> => this.data;
 
   get(selection: TalkSelection): Readonly<TalkBookmark> | undefined {
@@ -243,9 +249,10 @@ export class TalkProgress {
     if (event.key !== this.key || !event.newValue || (event.storageArea && event.storageArea !== this.storage)) return;
     this.data = mergeProgress(this.data, readTalkProgress(this.profile, event.newValue));
     const raw = this.stored();
-    if (!raw) return;
+    if (!raw) { this.listeners.forEach((notify) => notify()); return; }
     const current = readTalkProgress(this.profile, raw);
     this.data = mergeProgress(this.data, current);
+    this.listeners.forEach((notify) => notify());
     const merged = serialize(this.data);
     // Keep both chapters even when two tabs wrote from the same original snapshot.
     if (merged !== serialize(current)) this.persist(merged);
@@ -261,6 +268,7 @@ export class TalkProgress {
     change?.(data);
     this.data = withLastItems(data);
     this.persist(serialize(this.data));
+    this.listeners.forEach((notify) => notify());
   }
 
   private persist(serialized: string): void {

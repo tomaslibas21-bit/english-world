@@ -3,6 +3,7 @@
 // edition's Lithuanian, and those that addressed the learner with Jūs (here with tu). Replaces
 // src/editions/es/ui/strings.ts (English) in this layer.
 export const STRINGS: Record<string, string> = {
+  "Meipl Harboro viešoji biblioteka": "Kolibrių uosto biblioteka",
   "Sklandus sustojimas prie durų": "Sklandus sustojimas prie durų",
   "Kelionė be susidūrimų": "Kelionė be susidūrimų",
   "Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).": "Meksikietiškas ispanų tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).",

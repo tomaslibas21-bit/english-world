@@ -14,14 +14,23 @@ import type { FavoriteStore } from "./favorites";
 import { LYRIC_SIZES, loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type RadioConfig, type SongMeta } from "./songs";
 import { RADIO_SPOTS, type RadioSpot } from "../content/radioSpots";
+import type { BookChannel } from "./bookChannel";
+import type { TalkSelection } from "./talkProgress";
+import type { TalkStation } from "./playlist";
 import { SpotSchedule, type ReadySpot } from "./spots";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
 export type Hold = "conversation" | "voice" | "microphone" | "bed";
 
 export interface RadioState {
-  /** this build has songs to play */
+  /** At least one configured bank can be tuned. */
   available: boolean;
+  /** Music keeps its own availability and readiness in a books-only build. */
+  musicAvailable: boolean;
+  shelfOpen: boolean;
+  readerOpen: boolean;
+  settingsOpen: boolean;
+  showTalkText: boolean;
   /** the song list has arrived */
   ready: boolean;
   /** the learner turned the radio on */
@@ -69,6 +78,7 @@ export interface RadioState {
 
 export interface RadioDeps {
   config: RadioConfig | null;
+  books?: { station: TalkStation; channel: BookChannel };
   stations: Station[];
   output: RadioOutput;
   /** the course's files token, as it is now */
@@ -129,21 +139,39 @@ export class Radio {
   private resumeTimer: ReturnType<typeof setTimeout> | undefined;
   private saveTimer: ReturnType<typeof setInterval> | undefined;
 
+  private foldOnPlayback = false;
+
   constructor(private deps: RadioDeps) {
     this.spots = new SpotSchedule(deps.random);
     this.saved = loadSaved(deps.storageKey, deps.storageBefore);
     if (!this.saved.station) this.newSeed(); // a first visit: its own shuffle
     const station = this.stationOf(this.saved.station);
+    const books = deps.books;
+    const startsOnBooks = books && (!deps.config || this.saved.station === books.station.id);
     this.store = createStore<RadioState>(() => ({
-      available: !!deps.config && deps.stations.length > 0,
+      available: !!books || (!!deps.config && deps.stations.length > 0),
+      musicAvailable: !!deps.config, shelfOpen: false, readerOpen: false, settingsOpen: false, showTalkText: this.saved.talkText !== false,
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
-      station: station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
+      station: startsOnBooks ? books.station.id : station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
       lyrics: this.saved.lyrics, lyricSize: this.saved.size, nat: this.saved.nat, notes: this.saved.notes, pictures: this.saved.pictures,
       lineNotes: null, linePictures: null, open: false, song: null, spot: null, timeline: null, upNext: null,
     }));
+    books?.channel.output.setVolume?.(deps.volume());
+    books?.channel.player.subscribe(() => {
+      if (!this.onBooks) return;
+      const { status, playIntent } = books.channel.player.getSnapshot();
+      const playing = status === "playing";
+      if (this.foldOnPlayback && playing) this.setOpen(false);
+      if (status === "error" || (status === "paused" && !playIntent)) this.foldOnPlayback = false;
+      if (this.state.playing !== playing) this.set({ playing });
+    });
     deps.output.onEnded = () => this.ended();
     deps.output.onStopped = (reason) => this.stopped(reason);
   }
+
+  get bookStation() { return this.deps.books?.station; }
+  get books() { return this.deps.books?.channel; }
+  get onBooks() { return !!this.bookStation && this.state.station === this.bookStation.id; }
 
   private get state() { return this.store.getState(); }
   private set(patch: Partial<RadioState>) {
@@ -178,6 +206,7 @@ export class Radio {
         this.byId = new Map(this.songs.map((s) => [s.id, s]));
         this.hearts = new Set(this.deps.favorites?.list() ?? []);
         this.recount();
+        if (this.onBooks) { this.set({ ready: true }); return; }
         const station = this.stationWithSongs(this.state.station);
         if (station && station.id !== this.state.station) this.set({ station: station.id, shuffle: shuffled(station, this.saved.shuffle) });
         this.reorder();
@@ -187,7 +216,7 @@ export class Radio {
         this.set({ ready: true, failed: false, song: this.cursor ? this.byId.get(this.cursor)! : null });
         if (this.state.on) this.start(FADE_IN_MS); // pressed while the list was on its way
       } catch {
-        if (this.state.on) this.set({ failed: true });
+        if (this.state.on && !this.onBooks) this.set({ failed: true });
       } finally {
         this.loading = null;
       }
@@ -223,7 +252,7 @@ export class Radio {
    *  off looks off. (The set's own knob leaves the set open: the learner is using it.) */
   power() {
     if (!this.state.available) return;
-    if (this.state.on) this.set({ open: false });
+    if (this.state.on) this.setOpen(false);
     else if (!this.saved.introduced) { this.saved.introduced = true; this.set({ open: true }); }
     this.setOn(!this.state.on);
   }
@@ -238,11 +267,89 @@ export class Radio {
     else if (first) this.save();
   }
 
-  setOpen(open: boolean) { this.set({ open }); }
+  setOpen(open: boolean) {
+    this.foldOnPlayback = false;
+    this.set(open ? { open } : { open, shelfOpen: false, readerOpen: false, settingsOpen: false });
+  }
+
+  browse() {
+    if (!this.onBooks) return;
+    this.foldOnPlayback = false;
+    if (this.state.playing) this.books!.player.checkpoint();
+    this.set({ open: true, shelfOpen: true });
+  }
+
+  closeShelf() { this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false }); }
+
+  openReader() {
+    if (!this.onBooks || !this.books!.player.getSnapshot().selection) return;
+    this.foldOnPlayback = false;
+    this.set({ open: true, readerOpen: true });
+  }
+
+  closeReader() { this.set({ readerOpen: false, settingsOpen: false }); }
+
+  openSettings() {
+    if (!this.onBooks) return;
+    this.foldOnPlayback = false;
+    this.set({ open: true, settingsOpen: true });
+  }
+
+  closeSettings() { this.set({ settingsOpen: false }); }
+
+  /** An explicit chapter choice starts listening in the reader, above the same picker. */
+  read(selection: TalkSelection) {
+    if (!this.onBooks) return;
+    this.foldOnPlayback = false;
+    this.set({ on: true, open: true, readerOpen: true });
+    const player = this.books!.player;
+    const current = player.getSnapshot();
+    if (current.selection?.itemKey === selection.itemKey && current.selection.chapterId === selection.chapterId && current.status === "error") {
+      void player.retry(true);
+    } else void player.select(selection, true);
+    this.save();
+  }
+
+  listen(selection: TalkSelection) {
+    if (!this.onBooks) return;
+    const player = this.books!.player;
+    this.set({ on: true, shelfOpen: false, readerOpen: false, settingsOpen: false });
+    this.foldOnPlayback = true;
+    const current = player.getSnapshot();
+    if (current.selection?.itemKey === selection.itemKey && current.selection.chapterId === selection.chapterId && current.status === "error") {
+      void player.retry(true);
+    } else {
+      void player.select(selection, true);
+    }
+    if (player.getSnapshot().status === "playing") this.setOpen(false);
+    this.save();
+  }
+
+  setTalkText(showTalkText: boolean) { this.set({ showTalkText }); this.save(); }
+
+  private resumeBook(openShelf: boolean) {
+    const { player, progress } = this.books!;
+    if (player.getSnapshot().selection) {
+      if (player.getSnapshot().status === "error") void player.retry(true);
+      else player.play();
+    } else {
+      const saved = progress.continueListening();
+      if (saved) void player.select(saved, true);
+      else if (openShelf) this.browse();
+      else this.setOpen(true);
+    }
+  }
 
   /** On or off, with a fade. Call it from a tap: that is what lets the browser play at all. */
   setOn(on: boolean) {
     if (!this.state.available) return;
+    if (this.onBooks) {
+      this.set({ on, failed: false, needsTap: false });
+      if (on) this.resumeBook(false);
+      else this.books!.player.pause();
+      this.save();
+      return;
+    }
     const out = this.deps.output;
     if (!on) {
       clearTimeout(this.resumeTimer);
@@ -274,19 +381,53 @@ export class Radio {
   }
 
   toggle() { this.setOn(!this.state.on); }
-  next() { this.go(1); }
-  previous() { this.go(-1); }
+  play() {
+    if (!this.onBooks) { this.setOn(true); return; }
+    this.set({ on: true });
+    this.resumeBook(true);
+  }
+  pause() {
+    if (this.onBooks) this.books!.player.pause();
+    else this.setOn(false);
+  }
+  next() { if (this.onBooks) this.books!.player.stepSentence(1); else this.go(1); }
+  previous() { if (this.onBooks) this.books!.player.stepSentence(-1); else this.go(-1); }
 
   /** The learner picks a station. It goes on from where it was left (from that song's beginning), or starts at its
    *  first song. A station with no songs can't be picked. */
   setStation(id: string) {
+    if (id === this.bookStation?.id) {
+      if (!this.onBooks) {
+        if (this.cursor) this.saved.places[this.state.station] = this.cursor;
+        this.silence();
+        clearTimeout(this.resumeTimer);
+        this.cursor = null;
+        this.order = [];
+        this.set({ station: id, song: null, spot: null, timeline: null, upNext: null, lineNotes: null,
+          linePictures: null, needsTap: false, failed: false, playing: false });
+        if (this.state.on && !this.holds.size) this.deps.tune?.();
+      }
+      if (!this.books!.player.getSnapshot().selection) {
+        const saved = this.books!.progress.continueListening();
+        if (saved) void this.books!.player.select(saved, this.state.on);
+        else this.browse();
+      }
+      this.save();
+      return;
+    }
+    if (!this.deps.config) return;
     const station = this.deps.stations.find((s) => s.id === id);
     if (!station || station.id === this.state.station) return;
     if (this.state.ready && !(this.state.counts[station.id] > 0)) return;
+    if (this.onBooks) {
+      this.foldOnPlayback = false;
+      this.books!.player.clear();
+      this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false, upNext: this.queued ? this.byId.get(this.queued) ?? null : null });
+    }
     this.tuneTo(station);
     if (this.state.on && !this.holds.size) this.deps.tune?.();
     if (this.cursor) this.playSong(this.cursor, 0);
-    else this.save();
+    else { this.save(); if (this.state.on && !this.state.ready) void this.init(); }
   }
 
   /** Move to `station`: its order, and its place in it (where it was left, else its first song; `at` "last": its
@@ -311,6 +452,7 @@ export class Radio {
   /** The shuffle key: the station's songs in a shuffled order, or in the course's again. The mix is always shuffled;
    *  the key changes nothing there, and is kept for the other stations. */
   setShuffle(shuffle: boolean) {
+    if (this.onBooks) return;
     const station = this.stationOf(this.state.station);
     if (station?.kind === "mix" || shuffle === this.saved.shuffle) return;
     this.saved.shuffle = shuffle;
@@ -356,11 +498,14 @@ export class Radio {
   setPictures(pictures: boolean) { this.set(pictures ? { pictures } : { pictures, linePictures: null }); this.save(); this.extras(); }
 
   /** The game's volume changed. */
-  volumeChanged() { if (!this.holds.size) this.deps.output.setVolume(this.level()); }
+  volumeChanged() {
+    this.books?.output.setVolume?.(this.deps.volume());
+    if (!this.holds.size) this.deps.output.setVolume(this.level());
+  }
 
   /** A tap or a key anywhere in the game: what a browser may have been waiting for. */
   gesture() {
-    if (!this.state.on) return;
+    if (this.onBooks || !this.state.on) return;
     this.deps.output.unlock();
     if (this.state.needsTap && !this.holds.size) this.start(FADE_IN_MS);
   }
@@ -368,6 +513,7 @@ export class Radio {
   /** The learner walked into a place whose conversation is built on one of these songs: the first of them that the
    *  course has, and that wasn't offered in this visit yet, plays next, out of the station's turn. */
   suggest(ids: (string | null)[]) {
+    if (this.onBooks) return;
     const id = ids.find((x): x is string => !!x && this.byId.has(x) && !this.suggested.has(x) && x !== this.state.song?.id);
     if (!id) return;
     this.suggested.add(id);
@@ -377,7 +523,10 @@ export class Radio {
   }
 
   /** Seconds into the song. */
-  position(): number { return this.state.playing && !this.state.spot ? this.deps.output.position() : this.resumeAt; }
+  position(): number {
+    if (this.onBooks) return this.books!.player.getSnapshot().position;
+    return this.state.playing && !this.state.spot ? this.deps.output.position() : this.resumeAt;
+  }
 
   spotPosition() { return this.state.playing ? this.deps.output.position() : this.spotAt; }
   spotDuration() { return this.deps.output.duration?.() || this.state.spot?.duration || 0; }
@@ -390,6 +539,8 @@ export class Radio {
     this.holds.add(reason);
     clearTimeout(this.resumeTimer);
     if (!this.state.held) this.set({ held: true });
+    this.books?.player.hold(reason, now);
+    if (this.onBooks) return;
     if (now) { this.silence(); return; }
     if (!first || !this.sounding()) return;
     const ms = reason === "voice" ? VOICE_FADE_MS : FADE_OUT_MS;
@@ -400,6 +551,7 @@ export class Radio {
 
   /** It is over. When nothing else holds the radio, the music comes back a moment later. */
   release(reason: Hold) {
+    this.books?.player.release(reason);
     if (!this.holds.delete(reason) || this.holds.size) return;
     this.set({ held: false });
     clearTimeout(this.resumeTimer);
@@ -438,7 +590,7 @@ export class Radio {
 
   /** Begin, or go on with, the song the radio is at, fading in over `fade` ms. */
   private start(fade: number) {
-    if (!this.state.on || !this.state.ready || this.holds.size || this.sounding()) return;
+    if (this.onBooks || !this.state.on || !this.state.ready || this.holds.size || this.sounding()) return;
     let song = this.state.song;
     if (!song) {
       // the first song of this visit: where the station was, else its first. (A song waiting out of turn, the one
@@ -453,7 +605,7 @@ export class Radio {
   }
 
   private ended() {
-    if (!this.sounding()) return;
+    if (this.onBooks || !this.sounding()) return;
     const s = this.state;
     const spot = s.on && !s.spot && this.deps.spotRecording && this.spots.songEnded(RADIO_SPOTS, this.deps.spotRecording);
     if (!spot) { this.go(1, true); return; }
@@ -617,7 +769,7 @@ export class Radio {
   }
 
   private stopped(reason: "error" | "interrupted") {
-    if (!this.state.playing && !this.starting) return;
+    if (this.onBooks || (!this.state.playing && !this.starting)) return;
     if (reason === "error") {
       if (this.state.spot) { this.go(1, true); return; }
       const starting = this.starting;
@@ -701,9 +853,9 @@ export class Radio {
 
   save() {
     const s = this.state;
-    this.saved = { ...this.saved, on: s.on, station: s.station, lyrics: s.lyrics, size: s.lyricSize, nat: s.nat, notes: s.notes, pictures: s.pictures };
+    this.saved = { ...this.saved, on: s.on, station: s.station, talkText: s.showTalkText, lyrics: s.lyrics, size: s.lyricSize, nat: s.nat, notes: s.notes, pictures: s.pictures };
     // before the list has arrived the radio doesn't know its place yet: what was remembered stays
-    if (s.ready) { this.saved.song = this.cursor; this.saved.at = s.song && s.song.id === this.cursor ? Math.floor(this.position()) : 0; }
+    if (s.ready && !this.onBooks) { this.saved.song = this.cursor; this.saved.at = s.song && s.song.id === this.cursor ? Math.floor(this.position()) : 0; }
     storeSaved(this.deps.storageKey, this.saved);
   }
 
@@ -714,7 +866,8 @@ export class Radio {
   shutdown() {
     if (this.state.ready) this.save();
     clearTimeout(this.resumeTimer);
+    this.books?.player.clear();
     this.silence();
-    this.set({ open: false });
+    this.setOpen(false);
   }
 }

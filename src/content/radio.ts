@@ -1,7 +1,7 @@
 // Maple Harbor's radio (src/radio/): its name, the stations, and which course song each place's conversation is
 // built on. The songs are English Master's own (its /songs/index.json), every one of them: the radio is the course's
 // songs, as its Songs page has them.
-import type { Station } from "../radio/playlist";
+import type { Station, TalkStation } from "../radio/playlist";
 import type { SongMeta } from "../radio/songs";
 import type { SituationDef } from "./types";
 
@@ -22,13 +22,15 @@ const advanced = (from: number, to: number) => (song: SongMeta) => song.c === "p
  *  four (tests/radio.test.ts), and when one has played to its end the radio moves on to the next. `lt` says what
  *  plays; `freq` is the station's place on the set's dial. */
 export const STATIONS: Station[] = [
-  { id: "grammar", name: "Grammar FM", freq: 89.5, lt: "Gramatika", has: (song) => song.c === "g" || advanced(1, 12)(song) },
-  { id: "vocab", name: "Vocab FM", freq: 93.1, lt: "Žodynas", has: (song) => song.c === "v" },
-  { id: "situations", name: "Situations FM", freq: 96.7, lt: "Situacijos", has: (song) => song.c === "s" || advanced(25, 30)(song) },
-  { id: "idioms", name: "Idioms FM", freq: 100.3, lt: "Idiomos ir šnekamoji kalba", has: advanced(13, 24) },
-  { id: "random", name: "Random FM", freq: 103.9, lt: "Visos dainos, sumaišytos", kind: "mix", has: () => true },
-  { id: "favorites", name: "Favorites FM", freq: 106.9, lt: "Tavo mėgstamos dainos", kind: "favorites", has: () => false },
+  { source: "songs", id: "grammar", name: "Grammar FM", freq: 89.5, lt: "Gramatika", has: (song) => song.c === "g" || advanced(1, 12)(song) },
+  { source: "songs", id: "vocab", name: "Vocab FM", freq: 93.1, lt: "Žodynas", has: (song) => song.c === "v" },
+  { source: "songs", id: "situations", name: "Situations FM", freq: 96.7, lt: "Situacijos", has: (song) => song.c === "s" || advanced(25, 30)(song) },
+  { source: "songs", id: "idioms", name: "Idioms FM", freq: 100.3, lt: "Idiomos ir šnekamoji kalba", has: advanced(13, 24) },
+  { source: "songs", id: "random", name: "Random FM", freq: 103.9, lt: "Visos dainos, sumaišytos", kind: "mix", has: () => true },
+  { source: "songs", id: "favorites", name: "Favorites FM", freq: 106.9, lt: "Tavo mėgstamos dainos", kind: "favorites", has: () => false },
 ];
+
+export const BOOK_STATION = { source: "books", id: "books", freq: 91.3, name: "Book FM", lt: "Garsinės knygos ir istorijos" } as const satisfies TalkStation;
 
 /** The course's song a conversation is built on: songs 31–35 are the course's S96–S100, 62–91 its S62–S91, and the
  *  advanced ones carry the course's own id ("P25"). */

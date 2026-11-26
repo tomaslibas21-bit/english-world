@@ -10,13 +10,14 @@ function spanishReviewProfile(id: Exclude<TalkProfile, "em-lt">): BookProfile {
   return {
     id, bookRoute: english ? "/books" : "/knygos", targetField: "es",
     timingLanguage: { target: "es", helper: "lt" }, targetClock: "file", narratedTitle: true,
+    introductionLabels: { target: "Introducción", helper: english ? "Introduction" : "Įžanga" },
     jsonOnSite: () => false, freeRecording: () => true,
     recordingFolder: (path, _section, mode) => path === `/audio/v1/${folders[mode]}`,
     covers: spanishCovers, storyCovers: spanishStories,
   };
 }
 
-export function createBookReviewSource(env: Record<string, unknown>, site: string | undefined, em: BookProfile,
+export function createBookReviewSource(env: Record<string, unknown>, site: string | undefined, em?: BookProfile,
   fetcher?: typeof fetch) {
   const id = env.VITE_BOOK_PROFILE;
   if (env.VITE_BOOK_REVIEW !== "1" || typeof id !== "string" || !Object.hasOwn(TALK_LANGUAGES, id) || !site) return null;
@@ -26,8 +27,9 @@ export function createBookReviewSource(env: Record<string, unknown>, site: strin
   try { origin = new URL(site); } catch { return null; }
   if (!/^https?:$/.test(origin.protocol) || origin.href !== origin.origin + "/" || origin.username || origin.password ||
       env.VITE_RADIO_FILES !== root) return null;
-  const profile: BookProfile = profileId === "em-lt"
-    ? { ...em, targetClock: "file", jsonOnSite: () => false, timingRevision: undefined }
+  const profile: BookProfile | undefined = profileId === "em-lt"
+    ? em && { ...em, targetClock: "file", jsonOnSite: () => false, timingRevision: undefined }
     : spanishReviewProfile(profileId);
+  if (!profile) return null;
   return createBookSource({ profile, site: origin.origin, files: origin.origin + root, fetch: fetcher });
 }
