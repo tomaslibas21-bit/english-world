@@ -42,9 +42,9 @@ export const games = {
   gym: words("Workout", "Treniruotė"),
 };
 export const keepsakeNames: Record<KeepsakeKind, string> = {
-  cue_chalk: "Cue chalk", passport_stamp: "Passport stamp", boarding_pass: "Boarding pass", baggage_tag: "Baggage tag",
+  cue_chalk: "Pool chalk", passport_stamp: "Passport stamp", boarding_pass: "Boarding pass", baggage_tag: "Baggage claim ticket",
   ticket: "Ticket", room_key: "Room key", home_key: "Apartment key", car_key: "Car key", map: "Town map",
   coffee_cup: "Coffee cup", receipt: "Receipt", shopping_bag: "Shopping bag", business_card: "Business card",
   badge: "Employee badge", note: "Note", flower: "Flower", balloon: "Balloon", water_bottle: "Water bottle",
-  prescription: "Prescription", wallet: "Wallet", slate_pebble: "Slate pebble", oak_leaf: "Oak leaf",
+  prescription: "Prescription", wallet: "Wallet", slate_pebble: "Small slate pebble", oak_leaf: "Oak leaf",
 };

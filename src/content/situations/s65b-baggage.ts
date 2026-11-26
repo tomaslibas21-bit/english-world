@@ -323,15 +323,15 @@ export const baggage: SituationDef = {
     ] },
     hand_over: { patterns: [
       "here you go #h:t_here", "here you are", "here it is #h:t_here", "there you go", "here", "[here] take it", "here is it", "[yes] it is (here | right here)",
-      "here is (my | the) (tag | bag tag | claim tag | claim check | boarding pass | ticket | baggage tag | sticker) #h:t_heres",
+      "here is (my | the) (tag | bag tag | claim tag | claim check | boarding pass | ticket | baggage (tag | claim ticket) | sticker) #h:t_heres",
       "(it is | the tag is | my tag is) on my boarding pass #h:t_on_bp", "it is (stuck | right here) on my boarding pass",
-      "[yes] i have (it | the tag | my tag | the claim tag | the sticker | the baggage tag | my boarding pass) [here | right here | with me]",
+      "[yes] i have (it | the tag | my tag | the claim tag | the sticker | the baggage (tag | claim ticket) | my boarding pass) [here | right here | with me]",
       "(it is | the tag is | my tag is | the sticker is) (in | on | inside) my (passport | ticket | boarding pass | wallet | phone)",
       "(it is | the tag is) on the back of my (boarding pass | ticket | passport)",
     ] },
     tag_lost: { patterns: ["[no] i [think i] (lost | can not find | do not have) (it | the tag | my tag | the claim tag | the sticker) #h:t_lost", "[no] i do not know where it is",
       "[no] i [think i] (threw it away | threw it out | left it on the plane | do not have it anymore)",
-      "[no] (i did not get | they did not give me | nobody gave me | i never got | i did not receive) (a | the | any) (tag | sticker | claim tag | baggage tag)"] },
+      "[no] (i did not get | they did not give me | nobody gave me | i never got | i did not receive) (a | the | any) (tag | sticker | claim tag | baggage (tag | claim ticket))"] },
     describe: { patterns: [
       "@it_is {np_desc} #h:d_its", "{np_desc}", "[@it_is] {np_desc} [and] [quite | very | pretty] {size}",
       "@it_is {color} [and {color2:color}] #h:d_color", "@it_is {color} [and {color2:color}] with {feat_phrase} [and {feat_phrase}]",

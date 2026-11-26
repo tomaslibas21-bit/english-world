@@ -5,6 +5,7 @@ import { loadCards } from "../src/state/cards";
 import { bookCatalog, courseStamps, readCourse, songCatalog } from "../src/passport/course";
 import { presentation, presentationPrefix } from "../src/passport/presentation";
 import { townStamps } from "../src/passport/stamps";
+import { keepsakeNames } from "../src/passport/words";
 
 const cafe = "s72-cafe";
 const saved = (completions: number, used: string[] = [], twists: string[] = []) => ({ completions, visits: 1, used, twists, memory: {} });
@@ -15,6 +16,32 @@ function town(n = 0, used: string[] = [], twists: string[] = []) {
   return townStamps(p, 0, true);
 }
 describe("Maple Harbor town stamps", () => {
+  it("uses the owner's English keepsake names", () => {
+    expect(keepsakeNames).toEqual({
+      cue_chalk: "Pool chalk",
+      passport_stamp: "Passport stamp",
+      boarding_pass: "Boarding pass",
+      baggage_tag: "Baggage claim ticket",
+      ticket: "Ticket",
+      room_key: "Room key",
+      home_key: "Apartment key",
+      car_key: "Car key",
+      map: "Town map",
+      coffee_cup: "Coffee cup",
+      receipt: "Receipt",
+      shopping_bag: "Shopping bag",
+      business_card: "Business card",
+      badge: "Employee badge",
+      note: "Note",
+      flower: "Flower",
+      balloon: "Balloon",
+      water_bottle: "Water bottle",
+      prescription: "Prescription",
+      wallet: "Wallet",
+      slate_pebble: "Small slate pebble",
+      oak_leaf: "Oak leaf",
+    });
+  });
   it.each([[0, 0, 0, 0], [1, 5, 0, 1], [1, 6, 0, 2], [2, 6, 2, 3], [3, 0, 0, 2]])(
     "matches the journal for %i completions, %i expressions and %i twists", (n, u, t, expected) => {
       const rows = town(n, ids(u), ids(t));

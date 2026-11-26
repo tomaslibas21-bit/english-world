@@ -77,10 +77,10 @@ The street sign reads “TOWN HALL” in painted capitals. The seal carries the 
 
 | English (US) | Lietuvių |
 |---|---|
-| Cue chalk | Biliardo kreida |
+| Pool chalk | Biliardo kreida |
 | Passport stamp | Antspaudas pase |
 | Boarding pass | Įlaipinimo talonas |
-| Baggage tag | Bagažo kvitas |
+| Baggage claim ticket | Bagažo kvitas |
 | Ticket | Bilietas |
 | Room key | Kambario raktas |
 | Apartment key | Buto raktas |
@@ -96,7 +96,7 @@ The street sign reads “TOWN HALL” in painted capitals. The seal carries the 
 | Balloon | Balionas |
 | Water bottle | Gertuvė |
 | Prescription | Receptas |
-| Slate pebble | Mažas skalūno akmenėlis |
+| Small slate pebble | Mažas skalūno akmenėlis |
 | Oak leaf | Ąžuolo lapas |
 
 ## Variable text
