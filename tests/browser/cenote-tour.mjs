@@ -299,7 +299,8 @@ async function naturalText(line, key, compact, options) {
 
 async function unitText(line, key, scroll = false) {
   const row = line.locator('.il[lang="es"]');
-  const slots = row.locator(".u[data-i]");
+  // Every word slot: the tour card's lines are not tappable, so their slots carry no data-i (stones-cards).
+  const slots = row.locator(":scope > .u");
   const es = units(lines[key][0]), help = gloss(key);
   assert.equal(await slots.count(), es.length, `${key}: Spanish unit count`);
   assert.equal(help.length, es.length, `${key}: fixture aligns`);
@@ -417,9 +418,11 @@ async function visit(browser, viewport, play, run) {
     await run({ page, context, phone, label, setPhase, read, step, advance, wait, press, shot, narration, monitor, boot });
     await monitor.flush();
     assert.deepEqual(monitor.errors, [], "browser errors and failed resources");
-    // 3D (pictures off) never fetches Inés's stills; picture mode fetches both
+    // picture mode fetches both of Inés's stills
     if (play === "light") assert.deepEqual([...new Set(monitor.requests.filter(pendingArt).map((u) => new URL(u).pathname.replace(/^.*\//, "")))].sort(), ["mask.webp", "welcome.webp"], "picture mode fetches Inés's two stills");
-    else assert.deepEqual(monitor.requests.filter(pendingArt), [], "3D mode never requests the x14 scene pictures");
+    // 3D (pictures off) shows only the corner chip's preview of her welcome still (ViewSwitch), never the mask
+    else assert.deepEqual([...new Set(monitor.requests.filter(pendingArt).map((u) => new URL(u).pathname.replace(/^.*\//, "")))]
+      .filter((name) => name !== "welcome.webp"), [], "3D mode requests no x14 scene picture beyond the chip's preview");
   } catch (error) {
     const state = page && !page.isClosed() ? await read().catch(() => null) : null;
     let failureShot;
