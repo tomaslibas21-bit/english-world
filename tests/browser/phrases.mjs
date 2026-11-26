@@ -15,11 +15,11 @@ assert.equal(edition, "es");
 assert.ok(["en", "lt"].includes(learner), `Unsupported VITE_LEARNER: ${learner}`);
 const ui = learner === "lt" ? {
   heading: "Kaip žaisime?",
-  words: ["Žodžiai", "Išgirskite ispaniškai, pasirinkite reikšmę"],
-  phrases: ["Frazės", "Išgirskite lietuviškai, pasirinkite ispaniškai"],
-  comeback: "Šįkart pataikėte!",
+  words: ["Žodžiai", "Išgirsk ispaniškai, pasirink reikšmę"],
+  phrases: ["Frazės", "Išgirsk lietuviškai, pasirink ispaniškai"],
+  comeback: "Šįkart pataikei!",
   wrong: "Ne visai. Teisingai:",
-  drive: "Vairuoti", hear: "Ką išgirdote?", replay: "Klausyti dar kartą",
+  drive: "Vairuoti", hear: "Ką išgirdai?", replay: "Klausyti dar kartą",
   road: "Važiavimas baigtas", sea: "Plaukimas baigtas",
 } : {
   heading: "How do you want to play?",

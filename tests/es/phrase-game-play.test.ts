@@ -130,8 +130,8 @@ describe("Puerto Colibrí phrase mode", () => {
       L(WORD_GATE_UI.heading), L(WORD_GATE_UI.words.title), L(WORD_GATE_UI.words.line),
       L(WORD_GATE_UI.phrases.title), L(WORD_GATE_UI.phrases.line), L(WORD_GATE_UI.recovered),
     ]).toEqual(lt ? [
-      "Kaip žaisime?", "Žodžiai", "Išgirskite ispaniškai, pasirinkite reikšmę",
-      "Frazės", "Išgirskite lietuviškai, pasirinkite ispaniškai", "Šįkart pataikėte!",
+      "Kaip žaisime?", "Žodžiai", "Išgirsk ispaniškai, pasirink reikšmę",
+      "Frazės", "Išgirsk lietuviškai, pasirink ispaniškai", "Šįkart pataikei!",
     ] : [
       "How do you want to play?", "Words", "Hear Spanish, pick the meaning",
       "Phrases", "Hear English, pick the Spanish", "Got it this time!",

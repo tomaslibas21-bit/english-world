@@ -261,8 +261,9 @@ try {
     await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", { attempts: 500 });
     const lithuanian = await page.evaluate(() => document.documentElement.lang === "lt");
     assert.equal(lithuanian, process.env.WORLD_LEARNER === "lt");
-    const STRINGS = lithuanian ? {} : await page.evaluate(async () => (await import("/src/ui/strings.ts")).STRINGS);
-    const uiText = (key) => lithuanian ? key : STRINGS[key];
+    // The layer's strings: English for PC-en; for PC-lt the few originals it rewrites (tu, Puerto Colibrí).
+    const STRINGS = await page.evaluate(async () => (await import("/src/ui/strings.ts")).STRINGS);
+    const uiText = (key) => lithuanian ? STRINGS[key] ?? key : STRINGS[key];
     const standPrompt = page.locator(".prompt").getByText(uiText("Vairuoti taksi"));
     await waitFor(() => standPrompt.isVisible(), "taxi prompt appears");
     assert(await page.evaluate(() => !window.__ew.game.rides.list.some((ride) => ride.id === "taxi")), "the parked taxi is outside the town rides");

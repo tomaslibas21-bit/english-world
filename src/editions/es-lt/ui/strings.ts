@@ -1,6 +1,7 @@
 // The interface for a Lithuanian learner of Spanish (docs/es/LEARNER-LT.md): the Lithuanian originals (src/ui/…, L()
 // and Lx() of src/ui/i18n.ts) as they are, except those that speak of English or Maple Harbor: here, their Spanish
-// edition's Lithuanian. Replaces src/editions/es/ui/strings.ts (English) in this layer.
+// edition's Lithuanian, and those that addressed the learner with Jūs (here with tu). Replaces
+// src/editions/es/ui/strings.ts (English) in this layer.
 export const STRINGS: Record<string, string> = {
   "Sklandus sustojimas prie durų": "Sklandus sustojimas prie durų",
   "Kelionė be susidūrimų": "Kelionė be susidūrimų",
@@ -36,4 +37,32 @@ export const STRINGS: Record<string, string> = {
   // the word a recognizer drops or adds is Spanish "no" (the English layer says “no” too)
   "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?": "Atpažinimo variantai skiriasi žodžiu „no“. Ką norėjai pasakyti?",
   "Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį.": "Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „no“ ar kitą žodį.",
+  // The game speaks to the learner with tu (owner, 26 Nov 2026): the originals here that still said Jūs/jūs.
+  "Pasakykite arba pasirinkite": "Pasakyk arba pasirink",
+  "Ne visai – pabandykite dar kartą": "Ne visai – pabandyk dar kartą",
+  "Albumas palauks. Jį rasite telefone.": "Albumas palauks. Jį rasi telefone.",
+  "Visi 12! Nuneškite albumą Renatai.": "Visi 12! Nunešk albumą Renatai.",
+  "Radote!": "Radai!",
+  "Beveik! Galite pabandyti dar kartą.": "Beveik! Gali pabandyti dar kartą.",
+  "Pasakykite garsiai – gausite +1": "Pasakyk garsiai – gausi +1",
+  "Išgirskite ispaniškai, pasirinkite reikšmę": "Išgirsk ispaniškai, pasirink reikšmę",
+  "Išgirskite lietuviškai, pasirinkite ispaniškai": "Išgirsk lietuviškai, pasirink ispaniškai",
+  "Šįkart pataikėte!": "Šįkart pataikei!",
+  "Klausykite ir važiuokite pro teisingus vartus": "Klausyk ir važiuok pro teisingus vartus",
+  "Ką išgirdote?": "Ką išgirdai?",
+  "Vairuokite rodyklėmis · Tarpas – driftas · H – signalas": "Vairuok rodyklėmis · Tarpas – driftas · H – signalas",
+  "Pirmiausia pakalbėkite su žmonėmis mieste – tada čia atsiras žodžių.": "Pirmiausia pakalbėk su žmonėmis mieste – tada čia atsiras žodžių.",
+  "Klausykite ir plaukite pro teisingus vartus": "Klausyk ir plauk pro teisingus vartus",
+  "Vairuokite rodyklėmis · Rodyklė žemyn – atgal į krantą": "Vairuok rodyklėmis · Rodyklė žemyn – atgal į krantą",
+  "Patraukite vairalazdę žemyn – grįšite į krantą": "Patrauk vairalazdę žemyn – grįši į krantą",
+  "Plaukite pro plūdurus į horizontą – ten laukia žodžių žaidimas.": "Plauk pro plūdurus į horizontą – ten laukia žodžių žaidimas.",
+  "Susitikote su Andrea. Gero koncerto!": "Susitikai su Andrea. Gero koncerto!",
+  "← Sukite kairėn": "← Suk kairėn",
+  "Sukite dešinėn →": "Suk dešinėn →",
+  "↑ Važiuokite tiesiai": "↑ Važiuok tiesiai",
+  "Sustokite čia": "Sustok čia",
+  "Sustojote": "Sustojai",
+  "Ką atsakysite?": "Ką atsakysi?",
+  "Išvykos pradėti nepavyko. Pabandykite dar kartą.": "Išvykos pradėti nepavyko. Pabandyk dar kartą.",
+  "Pabandykite dar kartą.": "Pabandyk dar kartą.",
 };

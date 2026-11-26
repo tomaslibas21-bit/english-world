@@ -23,7 +23,7 @@ const names = {
   close: local("Close", "Uždaryti"),
   declined: local("Conversation over", "Pokalbis baigtas"),
   completed: local("Task completed!", "Užduotis įvykdyta!"),
-  again: local("Try again.", "Pabandykite dar kartą."),
+  again: local("Try again.", "Pabandyk dar kartą."),
   leave: local("Leave the outing and return to the hut", "Baigti išvyką ir grįžti prie trobelės"),
   phrasebook: local("Phrasebook", "Frazių knygelė"),
 };

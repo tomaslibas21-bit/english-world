@@ -7,7 +7,7 @@ it("uses the Lithuanian learner's phone copy", () => {
   expect(PHONE_CALLS["s80-support-call"]).toMatchObject({ name: "NetWave", reason: "Neveikia internetas, modemo lemputė mirksi raudonai. Paskambink tiekėjui." });
   expect(PHONE_CALLS["p26-complaint"]).toMatchObject({ name: "Hogar Puerto", reason: "Nauja sofa atvežta pavėluotai ir sulūžusi. Skambink į parduotuvę – mandagiai, bet tvirtai." });
   expect(FLOOD_INCOMING_INTRO).toBe("Šeštadienis, pusė devynių ryto, o tavo kojos šlapios: naktį viršuje trūko vamzdis, ir virtuvėje teka upė. Skambina Andrea – devintą turėjote susitikti pusryčių. Papasakok jai, kas nutiko (tú), paskui paskambink Don Gilbertui, pastato administratoriui (usted).");
-  expect(MEETING_DONE).toBe("Susitikote su Andrea. Gero koncerto!");
+  expect(MEETING_DONE).toBe("Susitikai su Andrea. Gero koncerto!");
   expect(OFFICE_TASK).toBe("Skubėk į biurą – susirinkimas jau prasidėjo");
   expect(invitationTitle(concertInvitation({ place: "kiosco", day: "friday", meetTime: { h: 8, m: 0 } })!))
     .toBe("Susitik su Andrea prie kiosko aikštėje · penktadienį 20:00");
