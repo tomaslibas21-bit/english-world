@@ -290,6 +290,7 @@ try {
   await waitFor(async () => !(await state()).invitation && !(await meeting.isVisible()), "meeting clears the invitation");
   assert.equal(await task.count(), 0);
   await calmThen(flood);
+  await shot("after-booth-ring", card);
   await press(card.getByRole("button", { name: "Atsiliepti" }));
   await waitFor(() => conv(flood), "answering the incoming call opens it");
   assert.match(await page.locator(".scene-intro").innerText(), /Skambina Lizzie/);
