@@ -636,6 +636,25 @@ class Route {
 
   async stageApproach(actor, id, spot) {
     this.approachAt = this.frames.length;
+    if (!spot) {
+      // The review build mounts the town's standing people after the exterior loads: wait for this one in town.
+      await this.page.evaluate(() => {
+        const { game } = window.__ew;
+        if (game.zone.id !== "town") game.enterZone("town", undefined, true);
+      });
+      // (frames advance only as the route pulls them: the arrival's fade runs on them)
+      const deadline = Math.min(this.deadline, Date.now() + 20_000);
+      for (;;) {
+        await this.pull(2);
+        // (and the arrival finished: a second enterZone during the first one's transition is dropped)
+        if (await this.page.evaluate((actor) => {
+          const { game } = window.__ew;
+          return game.zone.id === "town" && !game.transitioning && game.npcs.some((npc) => npc.id === actor);
+        }, actor)) break;
+        if (Date.now() > deadline) throw new Error(`Missing town actor ${actor} (not standing in town within 20 s)`);
+        await real(12);
+      }
+    }
     await this.page.evaluate(({ actor, id, spot }) => {
       const { game, store } = window.__ew;
       store.getState().updateProgress((progress) => { progress.objective = id; });
