@@ -814,7 +814,12 @@ class ConversationPose implements NaturalPoseDriver {
     const countAge = c.age - c.rise + 0.05, beat = Math.floor(countAge / 0.19);
     const pulse = kind === "count" && beat >= 0 && beat < c.count
       ? 0.09 * oneShot(countAge - beat * 0.19, 0.07, 0, 0.07) * Math.min(1, amount) : 0;
-    let used = !(blocked & (side < 0 ? 1 : 2)) && this.mixArm(side, reach, amount, range, wave, pulse, direction, high, ride);
+    // The free hand pointing across the body (the other holds a bag) stays low and in front of its own shoulder,
+    // clear of the face.
+    const across = c.directional && direction !== side && !high;
+    let used = !(blocked & (side < 0 ? 1 : 2)) && (across
+      ? this.mixArm(side, reach, amount * 0.75, range * 0.75, wave, pulse, (direction * 0.45) as -1 | 1, high, ride)
+      : this.mixArm(side, reach, amount, range, wave, pulse, direction, high, ride));
     if (reach.both && !blocked) used = this.mixArm(side < 0 ? 1 : -1, reach, lagged * range * 0.92, range, 0, 0, undefined, high, ride * 0.6) || used;
     if (kind === "point" && used && !c.straight) {
       // A look where the hand goes, then back to the learner while the arm still holds.
