@@ -5,3 +5,10 @@ export function hasLibraryShelf(env: Record<string, unknown>) {
     && env.VITE_RADIO_FILES.trim().replace(/\/$/, "") === "https://audio.dvikalbesdainos.lt/fluent-steps";
 }
 export const LIBRARY_ENABLED = hasLibraryShelf(import.meta.env ?? {});
+
+// The room and its reader share these bilingual world actions.
+export const LIBRARY_COPY = {
+  browse: { label: "Browse books", lt: "Rinktis knygą" },
+  sit: { label: "Sit and read", lt: "Prisėsti paskaityti" },
+  stand: { label: "Stand up", lt: "Atsistoti" },
+} as const;

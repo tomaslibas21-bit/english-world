@@ -4,6 +4,7 @@ import { hasLibraryShelf } from "../src/content/library";
 import { LOCATIONS } from "../src/content/locations";
 import { iconForEmoji } from "../src/ui/icons";
 import { Game } from "../src/game/Game";
+import { readingHeadphones } from "../src/game/library/readingSeat";
 import { Guidance } from "../src/game/guidance";
 import { Gait, Hop, Steer } from "../src/game/movement";
 import { audio } from "../src/game/audio";
@@ -206,6 +207,9 @@ it("batches the four uncropped jackets, fits the phone budgets and releases ever
     expect(map.image).toMatchObject({ width: 512, height: 512 });
     expect(map.generateMipmaps).toBe(false);
     const library = meshes().filter((o) => o.name.startsWith("library-"));
+    const furniture = room.group.getObjectByName("library-furniture") as Mesh<BufferGeometry, MeshLambertMaterial>;
+    const headphones = readingHeadphones(furniture.material);
+    library.push(headphones);
     const materials = new Set(library.map((o) => o.material));
     let triangles = 0, bytes = canvas.width * canvas.height * 4;
     for (const { geometry: g } of library) {
@@ -220,6 +224,7 @@ it("batches the four uncropped jackets, fits the phone budgets and releases ever
     expect(triangles).toBeLessThanOrEqual(6000);
     expect(bytes).toBeLessThanOrEqual(4 * 1024 ** 2);
     if (visit === 0) console.info("Library geometry budget", { meshes: library.length, materials: materials.size, triangles, bytes, fullRoomMeshes: meshes().length });
+    headphones.geometry.dispose();
     const disposed = vi.fn();
     for (const resource of [map, jackets.material, jackets.geometry, pages.material, pages.geometry]) resource.addEventListener("dispose", disposed);
     leave();

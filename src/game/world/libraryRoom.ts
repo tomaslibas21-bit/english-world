@@ -1,5 +1,6 @@
 // Oak Avenue reading room. Local +Z is the open front of each chair, shelf and book.
 import * as THREE from "three";
+import { LIBRARY_COPY } from "../../content/library";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { chamferBox } from "./shapes";
 import { colourMerge, type Colliders } from "./util";
@@ -19,9 +20,9 @@ export const LIBRARY_CHAIRS = [
   readingChair(4.1, 1.1, -1.95, 4.72, 2.33),
 ];
 export const LIBRARY_STOPS = [
-  { id: "display", action: "browse", chairIndex: undefined, approach: LIBRARY_DISPLAY.approach, label: "Browse books", lt: "Rinktis knygą" },
+  { id: "display", action: "browse", chairIndex: undefined, approach: LIBRARY_DISPLAY.approach, ...LIBRARY_COPY.browse },
   ...LIBRARY_CHAIRS.map(({ approach }, i) => ({
-    id: "chair-" + i, action: "sit" as const, chairIndex: i, approach, label: "Sit and read", lt: "Prisėsti paskaityti",
+    id: "chair-" + i, action: "sit" as const, chairIndex: i, approach, ...LIBRARY_COPY.sit,
   })),
 ] satisfies { id: string; action: LibraryAction; chairIndex?: number; approach: { x: number; z: number }; label: string; lt: string }[];
 

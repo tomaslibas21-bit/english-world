@@ -34,6 +34,7 @@ try {
     const label = `${width}x${height}`, phone = width === 390 || height === 390;
     const context = await browser.newContext({
       viewport: { width, height }, isMobile: phone, hasTouch: phone, deviceScaleFactor: phone ? 2 : 1,
+      reducedMotion: width === 1280 ? "reduce" : "no-preference",
     });
     try {
       await context.route("**/*", async (route) => {
@@ -55,7 +56,9 @@ try {
         window.SpeechRecognition = window.webkitSpeechRecognition = undefined;
         let seed = 20261126;
         Math.random = () => (seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296;
-      }, [`${storage}-progress-v1`, progress]);
+      }, [`${storage}-progress-v1`, {
+        ...progress, profile: { ...progress.profile, look: { ...progress.profile.look, height: width === 390 ? 0.9 : 1.1 } },
+      }]);
       const page = await context.newPage(), errors = [], metrics = [], viewportChecks = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(base.href, { waitUntil: "domcontentloaded" });
@@ -69,7 +72,9 @@ try {
       await page.evaluate(() => {
         window.__libraryActions = [];
         const g = window.__ew.game;
-        g.onLibraryAction = (action, chairIndex) => window.__libraryActions.push([action, chairIndex ?? null]);
+        // The world action remains installed. These stand in for the shelf/reader on the UI branch.
+        g.onLibraryShelf = () => window.__libraryActions.push(["browse", null]);
+        g.onLibraryReader = (chairIndex) => window.__libraryActions.push(["sit", chairIndex]);
         // Track resources actually submitted to WebGL and remove them on disposal. Retain duplicate names
         // so an orphaned atlas, jacket or page block from a previous visit fails the ownership check.
         const live = new Map();
@@ -153,7 +158,7 @@ try {
         await settle();
         const { townGeometryNames, ...reading } = await sample();
         try {
-          if (["doorstep", "display", "chair"].includes(state)) {
+          if (["doorstep", "display", "chair", "stood-up"].includes(state)) {
             assert(reading.calls <= 50, `${label} ${state} draw calls ${reading.calls}`);
             assert.equal(await page.locator(".objective-card.collapsed").count(), 1, "The unrelated task starts folded");
             assert.equal(await page.locator(".objective-summary .dist").count(), 0, "The summary omits exit-distance metres");
@@ -164,7 +169,21 @@ try {
                 && (!g.rig.cam.view || g.rig.cam.view.offsetY === 0);
             }), "The library has a floor exit ring and a vertically centered view");
           }
-          if (phone && ["display", "chair"].includes(state)) {
+          if (state === "seated") {
+            assert(reading.calls <= 50, `${label} seated draw calls ${reading.calls}`);
+            assert(await page.evaluate(() => {
+              const g = window.__ew.game, phones = g.player.root.getObjectByName("library-headphones");
+              const head = g.player.headJoint.getWorldPosition(g.player.root.position.clone());
+              const clip = head.project(g.rig.cam);
+              return g.libraryChair === 0 && g.player.anim === "sit" && g.player.root.visible
+                && phones?.parent === g.player.headJoint && phones.children.length === 0
+                && g.rig.mode === "stage" && !g.guidance.group.visible
+                && Math.abs(clip.x) < 0.9 && Math.abs(clip.y) < 0.9
+                && (!g.rig.cam.view || g.rig.cam.view.offsetY === 0);
+            }), "The side view contains the visible avatar and its one headphone mesh");
+            assert.equal(reading.library.geometries.filter((name) => name === "library-headphones").length, 1);
+          }
+          if (phone && ["display", "chair", "seated"].includes(state)) {
             const prompt = page.locator(".prompt.touch.library-prompt");
             assert.equal(await prompt.count(), 1);
             assert.equal(await prompt.locator("small[lang=lt]").count(), 1);
@@ -204,6 +223,17 @@ try {
         }), "The outside return is walkable and the visit atlas has been detached");
       };
 
+      const seated = (index) => page.waitForFunction((chair) => {
+        const g = window.__ew.game;
+        return g.libraryChair === chair && g.player.anim === "sit"
+          && !!g.player.root.getObjectByName("library-headphones");
+      }, index, { timeout: 30_000 });
+      const stood = () => page.waitForFunction(() => {
+        const g = window.__ew.game, p = g.player.root.position;
+        return g.libraryChair === null && !g.modes.engaged && g.player.anim !== "sit"
+          && !g.player.root.getObjectByName("library-headphones") && !g.zone.colliders.blocked(p.x, p.z, 0.38);
+      }, null, { timeout: 10_000 });
+
       // All movement after the saved Union Station start uses the ordinary walking path and door actions.
       await walk(22, 44.4, 0);
       await capture("street");
@@ -214,10 +244,20 @@ try {
       await activate("Browse books");
       await capture("display");
       await walk(spots["chair-0"].x, spots["chair-0"].z);
-      await activate("Sit and read");
       await capture("chair");
+      await activate("Sit and read");
+      await seated(0);
+      await capture("seated");
+      await activate("Stand up");
+      await stood();
+      await capture("stood-up");
       await walk(spots["chair-1"].x, spots["chair-1"].z);
       await activate("Sit and read");
+      await seated(1);
+      // Movement exits the second chair, including on touch-sized viewports.
+      await page.locator("canvas").first().evaluate((canvas) => canvas.focus());
+      await page.keyboard.down("w"); await page.waitForTimeout(150); await page.keyboard.up("w");
+      await stood();
       assert.deepEqual(await page.evaluate(() => window.__libraryActions), [["browse", null], ["sit", 0], ["sit", 1]]);
       await exit();
       await capture("exit");
@@ -239,6 +279,11 @@ try {
       const allocation = [];
       for (let visit = 1; visit < repeats; visit++) {
         await enter();
+        await page.evaluate((index) => window.__ew.game.onLibraryAction("sit", index), visit % 2);
+        await seated(visit % 2);
+        await settle(); // Submit the accessory to WebGL before testing its disposal.
+        await page.evaluate(() => window.__ew.game.standFromLibrary());
+        await stood();
         await exit();
         await settle();
         const { townGeometryNames, ...reading } = await sample();
