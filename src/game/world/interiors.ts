@@ -6,6 +6,7 @@ import { STYLED } from "../style";
 import { busParts, carParts } from "./car";
 import * as MX from "./mexican";
 import { THEME, type FloorKind, type RoomLook } from "./theme";
+import { STATION_PHONE } from "./stationPhone";
 import { GYM_MAT } from "./gymMat";
 import { floorMaterial, floorColor } from "./styled";
 import { BILLIARDS_NPC } from "../../content/billiards-lines";
@@ -630,6 +631,64 @@ function smalls(c: Ctx, parent = c.g): Smalls {
       parent.add(m);
     },
   };
+}
+/** Open-front public telephone on the south wall of the Terminal de Autobuses. The dark receiver
+ * hangs beside the upright so its silhouette reads from the doorway as well as the bench lane. */
+function stationPhone(c: Ctx, S: Smalls) {
+  const { x, z } = STATION_PHONE;
+  const enamel = "#157f82", brass = "#c6a258", metal = "#adbfc0", receiver = "#182c36", ivory = "#fff2cf";
+  const box = (w: number, h: number, d: number, dx: number, y: number, dz: number, color: string) =>
+    S.add(new THREE.BoxGeometry(w, h, d).translate(x + dx, y, z + dz), color);
+  box(0.88, 0.016, 0.64, 0, 0.01, STATION_PHONE.markZ - z, "#a18667");
+  box(0.82, 0.012, 0.58, 0, 0.024, STATION_PHONE.markZ - z, enamel);
+  box(0.42, 2.36, 0.18, 0.10, 1.18, 0.31, enamel);
+  box(1.25, 0.10, 0.68, 0, 2.38, -0.04, enamel);
+  box(1.26, 0.025, 0.69, 0, 2.36, -0.04, brass);
+  for (const side of [-1, 1]) box(0.065, 0.22, 0.68, side * 0.59, 2.23, -0.04, enamel);
+  box(1.16, 0.07, 0.75, 0, 1.00, -0.02, metal);
+  box(1.16, 0.035, 0.035, 0, 0.98, -0.39, brass);
+  box(0.45, 0.76, 0.27, 0.08, 1.58, 0.13, metal);
+  box(0.27, 0.14, 0.025, 0.08, 1.78, -0.016, ivory);
+  for (let row = 0; row < 3; row++) for (let col = -1; col <= 1; col++)
+    box(0.043, 0.043, 0.02, 0.08 + col * 0.069, 1.60 - row * 0.068, -0.02, receiver);
+
+  // Earpiece, handle and mouthpiece form a C in the plane of the south wall.
+  box(0.12, 0.48, 0.18, -0.48, 1.58, 0.25, receiver);
+  for (const y of [1.32, 1.84]) box(0.27, 0.14, 0.23, -0.405, y, 0.25, receiver);
+  box(0.34, 0.06, 0.13, -0.20, 1.75, 0.22, metal);
+  const tube = (points: number[][], radius: number, color: string) => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([dx, y, dz]) => new THREE.Vector3(x + dx, y, z + dz)));
+    S.add(new THREE.TubeGeometry(curve, 8, radius, 5, false), color);
+  };
+  tube([[-0.48, 1.26, 0.25], [-0.53, 0.87, 0.39], [-0.33, 0.73, 0.41], [-0.09, 1.22, 0.22]], 0.032, receiver);
+  box(0.48, 0.075, 0.38, 0.19, 1.074, -0.18, "#194775");
+  box(0.045, 0.080, 0.38, -0.037, 1.074, -0.18, "#102f52");
+  tube([[0.41, 1.09, -0.16], [0.56, 1.06, -0.23], [0.52, 1.05, 0.10], [0.27, 1.18, 0.18]], 0.012, metal);
+  c.col.addBox(x, z, 1.25, 0.92);
+
+  // Enamel station sign. Both faces carry the paint right-reading from their own side.
+  for (const dx of [-0.38, 0.38]) box(0.065, 0.24, 0.065, dx, 2.52, -dx * 0.36, brass);
+  const texture = canvasTex(256, 128, (ctx) => {
+    ctx.fillStyle = "#075657"; ctx.fillRect(0, 0, 256, 128);
+    ctx.strokeStyle = brass; ctx.lineWidth = 3; ctx.strokeRect(3, 3, 250, 122);
+    ctx.fillStyle = ivory;
+    ctx.beginPath(); ctx.moveTo(38, 52);
+    ctx.bezierCurveTo(44, 28, 78, 12, 128, 12);
+    ctx.bezierCurveTo(178, 12, 212, 28, 218, 52);
+    ctx.lineTo(218, 67); ctx.quadraticCurveTo(218, 74, 210, 73);
+    ctx.lineTo(177, 67); ctx.quadraticCurveTo(172, 66, 172, 60); ctx.lineTo(172, 46);
+    ctx.bezierCurveTo(151, 36, 105, 36, 84, 46);
+    ctx.lineTo(84, 60); ctx.quadraticCurveTo(84, 66, 79, 67);
+    ctx.lineTo(46, 73); ctx.quadraticCurveTo(38, 74, 38, 67); ctx.closePath(); ctx.fill();
+    ctx.textAlign = "center"; ctx.font = "bold 30px Georgia, serif";
+    ctx.fillText("Teléfono público", 128, 111, 236);
+  });
+  const face = new THREE.PlaneGeometry(1.82, 0.94);
+  const faces = mergeGeometries([face, face.clone().rotateY(Math.PI)])!;
+  const sign = new THREE.Mesh(faces, new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+  sign.rotation.order = "YXZ"; sign.rotation.set(-0.12, 0.35, 0);
+  sign.position.set(x, 3.04, z); sign.name = "public-phone-sign";
+  c.g.add(sign);
 }
 /** A till on a counter top at height y, its screen towards the cashier (north). */
 function till(S: Smalls, x: number, y: number, z: number) {
@@ -1565,7 +1624,10 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(-6.9, 4.0, 0.5, 0.3);
     for (const [bx, bz] of [[5.0, 1.0], [-7.0, 5.2]]) { S.add(cylGeo(0.24, 0.22, 0.75, bx, 0.375, bz, 12), "#5a646e"); S.add(cylGeo(0.26, 0.26, 0.05, bx, 0.77, bz, 12), "#3a3d42"); c.col.addCircle(bx, bz, 0.26); }
     plant(c, -12.1, 8.1, 1.2); plant(c, 12.1, 8.1, 1.2);
-    if (THEME.roomExtras.terminalMx) terminalMx(c, S);
+    if (THEME.roomExtras.terminalMx) {
+      terminalMx(c, S);
+      stationPhone(c, S);
+    }
     if (THEME.roomExtras.services) terminalAtm(c, S);
     S.done();
   }, [{ npc: "walter", x: -6, z: -7, rot: 0, ax: -6, az: -4.85 }, { npc: "denise", x: 9, z: -1.2, rot: -Math.PI / 2 }], { floorKind: "stone", accent: "#7a2e2e" }),

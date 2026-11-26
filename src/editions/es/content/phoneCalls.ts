@@ -5,16 +5,16 @@ import { L } from "@/ui/i18n";
 import { NPCS } from "./npcs";
 
 export const PHONE_CALLS: Readonly<Record<string, PhoneCall>> = {
-  "s76-dentist-call": { npc: "linda", name: `${NPCS.linda.name} · Clínica Dental Coral`, kind: "reminder",
+  "s76-dentist-call": { npc: "linda", organization: "Clínica Dental Coral", name: `${NPCS.linda.name} · Clínica Dental Coral`, kind: "reminder",
     reason: L("Jau kelias dienas skauda dantį. Gal metas užsiregistruoti pas odontologą?") },
-  "s80-support-call": { npc: "claire", name: "NetWave", kind: "reminder",
+  "s80-support-call": { npc: "claire", organization: "NetWave", name: "NetWave", kind: "reminder",
     reason: L("Neveikia internetas, modemo lemputė mirksi raudonai. Paskambink tiekėjui.") },
-  "s89-video-call": { npc: "kate", name: `${NPCS.kate.name} · Línea Clara`, kind: "incoming", video: true },
-  "s90-running-late": { npc: "harris", name: NPCS.harris.name, kind: "reminder",
+  "s89-video-call": { npc: "kate", organization: "Línea Clara", name: `${NPCS.kate.name} · Línea Clara`, kind: "incoming", video: true },
+  "s90-running-late": { npc: "harris", organization: "Línea Clara", name: NPCS.harris.name, kind: "reminder",
     reason: L("8:50, o susirinkimas prasideda devintą. Pranešk viršininkui, kad vėluoji.") },
   "s83-invite-call": { npc: "lizzie", name: NPCS.lizzie.name, kind: "reminder",
     reason: L("Turi du bilietus į penktadienio koncertą. Pakviesk draugę!") },
-  "p26-complaint": { npc: "kyle", name: "Hogar Puerto", kind: "reminder",
+  "p26-complaint": { npc: "kyle", organization: "Hogar Puerto", name: "Hogar Puerto", kind: "reminder",
     reason: L("Nauja sofa atvežta pavėluotai ir sulūžusi. Skambink į parduotuvę – mandagiai, bet tvirtai.") },
   "p24-flood": { npc: "lizzie", name: NPCS.lizzie.name, kind: "incoming" },
 };

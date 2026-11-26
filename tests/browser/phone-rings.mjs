@@ -256,11 +256,53 @@ try {
   const missed = page.locator(".missed-calls");
   assert((await missed.innerText()).includes(ui("Praleisti skambučiai", "Missed calls")));
   await shot("missed", missed);
-  await press(missed.getByRole("button", { name: ui("Perskambinti", "Call back") }));
+  const support = "s80-support-call";
+  let waiting;
+  if (pc) {
+    await press(page.locator(".phone-close"));
+
+    await page.evaluate(id => {
+      window.__ew.store.getState().updateProgress(p => { delete p.sits[id]; });
+      window.__ew.game.phoneDueNow();
+    }, support);
+    await calmThen(support);
+    await press(card.getByRole("button", { name: ui("Vėliau", "Later") }));
+    await page.evaluate(() => window.__ew.game.enterZone("station", { x: -5.2, z: 6.65, rot: 0 }, true));
+    await waitFor(() => page.evaluate(() => window.__ew.store.getState().hud.prompt?.kind === "phonebooth"), "station phone");
+    // Restore the common old-save case where a genuine missed item reached its automatic retry cap.
+    await page.evaluate(id => window.__ew.store.getState().updateProgress(p => { p.phone.missed[id].presentations = 3; }), flood);
+    waiting = (await state()).missed;
+    await page.keyboard.press("e");
+    const book = page.getByRole("dialog", { name: ui("Miesto telefonų knyga", "Town directory") });
+    await press(book.locator('[data-contact="lizzie"]'));
+    await press(book.getByRole("button", { name: ui("Pradėti mokomąjį skambutį", "Start practice call") }));
+    await waitFor(() => book.locator(".booth-line").isVisible(), "practice at the booth");
+    await noCardFor("a practice panel blocks new cards");
+    await press(book.getByRole("button", { name: ui("Padėti ragelį", "Hang up") }));
+    assert.deepEqual((await state()).missed, waiting);
+    assert.deepEqual((await state()).invitation, invitation);
+    await press(book.locator('[data-contact="lizzie"]'));
+    await press(book.getByRole("button", { name: new RegExp(ui("Atverti savo telefone", "Open on my phone")) }));
+    const callback = missed.locator(`[data-call="${flood}"] button`);
+    assert(await callback.evaluate(el => el === document.activeElement));
+    assert.equal(await missed.locator(".missed-call").count(), 2);
+    await shot("booth-handoff", missed);
+    await press(callback);
+  } else {
+    await press(missed.getByRole("button", { name: ui("Perskambinti", "Call back") }));
+  }
   await waitFor(() => conv(flood), "returning a missed call opens it");
   await waitFor(() => page.locator(".scene-intro").isVisible(), "regular flood intro");
   assert((await page.locator(".scene-intro").innerText()).includes(ui("Pirmiausia paskambink", "First call your friend Andrea")));
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id), flood));
+  if (pc) {
+    assert.deepEqual((await state()).missed, { [support]: waiting[support] });
+    await page.keyboard.press("p");
+    await press(missed.locator(`[data-call="${support}"] button`));
+    await waitFor(() => conv(support), "the other callback remains available");
+    assert(await page.evaluate(id => window.__ew.game.finishPhoneCallForTest(id), support));
+    await page.evaluate(() => window.__ew.game.enterZone("town", { x: 28, z: -20, rot: Math.PI }, true));
+  }
   assert.deepEqual((await state()).missed, {});
 
   await page.evaluate((id) => {

@@ -1,3 +1,4 @@
+import { checkPhoneBooth } from "../phone-booth-checks";
 import { expect, it, vi } from "vitest";
 import { PerspectiveCamera, Vector3 } from "three";
 import { NPCS } from "@/content/npcs";
@@ -13,16 +14,16 @@ import { L } from "@/ui/i18n";
 
 it("uses Puerto Colibrí's callers, portraits, reminders and incoming intro", () => {
   expect(PHONE_CALLS).toEqual({
-    "s76-dentist-call": { npc: "linda", name: "Lorena · Clínica Dental Coral", kind: "reminder",
+    "s76-dentist-call": { npc: "linda", organization: "Clínica Dental Coral", name: "Lorena · Clínica Dental Coral", kind: "reminder",
       reason: "A tooth has been bothering you for days. Time to make a dentist appointment?" },
-    "s80-support-call": { npc: "claire", name: "NetWave", kind: "reminder",
+    "s80-support-call": { npc: "claire", organization: "NetWave", name: "NetWave", kind: "reminder",
       reason: "Your internet is down and the modem light is blinking red. Call your provider." },
-    "s89-video-call": { npc: "kate", name: "Sofía · Línea Clara", kind: "incoming", video: true },
-    "s90-running-late": { npc: "harris", name: "Ingeniero Montes", kind: "reminder",
+    "s89-video-call": { npc: "kate", organization: "Línea Clara", name: "Sofía · Línea Clara", kind: "incoming", video: true },
+    "s90-running-late": { npc: "harris", organization: "Línea Clara", name: "Ingeniero Montes", kind: "reminder",
       reason: "It's 8:50, and the meeting starts at nine. Let your boss know you're running late." },
     "s83-invite-call": { npc: "lizzie", name: "Andrea", kind: "reminder",
       reason: "You have two tickets for Friday's concert. Invite a friend!" },
-    "p26-complaint": { npc: "kyle", name: "Hogar Puerto", kind: "reminder",
+    "p26-complaint": { npc: "kyle", organization: "Hogar Puerto", name: "Hogar Puerto", kind: "reminder",
       reason: "Your new sofa came late and broken. Call the store: polite, but firm." },
     "p24-flood": { npc: "lizzie", name: "Andrea", kind: "incoming" },
   });
@@ -95,3 +96,5 @@ it("can reach Andrea from each arrival point with a clear meeting shot", () => {
     vi.unstubAllGlobals();
   }
 });
+
+checkPhoneBooth("en");
