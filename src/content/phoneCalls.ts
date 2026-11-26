@@ -1,19 +1,19 @@
 import { NPCS } from "./npcs";
 
-type Caller = { npc: string; name: string };
+type Caller = { npc: string; name: string; organization?: string };
 export type PhoneCall = Caller & ({ kind: "incoming"; video?: boolean } | { kind: "reminder"; reason: string });
 
 const caller = (npc: string, organization?: string): Caller => ({
-  npc, name: [NPCS[npc].name, organization].filter(Boolean).join(" · "),
+  npc, organization, name: [NPCS[npc].name, organization].filter(Boolean).join(" · "),
 });
 
 export const PHONE_CALLS: Readonly<Record<string, PhoneCall>> = {
   "s76-dentist-call": { ...caller("linda", "Green Street Dental"), kind: "reminder", reason: "Jau kelias dienas skauda dantį. Gal metas užsiregistruoti pas odontologą?" },
-  "s80-support-call": { npc: "claire", name: "NetWave", kind: "reminder", reason: "Neveikia internetas, lemputė mirksi raudonai. Paskambink tiekėjui." },
+  "s80-support-call": { npc: "claire", name: "NetWave", organization: "NetWave", kind: "reminder", reason: "Neveikia internetas, lemputė mirksi raudonai. Paskambink tiekėjui." },
   "s89-video-call": { ...caller("kate", "Brightline"), kind: "incoming", video: true },
-  "s90-running-late": { ...caller("harris"), kind: "reminder", reason: "8:50, o susirinkimas prasideda devintą. Pranešk viršininkui, kad vėluoji." },
+  "s90-running-late": { ...caller("harris"), organization: "Brightline", kind: "reminder", reason: "8:50, o susirinkimas prasideda devintą. Pranešk viršininkui, kad vėluoji." },
   "s83-invite-call": { ...caller("lizzie"), kind: "reminder", reason: "Turi du bilietus į penktadienio koncertą. Pakviesk draugę!" },
-  "p26-complaint": { npc: "kyle", name: "Harbor Home", kind: "reminder", reason: "Naujas šaldytuvas vėl neveikia. Skambink į parduotuvę – mandagiai, bet tvirtai." },
+  "p26-complaint": { npc: "kyle", name: "Harbor Home", organization: "Harbor Home", kind: "reminder", reason: "Naujas šaldytuvas vėl neveikia. Skambink į parduotuvę – mandagiai, bet tvirtai." },
   "p24-flood": { ...caller("lizzie"), kind: "incoming" },
 };
 

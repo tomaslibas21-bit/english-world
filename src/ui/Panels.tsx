@@ -42,6 +42,7 @@ import { HARBOR_SURF } from "../game/world/surf";
 import { GYM_ENTRY } from "../content/gym-entry";
 import { CavePicker } from "./CavePicker";
 
+const PhoneBooth = lazy(() => import("./PhoneBooth"));
 const WorldMapPanel = lazy(() => import("./worldMap"));
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
@@ -56,18 +57,29 @@ function mainNpc(s: SituationMeta) {
 export function Panels() {
   const panel = useStore((s) => s.hud.panel);
   useEffect(() => {
-    if (!panel) return;
+    if (!panel || panel === "phonebooth") return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); useStore.getState().setHud({ panel: null }); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [panel]);
+  const fromBooth = useRef(false);
+  useLayoutEffect(() => {
+    if (panel === "phonebooth") fromBooth.current = true;
+    else if (!panel && fromBooth.current) {
+      fromBooth.current = false;
+      document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus({ preventScroll: true });
+    }
+  }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   return (
-    <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+    <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (panel !== "phonebooth" && e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}
       {panel === "journal" && <Journal close={close} />}
       {panel === "phone" && <Phone close={close} />}
+      {panel === "phonebooth" && <Suspense fallback={<button data-pad-back onClick={close}>Uždaryti</button>}>
+        <PhoneBooth close={close} />
+      </Suspense>}
       {panel === "settings" && <Settings close={close} />}
       {panel === "phrasebook" && <Phrasebook close={close} />}
       {panel === "scenarios" && <Scenarios close={close} />}
@@ -466,6 +478,11 @@ function TownMapPanel({ close }: { close: () => void }) {
 }
 
 function Phone({ close }: { close: () => void }) {
+  const focusId = useStore(s => s.hud.phoneMissedFocus);
+  const callback = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (focusId) callback.current?.focus();
+  }, [focusId]);
   const calls = ROUTE.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);
   const progress = useStore((s) => s.progress);
   const textId = useStore((s) => s.hud.textThread);
@@ -484,7 +501,7 @@ function Phone({ close }: { close: () => void }) {
         {missed.map((sit) => (
           <div className="contact missed-call" key={sit.id} data-call={sit.id}>
             <span className="txt"><b>{PHONE_CALLS[sit.id]?.name ?? NPCS[sit.npc]?.name}</b><span>Praleistas skambutis</span></span>
-            <button className="btn small" onClick={() => { close(); game?.call(sit.id); }}>Perskambinti</button>
+            <button ref={sit.id === focusId ? callback : undefined} className="btn small" onClick={() => { close(); game?.call(sit.id); }}>Perskambinti</button>
           </div>
         ))}
       </section>}
@@ -499,7 +516,7 @@ function Phone({ close }: { close: () => void }) {
               {s.mode === "video" ? <Icon name="video" size={20} /> : n?.name.replace(/^(Mr\.|Ms\.|Mrs\.) /, "").charAt(0)}
               <span className="contact-badge"><SitIcon id={s.id} size={13} /></span>
             </span>
-            <span className="txt"><b>{n?.name}</b><span>{s.title.lt}{st ? <> · <Stars n={st} of={st} size={13} label={`${st} iš 3`} /></> : null}</span></span>
+            <span className="txt"><b>{n?.name}</b><span>{s.title.lt}{s.mode === "video" && " · Vaizdo skambutis"}{st ? <> · <Stars n={st} of={st} size={13} label={`${st} iš 3`} /></> : null}</span></span>
             <span className="call"><Icon name={s.mode === "video" ? "video" : "phoneCall"} size={21} /></span>
           </button>
         );

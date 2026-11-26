@@ -1443,6 +1443,27 @@ async function detachContract(h, real) {
     await page.locator("[data-pad-focus], [data-pad-slot], .pad-hint-layer").count() === 0, await state());
 }
 
+async function stationPhoneContract({ page, attach, when, tap, focusWith, focused, until, check, step }) {
+  await page.evaluate(() => window.__ew.game.enterZone("station", { x: -5.2, z: 6.65, rot: 0 }, true));
+  await attach();
+  await when("at the station listening mark with a controller", s => s.pad.connected && s.prompt === "phonebooth");
+  await tap("X");
+  await until("X opens the directory", () => page.locator(".booth-book").isVisible());
+  await focusWith('[data-contact="harris"]');
+  await tap("A");
+  await focusWith(".booth-offer-row .booth-primary");
+  await tap("A");
+  await until("A starts Harris's call", () => page.locator(".booth-line").textContent().then(s => s === "Hello, this is Harris."));
+  await focusWith(".booth-actions .booth-primary");
+  await tap("A");
+  await until("A advances to the learner", () => page.locator(".booth-line").textContent().then(s => s === "I'm running late."));
+  await tap("B");
+  check("B hangs up at the same contact", await focused('[data-contact="harris"]'));
+  await tap("B");
+  await step(2);
+  check("B returns to the station prompt", await focused(".hud .prompt"));
+}
+
 async function townContract(h) {
   const real = await realMovement(h);
   await idleAndAttach(h, real);
@@ -2050,6 +2071,7 @@ try {
   if (storage !== "puerto-colibri") {
     contracts.unshift(["light", lazyPopoverContract, "light-popovers"]);
     contracts.push(
+      ["town", stationPhoneContract, "station-phone"],
       ["town", async (h) => { await settingsAdjustments(h); await townHudChoices(h); }, "town-choices"],
       ["town", async (h) => { await narrationBack(h); await reviewAdjustments(h); }, "town-narration-review"],
     );

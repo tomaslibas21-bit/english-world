@@ -63,6 +63,7 @@ import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
 import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
+import { STATION_PHONE } from "./world/stationPhone";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
@@ -253,7 +254,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph" | "phonebooth"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -1183,7 +1184,7 @@ export class Game implements GameApi {
         this.restoreCaveScene = undefined;
       }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, frontMark: id === "station" ? STATION_PHONE : undefined };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -1436,7 +1437,7 @@ export class Game implements GameApi {
     if (gym) this.gymHeldKeys.add(k);
     else if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active || st.hud.glyph) return; // the active reader or conversation handles its own keys
-    if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    if (st.hud.panel) { if (k === "escape" && st.hud.panel !== "phonebooth") st.setHud({ panel: null }); return; }
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
@@ -2337,6 +2338,19 @@ export class Game implements GameApi {
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "phonebooth") {
+      const st = useStore.getState();
+      if (repeat || this.zone.id !== "station" || st.hud.phoneCard || st.hud.panel || st.conv.active || this.conversationLoads) return;
+      this.autoPath = null;
+      this.autoTarget = null;
+      this.steer.reset();
+      this.stepOut = 0;
+      this.vel.set(0, 0, 0);
+      this.moveVel.set(0, 0, 0);
+      this.keys.clear();
+      this.setJoystick(0, 0);
+      st.setHud({ panel: "phonebooth" });
+    }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -4346,6 +4360,14 @@ export class Game implements GameApi {
       } else if (this.caveZone) {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
+        if (this.zone.id === "station" && !this.hop.air) {
+          const reach = Math.hypot(p.x - STATION_PHONE.x, p.z - STATION_PHONE.markZ);
+          if (reach < STATION_PHONE.reach && reach < bd) {
+            bd = reach;
+            const label = "Naudotis viešuoju telefonu";
+            best = { kind: "phonebooth", id: "phonebooth", label, prompt: { kind: "phonebooth", label } };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
