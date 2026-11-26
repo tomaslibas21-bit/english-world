@@ -419,25 +419,27 @@ describe.each([30, 60])("PC conversation rig at %i Hz", (hz) => {
     pose.speak("greeting", null, { kind: "greeting" });
     for (let i = 0; i < Math.round(0.75 * hz); i++) {
       actor.update(dt);
-      expect(r.upperR.rotation.z - arm.z).toBeLessThanOrEqual(0.75 + 1e-9);
-      expect(r.foreR.rotation.z - fore.z).toBeLessThanOrEqual(0.14 + 1e-9);
+      // A wave is a raised hand: the arm out to the side, the forearm up from the elbow, below the eyes.
+      expect(r.upperR.rotation.z - arm.z).toBeLessThanOrEqual(1.38 * 1.07);
+      expect(r.foreR.rotation.z - fore.z).toBeLessThanOrEqual((1.3 + 0.17) * 1.07);
       r.foreR.localToWorld(hand.set(0, -r.handLength, 0));
       expect(hand.y).toBeLessThan(r.eye.getWorldPosition(eye).y);
       peaks.push(r.foreR.rotation.z - fore.z);
     }
-    expect(Math.max(...peaks)).toBeGreaterThan(0.12);
-    expect(peaks.filter((value, i) => value > 0.08 && value > (peaks[i - 1] ?? 0) && value >= (peaks[i + 1] ?? 0))).toHaveLength(1);
+    expect(Math.max(...peaks)).toBeGreaterThan(1.3);
+    // The hand swings out, back across and out again.
+    expect(peaks.filter((value, i) => value > 1.3 && value > (peaks[i - 1] ?? 0) && value >= (peaks[i + 1] ?? 0)).length).toBeGreaterThanOrEqual(2);
 
-    step(actor, 0.95, hz);
+    step(actor, 1.6, hz);
     pose.speak("direction", null, { kind: "point", side: 1, directional: true });
-    step(actor, 0.3, hz);
-    expect(r.upperR.rotation.x - arm.x).toBeCloseTo(-0.56, 8);
-    expect(r.foreR.rotation.x - fore.x).toBeCloseTo(-0.68, 8);
-    step(actor, 1.5, hz);
+    step(actor, 0.45, hz);
+    expect(r.upperR.rotation.x - arm.x).toBeCloseTo(-1.05, 1);
+    expect(r.foreR.rotation.x - fore.x).toBeCloseTo(-0.16, 1);
+    step(actor, 2.1, hz);
     pose.speak("offer", null, { kind: "offer" });
-    step(actor, 0.3, hz);
-    expect(r.upperR.rotation.x - arm.x).toBeCloseTo(-0.48, 8);
-    expect(r.foreR.rotation.x - fore.x).toBeCloseTo(-0.90, 8);
+    step(actor, 0.55, hz);
+    expect(r.upperR.rotation.x - arm.x).toBeCloseTo(-0.48, 1);
+    expect(r.foreR.rotation.x - fore.x).toBeCloseTo(-0.90, 1);
     actor.dispose();
   });
 

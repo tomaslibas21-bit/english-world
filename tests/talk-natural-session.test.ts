@@ -290,7 +290,7 @@ describe("shared 3D presentation", () => {
     s.audio.visualOwner = { ...owner };
     s.audio.elapsed = 0;
     s.audio.state = "playing";
-    s.advance(0.8);
+    s.advance(2.4); // an arm held out with the words takes its time to come back
     expect(sample()).toMatchObject({ gesture: null, timers: { armAt } });
   });
 

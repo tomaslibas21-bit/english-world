@@ -7,7 +7,7 @@ import { talkRoomAnchors } from "../world/talkNatural";
 import type { ClassifiedCue, VoiceVisualOwner } from "./contract";
 import type { SessionReaction } from "./feedback";
 import { inspectTalkNatural, inspectedRequest } from "./inspection";
-import { bindConversationPose, type GestureRequest, type TalkRole } from "./pose";
+import { ARM_REST, bindConversationPose, type GestureRequest, type TalkRole } from "./pose";
 import { lineSeed, talkRandom } from "./seed";
 
 export interface TalkActor { id: string; ch: GameCharacter }
@@ -282,7 +282,7 @@ export class NaturalSession {
     const pose = peer.pose;
     if (!pose) return;
     let kind: typeof peer.style.farewell | "headGreeting" = peer.style.farewell;
-    if (!pose.canWave || this.time + delay - this.armAt < 1.6 ||
+    if (!pose.canWave || this.time + delay - this.armAt < ARM_REST ||
       lineSeed(peer.actor.id, this.options.run, line, 5) >= peer.style.armChance) kind = peer.style.directs ? "headGreeting" : "yes";
     const side = lineSeed(peer.actor.id, this.options.run, line, 4) < 0.5 ? -1 : 1;
     if (pose.react(kind, side, delay, line, textOnly && peer.style.directs)) {
@@ -343,9 +343,10 @@ export class NaturalSession {
     let kind: GestureRequest["kind"] = cue.family;
     const wantsArm = kind !== "yes" && kind !== "no";
     const routePoint = peer.style.directs && kind === "point" && (cue.side || cue.straight);
-    const allowed = peer.style.directs ? routePoint : lineSeed(id, run, line, 5) < peer.style.armChance;
+    // A direction and a thing handed over belong to their words; the rest depends on the person.
+    const allowed = peer.style.directs ? routePoint : kind === "point" || kind === "offer" || lineSeed(id, run, line, 5) < peer.style.armChance;
     const opportunity = pose.armOpportunity;
-    const arms = wantsArm && opportunity > 0 && this.time + delay - this.armAt >= 1.6 &&
+    const arms = wantsArm && opportunity > 0 && this.time + delay - this.armAt >= ARM_REST &&
       allowed && (kind !== "greeting" || pose.canWave);
     if (wantsArm && !arms) {
       if (kind === "greeting" || kind === "offer" || peer.style.directs) kind = "headGreeting";

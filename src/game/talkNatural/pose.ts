@@ -46,6 +46,7 @@ export interface PoseOptions {
 }
 
 const clamp = (t: number, min: number, max: number) => Math.max(min, Math.min(max, t));
+const mix = (base: number, target: number, weight: number) => base + (target - base) * weight;
 const ease = (t: number) => { const u = clamp(t, 0, 1); return u * u * (3 - 2 * u); };
 const HANDOFF_SECONDS = 0.16;
 const RELEASE_SECONDS = 0.30;
@@ -66,18 +67,47 @@ interface Reach {
 }
 
 const REACH: Partial<Record<CueKind, Reach>> = {
-  greeting: { forward: -0.34, out: 0.75, bend: -1.4, twist: -0.32, side: 0 },
+  // A wave is a hand up beside the head: the arm out to the side, the forearm up from the elbow.
+  greeting: { forward: -0.15, out: 1.38, bend: -0.11, twist: -0.3, side: 1.3 },
   question: { forward: -0.27, out: 0.20, bend: -0.81, twist: -0.85, side: 0.18, both: true },
-  point: { forward: -0.56, out: 0.19, bend: -0.68, twist: -0.22, side: 0.12 },
+  point: { forward: -1.05, out: 0.6, bend: -0.16, twist: -0.22, side: 0.1 },
   shrug: { forward: -0.10, out: 0.16, bend: -0.56, twist: -0.70, side: 0.24, both: true },
   count: { forward: -0.37, out: 0.17, bend: -1.04, twist: -0.55, side: 0.12 },
   offer: { forward: -0.48, out: 0.12, bend: -0.90, twist: -0.95, side: 0.12 },
-  wave: { forward: -0.32, out: 0.65, bend: -1.36, twist: -0.32, side: 0 },
+  wave: { forward: -0.15, out: 1.34, bend: -0.11, twist: -0.3, side: 1.3 },
   openPalm: { forward: -0.35, out: 0.18, bend: -0.96, twist: -0.85, side: 0.18 },
   heart: { forward: -0.40, out: -0.08, bend: -1.51, twist: -0.20, side: -0.56 },
 };
 
-const STRAIGHT: Reach = { forward: -0.62, out: 0.06, bend: -0.65, twist: -0.20, side: 0 };
+const STRAIGHT: Reach = { forward: -0.95, out: 0.06, bend: -0.3, twist: -0.20, side: 0 };
+
+/** Behind a counter or a till the hands come up in front of the chest, where the learner can see them (whole poses,
+ *  not added to the resting arm). */
+const REACH_HIGH: Partial<Record<CueKind, Reach>> = {
+  greeting: { forward: -0.2, out: 1.15, bend: -0.3, twist: -0.3, side: 1.4 },
+  question: { forward: -1.05, out: 0.08, bend: -1.72, twist: -0.9, side: 0.14 },
+  point: { forward: -0.95, out: 0.45, bend: -1.45, twist: -0.2, side: 0.45 },
+  shrug: { forward: -0.75, out: 0.26, bend: -1.95, twist: -0.8, side: 0.36, both: true },
+  count: { forward: -0.85, out: 0.2, bend: -2.05, twist: -0.4, side: 0.08 },
+  offer: { forward: -1.15, out: 0.04, bend: -1.3, twist: -1.0, side: 0.04 },
+  wave: { forward: -0.2, out: 1.15, bend: -0.3, twist: -0.3, side: 1.4 },
+  openPalm: { forward: -1.0, out: 0.12, bend: -1.8, twist: -0.85, side: 0.14 },
+  heart: { forward: -0.85, out: -0.08, bend: -2.3, twist: -0.2, side: -0.5 },
+};
+/** On the way up from below a counter the forearm folds first, so the hand rises close to the body. */
+const TUCK_FORWARD = -0.32, TUCK_BEND = -2.45;
+
+/** An arm stroke: seconds to arrive, the longest it is held, seconds to let go. It lets go sooner when the phrase ends. */
+const STROKE: Partial<Record<CueKind, readonly [number, number, number]>> = {
+  greeting: [0.26, 0.66, 0.42], wave: [0.26, 0.74, 0.45],
+  question: [0.30, 1.05, 0.50], point: [0.30, 1.30, 0.52], shrug: [0.28, 0.55, 0.46],
+  count: [0.28, 0.80, 0.46], offer: [0.34, 1.15, 0.55], openPalm: [0.30, 0.75, 0.50], heart: [0.34, 0.80, 0.55],
+};
+const MIN_HOLD = 0.34;
+/** Two hands never move as one: the second follows this far behind. */
+const ARM_LAG = 0.07;
+/** Seconds between the starts of two arm gestures by one person. */
+export const ARM_REST = 2.3;
 
 interface Cue {
   kind: CueKind | null;
@@ -90,16 +120,35 @@ interface Cue {
   smile: boolean;
   line?: TalkLineId;
   readable?: boolean;
+  /** Arm strokes: seconds to arrive, and the age at which the hand starts back. */
+  rise: number;
+  end: number;
+  /** A sign-off or a reply plays out whole; a stroke on a spoken line ends with its phrase. */
+  whole?: boolean;
 }
 
-function emptyCue(): Cue { return { kind: null, age: 0, side: 1, count: 1, directional: false, straight: false, strength: 1, smile: false }; }
+function emptyCue(): Cue {
+  return { kind: null, age: 0, side: 1, count: 1, directional: false, straight: false, strength: 1, smile: false, rise: 0.3, end: 1 };
+}
 
-function cueTime(kind: CueKind | null, age: number) {
+/** A small double nod: down, most of the way back, a lighter second dip. */
+function nodTwice(age: number) {
+  return oneShot(age, 0.17, 0.02, 0.24) + 0.5 * oneShot(age - 0.40, 0.15, 0, 0.26);
+}
+
+function cueTime(c: Cue, age = c.age) {
+  const kind = c.kind;
   if (!kind) return 0;
+  const stroke = STROKE[kind];
+  if (stroke) {
+    // Arrive a touch past the pose and settle into it, hold while the phrase lasts, let go slower than the rise.
+    const arrive = ease(age / c.rise) + 0.06 * Math.sin(Math.PI * clamp((age - 0.6 * c.rise) / (0.9 * c.rise), 0, 1));
+    return arrive * ease((c.end + stroke[2] - age) / stroke[2]);
+  }
   if (kind === "understood") return oneShot(age, 0.23, 0.02, 0.27);
-  if (kind === "repeat") return oneShot(age, 0.22, 0.15, 0.28);
-  if (kind === "wave" || kind === "openPalm" || kind === "heart") return oneShot(age, 0.22, 0.28, 0.28);
-  return oneShot(age, 0.20, kind === "count" ? 0.35 : 0.23, 0.28);
+  if (kind === "repeat") return oneShot(age, 0.24, 0.30, 0.36);
+  if (kind === "yes") return nodTwice(age);
+  return oneShot(age, 0.20, 0.23, 0.28);
 }
 
 function jointValues() {
@@ -190,9 +239,29 @@ class ConversationPose implements NaturalPoseDriver {
   /** Speech carriage: the head rides the voice (stress) and drifts a little while the line plays (talk). */
   private talk = 0;
   private stress = 0;
+  /** Quiet attention: the speaker has stopped (or not yet begun) and is simply with the learner. */
+  private rest = 0;
   private readonly energy: number;
   private readonly swayA: number;
   private readonly swayB: number;
+  /** Lively people arrive at a pose sooner, reserved ones take their time. */
+  private readonly tempo: number;
+  /** This person's own pace of small movements (about 0.85 to 1.2). */
+  private readonly pace: number;
+  /** The side the attentive head rests on; it changes now and then while the learner thinks. */
+  private attendSide: -1 | 1;
+  private attendNow: number;
+  private beats = 0;
+  private nodKind = 0;
+  private nodSize = 1;
+  private phrases = 0;
+  private accent = 0;
+  /** The eyes flick to the learner's mouth or hands and back while they wait. */
+  private dartAge = Infinity;
+  private dartAt = Infinity;
+  private darts = 0;
+  private dartX = 0;
+  private dartY = 0;
 
   private readonly gaze = new Vector3();
   private readonly ray = new Vector3();
@@ -241,6 +310,9 @@ class ConversationPose implements NaturalPoseDriver {
     const spot = Math.abs(actor.root.position.x * 12.9898 + actor.root.position.z * 78.233);
     this.swayA = spot % 6.283;
     this.swayB = (spot * 1.618) % 6.283;
+    this.tempo = clamp(1.6 - 0.6 * this.energy, 0.8, 1.2);
+    this.pace = 0.85 + 0.35 * ((spot * 0.7548) % 1);
+    this.attendNow = this.attendSide = this.swayA > 3.1416 ? 1 : -1;
     if (handoff && !options.beforeAdvance) this.entrySeconds = HANDOFF_SECONDS;
     this.motion?.addEventListener("change", this.motionChanged);
     this.motionChanged();
@@ -265,6 +337,18 @@ class ConversationPose implements NaturalPoseDriver {
       this.afterQuiet = false;
     } else this.scheduleListener();
   };
+
+  /** This person's own variety, the same on every run: no random draw. */
+  private pick(n: number, salt: number) {
+    const x = Math.sin(n * 12.9898 + salt * 78.233 + this.swayA) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  /** Staff behind a counter or a till: their hands work below it, so a gesture comes up in front of the chest. */
+  private get high() {
+    const busy = this.actor.busy;
+    return this.counterY !== undefined || (!!this.options.idleWorkHands && (busy === "wipe" || busy === "type"));
+  }
 
   setRole(role: TalkRole) {
     if (!this.active || this.releasing || role === this.role) return;
@@ -345,6 +429,7 @@ class ConversationPose implements NaturalPoseDriver {
     }
     this.fadeCue();
     if (!this.startCue(kind, side, 1, delay)) return false;
+    this.cue.whole = true;
     this.cue.line = line;
     this.cue.readable = readable;
     return true;
@@ -408,7 +493,7 @@ class ConversationPose implements NaturalPoseDriver {
 
   private fadeCue() {
     if (!this.cue.kind) return;
-    if (cueTime(this.cue.kind, this.cue.age) > 0) {
+    if (cueTime(this.cue) > 0) {
       Object.assign(this.fading, this.cue);
       this.fadeAge = 0;
     }
@@ -422,7 +507,7 @@ class ConversationPose implements NaturalPoseDriver {
     }
     if (REACH[kind]) {
       const onset = this.time + delay;
-      if (onset - this.lastArm < 1.6) {
+      if (onset - this.lastArm < ARM_REST) {
         if (kind === "greeting" || kind === "wave" || kind === "heart" || kind === "openPalm") kind = "headGreeting";
         else return false;
       } else this.lastArm = onset;
@@ -437,6 +522,10 @@ class ConversationPose implements NaturalPoseDriver {
     this.cue.smile = smile;
     this.cue.line = undefined;
     this.cue.readable = false;
+    const stroke = STROKE[kind];
+    this.cue.rise = stroke ? stroke[0] * this.tempo : 0.2;
+    this.cue.end = stroke ? this.cue.rise + stroke[1] + (kind === "count" ? 0.19 * (count - 1) : 0) : 0;
+    this.cue.whole = false;
     return true;
   }
 
@@ -446,7 +535,7 @@ class ConversationPose implements NaturalPoseDriver {
     return (blocked === 3 || this.actor.anim === "sit" || this.actor.poolPose ? 0 : blocked ? SUPPORTED_REACH : 1);
   }
 
-  get canWave() { return this.counterY === undefined && this.armOpportunity > 0; }
+  get canWave() { return this.armOpportunity > 0; }
 
   private scheduleListener() {
     this.listenAt = this.time + (this.role === "learner" ? 5 + this.random() * 3 : 2 + this.random() * 1.5);
@@ -476,27 +565,52 @@ class ConversationPose implements NaturalPoseDriver {
 
       const listening = this.role === "listening", learner = this.role === "learner";
       if (!this.reduced) {
-        const incline = (listening || this.role === "thinking") && cueTime(this.response.kind, this.response.age) === 0;
+        const incline = (listening || this.role === "thinking") && cueTime(this.response) === 0;
         this.listenWeight = clamp(this.listenWeight + dt / (incline ? 0.26 : -0.22), 0, 1);
         if ((listening || learner) && this.time >= this.listenAt) {
           this.listenAge = 0;
           this.learnerHip = !this.learnerHip;
           this.listenAt = this.time + (learner ? 5 : 4) + this.random() * 3;
+          // The first is a plain nod. After it: a nod, a slower double nod, or the head only settles to its other side.
+          const n = this.beats++, k = n && listening ? this.pick(n, 1) : 0;
+          this.nodKind = k < 0.5 ? 0 : k < 0.78 ? 1 : 2;
+          this.nodSize = n ? 0.7 + 0.5 * this.pick(n, 2) : 1;
+          if (listening && n && (this.nodKind === 2 || this.pick(n, 3) < 0.35)) this.attendSide = this.attendSide === 1 ? -1 : 1;
+        }
+        this.attendNow += (this.attendSide - this.attendNow) * (1 - Math.exp(-dt / 0.3));
+        this.dartAge += dt;
+        if (this.role === "speaking" || this.role === "closing" || this.role === "learner") this.dartAt = Infinity;
+        else if (this.dartAt === Infinity) this.dartAt = this.time + 1.6 + 2 * this.pick(1, 7);
+        else if (this.time >= this.dartAt) {
+          const n = ++this.darts;
+          this.dartAge = 0;
+          this.dartX = (this.pick(n, 8) - 0.5) * 0.006;
+          this.dartY = -0.001 - 0.0022 * this.pick(n, 9);
+          this.dartAt = this.time + 2.4 + 3.2 * this.pick(n, 7);
         }
       }
     }
 
     this.lips.read(dt, this.options.audio, this.voice, held);
     const { sample, level, silence } = this.lips;
-    const voiced = !this.releasing && this.role === "speaking" && silence < 0.45;
+    const speaking = !this.releasing && this.role === "speaking";
+    const voiced = speaking && silence < 0.45;
     this.talk = clamp(this.talk + dt * (voiced ? 1 / 0.30 : -1 / 0.45), 0, 1);
+    this.rest = clamp(this.rest + dt * (speaking && silence >= 0.5 ? 1 / 0.4 : -1 / 0.25), 0, 1);
     this.stress += (this.lips.mouth - this.stress) * (1 - Math.exp(-dt / 0.11));
+    // The hand goes back when the phrase it belongs to is over, not on a fixed count.
+    const c = this.cue;
+    if (c.kind && !c.whole && !c.readable && c.age < c.end && c.age > c.rise + MIN_HOLD && silence >= 0.22 &&
+      (sample === "quiet" || sample === "ended")) c.end = c.age;
     if (silence >= 0.18) this.afterQuiet = true;
     if (this.afterQuiet && sample === "voiced" && level! >= 0.18) {
       this.afterQuiet = false;
       if (!this.reduced && this.time - this.lastPhrase >= 0.75) {
         this.phraseAge = 0;
         this.lastPhrase = this.time;
+        // Not the same nod on every phrase: mostly a dip, sometimes the chin lifts, the head tips or only the brows go.
+        const a = this.phrases++ ? this.pick(this.phrases, 5) : 0;
+        this.accent = a < 0.45 ? 0 : a < 0.65 ? 1 : a < 0.85 ? 2 : 3;
       }
     }
   }
@@ -616,12 +730,29 @@ class ConversationPose implements NaturalPoseDriver {
     return this.hand.y <= this.eyes.y - 0.11 && (this.counterY === undefined || this.hand.y >= this.counterY + 0.07 || this.options.counterContains?.(this.hand) === false);
   }
 
-  private mixArm(side: -1 | 1, reach: Reach, weight: number, range: number, wave: number, pulse: number, direction = side) {
+  private mixArm(side: -1 | 1, reach: Reach, weight: number, range: number, wave: number, pulse: number, direction = side, high = false, ride = 0) {
     const r = this.rig;
     const upper = side < 0 ? r.upperL : r.upperR, fore = side < 0 ? r.foreL : r.foreR;
+    if (high) {
+      // From below the counter: the forearm folds up against the chest first, then the arm carries the hand out
+      // over the top. On the way back the same in reverse. The hand never sweeps through the counter.
+      const lift = ease(weight / 0.55), carry = ease((weight - 0.3) / 0.7);
+      const forward = mix(mix(upper.rotation.x, TUCK_FORWARD, lift), reach.forward, carry);
+      const out = mix(upper.rotation.z, direction * reach.out, carry);
+      const bend = mix(mix(fore.rotation.x, TUCK_BEND, lift), reach.bend, carry) + ride * carry;
+      const twist = mix(fore.rotation.y, side * reach.twist, lift) + side * pulse;
+      const swing = mix(fore.rotation.z, direction * (reach.side + wave), carry);
+      r.eye.getWorldPosition(this.eyes);
+      if (!this.handFits(upper, fore, reach.forward, direction * reach.out, reach.bend, side * reach.twist, direction * reach.side)
+        || !this.handFits(upper, fore, forward, out, bend, twist, swing)) return false;
+      upper.rotation.x = forward;
+      upper.rotation.z = out;
+      fore.rotation.set(bend, twist, swing);
+      return true;
+    }
     const forward = upper.rotation.x + reach.forward * weight;
     const out = upper.rotation.z + direction * reach.out * weight;
-    const bend = fore.rotation.x + reach.bend * weight;
+    const bend = fore.rotation.x + reach.bend * weight + ride * weight;
     const twist = fore.rotation.y + side * (reach.twist * weight + pulse);
     const swing = fore.rotation.z + direction * (reach.side + wave) * weight;
     r.eye.getWorldPosition(this.eyes);
@@ -636,9 +767,10 @@ class ConversationPose implements NaturalPoseDriver {
     return true;
   }
 
-  private applyCue(c: Cue, weight: number, blocked: number, supported: boolean) {
+  /** `weight` moves the leading arm and the head; `lagged` is the same stroke a moment later, for the other arm. */
+  private applyCue(c: Cue, weight: number, lagged: number, blocked: number, supported: boolean, ride = 0) {
     const kind = c.kind;
-    if (!kind || weight <= 0) return 0;
+    if (!kind || (weight <= 0 && lagged <= 0)) return 0;
     const { head, browL, browR, corners, upperL, upperR } = this.rig;
     if (kind === "yes" || kind === "understood" || kind === "headGreeting") {
       head.rotation.x += (kind === "yes" ? 0.12 : kind === "understood" ? 0.15 : 0.085) * weight;
@@ -653,13 +785,15 @@ class ConversationPose implements NaturalPoseDriver {
     }
 
     if (c.smile && corners && kind !== "headGreeting") corners.position.y += 0.005 * weight;
-    const reach = c.straight ? STRAIGHT : REACH[kind];
+    const high = this.high && !!REACH_HIGH[kind];
+    const reach = high ? REACH_HIGH[kind] : c.straight ? STRAIGHT : REACH[kind];
     if (!reach) return 0;
     if (kind === "shrug") {
       if (!supported) {
         this.retainShoulders();
-        upperL.position.y = this.shoulderBaseL + 0.015 * weight;
-        upperR.position.y = this.shoulderBaseR + 0.015 * weight;
+        const lift = 0.015 * Math.min(1, weight);
+        upperL.position.y = this.shoulderBaseL + lift;
+        upperR.position.y = this.shoulderBaseR + lift;
       }
       head.rotation.z += 0.025 * c.side * weight;
     }
@@ -667,15 +801,25 @@ class ConversationPose implements NaturalPoseDriver {
     // A free hand can point across the body while the bag or prop stays in its own hand.
     const side = blocked & preferred ? (c.side === -1 ? 1 : -1) : c.side;
     const direction = c.directional ? c.side : side;
-    const range = (supported ? SUPPORTED_REACH : 1) * c.strength;
+    const waving = kind === "greeting" || kind === "wave";
+    // A raised hand stays a raised hand: a small greeting is a lower wave, never a flap at the hip. Over a counter
+    // the pose is whole, so it clears the top.
+    const range = high ? (waving ? Math.max(0.8, Math.min(1, c.strength)) : 1)
+      : (supported ? SUPPORTED_REACH : 1) * (waving ? Math.max(0.8, c.strength) : c.strength);
     const amount = weight * range;
-    const wave = kind === "greeting" || kind === "wave" ? 0.14 * oneShot(c.age - 0.20, 0.10, 0, 0.16) : 0;
-    const countAge = c.age - 0.15, beat = Math.floor(countAge / 0.19);
+    // A wave is the hand out, back across and out again, each swing smaller.
+    const swing = c.age - c.rise * 0.8;
+    const wave = waving
+      ? 0.17 * (oneShot(swing, 0.10, 0, 0.13) - 0.8 * oneShot(swing - 0.21, 0.11, 0, 0.13) + 0.55 * oneShot(swing - 0.43, 0.11, 0, 0.15)) : 0;
+    const countAge = c.age - c.rise + 0.05, beat = Math.floor(countAge / 0.19);
     const pulse = kind === "count" && beat >= 0 && beat < c.count
-      ? 0.09 * oneShot(countAge - beat * 0.19, 0.07, 0, 0.07) * amount : 0;
-    let used = !(blocked & (side < 0 ? 1 : 2)) && this.mixArm(side, reach, amount, range, wave, pulse, direction);
-    if (reach.both && !blocked) used = this.mixArm(side < 0 ? 1 : -1, reach, amount, range, 0, 0) || used;
-    if (!used && c.directional) head.rotation.y += 0.055 * direction * weight;
+      ? 0.09 * oneShot(countAge - beat * 0.19, 0.07, 0, 0.07) * Math.min(1, amount) : 0;
+    let used = !(blocked & (side < 0 ? 1 : 2)) && this.mixArm(side, reach, amount, range, wave, pulse, direction, high, ride);
+    if (reach.both && !blocked) used = this.mixArm(side < 0 ? 1 : -1, reach, lagged * range * 0.92, range, 0, 0, undefined, high, ride * 0.6) || used;
+    if (kind === "point" && used && !c.straight) {
+      // A look where the hand goes, then back to the learner while the arm still holds.
+      head.rotation.y += 0.11 * direction * oneShot(c.age - 0.04, 0.22, 0.3, 0.38) * Math.min(1, weight);
+    } else if (!used && c.directional) head.rotation.y += 0.055 * direction * weight;
     else if (!used && kind !== "shrug") head.rotation.x += 0.033 * weight;
     return used ? side : 0;
   }
@@ -685,7 +829,7 @@ class ConversationPose implements NaturalPoseDriver {
     const r = this.rig, seated = this.actor.anim === "sit";
     const headOnly = this.channel === "head";
     const occupied = blockedHands(this.actor, r, this.options.idleWorkHands), blocked = seated || headOnly ? 3 : occupied;
-    const supported = blocked !== 0 || this.counterY !== undefined;
+    const supported = blocked !== 0 || this.high;
     if (moving || seated !== this.origin.seated) this.blendOrigin = false;
     let gesture = null as CueKind | null, gestureWeight = 0, reactionWeight = 0, listen = 0;
     if (import.meta.env.DEV) {
@@ -699,51 +843,75 @@ class ConversationPose implements NaturalPoseDriver {
     }
     if (!this.reduced && !moving && this.channel !== "face") {
       if (!this.releasing) {
-        const response = cueTime(this.response.kind, this.response.age);
+        const response = cueTime(this.response);
         const incoming = ease(this.fadeAge / HANDOFF_SECONDS);
-        const fading = cueTime(this.fading.kind, this.fading.age) * (1 - incoming);
-        const cue = cueTime(this.cue.kind, this.cue.age) * (this.fading.kind ? incoming : 1);
+        const fadeOut = 1 - incoming, fadeIn = this.fading.kind ? incoming : 1;
+        const fading = cueTime(this.fading) * fadeOut;
+        const cue = cueTime(this.cue) * fadeIn;
         const recoveryAge = this.time - this.recoverFrom;
-        const recovered = this.recovery.kind ? cueTime(this.recovery.kind, recoveryAge) *
+        const recovered = this.recovery.kind ? cueTime(this.recovery, recoveryAge) *
           (1 - ease((recoveryAge - READABLE_POINT_HOLD) / HANDOFF_SECONDS)) : 0;
         const learner = this.role === "learner";
-        const listenBeat = oneShot(this.listenAge, 0.23, 0.02, 0.30) * (1 - Math.max(cue, response));
+        const nod = this.nodKind === 0 ? oneShot(this.listenAge, 0.23, 0.02, 0.30) : this.nodKind === 1 ? 0.8 * nodTwice(this.listenAge) : 0;
+        const listenBeat = nod * this.nodSize * (1 - Math.min(1, Math.max(cue, response)));
         const hip = learner && this.learnerHip && !supported;
         const headBase = r.head.rotation.x, yawBase = r.head.rotation.y, rollBase = r.head.rotation.z;
         const browBaseL = r.browL.position.y, browBaseR = r.browR?.position.y ?? browBaseL;
         const smileBase = r.corners?.position.y ?? 0;
         listen = ease(this.listenWeight);
+        const e = this.energy, t = this.time, pace = this.pace, stress = this.stress;
+        const busyArm = Math.min(1, Math.max(cue, fading));
+        // The attentive head belongs to whoever waits for the learner, and to the quiet before and after a line.
+        const attend = (this.role === "learner" ? 0 : Math.max(listen, ease(this.rest))) * (1 - response);
+        const talk = ease(this.talk) * (1 - response) * (1 - 0.6 * busyArm) * e;
         if (!supported) {
-          this.mixTorso(0.055 * listen, hip ? 0.014 * listenBeat : 0);
-          r.foreL.rotation.x -= 0.13 * listen;
-          r.foreR.rotation.x -= 0.13 * listen;
+          // A person on their feet is never a post from the neck down: the weight drifts slowly from side to side,
+          // the body leans a touch into a stressed word, and the forearms lift with it (one more than the other).
+          const sway = Math.sin(t * 0.55 * pace + this.swayB) * 0.012 * Math.max(attend, talk);
+          this.mixTorso(0.055 * listen + 0.014 * stress * talk, (hip ? 0.014 * listenBeat : 0) + sway);
+          const lift = stress * talk * (1 - busyArm);
+          r.foreL.rotation.x -= 0.13 * listen + 0.075 * lift;
+          r.foreR.rotation.x -= 0.13 * listen + 0.05 * lift;
         }
-        const e = this.energy;
         if (!hip) r.head.rotation.x += (learner ? 0.055 : 0.075 * e) * listenBeat;
-        // An attentive head: a little to one side, the mouth a touch warmer, for as long as the learner has the turn.
-        const attend = listen * (1 - response);
-        r.head.rotation.z += (this.swayA > 3.1416 ? 0.042 : -0.042) * e * attend;
+        // An attentive head: a little to one side, the mouth a touch warmer. It is never a statue: the head drifts
+        // very slowly, each person at their own pace, and the eyes flick to the learner's mouth and back.
+        r.head.rotation.z += (0.042 * this.attendNow + Math.sin(t * 0.6 * pace + this.swayB) * 0.009) * e * attend;
+        r.head.rotation.y += (Math.sin(t * 0.8 * pace + this.swayA) * 0.014 + Math.sin(t * 0.33 * pace + this.swayB) * 0.009) * e * attend;
         if (r.corners) r.corners.position.y += 0.005 * attend;
+        const dart = oneShot(this.dartAge, 0.06, 0.26, 0.09) * attend;
+        if (dart > 0 && !this.baseGaze) {
+          this.retainEyes();
+          r.eye.position.x += this.dartX * dart;
+          r.eye.position.y += this.dartY * dart;
+        }
         const phrase = this.role === "speaking" ? oneShot(this.phraseAge, 0.09, 0.02, 0.28) * (1 - response) : 0;
-        r.head.rotation.x += 0.06 * e * phrase * (1 - Math.max(cue, fading));
-        r.browL.position.y += 0.009 * phrase;
-        if (r.browR) r.browR.position.y += 0.009 * phrase;
-        const talk = ease(this.talk) * (1 - response) * (1 - 0.6 * Math.max(cue, fading)) * e;
+        const accent = this.accent, free = phrase * (1 - busyArm) * e;
+        if (accent === 0) r.head.rotation.x += 0.06 * free;
+        else if (accent === 1) r.head.rotation.x -= 0.032 * free;
+        else if (accent === 2) r.head.rotation.z += (this.swayB > 3.1416 ? 0.045 : -0.045) * free;
+        const brow = (accent === 1 || accent === 3 ? 0.013 : 0.009) * phrase;
+        r.browL.position.y += brow;
+        if (r.browR) r.browR.position.y += brow;
         if (talk > 0) {
           // The head rides the voice: down a little on a stressed syllable, and it never sits dead still mid-sentence.
-          const t = this.time, stress = this.stress;
+          // Two slow waves of different lengths on each axis, at this person's pace: no loop to spot, no two alike.
           r.head.rotation.x += (0.07 * stress - 0.012) * talk;
-          r.head.rotation.y += Math.sin(t * 1.9 + this.swayA) * 0.032 * talk;
-          r.head.rotation.z += Math.sin(t * 1.3 + this.swayB) * 0.024 * talk;
+          r.head.rotation.y += (Math.sin(t * 1.9 * pace + this.swayA) * 0.024 + Math.sin(t * 0.83 * pace + this.swayB) * 0.016) * talk;
+          r.head.rotation.z += (Math.sin(t * 1.3 * pace + this.swayB) * 0.017 + Math.sin(t * 0.61 * pace + this.swayA) * 0.012) * talk;
           r.browL.position.y += 0.006 * stress * talk;
           if (r.browR) r.browR.position.y += 0.006 * stress * talk;
         }
-        const fadingWeight = fading * (this.fading.readable ? 1 : 1 - response);
-        const cueWeight = cue * (this.cue.readable ? 1 : 1 - response);
-        const recoveredSide = this.applyCue(this.recovery, recovered, blocked, supported);
-        const fadingSide = this.applyCue(this.fading, fadingWeight, blocked, supported);
-        const cueSide = this.applyCue(this.cue, cueWeight, blocked, supported);
-        this.applyCue(this.response, response, blocked, supported);
+        const fadingShare = this.fading.readable ? 1 : 1 - response;
+        const cueShare = this.cue.readable ? 1 : 1 - response;
+        const fadingWeight = fading * fadingShare;
+        const cueWeight = cue * cueShare;
+        // While the hand is out it beats lightly with the stressed syllables.
+        const ride = this.role === "speaking" ? -0.09 * (stress - 0.3) * ease(this.talk) : 0;
+        const recoveredSide = this.applyCue(this.recovery, recovered, recovered, blocked, supported);
+        const fadingSide = this.applyCue(this.fading, fadingWeight, cueTime(this.fading, this.fading.age - ARM_LAG) * fadeOut * fadingShare, blocked, supported);
+        const cueSide = this.applyCue(this.cue, cueWeight, cueTime(this.cue, this.cue.age - ARM_LAG) * fadeIn * cueShare, blocked, supported, ride);
+        this.applyCue(this.response, response, response, blocked, supported);
         // The smile outlasts the nod.
         if (this.response.kind === "understood" && r.corners) {
           r.corners.position.y += 0.012 * oneShot(this.response.age - 0.1, 0.2, 0.75, 0.5);
