@@ -884,7 +884,7 @@ function passportRoom({ M, col, g, w, d }: Ctx) {
   add(new THREE.RingGeometry(.071, .084, 20).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.214, deskZ + .04), spruce);
   add(leafShape().scale(.10, .10, 1).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.215, deskZ + .04), spruce);
   slab(bookX + .01, 1.121, deskZ + .405, .052, .017, .12, "#995441");
-  // Lid swung back, with the stamp standing separately from the felt pad.
+  // A raised wood rim frames the felt. Leave space between the pad and the stamp.
   slab(.63, 1.09, deskZ + .19, .41, .084, .33, walnut);
   slab(.63, 1.138, deskZ + .19, .345, .024, .263, "#172d29");
   slab(.70, 1.079, deskZ - .22, .26, .067, .21, "#2a3932");

@@ -78,6 +78,7 @@
 .passport-proof h3 { font-size: clamp(1.55em, 3vw, 2.25em); line-height: 1.06; margin: 7px 0 13px; }
 .passport-proof h3 small { margin-top: 5px; color: #5c5e50; }
 .passport-proof h3:focus { outline: none; }
+.passport-proof:has(h3:focus-visible) { outline: 2px solid #527864; outline-offset: -2px; }
 .passport-proof .passport-status { font: 700 .78em/1.2 var(--ui); color: var(--spruce); letter-spacing: .045em; }
 .passport-status small { display: inline; font: inherit; color: #59675a; letter-spacing: 0; }
 .passport-status small::before { content: " · "; }
