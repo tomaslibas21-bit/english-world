@@ -254,10 +254,12 @@ try {
           await card.waitFor({ state: "visible", timeout: 30_000 });
           assert.equal(await card.locator("b").innerText(), "Maple Harbor Public Library");
           assert.equal(await card.locator(".mm-arrival-sub[lang=lt]").innerText(), "Meipl Harboro viešoji biblioteka");
-          assert.deepEqual(await card.evaluate((el) => [
+          const [title, sub] = await card.evaluate((el) => [
             parseFloat(getComputedStyle(el.querySelector("b")).fontSize),
             parseFloat(getComputedStyle(el.querySelector(".mm-arrival-sub")).fontSize),
-          ]), [16, 13]);
+          ]);
+          // 16/13 px at the default size; the desktop card scales them up together.
+          assert(title >= 16 && sub >= 13 && Math.abs(title / sub - 16 / 13) < 0.05, JSON.stringify({ title, sub }));
           assert.equal(await page.locator(".zone-banner").count(), 0, "The title stays in the location card");
         }
         await waitZone("library");
