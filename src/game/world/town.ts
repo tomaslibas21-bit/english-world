@@ -765,6 +765,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const townHall = b.loc === "town-hall";
   const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -983,11 +984,12 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
   if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
+    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: townHall ? "#214e41" : signInk(b), border: townHall ? "#436353" : b.trim, w: townHall ? 512 : 768, h: townHall ? 108 : 160 });
     const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     if (poolHall) sy = 4.29;
+    if (townHall) sy = 4.25;
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
     if (b.style === "terminal") sy = Math.min(b.h - 0.4 - sw * 80 / 768, TERMINAL_CANOPY_TOP + 0.25 + sw * 80 / 768);
     signW = sw; signH = sw * 160 / 768; signY = sy;
@@ -998,7 +1000,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     if (b.style === "museum") sign.position.set(dx + n[0] * out, MUSEUM_FRIEZE.y, dz + n[1] * out);
     else sign.position.set(dx - t[0] * doorOff + n[0] * out, sy, dz - t[1] * doorOff + n[1] * out);
     sign.rotation.y = rotY;
-    if (b.style !== "house") { group.add(sign); signs.push(sign); }
+    if (townHall || b.style !== "house") { group.add(sign); signs.push(sign); }
   }
 
   // style extras
@@ -1062,7 +1064,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (b.style === "house") {
     // porch
-    M.add("porch", mat("#e8e2d6"), boxGeo(6, 0.35, 2.6, 0, 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
+    M.add("porch", mat("#e8e2d6"), boxGeo(6, townHall ? 0.02 : 0.35, 2.6, 0, townHall ? 0.01 : 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
     for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
@@ -1076,10 +1078,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       if (Math.abs(i) < 1.4) continue;
       M.add("fence", mat("#ffffff"), boxGeo(0.1, 0.9, 0.06, dx + t[0] * i + n[0] * 5.6, 0.45, dz + t[1] * i + n[1] * 5.6));
     }
-    M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
+    if (!townHall) M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
     // the fence blocks on both sides of its gate
     for (const sd of [-1, 1]) {
       const len = b.w / 2 - 1.4, u = sd * (1.4 + len / 2), fx = dx + t[0] * u + n[0] * 5.6, fz = dz + t[1] * u + n[1] * 5.6;
+      if (townHall) M.add("fence", mat("#ffffff"), boxGeo(len, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(fx, 0, fz));
       col.addBox(fx, fz, Math.abs(t[0]) * len + Math.abs(n[0]) * 0.16, Math.abs(t[1]) * len + Math.abs(n[1]) * 0.16);
     }
   }

@@ -810,6 +810,25 @@ function poolHall(c: Ctx) {
 }
 
 const B: Record<string, () => Interior> = {
+  "town-hall": () => room("town-hall", 9, 7, "#bc946e", "#efe7d6", (c) => {
+    const ink = "#234c42", oak = "#ad7747", z = -1.3;
+    const s = smalls(c);
+    s.add(boxGeo(2.4, 0.12, 1.05, 0, 0.94, z), oak);
+    for (const x of [-1.02, 1.02]) s.add(boxGeo(0.15, 0.88, 0.82, x, 0.44, z), oak);
+    c.col.addBox(0, z, 2.4, 1.05, "counter");
+    s.add(boxGeo(2, 0.012, 0.8, 0, 1.008, z), "#51705a");
+    // Two flat paper blocks on the stitched cover, separated by its dark gutter.
+    s.add(boxGeo(1.03, 0.05, 0.7, -0.27, 1.04, z), ink);
+    for (const side of [-1, 1]) {
+      s.add(boxGeo(0.47, 0.065, 0.64, 0, 0, 0).rotateZ(side * 0.07)
+        .translate(-0.27 + side * 0.245, 1.105, z), "#fff1d0");
+    }
+    s.add(boxGeo(0.31, 0.075, 0.23, 0.55, 1.054, z + 0.16), "#633d29");
+    s.add(boxGeo(0.27, 0.02, 0.19, 0.55, 1.1, z + 0.16), ink);
+    s.add(boxGeo(0.2, 0.07, 0.16, 0.65, 1.054, z - 0.17), "#51382b");
+    s.add(cylGeo(0.08, 0.045, 0.17, 0.65, 1.175, z - 0.17, 10), oak);
+    s.done();
+  }, [], { accent: "#486354" }),
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: "tina", ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {

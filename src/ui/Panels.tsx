@@ -444,6 +444,7 @@ function TownMapPanel({ close }: { close: () => void }) {
               <div>
                 <h3 className="place-title" tabIndex={0}><span className="place-ico"><MapPlaceIcon loc={sel} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
+                {sel === "town-hall" && <button type="button" className="btn soft" onClick={() => { close(); game?.guideToPlace?.(sel); }}><Icon name="walk" size={17} /> Nuvesk mane</button>}
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 {sel === GYM_ENTRY.location && game?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
                 {landmarks.includes(sel) && <button type="button" className="btn soft" onClick={() => guideTo(sel)}><Icon name="walk" size={17} /> Nuvesk mane</button>}
@@ -454,7 +455,7 @@ function TownMapPanel({ close }: { close: () => void }) {
                       <div style={{ padding: "6px 4px" }}><div style={{ color: "var(--ink-soft)", fontSize: "0.9em" }}>{s.goal}</div><SitActions s={s} close={close} /></div>
                     </div>
                   ))}
-                  {!selSits.length && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
+                  {!selSits.length && sel !== "town-hall" && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
                 </div>
               </div>
             )}

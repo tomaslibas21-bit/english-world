@@ -24,7 +24,7 @@ type Props = {
 };
 
 const landmarks = ["gruta", "old-stone-ring"];
-const locs = Object.values(LOCATIONS).filter((l) => l.id === "pool-hall" || landmarks.includes(l.id) ||
+const locs = Object.values(LOCATIONS).filter((l) => l.id === "town-hall" || l.id === "pool-hall" || landmarks.includes(l.id) ||
   (l.kind !== "phone" && ROUTE.some((s) => s.location === l.id)));
 
 function locationPoint(loc: string): { x: number; z: number } | null {
@@ -134,7 +134,8 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
             {sel && LOCATIONS[sel] && <div>
               <h3 className="place-title" lang="en"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
               <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
-              {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
+              {sel === "town-hall" && <button type="button" className="btn soft" onClick={() => { close(); game?.guideToPlace?.(sel); }}><Icon name="walk" size={17} /> Nuvesk mane</button>}
+                {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
               {landmarks.includes(sel) && <button type="button" className="btn soft" onClick={() => guide(sel, true)}>{walkLabel()}</button>}
               <div className="sit-list">
                 {selSits.map((s) => <div key={s.id}>
@@ -144,7 +145,7 @@ export default function MapPanel({ close, SheetHead, SitCard, SitActions }: Prop
                     <SitActions s={s} close={close} />
                   </div>
                 </div>)}
-                {!selSits.length && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
+                {!selSits.length && sel !== "town-hall" && !landmarks.includes(sel) && <div className="info-box">Čia kol kas nėra užduočių.</div>}
               </div>
             </div>}
           </>}
