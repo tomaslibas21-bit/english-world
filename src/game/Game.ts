@@ -38,7 +38,7 @@ import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
-import type { TownGame } from "./arcade/cabinets";
+import { cabinetNear, type TownGame } from "./arcade/cabinets";
 import { ArcadeMode, useArcade } from "./arcade/mode";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
@@ -293,6 +293,7 @@ export class Game implements GameApi {
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
   private cabinetPin = new THREE.Vector2(NaN, NaN);
+  private lastCabinetCue?: string;
   private disposed = false;
   private coveArt = new SlateCoveArt();
   private get caveCode() { return this.caveTravel.code; }
@@ -4435,13 +4436,18 @@ export class Game implements GameApi {
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
       }
     }
+    // Closing a menu restores the prompt under the learner. Only a new approach rings the cabinet.
+    if (this.lastCabinetCue && (this.zone.id !== BILLIARDS_PLACE || !cabinetNear(p.x, p.z))) this.lastCabinetCue = undefined;
     const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id
       || (best?.prompt?.kind === "arcade" && best.label !== this.nearest?.label);
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
       if (changed && best) {
-        if (best.prompt?.kind === "arcade") audio.sfx("coin", 0.35);
-        else audio.sfx("tick");
+        if (best.prompt?.kind !== "arcade") audio.sfx("tick");
+        else if (this.lastCabinetCue !== best.label) {
+          this.lastCabinetCue = best.label;
+          audio.sfx("coin", 0.35);
+        }
       }
       const names = RIDE_NAMES;
       const keeperPrompt = best?.kind === "npc" ? this.caveZone?.keeperPrompts.get(best.id) : undefined;

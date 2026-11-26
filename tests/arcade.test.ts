@@ -29,7 +29,7 @@ it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames the hall door
   const rig = new CameraRig(w / h);
   rig.mode = "interior";
   rig.interiorBounds = { w: 11, d: 10, cabinetCorner: true };
-  rig.target.set(0, 0, 4.1);
+  rig.target.set(0, 0, 3.4); // The hall spawn is 1.6 m inside its open front.
   rig.cam.fov = rig.fovFor(w, h, false);
   rig.cam.updateProjectionMatrix();
   rig.snap();
