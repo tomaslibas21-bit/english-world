@@ -1,6 +1,6 @@
 # Three more places in Maple Harbor and Puerto Colibrí
 
-**26 November 2026 · Design brief.** Put one useful sentence on the walk through the square. Let the learner sit with a short story at the museum or play a round in the pool hall. Build the noticeboard first. The arcade has a small first release. The cinema stays on paper until the owner selects a program.
+**26 November 2026 · Design brief.** Put one useful sentence on the walk through the square. Let the learner sit with a short story at the museum or play a round in the pool hall. Build the noticeboard first. The arcade has a small first release. The owner selected an original in-engine cartoon for the Maple Harbor cinema.
 
 | Edition | Game reference | Read-only course source | Words on screen |
 |---|---|---|---|
@@ -12,7 +12,9 @@ All placements below use **(x, z) in meters**. Room coordinates start over insid
 
 Budget **$0**. Use game code, existing course assets, painted geometry and the current course's access paths. Course and PC review trees are inputs only. No media procurement, generation, downloads or Worker changes. A new protected path, changed access rule or asset publication **needs the owner**. The library plan reserves `house3` at (22, 54). The karaoke plan reserves the café table at room (5.8, 2.6). References are `radio-library/mh:docs/RADIO-LIBRARY-PLAN.md` and `karaoke/mh:docs/KARAOKE-PLAN.md`.
 
-## 1 · The museum cinema — design only
+## 1 · The museum cinema
+
+**Program decision, 26 November 2026.** The Maple Harbor seat plays the original harbor short *Lunch on the Fly*. The owner requires owner-made material throughout the game and has ruled out third-party video. The earlier excerpt and caption designs below are archived program research. The current [cinema plan](CINEMA.md) contains the two box-office drafts and the recording list.
 
 **Find it.** Enter the Maple Harbor Museum of Art from Main Street, or the Museo de la Costa Maya from avenida Juárez. In both layouts `museum` is centered at (−26, −31), 30 × 24 m, facing south. The door is at (−26, −19). In the 26 × 20 m room, turn toward the exhibition partition at (6, −3). Its east face already carries paintings and the exhibition title. Use its west face for a 3.4 × 1.9 m matte screen, with a single program rail beneath it. Proposed viewing mark (3.8, −3) faces east. The statue is at (−2, −2), the ticket desk at (−7, 3.5), and PC's stairs start on the east side at x=11. Keep the rail flush and the approach level. See each `interiors.ts` museum builder and PC's `museumStairs`.
 
@@ -37,10 +39,6 @@ The inventory turned up no full lesson film, filmed dialogue, full-length song v
 **Three timing references for review.** In EM `TOM-001-S001`, the Lithuanian voice runs 0.000–3.433 s, English 3.733–7.840 s. G01's first sung line runs 6.27–9.15 s. In PC the first Spanish title cue for `HIS-SG01` begins at 3.020 s in SME and 2.460 s in SM. Resolve the pair by ID and active course. In SME the legacy `lt` field and `language:"lt"` cue carry **English**. Separate profiles also own the actual glosses. The five-second painting never sets the caption clock.
 
 **Sound and access.** Use the catalog, access and playback contracts in the radio/library plan. Site-origin cover art and program browsing need no token. Use the current course's authorized recording path, including SME's `spanish-master-en` prefix and its own site-origin story JSON. For songs reuse `src/radio/{songs,lyrics,output}.ts`. Starting a screening holds the radio through the existing focus system. Stop and release the screening before resuming eligible radio audio. Hidden tab pauses the excerpt. Back releases video, audio and subscriptions. Pressing Play after a failure retries the same item. The still and readable text survive loss of audio or motion art.
-
-**VOA option for the owner.** A later MH program could include a short VOA Learning English segment with a verified transcript and reviewed Lithuanian subtitles and glosses. For each proposed segment the owner would check the original page, byline, end credits, all footage/photos/music and permitted reuse. Exclude agency material, including AP and Reuters, and mixed or unidentified third-party material. Show the exact credit **learningenglish.voanews.com** on the program detail and end frame. Record the owner’s clearance decision alongside the credit. No VOA title is selected, downloaded or on the launch program. PC would require a separate Spanish-learning rationale and owner decision.
-
-**Owner choices.** Approve the museum partition and first two excerpts per course, or retain the printed program as a concept. Decide separately on the SM studies and on any future VOA review. The cinema jobs below are design reviews. Implementation would need a separate commission.
 
 ## 2 · The phrase-of-the-day noticeboard
 
