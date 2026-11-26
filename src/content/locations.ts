@@ -16,6 +16,7 @@ const L = (id: string, name: string, lt: string, district: LocationDef["district
 export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("airport", "Maple Harbor Airport", "Oro uostas", "airport", "interior", "✈️"),
   L("taxi-stand", "Taxi Stand", "Taksi stotelė", "transport", "outdoor", "🚕"),
+  L("library", "Maple Harbor Public Library", "Meipl Harboro viešoji biblioteka", "residential", "interior", "📖"),
   L("station", "Union Station", "Traukinių ir autobusų stotis", "transport", "interior", "🚆"),
   L("bus-stop", "Bus Stop · Oak Avenue", "Autobuso stotelė", "transport", "outdoor", "🚌"),
   L("car-rental", "Harbor Car Rental", "Automobilių nuoma", "transport", "interior", "🚗"),

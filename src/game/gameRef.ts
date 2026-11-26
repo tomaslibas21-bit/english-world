@@ -43,6 +43,11 @@ export interface GameApi {
   setObjective(sitId: string | null): void;
   // the 3D world
   interact(): void;
+  onLibraryAction?(action: import("./world/libraryRoom").LibraryAction, chairIndex?: number): void;
+  onLibraryReader?(chairIndex: number): void;
+  onLibraryShelf?(): void;
+  readonly libraryChair?: number | null;
+  standFromLibrary?(): void;
   autoWalkToObjective(kind?: GuideKind): void;
   guideToLighthouse?(): void;
   guideToPlace?(loc: string, directions?: null, npc?: string): void;

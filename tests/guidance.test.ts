@@ -1,7 +1,8 @@
 // The way to the objective, marked on the ground (src/game/guidance.ts): small arrowheads that lie still, fewer than
 // the discs there were, fading in before the player and out with distance, a brightening travelling along them.
 import { describe, expect, it } from "vitest";
-import { guideVisualTarget, wayMarks, WAY } from "../src/game/guidance";
+import { Guidance, guideVisualTarget, wayMarks, WAY } from "../src/game/guidance";
+import { MeshBasicMaterial } from "three";
 import { ASK_WAY_PLACES } from "../src/content/ask-way-lines";
 
 /** A way of 60 m: 30 m east, then 30 m north (towards -z). */
@@ -89,4 +90,23 @@ describe("the way's marks", () => {
     expect(wayMarks([], 0)).toEqual([]);
     expect(wayMarks([[1, 1]], 0)).toEqual([]);
   });
+});
+
+it("keeps the library exit ring within the open doorway and restores the street beacon on leaving", () => {
+  const guide = new Guidance();
+  const target = guideVisualTarget([[0, 3.4], [0, 4.2]], { kind: "exit", id: "library" }, null)!;
+  expect(target).toEqual({ kind: "exit", x: 0, z: 4.2 });
+  guide.setBeacon(target.x, target.z, 3.4, undefined, 0, true);
+  guide.update(1 / 60);
+  expect(guide["beacon"].position.toArray()).toEqual([0, 0, 4.2]);
+  expect(guide["ring"].position.y).toBe(0.04);
+  expect(1.05 * guide["ring"].scale.x).toBeLessThan(2.4 / 2);
+  expect((guide["ring"].material as MeshBasicMaterial).opacity).toBe(0.4);
+  expect(guide["beam"].visible || guide["gem"].visible).toBe(false);
+  guide.setBeacon(null);
+  expect(guide["beacon"].visible).toBe(false);
+  guide.setBeacon(22, 46.8);
+  expect(guide["beam"].visible && guide["gem"].visible).toBe(true);
+  expect(guide["ring"].scale.x).toBe(1);
+  expect((guide["ring"].material as MeshBasicMaterial).opacity).toBe(0.8);
 });

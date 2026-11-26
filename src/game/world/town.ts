@@ -236,6 +236,8 @@ export function buildTown(): Town {
   const signs: THREE.Mesh[] = [];
   for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r, photo);
 
+  batchOakSigns(group, signs);
+
   // --- street furniture & nature -----------------------------------------------
   addStreetProps(M, colliders, photo);
   const parkedCars = makeParkedCars();
@@ -616,6 +618,13 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, 102, 1, 124, 12, P.gasLot); // gas forecourt
   rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
   for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, P.road);
+  // Flush limestone flags join Oak Avenue at the back edge of the existing sidewalk.
+  const library = BUILDINGS.find((b) => b.loc === "library");
+  if (library) {
+    const z = library.z - library.d / 2;
+    rectW(x, library.x - 1.1, z - 3.3, library.x + 1.1, z, "#d9cbb4");
+    for (const offset of [1.1, 2.2]) rectW(x, library.x - 1.1, z - offset, library.x + 1.1, z - offset + 0.05, "#b5a892");
+  }
   // sidewalks
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
@@ -756,6 +765,44 @@ function faceInfo(b: BuildingDef) {
   return { n, t, halfDepth, halfWidth };
 }
 
+// These neighbouring signs share a single atlas and draw. The station retains its full 768 × 160 tile.
+function batchOakSigns(group: THREE.Group, signs: THREE.Mesh[]) {
+  type Sign = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  const named = (name: string) => (signs as Sign[]).find((s) => s.material.map?.name === name);
+  const library = named(LOCATIONS.library.name), station = named(LOCATIONS.station.name);
+  if (!library || !station) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = 768; canvas.height = 190;
+  const ctx = canvas.getContext("2d")!;
+  const parts: THREE.BufferGeometry[] = [];
+  const signQuads = [];
+  let top = 0;
+  for (const sign of [station, library]) {
+    const map = sign.material.map!;
+    const tile = map.image as HTMLCanvasElement;
+    if (sign === library) { ctx.fillStyle = "#223b52"; ctx.fillRect(0, top, tile.width, tile.height); }
+    ctx.drawImage(tile, 0, top);
+    sign.updateMatrix();
+    const { width: w, height: h } = sign.geometry.parameters;
+    signQuads.push({ key: map.name, w, h, m: sign.matrix.toArray() });
+    const g = sign.geometry.applyMatrix4(sign.matrix), uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) {
+      uv.setXY(i, (0.5 + uv.getX(i) * (tile.width - 1)) / canvas.width,
+        1 - (top + 0.5 + (1 - uv.getY(i)) * (tile.height - 1)) / canvas.height);
+    }
+    top += tile.height;
+    parts.push(g);
+    group.remove(sign);
+    sign.material.dispose(); map.dispose();
+  }
+  const atlas = new THREE.CanvasTexture(canvas);
+  atlas.colorSpace = THREE.SRGBColorSpace; atlas.anisotropy = 16;
+  const mesh = new THREE.Mesh(mergeGeometries(parts, false)!, new THREE.MeshBasicMaterial({ map: atlas, toneMapped: false }));
+  mesh.name = "oak-civic-signs"; mesh.userData.signQuads = signQuads;
+  group.add(mesh);
+  parts.forEach((p) => p.dispose());
+}
+
 function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   // the details added later (roof kit, chimneys) draw from their own sequence, so `r`'s draws stay as they were
   const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
@@ -765,6 +812,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const library = b.loc === "library";
   const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -834,7 +882,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     // a ridge cap along the top, and on a house a brick chimney through one slope
     const alongX = b.face === "n" || b.face === "s", top = b.h + rd * 0.32;
     M.add("roof-ridge", mat("#4a3b30", { flat: true }), boxGeo(alongX ? rw + 0.9 : 0.26, 0.14, alongX ? 0.26 : rw + 0.9, b.x, top + 0.02, b.z), false);
-    if (b.style === "house") {
+    if (library || b.style === "house") {
       const u = (dr() < 0.5 ? -1 : 1) * rw * 0.28, v = rd * 0.16, ch = rd * 0.32 + 1.1;
       const [cx, cz] = alongX ? [b.x + u, b.z + v] : [b.x + v, b.z + u];
       M.add("chimney", mat("#9a4f3c", { flat: true }), boxGeo(0.7, ch, 0.7, cx, b.h + ch / 2 - 0.2, cz));
@@ -871,7 +919,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const dx = b.x + n[0] * halfDepth + t[0] * doorOff, dz = b.z + n[1] * halfDepth + t[1] * doorOff;
   const doorW = b.doorWidth ?? (b.style === "terminal" || b.style === "station" || b.style === "museum" || b.style === "hotel" ? 3.4 : 1.8);
   const rotY = Math.atan2(n[0], n[1]);
-  const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" ? "#8a5a44" : b.trim!) : darkGlass;
+  const doorMat = library ? mat("#845638") : b.style === "house" ? mat(b.trim === "#ffffff" ? "#8a5a44" : b.trim!) : darkGlass;
   M.add(`door-${key}`, doorMat, boxGeo(doorW, 2.5, 0.15, 0, 1.25, 0, 0).rotateY(rotY).translate(dx + n[0] * 0.05, 0, dz + n[1] * 0.05));
   M.add(`trim-${b.trim}`, trimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
   const atDoor = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08);
@@ -881,6 +929,39 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.style !== "terminal" && b.style !== "station") {
     M.add("wall-lamp", mat("#3a3d42"), atDoor(boxGeo(0.2, 0.3, 0.16, doorW / 2 + 0.5, 2.25, 0.06)), false);
     M.add("lamp-warm", mat("#ffe6b0", { emissive: "#9c7a2a" }), atDoor(boxGeo(0.14, 0.2, 0.06, doorW / 2 + 0.5, 2.25, 0.14)), false);
+  }
+  if (library) {
+    // A suspended navy lintel and a little brass open book inlaid in the walnut door.
+    const detail = (g: THREE.BufferGeometry, color: string) => details.push([atDoor(g), color]);
+    detail(boxGeo(8.25, 0.72, 0.98, 0, 3.26, 0.44), "#223b52");
+    detail(boxGeo(8.38, 0.09, 1.06, 0, 3.65, 0.44), "#354b57");
+    detail(boxGeo(8.21, 0.035, 0.06, 0, 2.95, 0.92), "#c9a45c");
+    for (const side of [-1, 1]) {
+      detail(boxGeo(0.14, 0.32, 0.67, side * 3.38, 2.78, 0.27), "#70523d");
+      for (const y of [1.47, 1.78])
+        detail(boxGeo(0.24, 0.028, 0.022, 0, 0, 0).rotateZ(side * 0.19).translate(side * 0.12, y, 0.125), "#e0bf7a");
+      detail(boxGeo(0.028, 0.33, 0.022, side * 0.24, 1.646, 0.125), "#e0bf7a");
+    }
+    detail(boxGeo(0.029, 0.33, 0.022, 0, 1.6, 0.125), "#e0bf7a");
+    // A 2.8 × 1.5 m divided fanlight, centred at 4.9 m. It shares the town's vertex-colour detail batch.
+    // Its painted glass and slender cream muntins echo the reading room's back-wall sashes.
+    detail(boxGeo(2.8, 0.9, 0.09, 0, 4.6, 0.09), "#223b52");
+    detail(new THREE.CircleGeometry(1, 20, 0, Math.PI).scale(1.4, 0.6, 1).translate(0, 5.05, 0.14), "#223b52");
+    detail(new THREE.CircleGeometry(1, 20, 0, Math.PI).scale(1.29, 0.49, 1).translate(0, 5.05, 0.151), "#c2d5cc");
+    for (const side of [-1, 1]) {
+      detail(boxGeo(1.22, 0.73, 0.018, side * 0.665, 4.6, 0.145), "#c2d5cc");
+      detail(boxGeo(1.22, 0.2, 0.012, side * 0.665, 4.335, 0.16), "#95b2ad");
+      detail(boxGeo(1.22, 0.035, 0.028, side * 0.665, 4.62, 0.172), "#ebdec5");
+      detail(boxGeo(0.035, 0.73, 0.028, side * 0.665, 4.6, 0.172), "#ebdec5");
+    }
+    for (const angle of [Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4]) {
+      const x = 1.29 * Math.cos(angle), y = 0.49 * Math.sin(angle);
+      detail(boxGeo(0.035, Math.hypot(x, y), 0.025, 0, 0, 0).rotateZ(-Math.atan2(x, y))
+        .translate(x / 2, 5.05 + y / 2, 0.175), "#ebdec5");
+    }
+    detail(boxGeo(0.065, 0.9, 0.065, 0, 4.6, 0.15), "#223b52");
+    detail(boxGeo(2.8, 0.065, 0.09, 0, 5.05, 0.16), "#223b52");
+    detail(boxGeo(2.8, 0.09, 0.18, 0, 4.195, 0.15), "#bc9757");
   }
   if (b.loc) {
     const out = 2.2;
@@ -983,17 +1064,20 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
   if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
-    const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    const tex = library ? textTexture(b.sign, { bg: "#223b52", fg: "#f2dba7", font: "Georgia, serif", w: 384, h: 30 })
+      : textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
+    const sw = library ? 7.8 : poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
+    const sh = sw * tex.image.height / tex.image.width;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
+    if (library) sy = 3.26;
     if (poolHall) sy = 4.29;
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
     if (b.style === "terminal") sy = Math.min(b.h - 0.4 - sw * 80 / 768, TERMINAL_CANOPY_TOP + 0.25 + sw * 80 / 768);
-    signW = sw; signH = sw * 160 / 768; signY = sy;
+    signW = sw; signH = sh; signY = sy;
     // centred on the facade (the same place as the door, unless the door is off-centre); the museum's on the frieze
     // over its columns (behind them, the columns cut its words)
-    const out = b.style === "museum" ? MUSEUM_FRIEZE.out + 0.03 : poolHall ? 0.32 : 0.2;
+    const out = library ? 1.018 : b.style === "museum" ? MUSEUM_FRIEZE.out + 0.03 : poolHall ? 0.32 : 0.2;
     if (poolHall) M.add("pool-hall-sign-board", trimMat, boxGeo(sw + 0.08, signH + 0.08, 0.31, b.x, sy, dz + 0.15));
     if (b.style === "museum") sign.position.set(dx + n[0] * out, MUSEUM_FRIEZE.y, dz + n[1] * out);
     else sign.position.set(dx - t[0] * doorOff + n[0] * out, sy, dz - t[1] * doorOff + n[1] * out);

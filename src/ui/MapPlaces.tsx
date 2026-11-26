@@ -112,7 +112,7 @@ export default function MapPlaces({ canvas, island, north, west = WORLD.minX, la
   const places = useMemo(() => {
     const points = Object.values(LOCATIONS).flatMap(({ id, kind, lt, name }) => {
       const own = landmarks.includes(id);
-      if (kind === "phone" || (id !== "pool-hall" && id !== landmark && !own && !route.some((s) => s.location === id))) return [];
+      if (kind === "phone" || (id !== "pool-hall" && id !== "library" && id !== landmark && !own && !route.some((s) => s.location === id))) return [];
       const point = positionFor(id);
       return point ? [{ id, lt, name, reserved: id === "airport" || id === landmark || own, ...project(point, north, west) }] : [];
     });

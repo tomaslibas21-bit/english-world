@@ -131,27 +131,34 @@ export function Hud() {
     );
   }
   const note = townNote(hud);
-  const banner = hud.zoneBanner && note === "banner" ? splitLead(hud.zoneBanner.title) : null;
+  const libraryArrival = hud.minimap.zone === "library" && note === "banner" ? hud.zoneBanner : null;
+  const banner = hud.zoneBanner && note === "banner" && !libraryArrival ? splitLead(hud.zoneBanner.title) : null;
   const subtitle = hud.zoneBanner?.sub;
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
   const kind = hud.prompt?.kind;
+  const libraryDoorPrompt = kind === "library-enter" || kind === "library-exit";
   const talk = kind === "talk";
   const namedTalk = talk && hud.prompt?.label.startsWith("Kalbėtis: ") === true;
   const zone = hud.minimap.zone;
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
+  const libraryDoor = zone === "town" ? game?.doors.find((door) => door.loc === "library") : undefined;
+  const nearLibrary = zone === "library" || (libraryDoor !== undefined
+    && Math.hypot(hud.minimap.px - libraryDoor.outX, hud.minimap.pz - libraryDoor.outZ) < 4);
+  const libraryContext = nearLibrary && target !== "library";
   const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || baristaOffer || goFishOffer;
   const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = streetCard || (task.collapsedForNote
-    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
+    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (libraryContext || screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
         <div className={"objective-notes" + (inCave ? " cave-notes task-folded" : "") + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           {inCave ? <Suspense><CaveHud phoneToast={phoneToast} /></Suspense>
-            : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />}
+            : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel && !libraryContext}
+              hideExitDistance={zone === "library" && libraryContext} libraryContext={libraryContext} setCollapsed={task.setManual} />}
           {streetCard && portrait && <StreetCard compactChoices={screen.h <= 720} />}
           {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && splitLead(subtitle).rest.trim() !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
@@ -160,7 +167,7 @@ export function Hud() {
           <TownToast toast={toast} />
           {directions && <DirectionsCard />}
         </div>
-        <Minimap {...screen} />
+        <Minimap {...screen} arrival={libraryArrival} />
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
       <RadioSetLayer />
@@ -170,7 +177,7 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "library" || kind === "library-stand" ? " library-prompt" : "") + (libraryDoorPrompt ? " library-door-prompt" : "")} lang={libraryDoorPrompt ? "lt" : undefined} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.label === ROAD_UI.drive ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
@@ -433,7 +440,9 @@ function Fade() {
   return <div className="fade" style={{ opacity: fade, transition: fadeOnFrames ? "none" : undefined }} />;
 }
 
-function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
+function Objective({ collapsed, fresh, hideExitDistance = false, libraryContext = false, setCollapsed }: {
+  collapsed: boolean; fresh: boolean; hideExitDistance?: boolean; libraryContext?: boolean; setCollapsed: (collapsed: boolean) => void;
+}) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
   const keepFocus = useRef(false);
@@ -459,8 +468,8 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
     ? [partner, !o?.inside && o?.where].filter(Boolean).join(" · ")
     : sit && LOCATIONS[sit.location]?.kind === "outdoor" ? NPCS[sit.npc]?.name : o?.where;
   const place = (collapsed && o?.titleLt) || destination;
-  const meters = o?.dist == null ? null : `${o.dist} m`;
-  const distance = o?.dist != null && <span className="dist">
+  const meters = o?.dist == null || (collapsed && hideExitDistance) ? null : `${o.dist} m`;
+  const distance = o?.dist != null && !(collapsed && hideExitDistance) && <span className="dist">
     {o.angle !== null && <Arrow angle={o.angle} />}
     {!collapsed && !o.followUp && o.inside && o.dist < 4 ? "Čia pat!" : meters}
   </span>;
@@ -469,13 +478,11 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   </span>;
   if (collapsed) {
     return (
-      <div className="objective-card collapsed" data-pad-aux data-target-location={o?.targetLoc}>
+      <div className={"objective-card collapsed" + (libraryContext ? " library-task" : "")} data-pad-aux data-target-location={o?.targetLoc}>
         <button className="collapse-btn objective-summary" aria-expanded={false}
-          aria-label={[title, place, meters].filter(Boolean).join(", ")} ref={focusToggle} onClick={toggle}>
-          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
-          <span className="objective-title">{title}</span>
-          {details}
-          <Icon name="chevronDown" size={16} strokeWidth={2} />
+          aria-label={[title, place, meters].filter(Boolean).join(", ")} title={libraryContext ? title : undefined} ref={focusToggle} onClick={toggle}>
+          {situation ? <SitIcon id={situation} size={libraryContext ? 24 : 18} className="objective-ico" /> : <Icon name="target" size={libraryContext ? 22 : 16} strokeWidth={2} />}
+          {!libraryContext && <><span className="objective-title">{title}</span>{details}<Icon name="chevronDown" size={16} strokeWidth={2} /></>}
         </button>
       </div>
     );
@@ -538,7 +545,7 @@ function Arrow({ angle }: { angle: number }) {
   );
 }
 
-function Minimap({ w, h }: Screen) {
+function Minimap({ w, h, arrival }: Screen & { arrival?: HudState["zoneBanner"] }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const card = useRef<HTMLSpanElement>(null);
   const mm = useStore((s) => s.hud.minimap);
@@ -571,7 +578,7 @@ function Minimap({ w, h }: Screen) {
     ro?.observe(el);
     document.fonts?.addEventListener?.("loadingdone", measure);
     return () => { ro?.disconnect(); document.fonts?.removeEventListener?.("loadingdone", measure); };
-  }, [inside, zoneName, w, h]);
+  }, [inside, zoneName, w, h, arrival]);
   useEffect(() => {
     const c = ref.current;
     const g = game?.groundCanvas;
@@ -621,16 +628,17 @@ function Minimap({ w, h }: Screen) {
     x.restore();
   }, [mm, inside, region]);
   return (
-    <button type="button" data-map={region} data-gates={mm.gates} className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <button type="button" data-map={region} data-gates={mm.gates} className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "") + (arrival ? " library-arrival" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
       onClick={() => useStore.getState().setHud({ panel: "map" })}
       onKeyDown={activateHudButton} title="Žemėlapis (M)" aria-label="Žemėlapis (M)">
       <canvas ref={ref} data-map={region} data-gates={mm.gates} />
       <span className="label">{inside ? "" : zoneName}</span>
       <span className="mm-card" ref={card} aria-hidden={!inside}>
-        <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
-        <small>Viduje</small>
-        <b><span>{place.current}</span></b>
+        <span className="mm-ico"><Icon name={mm.zone === "library" ? "bookOpen" : "home"} size={21} strokeWidth={2} /></span>
+        {!arrival && <small>Viduje</small>}
+        <b><span lang={arrival ? "en" : undefined}>{arrival?.title ?? place.current}</span></b>
+        {arrival?.sub && <span className="mm-arrival-sub" lang="lt">{arrival.sub}</span>}
         <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
       </span>
     </button>
@@ -646,6 +654,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
   const ref = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
+  const libraryDoorPrompt = prompt?.kind === "library-enter" || prompt?.kind === "library-exit";
   const ride = useStore((s) => s.hud.ride);
   const fast = useStore((s) => s.hud.fast);
   useEffect(() => {
@@ -689,7 +698,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && prompt.kind !== "library" && prompt.kind !== "library-stand" && !libraryDoorPrompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
@@ -698,7 +707,8 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? "Išnirti" : "Panerti"} title={ride === "dive" ? "Išnirti" : "Panerti"} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : ride === "surf"
             ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label="Atsistoti" title="Atsistoti" onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>
-          : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label="Pašokti" title="Pašokti" onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
+          : prompt?.kind === "library-stand" ? null
+          : <button className={"jump-btn" + (prompt ? " beside" : "") + (prompt?.kind === "library" ? " library-prompt-beside" : "") + (libraryDoorPrompt ? " library-door-prompt-beside" : "")} aria-label="Pašokti" title="Pašokti" onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );
 }
