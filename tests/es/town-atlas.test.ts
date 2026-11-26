@@ -76,11 +76,16 @@ it("matches the original PC atlas paint, packing and UVs", () => {
   const canvases = recordCanvases();
   const { group } = buildTown({ movableParking: true });
   const mesh = group.getObjectByName("town-signs") as THREE.Mesh;
-  const { measures, ...paint } = atlasReport(mesh, canvases);
+  const { measures, paintSHA, ...paint } = atlasReport(mesh, canvases);
   expect(measures).toBeLessThan(766);
+  // Both complete streams were captured from the original painter (before 567ffbee).
+  // Keep exact hashes for the original review runtime and the Linux x64 test runtime.
+  expect([
+    "fc5a89d0062812147fabd3e39ed03b89c5aafb932d4244a026b3709dd7d0324c",
+    "30ff12545ee8831e56f2c686f0acc0dd8d4f4c99bd5b94fef28727d487a7fea4",
+  ]).toContain(paintSHA);
   expect(paint).toStrictEqual({
     draws: 92, font: "10px sans-serif", size: [1024, 5224], anisotropy: 16,
-    paintSHA: "fc5a89d0062812147fabd3e39ed03b89c5aafb932d4244a026b3709dd7d0324c",
     uvSHA: "8e897558a5cd07165d19c0f24e7de76251ae9afe817df6bbf8880aeadfe89b5d",
   });
   expect(canvases.get((mesh.material as THREE.MeshBasicMaterial).map!.image)!.words).toContain("ALTO");
@@ -97,11 +102,14 @@ it("matches the original blades, fractional floor, stacked boards and outlined s
   });
   stopFace(atlas, "ALTO", 0, 0);
   const mesh = atlas.build()!;
-  const { measures, ...paint } = atlasReport(mesh, canvases);
+  const { measures, paintSHA, ...paint } = atlasReport(mesh, canvases);
   expect(measures).toBeLessThan(285);
+  expect([
+    "e90b05a0fbd3981195376d8f55f7c75a629dd76d52fc3de8d5421fe9db1e99b2",
+    "8da2b905287ba960261da4fa3e6c7a401bc2478d49c11211daef04c93e497f6d",
+  ]).toContain(paintSHA);
   expect(paint).toStrictEqual({
     draws: 17, font: "10px sans-serif", size: [1024, 786], anisotropy: 16,
-    paintSHA: "e90b05a0fbd3981195376d8f55f7c75a629dd76d52fc3de8d5421fe9db1e99b2",
     uvSHA: "4e812188975ce8f7a742067bde58d2dbfb1deda169dd125e0ed940ee805b7083",
   });
   const script = paintedSignTexture("El Rincón de la Señora Úrsula ".repeat(4), "#fd0", "#300", "#131", "Café · Mañana");

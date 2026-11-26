@@ -2,6 +2,7 @@
 // Configure VITE_RADIO_INDEX=/songs/index.json, VITE_RADIO_FILES=/karaoke-files,
 // VITE_RADIO_RECORDINGS=https://audio.dvikalbesdainos.lt/spanish-master.
 // WORLD_TEST_URL and WORLD_SHOTS select the review origin and output directory.
+// WORLD_VIEWPORT optionally selects one matrix size (e.g. 1280x800) for a repeat capture.
 // Course lyrics and artwork are read locally. Silent WAVs exercise the media clock.
 import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
@@ -28,7 +29,7 @@ const tracks = new Map(ids.map((id) => {
 const token = "karaoke-pc+fixture &";
 const words = lt ? {
   enter: "Dainuoti karaokę", start: "Pradėti dainą", show: "Rodyti reikšmę", hide: "Slėpti reikšmę",
-  back: "Grįžti", mode: "Praktikos būdas", repeat: "Išklausyti eilutę dar kartą",
+  back: "Grįžti", mode: "Praktikos būdas", repeat: "Klausytis dar kartą",
   more: "Daugiau", another: "Pasirinkti kitą dainą",
   next: "Tęsti", leave: "Nulipti nuo scenos", missing: "Praleistas žodis", reveal: "Parodyti žodį", speed: "Greitis",
 } : {
@@ -38,6 +39,8 @@ const words = lt ? {
   next: "Continue", leave: "Leave stage", missing: "Missing word", reveal: "Reveal word", speed: "Speed",
 };
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
+const reviewSizes = sizes.filter((size) => !process.env.WORLD_VIEWPORT || size.join("x") === process.env.WORLD_VIEWPORT);
+assert(reviewSizes.length, "WORLD_VIEWPORT must be one of the four review sizes");
 await mkdir(shots, { recursive: true });
 
 function install({ token, short, microphone }) {
@@ -100,11 +103,11 @@ async function serveTrack(route, recording) {
 }
 
 const browser = await chromium.launch({
-  headless: true, channel: process.env.WORLD_BROWSER_CHANNEL || undefined,
+  headless: true, executablePath: process.env.WORLD_CHROMIUM_PATH, channel: process.env.WORLD_BROWSER_CHANNEL || undefined,
   args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--autoplay-policy=document-user-activation-required"],
 });
 try {
-  for (const [width, height] of sizes) {
+  for (const [width, height] of reviewSizes) {
     const label = `${width}x${height}`, phone = width < 900, reduced = width === 1280;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: phone, deviceScaleFactor: 1,
       reducedMotion: reduced ? "reduce" : "no-preference" });
@@ -182,7 +185,7 @@ try {
         const game = window.__ew.game, door = game.town.doors.find((door) => door.loc === "sunny-cup");
         game.walkTo(door.outX, door.outZ, { kind: "door", id: door.loc });
       });
-      await until(() => window.__ew.store.getState().hud.minimap.zone === "sunny-cup" && !window.__ew.game.transitioning);
+      await until(() => window.__ew.store.getState().hud.minimap.zone === "sunny-cup" && !window.__ew.game.transitioning, 90000);
       await shot("cafe");
       await page.evaluate(() => window.__ew.game.walkTo(4.2, 2.8, { kind: "point" }));
       await until(() => window.__ew.store.getState().hud.prompt?.kind === "karaoke" && !window.__ew.game.autoPath);
@@ -198,6 +201,13 @@ try {
       await picker.waitFor();
       await decodeCover(picker.locator('[data-song="SG01"] img'));
       assert.equal(await picker.locator("[data-song]").count(), index.songs.length);
+      const firstRows = await picker.locator("[data-song]").evaluateAll((rows) => rows.slice(0, 3).map((row) => {
+        const bounds = row.getBoundingClientRect(), cover = row.querySelector(".karaoke-cover").getBoundingClientRect();
+        const title = row.querySelector(".karaoke-titles").getBoundingClientRect();
+        return { top: bounds.top, bottom: bounds.bottom, contentBottom: Math.max(cover.bottom, title.bottom) };
+      }));
+      assert(firstRows.every((row) => row.contentBottom <= row.bottom + 1), "covers and titles fit their song buttons");
+      assert(firstRows[2].top >= firstRows[0].bottom - 1, "the next catalog row clears the first");
       await shot("picker");
       assert.equal(routes.length, 0, "browsing requests no words or recording");
       await picker.locator("select").selectOption("favorites");
@@ -246,6 +256,13 @@ try {
       if (width <= 600) {
         const card = await page.locator(".karaoke-reader").boundingBox();
         const controls = await page.locator(".karaoke-stage-bottom").boundingBox();
+        const body = await page.locator(".karaoke-reader-body").boundingBox();
+        const hide = await button(words.hide).boundingBox();
+        assert(body.y + body.height <= hide.y + 1, "scrolling glosses stay clear of the meaning toggle");
+        await natural.scrollIntoViewIfNeeded();
+        const sentence = await natural.boundingBox();
+        assert(sentence.y + sentence.height <= hide.y + 1, "the natural meaning can scroll fully into view");
+        await page.locator(".karaoke-reader-body").evaluate((body) => { body.scrollTop = 0; });
         assert(card.height <= height * 0.46 + 1);
         assert(card.y + card.height <= controls.y, "meaning card stays above the controls");
       }
@@ -293,17 +310,19 @@ try {
       const canSlow = await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().canSlow);
       if (canSlow) {
         await speed.selectOption("0.8");
+        await page.evaluate(() => window.__ew.radio.store.getState().karaoke.resume());
+        // Exclude output startup after the seek, then measure several media-clock ticks.
+        await until(() => window.__ew.radio.store.getState().karaoke.position() > 7.3);
         const clock = await page.evaluate(async () => {
           const take = window.__ew.radio.store.getState().karaoke;
-          await take.resume();
           const from = take.position(), wall = performance.now();
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 2500));
           const elapsed = (performance.now() - wall) / 1000, media = take.position() - from;
           take.pause();
           return { elapsed, media, rate: take.store.getState().rate };
         });
         assert.equal(clock.rate, 0.8);
-        assert(Math.abs(clock.media / clock.elapsed - 0.8) < 0.15);
+        assert(Math.abs(clock.media / clock.elapsed - 0.8) < 0.15, JSON.stringify(clock));
       } else {
         assert(await speed.isDisabled());
         assert.equal(await speed.locator('option[value="0.8"]').count(), 0);
@@ -416,6 +435,7 @@ try {
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke), null);
       await page.evaluate(() => window.__ew.game.walkTo(-1.2, -2.05, { kind: "point" }));
       await until(() => window.__ew.store.getState().hud.prompt?.kind === "talk" && !window.__ew.game.autoPath);
+      await shot("walk");
       await page.keyboard.press("e");
       await until(() => window.__ew.store.getState().conv.active && window.__ew.store.getState().conv.sitId === "s72-cafe");
       assert.deepEqual(errors, []);

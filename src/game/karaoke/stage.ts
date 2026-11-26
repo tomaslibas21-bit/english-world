@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { KARAOKE_SIGN } from "../../content/karaokeCopy";
+import { ceibaBackdrop } from "./ceibaBackdrop";
 import { THEME } from "../world/theme";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
@@ -14,7 +15,7 @@ export function makeKaraokeMic() {
   group.name = "karaoke-hand-mic";
   const merger = new Merger();
   // The origin is the middle of the grip, rather than the bottom of the handle.
-  merger.add("mic-handle", mat("#223b52"), cylGeo(0.035, 0.04, 0.22, 0, 0, 0, 8), false);
+  merger.add("mic-handle", mat(THEME.karaoke?.panel ?? "#223b52"), cylGeo(0.035, 0.04, 0.22, 0, 0, 0, 8), false);
   merger.add("mic-grille", mat("#c9a45c"), new THREE.SphereGeometry(0.066, 8, 6).scale(1, 1.2, 1).translate(0, 0.15, 0), false);
   merger.build(group);
   group.rotation.x = -0.7;
@@ -64,13 +65,29 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
   box(panel, 0.48, 0.06, 0.42, 5.02, 0.11, 3.05);
   box(THEME.karaoke ? stand : floor, 0.08, 0.87, 0.08, 5.02, 0.55, 3.05);
   box(stand, 0.58, 0.06, 0.42, 5.02, 1.02, 3.05);
-  box("#954336", 0.045, 0.009, 0.4, 4.82, 1.055, 3.05);
+  if (THEME.karaoke) {
+    // A clothbound cancionero sits open, tilted toward someone standing in the aisle.
+    const page = (color: string, w: number, h: number, d: number, x: number, y: number, z: number) =>
+      parts.push([boxGeo(w, h, d, x, y, z).rotateZ(0.28).translate(5.02, 1.12, 3.05), color]);
+    page(trim, 0.39, 0.026, 0.38, 0, 0, 0);
+    for (const side of [-1, 1]) {
+      page(stand, 0.36, 0.018, 0.17, 0, 0.022, side * 0.088);
+      for (const x of [-0.055, 0, 0.055]) page(panel, 0.012, 0.003, 0.11, x, 0.033, side * 0.088);
+    }
+  } else box("#954336", 0.045, 0.009, 0.4, 4.82, 1.055, 3.05);
   // Upright stand and cradle. The docked microphone disappears while the avatar carries it.
   parts.push([cylGeo(0.19, 0.22, 0.035, 5.7, 0.1, 2.5, 12), panel]);
   parts.push([cylGeo(0.018, 0.024, 1.15, 5.7, 0.69, 2.5, 8), panel]);
   parts.push([new THREE.CircleGeometry(0.72, 24).rotateX(-Math.PI / 2).scale(1.3, 1, 1)
     .translate(5.65, KARAOKE_MARK.y + 0.002, 2.58), THEME.karaoke ? "#ce8961" : "#ca935d"]);
   for (const z of [1.91, 3.29]) {
+    if (THEME.karaoke) {
+      // Clay sconces with a warm glass globe. Both globes share the existing emissive draw.
+      parts.push([cylGeo(0.072, 0.12, 0.08, 6.88, 2.12, z), trim]);
+      merger.add("booth-lamps", mat("#ffe0a2", { emissive: "#a3672a" }),
+        new THREE.SphereGeometry(0.09, 10, 8).scale(1, 1.18, 1).translate(6.88, 2.04, z), false);
+      continue;
+    }
     box("#223b52", 0.14, 0.32, 0.24, 6.9, 2.07, z);
     merger.add("booth-lamps", mat("#ffcf7a", { emissive: "#9c571f" }), boxGeo(0.02, 0.23, 0.17, 6.81, 2.07, z), false);
   }
@@ -82,12 +99,12 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
   docked.name = "karaoke-docked-mic";
   docked.position.set(5.7, 1.36, 2.5);
   group.add(docked);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.35, 0.38), new THREE.MeshBasicMaterial({
+  const sign = THEME.karaoke ? ceibaBackdrop(THEME.karaoke) : new THREE.Mesh(new THREE.PlaneGeometry(1.35, 0.38), new THREE.MeshBasicMaterial({
     map: textTexture(KARAOKE_SIGN, { bg: panel, fg: stand, w: 512, h: 144 }),
   }));
   sign.name = "karaoke-sign";
   if (THEME.karaoke) {
-    sign.position.set(6.977, 2.05, 2.6);
+    sign.position.set(6.98, 1.2, 2.6);
     sign.rotation.y = -Math.PI / 2;
   } else sign.position.set(5.8, 2.06, 1.74);
   group.add(sign);
@@ -99,8 +116,8 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
 
 export function karaokeShot(aspect: number): NonNullable<CameraRig["stage"]> {
   return {
-    // Move beside the foreground guest on portrait phones so their shoulder cannot fill the narrow picture.
-    pos: new THREE.Vector3(0.65, 1.5, aspect < 0.9 ? 2.3 : 1.3), look: new THREE.Vector3(5.7, 0.6, 2.6),
+    // Use the aisle beside the guest in portrait and clear their shoulder in the wide shot.
+    pos: aspect < 0.9 ? new THREE.Vector3(0.65, 1.5, 2.3) : new THREE.Vector3(1.5, 1.5, 3), look: new THREE.Vector3(5.7, 0.6, 2.6),
     fov: aspect < 0.9 ? 48 : 43, rate: 18,
   };
 }

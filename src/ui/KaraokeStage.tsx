@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { KARAOKE_SIGN, KARAOKE_UI as words } from "../content/karaokeCopy";
+import { LOCATIONS } from "../content/locations";
 import { game } from "../game/gameRef";
 import { lineGap, type EchoCall, type WordGap } from "../game/karaoke/practice";
 import type { KaraokeSession, KaraokeState } from "../radio/karaokeSession";
@@ -268,19 +269,21 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
   return <section ref={surface} className="karaoke-performance" role="dialog" aria-modal="true" aria-labelledby="karaoke-song-title"
     data-pad-scope="karaoke-stage" data-booth-town={EDITION.id} onKeyDown={keys} tabIndex={-1} lang={EDITION.helper} data-echo={!!turn}>
     <header ref={header} className="karaoke-stage-head">
-      <div><span lang={EDITION.target}>{KARAOKE_SIGN}</span><h1 id="karaoke-song-title" lang={EDITION.target}>{take.song?.t}</h1></div>
+      <div><span lang={EDITION.target}>{EDITION.id === "es" ? LOCATIONS["sunny-cup"].name : KARAOKE_SIGN}</span><h1 id="karaoke-song-title" lang={EDITION.target}>{take.song?.t}</h1></div>
       {take.status !== "ended" && <button ref={leave} type="button" onClick={() => action("leave")}>{words.leave}</button>}
     </header>
     {take.status === "ended" ? <KaraokeFinish take={take} act={action} /> : <>
       {lines.length > 0 && <section className={"karaoke-reader" + (meaning && small ? " karaoke-meaning-sheet" : "")} aria-label={words.lyrics}>
         {turn && <div className="karaoke-turn"><span role="status">{words.yourTurn}</span><span aria-hidden>{karaokeCountdown(take.practice!.remaining)}</span></div>}
-        <div ref={reading} className="karaoke-reading" tabIndex={-1} onClick={() => { if (canReadMeaning) toggleMeaning(); }}>
-          {lines.map((line, index) => <KaraokeLyricLine key={`${line.i}-${index}`} line={line} word={turn || index > 0 ? -1 : frame.word} meaning={meaning} gap={gaps[index]}
-            heard={take.microphone?.matches.filter((match) => match.row === indices[index]).map((match) => match.word)} />)}
+        <div className="karaoke-reader-body">
+          <div ref={reading} className="karaoke-reading" tabIndex={-1} onClick={() => { if (canReadMeaning) toggleMeaning(); }}>
+            {lines.map((line, index) => <KaraokeLyricLine key={`${line.i}-${index}`} line={line} word={turn || index > 0 ? -1 : frame.word} meaning={meaning} gap={gaps[index]}
+              heard={take.microphone?.matches.filter((match) => match.row === indices[index]).map((match) => match.word)} />)}
+          </div>
+          <KaraokeMic take={take} act={action} />
+          {hidden && <button type="button" className="karaoke-reveal karaoke-primary" onClick={() => { revealFocus.current = true; action("reveal"); }}>{words.reveal}</button>}
+          {frame.next >= 0 && !turn && !meaning && !hidden && <KaraokeNextLine take={take} row={frame.next} seconds={seconds} />}
         </div>
-        <KaraokeMic take={take} act={action} />
-        {hidden && <button type="button" className="karaoke-reveal karaoke-primary" onClick={() => { revealFocus.current = true; action("reveal"); }}>{words.reveal}</button>}
-        {frame.next >= 0 && !turn && !meaning && !hidden && <KaraokeNextLine take={take} row={frame.next} seconds={seconds} />}
         {canReadMeaning && <button ref={meaningButton} type="button" className="karaoke-meaning-toggle" aria-expanded={meaning}
           data-pad-back={meaning || undefined} onClick={toggleMeaning}>{meaning ? words.hideMeaning : words.showMeaning}</button>}
       </section>}

@@ -44,7 +44,7 @@ export const STRINGS: Record<string, string> = {
   "Kita eilutė": "Next line",
   "Rodyti reikšmę": "Show meaning",
   "Slėpti reikšmę": "Hide meaning",
-  "Išklausyti eilutę dar kartą": "Replay line",
+  "Klausytis dar kartą": "Replay line",
   "Plojimai tau!": "A round of applause!",
   "Pakartotos eilutės · {done} iš {total}": "Lines practiced · {done} of {total}",
   // The town quests and the optional spoken bonus.

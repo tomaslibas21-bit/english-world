@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { KARAOKE_SIGN, KARAOKE_UI as words } from "../content/karaokeCopy";
+import { LOCATIONS } from "../content/locations";
 import { STATIONS } from "../content/radio";
 import { game } from "../game/gameRef";
 import { karaokeSongs, karaokeStations, useKaraoke } from "../game/karaoke/store";
@@ -60,6 +61,7 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
         <header className="karaoke-mast">
           <button type="button" className="karaoke-back" data-pad-back onClick={() => act("back")} aria-label={words.back}><Icon name="arrowLeft" /></button>
           <Icon name="mic" /><h1 id="karaoke-heading" lang={EDITION.target}>{KARAOKE_SIGN}</h1>
+          {EDITION.id === "es" && <span className="karaoke-venue" lang={EDITION.target}>{LOCATIONS["sunny-cup"].name}</span>}
         </header>
         {selected ? <>
           <div className="karaoke-detail" data-song-detail={selected.song.id}>
