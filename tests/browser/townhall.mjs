@@ -77,15 +77,24 @@ try {
   assert.match(await page.locator(".passport-proof").innerText(), /Conversations completed · 1/);
   await page.waitForSelector("[data-pad-hint][data-pad-positioned]");
   assert(await page.locator(".passport-pad-dock [data-pad-slot]").count(), "controller notice has reserved cover space");
-  assert(await page.locator(".passport-proof").evaluate(proof => {
-    const toast = document.querySelector("[data-pad-hint]").getBoundingClientRect();
-    const receipt = [".passport-mark", ".stars", "li"].map(s => proof.querySelector(s).getBoundingClientRect());
-    const paper = document.querySelector(".passport-evidence").getBoundingClientRect();
-    return getComputedStyle(document.querySelector(".passport-layer")).animationName === "none"
-      && getComputedStyle(proof).backgroundColor.startsWith("rgb(")
-      && receipt.every(b => b.height > 0 && b.top >= paper.top && b.bottom <= paper.bottom && b.bottom <= toast.top);
-  }), "cup, journal stars and completion count share an opaque leaf clear of the controller notice");
-  await shot(page, "cafe-earned");
+  for (const [width, height, scale] of [[390, 844, 1], [844, 390, 1], [390, 664, 1.3], [1280, 800, 1]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(value => window.__ew.store.getState().setSettings({ textSize: value }), scale);
+    await page.waitForFunction(large => document.querySelector(".passport")?.dataset.large === String(large), scale > 1);
+    await page.waitForFunction(() => {
+      const proof = document.querySelector(".passport-proof"), paper = document.querySelector(".passport-evidence");
+      const toast = document.querySelector("[data-pad-hint][data-pad-positioned]")?.getBoundingClientRect();
+      const bounds = paper.getBoundingClientRect();
+      return getComputedStyle(document.querySelector(".passport-layer")).animationName === "none"
+        && getComputedStyle(proof).backgroundColor.startsWith("rgb(")
+        && [".passport-mark", ".stars", "li"].every(s => {
+          const box = proof.querySelector(s).getBoundingClientRect();
+          return box.height > 0 && box.top >= bounds.top && box.bottom <= bounds.bottom && (!toast || box.bottom <= toast.top);
+        });
+    }, null, { timeout: 5000 });
+    if (height === 844) await shot(page, "cafe-earned");
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await tap(1); // B to the index
   assert(await row.evaluate(el => el === document.activeElement));
   await tap(15); // D-pad right, A to read its evidence

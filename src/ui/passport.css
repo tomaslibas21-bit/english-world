@@ -113,7 +113,7 @@
   .passport-spread { display: flex; flex-direction: column; background: var(--paper); }
   .passport-sections { padding: 9px 11px 0; }
   .passport-index,.passport-evidence { padding: 8px 11px 12px; }
-  .passport[data-detail=true] :is(.passport-index,.passport-sections,.passport-pages) { display: none; }
+  .passport[data-detail=true] :is(.passport-index,.passport-sections,.passport-pages button) { display: none; }
   .passport-evidence { flex: auto; padding: 12px 11px; }
   .passport[data-detail=false] .passport-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
   .passport[data-large=true] .passport-grid { grid-template-columns: 1fr; }
@@ -136,4 +136,25 @@
   .passport-index,.passport-evidence,.passport[data-detail=false] .passport-index { grid-area: 1/2; }
   .passport[data-detail=false] .passport-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .passport[data-detail=true] .passport-index { display: none; }
+  .passport-evidence { padding: 7px 11px; }
+  .passport-proof {
+    display: grid; grid-template-columns: 92px minmax(0,1fr); column-gap: 12px;
+    text-align: left; align-content: start; padding: 9px 12px; border-radius: 4px;
+  }
+  .passport-proof .passport-impression { grid-area: 1 / 1 / 5 / 2; align-self: center; }
+  .passport-proof .passport-mark { width: 86px; height: 66px; font-size: 10px; }
+  .passport-proof-mark .ui-icon { width: 32px; height: 32px; }
+  .passport-proof .stars { gap: 3px; }
+  .passport-proof .passport-status { grid-area: 1 / 2; }
+  .passport-proof .passport-group { grid-area: 2 / 2; }
+  .passport-proof h3 { grid-area: 3 / 2; margin: 3px 0; font-size: 1.35em; }
+  .passport-proof ul { grid-area: 4 / 2; }
+  .passport-proof li { padding-block: 3px; }
+  .passport-proof :is(.passport-requirement,.passport-link) { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) and (max-height: 740px) {
+  .passport-evidence { padding: 7px 10px; }
+  .passport-proof { padding: 12px 10px; }
+  .passport-proof-mark .passport-mark { width: 96px; height: 75px; font-size: 11px; }
+  .passport-proof-mark .ui-icon { width: 36px; height: 36px; }
 }
