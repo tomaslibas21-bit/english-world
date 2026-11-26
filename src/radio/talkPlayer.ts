@@ -49,6 +49,8 @@ export interface TalkOutput {
   }): Promise<void>;
   /** Current source seconds for the active request, null while it has no clock. */
   position(): number | null;
+  /** Wake the game context inside a gesture, before an asynchronous selection loads. */
+  unlock?(): void;
   setRates(rates: MediaRates): void;
   setVolume?(volume: number): void;
   /** Capture and source changes also cancel any fade still in progress. */

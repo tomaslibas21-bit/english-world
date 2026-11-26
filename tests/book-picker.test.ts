@@ -61,7 +61,17 @@ describe("Book FM shelf and chapter detail", () => {
     channel.progress.checkpoint(book.chapters[1].selection, mark);
     const html = detail();
     expect(html).toContain('id="chapter-BOOK-CANT-01" class="chapter current" data-pad-default="true" aria-current="true"');
-    expect(html).toContain("Dabar klausaisi");
+    expect(html).toContain("Čia sustojai");
+    expect(html).not.toContain("Dabar klausaisi");
+    const snapshot = channel.player.getSnapshot();
+    const playback = vi.spyOn(channel.player, "getSnapshot").mockReturnValue({
+      ...snapshot, status: "playing", selection: book.chapters[1].selection,
+    });
+    expect(detail()).toContain("Dabar klausaisi");
+    playback.mockReturnValue({ ...snapshot, status: "playing", selection: story.chapters[0].selection });
+    expect(detail()).toContain("Čia sustojai");
+    expect(detail()).not.toContain("Dabar klausaisi");
+    playback.mockRestore();
     expect(html).toContain("Išklausyta");
     expect(html).toContain("Klausytis toliau");
     channel.progress.checkpoint(book.chapters[1].selection, { ...mark, complete: true, fraction: 1 });

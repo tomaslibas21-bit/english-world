@@ -39,22 +39,49 @@ try {
         };
       });
       const capture = async (state) => {
+        if (state === "set-talk") {
+          await page.locator(".radio-set").evaluate((el) => Promise.all(
+            el.getAnimations().filter((animation) => animation.animationName === "radio-in").map((animation) => animation.finished.catch(() => {})),
+          ));
+        }
+        if (state.startsWith("shelf-")) {
+          const covers = picker.locator(".catalog-card[data-cover-expected]");
+          const count = await covers.count();
+          if (count <= 2) {
+            for (let i = 0; i < count; i++) await covers.nth(i).locator("img").waitFor({ state: "attached" });
+          }
+        }
         await page.evaluate(() => Promise.all([...document.querySelectorAll(".book-picker img, .book-glass-cover img")].map((img) => img.decode().catch(() => {}))));
         await shot(page, `${width}x${height}-${state}`);
       };
       const openSet = async () => {
+        const set = page.locator(".radio-set");
+        if (await set.isVisible()) return;
         if (phone) {
           await openPhoneMenu(page);
           await page.locator(".radio-btn").tap();
-        } else if (await page.locator(".radio-plate").count()) await page.locator(".radio-plate").click();
-        else await page.locator(".radio-btn").click();
+        } else {
+          const plate = page.locator(".radio-plate");
+          // On a returning visit, desktop power resumes sound. The station plate opens the cabinet.
+          if (!(await plate.isVisible())) await page.locator(".radio-btn").click();
+          await page.locator(".radio-set, .radio-plate").first().waitFor();
+          if (!(await set.isVisible())) await plate.click();
+        }
         await readout.waitFor();
+      };
+      const revealReaderOptions = async () => {
+        const more = reader.locator("[data-reader-more]");
+        if (await more.isVisible() && await more.getAttribute("aria-expanded") !== "true") await more.click();
+      };
+      const openListeningSettings = async () => {
+        await revealReaderOptions();
+        await reader.locator("[data-book-settings]").click();
       };
       const detail = async () => {
         const cover = picker.locator('[data-book="BOOK-CANT"]');
         await cover.click();
         const rail = picker.locator(".rail-action");
-        if (width > 650) await rail.click();
+        if (await rail.isVisible()) await rail.click();
         await picker.locator("#chapter-BOOK-CANT-01").waitFor();
       };
       await openSet();
@@ -81,7 +108,13 @@ try {
       assert.ok(await reader.locator(".active .u small").count() > 0);
       await capture("reader-meanings");
 
-      await reader.locator("[data-book-settings]").click();
+      if (await reader.locator("[data-reader-more]").isVisible()) {
+        await revealReaderOptions();
+        await page.keyboard.press("Escape");
+        await page.waitForFunction(() => document.activeElement?.hasAttribute("data-reader-more"));
+        assert.ok(await reader.isVisible());
+      }
+      await openListeningSettings();
       await settings.waitFor();
       assert.equal(await settings.getByRole("radio", { name: "Lietuviškai, tada angliškai", exact: true }).getAttribute("aria-checked"), "true");
       const targetSpeed = settings.getByRole("combobox", { name: "Anglų kalbos greitis", exact: true });
@@ -101,7 +134,7 @@ try {
       await settings.waitFor({ state: "detached" });
       await reader.locator(".helper-primary.audible").waitFor();
       assert.equal(await reader.locator(".target-leg").count(), 0);
-      await reader.locator("[data-book-settings]").click();
+      await openListeningSettings();
       await settings.getByRole("radio", { name: "Tik angliškai", exact: true }).click();
       await settings.getByRole("combobox", { name: "Išjungimo laikmatis", exact: true }).selectOption("15");
       await page.keyboard.press("Escape");
@@ -125,6 +158,7 @@ try {
         assert.equal(route.request().headers().referer, undefined);
         await route.fulfill({ contentType: "text/html", body: "<title>Course handoff</title>" });
       });
+      await revealReaderOptions();
       await reader.getByRole("link", { name: "Atverti kurse", exact: true }).click();
       await page.waitForURL("**/knygos/audio/BOOK-CANT-01?mode=english");
       await page.goBack();
@@ -141,7 +175,7 @@ try {
       assert.equal((await current()).intent, false);
       await page.unroute("**/knygos/audio/BOOK-CANT-01?mode=english");
 
-      await reader.locator("[data-book-settings]").click();
+      await openListeningSettings();
       await settings.getByRole("radio", { name: "Lietuviškai, tada angliškai", exact: true }).click();
       await settings.getByRole("combobox", { name: "Išjungimo laikmatis", exact: true }).selectOption("off");
       // Listen at a changed target rate, then open and close settings during that same source.
@@ -152,13 +186,13 @@ try {
         return state.status === "playing" && state.cue?.language === "en" && state.position > state.cue.start + 0.5 && state.position < state.cue.end - 0.2;
       }, null, { timeout: 30000 });
       const midword = await current();
-      await reader.locator("[data-book-settings]").click();
+      await openListeningSettings();
       assert.equal((await current()).intent, true);
       assert.ok((await current()).position >= midword.position);
       assert.equal(await settings.getByRole("combobox", { name: "Anglų kalbos greitis", exact: true }).inputValue(), "0.9");
       await page.keyboard.press("Escape");
       await reader.getByRole("button", { name: "Pristabdyti", exact: true }).click();
-      await reader.locator("[data-book-settings]").click();
+      await openListeningSettings();
       await settings.getByRole("combobox", { name: "Anglų kalbos greitis", exact: true }).selectOption("0.75");
       await settings.getByRole("combobox", { name: "Lietuvių kalbos greitis", exact: true }).selectOption("1");
       await page.keyboard.press("Escape");
@@ -188,6 +222,7 @@ try {
       await capture("shelf-continue");
       await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
       await detail();
+      assert.match(await picker.locator(".chapter.current .status").innerText(), /Čia sustojai/);
       const fits = await picker.locator(".primary").evaluate((el) => {
         const { left, top, bottom, right } = el.getBoundingClientRect();
         return top >= 0 && bottom <= innerHeight && left >= 0 && right <= innerWidth && el.clientHeight >= 44;

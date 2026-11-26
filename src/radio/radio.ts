@@ -19,8 +19,8 @@ import type { TalkSelection } from "./talkProgress";
 import type { TalkStation } from "./playlist";
 import { SpotSchedule, type ReadySpot } from "./spots";
 
-/** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
-export type Hold = "conversation" | "voice" | "microphone" | "bed";
+/** Audio focus reasons shared by the song and talk transports. */
+export type Hold = "conversation" | "voice" | "microphone" | "bed" | "hidden";
 
 export interface RadioState {
   /** At least one configured bank can be tuned. */
@@ -365,7 +365,7 @@ export class Radio {
       this.save();
       return;
     }
-    out.unlock();
+    if (!this.holds.size) out.unlock();
     this.failures = 0;
     this.set({ on: true, failed: false });
     this.save();
@@ -400,6 +400,7 @@ export class Radio {
       if (!this.onBooks) {
         if (this.cursor) this.saved.places[this.state.station] = this.cursor;
         this.silence();
+        this.deps.output.releaseRecording?.();
         clearTimeout(this.resumeTimer);
         this.cursor = null;
         this.order = [];
@@ -505,9 +506,14 @@ export class Radio {
 
   /** A tap or a key anywhere in the game: what a browser may have been waiting for. */
   gesture() {
-    if (this.onBooks || !this.state.on) return;
+    if (this.holds.size) return;
+    if (this.onBooks) {
+      this.books?.output.unlock?.();
+      return;
+    }
+    if (!this.state.on) return;
     this.deps.output.unlock();
-    if (this.state.needsTap && !this.holds.size) this.start(FADE_IN_MS);
+    if (this.state.needsTap) this.start(FADE_IN_MS);
   }
 
   /** The learner walked into a place whose conversation is built on one of these songs: the first of them that the

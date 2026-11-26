@@ -53,6 +53,7 @@ const surfaces: Record<string, Surface> = {
   photo: { priority: 60, first: "[data-choice], .photo-choices [data-line], .photo-quiz > button" },
   "book-shelf": { priority: 52, first: DEFAULT, slot: ".mast" },
   "book-reader": { priority: 56, first: DEFAULT, slot: ".mast" },
+  "book-options": { priority: 57, first: "button", back: ".book-reader [data-reader-more]" },
   "book-settings": { priority: 58, first: DEFAULT, slot: ".mast" },
   "book-detail": { priority: 54, first: DEFAULT, slot: ".mast" },
   radio: { priority: 50, first: DEFAULT, back: ".rs-x", slot: ".radio-set" },

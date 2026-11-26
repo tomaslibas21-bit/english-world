@@ -1,4 +1,6 @@
-import { usesBufferRecordings } from "../game/audio";
+import { audio, usesBufferRecordings } from "../game/audio";
+import { holdPlaybackRoute, playbackRoute } from "../convo/audioFocus";
+import { BookBufferOutput } from "./bookBufferOutput";
 import { bookCueIndex } from "./bookTiming";
 import { streamingAudio } from "./output";
 import type { TalkCue, TalkFailure, TalkOutput, TalkStopReason, TalkTrack } from "./talkPlayer";
@@ -17,6 +19,7 @@ type Part = {
   excerpt?: Excerpt;
   playing: boolean;
   recovery?: AbortController;
+  releaseRoute?: () => void;
 };
 type Session = {
   generation: number;
@@ -206,6 +209,7 @@ export class BookOutput implements TalkOutput {
     part.media.pause();
     part.media.removeAttribute("src");
     part.media.load();
+    part.releaseRoute?.();
   }
 
   private async open(session: Session, position: number, index?: number, retried = false): Promise<void> {
@@ -239,6 +243,7 @@ export class BookOutput implements TalkOutput {
 
     let rejectStart!: (error: unknown) => void;
     const interrupted = new Promise<never>((_, reject) => { rejectStart = reject; });
+    void interrupted.catch(() => {}); // The setup below can fail before play() is called.
     const failed = () => {
       if (!this.active(session, part)) return;
       if (!part.playing) rejectStart(new Error("Media request failed"));
@@ -276,6 +281,8 @@ export class BookOutput implements TalkOutput {
         if (!validDuration()) throw new PlaybackFailure("invalid");
         media.currentTime = part.startTime;
       }
+      if (!playbackRoute(true)) throw new DOMException("Audio route held", "NotAllowedError");
+      part.releaseRoute = holdPlaybackRoute();
       media.muted = false;
       // Invoke play in the gesture. The browser waits for metadata and the precise seek.
       await Promise.race([interrupted, media.play()]);
@@ -410,14 +417,8 @@ export class BookOutput implements TalkOutput {
   }
 }
 
-/** iOS uses the game's buffer branch. Keep chapter text available until bounded decoding is ready. */
-export function createBookOutput(): TalkOutput {
-  if (!usesBufferRecordings()) return new BookOutput();
-  return {
-    unavailable: "unavailable",
-    start: async () => { throw new PlaybackFailure("unavailable"); },
-    position: () => null,
-    setRates: () => {},
-    stop: () => {},
-  };
+export function createBookOutput(bufferRecordings = usesBufferRecordings()): TalkOutput {
+  const forceBuffer = (import.meta.env.DEV || import.meta.env.VITE_BOOK_REVIEW === "1") &&
+    new URLSearchParams(globalThis.location?.search).get("bookOutput") === "buffer";
+  return bufferRecordings || forceBuffer ? new BookBufferOutput(() => audio.context()) : new BookOutput();
 }

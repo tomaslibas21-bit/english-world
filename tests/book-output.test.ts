@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BookBufferOutput } from "../src/radio/bookBufferOutput";
 import { BookOutput, createBookOutput } from "../src/radio/bookOutput";
 import { bookRateSwitches, englishBookCues } from "../src/radio/bookTiming";
 import { TalkPlayer, type TalkCue, type TalkItem, type TalkOutput, type TalkTrack } from "../src/radio/talkPlayer";
@@ -367,19 +368,23 @@ describe("HTML chapter output", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("keeps cues available on the existing iOS buffer branch without constructing audio", async () => {
+  it("selects book buffers on the existing iPad branch without constructing media elements", () => {
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Macintosh)", maxTouchPoints: 5 });
     const audio = vi.fn();
     vi.stubGlobal("Audio", audio);
-    const player = new TalkPlayer({ progress: new TalkProgress("em-lt"), output: createBookOutput(), load: async () => chapter(),
-      clock: { now: () => 0, setTimeout: () => () => {} } });
-    disposables.push(() => player.dispose());
-    await player.select(selection, true);
-    expect(player.getSnapshot()).toMatchObject({ error: "unavailable", playIntent: false, cue: { text: "Speech 1" } });
-    player.play();
-    player.changeMode("target");
-    expect(player.getSnapshot()).toMatchObject({ error: "unavailable", cue: { language: "en" } });
+    expect(createBookOutput()).toBeInstanceOf(BookBufferOutput);
     expect(audio).not.toHaveBeenCalled();
+  });
+
+  it("allows only dev or review builds to force buffer output on desktop", () => {
+    vi.stubGlobal("location", { search: "?bookOutput=buffer" });
+    vi.stubEnv("DEV", false);
+    vi.stubEnv("VITE_BOOK_REVIEW", "0");
+    try {
+      expect(createBookOutput(false)).toBeInstanceOf(BookOutput);
+      vi.stubEnv("VITE_BOOK_REVIEW", "1");
+      expect(createBookOutput(false)).toBeInstanceOf(BookBufferOutput);
+    } finally { vi.unstubAllEnvs(); }
   });
 });
 

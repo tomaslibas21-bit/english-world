@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { bookLocale, bookWord as w } from "../content/bookCopy";
-import { BOOK_STATION, RADIO_SKIN } from "../content/radio";
+import { RADIO_SKIN } from "../content/radio";
 import { radio } from "../radio";
 import type { BookChannel } from "../radio/bookChannel";
 import type { SleepChoice } from "../radio/talkPlayer";
@@ -32,7 +32,6 @@ export function ListeningForm({ channel }: { channel: BookChannel }) {
   const sleepChoice: SleepChoice = sleep?.kind === "timed" ? sleep.minutes : sleep?.kind === "end" ? "end" : "off";
   const boundary = selection?.itemKey.startsWith("story/") ? "endStory" : selection?.itemKey.startsWith("scene/") ? "endScene" : "endChapter";
   return <form className="settings-form scroll" onSubmit={(event) => event.preventDefault()}>
-    <h1>{w("settings")}</h1>
     <fieldset>
       <legend id="book-mode-label">{w("mode")}</legend>
       <div className="mode-group" role="radiogroup" aria-labelledby="book-mode-label">
@@ -92,8 +91,7 @@ export function TalkSettings({ channel }: { channel: BookChannel }) {
     <section className="book-sheet settings">
       <header className="mast">
         <button className="round back" data-pad-back aria-label={w("back")} onClick={() => radio.closeSettings()}><Icon name="arrowLeft" /></button>
-        <span className="brand" lang="en"><Icon name="bookOpen" />{BOOK_STATION.name}</span>
-        <span className="frequency">{BOOK_STATION.freq.toLocaleString(bookLocale)} <small>{w("mhz")}</small></span>
+        <h1>{w("settings")}</h1>
       </header>
       <ListeningForm channel={channel} />
     </section>

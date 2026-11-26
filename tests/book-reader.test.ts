@@ -13,7 +13,7 @@ import { TALK_LANGUAGES } from "../src/radio/talkProgress";
 import { BookInterlinear, readerUnits, readerWord } from "../src/ui/BookInterlinear";
 import { BookCourseLink, BookReader, ReaderPage } from "../src/ui/BookReader";
 import { ReaderFollow } from "../src/ui/bookReaderFollow";
-import { ListeningForm } from "../src/ui/TalkSettings";
+import { ListeningForm, TalkSettings } from "../src/ui/TalkSettings";
 import { useStore } from "../src/state/store";
 
 const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/books/${name}.json`, import.meta.url), "utf8"));
@@ -158,6 +158,16 @@ describe("Book FM reader", () => {
     await player.select(chapter.selection);
     player.changeMode("paired");
     expect(player.getSnapshot().prefs.rates).toEqual({ en: 0.9, lt: 1.75 });
+  });
+
+  it("gives listening settings a single heading beside Back, with the language choices first in the form", () => {
+    const { channel } = setup();
+    const html = renderToStaticMarkup(createElement(TalkSettings, { channel }));
+    expect(html.match(/<h1>/g)).toHaveLength(1);
+    expect(html).toContain("<h1>Klausymo nustatymai</h1>");
+    expect(html).toContain('<form class="settings-form scroll"><fieldset>');
+    expect(html).not.toContain("Book FM");
+    expect(html).not.toContain("91,3");
   });
 
   it.each([15, 30] as const)("expires a %s minute wall-clock sleep ahead of hold release, even when page timers were delayed", async (minutes) => {
