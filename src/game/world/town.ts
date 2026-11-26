@@ -3,7 +3,7 @@ import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
+import { BUILDINGS, VISITOR_BENCH, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
@@ -1582,7 +1582,7 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   }
   // benches, hydrants, trash cans along Main Street
   const bench = (x: number, z: number, rot: number) => streetBench(M, col, x, z, rot);
-  for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) bench(x, z, rot);
+  for (const [x, z, rot] of [[-75, -17.5, 0], [VISITOR_BENCH.x, VISITOR_BENCH.z, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) bench(x, z, rot);
   const hydrant = (x: number, z: number) => {
     photo("hydrant", x, 0.55, z);
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));

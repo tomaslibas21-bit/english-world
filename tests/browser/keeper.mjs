@@ -444,21 +444,25 @@ async function visit(context, view, speech) {
   }
 
   async function reviewPhrase(answer) {
-    await tool("Frazių knygelė");
-    const book = page.locator(".sheet").filter({ has: page.getByRole("heading", { name: "Frazių knygelė", exact: true }) });
+    await tool("Kuprinė");
+    const book = page.locator(".sheet").filter({ has: page.getByRole("heading", { name: "Mano užrašinė", exact: true }) });
     await visible(book, "the phrasebook");
-    const chapter = book.locator(".chapter").filter({ has: page.getByRole("heading", { name: title.lt, exact: true }) });
-    const row = chapter.locator(".hint-row", { has: page.getByText(answer.en, { exact: true }) });
-    await visible(row, `the earned phrase ${answer.id} under the keeper source`);
-    await exact(row.locator(".nat"), answer.lt);
-    await press(row.getByRole("button", { name: "Į korteles", exact: true }));
-    await press(book.getByRole("tab", { name: /^Mano kortelės/ }));
-    await press(book.getByRole("button", { name: "Kartoti", exact: true }));
+    await press(book.getByRole("tab", { name: /^Kartotos frazės/ }));
+    const group = book.getByRole("heading", { name: title.lt, exact: true });
+    await visible(group, "keeper source heading");
+    const row = book.locator(".nb-entry", { has: page.getByText(answer.en, { exact: true }) });
+    await visible(row, `the earned phrase ${answer.id}`);
+    await exact(row.locator("[lang=lt]"), answer.lt);
+    await press(row);
+    await exact(book.locator(".nb-reading .nb-source"), title.lt);
+    await press(book.getByRole("button", { name: "Išsaugoti kortelėse", exact: true }));
+    await press(book.getByRole("tab", { name: /^Išsaugotos kortelės/ }));
+    await press(book.getByRole("button", { name: /^Kartoti korteles/ }));
     await exact(book.locator(".rv-lt[lang=lt]"), answer.lt);
     await exact(book.locator(".rv-sit"), `· ${title.lt}`);
     await press(book.getByRole("button", { name: "Rodyti atsakymą", exact: true }));
     await exact(book.locator(".rv-en[lang=en]"), answer.en);
-    await press(book.getByRole("button", { name: "Mokėjau", exact: true }));
+    await press(book.getByRole("button", { name: "Pažymėti kaip išmoktą", exact: true }));
     await closePanel();
   }
 

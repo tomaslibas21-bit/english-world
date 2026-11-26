@@ -170,11 +170,13 @@ try {
       assert.deepEqual(await inspect(page, ".map-wrap .sit-card", ".txt b, .txt i"), [["x04-surf", "waves-horizontal"]]);
 
       await panel("phrasebook");
-      await page.locator('.chapter h3 svg[data-sit-icon="car-taxi-front"]').waitFor();
+      await page.getByRole("tab", { name: /^Kartotos frazės/ }).click();
+      await page.locator('.nb-group svg[data-sit-icon="car-taxi-front"]').waitFor();
       await shot("phrasebook");
-      await page.locator(".pb-acts .add").click();
-      await page.getByRole("tab", { name: /Mano kortelės/ }).click();
-      await page.locator(".cards-hero button").click();
+      await page.locator(".nb-entry").click();
+      await page.getByRole("button", { name: "Išsaugoti kortelėse", exact: true }).click();
+      await page.getByRole("tab", { name: /^Išsaugotos kortelės/ }).click();
+      await page.locator("[data-review]").click();
       await page.locator('.rv-sit svg[data-sit-icon="car-taxi-front"]').waitFor();
       await shot("review");
 
