@@ -7,6 +7,7 @@ The square shows the English heading and target. The reading sheet uses Lithuani
 | Board heading and sheet title | Phrase of the day | Dienos frazė |
 | Nearest prompt | Read today’s phrase | Skaityti dienos frazę |
 | Touch action | Read | Skaityti |
+| Visible speaker labels | EN / LT | EN / LT |
 | Target speaker | Hear the phrase | Klausytis frazės |
 | Translation speaker | Hear the translation | Klausytis vertimo |
 | Save | Save to cards | Išsaugoti kortelėse |
@@ -17,7 +18,7 @@ The square shows the English heading and target. The reading sheet uses Lithuani
 | Failed voice request | Audio unavailable | Nepavyko paleisti garso įrašo |
 | Close button | Close | Uždaryti |
 | Date on the first posting | November 26, 2026 | 2026 m. lapkričio 26 d. |
-| Accessible button name | Hear the phrase · {target} / Hear the translation · {translation} | Klausytis frazės · {target} / Klausytis vertimo · {translation} |
+| Accessible button name | Hear the phrase (EN) · {target} / Hear the translation (LT) · {translation} | Klausytis frazės (EN) · {target} / Klausytis vertimo (LT) · {translation} |
 | Source in Cards | Phrase of the day · {source} | Dienos frazė · {source} |
 
 ## The fourteen postings

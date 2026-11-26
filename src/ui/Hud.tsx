@@ -102,7 +102,8 @@ export function Hud() {
   const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
   const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
-  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast });
+  const readingBoard = layout !== "full" && questHud && hud.prompt?.kind === "read";
+  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast, readingBoard });
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -199,11 +200,11 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast }: {
-  directions: string | undefined; photoReady: boolean; phoneToast: boolean;
+function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast, readingBoard }: {
+  directions: string | undefined; photoReady: boolean; phoneToast: boolean; readingBoard: boolean;
 }) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const note = directions ? `directions:${directions}:${photoReady}` : photoReady ? "photo" : phoneToast ? "toast" : null;
+  const note = readingBoard ? "noticeboard" : directions ? `directions:${directions}:${photoReady}` : photoReady ? "photo" : phoneToast ? "toast" : null;
   const [openedDuringNote, setOpenedDuringNote] = useState<string | null>(null);
   if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(null);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
@@ -216,7 +217,7 @@ function useTaskCard(taskId: string | null, visible: boolean, layout: string, { 
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    if (!directions) setState((current) => ({ ...current, manual }));
+    if (!directions && !readingBoard) setState((current) => ({ ...current, manual }));
     setOpenedDuringNote(manual ? null : note);
   }
   return { ...state, collapsedForNote: note === null ? null : openedDuringNote !== note, setManual };

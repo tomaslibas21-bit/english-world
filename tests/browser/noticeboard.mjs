@@ -49,6 +49,19 @@ try {
   const until = test => page.waitForFunction(test, null, { timeout: 90000 });
   const press = index => page.evaluate(i => window.pressButton(i), index);
   await until(() => window.__pad?.connected && window.__ew?.store.getState().hud.prompt?.kind === "read");
+  const summary = page.locator(".objective-summary");
+  await summary.waitFor();
+  await summary.click();
+  assert.equal(await page.locator(".objective-card [aria-expanded=true]").count(), 1);
+  assert.match(await page.locator(".hud .prompt").innerText(), /Skaityti dienos frazę/);
+  // Leave with the quest open, then approach again. Each new Read prompt folds it for that visit.
+  await page.evaluate(() => window.__ew.game.walkTo(32, -14));
+  await until(() => window.__ew.game.player.root.position.z > -14.8 && window.__ew.store.getState().hud.prompt?.kind !== "read");
+  await page.locator(".objective-card [aria-expanded=true]").waitFor();
+  await page.evaluate(() => window.__ew.game.walkTo(32, -17.3));
+  await until(() => window.__ew.store.getState().hud.prompt?.kind === "read");
+  await summary.waitFor();
+  await until(() => !window.__ew.store.getState().hud.walking);
   // Compare the same camera with just this prop hidden/visible on each pass. Other town activity
   // (pedestrians, streaming) can change the whole-scene totals between visits.
   const measure = () => page.evaluate(() => {
@@ -97,6 +110,9 @@ try {
   await page.clock.setFixedTime(new Date("2026-11-26T12:00:00Z"));
   await page.keyboard.press("e");
   await until(() => document.activeElement?.matches(".posting-line") && document.activeElement.textContent.includes("Is it far?"));
+  assert.deepEqual(await page.locator(".posting-voice:visible").allTextContents(), ["EN", "LT"]);
+  assert.match(await page.locator(".posting-line").first().getAttribute("aria-label"), /\(EN\).*Is it far/);
+  assert.match(await page.locator(".posting-line").last().getAttribute("aria-label"), /\(LT\).*Ar toli/);
   await page.keyboard.press("Tab");
   assert.match(await page.locator(":focus").innerText(), /Ar toli/);
   await page.keyboard.press("Tab");

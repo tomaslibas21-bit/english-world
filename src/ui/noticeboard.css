@@ -9,11 +9,11 @@ dialog.posting-paper {
   max-height: 78dvh;
   overflow: hidden;
   color: var(--paper-ink);
-  background: #fff8e9;
+  background: linear-gradient(120deg, #fff5df, #fffaef 58%, #f6ecd6);
   border: 1px solid #b79b70;
-  border-top: 5px solid #426650;
+  border-top: 4px solid #40604c;
   border-radius: 5px;
-  box-shadow: 0 7px 30px #221b1840;
+  box-shadow: inset 0 0 0 2px #fffaf080, 0 2px 0 #c7b491, 0 7px 30px #221b1840;
   font: 600 calc(18px * var(--scale))/1.35 var(--ui);
 }
 .posting-paper[open] { display: flex; flex-direction: column; }
@@ -23,7 +23,7 @@ dialog.posting-paper {
 .posting-paper h2 { margin: 0; font: 700 1.25em/1.15 var(--en); }
 .posting-paper time { color: #586656; font-size: .82em; }
 .posting-paper button { color: inherit; font: inherit; cursor: pointer; }
-.posting-paper header button, .posting-line i {
+.posting-paper header button {
   min-width: 44px; min-height: 44px; display: grid; place-items: center; border-radius: 50%;
   border: 1px solid #cdbf9e; background: #fffaf0;
 }
@@ -35,7 +35,11 @@ dialog.posting-paper {
 .posting-line span { overflow-wrap: anywhere; }
 .posting-line [lang=en] { font: 600 1.65em/1.12 var(--en); }
 .posting-line [lang=lt] { color: #435c51; }
-.posting-line i { flex: none; color: #29513f; background: #f1ecd9; }
+.posting-line .posting-voice {
+  display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 5px;
+  min-height: 44px; min-width: 64px; padding: 0 9px; border: 1px solid #b8b39a; border-radius: 22px;
+  background: #f3efdf; color: #284b3a; font: 800 max(13px, .76em)/1 var(--ui); letter-spacing: .04em;
+}
 .posting-paper footer { border-top: 1px solid #dfcfab; }
 .posting-paper .btn[data-phrase-save] {
   width: 100%; height: auto; min-height: 44px; padding: 8px 14px; gap: 8px;

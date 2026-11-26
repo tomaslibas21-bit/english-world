@@ -53,10 +53,12 @@ export function NoticeboardSheet({ board, close }: { board: DailyBoard; close: (
     };
   }, []);
 
-  function line(text: string, lang: string, file: string, label: string) {
-    return <button type="button" className="posting-line" aria-label={label + " · " + text} title={label}
+  function line(text: string, lang: "en" | "lt", file: string, label: string) {
+    const code = lang.toUpperCase();
+    return <button type="button" className="posting-line" aria-label={`${label} (${code}) · ${text}`} title={label}
       onClick={() => hear(file)}>
-      <span lang={lang}>{text}</span><i aria-hidden="true"><Icon name="speaker" size={21} /></i>
+      <span lang={lang}>{text}</span>
+      <span className="posting-voice" aria-hidden="true"><Icon name="speaker" size={19} />{code}</span>
     </button>;
   }
 
