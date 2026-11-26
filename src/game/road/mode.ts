@@ -210,7 +210,8 @@ export class RoadMode {
   private async begin(session: object, way: PlayWay) {
     this.phase = "loading";
     useRoad.setState({ phase: "loading", way });
-    const pool = await (way === "phrases" ? loadPhrasePool().catch(() => undefined) : this.pool ??= loadWordPrompts());
+    if (way === "words") this.pool ??= loadWordPrompts();
+    const pool = way === "phrases" ? await loadPhrasePool().catch(() => undefined) : await this.pool;
     if (this.session !== session) return;
     const pick = pool && runPicker(pool, edition, way);
     const first = pick?.([], 18);

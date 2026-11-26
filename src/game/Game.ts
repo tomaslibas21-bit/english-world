@@ -2907,6 +2907,8 @@ export class Game implements GameApi {
     if (!release && (this.transitioning || useStore.getState().hud.panel)) return;
     if (id === "directions") this.quests.directionAction(name);
     else if (this.modes.owns(id)) {
+      // The native result can explicitly send the learner to a lesson in town.
+      if (id === "road" && name === "guide") this.arcade?.forgetReturn();
       if (id === "surf" && name === "clear") this.setJoystick(0, 0);
       this.modes.get(id)?.action?.(name, value);
     }
@@ -3014,9 +3016,12 @@ export class Game implements GameApi {
       const { location } = cafe ? BARISTA_CONVERSATION : GOFISH_CONVERSATION;
       const unlocked = cafe ? this.barista?.available() : this.gofish?.available();
       const host = getInterior(location)?.npcs.find((n) => n.npc === (cafe ? BARISTA_CONVERSATION.npc : GOFISH_CONVERSATION.host));
-      const spawn = !unlocked && host
-        ? { x: host.ax ?? host.x + Math.sin(host.rot), z: host.az ?? host.z + Math.cos(host.rot), rot: host.rot + Math.PI }
-        : cafe ? BARISTA_PROMPT : GOFISH_PROMPT;
+      let spawn = cafe ? BARISTA_PROMPT : GOFISH_PROMPT;
+      if (!unlocked && host) {
+        spawn = host.ax !== undefined && host.az !== undefined
+          ? { x: host.ax, z: host.az, rot: host.rot + Math.PI }
+          : inFrontOf(host.x, host.z, host.rot, 1);
+      }
       this.enterZone(location, spawn);
     } else if (id === "gym") {
       this.enterZone(GYM_ENTRY.location, { x: GYM_MAT.x, z: GYM_MAT.z, rot: Math.PI / 2 });
@@ -3024,12 +3029,15 @@ export class Game implements GameApi {
       this.enterZone("town", HARBOR_SURF.approach);
     } else if (id === "photowalk") {
       const hana = OUTDOOR_NPCS.find((n) => n.npc === PHOTO_WALK_NPC)!;
-      this.enterZone("town", { x: hana.ax!, z: hana.az!, rot: Math.atan2(hana.x - hana.ax!, hana.z - hana.az!) });
+      const { x, z } = talkAt(hana);
+      this.enterZone("town", { x, z, rot: Math.atan2(hana.x - x, hana.z - z) });
     } else if (id === "taxi") {
       this.enterZone("town", TAXI_APPROACH);
     } else {
       const boat = RIDES.boats.find((b) => b.id === "beach")!;
-      this.enterZone("town", { x: boat.x, z: boat.z + 3, rot: Math.PI });
+      const beach = { x: boat.x, z: boat.z + 3 };
+      const approach = this.rides.boatApproach(beach.x, beach.z) ?? beach;
+      this.enterZone("town", { x: approach.x, z: approach.z, rot: Math.PI });
     }
   }
 
@@ -4413,7 +4421,8 @@ export class Game implements GameApi {
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
       }
     }
-    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id || best?.label !== this.nearest?.label;
+    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id
+      || (best?.prompt?.kind === "arcade" && best.label !== this.nearest?.label);
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
       if (changed && best) audio.sfx("tick");

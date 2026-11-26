@@ -4,7 +4,7 @@
 .arcade-panel { width: min(100%, 48rem); max-height: 100%; min-height: 0; display: flex; flex-direction: column;
   border: 2px solid #b6955b; border-radius: 14px; overflow: hidden; background: #fcf4df; box-shadow: 0 10px 40px #211b1590; }
 .arcade-panel header { padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #234839; color: #fff6df; }
-.arcade-panel h2 { margin: 0; font: 700 1.15em var(--ui); }
+.arcade-panel h2 { margin: 0; font: bold 1.45em Georgia, serif; }
 .arcade-panel button { min-height: 44px; min-width: 44px; padding: 6px 14px; color: inherit; font: inherit;
   background: transparent; border: 1px solid currentColor; border-radius: 8px; cursor: pointer; }
 .arcade-panel button:focus-visible { outline: 3px solid #ecaa34; outline-offset: -4px; }
@@ -17,10 +17,9 @@
 .arcade-panel .arcade-primary { color: #fff6df; background: #29513f; font-weight: 800; }
 .arcade-loading { pointer-events: auto; position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
   gap: 12px; background: #22382fee; color: #fff6df; }
-.arcade-panel header h2 { font: bold 1.45em Georgia, serif; }
 .arcade-panel header small { display: block; font: 600 0.6em var(--ui); }
 .arcade-columns { display: grid; min-height: 0; grid-template-columns: minmax(10rem, 2fr) minmax(0, 3fr); }
-.arcade-nav { min-height: 0; display: flex; flex-direction: column; padding: 14px; background: #eee5ce; }
+.arcade-nav { order: -1; min-height: 0; display: flex; flex-direction: column; padding: 14px; background: #eee5ce; }
 .arcade-nav h3 { margin: 0 0 8px; font: bold 1em var(--ui); }
 .arcade-nav button { display: block; width: 100%; text-align: start; }
 .arcade-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
