@@ -55,6 +55,10 @@
 .booth-actions > * { flex: 1; }
 .booth-actions .booth-primary { color: var(--paper); border-color: var(--enamel); background: var(--enamel); }
 .booth-actions :disabled { opacity: .55; cursor: default; }
+@media (min-width: 1000px) and (min-height: 680px) {
+  .overlay[data-pad-phase="phonebooth"] { align-items: start; padding-top: max(24px, env(safe-area-inset-top)); }
+  .booth-book { height: min(60dvh, 510px); }
+}
 @media (max-width: 620px) {
   .booth-pages { grid-template-columns: 1fr; }
   .booth-book[data-page="index"] .booth-leaf, .booth-book:not([data-page="index"]) .booth-index { display: none; }
