@@ -40,6 +40,7 @@ import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
 import { HARBOR_SURF } from "../game/world/surf";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { NoticeboardSheet } from "./NoticeboardSheet";
 import { CavePicker } from "./CavePicker";
 
 const WorldMapPanel = lazy(() => import("./worldMap"));
@@ -63,6 +64,7 @@ export function Panels() {
   }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
+  if (panel === "noticeboard" && game?.noticeboard) return <NoticeboardSheet board={game.noticeboard} close={close} />;
   return (
     <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}

@@ -1,6 +1,6 @@
 import { localDay } from "../../state/playStats";
 
-type Deck = typeof import("../../content/phrases/phrase-game.mh.json").default;
+type Deck = typeof import("../../content/phrases/phrase-game.mh.json");
 export type BoardRow = Pick<Deck["items"][number], "id" | "f" | "p" | "fClip" | "pClip" | "src">;
 const strip = ["mh-001", "mh-005", "mh-036", "mh-010", "mh-029", "mh-003", "mh-008",
   "mh-004", "mh-018", "mh-009", "mh-022", "mh-020", "mh-026", "mh-030"] as const;

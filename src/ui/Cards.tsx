@@ -313,6 +313,7 @@ function CardRow({ c, now }: { c: Card; now: number }) {
       <div className="cd-txt">
         <div className="cd-en" lang="en">{c.en}</div>
         <div className="cd-lt" lang="lt">{c.lt}</div>
+        {!c.situationId && c.sourceLabel && <small>{c.sourceLabel}</small>}
       </div>
       <div className="cd-meta">
         <Pips box={c.box} />

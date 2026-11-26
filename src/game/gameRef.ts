@@ -21,6 +21,7 @@ export interface NametagLayout {
 export type GuideKind = "cave" | "objective";
 
 export interface GameApi {
+  readonly noticeboard?: import("./noticeboard/posting").DailyBoard;
   readonly cave?: import("./cave/quest").CaveQuest | null;
   readonly caveMapBounds?: { minX: number; maxX: number; minZ: number; maxZ: number };
   /** The light mode: no town to walk on in, so its end box leads to the next conversation. */

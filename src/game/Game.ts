@@ -6,6 +6,8 @@ import { ROUTE } from "../content/route";
 import * as THREE from "three";
 import townCollisionURL from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
+import { DailyBoard } from "./noticeboard/posting";
+import { BOARD } from "./noticeboard/prop";
 import { buildTown, type Town, type Door } from "./world/town";
 import { CAVE_ZONE, COVE_DOORS, PREFERRED_COVE_DOOR, SLATE_COVE, filterSlateCoveNav, inSlateCove, type CoveDoor } from "./world/slateCovePlan";
 import { SlateCoveArt } from "./world/slateCoveArt";
@@ -182,6 +184,7 @@ export class Game implements GameApi {
   scene = new THREE.Scene();
   rig: CameraRig;
   town!: Town;
+  readonly noticeboard = new DailyBoard(phrase => this.town.noticeboard.paint(phrase));
   zone!: ZoneState;
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
@@ -253,7 +256,7 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private nearest: { kind: "noticeboard" | "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -809,6 +812,8 @@ export class Game implements GameApi {
     else this.enterZone("airport", ARRIVAL, true);
     this.phoneWatch.push(useStore.subscribe((state, previous) => {
       const h = state.hud, before = previous.hud;
+      if (before.panel === "noticeboard" && h.panel !== before.panel) this.noticeboard.close();
+      if (h.panel === "noticeboard" && state.conv.active) state.setHud({ panel: null });
       if (this.pad?.input && ((h.panel && h.panel !== before.panel) || (h.modeScreen && h.modeScreen !== before.modeScreen) ||
           (h.fade && !before.fade) || (h.phoneCard && h.phoneCard !== before.phoneCard) ||
           (state.conv.active && !previous.conv.active) || (state.screen !== "play" && previous.screen === "play"))) {
@@ -2337,6 +2342,14 @@ export class Game implements GameApi {
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "noticeboard") {
+      const state = useStore.getState();
+      if (repeat || state.hud.panel || state.conv.active || this.session?.active || this.flight) return;
+      this.cancelManualPath();
+      this.placeOnFoot(BOARD.x, BOARD.readZ, Math.PI);
+      this.noticeboard.open();
+      state.setHud({ panel: "noticeboard" });
+    }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -4298,6 +4311,8 @@ export class Game implements GameApi {
   private updateHud() {
     const st = useStore.getState();
     const p = this.player.root.position;
+    const boardDistance = Math.hypot(p.x - BOARD.x, p.z - BOARD.readZ);
+    this.noticeboard.setNearby(this.zone.id === "town" && !this.flight && !this.modes.active && boardDistance < 16);
     // nearest interactable
     let best: Game["nearest"] = null;
     let bd = Infinity;
@@ -4328,6 +4343,11 @@ export class Game implements GameApi {
         else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: "Užlipti ant prieplaukos" }; }
       }
       if (!this.swimming && !this.hop.air && this.diveK < 0.3) {
+        if (this.zone.id === "town" && p.z > BOARD.z && boardDistance < 1.8 && boardDistance < bd) {
+          bd = boardDistance;
+          const label = "Skaityti dienos frazę";
+          best = { kind: "noticeboard", id: "noticeboard", label, prompt: { label, kind: "read" } };
+        }
         const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd, !!this.zone.interior);
         if (m) {
           bd = m.distance;
@@ -4354,7 +4374,7 @@ export class Game implements GameApi {
     const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id;
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
-      if (changed && best) audio.sfx("tick");
+      if (changed && best && best.kind !== "noticeboard") audio.sfx("tick");
       const names = RIDE_NAMES;
       const keeperPrompt = best?.kind === "npc" ? this.caveZone?.keeperPrompts.get(best.id) : undefined;
       st.setHud({ prompt: !best ? null
@@ -4480,6 +4500,8 @@ export class Game implements GameApi {
     this.rides?.disposeCrashes();
     this.carVisuals?.dispose();
     this.islandScene?.dispose();
+    this.noticeboard.setNearby(false);
+    this.town?.noticeboard.dispose();
     this.town?.parkedCars.fleet.dispose();
     this.rides?.disposeParkingKeys();
     useStore.getState().setHud({ coach: null });
