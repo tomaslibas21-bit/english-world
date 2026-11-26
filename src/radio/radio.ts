@@ -17,7 +17,7 @@ import { RADIO_SPOTS, type RadioSpot } from "../content/radioSpots";
 import { SpotSchedule, type ReadySpot } from "./spots";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
-export type Hold = "conversation" | "voice" | "microphone" | "bed";
+export type Hold = "conversation" | "voice" | "microphone" | "bed" | "cinema";
 
 export interface RadioState {
   /** this build has songs to play */
