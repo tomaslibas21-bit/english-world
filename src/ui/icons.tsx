@@ -46,7 +46,7 @@ const carParts = (y: number) => [
 
 /** A plain string is a stroked path; `soft` adds a light fill, `solid` a full fill (both keep the
  *  stroke), `tint` / `fill` are fills without a stroke. */
-type Part = string | { d: string; k: "soft" | "solid" | "tint" | "fill" };
+type Part = string | { d: string; className?: string; k: "soft" | "solid" | "tint" | "fill" };
 type Def = Part[] | { rot: number; parts: Part[] };
 
 const ICONS = {
@@ -93,8 +93,13 @@ const ICONS = {
     "M6.83 9.29 8.04 5.2", "M11.32 8.34l1.21-4.09", "M15.81 7.39l1.21-4.09"],
   map: [{ d: "M9 4.75 3.5 6.9v12.35L9 17.1l6 2.15 5.5-2.15V4.75L15 6.9z", k: "soft" }, "M9 4.75V17.1", "M15 6.9v12.35"],
   journal: [{ d: rr(5, 3, 14.5, 18, 2.25), k: "soft" }, "M8.75 3v18", "M12 8h4", "M12 11.5h4"],
-  backpack: [{ d: rr(4, 5, 16, 16.5, 2.5), k: "soft" }, "M9 5V4a3 2 0 0 1 6 0v1",
-    "M4 7.5Q12 12 20 7.5", rr(7.5, 13, 9, 5.5, 1), "M9 15h1m2 0h1m2 0h.1"],
+  backpack: [
+    "M9 4.9V3.7a3 2.3 0 0 1 6 0v1.2",
+    { d: "M6.2 5.2Q12 3.6 17.8 5.2q2 .6 2.4 3.8l.8 9.4q.2 3.2-3 3.4H6q-3.2-.2-3-3.4l.8-9.4q.4-3.2 2.4-3.8Z", k: "soft", className: "pack-body" },
+    { d: "M4.35 8.2q.2-3.6 3.5-3.8a30 30 0 0 1 8.3 0q3.3.2 3.5 3.8l-1.1 2.45Q12 13.4 5.45 10.65Z", k: "soft", className: "pack-flap" },
+    { d: rr(6.5, 14, 11, 5.8, 1.65), k: "soft", className: "pack-pocket" },
+    "M8.5 15.9h7", { d: rr(10.7, 10.3, 2.6, 2.6, .55), k: "soft", className: "pack-clasp" },
+  ],
   bookOpen: [{ d: "M12 6.75C10.2 5.4 7.75 4.75 4.75 4.75H3.5v13h1.25c3 0 5.45.65 7.25 2 1.8-1.35 4.25-2 7.25-2h1.25v-13h-1.25c-3 0-5.45.65-7.25 2z", k: "soft" }, "M12 6.75v13"],
   settings: [{ d: GEAR + c(12, 12, 3), k: "soft" }],
   party: [{ d: "M3.75 20.25 8.4 8.6l7 7z", k: "soft" }, "M12.25 8.25c-.2-2 .7-3.6 2.5-4.5", "M15.75 11.75c2-.2 3.6.7 4.5 2.5", "M14 10l3.5-3.5",
@@ -197,7 +202,7 @@ const SOFT = 0.16;
 function renderPart(p: Part, i: number) {
   if (typeof p === "string") return <path key={i} d={p} />;
   switch (p.k) {
-    case "soft": return <path key={i} d={p.d} className="i-soft" fill="currentColor" fillOpacity={SOFT} fillRule="evenodd" />;
+    case "soft": return <path key={i} d={p.d} className={p.className ? "i-soft " + p.className : "i-soft"} fill="currentColor" fillOpacity={SOFT} fillRule="evenodd" />;
     case "solid": return <path key={i} d={p.d} fill="currentColor" />;
     case "tint": return <path key={i} d={p.d} className="i-soft" fill="currentColor" fillOpacity={SOFT} stroke="none" />;
     case "fill": return <path key={i} d={p.d} fill="currentColor" stroke="none" />;

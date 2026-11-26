@@ -81,6 +81,8 @@ try {
   assert.equal(await tab(/^Išsaugotos kortelės/).getAttribute("aria-selected"), "true");
   assert.equal(await book.getByRole("link").count(), 0);
   await book.locator('[data-entry="friday"]').click();
+  assert.equal(await book.locator(".nb-reading .nb-source").innerText(), "Pokalbis telefonu");
+  assert(!(await book.innerText()).includes(helper));
   await button("Rodyti reikšmę").click();
   assert.equal(await book.locator(".nb-meaning").textContent(), helper);
   await button("Klausytis frazės").waitFor();
@@ -123,8 +125,14 @@ try {
   assert.equal(await book.locator(".rv-en").textContent(), recalled);
   const grades = await book.locator(".rv-acts button").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()));
   assert(grades.every((r) => r.top >= 0 && r.bottom <= 390 && r.height >= 44));
+  const currentRow = book.locator('.nb-round-index [aria-current="step"]');
+  assert.equal(await currentRow.locator("span").last().innerText(), await book.locator(".rv-lt").innerText());
   await shot(page, "844x390-grading");
   await button("Kartoti dar kartą").click();
+  assert.equal(await book.locator(".rv-count").innerText(), "2/4 · 1 pakartojimas");
+  assert.equal(await currentRow.getAttribute("value"), "2");
+  assert.equal(await currentRow.locator("span").last().innerText(), await book.locator(".rv-lt").innerText());
+  assert.equal(await book.locator(".nb-round-index li").count(), 4);
   await shot(page, "844x390-next-card");
   await page.setViewportSize({ width: 390, height: 664 });
   await shot(page, "390x664-after-grade");
@@ -176,6 +184,8 @@ try {
   await controls.open();
   await t.keyboard.press("w");
   assert.deepEqual(await pose(), seated);
+  assert.equal(await controls.book.locator(".nb-reading .nb-source").innerText(), "Pokalbis telefonu");
+  assert(!(await controls.book.innerText()).includes(helper));
   await controls.button("Rodyti reikšmę").click();
   await shot(t, "1280x800-notebook");
   await controls.button("Uždaryti").click();
@@ -184,6 +194,13 @@ try {
   await t.waitForFunction(() => window.__ew.game.player.anim !== "sit");
   await t.setViewportSize({ width: 390, height: 844 });
   await t.locator('.ride-menu[aria-expanded="false"]').click();
+  const bounds = await controls.tool.evaluate((el) => {
+    const box = (target) => target.getBoundingClientRect().toJSON();
+    return { button: box(el), glyph: box(el.querySelector("svg")), flap: box(el.querySelector(".pack-flap")),
+      badge: box(el.querySelector(".due-badge")) };
+  });
+  assert.equal(bounds.button.width, 44); assert.equal(bounds.button.height, 44);
+  assert(bounds.glyph.width >= 34 && bounds.badge.top > bounds.flap.bottom + 2);
   await shot(t, "390x844-drawer");
   const baselineFrames = process.env.WORLD_TIMING && await frameTimes();
   await controls.open();
@@ -352,6 +369,10 @@ try {
   await mem.button(/^Kartoti korteles/).click();
   await mem.button("Rodyti atsakymą").tap();
   await mem.button("Kartoti dar kartą").tap();
+  assert.equal(await mem.book.locator(".rv-count").innerText(), "1/1 · Pakartojimas 1/1");
+  await mem.button("Rodyti atsakymą").tap();
+  await mem.button("Kartoti dar kartą").tap();
+  assert.equal(await mem.book.locator(".rv-count").innerText(), "1/1 · Pakartojimas 2/2");
   await mem.button("Rodyti atsakymą").tap();
   await mem.button("Pažymėti kaip išmoktą").tap();
   await mem.book.getByText(/^Kitas kartojimas ·/).last().waitFor();

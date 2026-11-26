@@ -233,7 +233,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
 .toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
 .hud.has-touch .toolbar .key { display: none; }
-.hud.has-touch .phone-menu .phrasebook-tool { background: var(--accent-soft); }
+
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -1149,8 +1149,14 @@ body.scene-on .tag-layer { display: none; }
 }
 
 .phrasebook-tool { min-width: 44px; min-height: 44px; }
-.phrasebook-tool > svg { color: #1d3557; }
-.phrasebook-tool > svg .i-soft { fill: var(--pack-fabric); fill-opacity: .72; }
+.icon-btn.phrasebook-tool { padding: 0; }
+.phrasebook-tool > .ui-icon { flex: none; width: 35px; height: 35px; color: #233544; }
+.phrasebook-tool:has(.due-badge) > svg { translate: -1px -2px; }
+.phrasebook-tool .i-soft { fill-opacity: 1; }
+.phrasebook-tool .pack-body { fill: var(--pack-fabric); }
+.phrasebook-tool .pack-flap { fill: color-mix(in srgb, var(--pack-fabric) 77%, ivory); }
+.phrasebook-tool .pack-pocket { fill: color-mix(in srgb, var(--pack-fabric) 65%, #ffe4aa); }
+.phrasebook-tool .pack-clasp { fill: #ffdc8d; stroke-width: .9; }
 
 /* saved cards due for review today: a small gold count on the phrasebook button */
 .icon-btn, .lh-tool { position: relative; }
@@ -1161,6 +1167,12 @@ body.scene-on .tag-layer { display: none; }
 .due-badge {
   right: -4px; padding: 0 5px;
   background: #e0a526; color: #fff; font-size: 11px; font-weight: 900; line-height: 19px; text-align: center;
+}
+.phrasebook-tool > .due-badge {
+  top: auto; bottom: -2px; right: -3px; height: 15px; min-width: 16px; padding: 0 4px;
+  border: 1px solid #9d722e; background: linear-gradient(#ffe3a0,#efbe64); color: #493214;
+  font: 850 11px/13px var(--ui); font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 1px #fff9e9, 0 1px 2px #513c2740;
 }
 .unread-badge {
   left: -4px; display: grid; place-items: center; background: #80e5b2; color: #17372a;

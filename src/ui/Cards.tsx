@@ -311,6 +311,10 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
   let p = pos;
   while (p < queue.length && !byId.has(queue[p])) p++; // deleted meanwhile (another tab)
   const card = p < queue.length ? byId.get(queue[p])! : null;
+  const activeRow = useRef<HTMLLIElement>(null);
+  useLayoutEffect(() => {
+    if (activeRow.current?.getClientRects().length) activeRow.current.scrollIntoView({ block: "nearest" });
+  }, [p, card?.id]);
   const shown = p === revealed;
   useEffect(() => { focusRef.current?.focus({ preventScroll: true }); }, [p, shown]);
 
@@ -330,10 +334,11 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
     setPos(p + 1);
   };
 
+  let page: ReactNode;
   if (!card) {
     const done = stats.knew + stats.again;
     const more = dueCards(cards, today).length;
-    return (
+    page = (
       <div className="rv-done">
         <div className="rv-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>
         <b>{more ? "Puiku!" : "Šiandien viskas!"}</b>
@@ -345,45 +350,66 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
         </div>
       </div>
     );
-  }
-
-  const sit = Object.hasOwn(SITUATION_BY_ID, card.situationId) ? SITUATION_BY_ID[card.situationId] : undefined;
-  const source = sourceName(card.situationId, card.sourceLabel);
-  const isSentence = cardKey(card.en) === cardKey(card.sentence.en);
-  const long = card.lt.length > 42 || card.en.length > 42;
-  return (
-    <div className="review">
-      <div className="rv-top">
-        <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
-        <span className="rv-count" aria-label={`Kortelė ${p + 1} iš ${queue.length}`}>{p + 1}/{queue.length}</span>
-      </div>
-      <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")}>
-        <div className="rv-label">Pasakyk angliškai{source && <span className="rv-sit"> · {sit && <SitIcon id={sit.id} size="1.15em" />} {source}</span>}</div>
-        <div className="rv-lt" lang="lt">{card.lt}</div>
-        {shown ? (
-          <div className="rv-answer">
-            <div className="rv-en-row">
-              <span className="rv-en" lang="en">{card.en}</span>
-            </div>
-            <NotebookSound key={card.id} line={card} />
-            {card.ipa && <div className="rv-ipa">{card.ipa}</div>}
-            {!isSentence && (
-              <div className="rv-src">
-                <div className="rv-src-en" lang="en">{marked(card.sentence.en, card.en)}</div>
-                <div className="rv-src-lt" lang="lt">{card.sentence.lt}</div>
+  } else {
+    const sit = Object.hasOwn(SITUATION_BY_ID, card.situationId) ? SITUATION_BY_ID[card.situationId] : undefined;
+    const source = sourceName(card.situationId, card.sourceLabel);
+    const isSentence = cardKey(card.en) === cardKey(card.sentence.en);
+    const ordinal = ids.indexOf(card.id) + 1;
+    const retries = queue.slice(ids.length).filter((id) => byId.has(id));
+    const retryTurn = queue.slice(ids.length, p + 1).filter((id) => byId.has(id)).length;
+    const retryLabel = retryTurn ? `Pakartojimas ${retryTurn}/${retries.length}` :
+      `${retries.length} ${ltCount(retries.length, "pakartojimas", "pakartojimai", "pakartojimų")}`;
+    const long = card.lt.length > 42 || card.en.length > 42;
+    page = (
+      <div className="review">
+        <div className="rv-top">
+          <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
+          <span className="rv-count" role="status" aria-atomic="true" aria-label={`Kortelė ${ordinal} iš ${ids.length}${retries.length ? " · " + retryLabel : ""}`}>
+            {ordinal}/{ids.length}{retries.length > 0 && <span className="rv-retries"> · {retryLabel}</span>}
+          </span>
+        </div>
+        <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")}>
+          <div className="rv-label">Pasakyk angliškai{source && <span className="rv-sit"> · {sit && <SitIcon id={sit.id} size="1.15em" />} {source}</span>}</div>
+          <div className="rv-lt" lang="lt">{card.lt}</div>
+          {shown ? (
+            <div className="rv-answer">
+              <div className="rv-en-row">
+                <span className="rv-en" lang="en">{card.en}</span>
               </div>
-            )}
+              <NotebookSound key={card.id} line={card} />
+              {card.ipa && <div className="rv-ipa">{card.ipa}</div>}
+              {!isSentence && (
+                <div className="rv-src">
+                  <div className="rv-src-en" lang="en">{marked(card.sentence.en, card.en)}</div>
+                  <div className="rv-src-lt" lang="lt">{card.sentence.lt}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setRevealed(p); }}>Rodyti atsakymą</button>
+          )}
+        </div>
+        {shown && (
+          <div className="rv-acts">
+            <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> Kartoti dar kartą</button>
+            <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> Pažymėti kaip išmoktą</button>
           </div>
-        ) : (
-          <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setRevealed(p); }}>Rodyti atsakymą</button>
         )}
       </div>
-      {shown && (
-        <div className="rv-acts">
-          <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> Kartoti dar kartą</button>
-          <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> Pažymėti kaip išmoktą</button>
-        </div>
-      )}
-    </div>
-  );
+    );
+  }
+
+  return <>
+    <div className="nb-index"><ol className="nb-round-index">
+      {ids.map((id, i) => {
+        const item = byId.get(id);
+        if (!item) return null;
+        const current = id === card?.id;
+        return <li key={id} value={i + 1} ref={current ? activeRow : undefined} aria-current={current ? "step" : undefined}>
+          <span className="nb-round-number" aria-hidden>{i + 1}</span><span>{item.lt}</span>
+        </li>;
+      })}
+    </ol></div>
+    <div className="nb-detail grading">{page}</div>
+  </>;
 }

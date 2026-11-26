@@ -37,6 +37,8 @@ export function keepsakePockets(progress: Progress) {
 }
 
 export function sourceName(situationId: string, stored?: string) {
+  // This conversation’s catalog title is the Friday card’s answer, even on older saves.
+  if (situationId === "s83-invite-call") return "Pokalbis telefonu";
   const title = Object.hasOwn(SITUATION_BY_ID, situationId) ? SITUATION_BY_ID[situationId].title.lt :
     situationId === "street" ? STREET_WORDS.cards : undefined;
   return [title, stored && stored !== title ? stored : undefined].filter(Boolean).join(" · ");

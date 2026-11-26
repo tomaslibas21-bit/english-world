@@ -24,7 +24,7 @@ export function BackpackTool({ due, picture = false }: { due: number; picture?: 
       openedHere.current = true;
       useStore.getState().setHud({ panel: "phrasebook" });
     }}>
-    <Icon name="backpack" size={26} />{picture && <span>Kuprinė</span>}
+    <Icon name="backpack" size={35} strokeWidth={1.3} />{picture && <span>Kuprinė</span>}
     {!!due && <span className="due-badge" aria-hidden>{due}</span>}
   </button>;
 }

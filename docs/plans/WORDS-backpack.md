@@ -11,6 +11,7 @@ English is the editorial reference. Maple Harbor displays Lithuanian controls, E
 | Second tab | Practiced phrases {count} | Kartotos frazės {count} |
 | Third tab | Keepsakes {count} | Suvenyrai {count} |
 | Source context | Source sentence | Sakinys, iš kurio išsaugojai kortelę |
+| Friday card source tab | Phone conversation | Pokalbis telefonu |
 | Reveal and hide | Show meaning / Hide meaning | Rodyti reikšmę / Slėpti reikšmę |
 | Next batch | Show more | Rodyti daugiau |
 | Sound controls | Hear phrase / Hear source sentence | Klausytis frazės / Klausytis viso sakinio |
@@ -42,6 +43,8 @@ English is the editorial reference. Maple Harbor displays Lithuanian controls, E
 | Level {box} of 5 | Lygis {box} iš 5 |
 | today / tomorrow / the day after tomorrow / in {days} days | šiandien / rytoj / poryt / po {days} d. |
 | Card {position} of {total} | Kortelė {position} iš {total} |
+| Scheduled retries after the card count | {count} retry / retries | {count} pakartojimas / pakartojimai / pakartojimų |
+| Current retry | Retry {turn}/{total} | Pakartojimas {turn}/{total} |
 | Say it in English | Pasakyk angliškai |
 | Great! / All done for today! | Puiku! / Šiandien viskas! |
 | You reviewed {count} card(s). | Pakartojai {count} kortelę / korteles / kortelių. |

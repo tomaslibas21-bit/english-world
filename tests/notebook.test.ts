@@ -38,6 +38,11 @@ describe("Maple Harbor notebook", () => {
     expect(notebookClips(original[0], "m", has)[0].voice).toBe("g_coach_m");
     expect(sourceName("old-source", "Old label")).toBe("Old label");
   });
+  it("uses a spoiler-free source for fresh and previously labeled Friday cards", () => {
+    expect(sourceName("s83-invite-call")).toBe("Pokalbis telefonu");
+    expect(sourceName("s83-invite-call", line.sentence.lt)).toBe("Pokalbis telefonu");
+    expect(sourceName("s83-invite-call", "Pokalbis telefonu")).toBe("Pokalbis telefonu");
+  });
   it("groups practiced rows by most recent source, including practice-only activities", () => {
     const row = (sitId: string, last: number) => ({ en: "Hi!", lt: "Labas!", count: 4, sitId, last });
     const phrases = { a: row("tree", 3), b: row("other", 4), c: row("tree", 8) };
