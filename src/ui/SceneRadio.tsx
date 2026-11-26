@@ -1,19 +1,22 @@
 import { useSyncExternalStore } from "react";
 import { bookLocale, bookWord as w } from "./bookCopy";
+import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
 import { RADIO_SKIN, SCENE_STATION } from "../content/radio";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { radio, useRadio } from "../radio";
 import type { SceneCue, SceneItem } from "../radio/sceneProgram";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { SitIcon } from "./SitIcon";
 
-function SceneLine({ cue, folded }: { cue: SceneCue; folded: boolean }) {
+function SceneLine({ cue, folded, venue }: { cue: SceneCue; folded: boolean; venue?: string }) {
   const show = useRadio((s) => s.sceneTranslation);
   return <>
     {!folded && <div className="walk-meta"><b lang={TL}><Icon name="speaker" size={15} />{SCENE_STATION.name}</b><span>{w("es")}</span></div>}
     <div className="spoken">
-      <b className="scene-speaker" lang={cue.speaker === "learner" ? HL : TL}>{cue.speaker === "learner" ? L("Tu") : NPCS[cue.speaker]?.name}</b>
+      <b className="scene-speaker" lang={cue.speaker === "learner" ? HL : TL}>{cue.speaker === "learner" ? L("Tu") : NPCS[cue.speaker]?.name}
+        {venue && <> · <span lang={TL}>{venue}</span></>}</b>
       <p lang={TL}>{cue.text}</p>
       {show && <p className="walk-translation" lang={HL}>{cue.translation}</p>}
     </div>
@@ -26,7 +29,9 @@ function SpokenScene({ folded = false }: { folded?: boolean }) {
   const current = () => player.getSnapshot().cue as SceneCue | null;
   const cue = useSyncExternalStore(player.subscribe, current, current);
   if (!cue) return null;
-  return <SceneLine cue={cue} folded={folded} />;
+  const chapterId = player.getSnapshot().item?.selection.chapterId;
+  const scene = RADIO_SKIN === "colibri" && !folded && chapterId ? SITUATION_BY_ID[chapterId] : undefined;
+  return <SceneLine cue={cue} folded={folded} venue={scene && LOCATIONS[scene.location]?.name} />;
 }
 
 export function WalkingSceneLine() {

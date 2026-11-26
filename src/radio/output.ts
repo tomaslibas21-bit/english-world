@@ -6,6 +6,8 @@
 //     devices, the radio's included. A song is fetched and decoded whole, one at a time.
 // Neither starts by itself: play() is the radio's only way to make a sound, and pause() always silences at once.
 
+import { holdPlaybackRoute, playbackRoute } from "../convo/audioFocus";
+
 /** play() refused for want of a tap (the browser's autoplay rule): not the song's fault. */
 export class NeedsTap extends Error { constructor() { super("the browser wants a tap first"); this.name = "NeedsTap"; } }
 
@@ -24,6 +26,8 @@ export interface RadioOutput {
   unlock(): void;
   /** Fetch a recording ahead of its turn (where that helps). */
   prepare?(url: string): void;
+  /** Drop retained recordings when the transport hands off to Book FM. */
+  releaseRecording?(): void;
   /** The song played to its end. */
   onEnded: (() => void) | null;
   /** The sound stopped without the radio asking (a broken download, the system taking the audio away). */
@@ -49,18 +53,21 @@ export class HtmlOutput implements RadioOutput {
   private unlocked = false;
   private level = 1;
   private fade: ReturnType<typeof setInterval> | undefined;
+  private releaseRoute?: () => void;
 
   private media(): HTMLAudioElement {
     if (this.el) return this.el;
     const el = this.el = streamingAudio();
-    el.addEventListener("ended", () => { if (this.wanted && el.ended && el.src !== SILENCE) this.onEnded?.(); });
+    el.addEventListener("ended", () => {
+      if (this.wanted && el.ended && el.src !== SILENCE) { this.leaveRoute(); this.onEnded?.(); }
+    });
     // el.error is cleared when another recording is set: a late event of the one before is not this one's failure
-    el.addEventListener("error", () => { if (this.wanted && el.error && el.src !== SILENCE) { this.wanted = false; this.onStopped?.("error"); } });
+    el.addEventListener("error", () => { if (this.wanted && el.error && el.src !== SILENCE) { this.wanted = false; this.leaveRoute(); this.onStopped?.("error"); } });
     el.addEventListener("play", () => { if (!this.wanted && el.src !== SILENCE) el.pause(); });
     el.addEventListener("pause", () => {
       // paused by the system or a hardware key while the radio meant it to play. Not the pause at a song's end, and
       // not the late event of the radio's own pause before the next song (by then play() has run: paused is false).
-      if (this.wanted && el.paused && !el.ended && el.src !== SILENCE && el.readyState > 0) { this.wanted = false; this.onStopped?.("interrupted"); }
+      if (this.wanted && el.paused && !el.ended && el.src !== SILENCE && el.readyState > 0) { this.wanted = false; this.leaveRoute(); this.onStopped?.("interrupted"); }
     });
     return el;
   }
@@ -74,6 +81,8 @@ export class HtmlOutput implements RadioOutput {
   }
 
   async play(url: string, at: number, exactSeek = false): Promise<boolean> {
+    this.leaveRoute();
+    if (!playbackRoute(true)) return false;
     const el = this.media();
     this.wanted = true;
     if (this.url !== url || el.src === SILENCE || !el.src) {
@@ -84,15 +93,17 @@ export class HtmlOutput implements RadioOutput {
       try { el.currentTime = at; } catch { /* stays where it is */ }
     }
     this.apply();
+    const release = this.releaseRoute = holdPlaybackRoute();
     try {
       await el.play();
       this.unlocked = true;
-      return this.wanted && this.url === url;
+      return this.wanted && this.releaseRoute === release;
     } catch (error) {
-      if (!this.wanted || this.url !== url) return false; // paused or replaced meanwhile
+      if (!this.wanted || this.releaseRoute !== release) return false; // paused or replaced meanwhile
+      this.leaveRoute();
+      this.wanted = false;
       const name = (error as { name?: string } | null)?.name;
       if (name === "AbortError") return false;
-      this.wanted = false;
       if (name === "NotAllowedError") throw new NeedsTap();
       throw error;
     }
@@ -102,7 +113,10 @@ export class HtmlOutput implements RadioOutput {
     this.wanted = false;
     clearInterval(this.fade);
     try { this.el?.pause(); } catch { /* nothing was playing */ }
+    this.leaveRoute();
   }
+
+  private leaveRoute() { this.releaseRoute?.(); this.releaseRoute = undefined; }
 
   position() { return this.el && this.el.src !== SILENCE ? this.el.currentTime || 0 : 0; }
   duration() { return this.el && Number.isFinite(this.el.duration) ? this.el.duration : 0; }
@@ -132,7 +146,9 @@ export class BufferOutput implements RadioOutput {
   onStopped: ((reason: "error" | "interrupted") => void) | null = null;
   private buffer: AudioBuffer | null = null;
   private url = "";
-  private ahead: { url: string; bytes: Promise<ArrayBuffer> } | null = null;
+  private ahead: { url: string; bytes: Promise<ArrayBuffer>; abort: AbortController } | null = null;
+  private readonly downloads = new Set<AbortController>();
+  private recordingGeneration = 0;
   private source: AudioBufferSourceNode | null = null;
   private gain: GainNode | null = null;
   private ctx: AudioContext | null = null;
@@ -141,9 +157,11 @@ export class BufferOutput implements RadioOutput {
   private sounding = false;
   private run = 0;
   private level = 1;
+  private releaseRoute?: () => void;
 
   /** `context`: the game's one AudioContext (audio.context()); `fetchBytes`: a recording's bytes. */
-  constructor(private context: () => AudioContext | null, private fetchBytes: (url: string) => Promise<ArrayBuffer> = defaultFetch) {}
+  constructor(private context: () => AudioContext | null,
+    private fetchBytes: (url: string, signal: AbortSignal) => Promise<ArrayBuffer> = defaultFetch) {}
 
   unlock() {
     const ctx = this.context();
@@ -152,9 +170,24 @@ export class BufferOutput implements RadioOutput {
 
   prepare(url: string) {
     if (this.url === url || this.ahead?.url === url) return;
-    const bytes = this.fetchBytes(url);
+    this.ahead?.abort.abort();
+    const abort = new AbortController();
+    const bytes = this.download(url, abort);
     bytes.catch(() => { if (this.ahead?.bytes === bytes) this.ahead = null; });
-    this.ahead = { url, bytes };
+    this.ahead = { url, bytes, abort };
+  }
+
+  releaseRecording() {
+    this.recordingGeneration++;
+    for (const abort of this.downloads) abort.abort();
+    this.ahead = null;
+    this.buffer = null;
+    this.url = "";
+  }
+
+  private async download(url: string, abort = new AbortController()): Promise<ArrayBuffer> {
+    this.downloads.add(abort);
+    try { return await this.fetchBytes(url, abort.signal); } finally { this.downloads.delete(abort); }
   }
 
   private async decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
@@ -178,21 +211,26 @@ export class BufferOutput implements RadioOutput {
       this.buffer = null;
       this.url = url;
       const ahead = this.ahead?.url === url ? this.ahead.bytes : null;
+      if (!ahead) this.ahead?.abort.abort();
       this.ahead = null;
-      const buffer = await this.decode(await (ahead ?? this.fetchBytes(url)));
-      if (this.url !== url) return false;
+      const generation = this.recordingGeneration;
+      const bytes = await (ahead ?? this.download(url));
+      if (this.url !== url || generation !== this.recordingGeneration) return false;
+      const buffer = await this.decode(bytes);
+      if (this.url !== url || generation !== this.recordingGeneration) return false;
       this.buffer = buffer;
       if (run !== this.run) return false;
     }
     const ctx = this.context();
     if (!ctx) throw new Error("no audio output");
+    if (!playbackRoute(true)) return false;
     if (ctx.state !== "running") {
       try { await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 3000))]); } catch { /* checked below */ }
       if (run !== this.run) return false;
       if ((ctx.state as AudioContextState) !== "running") throw new NeedsTap();
     }
     const buffer = this.buffer;
-    if (!buffer) return false;
+    if (!buffer || !playbackRoute(true)) return false;
     this.watch(ctx);
     const source = ctx.createBufferSource(), gain = ctx.createGain();
     source.buffer = buffer;
@@ -209,7 +247,8 @@ export class BufferOutput implements RadioOutput {
     this.source = source; this.gain = gain;
     this.startedAt = ctx.currentTime;
     this.sounding = true;
-    source.start(0, this.offset);
+    this.releaseRoute = holdPlaybackRoute();
+    try { source.start(0, this.offset); } catch (error) { this.stopSource(); throw error; }
     return true;
   }
 
@@ -228,6 +267,10 @@ export class BufferOutput implements RadioOutput {
     if (this.sounding && this.ctx) this.offset += Math.max(0, this.ctx.currentTime - this.startedAt);
     this.sounding = false;
     this.source = null;
+    this.gain?.disconnect();
+    this.gain = null;
+    this.releaseRoute?.();
+    this.releaseRoute = undefined;
   }
 
   private stopSource() {
@@ -236,8 +279,7 @@ export class BufferOutput implements RadioOutput {
     if (!source) return;
     source.onended = null;
     try { source.stop(); } catch { /* it never started */ }
-    try { source.disconnect(); this.gain?.disconnect(); } catch { /* already gone */ }
-    this.gain = null;
+    try { source.disconnect(); } catch { /* already gone */ }
   }
 
   pause() { this.run++; this.stopSource(); }
@@ -261,8 +303,8 @@ export class BufferOutput implements RadioOutput {
   }
 }
 
-async function defaultFetch(url: string): Promise<ArrayBuffer> {
-  const r = await fetch(url);
+async function defaultFetch(url: string, signal: AbortSignal): Promise<ArrayBuffer> {
+  const r = await fetch(url, { signal });
   if (!r.ok) throw new Error(`recording: ${r.status}`);
   return r.arrayBuffer();
 }

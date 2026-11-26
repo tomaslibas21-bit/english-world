@@ -75,10 +75,16 @@ export function ReaderPage({ item, state, word, roving, setRoving, seek, expande
   const activeId = state.cue?.sentenceId ?? first;
   const track = item.tracks[state.prefs.mode];
   const seekable = useMemo(() => new Set(track?.cues.map((cue) => cue.sentenceId)), [track]);
+  const narratedTitle = useMemo(() => {
+    const openingCue = track?.cues[0];
+    return RADIO_SKIN === "colibri" && !!openingCue && item.paragraphs.some((row) =>
+      row.kind !== "break" && row.sentences.some((sentence) => sentence.id === openingCue.sentenceId &&
+        sentence.target === item.chapter.title && sentence.helper === item.chapter.helperTitle));
+  }, [item, track]);
   const helperTitle = state.prefs.mode === "helper" && item.chapter.helperTitle;
   let number = 0;
   return <article>
-    <header className="page-head">
+    <header className="page-head" data-narrated-title={narratedTitle || undefined}>
       {item.book && <p className="label" lang={item.languages.target}>{item.book.title}</p>}
       <h1 lang={helperTitle ? item.languages.helper : item.languages.target}>
         {helperTitle || item.chapter.title}

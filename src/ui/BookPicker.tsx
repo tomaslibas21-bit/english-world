@@ -155,7 +155,7 @@ export function BookPicker({ channel, bookId, covered = false }: { channel: Book
   const selected = list.find((entry) => entry.id === selectedId) ?? (detail ? undefined : list[0]);
   const progress = useSyncExternalStore(channel.progress.subscribe, channel.progress.getSnapshot, channel.progress.getSnapshot);
   const resume = useMemo(() => continueEntry(entries ?? [], progress), [entries, progress]);
-  const twoBookShelf = desktop && collection === "books" && list.length === 2 && !resume;
+  const twoBookShelf = desktop && collection === "books" && list.length === 2 && (!resume || RADIO_SKIN === "colibri");
   const langs = TALK_LANGUAGES[channel.source.profile];
 
   useLayoutEffect(() => {
@@ -227,7 +227,7 @@ export function BookPicker({ channel, bookId, covered = false }: { channel: Book
         <div className="shelf-body">
           <div className="catalog-pane scroll" ref={pane}>
             <h1 lang={RADIO_SKIN === "colibri" && HL === "en" ? TL : HL}>{w("library")}</h1>
-            {!landscape && resumeCard}
+            {(!landscape || twoBookShelf) && resumeCard}
             <nav className="tabs" aria-label={w("collections")}>{(["books", "stories"] as const).map((kind) =>
               <button key={kind} aria-pressed={collection === kind} onClick={() => {
                 if (collection === kind) return;

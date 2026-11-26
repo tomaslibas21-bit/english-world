@@ -40,11 +40,14 @@ try {
       assert.equal(await cafe.locator('.target-title[lang="es"]').textContent(), "¿Para aquí o para llevar?");
       assert.equal(await cafe.locator(`.translation[lang="${learner}"]`).textContent(), copy.title);
       assert.equal(await cafe.locator('[data-sit-icon="coffee"]').count(), 1);
+      assert.equal(await cafe.locator(".scene-play > span").isVisible(), width > 650);
+      assert.equal((await cafe.locator(".scene-play svg").boundingBox()).width, width <= 650 ? 20 : 14);
       await capture("scene-picker");
       await cafe.click();
 
       const strip = page.locator(".scene-walking");
       await strip.locator(".scene-speaker").waitFor();
+      assert.ok((await strip.locator(".scene-speaker").textContent()).endsWith(" · Café La Ceiba"));
       await strip.locator('.spoken > p[lang="es"]').waitFor();
       const toggle = strip.getByRole("button");
       assert.equal(await toggle.getAttribute("aria-expanded"), "false");

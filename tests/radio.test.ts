@@ -1203,6 +1203,31 @@ describe("the iPhone output: the game's own Web Audio, no media element", () => 
     expect(out.position()).toBe(10);
   });
 
+  it("releases a decoded song and cancels prefetch before Book FM takes over", async () => {
+    const ctx = context();
+    const signals: AbortSignal[] = [];
+    let finish!: (bytes: ArrayBuffer) => void;
+    const out = new BufferOutput(() => ctx as any, async (url, signal) => {
+      signals.push(signal);
+      return url === "a.mp3" ? new ArrayBuffer(8) : new Promise<ArrayBuffer>((resolve) => { finish = resolve; });
+    });
+    await out.play("a.mp3", 12);
+    out.prepare("b.mp3");
+    const pending = out.play("b.mp3", 0);
+    out.pause();
+    out.releaseRecording();
+    expect(signals[1].aborted).toBe(true);
+    expect(out.duration()).toBe(0);
+    finish(new ArrayBuffer(8));
+    expect(await pending).toBe(false);
+    expect(decoded).toBe(1);
+    expect(ctx.sources).toHaveLength(1);
+    expect(ctx.sources[0].stopped).toBe(true);
+    await out.play("a.mp3", 12);
+    expect(decoded).toBe(2);
+    out.pause();
+  });
+
   it("uses a recording fetched ahead of its turn", async () => {
     const ctx = context(), fetches: string[] = [];
     const out = new BufferOutput(() => ctx as any, async (url) => { fetches.push(url); return new ArrayBuffer(8); });

@@ -33,10 +33,10 @@ function setup({ music = true, books = true, songList = async () => ({ songs }) 
   const load = vi.spyOn(source, "load").mockResolvedValue(item);
   const catalog = vi.spyOn(source, "catalog");
   const songOutput = {
-    play: vi.fn(async () => true), pause: vi.fn(), unlock: vi.fn(), position: () => 0, setVolume: vi.fn(),
+    play: vi.fn(async () => true), pause: vi.fn(), unlock: vi.fn(), releaseRecording: vi.fn(), position: () => 0, setVolume: vi.fn(),
     onEnded: null as RadioOutput["onEnded"], onStopped: null as RadioOutput["onStopped"],
   };
-  const output: TalkOutput = { start: vi.fn(async () => {}), stop: vi.fn(), position: () => null, setRates: vi.fn() };
+  const output: TalkOutput = { start: vi.fn(async () => {}), stop: vi.fn(), position: () => null, setRates: vi.fn(), unlock: vi.fn() };
   const channel = createBookChannel(source, output);
   const fetchJson = vi.fn(async (url) => url === config.index ? songList() : { L: [] });
   const radio = active = new Radio({
@@ -123,6 +123,27 @@ describe("Book FM in the radio", () => {
     expect(channel.player.getSnapshot()).toMatchObject({ selection: chapter.selection, playIntent: false });
     radio.closeReader();
     expect(channel.player.getSnapshot()).toMatchObject({ status: "paused", playIntent: false });
+  });
+
+  it("unlocks the book context on gestures and stays silent until all audio holds end", async () => {
+    const { radio, output, songOutput, state } = setup();
+    radio.setStation("books");
+    expect(songOutput.releaseRecording).toHaveBeenCalledOnce();
+    radio.gesture();
+    expect(output.unlock).toHaveBeenCalledOnce();
+    expect(songOutput.unlock).not.toHaveBeenCalled();
+    radio.hold("hidden", true);
+    radio.hold("microphone", true);
+    radio.gesture();
+    radio.read(chapter.selection); await settle();
+    expect(output.start).not.toHaveBeenCalled();
+    radio.release("microphone");
+    await vi.advanceTimersByTimeAsync(700);
+    expect(state().playing).toBe(false);
+    radio.release("hidden");
+    await vi.advanceTimersByTimeAsync(700);
+    expect(state().playing).toBe(true);
+    expect(output.unlock).toHaveBeenCalledOnce();
   });
 
   it("keeps song and spot ends inside music and preserves the station's place through a talk visit", async () => {

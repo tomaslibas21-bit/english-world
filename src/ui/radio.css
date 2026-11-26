@@ -362,6 +362,8 @@
 .rs-bank { display: flex; flex: none; gap: 2px; padding: 2px; border: 1px solid #ffffff3b; border-radius: 12px; background: #0002; }
 .rs-bank button { min-height: 44px; flex: 1; border: 0; border-radius: 9px; background: none; color: var(--rs-ink-soft); font: 700 calc(14px * var(--scale))/1.2 var(--ui); }
 .rs-bank [aria-pressed="true"] { color: var(--rs-ink); background: var(--rs-key-on); box-shadow: inset 0 -2px var(--rs-trim); }
+.radio-skin-colibri .rs-bank [aria-pressed="true"] { color: var(--rs-lcd); background: var(--rs-trim); }
+.radio-skin-colibri .book-actions .rs-opt:enabled { color: var(--rs-ink); background: var(--rs-body-2); }
 .rs-bank button:disabled { opacity: .6; }
 .rs-rows { display: grid; gap: 4px; }
 .radio-set[data-book-tuned] .rs-x { width: 44px; height: 44px; }

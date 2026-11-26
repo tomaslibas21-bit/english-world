@@ -99,8 +99,11 @@ export async function mountBookHarness(root: HTMLElement): Promise<void> {
     time.value = `${state.position.toFixed(3)} s`;
   };
   player.subscribe(update);
+  panel.addEventListener("click", () => output.unlock?.(), true);
   window.addEventListener("pagehide", () => player.pause());
-  document.addEventListener("visibilitychange", () => player.tick());
+  const visibility = () => { if (document.hidden) player.hold("hidden", true); else player.release("hidden"); };
+  document.addEventListener("visibilitychange", visibility);
+  visibility();
   if (chapters[0]) await player.select(chapters[0].selection);
   else update();
 }

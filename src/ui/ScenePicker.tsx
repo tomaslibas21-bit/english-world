@@ -46,7 +46,7 @@ export function ScenePicker() {
               <span className="scene-icon"><SitIcon id={scene.id} size={24} /></span>
               <span className="scene-titles"><span className="target-title" lang={TL}>{scene.title.en}</span>
                 <span className="translation" lang={HL}>{scene.title.lt}</span></span>
-              <span className="scene-play"><Icon name="play" size={14} />{w("play")}</span>
+              <span className="scene-play"><Icon name="play" size={14} /><span>{w("play")}</span></span>
             </button>)}
           </section>)}
         </div>

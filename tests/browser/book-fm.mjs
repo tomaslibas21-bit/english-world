@@ -298,6 +298,11 @@ try {
       assert.ok(resume.includes(copy.resume));
       assert.ok(resume.includes("Cuentos de la selva"));
       assert.ok(resume.includes(targetTitle));
+      if (width >= 1000) {
+        assert.equal(await picker.locator(".catalog-card").count(), 2);
+        assert.equal(await picker.locator(".rail").count(), 0);
+        assert.equal((await picker.locator(".book-sheet").boundingBox()).height, 680);
+      }
       await capture("shelf-continue");
       await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
       await detail();
@@ -314,7 +319,10 @@ try {
       await reader.getByRole("button", { name: copy.pause, exact: true }).click();
       if (width === 390 && height === 664) {
         assert.equal(await reader.getAttribute("data-enlarged"), "true");
-        assert.ok(await reader.locator(".page-head h1").isVisible());
+        assert.ok(await reader.locator(".page-head .label").isVisible());
+        assert.equal(await reader.getByRole("heading", { level: 1 }).textContent(), targetTitle);
+        assert.equal(await reader.locator(".page-head h1").evaluate(el => getComputedStyle(el).clipPath), "inset(50%)");
+        assert.ok(await reader.locator(".pair").first().isVisible());
         await capture("reader-a-plus-plus");
       }
       // A rotation while paused keeps the chapter and place.

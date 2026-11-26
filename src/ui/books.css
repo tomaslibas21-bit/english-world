@@ -35,6 +35,10 @@
   .cover-well { background: var(--leaf); }
   .primary { border-color: var(--rs-lcd); }
   .primary:hover { background: var(--rs-body-2); }
+  .page-head[data-narrated-title] {
+    > :is(h1, .translation) { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    &:not(:has(.label)) { padding: 0; border: 0; margin: 0; }
+  }
 }
 .book-picker {
   position: fixed; inset: 0; margin: 0; border: 0; padding: 24px;
@@ -177,6 +181,7 @@
 @media (min-width: 1000px) {
   .book-picker[data-two-book-shelf] {
     .book-sheet.shelf { width: min(720px,100%); height: min(560px,100%); }
+    &.radio-skin-colibri .book-sheet.shelf:has(.resume) { height: min(680px, 100%); }
     .shelf-body { grid-template-columns: minmax(0,1fr); }
     .catalog-pane { grid-column: 1; }
     .catalog-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -480,6 +485,12 @@
   .scene-play { display: inline-flex; gap: 5px; align-items: center; color: var(--navy); font-weight: 800; }
 }
 .scene-speaker { display: block; font: 800 calc(14px * var(--scale))/1.4 var(--ui); color: var(--rs-trim); }
+@media (max-width: 650px) {
+  .scene-picker.radio-skin-colibri .scene-play {
+    .ui-icon { width: 20px; height: 20px; }
+    > span { display: none; }
+  }
+}
 @media (max-width: 650px) and (min-height: 501px) {
   .scene-picker {
     .scene-layout { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }

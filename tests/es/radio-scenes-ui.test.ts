@@ -43,7 +43,7 @@ function setup({ booksAvailable = false } = {}) {
   const output = {
     onEnded: null as RadioOutput["onEnded"], onStopped: null as RadioOutput["onStopped"],
     play: vi.fn(async (_url: string, _offset: number, _exact?: boolean) => true), position: vi.fn(() => 0),
-    pause: vi.fn(), setVolume: vi.fn(), unlock: vi.fn(),
+    pause: vi.fn(), setVolume: vi.fn(), unlock: vi.fn(), releaseRecording: vi.fn(),
   };
   const source = bookSource({ VITE_RADIO_FILES: lithuanian ? SM_FILES : SME_FILES }, SITE)!;
   const bookOut = {
@@ -184,6 +184,7 @@ describe("Conversaciones FM in the radio set", () => {
     radio.openSettings();
     radio.setStation("scenes");
     expect(radio.store.getState()).toMatchObject({ readerOpen: false, settingsOpen: false, shelfOpen: true });
+    expect(output.releaseRecording).not.toHaveBeenCalled();
     expect(radio.books!.player).toBe(talk.player);
     expect(bookOut.stop).toHaveBeenCalledWith("change");
     await pick();
@@ -193,6 +194,7 @@ describe("Conversaciones FM in the radio set", () => {
     radio.setStation("books");
     await vi.waitFor(() => expect(radio.store.getState().playing).toBe(true));
     expect(output.pause.mock.invocationCallOrder.at(-1)).toBeLessThan(bookOut.start.mock.invocationCallOrder.at(-1)!);
+    expect(output.releaseRecording).toHaveBeenCalledOnce();
     expect(talk.player.getSnapshot().item?.selection).toEqual(chapter.selection);
     expect(strip()).toContain(BOOK_STATION.name);
     expect(strip()).not.toContain("scene-speaker");
