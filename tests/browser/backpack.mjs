@@ -158,6 +158,33 @@ try {
   await context.close();
   console.log("Picture mode, single and bulk saves, both ticket sources, empty source, review rotation, early exit and focus passed.");
 
+  // Finish a four-card round including its fifth turn, then check the original card's grade.
+  const retryGame = await openGame("light", 844, 390);
+  const retryUi = bookControls(retryGame.page);
+  await retryUi.open();
+  await retryUi.tab(/^Kartotos frazės/).click();
+  await retryUi.button("Išsaugoti visas").click();
+  await retryUi.tab(/^Išsaugotos kortelės/).click();
+  await retryUi.button(/^Kartoti korteles/).click();
+  const active = retryUi.book.locator('.nb-round-index [aria-current="step"]');
+  const firstPrompt = await retryUi.book.locator(".rv-lt").innerText();
+  for (let ordinal = 1; ordinal <= 4; ordinal++) {
+    assert.equal(await active.getAttribute("value"), String(ordinal));
+    await retryUi.button("Rodyti atsakymą").click();
+    await retryUi.button(ordinal === 1 ? "Kartoti dar kartą" : "Pažymėti kaip išmoktą").click();
+  }
+  assert.equal(await retryUi.book.locator(".rv-count").innerText(), "1/4 · Pakartojimas 1/1");
+  assert.equal(await active.getAttribute("value"), "1");
+  assert.equal(await retryUi.book.locator(".rv-lt").innerText(), firstPrompt);
+  await shot(retryGame.page, "844x390-retry");
+  await retryUi.button("Rodyti atsakymą").click();
+  await retryUi.button("Pažymėti kaip išmoktą").click();
+  await retryUi.book.locator(".rv-done").waitFor();
+  const finishedCards = await readDeck(retryGame.page);
+  assert.deepEqual(finishedCards.map((card) => card.reviews), [1, 1, 1, 1]);
+  assert.equal(finishedCards.find((card) => card.lt === firstPrompt).lapses, 1);
+  await retryGame.context.close();
+
   const town = await openGame("town", 1280, 800);
   const t = town.page, controls = bookControls(t);
   await t.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "bench");
