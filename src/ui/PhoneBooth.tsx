@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { townDirectory, PRACTICES, missionUrl, practiceTurns, type Contact, type PracticeId, type PracticeTurn } from "../content/phoneBooth";
 import { invitationLocation } from "../content/phoneCalls";
 import { LOCATIONS } from "../content/locations";
@@ -22,21 +22,31 @@ export default function PhoneBooth({ close }: { close: () => void }) {
     book.current?.querySelector<HTMLElement>(selector)?.focus();
   }, [page, selected]);
 
-  function navigate(event: KeyboardEvent) {
-    if (event.key === "Escape") {
+  // A tap on printed text can move native focus back to the document. B, Esc
+  // and keyboard navigation still belong to this open book.
+  useEffect(() => {
+    function navigate(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!event.repeat) {
+          if (page === "index") close();
+          else setPage("index");
+        }
+        return;
+      }
+      if (!["Tab", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      const controls = Array.from(book.current!.querySelectorAll<HTMLElement>("button:enabled, a[href]"))
+        .filter(el => el.getClientRects().length);
+      const current = controls.indexOf(document.activeElement as HTMLElement);
+      const reverse = event.shiftKey || event.key === "ArrowUp" || event.key === "ArrowLeft";
       event.preventDefault();
-      event.stopPropagation();
-      if (!event.repeat) back();
-      return;
+      const next = current < 0 ? (reverse ? controls.length - 1 : 0) : (current + (reverse ? -1 : 1) + controls.length) % controls.length;
+      controls[next]?.focus();
     }
-    if (!["Tab", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
-    const controls = Array.from(book.current!.querySelectorAll<HTMLElement>("button:enabled, a[href]"))
-      .filter(el => el.getClientRects().length);
-    const current = controls.indexOf(document.activeElement as HTMLElement);
-    const reverse = event.shiftKey || event.key === "ArrowUp" || event.key === "ArrowLeft";
-    event.preventDefault();
-    controls[(current + (reverse ? -1 : 1) + controls.length) % controls.length]?.focus();
-  }
+    window.addEventListener("keydown", navigate, true);
+    return () => window.removeEventListener("keydown", navigate, true);
+  }, [page, close]);
 
   function names(group: Contact[], title: string) {
     return <section><h3>{title}</h3>{group.map(contact =>
@@ -47,7 +57,7 @@ export default function PhoneBooth({ close }: { close: () => void }) {
   }
 
   return <div ref={book} role="dialog" aria-modal="true" aria-labelledby="booth-title"
-    className="booth-book" data-page={page} onKeyDown={navigate}>
+    className="booth-book" data-page={page}>
     <header className="booth-heading"><Icon name="phoneCall" size={24} /><h2 id="booth-title">Miesto telefonų knyga</h2>
       {page === "index" && <button className="booth-close" data-pad-back aria-label="Uždaryti" onClick={close}><Icon name="close" size={20} /></button>}
     </header>
@@ -109,6 +119,7 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
   const complete = turns.length > 0 && index === turns.length;
   const href = missionUrl(id, import.meta.env.VITE_BACK_URL, location.href);
   const firstAction = useRef<HTMLButtonElement>(null);
+  const dialogue = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     radio.hold("phonebooth", true);
@@ -155,10 +166,13 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
     setListen(n => n + 1);
   }
 
-  useLayoutEffect(() => { firstAction.current?.focus(); }, [line, complete, paused, loadFailed]);
+  useLayoutEffect(() => {
+    if (dialogue.current) dialogue.current.scrollTop = 0;
+    firstAction.current?.focus();
+  }, [line, complete, paused, loadFailed]);
   const speaker = line?.learner ? "Tavo eilė" : contact.npc.name;
   return <>
-    <div className="booth-body">
+    <div ref={dialogue} className="booth-body">
       <h3 className="booth-name">{contact.npc.name}</h3>
       <p className="booth-topic">{PRACTICES[id].topic}</p>
       <div aria-live="polite" aria-atomic="true">
@@ -168,22 +182,22 @@ function Practice({ id, contact, hangUp }: { id: PracticeId; contact: Contact; h
         {complete && <h4>Praktika baigta</h4>}
       </div>
       {line && <>
-        <button aria-expanded={meaning} onClick={() => setMeaning(!meaning)}>{meaning ? "Slėpti reikšmę" : "Rodyti reikšmę"}</button>
         {meaning && <p className="booth-meaning">{line.sentence.nat}</p>}
+        <button aria-expanded={meaning} onClick={() => setMeaning(!meaning)}>{meaning ? "Slėpti reikšmę" : "Rodyti reikšmę"}</button>
         {failed && !paused && <p role="status">Garso įrašas nepasiekiamas</p>}
         {paused
           ? <button ref={firstAction} onClick={() => { setFailed(false); setPaused(false); }}>Tęsti</button>
-          : <button ref={firstAction} onClick={replay}><Icon name="speaker" size={18} />
+          : <button onClick={replay}><Icon name="speaker" size={18} />
             {failed ? "Bandyti dar kartą" : line.learner ? "Klausytis atsakymo pavyzdžio" : "Dar kartą klausytis eilutės"}</button>}
       </>}
       {!line && !complete && (loadFailed ? <><p role="status">Nepavyko atsisiųsti pokalbio</p>
         <button ref={firstAction} onClick={() => { setLoadFailed(false); reload(n => n + 1); }}>Bandyti dar kartą</button></> : <p role="status">Kraunamas pokalbis…</p>)}
       {complete && href && <a href={href} target="_blank" rel="noopener noreferrer" onClick={hangUp}>
-        Atverti kurse · <span lang="en">{contact.calls.find(s => s.id === id)?.title.en}</span></a>}
+        Atverti kurse · {contact.calls.find(s => s.id === id)?.topic.lt}</a>}
     </div>
     <footer className="booth-actions">
       <button data-pad-back data-entry-focus onClick={hangUp}>Padėti ragelį</button>
-      {line && <button className="booth-primary" disabled={paused} onClick={() => move(index + 1)}>Pereiti prie kitos replikos</button>}
+      {line && <button ref={paused ? undefined : firstAction} className="booth-primary" disabled={paused} onClick={() => move(index + 1)}>Pereiti prie kitos replikos</button>}
       {complete && <button ref={firstAction} className="booth-primary" onClick={() => move(0)}>Kartoti skambutį</button>}
     </footer>
   </>;

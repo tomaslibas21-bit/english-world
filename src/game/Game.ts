@@ -63,6 +63,7 @@ import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
 import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
+import { STATION_PHONE } from "./world/stationPhone";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
@@ -1183,7 +1184,7 @@ export class Game implements GameApi {
         this.restoreCaveScene = undefined;
       }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, frontMark: id === "station" ? STATION_PHONE : undefined };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -2342,6 +2343,10 @@ export class Game implements GameApi {
       if (repeat || this.zone.id !== "station" || st.hud.phoneCard || st.hud.panel || st.conv.active || this.conversationLoads) return;
       this.autoPath = null;
       this.autoTarget = null;
+      this.steer.reset();
+      this.stepOut = 0;
+      this.vel.set(0, 0, 0);
+      this.moveVel.set(0, 0, 0);
       this.keys.clear();
       this.setJoystick(0, 0);
       st.setHud({ panel: "phonebooth" });
@@ -4356,8 +4361,8 @@ export class Game implements GameApi {
         best = this.caveZone.prompt(p, bd, !!best) ?? best;
       } else {
         if (this.zone.id === "station" && !this.hop.air) {
-          const reach = Math.hypot(p.x + 5.2, p.z - 6.65);
-          if (reach < 1.35 && reach < bd) {
+          const reach = Math.hypot(p.x - STATION_PHONE.x, p.z - STATION_PHONE.markZ);
+          if (reach < STATION_PHONE.reach && reach < bd) {
             bd = reach;
             const label = "Naudotis viešuoju telefonu";
             best = { kind: "phonebooth", id: "phonebooth", label, prompt: { kind: "phonebooth", label } };

@@ -66,6 +66,7 @@
   .booth-heading { min-height: 44px; }
   .booth-index, .booth-body { padding: 8px 12px; }
   .booth-body h3 { font-size: 1.45em; }
+  .booth-book[data-page="practice"] .booth-name { display: none; }
   .booth-body .booth-topic { margin-bottom: 6px; padding-bottom: 4px; }
   .booth-actions { padding: 4px 10px; }
 }

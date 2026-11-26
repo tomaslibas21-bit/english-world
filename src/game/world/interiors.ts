@@ -1,6 +1,7 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { STATION_PHONE } from "./stationPhone";
 import { ROAD_EDITION } from "../../content/road";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
@@ -424,13 +425,15 @@ function smalls(c: Ctx): Smalls {
 /** Open-front public telephone on the south wall of Union Station. The dark receiver
  * hangs beside the upright so its silhouette reads from the doorway as well as the bench lane. */
 function stationPhone(c: Ctx, S: Smalls) {
-  const x = -5.2, z = 8.15;
+  const { x, z } = STATION_PHONE;
   const enamel = "#702638", metal = "#b4babb", receiver = "#232329", paper = "#fff0cc";
   const box = (w: number, h: number, d: number, dx: number, y: number, dz: number, color: string) =>
-    S.add(boxGeo(w, h, d, x + dx, y, z + dz), color);
+    S.add(new THREE.BoxGeometry(w, h, d).translate(x + dx, y, z + dz), color);
+  box(0.88, 0.016, 0.64, 0, 0.01, STATION_PHONE.markZ - z, "#a18667");
+  box(0.82, 0.012, 0.58, 0, 0.024, STATION_PHONE.markZ - z, enamel);
   box(0.42, 2.36, 0.18, 0.10, 1.18, 0.31, enamel);
-  box(1.25, 0.12, 0.92, 0, 2.33, 0, enamel);
-  for (const side of [-1, 1]) box(0.065, 0.38, 0.92, side * 0.59, 2.12, 0, enamel);
+  box(1.25, 0.10, 0.68, 0, 2.38, -0.04, enamel);
+  for (const side of [-1, 1]) box(0.065, 0.22, 0.68, side * 0.59, 2.23, -0.04, enamel);
   box(1.16, 0.07, 0.75, 0, 1.00, -0.02, metal);
   box(0.45, 0.76, 0.27, 0.08, 1.58, 0.13, metal);
   box(0.27, 0.14, 0.025, 0.08, 1.78, -0.016, paper);
@@ -438,13 +441,14 @@ function stationPhone(c: Ctx, S: Smalls) {
     box(0.043, 0.043, 0.02, 0.08 + col * 0.069, 1.60 - row * 0.068, -0.02, receiver);
 
   // Earpiece, handle and mouthpiece form a C in the plane of the south wall.
-  box(0.12, 0.46, 0.15, -0.37, 1.61, 0.05, receiver);
-  for (const y of [1.39, 1.83]) box(0.25, 0.13, 0.20, -0.30, y, 0.05, receiver);
+  box(0.12, 0.48, 0.18, -0.48, 1.58, 0.25, receiver);
+  for (const y of [1.32, 1.84]) box(0.27, 0.14, 0.23, -0.405, y, 0.25, receiver);
+  box(0.34, 0.06, 0.13, -0.20, 1.75, 0.22, metal);
   const tube = (points: number[][], radius: number, color: string) => {
     const curve = new THREE.CatmullRomCurve3(points.map(([dx, y, dz]) => new THREE.Vector3(x + dx, y, z + dz)));
     S.add(new THREE.TubeGeometry(curve, 8, radius, 5, false), color);
   };
-  tube([[-0.37, 1.34, 0.05], [-0.46, 0.88, -0.31], [-0.26, 0.76, -0.40], [-0.09, 1.22, 0.04]], 0.027, receiver);
+  tube([[-0.48, 1.26, 0.25], [-0.53, 0.87, 0.39], [-0.33, 0.73, 0.41], [-0.09, 1.22, 0.22]], 0.032, receiver);
   box(0.48, 0.075, 0.38, 0.19, 1.074, -0.18, paper);
   box(0.045, 0.080, 0.38, -0.037, 1.074, -0.18, enamel);
   tube([[0.41, 1.09, -0.16], [0.56, 1.06, -0.23], [0.52, 1.05, 0.10], [0.27, 1.18, 0.18]], 0.012, metal);
@@ -455,11 +459,16 @@ function stationPhone(c: Ctx, S: Smalls) {
     ctx.fillStyle = paper; ctx.fillRect(0, 0, 256, 128);
     ctx.strokeStyle = enamel; ctx.lineWidth = 4; ctx.strokeRect(5, 5, 246, 118);
     ctx.fillStyle = enamel; ctx.textAlign = "center";
-    ctx.font = "bold 59px sans-serif"; ctx.fillText("☎", 128, 64);
+    // Hand-painted receiver silhouette (independent of device emoji fonts).
+    ctx.beginPath(); ctx.moveTo(85, 48);
+    ctx.bezierCurveTo(84, 13, 172, 13, 171, 48);
+    ctx.lineTo(150, 53); ctx.lineTo(147, 37);
+    ctx.quadraticCurveTo(128, 31, 109, 37);
+    ctx.lineTo(106, 53); ctx.closePath(); ctx.fill();
     ctx.font = "bold 34px sans-serif"; ctx.fillText("Public Phone", 128, 103);
   });
   const face = (angle: number) => new THREE.PlaneGeometry(1.16, 0.58).rotateY(angle);
-  const angle = Math.PI * 0.35;
+  const angle = Math.PI * 0.18;
   const faces = mergeGeometries([face(angle), face(angle + Math.PI)])!;
   const sign = new THREE.Mesh(faces, new THREE.MeshLambertMaterial({ map: texture }));
   sign.position.set(x, 2.67, z); sign.name = "public-phone-sign";
