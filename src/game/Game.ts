@@ -1139,6 +1139,7 @@ export class Game implements GameApi {
         this.steer.reset();
         audio.stopAmbience();
       }
+      const leavingPassportRoom = this.zone?.id === "town-hall";
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
@@ -1174,17 +1175,25 @@ export class Game implements GameApi {
       this.scene.fog = indoor ? null : new THREE.Fog(THEME.light.haze, 110, 420);
       this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
-      const poolHall = id === BILLIARDS_PLACE;
-      this.hemi.intensity = indoor ? (poolHall ? 1.23 : 1.9) : THEME.light.fill;
-      this.sun.intensity = indoor ? (poolHall ? 0.92 : 1.6) : THEME.light.sunPower;
+      const poolHall = id === BILLIARDS_PLACE, passportRoom = id === "town-hall";
+      this.hemi.intensity = indoor ? (poolHall ? 1.23 : passportRoom ? 1.95 : 1.9) : THEME.light.fill;
+      this.sun.intensity = indoor ? (poolHall ? 0.92 : passportRoom ? .82 : 1.6) : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
+      if (leavingPassportRoom) {
+        this.hemi.groundColor.set(THEME.light.ground);
+        this.sun.color.set(THEME.light.sun);
+      }
       if (wild) this.restoreCaveScene = this.caveCode?.applyCaveScene(wild, this.scene, this.rig, this.hemi, this.sun, this.restoreCaveScene);
       else if (departing) {
         this.restoreCaveScene?.();
         this.restoreCaveScene = undefined;
       }
+      if (passportRoom) {
+        this.hemi.groundColor.set("#d2c3ae");
+        this.sun.color.set("#fff4e5");
+      }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, counter: passportRoom };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -3179,7 +3188,9 @@ export class Game implements GameApi {
   /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
    *  stays over them and its ring lies on that spot, where the trail ends. */
   private showBeacon(tgt: { kind: string; x: number; z: number; person?: { x: number; z: number } } | null) {
-    if (!tgt) { this.guidance.setBeacon(null); return; }
+    // In the small hall the beam over the exit sits between the lens and the open book.
+    // The exit keeps its normal prompt, map marker and guided route.
+    if (!tgt || (this.zone.id === "town-hall" && tgt.kind === "exit")) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     const y = this.islandGuide && LIGHTHOUSE_ISLAND && !this.zone.interior ? islandGroundY(LIGHTHOUSE_ISLAND, over.x, over.z) : undefined;
     this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? tgt : undefined, y);

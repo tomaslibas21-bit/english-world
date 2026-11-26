@@ -1,25 +1,55 @@
-import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace } from "three";
+import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, type BufferGeometry } from "three";
+import { mat, type Merger } from "./util";
 
 export const passportPrompt = { kind: "passport", label: "Open passport", lt: "Atversti pasą" } as const;
-let material: MeshBasicMaterial | undefined;
 
-/** Both printed signs share one atlas. Its upper half faces Oak Avenue. */
-export function townHallPrint(width: number, height: number, desk = false) {
-  if (!material) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512; canvas.height = 256;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#fff6de"; ctx.fillRect(0, 0, 512, 256);
-    ctx.strokeStyle = ctx.fillStyle = "#234e40";
-    ctx.lineWidth = 4; ctx.strokeRect(5, 5, 502, 118); ctx.strokeRect(5, 133, 502, 118);
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.font = "bold 72px Georgia, serif"; ctx.fillText("Town Hall", 256, 66);
-    ctx.font = "bold 48px Georgia, serif"; ctx.fillText(passportPrompt.label, 256, 171);
-    ctx.font = "34px Nunito, sans-serif"; ctx.fillText(passportPrompt.lt, 256, 219);
-    const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace; map.name = "Town Hall";
-    material = new MeshBasicMaterial({ map, toneMapped: false });
+// Painted capitals on the oak lintel. Each stroke is two triangles in the existing street batch.
+const strokes: Record<string, number[][]> = {
+  T: [[0, 1, .72, 1], [.36, 1, .36, 0]],
+  O: [[.17, 0, .55, 0, .72, .18, .72, .82, .55, 1, .17, 1, 0, .82, 0, .18, .17, 0]],
+  W: [[0, 1, .17, 0, .42, .58, .68, 0, .84, 1]],
+  N: [[0, 0, 0, 1, .72, 0, .72, 1]],
+  H: [[0, 1, 0, 0], [.72, 1, .72, 0], [0, .52, .72, .52]],
+  A: [[0, 0, .36, 1, .72, 0], [.14, .38, .58, .38]],
+  L: [[0, 1, 0, 0, .65, 0]],
+};
+export function townHallLintel(batch: Merger, place: (g: BufferGeometry) => BufferGeometry) {
+  const y = 4.25;
+  function face(w: number, h: number, x: number, dy: number, z: number, color: string, angle = 0) {
+    const shape = new PlaneGeometry(w, h).rotateZ(angle).translate(x, y + dy, z);
+    batch.add("town-hall-lintel-" + color, mat(color), place(shape), false);
   }
-  const geo = new PlaneGeometry(width, height), uv = geo.getAttribute("uv");
-  for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * 0.5 + (desk ? 0 : 0.5));
-  return new Mesh(geo, material);
+  face(5.1, 1.07, 0, 0, .12, "#285244");
+  face(5.01, .98, 0, 0, .123, "#eddfc2");
+  for (const dy of [-.383, .383]) face(4.82, .016, 0, dy, .125, "#ad8957");
+  const text = "TOWN HALL", scale = .5, advance = .99, space = .48;
+  let start = -((text.length - 1) * advance + space - .31) * scale / 2;
+  for (const letter of text) {
+    if (letter === " ") { start += space * scale; continue; }
+    for (const path of strokes[letter]) for (let i = 2; i < path.length; i += 2) {
+      const [ax, ay, bx, by] = path.slice(i - 2, i + 2);
+      const dx = bx - ax, dy = by - ay;
+      face(Math.hypot(dx, dy) * scale + .022, .055, start + (ax + bx) * scale / 2,
+        (ay + by - 1) * scale / 2, .129, "#193f35", Math.atan2(dy, dx));
+    }
+    start += advance * scale;
+  }
+}
+
+let print: MeshBasicMaterial | undefined;
+/** The only room texture, printed locally when the room opens. */
+export function townHallDeskCard() {
+  if (!print) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256; canvas.height = 96;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#f4ead7"; ctx.fillRect(0, 0, 256, 96);
+    ctx.strokeStyle = "#ae9261"; ctx.lineWidth = 2; ctx.strokeRect(4, 4, 248, 88);
+    ctx.fillStyle = "#24493e"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = "bold 29px Georgia, serif"; ctx.fillText(passportPrompt.label, 128, 37);
+    ctx.font = "20px Nunito, sans-serif"; ctx.fillText(passportPrompt.lt, 128, 66);
+    const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace; map.name = "Town Hall desk card";
+    print = new MeshBasicMaterial({ map, toneMapped: false });
+  }
+  return new Mesh(new PlaneGeometry(.95, .36), print);
 }

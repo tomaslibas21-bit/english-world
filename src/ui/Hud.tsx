@@ -145,7 +145,7 @@ export function Hud() {
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = streetCard || (task.collapsedForNote
-    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
+    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (zone === "town-hall" || screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
