@@ -668,6 +668,9 @@ class Route {
       if (game.zone.id === "town" && !game.transitioning) return game.placeOnFoot(near.x, near.z, rot);
       return game.enterZone("town", { x: near.x, z: near.z, rot }, true);
     }, { actor, id, spot });
+    // Placing the learner clears the game's nearest person until its next prompt update: read the prompt from
+    // frames drawn after the placement (a frame from before it would let the press land while nobody is nearest).
+    const placedAt = this.frames.length;
     if (actor === "vinnie") {
       const start = await this.wait((f) => f.scene.zone === "town" && f.scene.mountedZone && !f.scene.transition
         && !f.scene.banner && !f.scene.coach && !f.conv.phone,
@@ -710,7 +713,7 @@ class Route {
     const before = await this.wait((f) => f.scene.nearest === actor && f.scene.prompt === "talk"
       && !f.scene.walking && !f.scene.transition && !f.conv.phone
       && (actor !== "vinnie" || (!f.scene.banner && !f.scene.coach)), `walk-up prompt for ${actor}`, 20_000,
-    { from: this.approachAt });
+    { from: actor === "vinnie" ? this.approachAt : placedAt });
     assertGameplayLens(before.scene.lens, this.size, `before ${id}`);
     this.gameplay = before.scene.lens;
     if (actor === "vinnie") this.row.approach.prompt = compact(before);
