@@ -39,13 +39,13 @@ export const TAXI_ROUTES = [
 export const TAXI_UI = {
   start: "Vairuoti taksi",
   actions: {
-    left: { label: "Sukite kairėn", key: "←" },
-    right: { label: "Sukite dešinėn", key: "→" },
-    straight: { label: "Važiuokite tiesiai", key: "↑" },
-    stop: { label: "Sustokite čia", key: "Tarpas" },
+    left: { label: "Suk kairėn", key: "←" },
+    right: { label: "Suk dešinėn", key: "→" },
+    straight: { label: "Važiuok tiesiai", key: "↑" },
+    stop: { label: "Sustok čia", key: "Tarpas" },
   },
   title: "Kelionė baigta",
-  fare: "Kaina", tip: "Arbatpinigiai", turns: "Posūkiai iš pirmo karto", stop: "Sustojote",
+  fare: "Kaina", tip: "Arbatpinigiai", turns: "Posūkiai iš pirmo karto", stop: "Sustojai",
   atDoor: "prie durų", tooFar: "per toli",
   cleanStop: { en: "Smooth stop at the door", lt: "Sklandus sustojimas prie durų" },
   collisionFree: { en: "Collision-free ride", lt: "Kelionė be susidūrimų" },

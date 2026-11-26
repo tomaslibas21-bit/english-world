@@ -11,28 +11,14 @@ describe("scene intros", () => {
     for (const [id, intro] of questIntros) expect(SITUATIONS.find((s) => s.id === id)?.intro).toBe(intro);
   });
 
-  it("the other conversations speak to the learner in the intro", () => {
+  it("the other conversations speak to the learner in the intro (tu, the app's register)", () => {
     const informalYou = /(?<![\p{L}])(tu|tau|tave|tavęs|tavo|tavimi|tavyje)(?![\p{L}])/iu;
-    const politeYou = /(?<![\p{L}\p{M}\p{N}_])Jus(?![\p{L}\p{M}\p{N}_])/u;
-    const keeperIntro = "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.";
-    const keeperId = "x05-lighthouse-keeper";
-    expect(SITUATIONS.some((s) => s.id === keeperId), `${keeperId} must exist`).toBe(true);
-    const surfId = "x04-surf";
-    expect(SITUATIONS.some((s) => s.id === surfId), `${surfId} must exist`).toBe(true);
-
+    const politeYou = /(?<![\p{L}\p{M}\p{N}_])(Jūs|Jus|Jums|Jūsų)(?![\p{L}\p{M}\p{N}_])/u;
     for (const { id, intro } of SITUATIONS) {
       if (questIntros.has(id)) continue;
-      if (id === surfId) {
-        expect(intro).toMatch(/^Jūs prieinate prie „Harbor Surf“ namelio vakariniame paplūdimyje\./u);
-        expect(intro).toContain("Maren Pike nuomoja lentas ir moko čiuožti banglente.");
-        expect(intro).toContain("Atėjote išsinuomoti įrangos arba susitarti dėl pamokos.");
-        expect(intro).not.toMatch(informalYou);
-      } else if (id === keeperId) {
-        expect(intro).toBe(keeperIntro);
-        expect(intro).toMatch(politeYou);
-      } else {
-        expect(intro ?? "", id).toMatch(informalYou);
-      }
+      expect(intro ?? "", id).toMatch(informalYou);
+      expect(intro ?? "", id).not.toMatch(politeYou);
     }
   });
+
 });

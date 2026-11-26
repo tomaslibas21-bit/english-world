@@ -6,6 +6,6 @@ export const STREET_WORDS = {
   cards: "Gatvėje",
   light: "Pakeliui",
   overheard: "Išgirsta gatvėje",
-  answer: "Ką atsakysite?",
+  answer: "Ką atsakysi?",
   replay: "Pakartoti",
 } as const;

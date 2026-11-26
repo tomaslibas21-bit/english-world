@@ -286,7 +286,7 @@ try {
       return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase };
     });
     /** The Lithuanian move labels from round 01 and their primary arrows. */
-    const MOVES = { paddle: ["Irkluokite", ["↑"]], duck: ["Nerkite po banga", ["↓"]], turn: ["Apsukite lentą", ["←", "→"]], up: ["Stokitės", ["↑"]], left: ["Pasvirkite kairėn", ["←"]], right: ["Pasvirkite dešinėn", ["→"]], down: ["Sulenkite kelius", ["↓"]], fwd: ["Svorį perkelkite pirmyn", ["↑"]], jump: ["Šokite", ["↑"]], steady: ["Išlaikykite pusiausvyrą", []] };
+    const MOVES = { paddle: ["Irkluok", ["↑"]], duck: ["Nerk po banga", ["↓"]], turn: ["Apsuk lentą", ["←", "→"]], up: ["Stokis", ["↑"]], left: ["Pasvirk kairėn", ["←"]], right: ["Pasvirk dešinėn", ["→"]], down: ["Sulenk kelius", ["↓"]], fwd: ["Svorį perkelk pirmyn", ["↑"]], jump: ["Šok", ["↑"]], steady: ["Išlaikyk pusiausvyrą", []] };
     const DIR = { paddle: "up", duck: "down", turn: "right", up: "up", left: "left", right: "right", down: "down", fwd: "up", jump: "up" };
     const play = async (how, level) => {
       let wrongBoard = how === "good", early = how === "early", frames = 0, strokeT = 0, upT = 0, askT = 0, moveT = 0, lastCue = "", spoken = 0, keyed = 0, tapped = 0, prev = "";
@@ -540,8 +540,8 @@ try {
     check(`${label}: the move never covers the learner on their board`, Object.values(mv).every((v) => !v.over && v.clearMin > 12), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.clearMin])));
     check(`${label}: paddling shows its strokes, the stand-up its time`, mv.paddle.dots >= 4 && mv.up.time, { dots: mv.paddle.dots, time: mv.up.time });
     check(`${label}: both stroke transitions were exercised`, shown.has("first-stroke") && shown.has("last-stroke"));
-    if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && mv.up.text === "Stokitės – bakstelėkite ↑", mv.up.text);
-    else check(`${label}: with keys it says which`, mv.up.text === "Stokitės – spauskite ↑" && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
+    if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && mv.up.text === "Stokis – bakstelėk ↑", mv.up.text);
+    else check(`${label}: with keys it says which`, mv.up.text === "Stokis – spausk ↑" && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
     await step(20);
     const scoreCard = page.locator(".surf .mode-score-card");
     const checkResult = async (score, waves, seconds) => {
@@ -551,7 +551,7 @@ try {
       assert.deepEqual(values, [String(score.waves), String(score.seconds), `${score.followed}/${score.asked}`]);
       assert.equal(await scoreCard.evaluate((el) => el.closest("[lang]").lang), "lt");
       assert.equal(await scoreCard.locator(".surf-best").innerText(), `Iš viso: bangų – ${waves}, sekundžių ant bangos – ${seconds}`);
-      assert.equal(await scoreCard.getByText("Girdėtas frazes rasite savo kortelėse.", { exact: true }).count(), 1);
+      assert.equal(await scoreCard.getByText("Girdėtas frazes rasi savo kortelėse.", { exact: true }).count(), 1);
       assert.equal(await scoreCard.locator(".mode-score-actions button:visible").count(), 3);
     };
     const beginnerScore = s.score;

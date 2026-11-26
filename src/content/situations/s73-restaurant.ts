@@ -1361,7 +1361,7 @@ export const restaurant: SituationDef = {
         { id: "can_i_get", s: t("Can | I | have | {X.the}, | please?", "Ar galiu | aš | gauti | {X.the:acc}, | prašau?", "Ar galiu gauti {X.the:acc}?"), register: "casual" },
         { id: "for_me", s: t("For me, | {X.the}, | please.", "Man, | {X.the:acc}, | prašau.", "Man {X.the:acc}, prašau.") },
         { id: "think_ill", s: t("I | think | I'll go with | {X.the}.", "Aš | manau | rinksiuosi | {X.the:acc}.", "Manau, rinksiuosi {X.the:acc}.") },
-        { id: "same", s: t("I'll have | the | same.", "Imsiu | — | tą patį.", "Imsiu tą patį."), note: "Kai norite to paties, ką užsisakė Jūsų draugas." },
+        { id: "same", s: t("I'll have | the | same.", "Imsiu | — | tą patį.", "Imsiu tą patį."), note: "Kai nori to paties, ką užsisakė tavo draugas." },
       ],
     },
     doneness: {

@@ -39,7 +39,7 @@ const mh = {
   target: "en-US", voice: "g_jordan", legacyVoice: "af_bella", speed: 1, male: false, trainer: "jordan",
   place: "Harbor Fitness", card: "Dar vienas pakartojimas", title: "One More Rep",
   sceneStart: "Pradėti", taskComplete: "Užduotis įvykdyta!",
-  entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Prie kilimėlio galite pradėti treniruotę su Jordan.", listAction: "Rasti treniruočių kilimėlį" },
+  entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Prie kilimėlio gali pradėti treniruotę su Jordan.", listAction: "Rasti treniruočių kilimėlį" },
   ui: {
     readyTitle: "Treniruotė su Jordan", readyTouch: "Klausyk ir bakstelėk tinkamą paveikslėlį.",
     readyKeys: "Klausyk. Judesiui pasirinkti paspausk rodyklę arba skaičių nuo 1 iki 4.", start: "Pradėti",

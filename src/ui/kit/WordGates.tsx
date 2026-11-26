@@ -112,8 +112,8 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane }: {
 }
 
 const ways = [
-  { id: "words", title: "Žodžiai", line: "Išgirskite angliškai, pasirinkite reikšmę" },
-  { id: "phrases", title: "Frazės", line: "Išgirskite lietuviškai, pasirinkite angliškai" },
+  { id: "words", title: "Žodžiai", line: "Išgirsk angliškai, pasirink reikšmę" },
+  { id: "phrases", title: "Frazės", line: "Išgirsk lietuviškai, pasirink angliškai" },
 ] as const;
 
 export function WordGateStart({ way, start, done, town }: {
@@ -193,7 +193,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
 }
 
 const sameWord = (a: GateWord, b: GateWord) => a.en === b.en && a.situation === b.situation;
-const Comeback = () => <small className="road-comeback">Šįkart pataikėte!</small>;
+const Comeback = () => <small className="road-comeback">Šįkart pataikei!</small>;
 
 function PracticeItems({ items, entries, recovered, label, title, missed, guide }: {
   items: GateWord[]; recovered: GateWord[]; label: string; title: string; missed?: boolean;

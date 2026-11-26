@@ -384,7 +384,7 @@ try {
     assert.equal(await card.locator(".mode-score-line").innerText(), "6/7");
     assert.deepEqual(await card.locator("dt").allTextContents(), [
       "Posūkiai iš pirmo karto", "Sklandus sustojimas prie durų", "Kelionė be susidūrimų",
-      "Kaina", "Arbatpinigiai", "Sustojote", "Frazių kortelės",
+      "Kaina", "Arbatpinigiai", "Sustojai", "Frazių kortelės",
     ]);
     assert.deepEqual(await card.locator("dd").allTextContents(), ["4/5", "1/1", "1/1", "$24.50", "$3.50", "prie durų", "10"]);
     assert.deepEqual(await page.evaluate(() => window.__taxiLines), [

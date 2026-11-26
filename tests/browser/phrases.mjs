@@ -335,7 +335,7 @@ async function checkScore(run, game, earned, comeback) {
   const pair = `${comeback.f} · ${comeback.p}`;
   await select.selectOption({ label: pair });
   assert.equal(await select.locator("option:checked").textContent(), pair);
-  assert.equal(await list.getByText("Šįkart pataikėte!", { exact: true }).isVisible(), true);
+  assert.equal(await list.getByText("Šįkart pataikei!", { exact: true }).isVisible(), true);
 }
 
 async function testGame(browser, game, size, budget) {
@@ -420,7 +420,7 @@ async function testGame(browser, game, size, budget) {
       assert.equal(state.phrasePrompt, undefined);
       assert.equal(state.gap, false);
       assert.ok(state.word && state.word.trim().split(/\s+/).length <= 2, `expected a word prompt, got ${state.word}`);
-      assert.equal(await run.cue.innerText(), "Ką išgirdote?");
+      assert.equal(await run.cue.innerText(), "Ką išgirdai?");
       const boards = run.overlay.locator('.road-gates[lang="lt"] .road-gate:visible');
       assert.deepEqual(await boards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label"))), state.gates);
       assert.equal(new Set(state.gates).size, 3);

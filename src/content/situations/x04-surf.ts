@@ -151,20 +151,20 @@ const intents: SituationDef["intents"] = {
 const PAY = ["pay_cash", "pay_card", "ask_card", "hand_over", "no_cash", "ask_atm", "atm_go", "back_ctx", "ask_price"];
 const LESSON_QUESTIONS = ["ask_hard", "ask_deep", "ask_fall", "ask_sharks", "swim"];
 const PINE_QUESTIONS = ["pe_when", "pe_where", "pe_stay", "pe_how", "pe_safe"];
-const GO = { lt: "Sutikite arba atidėkite kitai dienai", hint: "go" };
-const ASK = { lt: "Paklauskite apie kainas ar jūrą", hint: "ask" };
-const RENT = { lt: "Pasirinkite įrangą", hint: "rent", options: GEAR_IDS };
-const LESSON_Q = { lt: "Paklauskite apie pamoką", hint: "lessonq" };
-const SECURITY = { lt: "Palikite asmens dokumentą arba užstatą", hint: "deposit" };
-const FOLLOW = { lt: "Pasakykite, ar aišku", hint: "follow" };
-const SOCIAL = { lt: "Padėkokite arba atsisveikinkite", hint: "g_social" };
+const GO = { lt: "Sutik arba atidėk kitai dienai", hint: "go" };
+const ASK = { lt: "Paklausk apie kainas ar jūrą", hint: "ask" };
+const RENT = { lt: "Pasirink įrangą", hint: "rent", options: GEAR_IDS };
+const LESSON_Q = { lt: "Paklausk apie pamoką", hint: "lessonq" };
+const SECURITY = { lt: "Palik asmens dokumentą arba užstatą", hint: "deposit" };
+const FOLLOW = { lt: "Pasakyk, ar aišku", hint: "follow" };
+const SOCIAL = { lt: "Padėkok arba atsisveikink", hint: "g_social" };
 
 const surf: SituationDef = {
   id: "x04-surf",
   title: { en: "Want to Try a Wave?", lt: "Norite pagauti bangą?" },
   topic: { en: "Gear Rental and Surf Lessons", lt: "Įrangos nuoma ir banglenčių pamokos" },
-  goal: "Išsinuomokite įrangą arba susitarkite dėl banglenčių pamokos. Paklauskite kainos, tada atsakykite į Maren kvietimą pagauti bangą.",
-  intro: "Jūs prieinate prie „Harbor Surf“ namelio vakariniame paplūdimyje. Čia užaugusi Maren Pike nuomoja lentas ir moko čiuožti banglente. Atėjote išsinuomoti įrangos arba susitarti dėl pamokos. Lentoje – maždaug dviejų pėdų bangos, silpnas vėjas ir atoslūgis. Kainos – JAV doleriais.",
+  goal: "Išsinuomok įrangą arba susitark dėl banglenčių pamokos. Paklausk kainos, tada atsakyk į Maren kvietimą pagauti bangą.",
+  intro: "Tu prieini prie „Harbor Surf“ namelio vakariniame paplūdimyje. Čia užaugusi Maren Pike nuomoja lentas ir moko čiuožti banglente. Atėjai išsinuomoti įrangos arba susitarti dėl pamokos. Lentoje – maždaug dviejų pėdų bangos, silpnas vėjas ir atoslūgis. Kainos – JAV doleriais.",
   song: "", songTitle: "", chapter: 9, order: 11,
   bonus: true, optionalVoice: true, mode: "talk", location: "harbor-surf", npc: "maren",
   entities: { gear: GEAR, doc: DOCS },
@@ -342,7 +342,7 @@ const surf: SituationDef = {
       { id: "l_learn", s: t("I | want | to | learn | to | surf.", "Aš | noriu | — | išmokti | — | čiuožti banglente.", "Noriu išmokti čiuožti banglente.") },
       { id: "s_yes", s: t("I | already | surf.", "Aš | jau | čiuožiu banglente.", "Jau čiuožiu banglente.") },
     ] },
-    exp: { lt: "Papasakoti, ar čiuožėte banglente", items: [
+    exp: { lt: "Papasakoti, ar čiuožei banglente", items: [
       { id: "l_first", s: t("It's | my | first | time.", "Tai | mano | pirmas | kartas.", "Man tai pirmas kartas.") },
       { id: "ex_never", s: t("No, | never.", "Ne, | niekada.", "Ne, niekada.") },
       { id: "l_some", s: t("I've | surfed | a couple of | times.", "Aš | čiuožiau banglente | porą | kartų.", "Porą kartų čiuožiau banglente.") },
@@ -357,7 +357,7 @@ const surf: SituationDef = {
       { id: "q_late", s: t("What | if | I | come back | late?", "Kas | jei | aš | grįšiu | vėlai?", "O jei vėluosiu grąžinti įrangą?") },
       { id: "q_waves", s: t("How | are | the | waves?", "Kokios | yra | — | bangos?", "Kokios šiandien bangos?") },
     ] },
-    hours: { lt: "Pasakyti, kuriam laikui nuomojatės", items: [
+    hours: { lt: "Pasakyti, kuriam laikui nuomojiesi", items: [
       { id: "h_n", s: t("For | two | hours.", "— | dviem | valandoms.", "Dviem valandoms.") },
       { id: "h_one", s: t("Just | one | hour.", "Tik | vienai | valandai.", "Tik vienai valandai.") },
     ] },
@@ -387,11 +387,11 @@ const surf: SituationDef = {
       { id: "lq_sharks", s: t("Are there | sharks?", "Ar yra | ryklių?", "Ar čia būna ryklių?") },
       { id: "lq_swim", s: t("I'm | not | a | very | good | swimmer.", "Aš | ne | — | itin | {m:geras|f:gera} | {m:plaukikas|f:plaukikė}.", "Ne itin gerai plaukiu.") },
     ] },
-    follow: { lt: "Pasakyti, kad supratote", items: [
+    follow: { lt: "Pasakyti, kad supratai", items: [
       { id: "lq_ok", s: t("Yes, | I'm | with | you.", "Taip, | aš | su | Jumis.", "Taip, suprantu.") },
       { id: "fl_clear", s: t("Yes, | got it.", "Taip, | supratau.", "Taip, supratau.") },
     ] },
-    ready: { lt: "Pasakyti, ar dar turite klausimų", items: [
+    ready: { lt: "Pasakyti, ar dar turi klausimų", items: [
       { id: "rd_none", s: t("No, | none.", "Ne, | jokių.", "Ne, neturiu klausimų.") },
       { id: "rd_go", s: t("Let's go | in | the | water!", "Eikime | į | — | vandenį!", "Eikime į vandenį!") },
     ] },
@@ -468,12 +468,12 @@ const surf: SituationDef = {
     "would you": { reason: "grammatical_fusion", split: "The Lithuanian verb carries the conditional, with Ar Jūs or Jūs in the gloss.", minimal: "The modal has no separate verb meaning here." },
   },
   mission: [
-    { step: "what", lt: "Pasakykite, ko ieškote" },
-    { lt: "Pasirinkite įrangą arba pamoką", done: (c) => !!(c.s.gear || c.s.wantLesson || c.s.lessonNo || c.s.advanced),
+    { step: "what", lt: "Pasakyk, ko ieškai" },
+    { lt: "Pasirink įrangą arba pamoką", done: (c) => !!(c.s.gear || c.s.wantLesson || c.s.lessonNo || c.s.advanced),
       when: (c) => !c.s.noDeal, optional: true },
-    { lt: "Sumokėkite už nuomą arba pamoką", done: (c) => (!c.s.wantRent || c.s.rentPaid) && (!c.s.lessonOk || c.s.lessonPaid),
+    { lt: "Sumokėk už nuomą arba pamoką", done: (c) => (!c.s.wantRent || c.s.rentPaid) && (!c.s.lessonOk || c.s.lessonPaid),
       when: (c) => !!(c.s.wantRent || c.s.lessonOk), optional: true },
-    { step: "invite", lt: "Atsakykite į kvietimą pagauti bangą", optional: true },
+    { step: "invite", lt: "Atsakyk į kvietimą pagauti bangą", optional: true },
   ],
   steps: [
     {
@@ -485,7 +485,7 @@ const surf: SituationDef = {
         c.s.opened = true;
       },
       expects: ["want_rent", "want_lesson", "surf_yes", "surf_none", "surf_some", "just_looking", "ask_price", "ask_lesson_price", "ask_waves", "ask_big", "two_people"],
-      suggest: [RENT, { lt: "Pasiteiraukite dėl pamokos", hint: "lesson" }, ASK],
+      suggest: [RENT, { lt: "Pasiteirauk dėl pamokos", hint: "lesson" }, ASK],
       yes(c) { c.say("what_again"); c.hold(); },
       no(c) { c.say("looking_ok"); c.hold(); },
       help: priceList,
@@ -495,7 +495,7 @@ const surf: SituationDef = {
       when: (c) => !!c.s.wantRent, done: (c) => !!c.s.gear,
       ask(c) { c.say(c.s.gearAsked ? "gear_which" : "gear_ask"); c.s.gearAsked = true; },
       expects: ["want_rent", "ask_price", "ask_included", "two_people", "gear_no", "want_lesson"],
-      suggest: [RENT, ASK, { lt: "Pasiteiraukite dėl pamokos", hint: "lesson" }],
+      suggest: [RENT, ASK, { lt: "Pasiteirauk dėl pamokos", hint: "lesson" }],
       yes(c) { c.say("gear_which"); c.hold(); },
       no(c) { c.say("gear_which"); c.hold(); },
       help: priceList,
@@ -505,7 +505,7 @@ const surf: SituationDef = {
       when: (c) => !!(c.s.wantRent && c.s.gear), done: (c) => !!c.s.hours,
       ask(c) { c.say(c.s.hoursAsked ? "hours_reask" : "hours_ask"); c.s.hoursAsked = true; },
       expects: ["hours", "hours_ctx", "hours_half_ctx", "hours_long_ctx", "want_rent", "ask_price", "ask_late", "ask_hours"],
-      suggest: [{ lt: "Pasakykite, kelioms valandoms", hint: "hours" }],
+      suggest: [{ lt: "Pasakyk, kelioms valandoms", hint: "hours" }],
       yes: reaskHours, no: reaskHours,
       help(c) { c.say("hours_help"); },
     },
@@ -533,7 +533,7 @@ const surf: SituationDef = {
       when: (c) => !!c.s.wantLesson, done: (c) => !!c.s.exp,
       ask(c) { c.say("exp_ask"); },
       expects: ["surf_none", "surf_none_ctx", "surf_some", "surf_yes", "lesson_no"],
-      suggest: [{ lt: "Pasakykite, ar jau bandėte čiuožti banglente", hint: "exp" }],
+      suggest: [{ lt: "Pasakyk, ar jau bandei čiuožti banglente", hint: "exp" }],
       yes: (c) => experience(c, "some"), no: (c) => experience(c, "none"),
     },
     {
@@ -584,7 +584,7 @@ const surf: SituationDef = {
         } else c.say("safety_more");
       },
       expects: ["no_more_ctx", "one_q_ctx", "ask_current", "ask_waves", ...LESSON_QUESTIONS],
-      suggest: [{ lt: "Pasakykite, ar dar turite klausimų", hint: "ready" }, LESSON_Q],
+      suggest: [{ lt: "Pasakyk, ar dar turi klausimų", hint: "ready" }, LESSON_Q],
       yes: oneQuestion, no: safetyDone,
     },
     {
@@ -592,7 +592,7 @@ const surf: SituationDef = {
       when: (c) => !!c.s.advanced, done: (c) => !!c.s.peTalked,
       ask(c) { c.say("pe_been_q"); },
       expects: ["been_yes_ctx", "been_no_ctx", ...PINE_QUESTIONS],
-      suggest: [{ lt: "Pasakykite, ar ten lankėtės", hint: "g_yesno" }, { lt: "Paklauskite apie Pine Point", hint: "pe" }],
+      suggest: [{ lt: "Pasakyk, ar ten lankeisi", hint: "g_yesno" }, { lt: "Paklausk apie Pine Point", hint: "pe" }],
       yes: (c) => been(c, true), no: (c) => been(c, false),
     },
     {
@@ -860,7 +860,7 @@ const surf: SituationDef = {
     },
   ],
   tips: {
-    surf_card: { key: "surf_card", lt: "Jei norite mokėti kortele, pasakykite, kaip mokėsite.", better: "By card, please." },
+    surf_card: { key: "surf_card", lt: "Jei nori mokėti kortele, pasakyk, kaip mokėsi.", better: "By card, please." },
   },
 };
 
@@ -924,7 +924,7 @@ function noId(c: Ctx) {
   c.expect({
     id: "deposit_offer",
     expects: ["dep_give", "no_dep", "id_give", "ask_deposit", "dep_back_q", "hand_over"],
-    suggest: [{ lt: "Sutikite arba atsisakykite", hint: "g_yesno" }, SECURITY],
+    suggest: [{ lt: "Sutik arba atsisakyk", hint: "g_yesno" }, SECURITY],
     yes: (ctx) => takeSecurity(ctx),
     no: (ctx) => { ctx.s.noDep = true; refuseSecurity(ctx); },
     on: {
@@ -978,7 +978,7 @@ function askPay(c: Ctx, order: Order) {
 }
 
 function paySuggest(c: Ctx): Suggestion[] {
-  return c.s.cardOk ? [{ lt: "Pasirinkite kortelę arba grynuosius", hint: "paycard" }] : [{ lt: "Pasirinkite, kaip mokėsite", hint: "pay" }];
+  return c.s.cardOk ? [{ lt: "Pasirink kortelę arba grynuosius", hint: "paycard" }] : [{ lt: "Pasirink, kaip mokėsi", hint: "pay" }];
 }
 
 function payAgain(c: Ctx) {

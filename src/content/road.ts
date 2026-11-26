@@ -1,18 +1,18 @@
 export const ROAD_CONES = ["cone.glb", "cone-flat.glb"] as const;
 
 export const ROAD_UI = {
-  title: "Kelias per dykumą", hint: "Klausykite ir važiuokite pro teisingus vartus",
-  hear: "Ką išgirdote?", gap: "Kurio žodžio trūksta?", replay: "Klausyti dar kartą",
+  title: "Kelias per dykumą", hint: "Klausyk ir važiuok pro teisingus vartus",
+  hear: "Ką išgirdai?", gap: "Kurio žodžio trūksta?", replay: "Klausyti dar kartą",
   right: "Teisingai!", wrong: "Ne visai. Teisingai:", streak: "Serija",
   ghost: "Geriausias važiavimas", time: "Laikas",
-  controls: "Vairuokite rodyklėmis · Tarpas – driftas · H – signalas",
+  controls: "Vairuok rodyklėmis · Tarpas – driftas · H – signalas",
   drift: "Driftas", horn: "Signalas", drive: "Vairuoti",
   finish: "Važiavimas baigtas", points: "Taškai", correct: "Teisingi vartai",
   bestStreak: "Ilgiausia serija", distance: "Nuvažiuota", record: "Naujas rekordas!",
   missed: "Šiuos žodžius verta pakartoti", from: "Šis žodis skamba čia:", guide: "Nuvesk mane",
   again: "Dar kartą", town: "Atgal į miestą",
   cards: "Frazių kortelės", micOn: "Įjungti mikrofoną", micOff: "Išjungti mikrofoną",
-  unavailable: "Pirmiausia pakalbėkite su žmonėmis mieste – tada čia atsiras žodžių.",
+  unavailable: "Pirmiausia pakalbėk su žmonėmis mieste – tada čia atsiras žodžių.",
 } as const;
 
 // The west end of Main Street, beyond the traffic's turnaround.

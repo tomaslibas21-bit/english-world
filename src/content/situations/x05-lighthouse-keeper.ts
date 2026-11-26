@@ -40,11 +40,11 @@ function step(id: KeeperStep, label: string, suggestion: string, expects: string
 }
 
 const steps = [
-  step("life", "Gyvenimas saloje", "Paklauskite apie gyvenimą saloje", ["k_home_ctx", "k_company_ctx"], (c) => c.say("k_life_ask")),
-  step("light", "Švyturio šviesa", "Paklauskite apie švyturio šviesą", ["k_turn_ctx", "k_boats_ctx"], (c) => c.say("k_light_ask")),
-  step("routine", "Kasdieniai darbai", "Paklauskite apie darbą", ["k_morning_ctx", "k_night_ctx"], (c) => c.say("k_routine_ask")),
-  step("storm", "Paskutinė audra", "Paklauskite apie audrą", ["k_stay_ctx", "k_light_on_ctx"], (c) => c.say("k_storm_ask")),
-  step("gift", "Raštelis atminimui", "Priimkite raštelį", ["k_keep_ctx", "k_draw_ctx"], (c) => { c.say("k_note"); c.say("k_offer"); }),
+  step("life", "Gyvenimas saloje", "Paklausk apie gyvenimą saloje", ["k_home_ctx", "k_company_ctx"], (c) => c.say("k_life_ask")),
+  step("light", "Švyturio šviesa", "Paklausk apie švyturio šviesą", ["k_turn_ctx", "k_boats_ctx"], (c) => c.say("k_light_ask")),
+  step("routine", "Kasdieniai darbai", "Paklausk apie darbą", ["k_morning_ctx", "k_night_ctx"], (c) => c.say("k_routine_ask")),
+  step("storm", "Paskutinė audra", "Paklausk apie audrą", ["k_stay_ctx", "k_light_on_ctx"], (c) => c.say("k_storm_ask")),
+  step("gift", "Raštelis atminimui", "Priimk raštelį", ["k_keep_ctx", "k_draw_ctx"], (c) => { c.say("k_note"); c.say("k_offer"); }),
 ];
 
 function answer(c: Ctx, id: KeeperStep, reply: string) {
@@ -73,8 +73,8 @@ const lighthouseKeeper: SituationDef = {
   location: "lighthouse",
   npc: "lighthouse_keeper",
   mode: "talk",
-  goal: "Paklauskite prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Pasiimkite jo raštelį atminimui.",
-  intro: "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.",
+  goal: "Paklausk prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Pasiimk jo raštelį atminimui.",
+  intro: "Prie namelio durų tave pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.",
 
   merges: {
     "stay on": { reason: "lexical_expression", split: "Stay → likti and on → ant would put the light somewhere. The expression means continuing to work.", minimal: "The light itself stands outside the verb and particle." },
