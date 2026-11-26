@@ -6,6 +6,8 @@ import { BookReader } from "./BookReader";
 import { TalkSettings } from "./TalkSettings";
 import { BookPicker } from "./BookPicker";
 import { BookRadioControls, WalkingBookLine } from "./BookRadio";
+import { ScenePicker } from "./ScenePicker";
+import { SceneRadioControls, WalkingSceneLine } from "./SceneRadio";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
 import { notedLineAt } from "../radio/extras";
 import { LYRIC_SIZES, type Station, type TalkStation } from "../radio/playlist";
@@ -90,8 +92,8 @@ function RadioPlate() {
     const t = setTimeout(() => setTitle(null), 5000);
     return () => clearTimeout(t);
   }, [playing, song]);
-  const talk = radio.bookStation?.id === station;
-  const name = talk ? radio.bookStation!.name : STATIONS.find((s) => s.id === station)?.name ?? "";
+  const talk = radio.talkStations.find((s) => s.id === station);
+  const name = talk?.name ?? STATIONS.find((s) => s.id === station)?.name ?? "";
   const label = talk ? w("stations") : L("Stotys ir dainos");
   const plateTitle = talk ? name : title ?? name;
   return (
@@ -163,7 +165,7 @@ function StationRow({ station, number, count, current, playing }: { station: Sta
         {current && playing ? <span className="radio-eq"><i /><i /><i /></span>
           : kind === "favorites" ? <Icon name="heart" size={17} strokeWidth={2.25} />
           : kind === "mix" ? <Icon name="shuffle" size={17} strokeWidth={2.25} />
-          : talk ? <Icon name="bookOpen" size={17} /> : number}
+          : talk ? <Icon name={station.source === "scenes" ? "mic" : "bookOpen"} size={17} /> : number}
       </span>
       <span className="rs-st-text">
         <b lang={TL}>{station.name}</b>
@@ -177,8 +179,8 @@ function StationRow({ station, number, count, current, playing }: { station: Sta
 function RadioSet() {
   const s = useRadio((x) => x);
   const ref = useRef<HTMLDivElement>(null);
-  const talkStation = radio.bookStation;
-  const talk = !!talkStation && s.station === talkStation.id;
+  const talkStations = radio.talkStations;
+  const talk = talkStations.find((station) => station.id === s.station);
   const elapsed = useElapsed(!talk);
   const [bank, setBank] = useState<"music" | "talk">(talk ? "talk" : "music");
   useLayoutEffect(() => {
@@ -240,10 +242,10 @@ function RadioSet() {
     window.addEventListener("keydown", esc, true);
     return () => { document.removeEventListener("pointerdown", away, true); window.removeEventListener("keydown", esc, true); };
   }, []);
-  const station = talk ? talkStation : STATIONS.find((st) => st.id === s.station) ?? STATIONS[0];
+  const station = talk ?? STATIONS.find((st) => st.id === s.station) ?? STATIONS[0];
   // the stations on offer: the course's kinds of song that it has, the mix, and the favorites (also while empty)
   const music = STATIONS.filter((st) => st.kind === "favorites" || !s.ready || (s.counts[st.id] ?? 0) > 0);
-  const offered: (Station | TalkStation)[] = bank === "talk" && talkStation ? [talkStation] : s.musicAvailable ? music : [];
+  const offered: (Station | TalkStation)[] = bank === "talk" ? talkStations : s.musicAvailable ? music : [];
   const note = s.failed ? L("Radijas dabar nepasiekiamas. Pabandyk vėliau.")
     : s.on && !s.ready ? L("Kraunamas dainų sąrašas…")
     : s.needsTap ? L("Paspausk bet kur, kad radijas grotų.")
@@ -256,7 +258,7 @@ function RadioSet() {
   const like = () => { setHearted(s.liked ? "removed" : "added"); setBeat((n) => n + 1); radio.like(); };
   return (
     <>
-    <div inert={childOpen} data-pad-scope="radio" data-bank={bank} data-book-tuned={talk || undefined} onClickCapture={(e) => { launcher.current = (e.target as Element).closest("button"); }} className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label={L("Radijas")}>
+    <div inert={childOpen} data-pad-scope="radio" data-bank={bank} data-book-tuned={!!talk || undefined} onClickCapture={(e) => { launcher.current = (e.target as Element).closest("button"); }} className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label={L("Radijas")}>
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
@@ -274,7 +276,7 @@ function RadioSet() {
           {offered.map((st) => <i key={st.id} className="rs-tick" style={{ left: onDial(st.freq) }} />)}
           <i className="rs-needle" style={{ left: onDial(station.freq) }} />
         </div>
-        {talk ? <BookRadioControls /> : <>
+        {talk?.source === "scenes" ? <SceneRadioControls /> : talk ? <BookRadioControls /> : <>
         {/* the display: the station and the song's place in it, the time, the song, its heart */}
         <div className="rs-display">
           <div className="rs-line" aria-hidden>
@@ -336,7 +338,7 @@ function RadioSet() {
         </>}
       </div>
       <div className="rs-stations">
-        {talkStation && <div className="rs-bank" role="group" aria-label={w("banks")}>{(["music", "talk"] as const).map((key) =>
+        {talkStations.length > 0 && <div className="rs-bank" role="group" aria-label={w("banks")}>{(["music", "talk"] as const).map((key) =>
           <button key={key} disabled={key === "music" && !s.musicAvailable} aria-pressed={bank === key}
             onClick={() => setBank(key)}>{w(key)}</button>)}</div>}
         <div className="rs-rows" role="radiogroup" aria-label={L("Stotys")}>
@@ -346,9 +348,12 @@ function RadioSet() {
         </div>
       </div>
     </div>
-    {s.shelfOpen && radio.books && <BookPicker channel={radio.books} covered={s.readerOpen || s.settingsOpen} />}
-    {s.readerOpen && radio.books && <BookReader channel={radio.books} covered={s.settingsOpen} />}
-    {s.settingsOpen && radio.books && <TalkSettings channel={radio.books} />}
+    {s.shelfOpen && talk?.source === "scenes" && <ScenePicker />}
+    {talk?.source === "books" && radio.books && <>
+      {s.shelfOpen && <BookPicker channel={radio.books} covered={s.readerOpen || s.settingsOpen} />}
+      {s.readerOpen && <BookReader channel={radio.books} covered={s.settingsOpen} />}
+      {s.settingsOpen && <TalkSettings channel={radio.books} />}
+    </>}
     </>
   );
 }
@@ -363,9 +368,10 @@ function RadioSet() {
 export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const spot = useRadio((s) => s.spot);
-  const talk = useRadio((s) => s.station === radio.bookStation?.id);
-  const showBook = useRadio((s) => s.on && s.showTalkText && s.playing && !s.shelfOpen && !s.readerOpen && !s.settingsOpen);
-  if (talk) return showBook ? <WalkingBookLine /> : null;
+  const source = useRadio((s) => radio.talkStations.find((station) => station.id === s.station)?.source);
+  const showTalk = useRadio((s) => s.on && s.showTalkText && s.playing && !s.shelfOpen && !s.readerOpen && !s.settingsOpen);
+  if (source === "scenes") return showTalk ? <WalkingSceneLine /> : null;
+  if (source === "books") return showTalk ? <WalkingBookLine /> : null;
   if (show && spot) return <SpotStrip key={spot.spot.id} recording={spot} />;
   return <SongStrip show={show} sidewaysPhone={sidewaysPhone} />;
 }

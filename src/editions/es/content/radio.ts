@@ -30,6 +30,7 @@ const musicStations: Station[] = [
 export const STATIONS = EDITION.helper === "lt" ? musicStations.filter(({ id }) => id !== "bilingual") : musicStations;
 
 export const BOOK_STATION = { source: "books", id: "books", freq: 91.3, name: "Libros FM", lt: "Garsinės knygos ir istorijos" } as const satisfies TalkStation;
+export const SCENE_STATION = { source: "scenes", id: "scenes", freq: 98.5, name: "Conversaciones FM", lt: "Miestelio pokalbiai" } as const satisfies TalkStation;
 
 /** The course's song a conversation is built on. The game's song numbers are English Master's; its situation songs
  *  S62–S91 and S96–S100 (numbers 31–35) are SS01–SS35 in the Spanish courses, in the same order (the course's

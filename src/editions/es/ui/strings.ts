@@ -6,6 +6,11 @@ export const STRINGS: Record<string, string> = {
   // Radio library
   "Meipl Harboro viešoji biblioteka": "Biblioteca de Puerto Colibrí",
   "Garsinės knygos ir istorijos": "Audiobooks and stories",
+  "Miestelio pokalbiai": "Conversations around town",
+  "Rinktis pokalbį": "Browse conversations",
+  "Leisti atsitiktinį pokalbį": "Play a random conversation",
+  "Replika {n}/{total}": "Turn {n}/{total}",
+  "Įkeliamas pokalbis…": "Loading the conversation…",
   "Muzika": "Music",
   "Laidos": "Talk",
   "MHz": "MHz",

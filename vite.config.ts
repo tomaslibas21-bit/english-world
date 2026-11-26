@@ -9,6 +9,7 @@ import { fleetPackAsset } from "./tools/fleet-pack-plugin.ts";
 import { townCollisionAsset } from "./tools/town-collision-plugin.ts";
 import { LOADING_ART as MAPLE_HARBOR } from "./src/ui/loadingArt.ts";
 import { LOADING_ART as PUERTO_COLIBRI } from "./src/editions/es/ui/loadingArt.ts";
+import pcSceneIndex from "./src/editions/es/generated/convfm/index.json" with { type: "json" };
 
 // Hosting: GAME_BASE=/game/ builds the game for a sub-path of another site (e.g. https://site/game/).
 // GitHub Pages builds with GAME_BASE=/<repository>/ (.github/workflows/deploy.yml, docs/HOSTING.md).
@@ -51,8 +52,11 @@ function editionPictures(edition: string) {
 }
 
 const PAGE = PAGES[LEARNER ? `${EDITION}-${LEARNER}` : EDITION];
+// Only the playable IDs enter the startup bundle. The selected route pool is loaded on demand.
+const pcScenes = { __PLAYABLE_SCENE_IDS__: JSON.stringify(pcSceneIndex.filter((scene) => scene.poolSize > 0).map((scene) => scene.id)) };
 
 export default defineConfig({
+  define: EDITION === "es" ? pcScenes : { __PLAYABLE_SCENE_IDS__: "[]" },
   base: process.env.GAME_BASE || "/",
   plugins: [
     editionOverlay(EDITION, PAGE, LEARNER),
@@ -78,8 +82,8 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "en", environment: "node", include: ["tests/**/*.test.ts"], exclude: ["tests/es/**", "tests/es-lt/**", "**/node_modules/**"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,jump-more,layout,movement,street-schedule,street-world,traffic}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/{first-exterior,phrase-game-play,play-startup,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
+      { extends: true, define: pcScenes, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,jump-more,layout,movement,street-schedule,street-world,traffic}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
+      { extends: true, define: pcScenes, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/{first-exterior,phrase-game-play,play-startup,radio-scenes-ui,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
     ],
   },
 } as any);

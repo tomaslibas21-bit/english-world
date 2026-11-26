@@ -31,6 +31,7 @@ export const STATIONS: Station[] = [
 ];
 
 export const BOOK_STATION = { source: "books", id: "books", freq: 91.3, name: "Book FM", lt: "Garsinės knygos ir istorijos" } as const satisfies TalkStation;
+export const SCENE_STATION = { source: "scenes", id: "scenes", freq: 98.5, name: "Conversation FM", lt: "Miestelio pokalbiai" } as const satisfies TalkStation;
 
 /** The course's song a conversation is built on: songs 31–35 are the course's S96–S100, 62–91 its S62–S91, and the
  *  advanced ones carry the course's own id ("P25"). */

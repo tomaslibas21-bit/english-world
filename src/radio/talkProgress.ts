@@ -1,3 +1,5 @@
+import type { SceneBag } from "./sceneBag";
+
 export type TalkLanguage = "en" | "lt" | "es";
 export type TalkMode = "target" | "helper" | "paired";
 export type TalkProfile = "em-lt" | "sm-lt" | "sme-en";
@@ -28,6 +30,7 @@ export interface TalkPreferences {
 }
 
 interface ItemProgress {
+  sceneBag?: SceneBag & { drawnAt: number };
   lastChapter: string;
   chapters: Record<string, TalkBookmark>;
 }
@@ -132,7 +135,15 @@ export function readTalkProgress(profile: TalkProfile, serialized: string | null
       if (checked) chapters[id] = checked;
     }
     const checked = itemProgress(chapters);
-    if (checked) items[key] = checked;
+    if (!checked) continue;
+    const bag = item.sceneBag;
+    if (key.startsWith("scene/") && isRecord(bag) && safeTalkId(bag.version) && finite(bag.drawnAt) &&
+        Array.isArray(bag.order) && bag.order.every((id, _, order) => Number.isSafeInteger(id) && id >= 0 && id < order.length) &&
+        new Set(bag.order).size === bag.order.length && finite(bag.position) && Number.isInteger(bag.position) &&
+        bag.position > 0 && bag.position <= bag.order.length) {
+      checked.sceneBag = { version: bag.version, order: bag.order, position: bag.position, drawnAt: bag.drawnAt };
+    }
+    items[key] = checked;
   }
   return withLastItems({
     ...empty, items, prefs: preferences(profile, raw.prefs),
@@ -151,9 +162,21 @@ function mergeProgress(local: TalkProgressData, remote: TalkProgressData): TalkP
   const items = { ...local.items };
   for (const key of Object.keys(remote.items).filter(itemKey)) {
     const incoming = remote.items[key]!;
+    // A new draw replaces the previous route and its completion as one record.
+    const localBag = items[key]?.sceneBag, incomingBag = incoming.sceneBag;
+    if (localBag || incomingBag) {
+      const compare = (incomingBag?.drawnAt ?? -1) - (localBag?.drawnAt ?? -1) ||
+        (incomingBag?.position ?? 0) - (localBag?.position ?? 0) ||
+        (incomingBag?.version ?? "").localeCompare(localBag?.version ?? "") ||
+        JSON.stringify(incomingBag?.order ?? []).localeCompare(JSON.stringify(localBag?.order ?? []));
+      if (compare !== 0) {
+        if (compare > 0) items[key] = incoming;
+        continue;
+      }
+    }
     const chapters = { ...items[key]?.chapters };
     for (const [id, entry] of Object.entries(incoming.chapters)) chapters[id] = mergeBookmark(chapters[id], entry);
-    items[key] = itemProgress(chapters);
+    items[key] = { ...itemProgress(chapters)!, sceneBag: incomingBag };
   }
   const prefs = remote.prefsUpdatedAt > local.prefsUpdatedAt ||
     (remote.prefsUpdatedAt === local.prefsUpdatedAt && JSON.stringify(remote.prefs) > JSON.stringify(local.prefs)) ? remote : local;
@@ -223,17 +246,40 @@ export class TalkProgress {
     return choice?.selection ?? null;
   }
 
+  continueScene(): TalkSelection | null {
+    const key = this.data.lastScene;
+    const item = key && this.data.items[key];
+    return item && !item.chapters[item.lastChapter].complete ? { itemKey: key, chapterId: item.lastChapter } : null;
+  }
+
+  /** Resolve every clip before committing the draw. A failed or canceled selection leaves the bag alone. */
+  beginScene(selection: TalkSelection, draw: (bag?: SceneBag) => {
+    bag: SceneBag; start: Omit<TalkBookmark, "updatedAt">;
+  }): void {
+    const { itemKey: key, chapterId } = selection;
+    this.update(undefined, this.now(), (data) => {
+      const previous = data.items[key];
+      const { bag, start } = draw(previous?.sceneBag);
+      const last = data.lastScene && data.items[data.lastScene];
+      const drawnAt = Math.max(this.now(), last ? last.chapters[last.lastChapter].updatedAt + 1 : 0);
+      data.items[key] = { lastChapter: chapterId, sceneBag: { ...bag, drawnAt },
+        chapters: { [chapterId]: { ...start, updatedAt: drawnAt } } };
+    });
+  }
+
   checkpoint(selection: TalkSelection, position: Omit<TalkBookmark, "updatedAt">, prefs?: TalkPreferences): void {
     const { itemKey: key, chapterId } = selection;
     const now = this.now();
     if (!itemKey(key) || !validChapter(key, chapterId) || !bookmark(this.profile, { ...position, updatedAt: now })) return;
     this.update(prefs, now, (data) => {
       const previous = data.items[key]?.chapters[chapterId];
+      const sceneBag = data.items[key]?.sceneBag;
+      if (sceneBag && previous?.audioVersion !== position.audioVersion) return;
       const entry = bookmark(this.profile, {
         ...position, complete: !!(previous?.complete || position.complete),
         updatedAt: Math.max(now, (previous?.updatedAt ?? -1) + 1),
       })!;
-      data.items[key] = itemProgress({ ...data.items[key]?.chapters, [chapterId]: entry });
+      data.items[key] = { ...itemProgress({ ...data.items[key]?.chapters, [chapterId]: entry })!, sceneBag };
     });
   }
 
