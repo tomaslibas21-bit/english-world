@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { freezeConfettiBurst } from "./fixtures/confetti.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
@@ -67,7 +68,7 @@ const browser = await chromium.launch({
 try {
   for (const [width, height] of sizes) {
     const label = `${width}x${height}`, phone = width < 900;
-    const context = await browser.newContext({ viewport: { width, height }, hasTouch: phone, deviceScaleFactor: 1 });
+    const context = await browser.newContext({ viewport: { width, height }, hasTouch: phone, deviceScaleFactor: 1, reducedMotion: "no-preference" });
     const microphone = height === 664 || width === 1280;
     await context.addInitScript(install, { token, short: height === 664, microphone });
     const page = await context.newPage(), errors = [];
@@ -97,6 +98,10 @@ try {
       await page.screenshot({ path: join(shots, `${label}-${state}.png`) });
     };
     const press = async (locator) => phone ? locator.tap() : locator.click();
+    const anotherSong = async () => {
+      await press(page.getByRole("button", { name: "Daugiau", exact: true }));
+      await press(page.locator(".karaoke-more").getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
+    };
     const until = (predicate, timeout = 30000) => page.waitForFunction(predicate, null, { timeout });
     try {
       await page.goto(base, { waitUntil: "domcontentloaded" });
@@ -145,6 +150,7 @@ try {
       await press(start);
       await page.locator(".karaoke-performance").waitFor();
       await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
+      assert(await page.evaluate(() => window.__ew.game.rig.cam.position.distanceTo(window.__ew.game.rig.stage.pos) < 0.001), "entry uses the stage camera immediately");
       const pausedTake = await page.evaluate(async () => {
         const take = window.__ew.radio.store.getState().karaoke;
         await take.seek(7.1); take.pause();
@@ -163,22 +169,34 @@ try {
       assert(await page.evaluate(() => !!window.__ew.game.player.rightHand.getObjectByName("karaoke-hand-mic")));
       await shot("stage");
       await shot("first-line");
+      const primaryBefore = await page.locator(".karaoke-transport-primary").boundingBox();
+      if (width <= 600) {
+        const tops = await page.locator(".karaoke-current-line .karaoke-unit").evaluateAll((units) => units.map((unit) => Math.round(unit.getBoundingClientRect().top)));
+        assert(new Set(tops).size === 1 || (tops[0] === tops[1] && tops[2] === tops[3]), "wrapped opening balances the two Every evening phrases");
+      }
       await press(page.getByRole("button", { name: "Rodyti reikšmę", exact: true }));
       await page.locator(".karaoke-natural").waitFor();
       assert.equal(await page.locator(".karaoke-natural").textContent(), lyric.L[0].lt);
+      if (width <= 600) assert((await page.locator(".karaoke-reader").boundingBox()).height <= height * 0.46 + 1, "meaning fits its content within the phone cap");
       await shot("meaning");
       await press(page.getByRole("button", { name: "Slėpti reikšmę", exact: true }));
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused", "closing meanings preserves a manual pause");
-      await press(page.getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
+      await press(page.getByRole("button", { name: "Daugiau", exact: true }));
+      await page.keyboard.press("Escape");
+      await page.locator(".karaoke-more").waitFor({ state: "detached" });
+      assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("karaoke-transport-more")), true, "Back closes More and restores its focus");
+      await anotherSong();
       await picker.waitFor();
       await picker.getByRole("combobox", { name: "Praktikos būdas", exact: true }).selectOption("word");
       await press(picker.getByRole("button", { name: "Pradėti dainą", exact: true }));
       await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
-      await page.evaluate(async () => {
+      // The repeated opening is deliberately ineligible. G01 rows 1 and 2 each have unique single-word units.
+      const manualRow = 1, autoRow = 2, challengeAt = lyric.L[manualRow].s + 0.6;
+      await page.evaluate(async (seconds) => {
         const take = window.__ew.radio.store.getState().karaoke;
-        await take.seek(7.1); take.pause();
-      });
-      const blank = page.locator('.karaoke-current-line[data-line="0"] .karaoke-blank');
+        await take.seek(seconds); take.pause();
+      }, challengeAt);
+      const blank = page.locator(`.karaoke-current-line[data-line="${manualRow}"] .karaoke-blank`);
       await blank.waitFor();
       assert.equal((await blank.textContent()).trim(), "", "the blank contains no hidden answer text");
       assert.equal(await page.locator(".karaoke-natural, .karaoke-next").count(), 0, "no meaning or preview gives the answer away");
@@ -187,22 +205,22 @@ try {
       await shot("blank");
       await press(page.getByRole("button", { name: "Parodyti žodį", exact: true }));
       await blank.waitFor({ state: "detached" });
-      const revealed = page.locator('.karaoke-current-line[data-line="0"] .karaoke-revealed');
+      const revealed = page.locator(`.karaoke-current-line[data-line="${manualRow}"] .karaoke-revealed`);
       await revealed.waitFor();
       assert(Math.abs((await revealed.boundingBox()).width - slotWidth) < 1, "reveal reserves the blank's width");
-      assert.equal(await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent(), lyric.L[0].src);
+      assert.equal(await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent(), lyric.L[manualRow].src);
       await until(() => document.activeElement?.classList.contains("karaoke-reading"));
       await shot("revealed");
       // No tap is needed for the next line's reveal or its ordinary practiced-line tally.
       await page.evaluate(async (seconds) => {
         const take = window.__ew.radio.store.getState().karaoke;
         await take.seek(seconds); await take.resume();
-      }, lyric.L[1].s);
-      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-blank').waitFor();
-      await page.locator('.karaoke-current-line[data-line="1"] .karaoke-revealed').waitFor();
+      }, lyric.L[autoRow].s);
+      await page.locator(`.karaoke-current-line[data-line="${autoRow}"] .karaoke-blank`).waitFor();
+      await page.locator(`.karaoke-current-line[data-line="${autoRow}"] .karaoke-revealed`).waitFor();
       await page.evaluate(() => window.__ew.radio.store.getState().karaoke.pause());
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
-      await page.evaluate(async () => { await window.__ew.radio.store.getState().karaoke.seek(7.1); });
+      await page.evaluate(async (seconds) => { await window.__ew.radio.store.getState().karaoke.seek(seconds); }, challengeAt);
       const speed = page.getByRole("combobox", { name: "Greitis", exact: true });
       const canSlow = await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().canSlow);
       if (canSlow) {
@@ -222,13 +240,20 @@ try {
         assert.equal(await speed.locator('option[value="0.8"]').count(), 0, "buffer/unverified output offers only 1×");
       }
       await shot("slow");
-      await press(page.getByRole("button", { name: "Pasirinkti kitą dainą", exact: true }));
+      await anotherSong();
       await picker.waitFor();
       await picker.getByRole("combobox", { name: "Praktikos būdas", exact: true }).selectOption("echo");
       await press(picker.getByRole("button", { name: "Pradėti dainą", exact: true }));
       await page.locator(".karaoke-turn").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1, "each new performance starts at 1×");
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice.completed), 1);
+      if (width <= 600) {
+        const primary = await page.locator(".karaoke-transport-primary").boundingBox();
+        assert(Math.abs(primary.y - primaryBefore.y) < 1 && Math.abs(primary.height - primaryBefore.height) < 1, "the primary action stays under the same thumb for Echo");
+        const controls = await page.locator(".karaoke-transport-grid > button, .karaoke-transport-grid > .karaoke-rate").evaluateAll((nodes) => nodes.map((node) => ({ y: Math.round(node.getBoundingClientRect().top), h: node.getBoundingClientRect().height })));
+        assert.equal(new Set(controls.map((control) => control.y)).size, 2, "phone controls occupy exactly two rows");
+        assert(controls.every((control) => control.h >= 44));
+      }
       if (microphone) await page.getByRole("button", { name: "Naudoti mikrofoną šiai eilutei", exact: true }).focus();
       await shot("echo-turn");
       if (microphone) {
@@ -278,7 +303,8 @@ try {
       assert.equal(result.total, lyric.L.length);
       assert(result.completed >= 2 && result.completed < result.total, "skipped rows receive no practice credit");
       assert.equal(await page.evaluate(() => window.__karaokeCheers), 1);
-      await page.locator(".confetti").waitFor();
+      await page.locator(".confetti").waitFor({ state: "attached" });
+      await page.waitForFunction(freezeConfettiBurst); // zero-size origin is never Playwright-visible; the pieces are
       await shot("finish");
       await press(page.getByRole("button", { name: "Nulipti nuo scenos", exact: true }));
       await picker.waitFor({ state: "detached" });

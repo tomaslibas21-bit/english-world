@@ -86,8 +86,8 @@ export function addKaraokeBooth(room: THREE.Group, colliders: Colliders) {
 
 export function karaokeShot(aspect: number): NonNullable<CameraRig["stage"]> {
   return {
-    // Across the aisle, beside the seated guests: a three-quarter face, a near shoulder, and room below for lyrics.
-    pos: new THREE.Vector3(0.65, 1.5, 1.3), look: new THREE.Vector3(5.7, 0.6, 2.6),
+    // Move beside the foreground guest on portrait phones so their shoulder cannot fill the narrow picture.
+    pos: new THREE.Vector3(0.65, 1.5, aspect < 0.9 ? 2.3 : 1.3), look: new THREE.Vector3(5.7, 0.6, 2.6),
     fov: aspect < 0.9 ? 48 : 43, rate: 18,
   };
 }

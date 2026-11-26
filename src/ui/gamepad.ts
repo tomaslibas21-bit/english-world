@@ -54,6 +54,7 @@ const surfaces: Record<string, Surface> = {
   radio: { priority: 50, back: ".rs-x", slot: ".radio-set" },
   karaoke: { priority: 60, first: "[data-pad-default], [data-song], select", slot: ".karaoke-mast" },
   "karaoke-stage": { priority: 60, first: DEFAULT, slot: ".karaoke-stage-head" },
+  "karaoke-more": { priority: 70, first: DEFAULT },
   "phone-ring": { priority: 50, first: ".phone-ring-actions .btn:not(.soft)", back: ".phone-ring-actions .soft" },
   street: { priority: 50, first: ".street-choice", back: ".street-head button" },
   drawer: { priority: 20, first: "[data-pad-tool=scenarios]" },
@@ -742,6 +743,11 @@ export class GamepadView {
       this.returnTo.delete(root);
       this.debug.lastAction = "back";
       (target as HTMLElement).click();
+      this.sync();
+    } else if (kind === "karaoke-stage") {
+      // More owns song switching; Escape still returns one level when no meaning/mic sub-surface owns Back.
+      this.debug.lastAction = "back";
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
       this.sync();
     } else if (fallback && ["barista-offer", "road-offer", "taxi"].includes(kind)) {
       this.debug.lastAction = "back";

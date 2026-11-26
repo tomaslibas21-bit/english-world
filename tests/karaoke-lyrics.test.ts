@@ -104,6 +104,7 @@ describe("the booth's lyric card", () => {
     expect(html).not.toContain('aria-live="polite"');
     const hidden = renderToStaticMarkup(createElement(KaraokeLyricLine, { line, word: 2, meaning: false }));
     expect(hidden).not.toContain(line.lt);
+    expect(hidden).toContain('</span> <span class="karaoke-unit">'); // a real wrapping opportunity between phrase units
     const helper = renderToStaticMarkup(createElement(KaraokeLyricLine, { line: { ...line, part: "translation" }, word: 0, meaning: true }));
     expect(helper).not.toContain('class="karaoke-natural"');
   });

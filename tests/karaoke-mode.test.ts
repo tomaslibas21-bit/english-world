@@ -156,6 +156,7 @@ describe("the café karaoke mode", () => {
     expect(f.player.rightHand.getObjectByName("karaoke-hand-mic")).toBeTruthy();
     expect(f.dock.visible).toBe(false);
     expect(f.rig.mode).toBe("stage");
+    expect(f.rig.cam.position).toEqual(f.rig.stage!.pos); // first playable frame, before the mode's next update
     f.mode.update({ dt: 0.05, time: 1, x: 0, y: 0, blocked: true, brake: false });
     expect(f.guests[0].steady).toBe(true);
     f.mode.action("back");
@@ -226,7 +227,18 @@ describe("the café karaoke mode", () => {
     }
   });
 
-  it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames a singer and near guest with room for lyrics at %s × %s", async (w, h) => {
+  it("updates portrait framing on rotation and snaps the new shot with reduced motion", async () => {
+    const f = await fixture();
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01"); f.mode.action("start"); await flush();
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    f.rig.cam.aspect = 390 / 844;
+    f.mode.update({ dt: 0.05, time: 1, x: 0, y: 0, blocked: true, brake: false });
+    expect(f.rig.stage!.pos.z).toBe(2.3); expect(f.rig.cam.position).toEqual(f.rig.stage!.pos);
+    f.registry.exit(true);
+  });
+
+  it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames a singer with a clear portrait picture and a wide-view shoulder at %s × %s", async (w, h) => {
     const f = await fixture();
     f.rig.cam.aspect = w / h;
     f.rig.stage = karaokeShot(w / h);
@@ -247,10 +259,16 @@ describe("the café karaoke mode", () => {
     expect(head.y).toBeLessThan(0.3);
     expect(knees.y - head.y).toBeLessThan(0.4);
     expect(knees.y).toBeLessThan(0.56);
-    expect(nearShoulder.x).toBeGreaterThan(0);
-    expect(nearShoulder.x).toBeLessThan(head.x);
-    expect(nearShoulder.y).toBeGreaterThan(0.3);
-    expect(nearShoulder.y).toBeLessThan(0.55);
+    if (w / h < 0.9) {
+      expect(f.rig.stage.pos.z).toBe(2.3);
+      expect(nearShoulder.x).toBeLessThan(0.05); // the foreground guest stays outside the narrow singer picture
+    } else {
+      expect(f.rig.stage.pos.z).toBe(1.3);
+      expect(nearShoulder.x).toBeGreaterThan(0);
+      expect(nearShoulder.x).toBeLessThan(head.x);
+      expect(nearShoulder.y).toBeGreaterThan(0.3);
+      expect(nearShoulder.y).toBeLessThan(0.55);
+    }
     if (w < h) expect(head.y * h).toBeGreaterThanOrEqual(titleBottom + 11.9);
     if (w > h && h < 520) expect(head.x).toBeLessThan(0.34);
     const front = new Vector3(Math.sin(KARAOKE_MARK.rot), 0, Math.cos(KARAOKE_MARK.rot));
@@ -285,6 +303,12 @@ describe("the café karaoke mode", () => {
     const { getInterior } = await import("../src/game/world/interiors");
     const room = getInterior("sunny-cup")!;
     expect(room.group.getObjectByName("karaoke-booth")).toBeTruthy();
+    const cue = room.group.getObjectByName("karaoke-wayfinding") as Mesh;
+    expect(cue).toBeTruthy();
+    expect(cue.position.x).toBe(0); expect(cue.position.y).toBe(0.70); expect(cue.position.z).toBeCloseTo(-2.63);
+    expect(cue.rotation.y).toBe(0);
+    cue.geometry.computeBoundingBox();
+    expect(cue.geometry.boundingBox!.max.x - cue.geometry.boundingBox!.min.x).toBe(2);
     expect(room.colliders.circles.some((c) => c.x === 5.8 && c.z === 2.6)).toBe(false);
     expect(room.colliders.circles.some((c) => c.x === 3 && c.z === 0.5)).toBe(true);
     const nav = new NavGrid(-9, -7, 9, 9, 0.5, room.colliders, 0.35);
@@ -297,6 +321,7 @@ describe("the café karaoke mode", () => {
     vi.resetModules();
     const ordinary = (await import("../src/game/world/interiors")).getInterior("sunny-cup")!;
     expect(ordinary.group.getObjectByName("karaoke-booth")).toBeUndefined();
+    expect(ordinary.group.getObjectByName("karaoke-wayfinding")).toBeUndefined();
     expect(ordinary.colliders.circles.some((c) => c.x === 5.8 && c.z === 2.6)).toBe(true);
   });
 });
