@@ -1,0 +1,569 @@
+{
+  "data": {
+    "id": "BK01-01",
+    "title_es": "La tortuga gigante",
+    "title_lt": "Milžiniškas vėžlys",
+    "paragraphs": [
+      {
+        "lt": "Orasijus Kiroga – rašytojas iš Urugvajaus. Daug metų jis gyveno Argentinos džiunglėse ir rašė pasakas savo vaikams. „Milžiniškas vėžlys“ – pirmoji knygos pasaka: paprasta ir graži istorija apie žmogų ir gyvūną, kurie padeda vienas kitam.",
+        "sentences": [
+          {
+            "es": "Horacio Quiroga es un escritor de Uruguay.",
+            "lt": "Orasijus Kiroga – rašytojas iš Urugvajaus.",
+            "units": [
+              ["Horacio","Orasijus (tariama „orásjo“)",""],
+              ["Quiroga","Kiroga (tariama „kiróga“)",""],
+              ["es","yra",""],
+              ["un escritor","rašytojas",""],
+              ["de","iš",""],
+              ["Uruguay.","Urugvajaus.",""]
+            ],
+            "n": 0,
+            "en": "Horacio Quiroga es un escritor de Uruguay.",
+            "sentence_id": "intro-01"
+          },
+          {
+            "es": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+            "lt": "Daug metų jis gyveno Argentinos džiunglėse ir rašė pasakas savo vaikams.",
+            "units": [
+              ["Vivió","Gyveno",""],
+              ["muchos","daug",""],
+              ["años","metų",""],
+              ["en la selva","džiunglėse",""],
+              ["de Argentina","Argentinos",""],
+              ["y","ir",""],
+              ["escribió","rašė (parašė)",""],
+              ["cuentos","pasakas (apsakymus)",""],
+              ["para sus","savo",""],
+              ["hijos.","vaikams.",""]
+            ],
+            "n": 1,
+            "en": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+            "sentence_id": "intro-02"
+          },
+          {
+            "es": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+            "lt": "„Milžiniškas vėžlys“ – pirmoji knygos pasaka: paprasta ir graži istorija apie žmogų ir gyvūną, kurie padeda vienas kitam.",
+            "units": [
+              ["«La tortuga gigante»","„Milžiniškas vėžlys“",""],
+              ["es","yra",""],
+              ["el primer cuento","pirmoji pasaka",""],
+              ["del libro:","knygos:",""],
+              ["una historia simple y bonita","paprasta ir graži istorija",""],
+              ["sobre","apie",""],
+              ["un hombre","žmogų",""],
+              ["y","ir",""],
+              ["un animal","gyvūną",""],
+              ["que","kurie",""],
+              ["se ayudan.","padeda vienas kitam.",""]
+            ],
+            "n": 2,
+            "en": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+            "sentence_id": "intro-03"
+          }
+        ],
+        "introduction": true
+      },
+      {
+        "lt": "Kartą Buenos Airėse gyveno vienas žmogus. Jis buvo sveikas, darbštus ir labai laimingas. Jis daug dirbo, nes turėjo mažų brolių ir seserų ir norėjo juos išmaitinti.",
+        "sentences": [
+          {
+            "i": 0,
+            "es": "Había una vez un hombre que vivía en Buenos Aires.",
+            "lt": "Kartą Buenos Airėse gyveno vienas žmogus.",
+            "units": [
+              ["Había una vez","Kartą gyveno (pažod. buvo vieną kartą)",""],
+              ["un hombre","vienas žmogus (vyras)",""],
+              ["que","kuris",""],
+              ["vivía","gyveno",""],
+              ["en Buenos Aires.","Buenos Airėse.",""]
+            ],
+            "n": 3,
+            "en": "Había una vez un hombre que vivía en Buenos Aires.",
+            "sentence_id": "001"
+          },
+          {
+            "i": 1,
+            "es": "Era sano y trabajador, y estaba muy contento.",
+            "lt": "Jis buvo sveikas, darbštus ir labai laimingas.",
+            "units": [
+              ["Era","Buvo",""],
+              ["sano","sveikas",""],
+              ["y","ir",""],
+              ["trabajador,","darbštus,",""],
+              ["y","ir",""],
+              ["estaba","buvo",""],
+              ["muy","labai",""],
+              ["contento.","patenkintas (laimingas).",""]
+            ],
+            "n": 4,
+            "en": "Era sano y trabajador, y estaba muy contento.",
+            "sentence_id": "002"
+          },
+          {
+            "i": 2,
+            "es": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+            "lt": "Jis daug dirbo, nes turėjo mažų brolių ir seserų ir norėjo juos išmaitinti.",
+            "units": [
+              ["Trabajaba","Dirbo",""],
+              ["mucho","daug",""],
+              ["porque","nes",""],
+              ["tenía","turėjo",""],
+              ["hermanos","brolių (ir seserų)",""],
+              ["pequeños","mažų",""],
+              ["y","ir",""],
+              ["quería","norėjo",""],
+              ["darles","duoti jiems",""],
+              ["de comer.","valgyti (išmaitinti).",""]
+            ],
+            "n": 5,
+            "en": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+            "sentence_id": "003"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "i": 0,
+        "es": "Había una vez un hombre que vivía en Buenos Aires.",
+        "lt": "Kartą Buenos Airėse gyveno vienas žmogus.",
+        "units": [
+          ["Había una vez","Kartą gyveno (pažod. buvo vieną kartą)"],
+          ["un hombre","vienas žmogus (vyras)"],
+          ["que","kuris"],
+          ["vivía","gyveno"],
+          ["en Buenos Aires.","Buenos Airėse."]
+        ]
+      },
+      {
+        "i": 1,
+        "es": "Era sano y trabajador, y estaba muy contento.",
+        "lt": "Jis buvo sveikas, darbštus ir labai laimingas.",
+        "units": [
+          ["Era","Buvo"],
+          ["sano","sveikas"],
+          ["y","ir"],
+          ["trabajador,","darbštus,"],
+          ["y","ir"],
+          ["estaba","buvo"],
+          ["muy","labai"],
+          ["contento.","patenkintas (laimingas)."]
+        ]
+      },
+      {
+        "i": 2,
+        "es": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "lt": "Jis daug dirbo, nes turėjo mažų brolių ir seserų ir norėjo juos išmaitinti.",
+        "units": [
+          ["Trabajaba","Dirbo"],
+          ["mucho","daug"],
+          ["porque","nes"],
+          ["tenía","turėjo"],
+          ["hermanos","brolių (ir seserų)"],
+          ["pequeños","mažų"],
+          ["y","ir"],
+          ["quería","norėjo"],
+          ["darles","duoti jiems"],
+          ["de comer.","valgyti (išmaitinti)."]
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "story_id": "BK01-01",
+    "mode": "bilingual",
+    "duration_seconds": 768.5705,
+    "audio_sha256": {
+      "bilingual": "f90f41183d714c5e2200aa4c7c22bb3f1e91522ef96eabfd4cd6e54d9c5366fc",
+      "english": "881161677bbf6bd7f22a75c5a67bbf8fed877aaba029413a731de1753dcb13b7"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-01",
+        "sentence": "title",
+        "language": "lt",
+        "text": "Milžiniškas vėžlys",
+        "sentence_id": "BK01-01-title",
+        "start": 0,
+        "end": 2.24
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "title",
+        "language": "es",
+        "text": "La tortuga gigante",
+        "sentence_id": "BK01-01-title",
+        "start": 2.54,
+        "end": 4.918625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-01",
+        "language": "lt",
+        "text": "Orasijus Kiroga – rašytojas iš Urugvajaus.",
+        "sentence_id": "BK01-01-intro-01",
+        "start": 5.418625,
+        "end": 9.458625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-01",
+        "language": "es",
+        "text": "Horacio Quiroga es un escritor de Uruguay.",
+        "sentence_id": "BK01-01-intro-01",
+        "start": 9.758625,
+        "end": 14.104833333333334
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-02",
+        "language": "lt",
+        "text": "Daug metų jis gyveno Argentinos džiunglėse ir rašė pasakas savo vaikams.",
+        "sentence_id": "BK01-01-intro-02",
+        "start": 14.604833333333334,
+        "end": 20.124833333333335
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-02",
+        "language": "es",
+        "text": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+        "sentence_id": "BK01-01-intro-02",
+        "start": 20.424833333333332,
+        "end": 27.226791666666667
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-03",
+        "language": "lt",
+        "text": "„Milžiniškas vėžlys“ – pirmoji knygos pasaka: paprasta ir graži istorija apie žmogų ir gyvūną, kurie padeda vienas kitam.",
+        "sentence_id": "BK01-01-intro-03",
+        "start": 27.726791666666667,
+        "end": 37.966791666666666
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-03",
+        "language": "es",
+        "text": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+        "sentence_id": "BK01-01-intro-03",
+        "start": 38.26679166666667,
+        "end": 48.178333333333335
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "001",
+        "language": "lt",
+        "text": "Kartą Buenos Airėse gyveno vienas žmogus.",
+        "sentence_id": "BK01-01-001",
+        "start": 48.678333333333335,
+        "end": 51.998333333333335
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "001",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires.",
+        "sentence_id": "BK01-01-001",
+        "start": 52.29833333333333,
+        "end": 56.38875
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "002",
+        "language": "lt",
+        "text": "Jis buvo sveikas, darbštus ir labai laimingas.",
+        "sentence_id": "BK01-01-002",
+        "start": 56.88875,
+        "end": 61.48875
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "002",
+        "language": "es",
+        "text": "Era sano y trabajador, y estaba muy contento.",
+        "sentence_id": "BK01-01-002",
+        "start": 61.78875,
+        "end": 66.583625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "003",
+        "language": "lt",
+        "text": "Jis daug dirbo, nes turėjo mažų brolių ir seserų ir norėjo juos išmaitinti.",
+        "sentence_id": "BK01-01-003",
+        "start": 67.083625,
+        "end": 72.843625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "003",
+        "language": "es",
+        "text": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "sentence_id": "BK01-01-003",
+        "start": 73.143625,
+        "end": 79.09295833333333
+      }
+    ],
+    "rate_switches": {
+      "version": 1,
+      "audio_sha256": "f90f41183d714c5e2200aa4c7c22bb3f1e91522ef96eabfd4cd6e54d9c5366fc",
+      "speech": [
+        [
+          0.21,
+          1.911
+        ],
+        [
+          2.68,
+          4.68
+        ],
+        [
+          5.698,
+          9.199
+        ],
+        [
+          9.948,
+          13.539
+        ],
+        [
+          14.834,
+          19.925
+        ],
+        [
+          20.444,
+          27.135
+        ],
+        [
+          27.746,
+          37.857
+        ],
+        [
+          38.396,
+          47.917
+        ],
+        [
+          48.788,
+          51.799
+        ],
+        [
+          52.598,
+          56.049
+        ],
+        [
+          57.158,
+          61.239
+        ],
+        [
+          61.798,
+          66.239
+        ],
+        [
+          67.293,
+          72.584
+        ],
+        [
+          73.513,
+          78.634
+        ]
+      ],
+      "sw": [
+        0,
+        2.296,
+        5.189,
+        9.573,
+        14.186,
+        20.184,
+        27.441,
+        38.127,
+        48.352,
+        52.198,
+        56.603,
+        61.519,
+        66.766,
+        73.049
+      ]
+    }
+  },
+  "english-timing": {
+    "story_id": "BK01-01",
+    "mode": "english",
+    "duration_seconds": 416.7905,
+    "audio_sha256": {
+      "bilingual": "f90f41183d714c5e2200aa4c7c22bb3f1e91522ef96eabfd4cd6e54d9c5366fc",
+      "english": "881161677bbf6bd7f22a75c5a67bbf8fed877aaba029413a731de1753dcb13b7"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-01",
+        "sentence": "title",
+        "language": "es",
+        "text": "La tortuga gigante",
+        "sentence_id": "BK01-01-title",
+        "start": 0,
+        "end": 2.378625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-01",
+        "language": "es",
+        "text": "Horacio Quiroga es un escritor de Uruguay.",
+        "sentence_id": "BK01-01-intro-01",
+        "start": 2.878625,
+        "end": 7.224833333333334
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-02",
+        "language": "es",
+        "text": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+        "sentence_id": "BK01-01-intro-02",
+        "start": 7.724833333333334,
+        "end": 14.526791666666666
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-03",
+        "language": "es",
+        "text": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+        "sentence_id": "BK01-01-intro-03",
+        "start": 15.026791666666666,
+        "end": 24.938333333333333
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "001",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires.",
+        "sentence_id": "BK01-01-001",
+        "start": 25.438333333333333,
+        "end": 29.52875
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "002",
+        "language": "es",
+        "text": "Era sano y trabajador, y estaba muy contento.",
+        "sentence_id": "BK01-01-002",
+        "start": 30.02875,
+        "end": 34.823625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "003",
+        "language": "es",
+        "text": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "sentence_id": "BK01-01-003",
+        "start": 35.323625,
+        "end": 41.272958333333335
+      }
+    ]
+  },
+  "lithuanian-timing": {
+    "story_id": "BK01-01",
+    "mode": "lithuanian",
+    "duration_seconds": 368.68,
+    "audio_sha256": {
+      "lithuanian": "6b365021082a5839f0660bfe6cdfd4b621592ce6c353dd3d3ad996f57de858cb"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-01",
+        "sentence": "title",
+        "language": "lt",
+        "text": "Milžiniškas vėžlys",
+        "sentence_id": "BK01-01-title",
+        "start": 0,
+        "end": 2.24
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-01",
+        "language": "lt",
+        "text": "Orasijus Kiroga – rašytojas iš Urugvajaus.",
+        "sentence_id": "BK01-01-intro-01",
+        "start": 2.74,
+        "end": 6.78
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-02",
+        "language": "lt",
+        "text": "Daug metų jis gyveno Argentinos džiunglėse ir rašė pasakas savo vaikams.",
+        "sentence_id": "BK01-01-intro-02",
+        "start": 7.28,
+        "end": 12.8
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-03",
+        "language": "lt",
+        "text": "„Milžiniškas vėžlys“ – pirmoji knygos pasaka: paprasta ir graži istorija apie žmogų ir gyvūną, kurie padeda vienas kitam.",
+        "sentence_id": "BK01-01-intro-03",
+        "start": 13.3,
+        "end": 23.54
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "001",
+        "language": "lt",
+        "text": "Kartą Buenos Airėse gyveno vienas žmogus.",
+        "sentence_id": "BK01-01-001",
+        "start": 24.04,
+        "end": 27.36
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "002",
+        "language": "lt",
+        "text": "Jis buvo sveikas, darbštus ir labai laimingas.",
+        "sentence_id": "BK01-01-002",
+        "start": 27.86,
+        "end": 32.46
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "003",
+        "language": "lt",
+        "text": "Jis daug dirbo, nes turėjo mažų brolių ir seserų ir norėjo juos išmaitinti.",
+        "sentence_id": "BK01-01-003",
+        "start": 32.96,
+        "end": 38.72
+      }
+    ]
+  },
+  "word-timing": {
+    "story_id": "BK01-01",
+    "language": "es",
+    "lines": [
+      {
+        "sentence_id": "BK01-01-title",
+        "w": [[0.19,0.6],[0.6,1.4],[1.4,2.08]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-01",
+        "w": [[0.34,0.84],[0.84,1.88],[1.88,2.04],[2.04,2.28],[2.28,2.84],[2.84,3],[3,3.77]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-02",
+        "w": [[0.35,1.03],[1.03,1.43],[1.44,1.83],[1.83,1.99],[2,2.15],[2.16,2.71],[2.71,2.87],[2.88,3.83],[3.83,4.07],[4.08,4.79],[4.79,5.43],[5.43,5.67],[5.67,5.91],[5.92,6.32]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-03",
+        "w": [[0.22,0.4],[0.4,1.12],[1.12,2.08],[2.08,2.32],[2.32,2.56],[2.56,2.88],[2.88,3.36],[3.36,3.68],[3.68,4.56],[4.56,4.96],[4.96,5.52],[5.52,6],[6,6.16],[6.16,6.96],[6.96,7.28],[7.28,7.52],[7.52,7.84],[7.84,8],[8,8.24],[8.24,8.64],[8.64,8.88],[8.88,9.04],[9.04,9.65]]
+      },
+      {
+        "sentence_id": "BK01-01-001",
+        "w": [[0.3,0.7],[0.71,0.94],[0.95,1.34],[1.35,1.58],[1.59,1.9],[1.91,2.06],[2.07,2.46],[2.47,2.62],[2.63,3.1],[3.11,3.64]]
+      },
+      {
+        "sentence_id": "BK01-01-002",
+        "w": [[0.34,0.72],[0.72,1.2],[1.2,1.36],[1.36,2.4],[2.4,2.72],[2.72,3.08],[3.36,3.68],[3.68,4.44]]
+      },
+      {
+        "sentence_id": "BK01-01-003",
+        "w": [[0.37,1.26],[1.27,1.58],[1.58,2.06],[2.06,2.54],[2.54,3.02],[3.02,3.66],[3.67,3.9],[3.91,4.46],[4.46,4.94],[4.95,5.18],[5.18,5.47]]
+      }
+    ]
+  }
+}

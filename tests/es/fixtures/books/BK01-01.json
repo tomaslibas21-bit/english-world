@@ -1,0 +1,548 @@
+{
+  "data": {
+    "id": "BK01-01",
+    "title_es": "La tortuga gigante",
+    "title_lt": "The Giant Turtle",
+    "paragraphs": [
+      {
+        "lt": "Horacio Quiroga is a writer from Uruguay. He lived for many years in the jungle of Argentina and wrote stories for his children. “The Giant Turtle” is the first story in the book: a simple, nice story about a man and an animal who help each other.",
+        "sentences": [
+          {
+            "es": "Horacio Quiroga es un escritor de Uruguay.",
+            "lt": "Horacio Quiroga is a writer from Uruguay.",
+            "units": [
+              ["Horacio","Horacio (pronounced “oh-RAH-syoh”)",""],
+              ["Quiroga","Quiroga (pronounced “kee-ROH-gah”)",""],
+              ["es","is",""],
+              ["un","a",""],
+              ["escritor","writer",""],
+              ["de","from",""],
+              ["Uruguay.","Uruguay.",""]
+            ],
+            "n": 0,
+            "en": "Horacio Quiroga es un escritor de Uruguay.",
+            "sentence_id": "intro-01"
+          },
+          {
+            "es": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+            "lt": "He lived for many years in the jungle of Argentina and wrote stories for his children.",
+            "units": [
+              ["Vivió","He lived",""],
+              ["muchos","many",""],
+              ["años","years",""],
+              ["en","in",""],
+              ["la","the",""],
+              ["selva","jungle",""],
+              ["de","of",""],
+              ["Argentina","Argentina",""],
+              ["y","and",""],
+              ["escribió","wrote",""],
+              ["cuentos","stories",""],
+              ["para","for",""],
+              ["sus","his",""],
+              ["hijos.","children.",""]
+            ],
+            "n": 1,
+            "en": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+            "sentence_id": "intro-02"
+          },
+          {
+            "es": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+            "lt": "“The Giant Turtle” is the first story in the book: a simple, nice story about a man and an animal who help each other.",
+            "units": [
+              ["«La tortuga gigante»","“The Giant Turtle”",""],
+              ["es","is",""],
+              ["el","the",""],
+              ["primer","first",""],
+              ["cuento","story",""],
+              ["del","of the",""],
+              ["libro:","book:",""],
+              ["una","a",""],
+              ["historia","story",""],
+              ["simple","simple",""],
+              ["y","and",""],
+              ["bonita","nice",""],
+              ["sobre","about",""],
+              ["un","a",""],
+              ["hombre","man",""],
+              ["y","and",""],
+              ["un","an",""],
+              ["animal","animal",""],
+              ["que","who",""],
+              ["se ayudan.","help each other.",""]
+            ],
+            "n": 2,
+            "en": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+            "sentence_id": "intro-03"
+          }
+        ],
+        "introduction": true
+      },
+      {
+        "lt": "Once upon a time there was a man who lived in Buenos Aires. He was healthy and hardworking, and he was very happy. He worked hard because he had little brothers and sisters and wanted to feed them.",
+        "sentences": [
+          {
+            "i": 0,
+            "es": "Había una vez un hombre que vivía en Buenos Aires.",
+            "lt": "Once upon a time there was a man who lived in Buenos Aires.",
+            "units": [
+              ["Había una vez","Once upon a time (lit. there was one time)",""],
+              ["un","a",""],
+              ["hombre","man",""],
+              ["que","who",""],
+              ["vivía","lived",""],
+              ["en","in",""],
+              ["Buenos Aires.","Buenos Aires.",""]
+            ],
+            "n": 3,
+            "en": "Había una vez un hombre que vivía en Buenos Aires.",
+            "sentence_id": "001"
+          },
+          {
+            "i": 1,
+            "es": "Era sano y trabajador, y estaba muy contento.",
+            "lt": "He was healthy and hardworking, and he was very happy.",
+            "units": [
+              ["Era","He was",""],
+              ["sano","healthy",""],
+              ["y","and",""],
+              ["trabajador,","hardworking,",""],
+              ["y","and",""],
+              ["estaba","was",""],
+              ["muy","very",""],
+              ["contento.","happy.",""]
+            ],
+            "n": 4,
+            "en": "Era sano y trabajador, y estaba muy contento.",
+            "sentence_id": "002"
+          },
+          {
+            "i": 2,
+            "es": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+            "lt": "He worked hard because he had little brothers and sisters and wanted to feed them.",
+            "units": [
+              ["Trabajaba","He worked",""],
+              ["mucho","a lot",""],
+              ["porque","because",""],
+              ["tenía","he had",""],
+              ["hermanos","brothers (and sisters)",""],
+              ["pequeños","young",""],
+              ["y","and",""],
+              ["quería","wanted",""],
+              ["darles","to give them",""],
+              ["de comer.","something to eat.",""]
+            ],
+            "n": 5,
+            "en": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+            "sentence_id": "003"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "i": 0,
+        "es": "Había una vez un hombre que vivía en Buenos Aires.",
+        "lt": "Once upon a time there was a man who lived in Buenos Aires.",
+        "units": [
+          ["Había una vez","Once upon a time (lit. there was one time)"],
+          ["un","a"],
+          ["hombre","man"],
+          ["que","who"],
+          ["vivía","lived"],
+          ["en","in"],
+          ["Buenos Aires.","Buenos Aires."]
+        ]
+      },
+      {
+        "i": 1,
+        "es": "Era sano y trabajador, y estaba muy contento.",
+        "lt": "He was healthy and hardworking, and he was very happy.",
+        "units": [
+          ["Era","He was"],
+          ["sano","healthy"],
+          ["y","and"],
+          ["trabajador,","hardworking,"],
+          ["y","and"],
+          ["estaba","was"],
+          ["muy","very"],
+          ["contento.","happy."]
+        ]
+      },
+      {
+        "i": 2,
+        "es": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "lt": "He worked hard because he had little brothers and sisters and wanted to feed them.",
+        "units": [
+          ["Trabajaba","He worked"],
+          ["mucho","a lot"],
+          ["porque","because"],
+          ["tenía","he had"],
+          ["hermanos","brothers (and sisters)"],
+          ["pequeños","young"],
+          ["y","and"],
+          ["quería","wanted"],
+          ["darles","to give them"],
+          ["de comer.","something to eat."]
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "story_id": "BK01-01",
+    "mode": "bilingual",
+    "duration_seconds": 762.0505,
+    "audio_sha256": {
+      "bilingual": "8121d324dcc379df35249b08d1f02ed3a8284d24c8378ec4f8511fec203df019",
+      "lithuanian": "fb1c1494f103b8d11056d87ff45d69e6be65268d6f483c84e6c4ef290fe87a81",
+      "english": "881161677bbf6bd7f22a75c5a67bbf8fed877aaba029413a731de1753dcb13b7"
+    },
+    "timeline": [
+      {
+        "sentence_id": "BK01-01-title",
+        "language": "lt",
+        "text": "The Giant Turtle",
+        "start": 0,
+        "end": 2.04
+      },
+      {
+        "sentence_id": "BK01-01-title",
+        "language": "es",
+        "text": "La tortuga gigante",
+        "start": 2.34,
+        "end": 4.718625
+      },
+      {
+        "sentence_id": "BK01-01-intro-01",
+        "language": "lt",
+        "text": "Horacio Quiroga is a writer from Uruguay.",
+        "start": 5.218625,
+        "end": 8.538625
+      },
+      {
+        "sentence_id": "BK01-01-intro-01",
+        "language": "es",
+        "text": "Horacio Quiroga es un escritor de Uruguay.",
+        "start": 8.838625,
+        "end": 13.184833333333334
+      },
+      {
+        "sentence_id": "BK01-01-intro-02",
+        "language": "lt",
+        "text": "He lived for many years in the jungle of Argentina and wrote stories for his children.",
+        "start": 13.684833333333334,
+        "end": 19.324833333333334
+      },
+      {
+        "sentence_id": "BK01-01-intro-02",
+        "language": "es",
+        "text": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+        "start": 19.624833333333335,
+        "end": 26.426791666666666
+      },
+      {
+        "sentence_id": "BK01-01-intro-03",
+        "language": "lt",
+        "text": "“The Giant Turtle” is the first story in the book: a simple, nice story about a man and an animal who help each other.",
+        "start": 26.926791666666666,
+        "end": 35.20679166666667
+      },
+      {
+        "sentence_id": "BK01-01-intro-03",
+        "language": "es",
+        "text": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+        "start": 35.506791666666665,
+        "end": 45.41833333333334
+      },
+      {
+        "sentence_id": "BK01-01-001",
+        "language": "lt",
+        "text": "Once upon a time there was a man who lived in Buenos Aires.",
+        "start": 45.91833333333334,
+        "end": 50.79833333333333
+      },
+      {
+        "sentence_id": "BK01-01-001",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires.",
+        "start": 51.098333333333336,
+        "end": 55.18875
+      },
+      {
+        "sentence_id": "BK01-01-002",
+        "language": "lt",
+        "text": "He was healthy and hardworking, and he was very happy.",
+        "start": 55.68875,
+        "end": 59.72875
+      },
+      {
+        "sentence_id": "BK01-01-002",
+        "language": "es",
+        "text": "Era sano y trabajador, y estaba muy contento.",
+        "start": 60.02875,
+        "end": 64.823625
+      },
+      {
+        "sentence_id": "BK01-01-003",
+        "language": "lt",
+        "text": "He worked hard because he had little brothers and sisters and wanted to feed them.",
+        "start": 65.323625,
+        "end": 70.243625
+      },
+      {
+        "sentence_id": "BK01-01-003",
+        "language": "es",
+        "text": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "start": 70.543625,
+        "end": 76.49295833333333
+      }
+    ],
+    "rate_switches": {
+      "version": 1,
+      "audio_sha256": "8121d324dcc379df35249b08d1f02ed3a8284d24c8378ec4f8511fec203df019",
+      "speech": [
+        [
+          0.02,
+          2.011
+        ],
+        [
+          2.48,
+          4.48
+        ],
+        [
+          5.508,
+          8.349
+        ],
+        [
+          9.028,
+          12.619
+        ],
+        [
+          13.874,
+          19.035
+        ],
+        [
+          19.644,
+          26.335
+        ],
+        [
+          27.136,
+          35.147
+        ],
+        [
+          35.636,
+          45.157
+        ],
+        [
+          46.098,
+          50.499
+        ],
+        [
+          51.398,
+          54.849
+        ],
+        [
+          55.848,
+          59.72875
+        ],
+        [
+          60.038,
+          64.479
+        ],
+        [
+          65.563,
+          69.974
+        ],
+        [
+          70.913,
+          76.034
+        ]
+      ],
+      "sw": [
+        0,
+        2.245,
+        4.994,
+        8.689,
+        13.247,
+        19.34,
+        26.736,
+        35.392,
+        45.627,
+        50.949,
+        55.349,
+        59.883,
+        65.021,
+        70.444
+      ]
+    }
+  },
+  "english-timing": {
+    "story_id": "BK01-01",
+    "mode": "english",
+    "duration_seconds": 416.7905,
+    "audio_sha256": {
+      "bilingual": "f90f41183d714c5e2200aa4c7c22bb3f1e91522ef96eabfd4cd6e54d9c5366fc",
+      "english": "881161677bbf6bd7f22a75c5a67bbf8fed877aaba029413a731de1753dcb13b7"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-01",
+        "sentence": "title",
+        "language": "es",
+        "text": "La tortuga gigante",
+        "sentence_id": "BK01-01-title",
+        "start": 0,
+        "end": 2.378625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-01",
+        "language": "es",
+        "text": "Horacio Quiroga es un escritor de Uruguay.",
+        "sentence_id": "BK01-01-intro-01",
+        "start": 2.878625,
+        "end": 7.224833333333334
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-02",
+        "language": "es",
+        "text": "Vivió muchos años en la selva de Argentina y escribió cuentos para sus hijos.",
+        "sentence_id": "BK01-01-intro-02",
+        "start": 7.724833333333334,
+        "end": 14.526791666666666
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "intro-03",
+        "language": "es",
+        "text": "«La tortuga gigante» es el primer cuento del libro: una historia simple y bonita sobre un hombre y un animal que se ayudan.",
+        "sentence_id": "BK01-01-intro-03",
+        "start": 15.026791666666666,
+        "end": 24.938333333333333
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "001",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires.",
+        "sentence_id": "BK01-01-001",
+        "start": 25.438333333333333,
+        "end": 29.52875
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "002",
+        "language": "es",
+        "text": "Era sano y trabajador, y estaba muy contento.",
+        "sentence_id": "BK01-01-002",
+        "start": 30.02875,
+        "end": 34.823625
+      },
+      {
+        "item_id": "BK01-01",
+        "sentence": "003",
+        "language": "es",
+        "text": "Trabajaba mucho porque tenía hermanos pequeños y quería darles de comer.",
+        "sentence_id": "BK01-01-003",
+        "start": 35.323625,
+        "end": 41.272958333333335
+      }
+    ]
+  },
+  "lithuanian-timing": {
+    "story_id": "BK01-01",
+    "mode": "lithuanian",
+    "duration_seconds": 344.96,
+    "audio_sha256": {
+      "bilingual": "8121d324dcc379df35249b08d1f02ed3a8284d24c8378ec4f8511fec203df019",
+      "lithuanian": "fb1c1494f103b8d11056d87ff45d69e6be65268d6f483c84e6c4ef290fe87a81",
+      "english": "881161677bbf6bd7f22a75c5a67bbf8fed877aaba029413a731de1753dcb13b7"
+    },
+    "timeline": [
+      {
+        "sentence_id": "BK01-01-title",
+        "language": "lt",
+        "text": "The Giant Turtle",
+        "start": 0,
+        "end": 2.04
+      },
+      {
+        "sentence_id": "BK01-01-intro-01",
+        "language": "lt",
+        "text": "Horacio Quiroga is a writer from Uruguay.",
+        "start": 2.34,
+        "end": 5.66
+      },
+      {
+        "sentence_id": "BK01-01-intro-02",
+        "language": "lt",
+        "text": "He lived for many years in the jungle of Argentina and wrote stories for his children.",
+        "start": 5.96,
+        "end": 11.6
+      },
+      {
+        "sentence_id": "BK01-01-intro-03",
+        "language": "lt",
+        "text": "“The Giant Turtle” is the first story in the book: a simple, nice story about a man and an animal who help each other.",
+        "start": 11.9,
+        "end": 20.18
+      },
+      {
+        "sentence_id": "BK01-01-001",
+        "language": "lt",
+        "text": "Once upon a time there was a man who lived in Buenos Aires.",
+        "start": 20.48,
+        "end": 25.36
+      },
+      {
+        "sentence_id": "BK01-01-002",
+        "language": "lt",
+        "text": "He was healthy and hardworking, and he was very happy.",
+        "start": 25.66,
+        "end": 29.7
+      },
+      {
+        "sentence_id": "BK01-01-003",
+        "language": "lt",
+        "text": "He worked hard because he had little brothers and sisters and wanted to feed them.",
+        "start": 30,
+        "end": 34.92
+      }
+    ]
+  },
+  "word-timing": {
+    "story_id": "BK01-01",
+    "language": "es",
+    "lines": [
+      {
+        "sentence_id": "BK01-01-title",
+        "w": [[0.19,0.6],[0.6,1.4],[1.4,2.08]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-01",
+        "w": [[0.34,0.84],[0.84,1.88],[1.88,2.04],[2.04,2.28],[2.28,2.84],[2.84,3],[3,3.77]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-02",
+        "w": [[0.35,1.03],[1.03,1.43],[1.44,1.83],[1.83,1.99],[2,2.15],[2.16,2.71],[2.71,2.87],[2.88,3.83],[3.83,4.07],[4.08,4.79],[4.79,5.43],[5.43,5.67],[5.67,5.91],[5.92,6.32]]
+      },
+      {
+        "sentence_id": "BK01-01-intro-03",
+        "w": [[0.22,0.4],[0.4,1.12],[1.12,2.08],[2.08,2.32],[2.32,2.56],[2.56,2.88],[2.88,3.36],[3.36,3.68],[3.68,4.56],[4.56,4.96],[4.96,5.52],[5.52,6],[6,6.16],[6.16,6.96],[6.96,7.28],[7.28,7.52],[7.52,7.84],[7.84,8],[8,8.24],[8.24,8.64],[8.64,8.88],[8.88,9.04],[9.04,9.65]]
+      },
+      {
+        "sentence_id": "BK01-01-001",
+        "w": [[0.3,0.7],[0.71,0.94],[0.95,1.34],[1.35,1.58],[1.59,1.9],[1.91,2.06],[2.07,2.46],[2.47,2.62],[2.63,3.1],[3.11,3.64]]
+      },
+      {
+        "sentence_id": "BK01-01-002",
+        "w": [[0.34,0.72],[0.72,1.2],[1.2,1.36],[1.36,2.4],[2.4,2.72],[2.72,3.08],[3.36,3.68],[3.68,4.44]]
+      },
+      {
+        "sentence_id": "BK01-01-003",
+        "w": [[0.37,1.26],[1.27,1.58],[1.58,2.06],[2.06,2.54],[2.54,3.02],[3.02,3.66],[3.67,3.9],[3.91,4.46],[4.46,4.94],[4.95,5.18],[5.18,5.47]]
+      }
+    ]
+  }
+}

@@ -1,0 +1,667 @@
+{
+  "data": {
+    "id": "BK01-00",
+    "title_es": "Cuentos de la selva",
+    "title_lt": "Jungle Tales",
+    "paragraphs": [
+      {
+        "lt": "Horacio Quiroga (1878–1937) was born in Uruguay, but he lived for many years in Misiones, in the jungle of northern Argentina, near the Paraná River. There he told his children stories about the animals of the jungle, and in 1918 he published them in a book: “Cuentos de la selva.” In the book, turtles, parrots, caimans, and stingrays talk. But these are not sweet stories: the jungle is real, hot, and dangerous, and the animals are clever, loyal, and sometimes cruel. Today it is read in schools all over Latin America. The short sentences, the clear images, and the warm humor make the reading easy and enjoyable.",
+        "sentences": [
+          {
+            "es": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+            "lt": "Horacio Quiroga (1878–1937) was born in Uruguay, but he lived for many years in Misiones, in the jungle of northern Argentina, near the Paraná River.",
+            "units": [
+              ["Horacio","Horacio (pronounced “oh-RAH-syoh”)",""],
+              ["Quiroga","Quiroga (pronounced “kee-ROH-gah”)",""],
+              ["(1878–1937)","(1878–1937)",""],
+              ["nació","was born",""],
+              ["en","in",""],
+              ["Uruguay,","Uruguay,",""],
+              ["pero","but",""],
+              ["vivió","lived",""],
+              ["muchos","many",""],
+              ["años","years",""],
+              ["en","in",""],
+              ["Misiones,","Misiones,",""],
+              ["en","in",""],
+              ["la","the",""],
+              ["selva","jungle",""],
+              ["del","of the",""],
+              ["norte","north",""],
+              ["de","of",""],
+              ["Argentina,","Argentina,",""],
+              ["cerca","near",""],
+              ["del","the",""],
+              ["río","river",""],
+              ["Paraná.","Paraná.",""]
+            ],
+            "n": 0,
+            "en": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+            "sentence_id": "001"
+          },
+          {
+            "es": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+            "lt": "There he told his children stories about the animals of the jungle, and in 1918 he published them in a book: “Cuentos de la selva.”",
+            "units": [
+              ["Allí","There",""],
+              ["contaba","he used to tell",""],
+              ["a","to",""],
+              ["sus","his",""],
+              ["hijos","children",""],
+              ["cuentos","stories",""],
+              ["sobre","about",""],
+              ["los","the",""],
+              ["animales","animals",""],
+              ["de","of",""],
+              ["la","the",""],
+              ["selva,","jungle,",""],
+              ["y","and",""],
+              ["en","in",""],
+              ["1918","1918",""],
+              ["los","them",""],
+              ["publicó","he published",""],
+              ["en","in",""],
+              ["un","a",""],
+              ["libro:","book:",""],
+              ["«Cuentos de la selva».","“Cuentos de la selva” (“Jungle Tales”).",""]
+            ],
+            "n": 1,
+            "en": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+            "sentence_id": "002"
+          },
+          {
+            "es": "En el libro hablan tortugas, loros, yacarés y rayas.",
+            "lt": "In the book, turtles, parrots, caimans, and stingrays talk.",
+            "units": [
+              ["En","In",""],
+              ["el","the",""],
+              ["libro","book",""],
+              ["hablan","talk",""],
+              ["tortugas,","turtles,",""],
+              ["loros,","parrots,",""],
+              ["yacarés","caimans",""],
+              ["y","and",""],
+              ["rayas.","stingrays.",""]
+            ],
+            "n": 2,
+            "en": "En el libro hablan tortugas, loros, yacarés y rayas.",
+            "sentence_id": "003"
+          },
+          {
+            "es": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+            "lt": "But these are not sweet stories: the jungle is real, hot, and dangerous, and the animals are clever, loyal, and sometimes cruel.",
+            "units": [
+              ["Pero","But",""],
+              ["no son","they are not",""],
+              ["cuentos","stories",""],
+              ["dulces:","sweet:",""],
+              ["la","the",""],
+              ["selva","jungle",""],
+              ["es","is",""],
+              ["real,","real,",""],
+              ["caliente","hot",""],
+              ["y","and",""],
+              ["peligrosa,","dangerous,",""],
+              ["y","and",""],
+              ["los","the",""],
+              ["animales","animals",""],
+              ["son","are",""],
+              ["listos,","clever,",""],
+              ["fieles","loyal",""],
+              ["y","and",""],
+              ["a veces","sometimes",""],
+              ["crueles.","cruel.",""]
+            ],
+            "n": 3,
+            "en": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+            "sentence_id": "004"
+          },
+          {
+            "es": "Hoy lo leen en las escuelas de toda América Latina.",
+            "lt": "Today it is read in schools all over Latin America.",
+            "units": [
+              ["Hoy","Today",""],
+              ["lo","it",""],
+              ["leen","they read",""],
+              ["en","in",""],
+              ["las","the",""],
+              ["escuelas","schools",""],
+              ["de","of",""],
+              ["toda","all",""],
+              ["América Latina.","Latin America.",""]
+            ],
+            "n": 4,
+            "en": "Hoy lo leen en las escuelas de toda América Latina.",
+            "sentence_id": "005"
+          },
+          {
+            "es": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+            "lt": "The short sentences, the clear images, and the warm humor make the reading easy and enjoyable.",
+            "units": [
+              ["Las","The",""],
+              ["frases","sentences",""],
+              ["cortas,","short,",""],
+              ["las","the",""],
+              ["imágenes","images",""],
+              ["claras","clear",""],
+              ["y","and",""],
+              ["el","the",""],
+              ["humor","humor",""],
+              ["cálido","warm",""],
+              ["hacen","make",""],
+              ["la","the",""],
+              ["lectura","reading",""],
+              ["fácil","easy",""],
+              ["y","and",""],
+              ["agradable.","enjoyable.",""]
+            ],
+            "n": 5,
+            "en": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+            "sentence_id": "006"
+          }
+        ]
+      },
+      {
+        "lt": "Once upon a time there was a man who lived in Buenos Aires, and he was very happy because he was a healthy, hardworking man. But one day he got sick, and the doctors told him that only by going away to the country could he get well.",
+        "sentences": [
+          {
+            "es": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+            "lt": "Once upon a time there was a man who lived in Buenos Aires, and he was very happy because he was a healthy, hardworking man.",
+            "units": [
+              ["Había una vez","Once upon a time (lit. there was one time)",""],
+              ["un","a",""],
+              ["hombre","man",""],
+              ["que","who",""],
+              ["vivía","lived",""],
+              ["en","in",""],
+              ["Buenos Aires,","Buenos Aires,",""],
+              ["y","and",""],
+              ["estaba","he was",""],
+              ["muy","very",""],
+              ["contento","happy",""],
+              ["porque","because",""],
+              ["era","he was",""],
+              ["un","a",""],
+              ["hombre","man",""],
+              ["sano","healthy",""],
+              ["y","and",""],
+              ["trabajador.","hardworking.",""]
+            ],
+            "n": 6,
+            "en": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+            "sentence_id": "007"
+          },
+          {
+            "es": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+            "lt": "But one day he got sick, and the doctors told him that only by going away to the country could he get well.",
+            "units": [
+              ["Pero","But",""],
+              ["un día","one day",""],
+              ["se enfermó,","he got sick,",""],
+              ["y","and",""],
+              ["los","the",""],
+              ["médicos","doctors",""],
+              ["le","(to him)",""],
+              ["dijeron","told",""],
+              ["que","that",""],
+              ["solamente","only",""],
+              ["yéndose","by going away",""],
+              ["al","to the",""],
+              ["campo","countryside",""],
+              ["podría","he could",""],
+              ["curarse.","get well.",""]
+            ],
+            "n": 7,
+            "en": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+            "sentence_id": "008"
+          }
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "story_id": "BK01-00",
+    "mode": "bilingual",
+    "duration_seconds": 154.74125,
+    "audio_sha256": {
+      "bilingual": "e50fdcb43532522ced15dbcf5b0e8aba2cb0ab8edb62073dd5128590aa99dab0",
+      "lithuanian": "8f4c49c2be60789b1b7adf443b9d25e21a9e51cb3f6942545f8dd6e59e472ae5",
+      "english": "3b8b58bb5d1fa1fac44eff6e0bb4a35f8b40ba3b5f630c1bafa4156b5efb79d0"
+    },
+    "timeline": [
+      {
+        "sentence_id": "BK01-00-title",
+        "language": "lt",
+        "text": "Jungle Tales",
+        "start": 0,
+        "end": 2
+      },
+      {
+        "sentence_id": "BK01-00-title",
+        "language": "es",
+        "text": "Cuentos de la selva",
+        "start": 2.3,
+        "end": 4.789333333333333
+      },
+      {
+        "sentence_id": "BK01-00-001",
+        "language": "lt",
+        "text": "Horacio Quiroga (1878–1937) was born in Uruguay, but he lived for many years in Misiones, in the jungle of northern Argentina, near the Paraná River.",
+        "start": 5.289333333333333,
+        "end": 19.169333333333334
+      },
+      {
+        "sentence_id": "BK01-00-001",
+        "language": "es",
+        "text": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+        "start": 19.469333333333335,
+        "end": 35.12283333333333
+      },
+      {
+        "sentence_id": "BK01-00-002",
+        "language": "lt",
+        "text": "There he told his children stories about the animals of the jungle, and in 1918 he published them in a book: “Cuentos de la selva.”",
+        "start": 35.62283333333333,
+        "end": 45.462833333333336
+      },
+      {
+        "sentence_id": "BK01-00-002",
+        "language": "es",
+        "text": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+        "start": 45.76283333333333,
+        "end": 57.42166666666667
+      },
+      {
+        "sentence_id": "BK01-00-003",
+        "language": "lt",
+        "text": "In the book, turtles, parrots, caimans, and stingrays talk.",
+        "start": 57.92166666666667,
+        "end": 63.321666666666665
+      },
+      {
+        "sentence_id": "BK01-00-003",
+        "language": "es",
+        "text": "En el libro hablan tortugas, loros, yacarés y rayas.",
+        "start": 63.62166666666667,
+        "end": 70.91291666666666
+      },
+      {
+        "sentence_id": "BK01-00-004",
+        "language": "lt",
+        "text": "But these are not sweet stories: the jungle is real, hot, and dangerous, and the animals are clever, loyal, and sometimes cruel.",
+        "start": 71.41291666666666,
+        "end": 81.85291666666667
+      },
+      {
+        "sentence_id": "BK01-00-004",
+        "language": "es",
+        "text": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+        "start": 82.15291666666667,
+        "end": 94.02720833333333
+      },
+      {
+        "sentence_id": "BK01-00-005",
+        "language": "lt",
+        "text": "Today it is read in schools all over Latin America.",
+        "start": 94.52720833333333,
+        "end": 98.40720833333333
+      },
+      {
+        "sentence_id": "BK01-00-005",
+        "language": "es",
+        "text": "Hoy lo leen en las escuelas de toda América Latina.",
+        "start": 98.70720833333333,
+        "end": 102.80204166666667
+      },
+      {
+        "sentence_id": "BK01-00-006",
+        "language": "lt",
+        "text": "The short sentences, the clear images, and the warm humor make the reading easy and enjoyable.",
+        "start": 103.30204166666667,
+        "end": 110.62204166666666
+      },
+      {
+        "sentence_id": "BK01-00-006",
+        "language": "es",
+        "text": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+        "start": 110.92204166666667,
+        "end": 119.96941666666666
+      },
+      {
+        "sentence_id": "BK01-00-007",
+        "language": "lt",
+        "text": "Once upon a time there was a man who lived in Buenos Aires, and he was very happy because he was a healthy, hardworking man.",
+        "start": 120.46941666666666,
+        "end": 129.58941666666666
+      },
+      {
+        "sentence_id": "BK01-00-007",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+        "start": 129.88941666666668,
+        "end": 138.36804166666667
+      },
+      {
+        "sentence_id": "BK01-00-008",
+        "language": "lt",
+        "text": "But one day he got sick, and the doctors told him that only by going away to the country could he get well.",
+        "start": 138.86804166666667,
+        "end": 146.82804166666668
+      },
+      {
+        "sentence_id": "BK01-00-008",
+        "language": "es",
+        "text": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+        "start": 147.12804166666666,
+        "end": 154.74125
+      }
+    ],
+    "rate_switches": {
+      "version": 1,
+      "audio_sha256": "e50fdcb43532522ced15dbcf5b0e8aba2cb0ab8edb62073dd5128590aa99dab0",
+      "speech": [
+        [
+          0.39,
+          1.95
+        ],
+        [
+          2.699,
+          4.19
+        ],
+        [
+          5.429,
+          18.78
+        ],
+        [
+          19.659,
+          34.62
+        ],
+        [
+          35.632,
+          45.193
+        ],
+        [
+          46.032,
+          57.233
+        ],
+        [
+          58.191,
+          62.972
+        ],
+        [
+          63.641,
+          70.732
+        ],
+        [
+          71.562,
+          81.803
+        ],
+        [
+          82.592,
+          93.703
+        ],
+        [
+          94.807,
+          98.158
+        ],
+        [
+          99.017,
+          102.398
+        ],
+        [
+          103.672,
+          110.62204166666666
+        ],
+        [
+          111.042,
+          119.543
+        ],
+        [
+          120.679,
+          129.37
+        ],
+        [
+          130.159,
+          138.19
+        ],
+        [
+          138.888,
+          146.689
+        ],
+        [
+          147.148,
+          154.309
+        ]
+      ],
+      "sw": [
+        0,
+        2.325,
+        4.809,
+        19.22,
+        35.126,
+        45.612,
+        57.712,
+        63.306,
+        71.147,
+        82.197,
+        94.255,
+        98.588,
+        103.035,
+        110.832,
+        120.111,
+        129.764,
+        138.539,
+        146.918
+      ]
+    }
+  },
+  "english-timing": {
+    "story_id": "BK01-00",
+    "mode": "english",
+    "duration_seconds": 82.20125,
+    "audio_sha256": {
+      "bilingual": "1cc585b94a9599a2ffabcb4658043aa38eee3cd3eb2facbc4ae0866dcf88fa45",
+      "english": "3b8b58bb5d1fa1fac44eff6e0bb4a35f8b40ba3b5f630c1bafa4156b5efb79d0"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-00",
+        "sentence": "title",
+        "language": "es",
+        "text": "Cuentos de la selva",
+        "sentence_id": "BK01-00-title",
+        "start": 0,
+        "end": 2.489333333333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "001",
+        "language": "es",
+        "text": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+        "sentence_id": "BK01-00-001",
+        "start": 2.989333333333333,
+        "end": 18.642833333333332
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "002",
+        "language": "es",
+        "text": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+        "sentence_id": "BK01-00-002",
+        "start": 19.142833333333332,
+        "end": 30.801666666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "003",
+        "language": "es",
+        "text": "En el libro hablan tortugas, loros, yacarés y rayas.",
+        "sentence_id": "BK01-00-003",
+        "start": 31.301666666666666,
+        "end": 38.59291666666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "004",
+        "language": "es",
+        "text": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+        "sentence_id": "BK01-00-004",
+        "start": 39.09291666666667,
+        "end": 50.96720833333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "005",
+        "language": "es",
+        "text": "Hoy lo leen en las escuelas de toda América Latina.",
+        "sentence_id": "BK01-00-005",
+        "start": 51.46720833333333,
+        "end": 55.562041666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "006",
+        "language": "es",
+        "text": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+        "sentence_id": "BK01-00-006",
+        "start": 56.062041666666666,
+        "end": 65.10941666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "007",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+        "sentence_id": "BK01-00-007",
+        "start": 65.60941666666666,
+        "end": 74.08804166666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "008",
+        "language": "es",
+        "text": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+        "sentence_id": "BK01-00-008",
+        "start": 74.58804166666667,
+        "end": 82.20125
+      }
+    ]
+  },
+  "lithuanian-timing": {
+    "story_id": "BK01-00",
+    "mode": "lithuanian",
+    "duration_seconds": 72.24,
+    "audio_sha256": {
+      "bilingual": "e50fdcb43532522ced15dbcf5b0e8aba2cb0ab8edb62073dd5128590aa99dab0",
+      "lithuanian": "8f4c49c2be60789b1b7adf443b9d25e21a9e51cb3f6942545f8dd6e59e472ae5",
+      "english": "3b8b58bb5d1fa1fac44eff6e0bb4a35f8b40ba3b5f630c1bafa4156b5efb79d0"
+    },
+    "timeline": [
+      {
+        "sentence_id": "BK01-00-title",
+        "language": "lt",
+        "text": "Jungle Tales",
+        "start": 0,
+        "end": 2
+      },
+      {
+        "sentence_id": "BK01-00-001",
+        "language": "lt",
+        "text": "Horacio Quiroga (1878–1937) was born in Uruguay, but he lived for many years in Misiones, in the jungle of northern Argentina, near the Paraná River.",
+        "start": 2.3,
+        "end": 16.18
+      },
+      {
+        "sentence_id": "BK01-00-002",
+        "language": "lt",
+        "text": "There he told his children stories about the animals of the jungle, and in 1918 he published them in a book: “Cuentos de la selva.”",
+        "start": 16.48,
+        "end": 26.32
+      },
+      {
+        "sentence_id": "BK01-00-003",
+        "language": "lt",
+        "text": "In the book, turtles, parrots, caimans, and stingrays talk.",
+        "start": 26.62,
+        "end": 32.02
+      },
+      {
+        "sentence_id": "BK01-00-004",
+        "language": "lt",
+        "text": "But these are not sweet stories: the jungle is real, hot, and dangerous, and the animals are clever, loyal, and sometimes cruel.",
+        "start": 32.32,
+        "end": 42.76
+      },
+      {
+        "sentence_id": "BK01-00-005",
+        "language": "lt",
+        "text": "Today it is read in schools all over Latin America.",
+        "start": 43.06,
+        "end": 46.94
+      },
+      {
+        "sentence_id": "BK01-00-006",
+        "language": "lt",
+        "text": "The short sentences, the clear images, and the warm humor make the reading easy and enjoyable.",
+        "start": 47.24,
+        "end": 54.56
+      },
+      {
+        "sentence_id": "BK01-00-007",
+        "language": "lt",
+        "text": "Once upon a time there was a man who lived in Buenos Aires, and he was very happy because he was a healthy, hardworking man.",
+        "start": 54.86,
+        "end": 63.98
+      },
+      {
+        "sentence_id": "BK01-00-008",
+        "language": "lt",
+        "text": "But one day he got sick, and the doctors told him that only by going away to the country could he get well.",
+        "start": 64.28,
+        "end": 72.24
+      }
+    ]
+  },
+  "word-timing": {
+    "story_id": "BK01-00",
+    "language": "es",
+    "lines": [
+      {
+        "sentence_id": "BK01-00-title",
+        "w": [[0.4,0.92],[0.92,1.08],[1.08,1.24],[1.24,1.85]]
+      },
+      {
+        "sentence_id": "BK01-00-001",
+        "w": [[0.33,0.8],[0.8,1.84],[1.84,6],[6,6.48],[6.48,6.64],[6.64,7.84],[7.84,8.16],[8.16,8.8],[8.8,9.2],[9.2,9.6],[9.6,9.84],[9.84,10.72],[10.72,10.88],[10.88,11.12],[11.12,11.68],[11.68,11.84],[11.84,12.24],[12.24,12.4],[12.4,13.4],[13.6,14],[14,14.24],[14.24,14.64],[14.64,15.13]]
+      },
+      {
+        "sentence_id": "BK01-00-002",
+        "w": [[0.32,0.96],[0.96,1.52],[1.52,1.6],[1.6,1.84],[1.84,2.32],[2.32,2.96],[2.96,3.2],[3.2,3.44],[3.44,4],[4,4.16],[4.16,4.4],[4.4,5.44],[5.44,5.68],[5.68,5.96],[6.49,7.84],[7.84,8.16],[8.16,8.72],[8.72,8.8],[8.8,8.96],[8.96,10],[10,10.56],[10.56,10.72],[10.72,10.88],[10.88,11.32]]
+      },
+      {
+        "sentence_id": "BK01-00-003",
+        "w": [[0.26,0.4],[0.4,0.64],[0.64,1.04],[1.04,1.6],[1.6,3.36],[3.36,4.48],[4.48,5.64],[5.84,6.16],[6.16,6.85]]
+      },
+      {
+        "sentence_id": "BK01-00-004",
+        "w": [[0.44,0.72],[0.72,0.96],[0.96,1.28],[1.28,1.84],[1.84,2.88],[2.88,3.12],[3.12,3.68],[3.68,3.92],[3.92,4.36],[4.56,5.24],[5.44,5.76],[5.76,7.04],[7.04,7.28],[7.28,7.52],[7.52,8.08],[8.08,8.4],[8.4,9.28],[9.28,9.96],[10.24,10.48],[10.48,10.56],[10.56,10.96],[10.96,11.53]]
+      },
+      {
+        "sentence_id": "BK01-00-005",
+        "w": [[0.31,0.66],[0.67,0.82],[0.83,1.3],[1.31,1.46],[1.47,1.62],[1.63,2.18],[2.19,2.34],[2.35,2.66],[2.67,3.14],[3.15,3.68]]
+      },
+      {
+        "sentence_id": "BK01-00-006",
+        "w": [[0.12,0.56],[0.56,1.28],[1.28,2.24],[2.24,2.48],[2.48,3.2],[3.2,3.76],[3.76,4],[4,4.24],[4.24,4.72],[4.72,5.56],[5.76,6.24],[6.24,6.4],[6.4,7.04],[7.04,7.6],[7.6,7.92],[7.92,8.61]]
+      },
+      {
+        "sentence_id": "BK01-00-007",
+        "w": [[0.28,0.64],[0.64,0.88],[0.88,1.12],[1.12,1.36],[1.36,1.68],[1.68,1.84],[1.84,2.24],[2.24,2.4],[2.4,2.88],[2.88,3.84],[3.84,4.16],[4.16,4.52],[4.72,4.96],[4.96,5.48],[5.68,6],[6,6.16],[6.16,6.32],[6.32,6.72],[6.72,7.2],[7.2,7.36],[7.36,8.05]]
+      },
+      {
+        "sentence_id": "BK01-00-008",
+        "w": [[0.44,0.54],[0.54,0.78],[0.78,1.1],[1.1,1.34],[1.34,2.38],[2.38,2.62],[2.62,2.86],[2.86,3.34],[3.34,3.5],[3.5,4.06],[4.06,4.3],[4.3,4.94],[4.94,5.58],[5.58,5.74],[5.74,6.14],[6.14,6.7],[6.7,7.17]]
+      }
+    ]
+  }
+}

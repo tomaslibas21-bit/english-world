@@ -6,6 +6,7 @@ type CoverKind = "books" | "stories";
 type Edition = "author" | "easy" | "standard";
 type TimingKind = "timing" | "english-timing" | "lithuanian-timing" | "word-timing";
 type CoverTable = Readonly<Record<string, readonly (string | number)[]>>;
+type IntroductionLabels = { target: string; helper: string };
 const MODES: readonly TalkMode[] = ["paired", "target", "helper"];
 const COURSE_MODES = { paired: "bilingual", target: "english", helper: "lithuanian" } as const;
 const FOLDER_FIELDS = { paired: "baseUrl", target: "englishBaseUrl", helper: "lithuanianBaseUrl" } as const;
@@ -18,6 +19,7 @@ export interface BookProfile {
   targetClock: "derive" | "file";
   sparseTimingIds?: boolean;
   narratedTitle?: boolean;
+  introductionLabels?: IntroductionLabels;
   editions?: { easyBooks: ReadonlySet<string>; read: () => "easy" | "author" };
   jsonOnSite: (section: Section, id: string) => boolean;
   freeRecording: (section: Section, id: string) => boolean;
@@ -48,6 +50,7 @@ export interface BookChapter {
   title: string;
   helperTitle: string;
   number: number;
+  introduction?: IntroductionLabels;
   hasAudio: boolean;
   words?: number;
   readHref: string;
@@ -178,6 +181,7 @@ export function normalizeBookCatalog(profile: BookProfile, bookIndex: unknown, s
         selection: { itemKey: `book/${id}/${edition}`, chapterId: row.id },
         id: row.id, fileId: edition === "easy" ? `${row.id}.easy` : row.id, section: "knygos", edition,
         title: string(row.title), helperTitle: string(row.title_lt), number: row.n,
+        ...(row.n === 0 && profile.introductionLabels && { introduction: profile.introductionLabels }),
         hasAudio: (abridged ? abridged.audio : row.audio) === true, words: integer(words) ? words : undefined,
         readHref: courseReadingLinks(profile, "knygos", row.id).read,
       });
@@ -520,6 +524,7 @@ export function createBookSource({ profile, site, files, recordings = files, tok
     return normalizeBookItem(profile, chapter, { text: body, timing: { paired, target, helper }, words, recording });
   });
   return {
+    profile: profile.id,
     catalog,
     load: (selection: TalkSelection, signal?: AbortSignal) => load(`${selection.itemKey}/${selection.chapterId}`, signal),
     storyCover: async (id: string) => coverUrls(await profile.storyCovers(), "stories", id),

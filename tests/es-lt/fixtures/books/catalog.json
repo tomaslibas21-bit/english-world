@@ -1,0 +1,61 @@
+{
+  "knygos": {
+    "books": [
+      {
+        "id": "BK01",
+        "title": "Cuentos de la selva",
+        "title_lt": "Džiunglių pasakos",
+        "author": "Orasijus Kiroga",
+        "level": "A2",
+        "chapters": [
+          {
+            "id": "BK01-00",
+            "n": 0,
+            "title": "Cuentos de la selva",
+            "title_lt": "Džiunglių pasakos",
+            "words": 142,
+            "audio": true,
+            "english_audio": true
+          },
+          {
+            "id": "BK01-01",
+            "n": 1,
+            "title": "La tortuga gigante",
+            "title_lt": "Milžiniškas vėžlys",
+            "words": 710,
+            "audio": true,
+            "english_audio": true
+          }
+        ]
+      }
+    ]
+  },
+  "stories": {
+    "modules": [
+      {
+        "n": 1,
+        "name": "Istorijos 1–10",
+        "range": "1–10"
+      }
+    ],
+    "stories": [
+      {
+        "id": "HIS-SG01",
+        "n": 1,
+        "title": "Una palabra cada mañana",
+        "title_lt": "Kasdien po vieną žodį",
+        "module": 1,
+        "words": 310,
+        "kind": "tomas",
+        "audio": true,
+        "english_audio": true
+      }
+    ]
+  },
+  "config": {
+    "baseUrl": "https://audio.dvikalbesdainos.lt/spanish-master/audio/v1/LT-ES",
+    "englishBaseUrl": "https://audio.dvikalbesdainos.lt/spanish-master/audio/v1/ES",
+    "spanishBaseUrl": "https://audio.dvikalbesdainos.lt/spanish-master/audio/v1/ES",
+    "lithuanianBaseUrl": "https://audio.dvikalbesdainos.lt/spanish-master/audio/v1/LT"
+  }
+}

@@ -1,0 +1,681 @@
+{
+  "data": {
+    "id": "BK01-00",
+    "title_es": "Cuentos de la selva",
+    "title_lt": "Džiunglių pasakos",
+    "paragraphs": [
+      {
+        "lt": "Orasijus Kiroga (1878–1937) gimė Urugvajuje, bet daug metų gyveno Misjonese, šiaurės Argentinos džiunglėse, netoli Paranos upės. Ten jis pasakodavo savo vaikams pasakas apie džiunglių gyvūnus, o 1918 metais išleido jas knyga „Cuentos de la selva“. Knygoje kalba vėžliai, papūgos, kaimanai ir rajos. Bet tai ne saldžios pasakėlės: džiunglės čia tikros, karštos ir pavojingos, o gyvūnai protingi, ištikimi ir kartais žiaurūs. Šiandien ją skaito visos Lotynų Amerikos mokyklose. Trumpi sakiniai, aiškūs vaizdai ir šiltas humoras padaro skaitymą lengvą ir malonų.",
+        "sentences": [
+          {
+            "es": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+            "lt": "Orasijus Kiroga (1878–1937) gimė Urugvajuje, bet daug metų gyveno Misjonese, šiaurės Argentinos džiunglėse, netoli Paranos upės.",
+            "units": [
+              ["Horacio","Orasijus (tariama „orásjo“)",""],
+              ["Quiroga","Kiroga (tariama „kiróga“)",""],
+              ["(1878–1937)","(1878–1937)",""],
+              ["nació","gimė",""],
+              ["en Uruguay,","Urugvajuje,",""],
+              ["pero","bet",""],
+              ["vivió","gyveno",""],
+              ["muchos","daug",""],
+              ["años","metų",""],
+              ["en Misiones,","Misjonese,",""],
+              ["en la selva","džiunglėse",""],
+              ["del norte","šiaurės",""],
+              ["de Argentina,","Argentinos,",""],
+              ["cerca","netoli",""],
+              ["del río Paraná.","Paranos upės.",""]
+            ],
+            "n": 0,
+            "en": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+            "sentence_id": "001"
+          },
+          {
+            "es": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+            "lt": "Ten jis pasakodavo savo vaikams pasakas apie džiunglių gyvūnus, o 1918 metais išleido jas knyga „Cuentos de la selva“.",
+            "units": [
+              ["Allí","Ten",""],
+              ["contaba","pasakodavo",""],
+              ["a sus","savo",""],
+              ["hijos","vaikams",""],
+              ["cuentos","pasakas",""],
+              ["sobre","apie",""],
+              ["los animales","gyvūnus",""],
+              ["de la selva,","džiunglių,",""],
+              ["y","ir (čia: o)",""],
+              ["en 1918","1918 metais",""],
+              ["los","jas (pažod. juos)",""],
+              ["publicó","išleido",""],
+              ["en un libro:","knyga (pažod. knygoje):",""],
+              ["«Cuentos de la selva».","„Cuentos de la selva“ („Džiunglių pasakos“).",""]
+            ],
+            "n": 1,
+            "en": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+            "sentence_id": "002"
+          },
+          {
+            "es": "En el libro hablan tortugas, loros, yacarés y rayas.",
+            "lt": "Knygoje kalba vėžliai, papūgos, kaimanai ir rajos.",
+            "units": [
+              ["En el libro","Knygoje",""],
+              ["hablan","kalba",""],
+              ["tortugas,","vėžliai,",""],
+              ["loros,","papūgos,",""],
+              ["yacarés","kaimanai",""],
+              ["y","ir",""],
+              ["rayas.","rajos.",""]
+            ],
+            "n": 2,
+            "en": "En el libro hablan tortugas, loros, yacarés y rayas.",
+            "sentence_id": "003"
+          },
+          {
+            "es": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+            "lt": "Bet tai ne saldžios pasakėlės: džiunglės čia tikros, karštos ir pavojingos, o gyvūnai protingi, ištikimi ir kartais žiaurūs.",
+            "units": [
+              ["Pero","Bet",""],
+              ["no son","nėra",""],
+              ["cuentos","pasakos",""],
+              ["dulces:","saldžios:",""],
+              ["la selva","džiunglės",""],
+              ["es","yra",""],
+              ["real,","tikros,",""],
+              ["caliente","karštos",""],
+              ["y","ir",""],
+              ["peligrosa,","pavojingos,",""],
+              ["y","ir (čia: o)",""],
+              ["los animales","gyvūnai",""],
+              ["son","yra",""],
+              ["listos,","protingi (gudrūs),",""],
+              ["fieles","ištikimi",""],
+              ["y","ir",""],
+              ["a veces","kartais",""],
+              ["crueles.","žiaurūs.",""]
+            ],
+            "n": 3,
+            "en": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+            "sentence_id": "004"
+          },
+          {
+            "es": "Hoy lo leen en las escuelas de toda América Latina.",
+            "lt": "Šiandien ją skaito visos Lotynų Amerikos mokyklose.",
+            "units": [
+              ["Hoy","Šiandien",""],
+              ["lo","ją (pažod. jį)",""],
+              ["leen","skaito",""],
+              ["en las escuelas","mokyklose",""],
+              ["de toda","visos",""],
+              ["América Latina.","Lotynų Amerikos.",""]
+            ],
+            "n": 4,
+            "en": "Hoy lo leen en las escuelas de toda América Latina.",
+            "sentence_id": "005"
+          },
+          {
+            "es": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+            "lt": "Trumpi sakiniai, aiškūs vaizdai ir šiltas humoras padaro skaitymą lengvą ir malonų.",
+            "units": [
+              ["Las frases cortas,","Trumpi sakiniai,",""],
+              ["las imágenes claras","aiškūs vaizdai",""],
+              ["y","ir",""],
+              ["el humor cálido","šiltas humoras",""],
+              ["hacen","daro (padaro)",""],
+              ["la lectura","skaitymą",""],
+              ["fácil","lengvą",""],
+              ["y","ir",""],
+              ["agradable.","malonų.",""]
+            ],
+            "n": 5,
+            "en": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+            "sentence_id": "006"
+          }
+        ]
+      },
+      {
+        "lt": "Kartą gyveno Buenos Airėse vienas žmogus, ir jis buvo labai laimingas, nes buvo sveikas ir darbštus. Bet vieną dieną jis susirgo, ir gydytojai jam pasakė, kad pasveikti jis galės tik išvažiavęs gyventi į kaimą.",
+        "sentences": [
+          {
+            "es": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+            "lt": "Kartą gyveno Buenos Airėse vienas žmogus, ir jis buvo labai laimingas, nes buvo sveikas ir darbštus.",
+            "units": [
+              ["Había una vez","Kartą gyveno (pažod. buvo vieną kartą)",""],
+              ["un hombre","vienas žmogus (vyras)",""],
+              ["que","kuris",""],
+              ["vivía","gyveno",""],
+              ["en Buenos Aires,","Buenos Airėse,",""],
+              ["y","ir",""],
+              ["estaba","buvo",""],
+              ["muy","labai",""],
+              ["contento","laimingas (patenkintas)",""],
+              ["porque","nes",""],
+              ["era","buvo",""],
+              ["un hombre sano y trabajador.","sveikas ir darbštus žmogus.",""]
+            ],
+            "n": 6,
+            "en": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+            "sentence_id": "007"
+          },
+          {
+            "es": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+            "lt": "Bet vieną dieną jis susirgo, ir gydytojai jam pasakė, kad pasveikti jis galės tik išvažiavęs gyventi į kaimą.",
+            "units": [
+              ["Pero","Bet",""],
+              ["un día","vieną dieną",""],
+              ["se enfermó,","susirgo,",""],
+              ["y","ir",""],
+              ["los médicos","gydytojai",""],
+              ["le","jam",""],
+              ["dijeron","pasakė",""],
+              ["que","kad",""],
+              ["solamente","tik",""],
+              ["yéndose","išvykdamas (išvažiavęs)",""],
+              ["al campo","į kaimą",""],
+              ["podría","galėtų (galės)",""],
+              ["curarse.","pasveikti.",""]
+            ],
+            "n": 7,
+            "en": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+            "sentence_id": "008"
+          }
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "story_id": "BK01-00",
+    "mode": "bilingual",
+    "duration_seconds": 153.30125,
+    "audio_sha256": {
+      "bilingual": "1cc585b94a9599a2ffabcb4658043aa38eee3cd3eb2facbc4ae0866dcf88fa45",
+      "english": "3b8b58bb5d1fa1fac44eff6e0bb4a35f8b40ba3b5f630c1bafa4156b5efb79d0"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-00",
+        "sentence": "title",
+        "language": "lt",
+        "text": "Džiunglių pasakos",
+        "sentence_id": "BK01-00-title",
+        "start": 0,
+        "end": 1.8
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "title",
+        "language": "es",
+        "text": "Cuentos de la selva",
+        "sentence_id": "BK01-00-title",
+        "start": 2.1,
+        "end": 4.589333333333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "001",
+        "language": "lt",
+        "text": "Orasijus Kiroga (1878–1937) gimė Urugvajuje, bet daug metų gyveno Misjonese, šiaurės Argentinos džiunglėse, netoli Paranos upės.",
+        "sentence_id": "BK01-00-001",
+        "start": 5.089333333333333,
+        "end": 19.929333333333332
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "001",
+        "language": "es",
+        "text": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+        "sentence_id": "BK01-00-001",
+        "start": 20.229333333333333,
+        "end": 35.88283333333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "002",
+        "language": "lt",
+        "text": "Ten jis pasakodavo savo vaikams pasakas apie džiunglių gyvūnus, o 1918 metais išleido jas knyga „Cuentos de la selva“.",
+        "sentence_id": "BK01-00-002",
+        "start": 36.38283333333333,
+        "end": 46.38283333333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "002",
+        "language": "es",
+        "text": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+        "sentence_id": "BK01-00-002",
+        "start": 46.682833333333335,
+        "end": 58.34166666666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "003",
+        "language": "lt",
+        "text": "Knygoje kalba vėžliai, papūgos, kaimanai ir rajos.",
+        "sentence_id": "BK01-00-003",
+        "start": 58.84166666666667,
+        "end": 63.60166666666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "003",
+        "language": "es",
+        "text": "En el libro hablan tortugas, loros, yacarés y rayas.",
+        "sentence_id": "BK01-00-003",
+        "start": 63.901666666666664,
+        "end": 71.19291666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "004",
+        "language": "lt",
+        "text": "Bet tai ne saldžios pasakėlės: džiunglės čia tikros, karštos ir pavojingos, o gyvūnai protingi, ištikimi ir kartais žiaurūs.",
+        "sentence_id": "BK01-00-004",
+        "start": 71.69291666666666,
+        "end": 81.61291666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "004",
+        "language": "es",
+        "text": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+        "sentence_id": "BK01-00-004",
+        "start": 81.91291666666666,
+        "end": 93.78720833333334
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "005",
+        "language": "lt",
+        "text": "Šiandien ją skaito visos Lotynų Amerikos mokyklose.",
+        "sentence_id": "BK01-00-005",
+        "start": 94.28720833333334,
+        "end": 98.08720833333334
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "005",
+        "language": "es",
+        "text": "Hoy lo leen en las escuelas de toda América Latina.",
+        "sentence_id": "BK01-00-005",
+        "start": 98.38720833333333,
+        "end": 102.48204166666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "006",
+        "language": "lt",
+        "text": "Trumpi sakiniai, aiškūs vaizdai ir šiltas humoras padaro skaitymą lengvą ir malonų.",
+        "sentence_id": "BK01-00-006",
+        "start": 102.98204166666666,
+        "end": 109.26204166666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "006",
+        "language": "es",
+        "text": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+        "sentence_id": "BK01-00-006",
+        "start": 109.56204166666667,
+        "end": 118.60941666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "007",
+        "language": "lt",
+        "text": "Kartą gyveno Buenos Airėse vienas žmogus, ir jis buvo labai laimingas, nes buvo sveikas ir darbštus.",
+        "sentence_id": "BK01-00-007",
+        "start": 119.10941666666666,
+        "end": 127.10941666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "007",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+        "sentence_id": "BK01-00-007",
+        "start": 127.40941666666667,
+        "end": 135.88804166666668
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "008",
+        "language": "lt",
+        "text": "Bet vieną dieną jis susirgo, ir gydytojai jam pasakė, kad pasveikti jis galės tik išvažiavęs gyventi į kaimą.",
+        "sentence_id": "BK01-00-008",
+        "start": 136.38804166666668,
+        "end": 145.38804166666668
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "008",
+        "language": "es",
+        "text": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+        "sentence_id": "BK01-00-008",
+        "start": 145.68804166666666,
+        "end": 153.30125
+      }
+    ],
+    "rate_switches": {
+      "version": 1,
+      "audio_sha256": "1cc585b94a9599a2ffabcb4658043aa38eee3cd3eb2facbc4ae0866dcf88fa45",
+      "speech": [
+        [
+          0.23,
+          1.62
+        ],
+        [
+          2.5,
+          3.99
+        ],
+        [
+          5.289,
+          19.72
+        ],
+        [
+          20.419,
+          35.38
+        ],
+        [
+          36.592,
+          46.033
+        ],
+        [
+          46.952,
+          58.153
+        ],
+        [
+          58.861,
+          63.402
+        ],
+        [
+          63.921,
+          71.012
+        ],
+        [
+          71.992,
+          81.353
+        ],
+        [
+          82.352,
+          93.463
+        ],
+        [
+          94.497,
+          97.908
+        ],
+        [
+          98.697,
+          102.078
+        ],
+        [
+          103.192,
+          109.073
+        ],
+        [
+          109.682,
+          118.183
+        ],
+        [
+          119.359,
+          126.92
+        ],
+        [
+          127.679,
+          135.71
+        ],
+        [
+          136.458,
+          145.319
+        ],
+        [
+          145.708,
+          152.869
+        ]
+      ],
+      "sw": [
+        0,
+        2.06,
+        4.639,
+        20.069,
+        35.986,
+        46.492,
+        58.507,
+        63.662,
+        71.502,
+        81.852,
+        93.98,
+        98.303,
+        102.635,
+        109.377,
+        118.771,
+        127.299,
+        136.084,
+        145.513
+      ]
+    }
+  },
+  "english-timing": {
+    "story_id": "BK01-00",
+    "mode": "english",
+    "duration_seconds": 82.20125,
+    "audio_sha256": {
+      "bilingual": "1cc585b94a9599a2ffabcb4658043aa38eee3cd3eb2facbc4ae0866dcf88fa45",
+      "english": "3b8b58bb5d1fa1fac44eff6e0bb4a35f8b40ba3b5f630c1bafa4156b5efb79d0"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-00",
+        "sentence": "title",
+        "language": "es",
+        "text": "Cuentos de la selva",
+        "sentence_id": "BK01-00-title",
+        "start": 0,
+        "end": 2.489333333333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "001",
+        "language": "es",
+        "text": "Horacio Quiroga (1878–1937) nació en Uruguay, pero vivió muchos años en Misiones, en la selva del norte de Argentina, cerca del río Paraná.",
+        "sentence_id": "BK01-00-001",
+        "start": 2.989333333333333,
+        "end": 18.642833333333332
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "002",
+        "language": "es",
+        "text": "Allí contaba a sus hijos cuentos sobre los animales de la selva, y en 1918 los publicó en un libro: «Cuentos de la selva».",
+        "sentence_id": "BK01-00-002",
+        "start": 19.142833333333332,
+        "end": 30.801666666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "003",
+        "language": "es",
+        "text": "En el libro hablan tortugas, loros, yacarés y rayas.",
+        "sentence_id": "BK01-00-003",
+        "start": 31.301666666666666,
+        "end": 38.59291666666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "004",
+        "language": "es",
+        "text": "Pero no son cuentos dulces: la selva es real, caliente y peligrosa, y los animales son listos, fieles y a veces crueles.",
+        "sentence_id": "BK01-00-004",
+        "start": 39.09291666666667,
+        "end": 50.96720833333333
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "005",
+        "language": "es",
+        "text": "Hoy lo leen en las escuelas de toda América Latina.",
+        "sentence_id": "BK01-00-005",
+        "start": 51.46720833333333,
+        "end": 55.562041666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "006",
+        "language": "es",
+        "text": "Las frases cortas, las imágenes claras y el humor cálido hacen la lectura fácil y agradable.",
+        "sentence_id": "BK01-00-006",
+        "start": 56.062041666666666,
+        "end": 65.10941666666666
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "007",
+        "language": "es",
+        "text": "Había una vez un hombre que vivía en Buenos Aires, y estaba muy contento porque era un hombre sano y trabajador.",
+        "sentence_id": "BK01-00-007",
+        "start": 65.60941666666666,
+        "end": 74.08804166666667
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "008",
+        "language": "es",
+        "text": "Pero un día se enfermó, y los médicos le dijeron que solamente yéndose al campo podría curarse.",
+        "sentence_id": "BK01-00-008",
+        "start": 74.58804166666667,
+        "end": 82.20125
+      }
+    ]
+  },
+  "lithuanian-timing": {
+    "story_id": "BK01-00",
+    "mode": "lithuanian",
+    "duration_seconds": 72.4,
+    "audio_sha256": {
+      "lithuanian": "30f2da7da1fa0d5ee64f3f47ec075459444e390fbdc9de710142f343021067ad"
+    },
+    "timeline": [
+      {
+        "item_id": "BK01-00",
+        "sentence": "title",
+        "language": "lt",
+        "text": "Džiunglių pasakos",
+        "sentence_id": "BK01-00-title",
+        "start": 0,
+        "end": 1.8
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "001",
+        "language": "lt",
+        "text": "Orasijus Kiroga (1878–1937) gimė Urugvajuje, bet daug metų gyveno Misjonese, šiaurės Argentinos džiunglėse, netoli Paranos upės.",
+        "sentence_id": "BK01-00-001",
+        "start": 2.3,
+        "end": 17.14
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "002",
+        "language": "lt",
+        "text": "Ten jis pasakodavo savo vaikams pasakas apie džiunglių gyvūnus, o 1918 metais išleido jas knyga „Cuentos de la selva“.",
+        "sentence_id": "BK01-00-002",
+        "start": 17.64,
+        "end": 27.64
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "003",
+        "language": "lt",
+        "text": "Knygoje kalba vėžliai, papūgos, kaimanai ir rajos.",
+        "sentence_id": "BK01-00-003",
+        "start": 28.14,
+        "end": 32.9
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "004",
+        "language": "lt",
+        "text": "Bet tai ne saldžios pasakėlės: džiunglės čia tikros, karštos ir pavojingos, o gyvūnai protingi, ištikimi ir kartais žiaurūs.",
+        "sentence_id": "BK01-00-004",
+        "start": 33.4,
+        "end": 43.32
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "005",
+        "language": "lt",
+        "text": "Šiandien ją skaito visos Lotynų Amerikos mokyklose.",
+        "sentence_id": "BK01-00-005",
+        "start": 43.82,
+        "end": 47.62
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "006",
+        "language": "lt",
+        "text": "Trumpi sakiniai, aiškūs vaizdai ir šiltas humoras padaro skaitymą lengvą ir malonų.",
+        "sentence_id": "BK01-00-006",
+        "start": 48.12,
+        "end": 54.4
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "007",
+        "language": "lt",
+        "text": "Kartą gyveno Buenos Airėse vienas žmogus, ir jis buvo labai laimingas, nes buvo sveikas ir darbštus.",
+        "sentence_id": "BK01-00-007",
+        "start": 54.9,
+        "end": 62.9
+      },
+      {
+        "item_id": "BK01-00",
+        "sentence": "008",
+        "language": "lt",
+        "text": "Bet vieną dieną jis susirgo, ir gydytojai jam pasakė, kad pasveikti jis galės tik išvažiavęs gyventi į kaimą.",
+        "sentence_id": "BK01-00-008",
+        "start": 63.4,
+        "end": 72.4
+      }
+    ]
+  },
+  "word-timing": {
+    "story_id": "BK01-00",
+    "language": "es",
+    "lines": [
+      {
+        "sentence_id": "BK01-00-title",
+        "w": [[0.4,0.92],[0.92,1.08],[1.08,1.24],[1.24,1.85]]
+      },
+      {
+        "sentence_id": "BK01-00-001",
+        "w": [[0.33,0.8],[0.8,1.84],[1.84,6],[6,6.48],[6.48,6.64],[6.64,7.84],[7.84,8.16],[8.16,8.8],[8.8,9.2],[9.2,9.6],[9.6,9.84],[9.84,10.72],[10.72,10.88],[10.88,11.12],[11.12,11.68],[11.68,11.84],[11.84,12.24],[12.24,12.4],[12.4,13.4],[13.6,14],[14,14.24],[14.24,14.64],[14.64,15.13]]
+      },
+      {
+        "sentence_id": "BK01-00-002",
+        "w": [[0.32,0.96],[0.96,1.52],[1.52,1.6],[1.6,1.84],[1.84,2.32],[2.32,2.96],[2.96,3.2],[3.2,3.44],[3.44,4],[4,4.16],[4.16,4.4],[4.4,5.44],[5.44,5.68],[5.68,5.96],[6.49,7.84],[7.84,8.16],[8.16,8.72],[8.72,8.8],[8.8,8.96],[8.96,10],[10,10.56],[10.56,10.72],[10.72,10.88],[10.88,11.32]]
+      },
+      {
+        "sentence_id": "BK01-00-003",
+        "w": [[0.26,0.4],[0.4,0.64],[0.64,1.04],[1.04,1.6],[1.6,3.36],[3.36,4.48],[4.48,5.64],[5.84,6.16],[6.16,6.85]]
+      },
+      {
+        "sentence_id": "BK01-00-004",
+        "w": [[0.44,0.72],[0.72,0.96],[0.96,1.28],[1.28,1.84],[1.84,2.88],[2.88,3.12],[3.12,3.68],[3.68,3.92],[3.92,4.36],[4.56,5.24],[5.44,5.76],[5.76,7.04],[7.04,7.28],[7.28,7.52],[7.52,8.08],[8.08,8.4],[8.4,9.28],[9.28,9.96],[10.24,10.48],[10.48,10.56],[10.56,10.96],[10.96,11.53]]
+      },
+      {
+        "sentence_id": "BK01-00-005",
+        "w": [[0.31,0.66],[0.67,0.82],[0.83,1.3],[1.31,1.46],[1.47,1.62],[1.63,2.18],[2.19,2.34],[2.35,2.66],[2.67,3.14],[3.15,3.68]]
+      },
+      {
+        "sentence_id": "BK01-00-006",
+        "w": [[0.12,0.56],[0.56,1.28],[1.28,2.24],[2.24,2.48],[2.48,3.2],[3.2,3.76],[3.76,4],[4,4.24],[4.24,4.72],[4.72,5.56],[5.76,6.24],[6.24,6.4],[6.4,7.04],[7.04,7.6],[7.6,7.92],[7.92,8.61]]
+      },
+      {
+        "sentence_id": "BK01-00-007",
+        "w": [[0.28,0.64],[0.64,0.88],[0.88,1.12],[1.12,1.36],[1.36,1.68],[1.68,1.84],[1.84,2.24],[2.24,2.4],[2.4,2.88],[2.88,3.84],[3.84,4.16],[4.16,4.52],[4.72,4.96],[4.96,5.48],[5.68,6],[6,6.16],[6.16,6.32],[6.32,6.72],[6.72,7.2],[7.2,7.36],[7.36,8.05]]
+      },
+      {
+        "sentence_id": "BK01-00-008",
+        "w": [[0.44,0.54],[0.54,0.78],[0.78,1.1],[1.1,1.34],[1.34,2.38],[2.38,2.62],[2.62,2.86],[2.86,3.34],[3.34,3.5],[3.5,4.06],[4.06,4.3],[4.3,4.94],[4.94,5.58],[5.58,5.74],[5.74,6.14],[6.14,6.7],[6.7,7.17]]
+      }
+    ]
+  }
+}

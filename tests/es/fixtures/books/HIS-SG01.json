@@ -1,0 +1,3096 @@
+{
+  "data": {
+    "id": "HIS-SG01",
+    "title_es": "Una palabra cada mañana",
+    "title_lt": "One Word Every Morning",
+    "paragraphs": [
+      {
+        "lt": "Don Andrés and Marta sell bread in a small bakery in Valencia. They open at seven. At five past seven, every day, a tall man in work clothes comes in. He buys a loaf of bread, pays, and doesn’t say a word.",
+        "sentences": [
+          {
+            "i": 0,
+            "es": "Don Andrés y Marta venden pan en una panadería pequeña de Valencia.",
+            "lt": "Don Andrés and Marta sell bread in a small bakery in Valencia.",
+            "units": [
+              ["Don","Mr. (term of respect)",""],
+              ["Andrés","Andrés",""],
+              ["y","and",""],
+              ["Marta","Marta",""],
+              ["venden","sell",""],
+              ["pan","bread",""],
+              ["en","in",""],
+              ["una","a",""],
+              ["panadería","bakery",""],
+              ["pequeña","small",""],
+              ["de","in",""],
+              ["Valencia.","Valencia.",""]
+            ],
+            "n": 0,
+            "en": "Don Andrés y Marta venden pan en una panadería pequeña de Valencia.",
+            "sentence_id": "001"
+          },
+          {
+            "i": 1,
+            "es": "Abren a las siete.",
+            "lt": "They open at seven.",
+            "units": [
+              ["Abren","They open",""],
+              ["a las siete.","at seven.",""]
+            ],
+            "n": 1,
+            "en": "Abren a las siete.",
+            "sentence_id": "002"
+          },
+          {
+            "i": 2,
+            "es": "A las siete y cinco, todos los días, entra un hombre alto con ropa de trabajo.",
+            "lt": "At five past seven, every day, a tall man in work clothes comes in.",
+            "units": [
+              ["A las siete y cinco,","At five past seven (lit. at seven and five),",""],
+              ["todos","every",""],
+              ["los días,","day,",""],
+              ["entra","enters",""],
+              ["un","a",""],
+              ["hombre","man",""],
+              ["alto","tall",""],
+              ["con","in (lit. with)",""],
+              ["ropa","clothes",""],
+              ["de","for",""],
+              ["trabajo.","work.",""]
+            ],
+            "n": 2,
+            "en": "A las siete y cinco, todos los días, entra un hombre alto con ropa de trabajo.",
+            "sentence_id": "003"
+          },
+          {
+            "i": 3,
+            "es": "Compra un pan, paga y no habla.",
+            "lt": "He buys a loaf of bread, pays, and doesn’t say a word.",
+            "units": [
+              ["Compra","He buys",""],
+              ["un","a",""],
+              ["pan,","loaf of bread,",""],
+              ["paga","pays",""],
+              ["y","and",""],
+              ["no habla.","doesn’t speak.",""]
+            ],
+            "n": 3,
+            "en": "Compra un pan, paga y no habla.",
+            "sentence_id": "004"
+          }
+        ]
+      },
+      {
+        "lt": "“Good morning!” Don Andrés greets him.",
+        "sentences": [
+          {
+            "i": 4,
+            "es": "—¡Buenos días! —saluda don Andrés.",
+            "lt": "“Good morning!” Don Andrés greets him.",
+            "units": [
+              ["—¡Buenos días!","“Good morning!” (lit. good days)",""],
+              ["—saluda","greets",""],
+              ["don","Mr.",""],
+              ["Andrés.","Andrés.",""]
+            ],
+            "n": 4,
+            "en": "—¡Buenos días! —saluda don Andrés.",
+            "sentence_id": "005"
+          }
+        ]
+      },
+      {
+        "lt": "The man looks at the bread, looks at the coins, and doesn’t answer.",
+        "sentences": [
+          {
+            "i": 5,
+            "es": "El hombre mira el pan, mira las monedas y no contesta.",
+            "lt": "The man looks at the bread, looks at the coins, and doesn’t answer.",
+            "units": [
+              ["El hombre","The man",""],
+              ["mira","looks at",""],
+              ["el","the",""],
+              ["pan,","bread,",""],
+              ["mira","looks at",""],
+              ["las","the",""],
+              ["monedas","coins",""],
+              ["y","and",""],
+              ["no contesta.","doesn’t answer.",""]
+            ],
+            "n": 5,
+            "en": "El hombre mira el pan, mira las monedas y no contesta.",
+            "sentence_id": "006"
+          }
+        ]
+      },
+      {
+        "lt": "“He’s an unfriendly man,” remarks Doña Amparo, the neighbor on the first floor.",
+        "sentences": [
+          {
+            "i": 6,
+            "es": "—Es un hombre antipático —comenta doña Amparo, la vecina del primero.",
+            "lt": "“He’s an unfriendly man,” remarks Doña Amparo, the neighbor on the first floor.",
+            "units": [
+              ["—Es","“He is",""],
+              ["un","an",""],
+              ["hombre","man",""],
+              ["antipático","unfriendly",""],
+              ["—comenta","” remarks",""],
+              ["doña","Mrs. (term of respect)",""],
+              ["Amparo,","Amparo,",""],
+              ["la","the",""],
+              ["vecina","neighbor",""],
+              ["del","of the",""],
+              ["primero.","first (floor).",""]
+            ],
+            "n": 6,
+            "en": "—Es un hombre antipático —comenta doña Amparo, la vecina del primero.",
+            "sentence_id": "007"
+          }
+        ]
+      },
+      {
+        "lt": "“He’s not unfriendly,” Marta answers. He doesn’t speak Spanish.",
+        "sentences": [
+          {
+            "i": 7,
+            "es": "—No es antipático —contesta Marta—.",
+            "lt": "“He’s not unfriendly,” Marta answers.",
+            "units": [
+              ["—No es","“He is not",""],
+              ["antipático","unfriendly",""],
+              ["—contesta","” answers",""],
+              ["Marta—.","Marta.",""]
+            ],
+            "n": 7,
+            "en": "—No es antipático —contesta Marta—.",
+            "sentence_id": "008"
+          },
+          {
+            "i": 8,
+            "es": "No habla español.",
+            "lt": "He doesn’t speak Spanish.",
+            "units": [
+              ["No habla","He does not speak",""],
+              ["español.","Spanish.",""]
+            ],
+            "n": 8,
+            "en": "No habla español.",
+            "sentence_id": "009"
+          }
+        ]
+      },
+      {
+        "lt": "One Monday, the man touches the bread with a finger and asks:",
+        "sentences": [
+          {
+            "i": 9,
+            "es": "Un lunes, el hombre toca el pan con un dedo y pregunta:",
+            "lt": "One Monday, the man touches the bread with a finger and asks:",
+            "units": [
+              ["Un","One",""],
+              ["lunes,","Monday,",""],
+              ["el","the",""],
+              ["hombre","man",""],
+              ["toca","touches",""],
+              ["el","the",""],
+              ["pan","bread",""],
+              ["con","with",""],
+              ["un","a",""],
+              ["dedo","finger",""],
+              ["y","and",""],
+              ["pregunta:","asks:",""]
+            ],
+            "n": 9,
+            "en": "Un lunes, el hombre toca el pan con un dedo y pregunta:",
+            "sentence_id": "010"
+          }
+        ]
+      },
+      {
+        "lt": "“Bread?”",
+        "sentences": [
+          {
+            "i": 10,
+            "es": "—¿Pan?",
+            "lt": "“Bread?”",
+            "units": [
+              ["—¿Pan?","“Bread?",""]
+            ],
+            "n": 10,
+            "en": "—¿Pan?",
+            "sentence_id": "011"
+          }
+        ]
+      },
+      {
+        "lt": "“Bread,” answers Don Andrés, very slowly. “Bread.”",
+        "sentences": [
+          {
+            "i": 11,
+            "es": "—Pan —contesta don Andrés, muy despacio—.",
+            "lt": "“Bread,” answers Don Andrés, very slowly.",
+            "units": [
+              ["—Pan","“Bread",""],
+              ["—contesta","” answers",""],
+              ["don","Mr.",""],
+              ["Andrés,","Andrés,",""],
+              ["muy","very",""],
+              ["despacio—.","slowly.",""]
+            ],
+            "n": 11,
+            "en": "—Pan —contesta don Andrés, muy despacio—.",
+            "sentence_id": "012"
+          },
+          {
+            "i": 12,
+            "es": "Pan.",
+            "lt": "“Bread.”",
+            "units": [
+              ["Pan.","Bread.",""]
+            ],
+            "n": 12,
+            "en": "Pan.",
+            "sentence_id": "013"
+          }
+        ]
+      },
+      {
+        "lt": "“Bread.” “Thank you.”",
+        "sentences": [
+          {
+            "i": 13,
+            "es": "—Pan.",
+            "lt": "“Bread.”",
+            "units": [
+              ["—Pan.","“Bread.",""]
+            ],
+            "n": 13,
+            "en": "—Pan.",
+            "sentence_id": "014"
+          },
+          {
+            "i": 14,
+            "es": "Gracias.",
+            "lt": "“Thank you.”",
+            "units": [
+              ["Gracias.","Thank you.",""]
+            ],
+            "n": 14,
+            "en": "Gracias.",
+            "sentence_id": "015"
+          }
+        ]
+      },
+      {
+        "lt": "On Tuesday, Don Andrés teaches another word: “agua.” On Wednesday, “leche.” On Thursday, Doña Amparo teaches “hola” and “adiós”—“hello” and “goodbye.” Now, in the mornings, the bakery is a small classroom, and the teachers are learning too: the man is Piotr, he’s from Poland and works at the port. His wife and daughter live in Kraków.",
+        "sentences": [
+          {
+            "i": 15,
+            "es": "El martes, don Andrés enseña otra palabra: «agua».",
+            "lt": "On Tuesday, Don Andrés teaches another word: “agua.”",
+            "units": [
+              ["El martes,","On Tuesday,",""],
+              ["don","Mr.",""],
+              ["Andrés","Andrés",""],
+              ["enseña","teaches",""],
+              ["otra","another",""],
+              ["palabra:","word:",""],
+              ["«agua».","“agua” (water).",""]
+            ],
+            "n": 15,
+            "en": "El martes, don Andrés enseña otra palabra: «agua».",
+            "sentence_id": "016"
+          },
+          {
+            "i": 16,
+            "es": "El miércoles, «leche».",
+            "lt": "On Wednesday, “leche.”",
+            "units": [
+              ["El miércoles,","On Wednesday,",""],
+              ["«leche».","“leche” (milk).",""]
+            ],
+            "n": 16,
+            "en": "El miércoles, «leche».",
+            "sentence_id": "017"
+          },
+          {
+            "i": 17,
+            "es": "El jueves, doña Amparo enseña «hola» y «adiós».",
+            "lt": "On Thursday, Doña Amparo teaches “hola” and “adiós”—“hello” and “goodbye.”",
+            "units": [
+              ["El jueves,","On Thursday,",""],
+              ["doña","Mrs.",""],
+              ["Amparo","Amparo",""],
+              ["enseña","teaches",""],
+              ["«hola»","“hola” (hello)",""],
+              ["y","and",""],
+              ["«adiós».","“adiós” (goodbye).",""]
+            ],
+            "n": 17,
+            "en": "El jueves, doña Amparo enseña «hola» y «adiós».",
+            "sentence_id": "018"
+          },
+          {
+            "i": 18,
+            "es": "Ahora, por las mañanas, la panadería es una clase pequeña, y los profesores también aprenden: el hombre es Piotr, es de Polonia y trabaja en el puerto.",
+            "lt": "Now, in the mornings, the bakery is a small classroom, and the teachers are learning too: the man is Piotr, he’s from Poland and works at the port.",
+            "units": [
+              ["Ahora,","Now,",""],
+              ["por las mañanas,","in the mornings,",""],
+              ["la","the",""],
+              ["panadería","bakery",""],
+              ["es","is",""],
+              ["una","a",""],
+              ["clase","classroom",""],
+              ["pequeña,","small,",""],
+              ["y","and",""],
+              ["los","the",""],
+              ["profesores","teachers",""],
+              ["también","also",""],
+              ["aprenden:","learn:",""],
+              ["el","the",""],
+              ["hombre","man",""],
+              ["es","is",""],
+              ["Piotr,","Piotr,",""],
+              ["es","he is",""],
+              ["de","from",""],
+              ["Polonia","Poland",""],
+              ["y","and",""],
+              ["trabaja","works",""],
+              ["en","at",""],
+              ["el","the",""],
+              ["puerto.","port.",""]
+            ],
+            "n": 18,
+            "en": "Ahora, por las mañanas, la panadería es una clase pequeña, y los profesores también aprenden: el hombre es Piotr, es de Polonia y trabaja en el puerto.",
+            "sentence_id": "019"
+          },
+          {
+            "i": 19,
+            "es": "Su mujer y su hija viven en Cracovia.",
+            "lt": "His wife and daughter live in Kraków.",
+            "units": [
+              ["Su","His",""],
+              ["mujer","wife",""],
+              ["y","and",""],
+              ["su","his",""],
+              ["hija","daughter",""],
+              ["viven","live",""],
+              ["en","in",""],
+              ["Cracovia.","Kraków.",""]
+            ],
+            "n": 19,
+            "en": "Su mujer y su hija viven en Cracovia.",
+            "sentence_id": "020"
+          }
+        ]
+      },
+      {
+        "lt": "One Saturday, a lot of people come in. A lady asks out loud:",
+        "sentences": [
+          {
+            "i": 20,
+            "es": "Un sábado entran muchas personas.",
+            "lt": "One Saturday, a lot of people come in.",
+            "units": [
+              ["Un","One",""],
+              ["sábado","Saturday",""],
+              ["entran","come in",""],
+              ["muchas","many",""],
+              ["personas.","people.",""]
+            ],
+            "n": 20,
+            "en": "Un sábado entran muchas personas.",
+            "sentence_id": "021"
+          },
+          {
+            "i": 21,
+            "es": "Una señora pregunta en voz alta:",
+            "lt": "A lady asks out loud:",
+            "units": [
+              ["Una","A",""],
+              ["señora","lady",""],
+              ["pregunta","asks",""],
+              ["en voz alta:","out loud (lit. in a high voice):",""]
+            ],
+            "n": 21,
+            "en": "Una señora pregunta en voz alta:",
+            "sentence_id": "022"
+          }
+        ]
+      },
+      {
+        "lt": "“Who’s last?”",
+        "sentences": [
+          {
+            "i": 22,
+            "es": "—¿Quién es el último?",
+            "lt": "“Who’s last?”",
+            "units": [
+              ["—¿Quién","“Who",""],
+              ["es","is",""],
+              ["el","the",""],
+              ["último?","last one?",""]
+            ],
+            "n": 22,
+            "en": "—¿Quién es el último?",
+            "sentence_id": "023"
+          }
+        ]
+      },
+      {
+        "lt": "“I am,” answers a guy.",
+        "sentences": [
+          {
+            "i": 23,
+            "es": "—Yo —contesta un chico.",
+            "lt": "“I am,” answers a guy.",
+            "units": [
+              ["—Yo","“I (am)",""],
+              ["—contesta","” answers",""],
+              ["un","a",""],
+              ["chico.","guy.",""]
+            ],
+            "n": 23,
+            "en": "—Yo —contesta un chico.",
+            "sentence_id": "024"
+          }
+        ]
+      },
+      {
+        "lt": "The lady waits behind the guy. Piotr looks on and doesn’t understand. Marta explains with her hands: first the guy, then the lady, then Doña Amparo… and then you.",
+        "sentences": [
+          {
+            "i": 24,
+            "es": "La señora espera detrás del chico.",
+            "lt": "The lady waits behind the guy.",
+            "units": [
+              ["La","The",""],
+              ["señora","lady",""],
+              ["espera","waits",""],
+              ["detrás","behind",""],
+              ["del","the",""],
+              ["chico.","guy.",""]
+            ],
+            "n": 24,
+            "en": "La señora espera detrás del chico.",
+            "sentence_id": "025"
+          },
+          {
+            "i": 25,
+            "es": "Piotr mira y no comprende.",
+            "lt": "Piotr looks on and doesn’t understand.",
+            "units": [
+              ["Piotr","Piotr",""],
+              ["mira","looks",""],
+              ["y","and",""],
+              ["no comprende.","does not understand.",""]
+            ],
+            "n": 25,
+            "en": "Piotr mira y no comprende.",
+            "sentence_id": "026"
+          },
+          {
+            "i": 26,
+            "es": "Marta explica con las manos: primero el chico, después la señora, después doña Amparo… y después tú.",
+            "lt": "Marta explains with her hands: first the guy, then the lady, then Doña Amparo… and then you.",
+            "units": [
+              ["Marta","Marta",""],
+              ["explica","explains",""],
+              ["con","with",""],
+              ["las","the",""],
+              ["manos:","hands:",""],
+              ["primero","first",""],
+              ["el","the",""],
+              ["chico,","guy,",""],
+              ["después","then",""],
+              ["la","the",""],
+              ["señora,","lady,",""],
+              ["después","then",""],
+              ["doña","Mrs.",""],
+              ["Amparo…","Amparo…",""],
+              ["y","and",""],
+              ["después","then",""],
+              ["tú.","you.",""]
+            ],
+            "n": 26,
+            "en": "Marta explica con las manos: primero el chico, después la señora, después doña Amparo… y después tú.",
+            "sentence_id": "027"
+          }
+        ]
+      },
+      {
+        "lt": "The next Saturday, a lot of people come in again. Piotr arrives, looks at everyone, and asks out loud:",
+        "sentences": [
+          {
+            "i": 27,
+            "es": "El sábado siguiente entran otra vez muchas personas.",
+            "lt": "The next Saturday, a lot of people come in again.",
+            "units": [
+              ["El","The",""],
+              ["sábado","Saturday",""],
+              ["siguiente","next",""],
+              ["entran","come in",""],
+              ["otra vez","again (lit. another time)",""],
+              ["muchas","many",""],
+              ["personas.","people.",""]
+            ],
+            "n": 27,
+            "en": "El sábado siguiente entran otra vez muchas personas.",
+            "sentence_id": "028"
+          },
+          {
+            "i": 28,
+            "es": "Piotr llega, mira a todos y pregunta en voz alta:",
+            "lt": "Piotr arrives, looks at everyone, and asks out loud:",
+            "units": [
+              ["Piotr","Piotr",""],
+              ["llega,","arrives,",""],
+              ["mira","looks at",""],
+              ["a","—",""],
+              ["todos","everyone",""],
+              ["y","and",""],
+              ["pregunta","asks",""],
+              ["en voz alta:","out loud:",""]
+            ],
+            "n": 28,
+            "en": "Piotr llega, mira a todos y pregunta en voz alta:",
+            "sentence_id": "029"
+          }
+        ]
+      },
+      {
+        "lt": "“Who’s last?”",
+        "sentences": [
+          {
+            "i": 29,
+            "es": "—¿Quién es el último?",
+            "lt": "“Who’s last?”",
+            "units": [
+              ["—¿Quién","“Who",""],
+              ["es","is",""],
+              ["el","the",""],
+              ["último?","last one?",""]
+            ],
+            "n": 29,
+            "en": "—¿Quién es el último?",
+            "sentence_id": "030"
+          }
+        ]
+      },
+      {
+        "lt": "Silence. Then Doña Amparo raises her hand:",
+        "sentences": [
+          {
+            "i": 30,
+            "es": "Silencio.",
+            "lt": "Silence.",
+            "units": [
+              ["Silencio.","Silence.",""]
+            ],
+            "n": 30,
+            "en": "Silencio.",
+            "sentence_id": "031"
+          },
+          {
+            "i": 31,
+            "es": "Después, doña Amparo levanta la mano:",
+            "lt": "Then Doña Amparo raises her hand:",
+            "units": [
+              ["Después,","Then,",""],
+              ["doña","Mrs.",""],
+              ["Amparo","Amparo",""],
+              ["levanta","raises",""],
+              ["la","the",""],
+              ["mano:","hand:",""]
+            ],
+            "n": 31,
+            "en": "Después, doña Amparo levanta la mano:",
+            "sentence_id": "032"
+          }
+        ]
+      },
+      {
+        "lt": "“Me!” “I’m last!”",
+        "sentences": [
+          {
+            "i": 32,
+            "es": "—¡Yo!",
+            "lt": "“Me!”",
+            "units": [
+              ["—¡Yo!","“Me!",""]
+            ],
+            "n": 32,
+            "en": "—¡Yo!",
+            "sentence_id": "033"
+          },
+          {
+            "i": 33,
+            "es": "¡Yo soy la última!",
+            "lt": "“I’m last!”",
+            "units": [
+              ["¡Yo","I",""],
+              ["soy","am",""],
+              ["la","the",""],
+              ["última!","last one!",""]
+            ],
+            "n": 33,
+            "en": "¡Yo soy la última!",
+            "sentence_id": "034"
+          }
+        ]
+      },
+      {
+        "lt": "And everyone applauds.",
+        "sentences": [
+          {
+            "i": 34,
+            "es": "Y todos aplauden.",
+            "lt": "And everyone applauds.",
+            "units": [
+              ["Y","And",""],
+              ["todos","everyone",""],
+              ["aplauden.","applauds.",""]
+            ],
+            "n": 34,
+            "en": "Y todos aplauden.",
+            "sentence_id": "035"
+          }
+        ]
+      },
+      {
+        "lt": "One Monday, at five past seven, Piotr doesn’t come in. Don Andrés looks at the door. At ten past seven, he looks at the door again. Marta looks at the clock. At a quarter past seven, Piotr comes in with a woman and a little girl.",
+        "sentences": [
+          {
+            "i": 35,
+            "es": "Un lunes, a las siete y cinco, Piotr no entra.",
+            "lt": "One Monday, at five past seven, Piotr doesn’t come in.",
+            "units": [
+              ["Un","One",""],
+              ["lunes,","Monday,",""],
+              ["a las siete y cinco,","at five past seven (lit. seven and five),",""],
+              ["Piotr","Piotr",""],
+              ["no entra.","does not come in.",""]
+            ],
+            "n": 35,
+            "en": "Un lunes, a las siete y cinco, Piotr no entra.",
+            "sentence_id": "036"
+          },
+          {
+            "i": 36,
+            "es": "Don Andrés mira la puerta.",
+            "lt": "Don Andrés looks at the door.",
+            "units": [
+              ["Don","Mr.",""],
+              ["Andrés","Andrés",""],
+              ["mira","looks at",""],
+              ["la","the",""],
+              ["puerta.","door.",""]
+            ],
+            "n": 36,
+            "en": "Don Andrés mira la puerta.",
+            "sentence_id": "037"
+          },
+          {
+            "i": 37,
+            "es": "A las siete y diez, mira la puerta otra vez.",
+            "lt": "At ten past seven, he looks at the door again.",
+            "units": [
+              ["A las siete y diez,","At ten past seven (lit. seven and ten),",""],
+              ["mira","he looks at",""],
+              ["la","the",""],
+              ["puerta","door",""],
+              ["otra vez.","again.",""]
+            ],
+            "n": 37,
+            "en": "A las siete y diez, mira la puerta otra vez.",
+            "sentence_id": "038"
+          },
+          {
+            "i": 38,
+            "es": "Marta mira el reloj.",
+            "lt": "Marta looks at the clock.",
+            "units": [
+              ["Marta","Marta",""],
+              ["mira","looks at",""],
+              ["el","the",""],
+              ["reloj.","clock.",""]
+            ],
+            "n": 38,
+            "en": "Marta mira el reloj.",
+            "sentence_id": "039"
+          },
+          {
+            "i": 39,
+            "es": "A las siete y cuarto, entra Piotr con una mujer y una niña.",
+            "lt": "At a quarter past seven, Piotr comes in with a woman and a little girl.",
+            "units": [
+              ["A las siete y cuarto,","At a quarter past seven (lit. seven and a quarter),",""],
+              ["entra","comes in",""],
+              ["Piotr","Piotr",""],
+              ["con","with",""],
+              ["una","a",""],
+              ["mujer","woman",""],
+              ["y","and",""],
+              ["una","a",""],
+              ["niña.","little girl.",""]
+            ],
+            "n": 39,
+            "en": "A las siete y cuarto, entra Piotr con una mujer y una niña.",
+            "sentence_id": "040"
+          }
+        ]
+      },
+      {
+        "lt": "“My wife, Ania.” “My daughter, Zosia.”",
+        "sentences": [
+          {
+            "i": 40,
+            "es": "—Mi mujer, Ania.",
+            "lt": "“My wife, Ania.”",
+            "units": [
+              ["—Mi","“My",""],
+              ["mujer,","wife,",""],
+              ["Ania.","Ania.",""]
+            ],
+            "n": 40,
+            "en": "—Mi mujer, Ania.",
+            "sentence_id": "041"
+          },
+          {
+            "i": 41,
+            "es": "Mi hija, Zosia.",
+            "lt": "“My daughter, Zosia.”",
+            "units": [
+              ["Mi","My",""],
+              ["hija,","daughter,",""],
+              ["Zosia.","Zosia.",""]
+            ],
+            "n": 41,
+            "en": "Mi hija, Zosia.",
+            "sentence_id": "042"
+          }
+        ]
+      },
+      {
+        "lt": "The girl looks at the bread and announces, very seriously:",
+        "sentences": [
+          {
+            "i": 42,
+            "es": "La niña mira el pan y anuncia muy seria:",
+            "lt": "The girl looks at the bread and announces, very seriously:",
+            "units": [
+              ["La","The",""],
+              ["niña","girl",""],
+              ["mira","looks at",""],
+              ["el","the",""],
+              ["pan","bread",""],
+              ["y","and",""],
+              ["anuncia","announces",""],
+              ["muy","very",""],
+              ["seria:","serious:",""]
+            ],
+            "n": 42,
+            "en": "La niña mira el pan y anuncia muy seria:",
+            "sentence_id": "043"
+          }
+        ]
+      },
+      {
+        "lt": "“Chleb.”",
+        "sentences": [
+          {
+            "i": 43,
+            "es": "—Chleb.",
+            "lt": "“Chleb.”",
+            "units": [
+              ["—Chleb.","“Chleb (Polish for bread).",""]
+            ],
+            "n": 43,
+            "en": "—Chleb.",
+            "sentence_id": "044"
+          }
+        ]
+      },
+      {
+        "lt": "“Chleb?” asks Don Andrés.",
+        "sentences": [
+          {
+            "i": 44,
+            "es": "—¿Chleb? —pregunta don Andrés.",
+            "lt": "“Chleb?” asks Don Andrés.",
+            "units": [
+              ["—¿Chleb?","“Chleb?",""],
+              ["—pregunta","” asks",""],
+              ["don","Mr.",""],
+              ["Andrés.","Andrés.",""]
+            ],
+            "n": 44,
+            "en": "—¿Chleb? —pregunta don Andrés.",
+            "sentence_id": "045"
+          }
+        ]
+      },
+      {
+        "lt": "“Chleb,” answers the girl. “Bread.”",
+        "sentences": [
+          {
+            "i": 45,
+            "es": "—Chleb —contesta la niña—.",
+            "lt": "“Chleb,” answers the girl.",
+            "units": [
+              ["—Chleb","“Chleb",""],
+              ["—contesta","” answers",""],
+              ["la","the",""],
+              ["niña—.","girl.",""]
+            ],
+            "n": 45,
+            "en": "—Chleb —contesta la niña—.",
+            "sentence_id": "046"
+          },
+          {
+            "i": 46,
+            "es": "Pan.",
+            "lt": "“Bread.”",
+            "units": [
+              ["Pan.","Bread.",""]
+            ],
+            "n": 46,
+            "en": "Pan.",
+            "sentence_id": "047"
+          }
+        ]
+      },
+      {
+        "lt": "Now Don Andrés also learns a word every morning.",
+        "sentences": [
+          {
+            "i": 47,
+            "es": "Ahora don Andrés también aprende una palabra cada mañana.",
+            "lt": "Now Don Andrés also learns a word every morning.",
+            "units": [
+              ["Ahora","Now",""],
+              ["don","Mr.",""],
+              ["Andrés","Andrés",""],
+              ["también","also",""],
+              ["aprende","learns",""],
+              ["una","a",""],
+              ["palabra","word",""],
+              ["cada","every",""],
+              ["mañana.","morning.",""]
+            ],
+            "n": 47,
+            "en": "Ahora don Andrés también aprende una palabra cada mañana.",
+            "sentence_id": "048"
+          }
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "story_id": "HIS-SG01",
+    "mode": "bilingual",
+    "duration_seconds": 397.0810833333333,
+    "audio_sha256": {
+      "bilingual": "9df2fb26d0f8160c531805996bcdd31d6803ba592af8b99515d097ca21abdebf",
+      "lithuanian": "092b9e390fe906b7eede2e7bacdc0061598a49905819173bb3ee4d00dd9991a6",
+      "english": "1c8994b7908468e9f5ad99269f587b90735e4144f63f4bab48f7cfe91de35ee1"
+    },
+    "timeline": [
+      {
+        "sentence_id": "HIS-SG01-title",
+        "language": "lt",
+        "text": "One Word Every Morning",
+        "start": 0,
+        "end": 2.72
+      },
+      {
+        "sentence_id": "HIS-SG01-title",
+        "language": "es",
+        "text": "Una palabra cada mañana",
+        "start": 3.02,
+        "end": 6.413958333333333
+      },
+      {
+        "sentence_id": "HIS-SG01-001",
+        "language": "lt",
+        "text": "Don Andrés and Marta sell bread in a small bakery in Valencia.",
+        "start": 6.913958333333333,
+        "end": 11.873958333333333
+      },
+      {
+        "sentence_id": "HIS-SG01-001",
+        "language": "es",
+        "text": "Don Andrés y Marta venden pan en una panadería pequeña de Valencia.",
+        "start": 12.173958333333333,
+        "end": 18.416541666666667
+      },
+      {
+        "sentence_id": "HIS-SG01-002",
+        "language": "lt",
+        "text": "They open at seven.",
+        "start": 18.916541666666667,
+        "end": 20.476541666666666
+      },
+      {
+        "sentence_id": "HIS-SG01-002",
+        "language": "es",
+        "text": "Abren a las siete.",
+        "start": 20.776541666666667,
+        "end": 23.0545
+      },
+      {
+        "sentence_id": "HIS-SG01-003",
+        "language": "lt",
+        "text": "At five past seven, every day, a tall man in work clothes comes in.",
+        "start": 23.5545,
+        "end": 29.3945
+      },
+      {
+        "sentence_id": "HIS-SG01-003",
+        "language": "es",
+        "text": "A las siete y cinco, todos los días, entra un hombre alto con ropa de trabajo.",
+        "start": 29.6945,
+        "end": 38.15420833333334
+      },
+      {
+        "sentence_id": "HIS-SG01-004",
+        "language": "lt",
+        "text": "He buys a loaf of bread, pays, and doesn’t say a word.",
+        "start": 38.65420833333334,
+        "end": 43.414208333333335
+      },
+      {
+        "sentence_id": "HIS-SG01-004",
+        "language": "es",
+        "text": "Compra un pan, paga y no habla.",
+        "start": 43.71420833333333,
+        "end": 48.17275
+      },
+      {
+        "sentence_id": "HIS-SG01-005",
+        "language": "lt",
+        "text": "“Good morning!” Don Andrés greets him.",
+        "start": 48.67275,
+        "end": 51.63275
+      },
+      {
+        "sentence_id": "HIS-SG01-005",
+        "language": "es",
+        "text": "—¡Buenos días! —saluda don Andrés.",
+        "start": 51.93275,
+        "end": 55.706583333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-006",
+        "language": "lt",
+        "text": "The man looks at the bread, looks at the coins, and doesn’t answer.",
+        "start": 56.206583333333334,
+        "end": 61.246583333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-006",
+        "language": "es",
+        "text": "El hombre mira el pan, mira las monedas y no contesta.",
+        "start": 61.54658333333333,
+        "end": 68.45945833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-007",
+        "language": "lt",
+        "text": "“He’s an unfriendly man,” remarks Doña Amparo, the neighbor on the first floor.",
+        "start": 68.95945833333333,
+        "end": 74.47945833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-007",
+        "language": "es",
+        "text": "—Es un hombre antipático —comenta doña Amparo, la vecina del primero.",
+        "start": 74.77945833333334,
+        "end": 81.47404166666666
+      },
+      {
+        "sentence_id": "HIS-SG01-008",
+        "language": "lt",
+        "text": "“He’s not unfriendly,” Marta answers.",
+        "start": 81.97404166666666,
+        "end": 85.01404166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-008",
+        "language": "es",
+        "text": "—No es antipático —contesta Marta—.",
+        "start": 85.31404166666667,
+        "end": 89.233375
+      },
+      {
+        "sentence_id": "HIS-SG01-009",
+        "language": "lt",
+        "text": "He doesn’t speak Spanish.",
+        "start": 89.733375,
+        "end": 91.853375
+      },
+      {
+        "sentence_id": "HIS-SG01-009",
+        "language": "es",
+        "text": "No habla español.",
+        "start": 92.153375,
+        "end": 94.37420833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-010",
+        "language": "lt",
+        "text": "One Monday, the man touches the bread with a finger and asks:",
+        "start": 94.87420833333333,
+        "end": 99.43420833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-010",
+        "language": "es",
+        "text": "Un lunes, el hombre toca el pan con un dedo y pregunta:",
+        "start": 99.73420833333333,
+        "end": 105.684125
+      },
+      {
+        "sentence_id": "HIS-SG01-011",
+        "language": "lt",
+        "text": "“Bread?”",
+        "start": 106.184125,
+        "end": 107.224125
+      },
+      {
+        "sentence_id": "HIS-SG01-011",
+        "language": "es",
+        "text": "—¿Pan?",
+        "start": 107.524125,
+        "end": 108.63116666666667
+      },
+      {
+        "sentence_id": "HIS-SG01-012",
+        "language": "lt",
+        "text": "“Bread,” answers Don Andrés, very slowly.",
+        "start": 109.13116666666667,
+        "end": 113.37116666666667
+      },
+      {
+        "sentence_id": "HIS-SG01-012",
+        "language": "es",
+        "text": "—Pan —contesta don Andrés, muy despacio—.",
+        "start": 113.67116666666666,
+        "end": 118.72466666666666
+      },
+      {
+        "sentence_id": "HIS-SG01-013",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 119.22466666666666,
+        "end": 120.46466666666667
+      },
+      {
+        "sentence_id": "HIS-SG01-013",
+        "language": "es",
+        "text": "Pan.",
+        "start": 120.76466666666667,
+        "end": 121.972375
+      },
+      {
+        "sentence_id": "HIS-SG01-014",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 122.472375,
+        "end": 123.472375
+      },
+      {
+        "sentence_id": "HIS-SG01-014",
+        "language": "es",
+        "text": "—Pan.",
+        "start": 123.772375,
+        "end": 125.135125
+      },
+      {
+        "sentence_id": "HIS-SG01-015",
+        "language": "lt",
+        "text": "“Thank you.”",
+        "start": 125.635125,
+        "end": 126.875125
+      },
+      {
+        "sentence_id": "HIS-SG01-015",
+        "language": "es",
+        "text": "Gracias.",
+        "start": 127.175125,
+        "end": 128.703125
+      },
+      {
+        "sentence_id": "HIS-SG01-016",
+        "language": "lt",
+        "text": "On Tuesday, Don Andrés teaches another word: “agua.”",
+        "start": 129.203125,
+        "end": 133.843125
+      },
+      {
+        "sentence_id": "HIS-SG01-016",
+        "language": "es",
+        "text": "El martes, don Andrés enseña otra palabra: «agua».",
+        "start": 134.143125,
+        "end": 139.73795833333332
+      },
+      {
+        "sentence_id": "HIS-SG01-017",
+        "language": "lt",
+        "text": "On Wednesday, “leche.”",
+        "start": 140.23795833333332,
+        "end": 142.71795833333334
+      },
+      {
+        "sentence_id": "HIS-SG01-017",
+        "language": "es",
+        "text": "El miércoles, «leche».",
+        "start": 143.01795833333333,
+        "end": 145.93266666666668
+      },
+      {
+        "sentence_id": "HIS-SG01-018",
+        "language": "lt",
+        "text": "On Thursday, Doña Amparo teaches “hola” and “adiós”—“hello” and “goodbye.”",
+        "start": 146.43266666666668,
+        "end": 152.71266666666668
+      },
+      {
+        "sentence_id": "HIS-SG01-018",
+        "language": "es",
+        "text": "El jueves, doña Amparo enseña «hola» y «adiós».",
+        "start": 153.01266666666666,
+        "end": 158.69970833333332
+      },
+      {
+        "sentence_id": "HIS-SG01-019",
+        "language": "lt",
+        "text": "Now, in the mornings, the bakery is a small classroom, and the teachers are learning too: the man is Piotr, he’s from Poland and works at the port.",
+        "start": 159.19970833333332,
+        "end": 170.03970833333332
+      },
+      {
+        "sentence_id": "HIS-SG01-019",
+        "language": "es",
+        "text": "Ahora, por las mañanas, la panadería es una clase pequeña, y los profesores también aprenden: el hombre es Piotr, es de Polonia y trabaja en el puerto.",
+        "start": 170.33970833333333,
+        "end": 184.98804166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-020",
+        "language": "lt",
+        "text": "His wife and daughter live in Kraków.",
+        "start": 185.48804166666667,
+        "end": 187.96804166666666
+      },
+      {
+        "sentence_id": "HIS-SG01-020",
+        "language": "es",
+        "text": "Su mujer y su hija viven en Cracovia.",
+        "start": 188.26804166666668,
+        "end": 192.190875
+      },
+      {
+        "sentence_id": "HIS-SG01-021",
+        "language": "lt",
+        "text": "One Saturday, a lot of people come in.",
+        "start": 192.690875,
+        "end": 195.530875
+      },
+      {
+        "sentence_id": "HIS-SG01-021",
+        "language": "es",
+        "text": "Un sábado entran muchas personas.",
+        "start": 195.830875,
+        "end": 199.42833333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-022",
+        "language": "lt",
+        "text": "A lady asks out loud:",
+        "start": 199.92833333333334,
+        "end": 202.08833333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-022",
+        "language": "es",
+        "text": "Una señora pregunta en voz alta:",
+        "start": 202.38833333333332,
+        "end": 205.72454166666665
+      },
+      {
+        "sentence_id": "HIS-SG01-023",
+        "language": "lt",
+        "text": "“Who’s last?”",
+        "start": 206.22454166666665,
+        "end": 207.70454166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-023",
+        "language": "es",
+        "text": "—¿Quién es el último?",
+        "start": 208.00454166666665,
+        "end": 210.12004166666668
+      },
+      {
+        "sentence_id": "HIS-SG01-024",
+        "language": "lt",
+        "text": "“I am,” answers a guy.",
+        "start": 210.62004166666668,
+        "end": 213.02004166666666
+      },
+      {
+        "sentence_id": "HIS-SG01-024",
+        "language": "es",
+        "text": "—Yo —contesta un chico.",
+        "start": 213.32004166666667,
+        "end": 216.22970833333332
+      },
+      {
+        "sentence_id": "HIS-SG01-025",
+        "language": "lt",
+        "text": "The lady waits behind the guy.",
+        "start": 216.72970833333332,
+        "end": 219.08970833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-025",
+        "language": "es",
+        "text": "La señora espera detrás del chico.",
+        "start": 219.38970833333335,
+        "end": 223.37245833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-026",
+        "language": "lt",
+        "text": "Piotr looks on and doesn’t understand.",
+        "start": 223.87245833333333,
+        "end": 227.31245833333332
+      },
+      {
+        "sentence_id": "HIS-SG01-026",
+        "language": "es",
+        "text": "Piotr mira y no comprende.",
+        "start": 227.61245833333334,
+        "end": 231.33704166666666
+      },
+      {
+        "sentence_id": "HIS-SG01-027",
+        "language": "lt",
+        "text": "Marta explains with her hands: first the guy, then the lady, then Doña Amparo… and then you.",
+        "start": 231.83704166666666,
+        "end": 240.39704166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-027",
+        "language": "es",
+        "text": "Marta explica con las manos: primero el chico, después la señora, después doña Amparo… y después tú.",
+        "start": 240.69704166666668,
+        "end": 251.52095833333334
+      },
+      {
+        "sentence_id": "HIS-SG01-028",
+        "language": "lt",
+        "text": "The next Saturday, a lot of people come in again.",
+        "start": 252.02095833333334,
+        "end": 255.02095833333334
+      },
+      {
+        "sentence_id": "HIS-SG01-028",
+        "language": "es",
+        "text": "El sábado siguiente entran otra vez muchas personas.",
+        "start": 255.32095833333332,
+        "end": 260.63354166666664
+      },
+      {
+        "sentence_id": "HIS-SG01-029",
+        "language": "lt",
+        "text": "Piotr arrives, looks at everyone, and asks out loud:",
+        "start": 261.13354166666664,
+        "end": 266.2135416666667
+      },
+      {
+        "sentence_id": "HIS-SG01-029",
+        "language": "es",
+        "text": "Piotr llega, mira a todos y pregunta en voz alta:",
+        "start": 266.51354166666664,
+        "end": 272.46429166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-030",
+        "language": "lt",
+        "text": "“Who’s last?”",
+        "start": 272.96429166666667,
+        "end": 274.3242916666667
+      },
+      {
+        "sentence_id": "HIS-SG01-030",
+        "language": "es",
+        "text": "—¿Quién es el último?",
+        "start": 274.6242916666667,
+        "end": 276.4320833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-031",
+        "language": "lt",
+        "text": "Silence.",
+        "start": 276.9320833333333,
+        "end": 278.33208333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-031",
+        "language": "es",
+        "text": "Silencio.",
+        "start": 278.63208333333336,
+        "end": 280.48975
+      },
+      {
+        "sentence_id": "HIS-SG01-032",
+        "language": "lt",
+        "text": "Then Doña Amparo raises her hand:",
+        "start": 280.98975,
+        "end": 284.26975
+      },
+      {
+        "sentence_id": "HIS-SG01-032",
+        "language": "es",
+        "text": "Después, doña Amparo levanta la mano:",
+        "start": 284.56975,
+        "end": 288.9144166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-033",
+        "language": "lt",
+        "text": "“Me!”",
+        "start": 289.4144166666667,
+        "end": 290.69441666666665
+      },
+      {
+        "sentence_id": "HIS-SG01-033",
+        "language": "es",
+        "text": "—¡Yo!",
+        "start": 290.99441666666667,
+        "end": 292.14254166666666
+      },
+      {
+        "sentence_id": "HIS-SG01-034",
+        "language": "lt",
+        "text": "“I’m last!”",
+        "start": 292.64254166666666,
+        "end": 294.0025416666667
+      },
+      {
+        "sentence_id": "HIS-SG01-034",
+        "language": "es",
+        "text": "¡Yo soy la última!",
+        "start": 294.3025416666667,
+        "end": 296.5779166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-035",
+        "language": "lt",
+        "text": "And everyone applauds.",
+        "start": 297.0779166666667,
+        "end": 299.11791666666664
+      },
+      {
+        "sentence_id": "HIS-SG01-035",
+        "language": "es",
+        "text": "Y todos aplauden.",
+        "start": 299.41791666666666,
+        "end": 301.803375
+      },
+      {
+        "sentence_id": "HIS-SG01-036",
+        "language": "lt",
+        "text": "One Monday, at five past seven, Piotr doesn’t come in.",
+        "start": 302.303375,
+        "end": 306.943375
+      },
+      {
+        "sentence_id": "HIS-SG01-036",
+        "language": "es",
+        "text": "Un lunes, a las siete y cinco, Piotr no entra.",
+        "start": 307.243375,
+        "end": 312.9270833333333
+      },
+      {
+        "sentence_id": "HIS-SG01-037",
+        "language": "lt",
+        "text": "Don Andrés looks at the door.",
+        "start": 313.4270833333333,
+        "end": 315.70708333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-037",
+        "language": "es",
+        "text": "Don Andrés mira la puerta.",
+        "start": 316.00708333333336,
+        "end": 318.92579166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-038",
+        "language": "lt",
+        "text": "At ten past seven, he looks at the door again.",
+        "start": 319.42579166666667,
+        "end": 323.42579166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-038",
+        "language": "es",
+        "text": "A las siete y diez, mira la puerta otra vez.",
+        "start": 323.7257916666667,
+        "end": 328.87575
+      },
+      {
+        "sentence_id": "HIS-SG01-039",
+        "language": "lt",
+        "text": "Marta looks at the clock.",
+        "start": 329.37575,
+        "end": 331.45575
+      },
+      {
+        "sentence_id": "HIS-SG01-039",
+        "language": "es",
+        "text": "Marta mira el reloj.",
+        "start": 331.75575,
+        "end": 334.62854166666665
+      },
+      {
+        "sentence_id": "HIS-SG01-040",
+        "language": "lt",
+        "text": "At a quarter past seven, Piotr comes in with a woman and a little girl.",
+        "start": 335.12854166666665,
+        "end": 340.0885416666667
+      },
+      {
+        "sentence_id": "HIS-SG01-040",
+        "language": "es",
+        "text": "A las siete y cuarto, entra Piotr con una mujer y una niña.",
+        "start": 340.38854166666664,
+        "end": 346.884625
+      },
+      {
+        "sentence_id": "HIS-SG01-041",
+        "language": "lt",
+        "text": "“My wife, Ania.”",
+        "start": 347.384625,
+        "end": 349.184625
+      },
+      {
+        "sentence_id": "HIS-SG01-041",
+        "language": "es",
+        "text": "—Mi mujer, Ania.",
+        "start": 349.484625,
+        "end": 352.12466666666666
+      },
+      {
+        "sentence_id": "HIS-SG01-042",
+        "language": "lt",
+        "text": "“My daughter, Zosia.”",
+        "start": 352.62466666666666,
+        "end": 354.62466666666666
+      },
+      {
+        "sentence_id": "HIS-SG01-042",
+        "language": "es",
+        "text": "Mi hija, Zosia.",
+        "start": 354.92466666666667,
+        "end": 357.56391666666667
+      },
+      {
+        "sentence_id": "HIS-SG01-043",
+        "language": "lt",
+        "text": "The girl looks at the bread and announces, very seriously:",
+        "start": 358.06391666666667,
+        "end": 361.9839166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-043",
+        "language": "es",
+        "text": "La niña mira el pan y anuncia muy seria:",
+        "start": 362.28391666666664,
+        "end": 366.8515
+      },
+      {
+        "sentence_id": "HIS-SG01-044",
+        "language": "lt",
+        "text": "“Chleb.”",
+        "start": 367.3515,
+        "end": 368.5115
+      },
+      {
+        "sentence_id": "HIS-SG01-044",
+        "language": "es",
+        "text": "—Chleb.",
+        "start": 368.8115,
+        "end": 370.08141666666666
+      },
+      {
+        "sentence_id": "HIS-SG01-045",
+        "language": "lt",
+        "text": "“Chleb?” asks Don Andrés.",
+        "start": 370.58141666666666,
+        "end": 372.9814166666667
+      },
+      {
+        "sentence_id": "HIS-SG01-045",
+        "language": "es",
+        "text": "—¿Chleb? —pregunta don Andrés.",
+        "start": 373.28141666666664,
+        "end": 376.800625
+      },
+      {
+        "sentence_id": "HIS-SG01-046",
+        "language": "lt",
+        "text": "“Chleb,” answers the girl.",
+        "start": 377.300625,
+        "end": 379.660625
+      },
+      {
+        "sentence_id": "HIS-SG01-046",
+        "language": "es",
+        "text": "—Chleb —contesta la niña—.",
+        "start": 379.960625,
+        "end": 383.20175
+      },
+      {
+        "sentence_id": "HIS-SG01-047",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 383.70175,
+        "end": 384.98175
+      },
+      {
+        "sentence_id": "HIS-SG01-047",
+        "language": "es",
+        "text": "Pan.",
+        "start": 385.28175,
+        "end": 386.43733333333336
+      },
+      {
+        "sentence_id": "HIS-SG01-048",
+        "language": "lt",
+        "text": "Now Don Andrés also learns a word every morning.",
+        "start": 386.93733333333336,
+        "end": 391.13733333333334
+      },
+      {
+        "sentence_id": "HIS-SG01-048",
+        "language": "es",
+        "text": "Ahora don Andrés también aprende una palabra cada mañana.",
+        "start": 391.43733333333336,
+        "end": 397.0810833333333
+      }
+    ],
+    "rate_switches": {
+      "version": 1,
+      "audio_sha256": "9df2fb26d0f8160c531805996bcdd31d6803ba592af8b99515d097ca21abdebf",
+      "speech": [
+        [
+          0.41,
+          2.72
+        ],
+        [
+          3.12,
+          6.04
+        ],
+        [
+          7.123,
+          11.574
+        ],
+        [
+          12.463,
+          17.924
+        ],
+        [
+          19.226,
+          20.417
+        ],
+        [
+          20.916,
+          23.027
+        ],
+        [
+          23.794,
+          29.135
+        ],
+        [
+          29.844,
+          37.845
+        ],
+        [
+          38.734,
+          43.385
+        ],
+        [
+          44.064,
+          47.765
+        ],
+        [
+          48.922,
+          51.63275
+        ],
+        [
+          52.222,
+          55.433
+        ],
+        [
+          56.496,
+          60.987
+        ],
+        [
+          61.646,
+          68.057
+        ],
+        [
+          69.189,
+          74.44
+        ],
+        [
+          74.869,
+          81.13
+        ],
+        [
+          82.004,
+          84.675
+        ],
+        [
+          85.664,
+          89.233375
+        ],
+        [
+          89.963,
+          91.534
+        ],
+        [
+          92.443,
+          94.114
+        ],
+        [
+          95.124,
+          99.325
+        ],
+        [
+          100.114,
+          105.125
+        ],
+        [
+          106.414,
+          107.025
+        ],
+        [
+          107.544,
+          108.585
+        ],
+        [
+          109.401,
+          113.052
+        ],
+        [
+          114.071,
+          118.402
+        ],
+        [
+          119.514,
+          120.225
+        ],
+        [
+          121.104,
+          121.795
+        ],
+        [
+          122.672,
+          123.163
+        ],
+        [
+          123.902,
+          124.643
+        ],
+        [
+          125.905,
+          126.526
+        ],
+        [
+          127.395,
+          128.356
+        ],
+        [
+          129.393,
+          133.574
+        ],
+        [
+          134.503,
+          139.394
+        ],
+        [
+          140.317,
+          142.708
+        ],
+        [
+          143.077,
+          145.93266666666668
+        ],
+        [
+          146.492,
+          152.463
+        ],
+        [
+          153.142,
+          158.293
+        ],
+        [
+          159.209,
+          169.92
+        ],
+        [
+          170.469,
+          184.57
+        ],
+        [
+          185.598,
+          187.899
+        ],
+        [
+          188.488,
+          192.189
+        ],
+        [
+          193.02,
+          195.281
+        ],
+        [
+          196.12,
+          198.961
+        ],
+        [
+          200.188,
+          202.009
+        ],
+        [
+          202.738,
+          205.319
+        ],
+        [
+          206.294,
+          207.285
+        ],
+        [
+          208.414,
+          209.665
+        ],
+        [
+          210.68,
+          212.721
+        ],
+        [
+          213.67,
+          216.011
+        ],
+        [
+          216.879,
+          219.04
+        ],
+        [
+          219.539,
+          223.07
+        ],
+        [
+          223.882,
+          227.053
+        ],
+        [
+          227.882,
+          230.893
+        ],
+        [
+          231.857,
+          240.308
+        ],
+        [
+          241.077,
+          251.028
+        ],
+        [
+          252.04,
+          254.981
+        ],
+        [
+          255.58,
+          260.221
+        ],
+        [
+          261.423,
+          265.584
+        ],
+        [
+          266.863,
+          272.144
+        ],
+        [
+          273.134,
+          274.065
+        ],
+        [
+          274.924,
+          276.065
+        ],
+        [
+          277.002,
+          278.303
+        ],
+        [
+          278.842,
+          280.213
+        ],
+        [
+          281.069,
+          284.1
+        ],
+        [
+          284.719,
+          288.66
+        ],
+        [
+          289.434,
+          290.675
+        ],
+        [
+          291.244,
+          291.785
+        ],
+        [
+          292.842,
+          293.723
+        ],
+        [
+          294.642,
+          296.243
+        ],
+        [
+          297.357,
+          298.878
+        ],
+        [
+          299.497,
+          301.428
+        ],
+        [
+          302.613,
+          306.654
+        ],
+        [
+          307.323,
+          312.684
+        ],
+        [
+          313.487,
+          315.668
+        ],
+        [
+          316.337,
+          318.828
+        ],
+        [
+          319.715,
+          323.176
+        ],
+        [
+          324.085,
+          328.496
+        ],
+        [
+          329.705,
+          331.186
+        ],
+        [
+          331.795,
+          334.406
+        ],
+        [
+          335.258,
+          339.919
+        ],
+        [
+          340.768,
+          346.499
+        ],
+        [
+          347.414,
+          349.035
+        ],
+        [
+          349.874,
+          351.725
+        ],
+        [
+          352.684,
+          354.505
+        ],
+        [
+          355.254,
+          357.165
+        ],
+        [
+          358.113,
+          361.874
+        ],
+        [
+          362.433,
+          366.744
+        ],
+        [
+          367.551,
+          368.302
+        ],
+        [
+          369.191,
+          369.672
+        ],
+        [
+          370.751,
+          372.742
+        ],
+        [
+          373.371,
+          376.392
+        ],
+        [
+          377.53,
+          379.531
+        ],
+        [
+          380.36,
+          383.171
+        ],
+        [
+          383.971,
+          384.632
+        ],
+        [
+          385.641,
+          386.242
+        ],
+        [
+          387.357,
+          390.968
+        ],
+        [
+          391.707,
+          396.788
+        ]
+      ],
+      "sw": [
+        0,
+        2.92,
+        6.582,
+        12.018,
+        18.575,
+        20.666,
+        23.41,
+        29.489,
+        38.29,
+        43.724,
+        48.343,
+        51.927,
+        55.965,
+        61.317,
+        68.623,
+        74.654,
+        81.567,
+        85.169,
+        89.598,
+        91.989,
+        94.619,
+        99.72,
+        105.769,
+        107.285,
+        108.993,
+        113.561,
+        118.958,
+        120.665,
+        122.233,
+        123.532,
+        125.274,
+        126.96,
+        128.875,
+        134.038,
+        139.856,
+        142.892,
+        146.212,
+        152.803,
+        158.751,
+        170.195,
+        185.084,
+        188.194,
+        192.605,
+        195.701,
+        199.575,
+        202.373,
+        205.806,
+        207.849,
+        210.173,
+        213.195,
+        216.445,
+        219.289,
+        223.476,
+        227.468,
+        231.375,
+        240.692,
+        251.534,
+        255.281,
+        260.822,
+        266.224,
+        272.639,
+        274.495,
+        276.534,
+        278.572,
+        280.641,
+        284.409,
+        289.047,
+        290.96,
+        292.313,
+        294.183,
+        296.8,
+        299.188,
+        302.02,
+        306.988,
+        313.086,
+        316.002,
+        319.271,
+        323.63,
+        329.101,
+        331.49,
+        334.832,
+        340.343,
+        346.957,
+        349.455,
+        352.205,
+        354.88,
+        357.639,
+        362.154,
+        367.148,
+        368.746,
+        370.212,
+        373.057,
+        376.961,
+        379.946,
+        383.571,
+        385.137,
+        386.8,
+        391.337
+      ]
+    }
+  },
+  "english-timing": {
+    "story_id": "HIS-SG01",
+    "mode": "english",
+    "duration_seconds": 224.70108333333334,
+    "audio_sha256": {
+      "bilingual": "927724d9a1f463c3ef82d01322300f72062954fa49bb6c29f8a3cf508d2d70a8",
+      "english": "1c8994b7908468e9f5ad99269f587b90735e4144f63f4bab48f7cfe91de35ee1"
+    },
+    "timeline": [
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "title",
+        "language": "es",
+        "text": "Una palabra cada mañana",
+        "sentence_id": "HIS-SG01-title",
+        "start": 0,
+        "end": 3.3939583333333334
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "001",
+        "language": "es",
+        "text": "Don Andrés y Marta venden pan en una panadería pequeña de Valencia.",
+        "sentence_id": "HIS-SG01-001",
+        "start": 3.8939583333333334,
+        "end": 10.136541666666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "002",
+        "language": "es",
+        "text": "Abren a las siete.",
+        "sentence_id": "HIS-SG01-002",
+        "start": 10.636541666666666,
+        "end": 12.9145
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "003",
+        "language": "es",
+        "text": "A las siete y cinco, todos los días, entra un hombre alto con ropa de trabajo.",
+        "sentence_id": "HIS-SG01-003",
+        "start": 13.4145,
+        "end": 21.874208333333332
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "004",
+        "language": "es",
+        "text": "Compra un pan, paga y no habla.",
+        "sentence_id": "HIS-SG01-004",
+        "start": 22.374208333333332,
+        "end": 26.83275
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "005",
+        "language": "es",
+        "text": "—¡Buenos días! —saluda don Andrés.",
+        "sentence_id": "HIS-SG01-005",
+        "start": 27.33275,
+        "end": 31.106583333333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "006",
+        "language": "es",
+        "text": "El hombre mira el pan, mira las monedas y no contesta.",
+        "sentence_id": "HIS-SG01-006",
+        "start": 31.606583333333333,
+        "end": 38.51945833333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "007",
+        "language": "es",
+        "text": "—Es un hombre antipático —comenta doña Amparo, la vecina del primero.",
+        "sentence_id": "HIS-SG01-007",
+        "start": 39.01945833333333,
+        "end": 45.71404166666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "008",
+        "language": "es",
+        "text": "—No es antipático —contesta Marta—.",
+        "sentence_id": "HIS-SG01-008",
+        "start": 46.21404166666667,
+        "end": 50.133375
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "009",
+        "language": "es",
+        "text": "No habla español.",
+        "sentence_id": "HIS-SG01-009",
+        "start": 50.633375,
+        "end": 52.85420833333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "010",
+        "language": "es",
+        "text": "Un lunes, el hombre toca el pan con un dedo y pregunta:",
+        "sentence_id": "HIS-SG01-010",
+        "start": 53.35420833333333,
+        "end": 59.304125
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "011",
+        "language": "es",
+        "text": "—¿Pan?",
+        "sentence_id": "HIS-SG01-011",
+        "start": 59.804125,
+        "end": 60.91116666666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "012",
+        "language": "es",
+        "text": "—Pan —contesta don Andrés, muy despacio—.",
+        "sentence_id": "HIS-SG01-012",
+        "start": 61.41116666666667,
+        "end": 66.46466666666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "013",
+        "language": "es",
+        "text": "Pan.",
+        "sentence_id": "HIS-SG01-013",
+        "start": 66.96466666666667,
+        "end": 68.172375
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "014",
+        "language": "es",
+        "text": "—Pan.",
+        "sentence_id": "HIS-SG01-014",
+        "start": 68.672375,
+        "end": 70.035125
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "015",
+        "language": "es",
+        "text": "Gracias.",
+        "sentence_id": "HIS-SG01-015",
+        "start": 70.535125,
+        "end": 72.063125
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "016",
+        "language": "es",
+        "text": "El martes, don Andrés enseña otra palabra: «agua».",
+        "sentence_id": "HIS-SG01-016",
+        "start": 72.563125,
+        "end": 78.15795833333334
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "017",
+        "language": "es",
+        "text": "El miércoles, «leche».",
+        "sentence_id": "HIS-SG01-017",
+        "start": 78.65795833333334,
+        "end": 81.57266666666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "018",
+        "language": "es",
+        "text": "El jueves, doña Amparo enseña «hola» y «adiós».",
+        "sentence_id": "HIS-SG01-018",
+        "start": 82.07266666666666,
+        "end": 87.75970833333334
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "019",
+        "language": "es",
+        "text": "Ahora, por las mañanas, la panadería es una clase pequeña, y los profesores también aprenden: el hombre es Piotr, es de Polonia y trabaja en el puerto.",
+        "sentence_id": "HIS-SG01-019",
+        "start": 88.25970833333334,
+        "end": 102.90804166666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "020",
+        "language": "es",
+        "text": "Su mujer y su hija viven en Cracovia.",
+        "sentence_id": "HIS-SG01-020",
+        "start": 103.40804166666666,
+        "end": 107.330875
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "021",
+        "language": "es",
+        "text": "Un sábado entran muchas personas.",
+        "sentence_id": "HIS-SG01-021",
+        "start": 107.830875,
+        "end": 111.42833333333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "022",
+        "language": "es",
+        "text": "Una señora pregunta en voz alta:",
+        "sentence_id": "HIS-SG01-022",
+        "start": 111.92833333333333,
+        "end": 115.26454166666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "023",
+        "language": "es",
+        "text": "—¿Quién es el último?",
+        "sentence_id": "HIS-SG01-023",
+        "start": 115.76454166666667,
+        "end": 117.88004166666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "024",
+        "language": "es",
+        "text": "—Yo —contesta un chico.",
+        "sentence_id": "HIS-SG01-024",
+        "start": 118.38004166666667,
+        "end": 121.28970833333334
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "025",
+        "language": "es",
+        "text": "La señora espera detrás del chico.",
+        "sentence_id": "HIS-SG01-025",
+        "start": 121.78970833333334,
+        "end": 125.77245833333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "026",
+        "language": "es",
+        "text": "Piotr mira y no comprende.",
+        "sentence_id": "HIS-SG01-026",
+        "start": 126.27245833333333,
+        "end": 129.99704166666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "027",
+        "language": "es",
+        "text": "Marta explica con las manos: primero el chico, después la señora, después doña Amparo… y después tú.",
+        "sentence_id": "HIS-SG01-027",
+        "start": 130.49704166666666,
+        "end": 141.32095833333332
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "028",
+        "language": "es",
+        "text": "El sábado siguiente entran otra vez muchas personas.",
+        "sentence_id": "HIS-SG01-028",
+        "start": 141.82095833333332,
+        "end": 147.13354166666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "029",
+        "language": "es",
+        "text": "Piotr llega, mira a todos y pregunta en voz alta:",
+        "sentence_id": "HIS-SG01-029",
+        "start": 147.63354166666667,
+        "end": 153.58429166666667
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "030",
+        "language": "es",
+        "text": "—¿Quién es el último?",
+        "sentence_id": "HIS-SG01-030",
+        "start": 154.08429166666667,
+        "end": 155.89208333333335
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "031",
+        "language": "es",
+        "text": "Silencio.",
+        "sentence_id": "HIS-SG01-031",
+        "start": 156.39208333333335,
+        "end": 158.24975
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "032",
+        "language": "es",
+        "text": "Después, doña Amparo levanta la mano:",
+        "sentence_id": "HIS-SG01-032",
+        "start": 158.74975,
+        "end": 163.09441666666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "033",
+        "language": "es",
+        "text": "—¡Yo!",
+        "sentence_id": "HIS-SG01-033",
+        "start": 163.59441666666666,
+        "end": 164.74254166666665
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "034",
+        "language": "es",
+        "text": "¡Yo soy la última!",
+        "sentence_id": "HIS-SG01-034",
+        "start": 165.24254166666665,
+        "end": 167.51791666666668
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "035",
+        "language": "es",
+        "text": "Y todos aplauden.",
+        "sentence_id": "HIS-SG01-035",
+        "start": 168.01791666666668,
+        "end": 170.403375
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "036",
+        "language": "es",
+        "text": "Un lunes, a las siete y cinco, Piotr no entra.",
+        "sentence_id": "HIS-SG01-036",
+        "start": 170.903375,
+        "end": 176.58708333333334
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "037",
+        "language": "es",
+        "text": "Don Andrés mira la puerta.",
+        "sentence_id": "HIS-SG01-037",
+        "start": 177.08708333333334,
+        "end": 180.00579166666665
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "038",
+        "language": "es",
+        "text": "A las siete y diez, mira la puerta otra vez.",
+        "sentence_id": "HIS-SG01-038",
+        "start": 180.50579166666665,
+        "end": 185.65575
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "039",
+        "language": "es",
+        "text": "Marta mira el reloj.",
+        "sentence_id": "HIS-SG01-039",
+        "start": 186.15575,
+        "end": 189.02854166666665
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "040",
+        "language": "es",
+        "text": "A las siete y cuarto, entra Piotr con una mujer y una niña.",
+        "sentence_id": "HIS-SG01-040",
+        "start": 189.52854166666665,
+        "end": 196.024625
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "041",
+        "language": "es",
+        "text": "—Mi mujer, Ania.",
+        "sentence_id": "HIS-SG01-041",
+        "start": 196.524625,
+        "end": 199.16466666666668
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "042",
+        "language": "es",
+        "text": "Mi hija, Zosia.",
+        "sentence_id": "HIS-SG01-042",
+        "start": 199.66466666666668,
+        "end": 202.30391666666668
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "043",
+        "language": "es",
+        "text": "La niña mira el pan y anuncia muy seria:",
+        "sentence_id": "HIS-SG01-043",
+        "start": 202.80391666666668,
+        "end": 207.3715
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "044",
+        "language": "es",
+        "text": "—Chleb.",
+        "sentence_id": "HIS-SG01-044",
+        "start": 207.8715,
+        "end": 209.14141666666666
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "045",
+        "language": "es",
+        "text": "—¿Chleb? —pregunta don Andrés.",
+        "sentence_id": "HIS-SG01-045",
+        "start": 209.64141666666666,
+        "end": 213.160625
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "046",
+        "language": "es",
+        "text": "—Chleb —contesta la niña—.",
+        "sentence_id": "HIS-SG01-046",
+        "start": 213.660625,
+        "end": 216.90175
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "047",
+        "language": "es",
+        "text": "Pan.",
+        "sentence_id": "HIS-SG01-047",
+        "start": 217.40175,
+        "end": 218.55733333333333
+      },
+      {
+        "item_id": "HIS-SG01",
+        "sentence": "048",
+        "language": "es",
+        "text": "Ahora don Andrés también aprende una palabra cada mañana.",
+        "sentence_id": "HIS-SG01-048",
+        "start": 219.05733333333333,
+        "end": 224.70108333333334
+      }
+    ]
+  },
+  "lithuanian-timing": {
+    "story_id": "HIS-SG01",
+    "mode": "lithuanian",
+    "duration_seconds": 172.08,
+    "audio_sha256": {
+      "bilingual": "9df2fb26d0f8160c531805996bcdd31d6803ba592af8b99515d097ca21abdebf",
+      "lithuanian": "092b9e390fe906b7eede2e7bacdc0061598a49905819173bb3ee4d00dd9991a6",
+      "english": "1c8994b7908468e9f5ad99269f587b90735e4144f63f4bab48f7cfe91de35ee1"
+    },
+    "timeline": [
+      {
+        "sentence_id": "HIS-SG01-title",
+        "language": "lt",
+        "text": "One Word Every Morning",
+        "start": 0,
+        "end": 2.72
+      },
+      {
+        "sentence_id": "HIS-SG01-001",
+        "language": "lt",
+        "text": "Don Andrés and Marta sell bread in a small bakery in Valencia.",
+        "start": 3.02,
+        "end": 7.98
+      },
+      {
+        "sentence_id": "HIS-SG01-002",
+        "language": "lt",
+        "text": "They open at seven.",
+        "start": 8.28,
+        "end": 9.84
+      },
+      {
+        "sentence_id": "HIS-SG01-003",
+        "language": "lt",
+        "text": "At five past seven, every day, a tall man in work clothes comes in.",
+        "start": 10.14,
+        "end": 15.98
+      },
+      {
+        "sentence_id": "HIS-SG01-004",
+        "language": "lt",
+        "text": "He buys a loaf of bread, pays, and doesn’t say a word.",
+        "start": 16.28,
+        "end": 21.04
+      },
+      {
+        "sentence_id": "HIS-SG01-005",
+        "language": "lt",
+        "text": "“Good morning!” Don Andrés greets him.",
+        "start": 21.34,
+        "end": 24.3
+      },
+      {
+        "sentence_id": "HIS-SG01-006",
+        "language": "lt",
+        "text": "The man looks at the bread, looks at the coins, and doesn’t answer.",
+        "start": 24.6,
+        "end": 29.64
+      },
+      {
+        "sentence_id": "HIS-SG01-007",
+        "language": "lt",
+        "text": "“He’s an unfriendly man,” remarks Doña Amparo, the neighbor on the first floor.",
+        "start": 29.94,
+        "end": 35.46
+      },
+      {
+        "sentence_id": "HIS-SG01-008",
+        "language": "lt",
+        "text": "“He’s not unfriendly,” Marta answers.",
+        "start": 35.76,
+        "end": 38.8
+      },
+      {
+        "sentence_id": "HIS-SG01-009",
+        "language": "lt",
+        "text": "He doesn’t speak Spanish.",
+        "start": 39.1,
+        "end": 41.22
+      },
+      {
+        "sentence_id": "HIS-SG01-010",
+        "language": "lt",
+        "text": "One Monday, the man touches the bread with a finger and asks:",
+        "start": 41.52,
+        "end": 46.08
+      },
+      {
+        "sentence_id": "HIS-SG01-011",
+        "language": "lt",
+        "text": "“Bread?”",
+        "start": 46.38,
+        "end": 47.42
+      },
+      {
+        "sentence_id": "HIS-SG01-012",
+        "language": "lt",
+        "text": "“Bread,” answers Don Andrés, very slowly.",
+        "start": 47.72,
+        "end": 51.96
+      },
+      {
+        "sentence_id": "HIS-SG01-013",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 52.26,
+        "end": 53.5
+      },
+      {
+        "sentence_id": "HIS-SG01-014",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 53.8,
+        "end": 54.8
+      },
+      {
+        "sentence_id": "HIS-SG01-015",
+        "language": "lt",
+        "text": "“Thank you.”",
+        "start": 55.1,
+        "end": 56.34
+      },
+      {
+        "sentence_id": "HIS-SG01-016",
+        "language": "lt",
+        "text": "On Tuesday, Don Andrés teaches another word: “agua.”",
+        "start": 56.64,
+        "end": 61.28
+      },
+      {
+        "sentence_id": "HIS-SG01-017",
+        "language": "lt",
+        "text": "On Wednesday, “leche.”",
+        "start": 61.58,
+        "end": 64.06
+      },
+      {
+        "sentence_id": "HIS-SG01-018",
+        "language": "lt",
+        "text": "On Thursday, Doña Amparo teaches “hola” and “adiós”—“hello” and “goodbye.”",
+        "start": 64.36,
+        "end": 70.64
+      },
+      {
+        "sentence_id": "HIS-SG01-019",
+        "language": "lt",
+        "text": "Now, in the mornings, the bakery is a small classroom, and the teachers are learning too: the man is Piotr, he’s from Poland and works at the port.",
+        "start": 70.94,
+        "end": 81.78
+      },
+      {
+        "sentence_id": "HIS-SG01-020",
+        "language": "lt",
+        "text": "His wife and daughter live in Kraków.",
+        "start": 82.08,
+        "end": 84.56
+      },
+      {
+        "sentence_id": "HIS-SG01-021",
+        "language": "lt",
+        "text": "One Saturday, a lot of people come in.",
+        "start": 84.86,
+        "end": 87.7
+      },
+      {
+        "sentence_id": "HIS-SG01-022",
+        "language": "lt",
+        "text": "A lady asks out loud:",
+        "start": 88,
+        "end": 90.16
+      },
+      {
+        "sentence_id": "HIS-SG01-023",
+        "language": "lt",
+        "text": "“Who’s last?”",
+        "start": 90.46,
+        "end": 91.94
+      },
+      {
+        "sentence_id": "HIS-SG01-024",
+        "language": "lt",
+        "text": "“I am,” answers a guy.",
+        "start": 92.24,
+        "end": 94.64
+      },
+      {
+        "sentence_id": "HIS-SG01-025",
+        "language": "lt",
+        "text": "The lady waits behind the guy.",
+        "start": 94.94,
+        "end": 97.3
+      },
+      {
+        "sentence_id": "HIS-SG01-026",
+        "language": "lt",
+        "text": "Piotr looks on and doesn’t understand.",
+        "start": 97.6,
+        "end": 101.04
+      },
+      {
+        "sentence_id": "HIS-SG01-027",
+        "language": "lt",
+        "text": "Marta explains with her hands: first the guy, then the lady, then Doña Amparo… and then you.",
+        "start": 101.34,
+        "end": 109.9
+      },
+      {
+        "sentence_id": "HIS-SG01-028",
+        "language": "lt",
+        "text": "The next Saturday, a lot of people come in again.",
+        "start": 110.2,
+        "end": 113.2
+      },
+      {
+        "sentence_id": "HIS-SG01-029",
+        "language": "lt",
+        "text": "Piotr arrives, looks at everyone, and asks out loud:",
+        "start": 113.5,
+        "end": 118.58
+      },
+      {
+        "sentence_id": "HIS-SG01-030",
+        "language": "lt",
+        "text": "“Who’s last?”",
+        "start": 118.88,
+        "end": 120.24
+      },
+      {
+        "sentence_id": "HIS-SG01-031",
+        "language": "lt",
+        "text": "Silence.",
+        "start": 120.54,
+        "end": 121.94
+      },
+      {
+        "sentence_id": "HIS-SG01-032",
+        "language": "lt",
+        "text": "Then Doña Amparo raises her hand:",
+        "start": 122.24,
+        "end": 125.52
+      },
+      {
+        "sentence_id": "HIS-SG01-033",
+        "language": "lt",
+        "text": "“Me!”",
+        "start": 125.82,
+        "end": 127.1
+      },
+      {
+        "sentence_id": "HIS-SG01-034",
+        "language": "lt",
+        "text": "“I’m last!”",
+        "start": 127.4,
+        "end": 128.76
+      },
+      {
+        "sentence_id": "HIS-SG01-035",
+        "language": "lt",
+        "text": "And everyone applauds.",
+        "start": 129.06,
+        "end": 131.1
+      },
+      {
+        "sentence_id": "HIS-SG01-036",
+        "language": "lt",
+        "text": "One Monday, at five past seven, Piotr doesn’t come in.",
+        "start": 131.4,
+        "end": 136.04
+      },
+      {
+        "sentence_id": "HIS-SG01-037",
+        "language": "lt",
+        "text": "Don Andrés looks at the door.",
+        "start": 136.34,
+        "end": 138.62
+      },
+      {
+        "sentence_id": "HIS-SG01-038",
+        "language": "lt",
+        "text": "At ten past seven, he looks at the door again.",
+        "start": 138.92,
+        "end": 142.92
+      },
+      {
+        "sentence_id": "HIS-SG01-039",
+        "language": "lt",
+        "text": "Marta looks at the clock.",
+        "start": 143.22,
+        "end": 145.3
+      },
+      {
+        "sentence_id": "HIS-SG01-040",
+        "language": "lt",
+        "text": "At a quarter past seven, Piotr comes in with a woman and a little girl.",
+        "start": 145.6,
+        "end": 150.56
+      },
+      {
+        "sentence_id": "HIS-SG01-041",
+        "language": "lt",
+        "text": "“My wife, Ania.”",
+        "start": 150.86,
+        "end": 152.66
+      },
+      {
+        "sentence_id": "HIS-SG01-042",
+        "language": "lt",
+        "text": "“My daughter, Zosia.”",
+        "start": 152.96,
+        "end": 154.96
+      },
+      {
+        "sentence_id": "HIS-SG01-043",
+        "language": "lt",
+        "text": "The girl looks at the bread and announces, very seriously:",
+        "start": 155.26,
+        "end": 159.18
+      },
+      {
+        "sentence_id": "HIS-SG01-044",
+        "language": "lt",
+        "text": "“Chleb.”",
+        "start": 159.48,
+        "end": 160.64
+      },
+      {
+        "sentence_id": "HIS-SG01-045",
+        "language": "lt",
+        "text": "“Chleb?” asks Don Andrés.",
+        "start": 160.94,
+        "end": 163.34
+      },
+      {
+        "sentence_id": "HIS-SG01-046",
+        "language": "lt",
+        "text": "“Chleb,” answers the girl.",
+        "start": 163.64,
+        "end": 166
+      },
+      {
+        "sentence_id": "HIS-SG01-047",
+        "language": "lt",
+        "text": "“Bread.”",
+        "start": 166.3,
+        "end": 167.58
+      },
+      {
+        "sentence_id": "HIS-SG01-048",
+        "language": "lt",
+        "text": "Now Don Andrés also learns a word every morning.",
+        "start": 167.88,
+        "end": 172.08
+      }
+    ]
+  },
+  "word-timing": {
+    "story_id": "HIS-SG01",
+    "language": "es",
+    "lines": [
+      {
+        "sentence_id": "HIS-SG01-title",
+        "w": [[0.33,0.86],[0.86,1.82],[1.82,2.18],[2.38,2.99]]
+      },
+      {
+        "sentence_id": "HIS-SG01-001",
+        "w": [[0.29,0.7],[0.7,1.26],[1.26,1.42],[1.42,2.22],[2.22,2.78],[2.78,3.1],[3.1,3.26],[3.26,3.5],[3.5,4.3],[4.3,4.78],[4.78,5.02],[5.02,5.75]]
+      },
+      {
+        "sentence_id": "HIS-SG01-002",
+        "w": [[0.46,0.99],[0.99,1.15],[1.15,1.44],[1.45,1.89]]
+      },
+      {
+        "sentence_id": "HIS-SG01-003",
+        "w": [[0.35,0.64],[0.64,0.92],[0.93,1.36],[1.36,1.68],[1.68,2.64],[2.64,3],[3.2,3.44],[3.44,4.12],[4.48,5.12],[5.12,5.36],[5.36,5.76],[5.76,6.56],[6.56,6.8],[6.8,7.36],[7.36,7.52],[7.52,8.08]]
+      },
+      {
+        "sentence_id": "HIS-SG01-004",
+        "w": [[0.35,0.97],[0.97,1.29],[1.29,1.97],[2.25,2.93],[3.13,3.45],[3.45,3.69],[3.69,4.04]]
+      },
+      {
+        "sentence_id": "HIS-SG01-005",
+        "w": [[0.3,0.97],[0.97,1.85],[1.85,2.57],[2.57,2.89],[2.89,3.44]]
+      },
+      {
+        "sentence_id": "HIS-SG01-006",
+        "w": [[0.49,0.78],[0.78,1.26],[1.26,1.74],[1.74,2.06],[2.06,2.82],[3.1,3.74],[3.74,3.98],[3.98,4.9],[5.18,5.5],[5.5,5.82],[5.82,6.5]]
+      },
+      {
+        "sentence_id": "HIS-SG01-007",
+        "w": [[0.35,0.61],[0.61,0.85],[0.85,1.25],[1.25,2.49],[2.69,3.33],[3.33,3.73],[3.73,4.77],[4.77,4.93],[4.93,5.49],[5.49,5.81],[5.81,6.27]]
+      },
+      {
+        "sentence_id": "HIS-SG01-008",
+        "w": [[0.36,0.84],[0.84,1.08],[1.08,2.24],[2.44,2.8],[3,3.55]]
+      },
+      {
+        "sentence_id": "HIS-SG01-009",
+        "w": [[0.3,0.75],[0.75,1.23],[1.23,1.94]]
+      },
+      {
+        "sentence_id": "HIS-SG01-010",
+        "w": [[0.39,0.62],[0.62,1.38],[1.58,1.9],[1.9,2.3],[2.3,2.7],[2.7,2.94],[2.94,3.26],[3.26,3.5],[3.5,3.66],[3.66,4.18],[4.38,4.62],[4.62,5.38]]
+      },
+      {
+        "sentence_id": "HIS-SG01-011",
+        "w": [[0.39,0.77]]
+      },
+      {
+        "sentence_id": "HIS-SG01-012",
+        "w": [[0.4,1.54],[1.54,2.26],[2.26,2.58],[2.58,3.26],[3.46,3.78],[3.78,4.65]]
+      },
+      {
+        "sentence_id": "HIS-SG01-013",
+        "w": [[0.34,0.91]]
+      },
+      {
+        "sentence_id": "HIS-SG01-014",
+        "w": [[0.41,0.83]]
+      },
+      {
+        "sentence_id": "HIS-SG01-015",
+        "w": [[0.23,1.15]]
+      },
+      {
+        "sentence_id": "HIS-SG01-016",
+        "w": [[0.37,0.58],[0.58,1.46],[1.46,1.78],[1.78,2.34],[2.34,3.06],[3.06,3.46],[3.46,4.38],[4.66,5.2]]
+      },
+      {
+        "sentence_id": "HIS-SG01-017",
+        "w": [[0.34,0.58],[0.58,1.86],[1.86,2.91]]
+      },
+      {
+        "sentence_id": "HIS-SG01-018",
+        "w": [[0.26,0.49],[0.5,1.37],[1.38,2.01],[2.02,2.73],[2.74,3.61],[3.62,4.21],[4.42,4.65],[4.66,5.27]]
+      },
+      {
+        "sentence_id": "HIS-SG01-019",
+        "w": [[0.38,1.15],[1.15,1.47],[1.47,1.71],[1.71,2.75],[2.75,2.99],[2.99,3.95],[3.95,4.19],[4.19,4.51],[4.51,4.99],[4.99,6.03],[6.03,6.35],[6.35,6.67],[6.67,7.35],[7.55,8.03],[8.03,9.23],[9.23,9.55],[9.55,10.03],[10.03,10.27],[10.27,11.11],[11.31,11.55],[11.55,11.79],[11.79,12.67],[12.67,12.91],[12.91,13.39],[13.39,13.55],[13.55,13.79],[13.79,14.22]]
+      },
+      {
+        "sentence_id": "HIS-SG01-020",
+        "w": [[0.32,0.59],[0.59,1.07],[1.07,1.23],[1.23,1.47],[1.47,1.83],[2.03,2.43],[2.43,2.59],[2.59,3.44]]
+      },
+      {
+        "sentence_id": "HIS-SG01-021",
+        "w": [[0.29,0.58],[0.58,1.22],[1.22,1.86],[1.86,2.5],[2.5,3.12]]
+      },
+      {
+        "sentence_id": "HIS-SG01-022",
+        "w": [[0.35,0.67],[0.67,1.39],[1.39,1.95],[1.95,2.19],[2.19,2.51],[2.51,2.86]]
+      },
+      {
+        "sentence_id": "HIS-SG01-023",
+        "w": [[0.42,0.85],[0.85,1.01],[1.01,1.25],[1.25,1.65]]
+      },
+      {
+        "sentence_id": "HIS-SG01-024",
+        "w": [[0.35,1.29],[1.29,2.01],[2.01,2.17],[2.17,2.68]]
+      },
+      {
+        "sentence_id": "HIS-SG01-025",
+        "w": [[0.26,0.61],[0.61,1.53],[1.73,2.37],[2.37,2.85],[2.85,3.09],[3.09,3.65]]
+      },
+      {
+        "sentence_id": "HIS-SG01-026",
+        "w": [[0.27,1.04],[1.04,1.72],[2,2.32],[2.32,2.56],[2.56,3.23]]
+      },
+      {
+        "sentence_id": "HIS-SG01-027",
+        "w": [[0.39,1.06],[1.06,1.7],[1.7,1.94],[1.94,2.18],[2.18,2.94],[3.22,3.86],[3.86,4.1],[4.1,5.06],[5.06,5.7],[5.7,5.94],[5.94,6.98],[6.98,7.62],[7.62,8.1],[8.1,9.22],[9.22,9.46],[9.46,10.02],[10.02,10.33]]
+      },
+      {
+        "sentence_id": "HIS-SG01-028",
+        "w": [[0.26,0.55],[0.55,1.27],[1.27,1.95],[2.15,2.79],[2.79,3.27],[3.27,3.59],[3.59,4.23],[4.23,4.88]]
+      },
+      {
+        "sentence_id": "HIS-SG01-029",
+        "w": [[0.35,1.04],[1.04,2.08],[2.08,2.64],[2.64,2.88],[2.88,3.24],[3.68,3.92],[3.92,4.64],[4.64,4.88],[4.88,5.2],[5.2,5.62]]
+      },
+      {
+        "sentence_id": "HIS-SG01-030",
+        "w": [[0.31,0.59],[0.59,0.75],[0.75,0.99],[0.99,1.41]]
+      },
+      {
+        "sentence_id": "HIS-SG01-031",
+        "w": [[0.38,1.49]]
+      },
+      {
+        "sentence_id": "HIS-SG01-032",
+        "w": [[0.36,1.53],[1.53,2.09],[2.09,2.89],[2.89,3.53],[3.53,3.77],[3.77,4.04]]
+      },
+      {
+        "sentence_id": "HIS-SG01-033",
+        "w": [[0.25,0.77]]
+      },
+      {
+        "sentence_id": "HIS-SG01-034",
+        "w": [[0.34,0.71],[0.71,1.11],[1.11,1.35],[1.35,1.85]]
+      },
+      {
+        "sentence_id": "HIS-SG01-035",
+        "w": [[0.43,0.71],[0.71,1.19],[1.19,2]]
+      },
+      {
+        "sentence_id": "HIS-SG01-036",
+        "w": [[0.59,0.8],[0.8,1.76],[1.76,2],[2,2.22],[2.22,2.56],[2.56,2.82],[2.82,3.6],[3.6,4.56],[4.56,4.88],[4.88,5.39]]
+      },
+      {
+        "sentence_id": "HIS-SG01-037",
+        "w": [[0.33,0.76],[0.76,1.4],[1.4,1.96],[1.96,2.12],[2.12,2.65]]
+      },
+      {
+        "sentence_id": "HIS-SG01-038",
+        "w": [[0.36,0.65],[0.65,0.89],[0.89,1.37],[1.37,1.61],[1.61,2.13],[2.65,3.21],[3.21,3.45],[3.45,4.01],[4.01,4.49],[4.49,4.72]]
+      },
+      {
+        "sentence_id": "HIS-SG01-039",
+        "w": [[0.32,1.19],[1.19,1.75],[1.75,1.91],[1.91,2.49]]
+      },
+      {
+        "sentence_id": "HIS-SG01-040",
+        "w": [[0.38,0.58],[0.58,0.82],[0.82,1.22],[1.22,1.46],[1.46,2.5],[2.5,3.06],[3.06,3.94],[3.94,4.18],[4.18,4.5],[4.5,5.06],[5.06,5.3],[5.3,5.62],[5.62,6.1]]
+      },
+      {
+        "sentence_id": "HIS-SG01-041",
+        "w": [[0.4,0.7],[0.7,1.66],[1.66,2.21]]
+      },
+      {
+        "sentence_id": "HIS-SG01-042",
+        "w": [[0.34,0.79],[0.79,1.15],[1.43,2.21]]
+      },
+      {
+        "sentence_id": "HIS-SG01-043",
+        "w": [[0.37,0.61],[0.61,1.04],[1.04,1.47],[1.47,1.73],[1.73,1.93],[2.29,2.53],[2.53,3.33],[3.33,3.65],[3.65,4.24]]
+      },
+      {
+        "sentence_id": "HIS-SG01-044",
+        "w": [[0.39,0.85]]
+      },
+      {
+        "sentence_id": "HIS-SG01-045",
+        "w": [[0.38,1.52],[1.52,2.24],[2.24,2.56],[2.56,3.1]]
+      },
+      {
+        "sentence_id": "HIS-SG01-046",
+        "w": [[0.4,1.6],[1.6,2.32],[2.32,2.56],[2.56,3.03]]
+      },
+      {
+        "sentence_id": "HIS-SG01-047",
+        "w": [[0.37,0.84]]
+      },
+      {
+        "sentence_id": "HIS-SG01-048",
+        "w": [[0.27,0.96],[0.96,1.28],[1.28,2.08],[2.08,2.56],[2.56,3.36],[3.36,3.68],[3.68,4.4],[4.4,4.72],[4.72,5.28]]
+      }
+    ]
+  }
+}
