@@ -41,7 +41,9 @@ const INIT = `(() => {
 
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
-  for (const [label, width, height] of [["computer", 1280, 800], ["phone", 390, 844], ["short-phone", 390, 664]]) {
+  // SURF_RUNS=short-phone runs only the named runs (all by default).
+  for (const [label, width, height] of [["computer", 1280, 800], ["phone", 390, 844], ["short-phone", 390, 664]]
+    .filter(([label]) => !process.env.SURF_RUNS || process.env.SURF_RUNS.split(",").includes(label))) {
     const phone = label !== "computer";
     const ctx = await browser.newContext({
       viewport: { width, height }, ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
@@ -309,6 +311,7 @@ try {
               return el.getBoundingClientRect().top - (1 - head.project(rig.cam).y) * innerHeight / 2;
             });
             check(`${label}: the answers to “Ya estamos…” sit below the surfer's head`, gap > 0, gap);
+            await shot("turn-arrive", "css");
           }
           if (!shown.has("turn:" + s.choice)) {
             shown.add("turn:" + s.choice);

@@ -506,6 +506,9 @@ export class Surf {
     } else {
       // paddling out, waiting: from behind, towards the sea and what comes in from it (the instructor to the right)
       C.pos.set(x - 1.4, 3.3, z + 6.6 * far); C.look.set(x + 1.2, 0.4, z - 9); C.rate = 2.6;
+      // A short upright phone (390x664) has her words above and two rows of answers below: the surfer a little higher,
+      // so the answers stay under the head.
+      if (tall && aspect > 0.55) C.shiftY = 0.08;
     }
     if (demo) {
       // Show the face from the side, then turn back to the learner as Nayeli reaches the shallows.
