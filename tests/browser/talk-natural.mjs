@@ -1850,15 +1850,24 @@ async function startFilm(route, actor, zone, kind) {
       }
     }
     if (game.zone.id !== zone) game.enterZone(zone, undefined, true);
-    if (actor === "vinnie") {
+    return { actor, zone };
+  }, { actor, zone, id: route.row.id, pc }));
+  if (actor === "vinnie") {
+    // The review build stands the town's people up after the exterior loads: wait for the driver at his stand.
+    await route.until(() => route.page.evaluate((actor) => {
+      window.__step(2);
+      const { game } = window.__ew;
+      return game.zone.id === "town" && game.npcs.some((n) => n.id === actor);
+    }, actor), `${actor} standing at his taxi`);
+    await route.page.evaluate((actor) => {
+      const { game } = window.__ew;
       const { home, rot } = game.npcs.find((n) => n.id === actor);
       // Begin outside the ordinary 4.5 m wave radius and use the normal walk
       // path to enter it. Never set the actor's animation from the test.
       game.placeOnFoot(home.x + Math.sin(rot) * 4.8, home.z + Math.cos(rot) * 4.8, rot + Math.PI);
-    }
-    window.__naturalTest.track(actor);
-    return { actor, zone };
-  }, { actor, zone, id: route.row.id, pc }));
+    }, actor);
+  }
+  await route.page.evaluate((actor) => window.__naturalTest.track(actor), actor);
   await route.wait((f) => f.scene.zone === zone && f.rendered && f.actual[actor]?.live && !f.scene.transition, "approach location rendered");
   await route.capture.start(kind);
   await route.series(4);
