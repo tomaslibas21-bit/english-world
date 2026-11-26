@@ -59,7 +59,7 @@ const PUERTO_COLIBRI: SeaView = {
   water: { deep: "#07677e", bright: "#219eaa", foam: "#f1faf3" },
   island: { sand: "#f0dcae", green: ["#3f9a62", "#6fb85e"], rock: "#8d8478", trees: "palm" },
   sails: ["#ffffff", "#ffd45c", "#ff6f61"],
-  coast: { walls: ["#f6a35c", "#ee6f86", "#5fc0b8", "#f6dc7a", "#fbf3e2"], roofs: ["#b5533c", "#c9683f", "#8f4a3a"], land: "#ecd9a8", hills: "#4f9a5e" },
+  coast: { walls: ["#f0cb9f", "#eabda0", "#e9d8b6", "#cbd7c2", "#f3dec1"], roofs: ["#bc8665", "#aa684e", "#c29370"], land: "#d6bb87", hills: "#96ad9f" },
 };
 
 export const SEA_VIEW: SeaView = (ROAD_EDITION.id as string) === "puerto-colibri" ? PUERTO_COLIBRI : MAPLE_HARBOR;
@@ -137,23 +137,65 @@ function freighter(x: number, z: number, heading: number): Part[] {
   return parts;
 }
 
+/** One sloping sandbank. The crest follows the waterline into two shallow inlets. */
+function sandLip(x0: number, x1: number, z: number) {
+  const edge = [[x0 - 1600, -5], ...[
+    [0.04, -5], [0.12, -8], [0.17, 12], [0.21, 14], [0.26, -4],
+    [0.31, -8], [0.35, 7], [0.39, 9], [0.44, -6], [0.54, -5],
+  ].map(([fraction, depth]) => [x0 + fraction * (x1 - x0), depth]), [x1 + 1600, -5]];
+  const g = new THREE.PlaneGeometry(1, 1, edge.length - 1, 2);
+  const p = g.attributes.position;
+  edge.forEach(([x, depth], i) => {
+    p.setXYZ(i, x, -1.6, z + depth);
+    p.setXYZ(edge.length + i, x, 1.15, z + depth + 4);
+    p.setXYZ(2 * edge.length + i, x, 0.8, z + 65);
+  });
+  g.computeVertexNormals();
+  return g;
+}
+
+/** A low thatched hip over a stucco wall, with a broad eave visible against the sand. */
+function shorePalapa(w: number, d: number, x: number, y: number, z: number): Part[] {
+  const halfW = w / 2 + 2.2, halfD = d / 2 + 1.4, ridge = halfW * 0.42, rise = halfW * 0.47;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute([
+    -halfW, 0, -halfD, halfW, 0, -halfD, halfW, 0, halfD, -halfW, 0, halfD,
+    -ridge, rise, 0, ridge, rise, 0,
+  ], 3));
+  g.setIndex([0, 4, 5, 0, 5, 1, 1, 5, 2, 2, 5, 4, 2, 4, 3, 3, 4, 0]);
+  const thatch = g.toNonIndexed();
+  thatch.computeVertexNormals();
+  return [
+    [at(new THREE.BoxGeometry(2 * halfW, 0.60, 2 * halfD), x, y + 0.30, z), "#785d40"],
+    [at(thatch, x, y + 0.60, z), "#987246"],
+  ];
+}
+
 /** The town from the sea: a strip of shore, low hills, a row of houses and trees, a church or a lighthouse. */
 function coast(view: SeaView, r: () => number, { x0, x1, z, lighthouse }: Coast): Part[] {
   const { walls, roofs, land, hills } = view.coast, { green, trees } = view.island;
   const mid = (x0 + x1) / 2, wide = x1 - x0;
+  const palms = trees === "palm";
   const parts: Part[] = [
-    [at(new THREE.BoxGeometry(wide + 3200, 2.4, 70), mid, -0.4, z + 30), land],
-    [at(new THREE.BoxGeometry(wide + 3400, 5, 160), mid, 0.6, z + 140), green[0]],
+    [palms ? sandLip(x0, x1, z) : at(new THREE.BoxGeometry(wide + 3200, 2.4, 70), mid, -0.4, z + 30), land],
+    [at(new THREE.BoxGeometry(wide + 3400, 5, 160), mid, 0.6, z + 140), palms ? "#91a88e" : green[0]],
   ];
   for (let i = 0; i < 7; i++) {
     const x = mid + (i - 3) * (wide + 500) / 6 + (r() - 0.5) * 60, radius = 70 + r() * 80;
-    parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : green[1]]);
+    parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : palms ? "#a5b8a5" : green[1]]);
   }
+  let palapas = 0;
   for (let x = x0 + 6; x < x1 - 6;) {
     const w = 7 + r() * 9, tall = 4.5 + r() * 6.5, deep = 8 + r() * 6, back = z + 18 + r() * 30;
     if (r() < 0.78) {
       parts.push([at(new THREE.BoxGeometry(w, tall, deep), x + w / 2, 1 + tall / 2, back), walls[Math.floor(r() * walls.length)]]);
-      parts.push([at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roofs[Math.floor(r() * roofs.length)]]);
+      const roof = roofs[Math.floor(r() * roofs.length)];
+      if (palms && palapas < 2) {
+        parts.push(...shorePalapa(w, deep, x + w / 2, 1 + tall, back));
+        palapas++;
+      } else {
+        parts.push([at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roof]);
+      }
     } else parts.push(...tree(trees, r, x + w / 2, 1, back, 1.8 + r() * 1.2, green[Math.floor(r() * 2)]));
     x += w + 1.5 + r() * 7;
   }

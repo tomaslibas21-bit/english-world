@@ -487,23 +487,53 @@ function lamp(c: Ctx, x: number, z: number, y = 3.6) {
 function rug(c: Ctx, x: number, z: number, w: number, d: number, color: string) {
   c.M.add("rug-" + color, mat(color), boxGeo(w, 0.02, d, x, 0.012, z), false, true);
 }
-function menuBoard(lines: string[], title: string, colors = { bg: "#2f3a33", fg: "#f7f3e8", accent: "#ffd166" }) {
+function drawCeibaBoard(x: CanvasRenderingContext2D, title: string, lines: string[], H: number, heightM: number) {
+  const rail = H * (1 - 0.20 / heightM), shadow = H * (1 - 0.08 / heightM);
+  x.save();
+  roundRect(x, 0, 0, 1024, H, 30); x.clip();
+  x.fillStyle = "#a96949"; x.fillRect(0, 0, 1024, H);
+  x.fillStyle = "#315852"; x.fillRect(9, 9, 1006, rail - 9);
+  x.fillStyle = "#41605a"; x.fillRect(9, H * 0.80, 1006, rail - H * 0.80);
+  x.fillStyle = "#be8a64"; x.fillRect(0, rail, 1024, 3);
+  x.fillStyle = "#644d40"; x.fillRect(0, shadow, 1024, H - shadow);
+  x.restore();
+
+  x.font = "800 56px Nunito, Arial"; x.textAlign = "center"; x.fillStyle = "#edc66f";
+  x.fillText(title, 512, H * 0.115);
+  const leading = Math.min(54, H * 0.575 / Math.max(1, lines.length - 1));
+  x.font = `600 ${Math.min(38, Math.floor(leading * 0.84))}px Nunito, Arial`;
+  x.fillStyle = "#e7dfc9";
+  lines.forEach((line, i) => {
+    const [item, price] = line.split("|"), y = H * 0.195 + i * leading;
+    if (item) {
+      const available = 1024 - 2 * 96 - (price ? x.measureText(price).width + 32 : 0);
+      x.textAlign = "left"; x.fillText(item, 96, y, available);
+    }
+    if (price) { x.textAlign = "right"; x.fillText(price, 928, y); }
+  });
+}
+
+function menuBoard(lines: string[], title: string, colors = { bg: "#2f3a33", fg: "#f7f3e8", accent: "#ffd166" }, cafeHeight?: number) {
   const own = THEME.boards[title];
   if (own) { title = own[0]; lines = own.slice(1); }
   const rows = lines.length;
   const H = Math.max(640, 150 + rows * 50);
   const cv = document.createElement("canvas"); cv.width = 1024; cv.height = H;
   const x = cv.getContext("2d")!;
-  x.fillStyle = colors.bg; roundRect(x, 0, 0, 1024, H, 30); x.fill();
-  x.strokeStyle = "#8a6a4a"; x.lineWidth = 18; x.stroke();
-  x.fillStyle = colors.accent; x.font = "800 60px Nunito, Arial"; x.textAlign = "center"; x.fillText(title, 512, 84);
-  x.font = "600 38px Nunito, Arial";
-  lines.forEach((l, i) => {
-    const [name, price] = l.split("|");
-    const y = 150 + i * 50;
-    x.fillStyle = colors.fg; x.textAlign = "left"; x.fillText(name, 70, y);
-    if (price) { x.textAlign = "right"; x.fillStyle = colors.accent; x.fillText(price, 954, y); }
-  });
+  if (cafeHeight && THEME.roomExtras.cafeMx) {
+    drawCeibaBoard(x, title, lines, H, cafeHeight);
+  } else {
+    x.fillStyle = colors.bg; roundRect(x, 0, 0, 1024, H, 30); x.fill();
+    x.strokeStyle = "#8a6a4a"; x.lineWidth = 18; x.stroke();
+    x.fillStyle = colors.accent; x.font = "800 60px Nunito, Arial"; x.textAlign = "center"; x.fillText(title, 512, 84);
+    x.font = "600 38px Nunito, Arial";
+    lines.forEach((l, i) => {
+      const [name, price] = l.split("|");
+      const y = 150 + i * 50;
+      x.fillStyle = colors.fg; x.textAlign = "left"; x.fillText(name, 70, y);
+      if (price) { x.textAlign = "right"; x.fillStyle = colors.accent; x.fillText(price, 954, y); }
+    });
+  }
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
   (t as any).aspect = 1024 / H;
   return t;
@@ -1003,8 +1033,10 @@ const B: Record<string, () => Interior> = {
       S.done();
     }
     c.g.add(props);
-    wallPanel(c, menuBoard(["                    small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00", "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50", "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00", "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], "SUNNY CUP · DRINKS"), -3.6, 2.75, -c.d / 2 + 0.2, 4.2, 3.2);
-    wallPanel(c, menuBoard(["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75", "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], "FOOD"), 0.9, 2.75, -c.d / 2 + 0.2, 3.2, 2);
+    const menu = (lines: string[], title: string, x: number, w: number, h: number) =>
+      wallPanel(c, menuBoard(lines, title, undefined, h), x, 2.75, -c.d / 2 + 0.2, w, h);
+    menu(["                    small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00", "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50", "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00", "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], "SUNNY CUP · DRINKS", -3.6, 4.2, 3.2);
+    menu(["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75", "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], "FOOD", 0.9, 3.2, 2);
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");
     for (const [tx, tz] of [[3, 0.5], [5.8, -1.8], [5.8, 2.6], [-5.6, 1.5], [0.4, 3]]) table(c, tx, tz, { round: true, cloth: "#f7f1e6", chairs: 2, chairColor: "#e8743b" });
     windowBack(c, 5.2, 3.8);
@@ -1488,7 +1520,8 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
-    counter(c, -6, -6, 6, 1.1, "#7a2e2e", "#efe3d0");
+    const enamel = THEME.roomExtras.terminalMx;
+    counter(c, -6, -6, 6, 1.1, enamel ? "#386c70" : "#7a2e2e", enamel ? "#41676a" : "#efe3d0");
     for (const gx of [-7.5, -4.5]) c.M.add("ticket-glass", mat("#dff3fb", { transparent: 0.3 }), boxGeo(2.8, 1.3, 0.05, gx, 1.75, -5.5), false);
     sign(c, "TICKETS", -6, 3.4, -c.d / 2 + 0.2, 3, "#7a2e2e", "#fff8e8");
     const board = document.createElement("canvas"); board.width = 1024; board.height = 512;
@@ -3740,10 +3773,49 @@ function shoeshine(c: Ctx, S: Smalls, x: number, z: number, rot: number) {
   c.col.addBox(x, z, cw, cd);
 }
 
+function ticketWell(S: Smalls, x: number, y: number, z: number) {
+  // The pressed tray slopes from the lip down to a flat bed just above the sill.
+  const tray = new THREE.PlaneGeometry(1, 1, 3, 3);
+  const points = tray.getAttribute("position");
+  const across = [-0.19, -0.171, 0.171, 0.19], along = [-0.11, -0.09, 0.09, 0.11];
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+    const rim = col === 0 || col === 3 || row === 0 || row === 3;
+    points.setXYZ(row * 4 + col, across[col], rim ? 0.019 : 0.004, along[row]);
+  }
+  tray.computeVertexNormals();
+  S.add(tray.translate(x, y, z), "#526267");
+
+  // The folded boleto crosses the back lip. Its punched coupon lies on the exposed clerk's side.
+  const width = 0.224, nearLength = 0.252, farLength = 0.376;
+  const nearPitch = 0.28, farPitch = -0.20;
+  const front = z + 0.073, base = y + 0.008;
+  S.add(new THREE.PlaneGeometry(width + 0.012, 0.435).rotateX(-Math.PI / 2)
+    .translate(x + 0.009, y + 0.001, z - 0.328), "#29484c");
+  S.add(new THREE.PlaneGeometry(width, nearLength).translate(0, nearLength / 2, 0)
+    .rotateX(nearPitch - Math.PI / 2).translate(x, base, front), "#ead1a5");
+  const creaseY = base + nearLength * Math.sin(nearPitch), creaseZ = front - nearLength * Math.cos(nearPitch);
+  const onCoupon = (g: THREE.BufferGeometry) => g.rotateX(farPitch - Math.PI / 2).translate(x, creaseY, creaseZ);
+  const paper = new THREE.Shape();
+  paper.moveTo(-width / 2, 0); paper.lineTo(width / 2, 0); paper.lineTo(width / 2, farLength); paper.lineTo(-width / 2, farLength);
+  paper.closePath();
+  const punch = new THREE.Path();
+  punch.absarc(0.082, farLength - 0.032, 0.016, 0, Math.PI * 2, true);
+  paper.holes.push(punch);
+  S.add(onCoupon(new THREE.ShapeGeometry(paper, 4)), "#f2deb5");
+  S.add(onCoupon(new THREE.PlaneGeometry(0.118, 0.012).translate(-0.025, 0.31, 0.001)), "#527171");
+}
+
 /** The bus terminal's hall in this edition (theme.ts roomExtras.terminalMx; s67b): route 7's city bus at the bay (the
  *  town's own bus, car.ts busParts: white over teal, its number lit amber over the windshield), its front to the hall
  *  and its doors towards Ana; the route's sign hanging over its front; a shoeshine stand by the west wall. */
 function terminalMx(c: Ctx, S: Smalls) {
+  ticketWell(S, -6, 1.08, -6);
+  S.add(new THREE.PlaneGeometry(6.12, 0.05).rotateX(-Math.PI / 2).translate(-6, 1.082, -6.585), "#e7d9bd");
+  for (const side of [-1, 1]) {
+    S.add(new THREE.PlaneGeometry(6.12, 0.05).rotateY(side < 0 ? Math.PI : 0)
+      .translate(-6, 1.046, -6 + side * 0.612), "#e7d9bd");
+    S.add(new THREE.PlaneGeometry(0.022, 1).translate(-6 + side, 0.5, -5.448), "#ede2ca");
+  }
   for (const [g, col] of busParts("#f4f6f8", "#1f8fa3", 7)) S.add(g.translate(11.45, 0, -3.5), col);
   c.col.addBox(11.45, -3.5, 2.6, 10.0);
   sign(c, "BUS 12 · DOWNTOWN", 11.45, 3.5, 1.95, 3, "#1f8fa3", "#ffffff");

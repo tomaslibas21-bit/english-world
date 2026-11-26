@@ -1173,7 +1173,28 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.style === "hotel") {
     // (the edition's merger has the walking camera look through the hotel's canopy and its posts: graphics round 6)
     const tm = THEME.townMerge ? "hotel-" : "";
-    M.add(tm + "canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
+    const place = (geo: THREE.BufferGeometry) => geo.rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2);
+    if (THEME.mexican && !STYLED) {
+      const blue = mat(b.awning ?? "#1f6f8b");
+      M.add("hotel-canopy", blue, place(boxGeo(7.04, 0.19, 3.96, 0, 3.48, 0)));
+      for (const side of [-1, 1]) {
+        M.add("hotel-canopy-end", mat("#b56538"), place(boxGeo(0.46, 0.19, 3.96, side * 3.75, 3.48, 0)));
+      }
+      M.add("hotel-canopy-tile", mat("#f1dfbc"), place(boxGeo(7.984, 0.11, 3.992, 0, 3.33, -0.004)));
+      // Blue lozenges on the ivory nosing turn the two outer corners.
+      for (const side of [-1, 1]) {
+        const lozenge = () => new THREE.PlaneGeometry(0.058, 0.058).rotateZ(Math.PI / 4).scale(2.8, 1, 1);
+        for (const inset of [0.26, 0.59, 0.92]) {
+          M.add("hotel-canopy-tile", blue, place(lozenge().translate(side * (4 - inset), 3.33, 2)));
+        }
+        M.add("hotel-canopy-tile", blue, place(lozenge().rotateY(side * Math.PI / 2).translate(side * 4, 3.33, 1.74)));
+      }
+      M.add("hotel-canopy-soffit", mat("#665444"), place(boxGeo(7.89, 0.045, 3.89, 0, 3.2525, 0)));
+      M.add("hotel-canopy-reflection", mat("#b08a57"), place(new THREE.PlaneGeometry(4.2, 2.65)
+        .rotateX(Math.PI / 2).translate(0, 3.225, -0.50)));
+    } else {
+      M.add(tm + "canopy", mat("#8a2f3b"), place(boxGeo(8, 0.35, 4, 0, 3.4, 0)));
+    }
     for (const s of [-1, 1]) {
       M.add(tm + "canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
       col.addCircle(dx + t[0] * s * 3.7 + n[0] * 3.8, dz + t[1] * s * 3.7 + n[1] * 3.8, 0.15);
