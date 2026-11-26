@@ -39,6 +39,7 @@ The editor can review each complete utterance here. Aligned glosses for both hel
 | `ask_fare` | Two regular tickets? | Du bilietai už visą kainą? | ¿Los dos a precio normal? | Both at the regular price? | Abu už įprastą kainą? |
 | `ask_id` | Sure. Do you have your student ID? | Žinoma. Ar turite studento pažymėjimą? | Claro. ¿Trae su credencial de estudiante? | Sure. Do you have your student ID? | Žinoma. Ar turite studento pažymėjimą? |
 | `no_id` | That's okay. Two regular tickets, then. | Nieko tokio. Tuomet abu bilietai už visą kainą. | Está bien. Entonces serían dos boletos a precio normal. | That's okay. Two regular tickets, then. | Nieko tokio. Tuomet abu bilietai už visą kainą. |
+| `student_ok` | You get two dollars off your ticket. | Jūsų bilietas dviem doleriais pigesnis. | Con su credencial, le descontamos quince pesos. | With your student ID, you get fifteen pesos off. | Su studento pažymėjimu Jūsų bilietas penkiolika pesų pigesnis. |
 | `ask_snack` | Would you like some popcorn? | Gal norėtumėte spragėsių? | ¿Le pongo unas palomitas? | Would you like some popcorn? | Gal norėtumėte spragėsių? |
 | `total_regular` | That'll be sixteen dollars. | Iš viso šešiolika dolerių. | Son ciento veinte pesos. | That comes to one hundred twenty pesos. | Iš viso šimtas dvidešimt pesų. |
 | `total_regular_snack` | That'll be nineteen dollars. | Iš viso devyniolika dolerių. | Son ciento cincuenta pesos. | That comes to one hundred fifty pesos. | Iš viso šimtas penkiasdešimt pesų. |
@@ -61,4 +62,4 @@ The editor can review each complete utterance here. Aligned glosses for both hel
 
 ## Recording TODO
 
-Keep unrecorded draft lines text-only. The [recording list](CINEMA.md#recording-list) gives each exact take, speaker and reusable manifest key. The manifest comparison found **32 MH takes to record** (6 reusable) and **32 Mexican Spanish takes to record** (6 reusable). Seller voices are `g_ben` and `es_ben`. Hint examples use each edition’s female and male coach. The LT and EN helper layers share the same Spanish clips.
+Keep unrecorded draft lines text-only. The [recording list](CINEMA.md#recording-list) gives each exact take, speaker and reusable manifest key. The manifest comparison found **33 MH takes to record** (6 reusable) and **33 Mexican Spanish takes to record** (6 reusable). Seller voices are `g_ben` and `es_ben`. Hint examples use each edition’s female and male coach. The LT and EN helper layers share the same Spanish clips.

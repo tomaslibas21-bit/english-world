@@ -55,6 +55,7 @@ const lines = {
   ask_fare: [t("Two | regular | tickets?", "Du | įprasti | bilietai?", "Du bilietai už visą kainą?")],
   ask_id: [t("Sure. | Do | you | have | your | student | ID?", "Žinoma. | Ar | Jūs | turite | savo | studento | pažymėjimą?", "Žinoma. Ar turite studento pažymėjimą?")],
   no_id: [t("That's | okay. | Two | regular | tickets, | then.", "Tai | nieko. | Du | įprasti | bilietai | tuomet.", "Nieko tokio. Tuomet abu bilietai už visą kainą.")],
+  student_ok: [t("You | get | two | dollars | off | your | ticket.", "Jūs | gaunate | dviejų | dolerių | nuolaidą | savo | bilietui.", "Jūsų bilietas dviem doleriais pigesnis.")],
   ask_snack: [t("Would | you | like | some | popcorn?", "— | Jūs | norėtumėte | šiek tiek | spragėsių?", "Gal norėtumėte spragėsių?")],
   total_regular: [t("That'll be | sixteen | dollars.", "Bus | šešiolika | dolerių.", "Iš viso šešiolika dolerių.")],
   total_regular_snack: [t("That'll be | nineteen | dollars.", "Bus | devyniolika | dolerių.", "Iš viso devyniolika dolerių.")],
@@ -94,9 +95,9 @@ const hints = {
 };
 
 const intents = {
-  pair_show: { patterns: ["[can i get] two tickets for the seven [o'clock] show [please] #h:pair_show"] },
+  pair_show: { patterns: ["[can i get] (two | 2) tickets for the (seven | 7) [o'clock] show [please] #h:pair_show"] },
   pair: { patterns: ["[can i get] two tickets [please] #h:pair"] },
-  seven: { patterns: ["[the] seven [o'clock] [show] [please] #h:seven"] },
+  seven: { patterns: ["[the] (seven | 7) [o'clock] [show] [please] #h:seven"] },
   middle: { patterns: ["([could we sit together] in the middle | middle seats) [please] #h:middle"] },
   back: { patterns: ["[two seats together] in the back [please] #h:back"] },
   regular: { patterns: ["[yes] two regular tickets #h:regular"] },
@@ -137,6 +138,7 @@ const lines = {
   ask_fare: [t("¿Los | dos | a | precio | normal?", "The | two | at | price | regular?", "Both at the regular price?")],
   ask_id: [t("Claro. | ¿Trae | su | credencial | de | estudiante?", "Of course. | Do you have with you | your | ID | of | student?", "Sure. Do you have your student ID?")],
   no_id: [t("Está | bien. | Entonces | serían | dos | boletos | a | precio | normal.", "That's | fine. | Then | that would be | two | tickets | at | price | regular.", "That's okay. Two regular tickets, then.")],
+  student_ok: [t("Con | su | credencial, | le | descontamos | quince | pesos.", "With | your | ID, | for you | we take off | fifteen | pesos.", "With your student ID, you get fifteen pesos off.")],
   ask_snack: [t("¿Le | pongo | unas | palomitas?", "For you | shall I add | some | popcorn?", "Would you like some popcorn?")],
   total_regular: [t("Son | ciento veinte | pesos.", "That comes to | one hundred twenty | pesos.", "That comes to one hundred twenty pesos.")],
   total_regular_snack: [t("Son | ciento cincuenta | pesos.", "That comes to | one hundred fifty | pesos.", "That comes to one hundred fifty pesos.")],
@@ -176,9 +178,9 @@ const hints = {
 };
 
 const intents = {
-  pair_show: { patterns: ["[me da] dos boletos para la función de las siete [por favor] #h:pair_show"] },
+  pair_show: { patterns: ["[me da] (dos | 2) boletos para la función de las (siete | 7) [por favor] #h:pair_show"] },
   pair: { patterns: ["[me da] dos boletos [por favor] #h:pair"] },
-  seven: { patterns: ["[para] [la de] las siete [por favor] #h:seven"] },
+  seven: { patterns: ["[para] [la de] las (siete | 7) [por favor] #h:seven"] },
   middle: { patterns: ["([nos puede dar dos asientos juntos] en medio | en el centro) [por favor] #h:middle"] },
   back: { patterns: ["[dos asientos juntos] atrás [por favor] #h:back"] },
   regular: { patterns: ["[sí] los dos a precio normal #h:regular"] },
@@ -236,7 +238,7 @@ export const boxOffice: SituationDef = {
     middle(c) { c.s.seat = "middle"; }, back(c) { c.s.seat = "back"; },
     regular(c) { c.s.fare = "regular"; c.s.discount = false; },
     student(c) { c.s.fare = "student"; c.s.discount = undefined; },
-    proof(c) { if (c.step === "id") c.s.discount = true; },
+    proof(c) { if (c.step === "id" && !c.s.discount) { c.s.discount = true; c.say("student_ok"); } },
     forgot(c) { if (c.step === "id") { c.s.discount = false; c.say("no_id"); } },
     popcorn(c) { c.s.popcorn = true; }, plain(c) { c.s.popcorn = false; },
     card(c) { if (c.step === "pay") c.s.method = "card"; },
@@ -286,6 +288,10 @@ The SM table uses the same Spanish audio and the same composite keys as `src/edi
     "Está | bien. | Entonces | serían | dos | boletos | a | precio | normal.␟That's | fine. | Then | that would be | two | tickets | at | price | regular.␟That's okay. Two regular tickets, then.": {
       "gloss": "Viskas | gerai. | Tuomet | būtų | du | bilietai | už | kainą | įprastą.",
       "nat": "Nieko tokio. Tuomet abu bilietai už visą kainą."
+    },
+    "Con | su | credencial, | le | descontamos | quince | pesos.␟With | your | ID, | for you | we take off | fifteen | pesos.␟With your student ID, you get fifteen pesos off.": {
+      "gloss": "Su | Jūsų | pažymėjimu | Jums | pritaikome | penkiolikos | pesų nuolaidą.",
+      "nat": "Su studento pažymėjimu Jūsų bilietas penkiolika pesų pigesnis."
     },
     "¿Le | pongo | unas | palomitas?␟For you | shall I add | some | popcorn?␟Would you like some popcorn?": {
       "gloss": "Jums | įdėti | šiek tiek | spragėsių?",
@@ -395,6 +401,7 @@ The list covers every distinct seller line and every voiced learner hint, includ
 | `ask_fare` | Two regular tickets? | TODO Ben |
 | `ask_id` | Sure. Do you have your student ID? | TODO Ben |
 | `no_id` | That's okay. Two regular tickets, then. | TODO Ben |
+| `student_ok` | You get two dollars off your ticket. | TODO Ben |
 | `ask_snack` | Would you like some popcorn? | TODO Ben |
 | `total_regular` | That'll be sixteen dollars. | TODO Ben |
 | `total_regular_snack` | That'll be nineteen dollars. | TODO Ben |
@@ -425,6 +432,7 @@ The list covers every distinct seller line and every voiced learner hint, includ
 | `ask_fare` | ¿Los dos a precio normal? | TODO Iván |
 | `ask_id` | Claro. ¿Trae su credencial de estudiante? | TODO Iván |
 | `no_id` | Está bien. Entonces serían dos boletos a precio normal. | TODO Iván |
+| `student_ok` | Con su credencial, le descontamos quince pesos. | TODO Iván |
 | `ask_snack` | ¿Le pongo unas palomitas? | TODO Iván |
 | `total_regular` | Son ciento veinte pesos. | TODO Iván |
 | `total_regular_snack` | Son ciento cincuenta pesos. | TODO Iván |
