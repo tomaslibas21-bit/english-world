@@ -600,6 +600,8 @@ export class GamepadView {
     for (let i = index + step; i >= 0 && i < items.length; i += step) {
       if (this.focus(root, items[i])) return true;
     }
+    // Short modal lists can loop from their last action back to the header's Close button.
+    if (root.hasAttribute("data-pad-wrap")) return this.focus(root, backwards ? items[items.length - 1] : items[0]);
     return false;
   }
 

@@ -41,6 +41,7 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { NoticeboardSheet } from "./NoticeboardSheet";
 import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
@@ -75,6 +76,7 @@ export function Panels() {
   }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
+  if (panel === "noticeboard" && game?.noticeboard) return <NoticeboardSheet board={game.noticeboard} close={close} />;
   return (
     <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}

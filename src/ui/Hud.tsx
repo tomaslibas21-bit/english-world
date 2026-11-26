@@ -130,7 +130,8 @@ export function Hud() {
   const phoneToast = narrow && toast !== null;
   const autoCollapse = (phoneToast || photoReady) && !hud.cave;
   const shortChatter = portrait && screen.h <= 720 && anchoredChatter && taskId !== null && !hud.panel && !hud.cave;
-  const task = useTaskCard(taskId, notesVisible && !hud.cave, taskCardNote(directions, autoCollapse, shortChatter), layout);
+  const readingBoard = layout !== "full" && questHud && hud.prompt?.kind === "read";
+  const task = useTaskCard(taskId, notesVisible && !hud.cave, readingBoard ? "noticeboard" : taskCardNote(directions, autoCollapse, shortChatter), layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud" data-pad-scope="flight"><Flight /><Fade /></div>;
@@ -184,7 +185,7 @@ export function Hud() {
   const collapsed = !hud.cave && ((!directions && streetCard) || (task.note ? !task.openedDuringNote
     : movingFollowUp || (task.manual ?? (screen.sidewaysPhone || foldForContext || (!task.fresh && moving)))));
   return (
-    <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")} hidden={hud.panel === "noticeboard"} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
@@ -699,12 +700,12 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
+      {prompt && <button className="act-btn" aria-label={prompt.kind === "read" ? prompt.label : undefined} style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
         // Ending a second touch while holding the brake or stick may produce no click.
         e.preventDefault();
         const touch = e.changedTouches[0];
         if (touch && e.currentTarget.contains(document.elementFromPoint(touch.clientX, touch.clientY))) game?.interact();
-      } : undefined}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
+      } : undefined}>{prompt.kind === "read" ? L("Skaityti") : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* Removing a held free-ride brake during exit or a panel also releases it. */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>

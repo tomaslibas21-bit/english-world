@@ -25,7 +25,7 @@ import { townCanvasDocument } from "../../tools/town-canvas-stub";
 import { bakeTownCollision } from "../../tools/town-collision-data";
 
 const fieldSHA = "7d59eb37d5a601dab65ed4a3ff25c7491aa5bf41756dfa579e41969c52c99175";
-const ledgesSHA = "9707053cbad622517b19fc568e4511a947fa9ae8e3cd90c7e2e9d7907daa9d2d";
+const ledgesSHA = "e024bcfbbaae527c2e456dd2bbf88d621180c8e1f2e8f836dcf11d637a2dbb7a";
 const verifyBuild = process.env.VERIFY_TOWN_COLLISION_ARTIFACTS === "1";
 const newTown = () => buildTown({ movableParking: true });
 const flags = ({ boxes, circles }: Town["colliders"]) => [...boxes, ...circles].map(({ split }) => split);
@@ -184,6 +184,12 @@ it("restores the complete PC artifact and matches the live sliced builder", () =
     deepStrictEqual(hit.ledges.pieces, direct.ledges.pieces);
     deepStrictEqual(hit.ledges.things, direct.ledges.things);
     deepStrictEqual(hitTown.colliders, directTown.colliders);
+    // The zócalo board stops a walker. Its reading mark and a 1.5 m passage on either side stay open.
+    expect(hitTown.colliders.blocked(30, -18.9, 0.38)).toBe(true);
+    expect(hitTown.colliders.blocked(30, -17.3, 0.38)).toBe(false);
+    for (const x of [28.5, 31.5]) {
+      for (const z of [-17.3, -18.9, -20.5]) expect(hitTown.colliders.blocked(x, z, 0.75)).toBe(false);
+    }
     expect(hit.ledges.pieces[0]).toEqual(hull);
     expect(hit.ledges.pieces).toHaveLength(1847);
     expect(hit.ledges.things.some(({ x }) => x < WORLD.minX)).toBe(true);

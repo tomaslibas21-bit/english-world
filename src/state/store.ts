@@ -166,7 +166,7 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "listen" | "barista" | "pool" | "billiards" | "gym" } | null;
+  prompt: { label: string; lt?: string; kind: "read" | "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "listen" | "barista" | "pool" | "billiards" | "gym" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
@@ -189,7 +189,7 @@ export interface HudState {
   textArrival?: string | null;
   textThread?: string | null;
   reaction?: import("../game/life/reacts").ReactionLine | null;
-  panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
+  panel: null | "noticeboard" | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
   /** Puerto Colibrí's chamber and quest card, and the card of the glyph stone the learner is at. */
   cave: import("../game/cave/quest").CaveCard | null;

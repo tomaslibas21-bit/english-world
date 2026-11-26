@@ -63,7 +63,10 @@ describe("recorded voice reliability", () => {
     expect(clip.currentTime).toBe(1.2);
     player.emitEnded();
     expect(clip.status).toBe("ended");
+    // Named target and helper files live behind the same course gate as manifest-backed voices.
+    vi.stubGlobal("localStorage", { getItem: () => JSON.stringify({ token: "course fixture", exp: Date.now() / 1000 + 3600 }) });
     const blocked = audio.playFile("ph-abcdef1234.mp3");
+    expect(player.src).toBe("/voices/ph-abcdef1234.mp3?t=course%20fixture");
     player.onerror?.();
     player.currentTime = 0;
     expect(blocked.status).toBe("unavailable");

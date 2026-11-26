@@ -3,6 +3,17 @@ import { LOTERIA_UI_EN } from "../content/loteria";
 // The interface in English for the Spanish edition: each Lithuanian original (as written in src/ui/…, through
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
+  // The daily posting in the zócalo.
+  "Dienos frazė": "Phrase of the day",
+  "Skaityti dienos frazę": "Read today’s phrase",
+  "Klausytis frazės": "Hear the phrase",
+  "Klausytis vertimo": "Hear the translation",
+  "Išsaugoti kortelėse": "Save to cards",
+  "Tavo kortelėse": "In your cards",
+  "Įkeliama…": "Loading…",
+  "Šiandien frazės lentoje nėra.": "No phrase is posted today.",
+  "Nepavyko paleisti garso įrašo": "Audio unavailable",
+  "Kortelė išsaugota tik šiam kartui.": "Card saved for this visit only.",
   // The town quests and the optional spoken bonus.
   "Renatos nuotraukų albumas": "Renata's photo album",
   "Atversti albumą": "Open the album",

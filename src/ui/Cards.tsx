@@ -318,6 +318,7 @@ function CardRow({ c, now }: { c: Card; now: number }) {
       <div className="cd-txt">
         <div className="cd-en" lang={TL}>{c.en}</div>
         <div className="cd-lt" lang={EDITION.helper}>{c.lt}</div>
+        {!c.situationId && c.sourceLabel && <small>{c.sourceLabel}</small>}
       </div>
       <div className="cd-meta">
         <Pips box={c.box} />
