@@ -13,7 +13,8 @@ import { Icon } from "../icons";
 import { FeedbackBadge } from "./FeedbackBadge";
 import { GlossLine } from "./GlossLine";
 import { PhraseChooser } from "./PhraseChooser";
-import { PhraseReviewRow } from "./PhraseReview";
+import { reviewLine } from "./PhraseReview";
+import "./phraseReview.css";
 import { PhraseSave } from "./PhraseSave";
 import { SayIt } from "./SayIt";
 import { ScoreCard, ScoreNumber } from "./ScoreCard";
@@ -206,6 +207,7 @@ function PracticeItems({ items, entries, recovered, label, title, missed, guide 
   const entry = entries?.[index] ?? gateWordEntry(item, title);
   const sit = guide && SITUATION_BY_ID[item.situation];
   const full = entry.sentence.en !== item.en;
+  const line = reviewLine(entry);
   const pair = <div className="road-pair">
     {items.length === 1 ? <><strong lang="en">{item.en}</strong> · {item.lt}</> :
       <select data-pad-adjust aria-label={missed ? undefined : label} aria-labelledby={missed ? "road-missed-title" : undefined}
@@ -218,8 +220,15 @@ function PracticeItems({ items, entries, recovered, label, title, missed, guide 
   return <section className={missed ? "road-missed" : "road-missed road-practice"}>
     {missed && <h3 id="road-missed-title">{label}</h3>}
     <article>
-      {full && pair}
-      <PhraseReviewRow entry={entry}>{!full ? pair : undefined}</PhraseReviewRow>
+      {/* The word chooser keeps one place in the tree whichever item is picked (a word met in a longer line shows
+          that line under it): moving it between rows remounted the focused <select> and the controller lost it. */}
+      <div className="phrase-review-row">
+        <div className="road-pair-cell">
+          {pair}
+          {full && line && <div className="phrase-review-line"><div lang="en">{line.target}</div><small lang="lt">{line.helper}</small></div>}
+        </div>
+        {line?.save}
+      </div>
       {recovered.some((other) => sameWord(item, other)) && <Comeback />}
       {guide && sit && <><small>{guide.from}</small><EndDestination sit={sit} label={guide.label} close={guide.run} /></>}
     </article>

@@ -214,3 +214,5 @@
   .road-hint { font-size: .72rem; white-space: nowrap; }
   .road-karaoke-panel { --sky-bottom: 85px; font-size: 1.35rem; }
 }
+/* The word chooser and, for a word met in a longer line, that line under it: one cell beside the save button. */
+.road-pair-cell { min-width: 0; display: grid; gap: 4px; }
