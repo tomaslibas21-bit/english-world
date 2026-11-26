@@ -78,8 +78,8 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "en", environment: "node", include: ["tests/**/*.test.ts"], exclude: ["tests/es/**", "tests/es-lt/**", "**/node_modules/**"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,jump-more,layout,movement,street-schedule,street-world,traffic}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/{first-exterior,phrase-game-play,play-startup,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
+      { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/karaoke-{confetti,controls,echo,gap-word,mic,mode,rate,session}.test.ts", "tests/{audio-focus,on-device-speech}.test.ts", "tests/{barista-mode,car-models,jump-more,layout,movement,street-schedule,street-world,traffic}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
+      { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/karaoke-{confetti,controls,echo,gap-word,mic,mode,rate,session}.test.ts", "tests/{audio-focus,on-device-speech}.test.ts", "tests/es/karaoke-{source,stage}.test.ts", "tests/es/{first-exterior,phrase-game-play,play-startup,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts", "tests/gym-{round,poses,mode}.test.ts"] } },
     ],
   },
 } as any);

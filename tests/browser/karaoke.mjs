@@ -141,6 +141,24 @@ try {
       const row = page.locator(`.karaoke-picker [data-song="${id}"]`);
       await row.scrollIntoViewIfNeeded();
       await press(row);
+      await page.locator(`.karaoke-detail[data-song-detail="${id}"]`).waitFor();
+    };
+    const decodeCover = async (image) => {
+      await image.scrollIntoViewIfNeeded();
+      await image.evaluate(async (element) => {
+        // A newly mounted lazy image may not have started loading when decode() is called.
+        if (!element.complete) await new Promise((resolve) => {
+          const loaded = () => {
+            element.removeEventListener("load", loaded);
+            element.removeEventListener("error", loaded);
+            resolve();
+          };
+          element.addEventListener("load", loaded);
+          element.addEventListener("error", loaded);
+        });
+        if (!element.naturalWidth) throw new Error(`Cover failed to load: ${element.currentSrc || element.src}`);
+        await element.decode();
+      });
     };
     const anotherSong = async (id) => {
       await press(button(words.more));
@@ -178,7 +196,7 @@ try {
       await press(page.locator(".prompt"));
       const picker = page.locator(".karaoke-picker");
       await picker.waitFor();
-      await picker.locator('[data-song="SG01"] img').evaluate((image) => image.decode());
+      await decodeCover(picker.locator('[data-song="SG01"] img'));
       assert.equal(await picker.locator("[data-song]").count(), index.songs.length);
       await shot("picker");
       assert.equal(routes.length, 0, "browsing requests no words or recording");
@@ -199,7 +217,7 @@ try {
       }
 
       await choose("SG01");
-      await picker.locator(".karaoke-jacket img").evaluate((image) => image.decode());
+      await decodeCover(picker.locator('[data-song-detail="SG01"] .karaoke-jacket img'));
       await shot("sg01-details");
       const size = await button(words.start).boundingBox();
       assert(size && size.height >= 44 && size.y >= 0 && size.y + size.height <= height);

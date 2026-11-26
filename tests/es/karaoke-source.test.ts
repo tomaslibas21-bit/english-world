@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { EDITION } from "../../src/edition";
 import { STATIONS } from "../../src/content/radio";
 import { karaokeStations } from "../../src/game/karaoke/store";
@@ -6,6 +8,7 @@ import { karaokeReading, karaokeWordAt } from "../../src/radio/lyrics";
 import { KaraokeSession } from "../../src/radio/karaokeSession";
 import type { RadioOutput } from "../../src/radio/output";
 import { loadKaraokeCovers, karaokeCatalog, radioConfig, readSongList, songDataUrls, type SongMeta } from "../../src/radio/songs";
+import { SongCover } from "../../src/ui/SongCover";
 import fixture from "../fixtures/karaoke-pc.json";
 
 const lithuanian = EDITION.helper === "lt";
@@ -24,6 +27,16 @@ const config = radioConfig({
 beforeAll(loadKaraokeCovers);
 
 describe("Puerto Colibrí course sources", () => {
+  it("loads the SG01 jacket immediately while catalog thumbnails remain lazy", () => {
+    const [entry] = karaokeCatalog(config, [course.songs.SG01.meta]);
+    const thumbnail = renderToStaticMarkup(createElement(SongCover, { entry }));
+    const jacket = renderToStaticMarkup(createElement(SongCover, { entry, width: 320 }));
+    expect(thumbnail).toContain('src="' + site + '/art/s/songs/SG01.50df7d56.160.webp"');
+    expect(thumbnail).toMatch(/<img\b[^>]*loading="lazy"/);
+    expect(jacket).toContain('src="' + site + '/art/s/songs/SG01.50df7d56.320.webp"');
+    expect(jacket).toMatch(/<img\b[^>]*loading="eager"/);
+  });
+
   it("joins every indexed ID to the active course jackets and leaves Bilingüe in SME only", () => {
     const songs = readSongList({ songs: course.ids.split(" ").map((id, n) => ({
       id, n, c: id[1].toLowerCase(), t: id, a: "/songs/v1/" + id + ".mp3",

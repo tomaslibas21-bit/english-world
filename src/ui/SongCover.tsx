@@ -10,7 +10,7 @@ export function SongCover({ entry, width = 160 }: { entry: KaraokeCatalogEntry; 
         <small>{entry.song.id}</small>
         <span lang={EDITION.target}>{entry.song.t}</span>
       </div>
-      {src && <img key={src} src={src} alt="" width={width} height={width} loading="lazy" decoding="async"
+      {src && <img key={src} src={src} alt="" width={width} height={width} loading={width === 160 ? "lazy" : "eager"} decoding="async"
         onError={(event) => { event.currentTarget.hidden = true; }} />}
     </div>
   );
