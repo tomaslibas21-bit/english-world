@@ -32,6 +32,14 @@
 .speed-feel[data-tier="1"] > span:nth-child(-n+2), .speed-feel[data-tier="2"] > span { display: block; }
 .speed-feel.resuming > span::before { opacity: var(--speed-feel-strength, 0); }
 
+/* A sideways phone (844×390, 664×390): the lower pair at 63% fell inside the stick's ring (and under its knob pushed
+   up) and the upper pair sat beside the horn; both pairs go up into the clear band between the top cards (objective,
+   map) and the controls (26 Nov 2026). */
+@media (orientation: landscape) and (max-height: 520px) {
+  .speed-feel > span { top: 31%; }
+  .speed-feel > span:nth-child(n+3) { top: 44%; }
+}
+
 @keyframes speed-feel-streak {
   0% { transform: translateX(0) rotate(var(--angle)); opacity: 0; }
   45% { opacity: .22; }
