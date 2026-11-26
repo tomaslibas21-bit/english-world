@@ -426,15 +426,17 @@ function smalls(c: Ctx): Smalls {
  * hangs beside the upright so its silhouette reads from the doorway as well as the bench lane. */
 function stationPhone(c: Ctx, S: Smalls) {
   const { x, z } = STATION_PHONE;
-  const enamel = "#702638", metal = "#b4babb", receiver = "#232329", paper = "#fff0cc";
+  const enamel = "#702638", brass = "#b8995f", metal = "#b4babb", receiver = "#232329", paper = "#fff0cc";
   const box = (w: number, h: number, d: number, dx: number, y: number, dz: number, color: string) =>
     S.add(new THREE.BoxGeometry(w, h, d).translate(x + dx, y, z + dz), color);
   box(0.88, 0.016, 0.64, 0, 0.01, STATION_PHONE.markZ - z, "#a18667");
   box(0.82, 0.012, 0.58, 0, 0.024, STATION_PHONE.markZ - z, enamel);
   box(0.42, 2.36, 0.18, 0.10, 1.18, 0.31, enamel);
   box(1.25, 0.10, 0.68, 0, 2.38, -0.04, enamel);
+  box(1.26, 0.025, 0.69, 0, 2.36, -0.04, brass);
   for (const side of [-1, 1]) box(0.065, 0.22, 0.68, side * 0.59, 2.23, -0.04, enamel);
   box(1.16, 0.07, 0.75, 0, 1.00, -0.02, metal);
+  box(1.16, 0.035, 0.035, 0, 0.98, -0.39, brass);
   box(0.45, 0.76, 0.27, 0.08, 1.58, 0.13, metal);
   box(0.27, 0.14, 0.025, 0.08, 1.78, -0.016, paper);
   for (let row = 0; row < 3; row++) for (let col = -1; col <= 1; col++)
@@ -454,24 +456,28 @@ function stationPhone(c: Ctx, S: Smalls) {
   tube([[0.41, 1.09, -0.16], [0.56, 1.06, -0.23], [0.52, 1.05, 0.10], [0.27, 1.18, 0.18]], 0.012, metal);
   c.col.addBox(x, z, 1.25, 0.92);
 
-  // A projecting sign, legible from either side with the same small painted face.
+  // Enamel station sign. Both faces carry the paint right-reading from their own side.
+  for (const dx of [-0.38, 0.38]) box(0.065, 0.24, 0.065, dx, 2.52, -dx * 0.36, brass);
   const texture = canvasTex(256, 128, (ctx) => {
-    ctx.fillStyle = paper; ctx.fillRect(0, 0, 256, 128);
-    ctx.strokeStyle = enamel; ctx.lineWidth = 4; ctx.strokeRect(5, 5, 246, 118);
-    ctx.fillStyle = enamel; ctx.textAlign = "center";
-    // Hand-painted receiver silhouette (independent of device emoji fonts).
-    ctx.beginPath(); ctx.moveTo(85, 48);
-    ctx.bezierCurveTo(84, 13, 172, 13, 171, 48);
-    ctx.lineTo(150, 53); ctx.lineTo(147, 37);
-    ctx.quadraticCurveTo(128, 31, 109, 37);
-    ctx.lineTo(106, 53); ctx.closePath(); ctx.fill();
-    ctx.font = "bold 34px sans-serif"; ctx.fillText("Public Phone", 128, 103);
+    ctx.fillStyle = "#51202d"; ctx.fillRect(0, 0, 256, 128);
+    ctx.strokeStyle = brass; ctx.lineWidth = 3; ctx.strokeRect(3, 3, 250, 122);
+    ctx.fillStyle = paper;
+    ctx.beginPath(); ctx.moveTo(38, 52);
+    ctx.bezierCurveTo(44, 28, 78, 12, 128, 12);
+    ctx.bezierCurveTo(178, 12, 212, 28, 218, 52);
+    ctx.lineTo(218, 67); ctx.quadraticCurveTo(218, 74, 210, 73);
+    ctx.lineTo(177, 67); ctx.quadraticCurveTo(172, 66, 172, 60); ctx.lineTo(172, 46);
+    ctx.bezierCurveTo(151, 36, 105, 36, 84, 46);
+    ctx.lineTo(84, 60); ctx.quadraticCurveTo(84, 66, 79, 67);
+    ctx.lineTo(46, 73); ctx.quadraticCurveTo(38, 74, 38, 67); ctx.closePath(); ctx.fill();
+    ctx.textAlign = "center"; ctx.font = "bold 37px Georgia, serif";
+    ctx.fillText("Public Phone", 128, 111);
   });
-  const face = (angle: number) => new THREE.PlaneGeometry(1.16, 0.58).rotateY(angle);
-  const angle = Math.PI * 0.18;
-  const faces = mergeGeometries([face(angle), face(angle + Math.PI)])!;
-  const sign = new THREE.Mesh(faces, new THREE.MeshLambertMaterial({ map: texture }));
-  sign.position.set(x, 2.67, z); sign.name = "public-phone-sign";
+  const face = new THREE.PlaneGeometry(1.82, 0.94);
+  const faces = mergeGeometries([face, face.clone().rotateY(Math.PI)])!;
+  const sign = new THREE.Mesh(faces, new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+  sign.rotation.order = "YXZ"; sign.rotation.set(-0.12, 0.35, 0);
+  sign.position.set(x, 3.04, z); sign.name = "public-phone-sign";
   c.g.add(sign);
 }
 /** A till on a counter top at height y, its screen towards the cashier (north). */
