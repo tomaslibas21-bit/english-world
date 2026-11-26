@@ -68,7 +68,7 @@ export function Panels() {
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   if (panel === "passport") return <div className="overlay passport-layer" data-pad-scope="panel" data-pad-phase="passport">
-    <Suspense fallback={<button data-pad-back onClick={close} autoFocus>Uždaryti</button>}><Passport close={close} /></Suspense>
+    <Suspense fallback={<button data-pad-back onClick={close} onKeyDown={e => { if (e.key === "Escape") close(); }} autoFocus>Uždaryti</button>}><Passport close={close} /></Suspense>
   </div>;
   return (
     <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>

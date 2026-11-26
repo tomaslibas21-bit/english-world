@@ -35,7 +35,8 @@
 .passport > header { padding: 6px 10px 12px; color: #fff4d5; }
 .passport h2 { font: 500 1.8em/.95 var(--en); }
 .passport h2 small { font-size: .47em; margin-top: 3px; }
-.passport .passport-close { margin-left: auto; color: inherit; border-color: #8d9b86; }
+.passport-total { margin-left: auto; text-align: right; font-size: .84em; flex-shrink: 0; }
+.passport .passport-close { flex-shrink: 0; color: inherit; border-color: #8d9b86; }
 .passport-spread {
   flex: 1; min-height: 0; display: grid; grid-template: auto 1fr / 1fr 1fr;
   background: linear-gradient(90deg, var(--paper) 47%, #e3d8bd 49.7%, #b2a589 50%, #eee5cf 50.8%, var(--paper) 54%);
@@ -107,6 +108,7 @@
   .passport[data-large=true] .passport-grid { grid-template-columns: 1fr; }
   .passport[data-large=true] .passport-cell { display: grid; grid-template-columns: 82px 1fr; text-align: left; gap: 3px 10px; }
   .passport[data-large=true] .passport-cell .passport-mark { grid-row: span 2; }
+  .passport > header { gap: 7px; }
   .passport > footer { gap: 4px; padding-inline: 0; }
   .passport-pages { gap: 2px; }
 }

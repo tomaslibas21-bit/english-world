@@ -45,7 +45,7 @@ export default function Passport({ close }: { close(): void }) {
   const [announcement, announce] = useState("");
   const root = useRef<HTMLDivElement>(null);
   const opened = useRef<string | null>(null), interacted = useRef(false);
-  const focusAfter = useRef<string | null>(".passport-picker");
+  const focusAfter = useRef<string | null>(".passport-close");
   const [tick, redraw] = useState(0);
   const bySection = useMemo(() => {
     const result = new Map<Section, Stamp[]>();
@@ -60,6 +60,8 @@ export default function Passport({ close }: { close(): void }) {
   const pending = useMemo(() => source.history.pending(earned), [source.history, earned, tick, source.revision]);
   const visibleSections = (Object.keys(sections) as Section[]).filter(k =>
     (k !== "books" && k !== "songs") || (inEnglishMaster && !source.missing.includes(k)));
+  const counted = !inEnglishMaster || (["songs", "books"] as const).every(k => source.catalogs[k] || source.missing.includes(k));
+  const total = counted ? earned.length + " / " + source.rows.length : earned.length;
   const list = bySection.get(section) ?? [];
   const count = showFavorites ? source.favorites.length : list.length;
   const pages = Math.max(1, Math.ceil(count / pageSize)), leaf = Math.min(page, pages - 1);
@@ -144,6 +146,7 @@ export default function Passport({ close }: { close(): void }) {
       if (document.activeElement === target) { e.preventDefault(); (e.shiftKey ? buttons.at(-1) : buttons[0])?.focus(); }
     }}>
     <header><Icon name="passport" size={31} /><h2 id="passport-title"><Caption label={copy.title} /></h2>
+      <span className="passport-total"><Caption label={withCount(copy.earned, total)} /></span>
       <button type="button" className="passport-close" aria-label={copy.close.lt} onClick={close}><Icon name="close" /></button>
     </header>
     <div className="passport-spread">
