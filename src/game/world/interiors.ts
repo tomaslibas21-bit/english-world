@@ -9,6 +9,7 @@ import { THEME, type FloorKind, type RoomLook } from "./theme";
 import { GYM_MAT } from "./gymMat";
 import { floorMaterial, floorColor } from "./styled";
 import { BILLIARDS_NPC } from "../../content/billiards-lines";
+import { addCabinets } from "../arcade/props";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
 import { rack } from "../billiards/rules";
 import { Ledges } from "../ledges";
@@ -970,6 +971,10 @@ function poolHall(c: Ctx) {
     col.addBox(jx, jz, 0.87, 0.63);
   }
 
+  if (THEME.roomExtras.cantina) {
+    addCabinets(g, col);
+    return;
+  }
   // A covered practice table.
   const spare = new TableView();
   spare.root.name = "pool-hall-spare";

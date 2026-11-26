@@ -31,6 +31,10 @@ import { Undersea } from "./rides/undersea";
 import { CAR, CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
+import { cabinetNear, type TownGame } from "./arcade/cabinets";
+import { ArcadeMode, useArcade } from "./arcade/mode";
+import { PHOTO_WALK_SITUATION } from "../content/photo-walk-lines";
+import { SURF_SPOT } from "./world/surf";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
 import { SEA_EDITION } from "../content/sea";
@@ -57,7 +61,7 @@ import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { FriendMeeting } from "./phone/meeting";
 import { createSurfMode } from "./surf/mode";
-import { createTaxiMode } from "./taxi/mode";
+import { createTaxiMode, TAXI_APPROACH } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { createPoolMode } from "./pool/mode";
@@ -67,7 +71,7 @@ import { GYM_MAT } from "./world/gymMat";
 import { createLoteriaMode, type LoteriaMode } from "./loteria/mode";
 import { loteriaDusk } from "./loteria/scene";
 import { LOTERIA_APPROACH } from "./loteria/location";
-import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, inHotelPool, POOL_ENTRY, POOL_KIDS, POOL_SITUATION } from "./world/pool";
+import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, inHotelPool, POOL_CIRCLE, POOL_ENTRY, POOL_TALK, POOL_KIDS, POOL_SITUATION } from "./world/pool";
 import type { OcclusionField } from "./occlusion";
 import type { PropFader } from "./fade";
 import { STYLED } from "./style";
@@ -287,6 +291,7 @@ export class Game implements GameApi {
   private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
+  private arcade?: ArcadeMode;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private taxi: ReturnType<typeof createTaxiMode> = null;
@@ -315,6 +320,8 @@ export class Game implements GameApi {
   private raycaster = new THREE.Raycaster();
   private chest = new THREE.Vector3();
   private moveVel = new THREE.Vector3();
+  private cabinetPin = new THREE.Vector2(NaN, NaN);
+  private lastCabinetCue?: string;
   private tmpV = new THREE.Vector3();
   private disposed = false;
   private screenW = 0;
@@ -625,8 +632,10 @@ export class Game implements GameApi {
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
       entered: (id) => { this.speedFeelLoader?.cancel(); this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
       left: (id) => {
+        if (!this.modes.owns(id)) return;
         this.modes.left(id); audio.bed(null);
         if (id === "road" && this.rides.riding) this.boardCarWater(this.rides.riding);
+        this.arcade?.returnedFrom(id);
       }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
@@ -696,8 +705,29 @@ export class Game implements GameApi {
       },
       actor: () => this.npcs.find(({ id }) => this.quests.handlesNpc(id))?.ch,
     }));
+    if (THEME.roomExtras.cantina) {
+      this.modes.register(this.arcade = new ArcadeMode(host, {
+        here: () => this.zone.id === BILLIARDS_PLACE,
+        place: ({ x, z, rot }) => {
+          useStore.getState().setHud({ ride: null, prompt: null });
+          this.placeOnFoot(x, z, rot, true);
+        },
+        start: (id, option) => this.modes.start(id, option),
+        holdRadio: (playing) => playing ? radio.hold("arcade") : radio.release("arcade"),
+        visit: (id) => this.visitArcadeGame(id),
+        refocus: () => {
+          if (this.disposed) return;
+          this.updateHud();
+          requestAnimationFrame(() => {
+            if (useStore.getState().hud.prompt?.kind === "arcade" && !this.modes.engaged)
+              document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus({ preventScroll: true });
+          });
+        },
+      }));
+    }
     this.road = new RoadEntry({
       ...host,
+      cabinetAvailable: () => this.zone.id === BILLIARDS_PLACE && useArcade.getState().playing === "road",
       environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
         environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity }),
       roadSign: () => this.town.roadSign.root,
@@ -1129,6 +1159,7 @@ export class Game implements GameApi {
     if (!z) return;
     this.pad?.cancel();
     const doIt = () => {
+      this.arcade?.forgetReturn();
       if (this.rides.water?.returning || this.rides.water?.wet) this.endRide();
       this.greeting?.release(0);
       this.phone.dismiss();
@@ -1192,7 +1223,7 @@ export class Game implements GameApi {
       this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor && !wild ? "interior" : "follow";
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, cabinetCorner: !!this.arcade && id === BILLIARDS_PLACE };
       else this.rig.yaw = this.heading;
       // (the follow camera's lean and distance: the town's, or the place's own)
       // (the town's, as the player left it with the wheel, is kept for when they come back up)
@@ -1575,7 +1606,11 @@ export class Game implements GameApi {
     this.gymHeldKeys.delete(key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.gymHeldKeys.clear(); this.waterActionHeld = false; this.releaseWaterInput(); this.billiards.release(" ", true); this.modes.blur(); };
+  private onBlur = () => {
+    this.cancelCabinetDrive();
+    this.keys.clear(); this.gymHeldKeys.clear(); this.waterActionHeld = false;
+    this.releaseWaterInput(); this.billiards.release(" ", true); this.modes.blur();
+  };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -2605,7 +2640,12 @@ export class Game implements GameApi {
     return true;
   }
 
+  private cancelCabinetDrive() {
+    if (useArcade.getState().playing === "road" && this.modes.owns("road")) this.modes.exit(true);
+  }
+
   private phoneVisibility = () => {
+    if (document.hidden) this.cancelCabinetDrive();
     this.wasHidden = true;
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.observeStreetAndPhone();
@@ -2785,7 +2825,10 @@ export class Game implements GameApi {
     if (this.transitioning || useStore.getState().hud.panel) return;
     if (id === "directions") { this.quests.directionAction(name); return; }
     const mode = this.modes.active ?? (id === "barista" && this.modes.owns(id) ? this.modes.get(id) : null);
-    if (mode?.id === id) mode.action?.(name, value);
+    if (mode?.id === id) {
+      if (id === "road" && name === "guide") this.arcade?.forgetReturn();
+      mode.action?.(name, value);
+    }
   }
   debugBilliards() {
     const debug = this.billiards.debug();
@@ -2883,6 +2926,36 @@ export class Game implements GameApi {
     if (this.cenoteTour && loc === CENOTE_TOUR?.location) return this.cenoteTour.home;
     const o = OUTDOOR_NPCS.find((n) => this.sitsForNpc(n.npc).some((s) => s.location === loc));
     return o ? { x: o.ax ?? o.x, z: (o.az ?? o.z) + 2.5, rot: Math.PI } : null;
+  }
+
+  private visitArcadeGame(id: TownGame) {
+    switch (id) {
+      case "barista":
+        if (this.barista?.available()) this.enterZone(BARISTA_CONVERSATION.location, BARISTA_PROMPT);
+        else this.visitArcadeHost(BARISTA_CONVERSATION.situation);
+        break;
+      case "photowalk": this.visitArcadeHost(PHOTO_WALK_SITUATION); break;
+      case "gym": this.enterZone(GYM_ENTRY.location, { ...GYM_MAT, rot: Math.PI / 2 }); break;
+      case "surf": if (SURF_SPOT) this.enterZone("town", SURF_SPOT.start); break;
+      case "taxi": this.enterZone("town", TAXI_APPROACH); break;
+      case "loteria": this.enterZone("town", LOTERIA_APPROACH); break;
+      case "pool": {
+        const spot = sitProgress(useStore.getState().progress, POOL_SITUATION).completions ? POOL_CIRCLE.learner : POOL_TALK;
+        this.enterZone("town", { ...spot, rot: Math.PI });
+        break;
+      }
+      case "sea": {
+        const beach = this.rides.find("playa")!.home;
+        const shore = inFrontOf(beach.x, beach.z, beach.rot + Math.PI, BOAT.half + 0.7);
+        this.enterZone("town", this.rides.boatApproach(shore.x, shore.z) ?? shore);
+        break;
+      }
+    }
+  }
+
+  private visitArcadeHost(situation: string) {
+    const arrival = this.scenarioArrival(SITUATION_BY_ID[situation]);
+    if (arrival?.spawn) this.enterZone(arrival.zone, arrival.spawn);
   }
 
   teleportTo(loc: string) {
@@ -3151,7 +3224,8 @@ export class Game implements GameApi {
     const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
-    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
+    const corner = this.rig.mode === "interior" ? this.rig.cabinetCornerFrame() : 0;
+    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift - 0.13 * corner;
     // (the taxi's greeting lift eases toward a higher shot; 0 keeps the plain walking shift)
     // (sideways the stick and the brake keep to the sides: the taxi goes lower, under Don Rigo's words)
     const lifted = this.sidewaysPhone ? -0.05 : 0.14 - 0.075 * this.shortGreeting(w, h);
@@ -4226,6 +4300,18 @@ export class Game implements GameApi {
   private updateTags() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
+    const overlay = useStore.getState().hud;
+    const anchor = overlay.prompt?.anchor;
+    if (anchor && !overlay.modeScreen && !overlay.panel) {
+      v.set(anchor.x, anchor.y, anchor.z).project(this.rig.cam);
+      const x = Math.round((1 + v.x) * w / 2), y = Math.round((1 - v.y) * h / 2);
+      if (x !== this.cabinetPin.x || y !== this.cabinetPin.y) {
+        this.cabinetPin.set(x, y);
+        const style = this.container.parentElement!.style;
+        style.setProperty("--cabinet-x", x + "px");
+        style.setProperty("--cabinet-y", y + "px");
+      }
+    }
     const obj = this.currentObjective();
     // in a conversation the header names the person and every line its speaker: no tags over heads
     const talking = !!this.session?.active, modeMenu = useStore.getState().hud.modeScreen?.kind === "menu";
@@ -4344,7 +4430,7 @@ export class Game implements GameApi {
         const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd, !!this.zone.interior);
         if (m) {
           bd = m.distance;
-          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind } };
+          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind, anchor: m.anchor } };
         }
       }
       if (!this.zone.interior) {
@@ -4373,10 +4459,19 @@ export class Game implements GameApi {
         for (const e of this.wild?.exits ?? []) { const de = Math.hypot(e.x - p.x, e.z - p.z); if (de < e.reach && de < bd) { bd = de; best = { kind: "exit", id: e.id, label: L("Išeiti") }; } }
       }
     }
-    const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
+    // Closing a menu restores the prompt under the learner. Only a new approach rings the cabinet.
+    if (this.lastCabinetCue && (this.zone.id !== BILLIARDS_PLACE || !cabinetNear(p.x, p.z))) this.lastCabinetCue = undefined;
+    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id
+      || (best?.prompt?.kind === "arcade" && best.label !== this.nearest?.label);
     this.nearest = best;
     if (changed) {
-      if (best) audio.sfx("tick");
+      if (best) {
+        if (best.prompt?.kind !== "arcade") audio.sfx("tick");
+        else if (this.lastCabinetCue !== best.label) {
+          this.lastCabinetCue = best.label;
+          audio.sfx("coin", 0.35);
+        }
+      }
       const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
         : best.kind === "ride" ? (best.label === "parked" ? { label: L(ROAD_UI.drive), kind: "drive" }

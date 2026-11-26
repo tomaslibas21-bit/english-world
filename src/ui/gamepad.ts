@@ -50,6 +50,7 @@ const POLICIES: Record<string, Policy> = {
   meeting: { rank: 74, first: ANSWER },
   convo: { rank: 70, first: `${ANSWER}, .guide .chip` },
   score: { rank: 65, flow: ".mode-score-card" },
+  arcade: { rank: 60, first: DEFAULT, back: BACK },
   choice: { rank: 60, first: ".barista-choice, [data-line].taxi-choice, .road-choice, .surf-choice", back: CLOSE },
   radio: { rank: 55, first: ".rs-knob", back: ".rs-x" },
   "phone-ring": { rank: 50, first: DEFAULT },
