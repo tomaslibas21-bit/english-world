@@ -3,7 +3,7 @@ import { GLOBAL } from "../../src/content/global";
 import { NPCS } from "../../src/content/npcs";
 import { learnerTake } from "../../src/content/radioScenes/voice";
 import type { LearnerSceneTurn, NpcSceneTurn } from "../../src/content/radioScenes/types";
-import type { SituationDef } from "../../src/content/types";
+import type { SentSrc, SituationDef } from "../../src/content/types";
 import { npcVoice } from "../../src/content/voices";
 import { compose, placeholders, type Sentence } from "../../src/convo/compose";
 import { buildNlu, Conversation, type SpokenLine, type TurnOut } from "../../src/convo/dialogue";
@@ -46,9 +46,13 @@ export interface Run {
   complete: boolean;
 }
 
-const valid = (sentence: Sentence) => !!sentence.say.trim() && !!sentence.nat.trim() &&
+// compose writes "…" for a slot with no value. An authored "…" is not one (26 Nov 2026: p26's kyle_file3 „Ir čia
+// parašyta, kad vizitas buvo… įvykdytas?“ and p28's mia_hi „Labas. Ee… Šefas sakė…“ were dropped as unrecorded,
+// so neither conversation had a route): only more "…" than the authored text has marks a missing value.
+const ellipses = (text: string) => text.split("…").length - 1;
+const valid = (sentence: Sentence, src: SentSrc) => !!sentence.say.trim() && !!sentence.nat.trim() &&
   !/[{}]/.test(sentence.say + sentence.nat) &&
-  !(/…/.test(sentence.en + sentence.nat) && !sentence.say.includes("…")) &&
+  ellipses(sentence.en) <= ellipses(src.en) && ellipses(sentence.nat) <= ellipses(src.nat) &&
   !/\s[.,!?]/.test(sentence.say);
 
 export function cachedNlu(sit: SituationDef): Map<string, Nlu> {
@@ -98,7 +102,7 @@ export function makeWalker(sit: SituationDef, manifest: Manifest, sharedNlu = ca
             addressee: exampleGender, speaker: npc.gender, formal: !npc.informal,
           });
           const take = learnerTake(to, 1, sentence.say, manifest);
-          if (!valid(sentence) || !take) continue;
+          if (!valid(sentence, entry.s) || !take) continue;
           const ref = `${group}/${item}${entity ? "/" + entity.id : ""}`;
           replies.push({
             ref, group, item, entity: entity?.id, sentence, duration: take.duration,
@@ -125,7 +129,7 @@ export function makeWalker(sit: SituationDef, manifest: Manifest, sharedNlu = ca
       const sentence = compose(sources[index], line.vars, {
         look: conv.look, addressee: exampleGender, speaker: npc.gender, formal: !npc.informal,
       });
-      if (!valid(sentence)) continue;
+      if (!valid(sentence, sources[index])) continue;
       const alt = withoutAddressedNames(sentence.say, Object.values(EXAMPLE_PLAYER));
       const text = manifest[audioKey(voice, speed, sentence.say)] ? sentence.say : alt ?? sentence.say;
       const clipKey = audioKey(voice, speed, text);

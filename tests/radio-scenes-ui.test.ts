@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bookSource, EM_BOOK_PROFILE } from "../src/content/bookSource";
 import { LOCATIONS } from "../src/content/locations";
+import { SITUATIONS } from "../src/content/situations/catalog";
 import { BOOK_STATION, SCENE_STATION, STATIONS } from "../src/content/radio";
 import { audio } from "../src/game/audio";
 import { createTalkChannel } from "../src/radio/bookChannel";
@@ -84,7 +85,10 @@ describe("Conversation FM in the radio set", () => {
     expect(index?.match(/<a /g)).toHaveLength(locations.length);
     for (const id of locations) expect(index).toContain(`href="#scene-place-${id}"`);
     expect(html.match(/class="rs-key[ "]/g)).toHaveLength(5);
-    expect(html).not.toMatch(/data-scene="(?:p26-complaint|p28-kitchen)"|<img/);
+    expect(html).not.toMatch(/<img/);
+    // every situation has routes since 26 Nov 2026 (p26 and p28 were left out until the walker's "…" fix)
+    expect(playableScenes.map((s) => s.id)).toEqual(SITUATIONS.map((s) => s.id));
+    for (const id of ["p26-complaint", "p28-kitchen"]) expect(html).toContain(`data-scene="${id}"`);
     expect(html.match(/data-scene="/g)).toHaveLength(playableScenes.length);
     for (const scene of playableScenes) {
       const section = html.split(`data-place="${scene.location}"`)[1]?.split("</section>")[0];
