@@ -53,7 +53,19 @@ export function RadioTool({ phone = false }: { phone?: boolean }) {
 
 export function RadioSetLayer() {
   const open = useRadio((s) => s.available && s.open);
-  return open ? <RadioSet /> : null;
+  const library = useRadio((s) => s.libraryOpen);
+  return open ? library ? <LibraryBooks /> : <RadioSet /> : null;
+}
+
+/** The room uses the same picker, reader and settings, without opening a cabinet over the furniture. */
+function LibraryBooks() {
+  const s = useRadio((state) => state);
+  if (!radio.books) return null;
+  return <>
+    {s.shelfOpen && <BookPicker channel={radio.books} covered={s.readerOpen || s.settingsOpen} />}
+    {s.readerOpen && <BookReader channel={radio.books} covered={s.settingsOpen} restoreFocus={false} />}
+    {s.settingsOpen && <TalkSettings channel={radio.books} />}
+  </>;
 }
 
 /** While the radio plays: the station's name on a small plate beside the button. A new song's title shows on it for

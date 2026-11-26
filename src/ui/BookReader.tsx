@@ -107,7 +107,7 @@ export function ReaderPage({ item, state, word, roving, setRoving, seek, expande
   </article>;
 }
 
-export function BookReader({ channel, covered = false }: { channel: BookChannel; covered?: boolean }) {
+export function BookReader({ channel, covered = false, restoreFocus = true }: { channel: BookChannel; covered?: boolean; restoreFocus?: boolean }) {
   const state = useBookState(channel, (s) => s);
   const item = state.item as BookItem | null;
   const dialog = useRef<HTMLDialogElement>(null);
@@ -142,7 +142,7 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
     el.querySelector<HTMLElement>("[data-pad-default]")?.focus({ preventScroll: true });
     return () => {
       el.close();
-      if (opener?.isConnected && !opener.closest("[inert]")) opener.focus({ preventScroll: true });
+      if (restoreFocus && opener?.isConnected && !opener.closest("[inert]")) opener.focus({ preventScroll: true });
     };
   }, []);
   useLayoutEffect(() => {

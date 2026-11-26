@@ -458,6 +458,11 @@
   .scene-layout { display: grid; grid-template-columns: minmax(0, 31%) minmax(0, 1fr); min-height: 0; }
   .scene-intro { background: var(--leaf); padding: 28px 22px; border-right: 1px solid var(--rule); overflow: auto; }
   .scene-intro .primary { margin-top: 20px; }
+  .scene-shuffle-short, .scene-place-index { display: none; }
+  .scene-place-index { margin-top: 20px; }
+  .scene-place-index a { display: flex; align-items: center; min-height: 44px; padding: 8px 2px; border-bottom: 1px solid var(--rule); color: var(--navy); text-decoration: none; }
+  .scene-place-index a:is(:hover, :focus-visible) { background: var(--wash); }
+  .scene-places h2 { scroll-margin-top: 8px; }
   .scene-places { padding: 18px 28px 30px; }
   .scene-places section + section { margin-top: 22px; }
   .scene-places h2 { padding: 8px 0; border-bottom: 1px solid var(--rule); color: var(--brass-ink); font: 800 calc(15px * var(--scale))/1.4 var(--ui); }
@@ -469,11 +474,18 @@
   .scene-play { display: inline-flex; gap: 5px; align-items: center; color: var(--navy); font-weight: 800; }
 }
 .scene-speaker { display: block; font: 800 calc(14px * var(--scale))/1.4 var(--ui); color: var(--rs-trim); }
+.scene-speaker .scene-title { font-weight: 600; }
+@media (min-width: 651px) {
+  .scene-picker .scene-place-index { display: grid; }
+}
 @media (max-width: 650px) and (min-height: 501px) {
   .scene-picker {
     .scene-layout { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
-    .scene-intro { border-right: 0; border-bottom: 1px solid var(--rule); padding: 16px; }
-    .scene-intro .primary { margin-top: 12px; }
+    .scene-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; border-right: 0; border-bottom: 1px solid var(--rule); padding: 8px 12px; gap: 8px; }
+    .scene-intro h1 { font-size: calc(24px * var(--scale)); }
+    .scene-intro .primary { margin: 0; min-height: 44px; }
+    .scene-shuffle-full { display: none; }
+    .scene-shuffle-short { display: inline; }
     .scene-places { padding: 8px 16px 20px; }
     .scene-row { gap: 10px; }
   }

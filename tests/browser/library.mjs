@@ -38,17 +38,20 @@ try {
       reducedMotion: width === 1280 ? "reduce" : "no-preference",
     });
     try {
+      let bookFlow = false;
       await context.route("**/*", async (route) => {
         const url = new URL(route.request().url());
         if (url.origin !== base.origin) return route.abort();
-        if (url.pathname === "/knygos/index.json")
+        if (!bookFlow && url.pathname === "/knygos/index.json")
           return route.fulfill({ status: 200, contentType: "application/json", body: index });
         const cover = /^\/art\/s\/books\/(BOOK-[A-Z]+\.[a-f0-9]{8}\.(?:160|320)\.webp)$/.exec(url.pathname);
         if (cover) {
           try { return await route.fulfill({ contentType: "image/webp", body: await readFile(join(artRoot, "books", cover[1])) }); }
           catch { return route.fulfill({ status: 404, body: "" }); }
         }
-        if (/\.mp3$/.test(url.pathname)) return route.fulfill({ status: 204, body: "" });
+        // The integrated flow uses real narration from the configured local review source.
+        if (/\.mp3$/.test(url.pathname) && !url.pathname.startsWith("/__files/em-lt/"))
+          return route.fulfill({ status: 204, body: "" });
         return route.continue();
       });
       await context.addInitScript(([key, save]) => {
@@ -73,9 +76,24 @@ try {
       await page.evaluate(() => {
         window.__libraryActions = [];
         const g = window.__ew.game;
-        // The world action remains installed. These stand in for the shelf/reader on the UI branch.
-        g.onLibraryShelf = () => window.__libraryActions.push(["browse", null]);
-        g.onLibraryReader = (chairIndex) => window.__libraryActions.push(["sit", chairIndex]);
+        // First measure the room without dialogs, then exercise the installed Book FM hooks below.
+        const shelf = g.onLibraryShelf, reader = g.onLibraryReader;
+        if (!shelf || !reader) throw new Error("The library must be connected to Book FM");
+        g.onLibraryShelf = () => {
+          window.__libraryActions.push(["browse", null]);
+          if (window.__libraryUseBookFM) shelf();
+        };
+        g.onLibraryReader = (chairIndex) => {
+          window.__libraryActions.push(["sit", chairIndex]);
+          if (!window.__libraryUseBookFM) return;
+          const player = window.__ew.radio.books.player, before = player.getSnapshot();
+          reader(chairIndex);
+          const after = player.getSnapshot();
+          window.__librarySeatJoin = {
+            sameSnapshot: before === after, positionBefore: before.position, positionAfter: after.position,
+            sentenceBefore: before.cue?.sentenceId, sentenceAfter: after.cue?.sentenceId, intent: after.playIntent,
+          };
+        };
         // Track resources actually submitted to WebGL and remove them on disposal. Retain duplicate names
         // so an orphaned atlas, jacket or page block from a previous visit fails the ownership check.
         const live = new Map();
@@ -345,6 +363,82 @@ try {
       console.log(JSON.stringify({ viewport: label, metrics, visits: repeats, allocation }));
       for (const [visit, reading] of allocation.entries())
         assert.deepEqual(reading.library, expectedLibrary, `${label} visit ${visit + 2} library-owned resources`);
+      // J9 uses the configured source's curated indexes/config and real local narration.
+      bookFlow = true;
+      await page.evaluate(() => {
+        const { radio, store } = window.__ew;
+        if (!radio.books) throw new Error("Configure Book FM for the integrated library review");
+        window.__libraryUseBookFM = true;
+        window.__libraryBookPlayer = radio.books.player;
+        window.__libraryBookProgress = radio.books.progress;
+        radio.setTalkText(true);
+        store.getState().setSettings({ volume: 0.65 });
+      });
+      await enter();
+      await walk(spots.display.x, spots.display.z);
+      await activate("Browse books");
+      const picker = page.locator('.book-picker[open]:is([data-pad-scope="book-shelf"], [data-pad-scope="book-detail"])');
+      const reader = page.locator(".book-reader[open]");
+      await picker.locator('[data-book="BOOK-CANT"]').waitFor();
+      assert.equal(await page.locator(".radio-set").count(), 0, "The shelf opens over the room");
+      await page.evaluate(() => Promise.all([...document.querySelectorAll(".book-picker img")].map((img) => img.decode().catch(() => {}))));
+      await capture("library-shelf");
+      await picker.locator('[data-book="BOOK-CANT"]').click();
+      const detail = picker.locator(".rail-action");
+      if (await detail.isVisible()) await detail.click();
+      await picker.locator("#chapter-BOOK-CANT-01").click();
+      await page.waitForFunction(() => {
+        const s = window.__ew.radio.books.player.getSnapshot();
+        return s.selection?.chapterId === "BOOK-CANT-01" && s.status === "playing";
+      }, null, { timeout: 60_000 });
+      await reader.locator("[data-current]").waitFor();
+      await reader.locator("[data-pad-back]").click();
+      await page.waitForFunction(() => !window.__ew.radio.store.getState().open);
+      await walk(spots["chair-0"].x, spots["chair-0"].z);
+      await activate("Sit and read");
+      await seated(0);
+      await reader.waitFor();
+      assert(await page.evaluate(() => {
+        const joined = window.__librarySeatJoin;
+        return joined.sameSnapshot && joined.intent && joined.positionBefore === joined.positionAfter
+          && joined.sentenceBefore === joined.sentenceAfter;
+      }), "Sitting joins the same playing sentence without selecting or restarting the source");
+      await page.waitForFunction(() => {
+        const { game, radio } = window.__ew, s = radio.books.player.getSnapshot();
+        return game.libraryChair === 0 && game.player.anim === "sit" && game.player.root.visible
+          && document.querySelector(".book-reader [data-current]")?.getAttribute("data-reader-pair") === s.cue?.sentenceId;
+      });
+      await capture("library-reader-seated");
+      const sentenceInChair = await page.evaluate(() => window.__ew.radio.books.player.getSnapshot().cue.sentenceId);
+      if (phone) await reader.locator("[data-pad-back]").tap();
+      else await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.activeElement?.hasAttribute("data-library-stand")
+        && window.__ew.game.libraryChair === 0 && !window.__ew.radio.store.getState().open);
+      // Native keyboard activation must stand once, without the world handler also consuming Enter.
+      if (phone) await page.locator("[data-library-stand]").tap();
+      else await page.keyboard.press("Enter");
+      await stood();
+      await page.waitForFunction(() => document.activeElement?.matches(".stage canvas"));
+      await exit();
+      await page.waitForFunction((previous) => {
+        const { radio } = window.__ew, s = radio.books.player.getSnapshot();
+        return radio.books.player === window.__libraryBookPlayer && radio.books.progress === window.__libraryBookProgress
+          && s.status === "playing" && s.cue?.sentenceId !== previous
+          && document.querySelector(".book-walking .spoken p")?.textContent === s.cue?.text;
+      }, sentenceInChair, { timeout: 90_000 });
+      await capture("street-strip-after");
+      assert(await page.evaluate(() => {
+        const { radio, game } = window.__ew;
+        radio.books.player.checkpoint();
+        const s = radio.books.player.getSnapshot(), saved = radio.books.progress.get(s.selection);
+        return game.zoneId === "town" && radio.store.getState().on && !radio.store.getState().open
+          && s.selection.chapterId === "BOOK-CANT-01" && s.playIntent && saved?.sentence === s.cue?.sentenceId
+          && radio.books.player === window.__libraryBookPlayer && radio.books.progress === window.__libraryBookProgress;
+      }), "One player and bookmark continue in the street");
+      console.log(JSON.stringify({ viewport: label, bookFM: await page.evaluate(() => {
+        const s = window.__ew.radio.books.player.getSnapshot();
+        return { selection: s.selection, sentence: s.cue?.sentenceId, position: s.position, status: s.status, join: window.__librarySeatJoin };
+      }) }));
       assert.deepEqual(errors, [], `${label} page errors`);
       if (viewportChecks.length) throw new AggregateError(viewportChecks, `${label} visual checks failed`);
     } catch (error) {

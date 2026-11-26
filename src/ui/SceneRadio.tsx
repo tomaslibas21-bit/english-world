@@ -6,26 +6,38 @@ import { radio, useRadio } from "../radio";
 import type { SceneCue, SceneItem } from "../radio/sceneProgram";
 import { Icon } from "./icons";
 import { SitIcon } from "./SitIcon";
+import { useBookMedia } from "./bookHooks";
 
-function SceneLine({ cue, folded }: { cue: SceneCue; folded: boolean }) {
+const noPlayer = () => () => {};
+/** Keep the task folded across clip handoffs, while respecting pause, text visibility and open pickers. */
+export function useScenePlayback() {
+  const player = radio.talk?.player;
+  const read = () => radio.onScenes && player?.getSnapshot().playIntent === true;
+  const intent = useSyncExternalStore(player?.subscribe ?? noPlayer, read, read);
+  return useRadio((s) => intent && radio.onScenes && s.on && s.showTalkText && !s.shelfOpen && !s.readerOpen && !s.settingsOpen);
+}
+
+function SceneLine({ cue, title, folded }: { cue: SceneCue; title: string; folded: boolean }) {
   const show = useRadio((s) => s.sceneTranslation);
+  const landscape = useBookMedia("(max-height: 500px) and (orientation: landscape)");
+  const translate = <button className="translate" aria-expanded={show} onClick={() => radio.toggleSceneTranslation()}>{w(show ? "hideTranslation" : "showTranslation")}</button>;
   return <>
-    {!folded && <div className="walk-meta"><b lang="en"><Icon name="speaker" size={15} />{SCENE_STATION.name}</b><span>{w("en")}</span></div>}
+    {!folded && <div className="walk-meta"><b lang="en"><Icon name="speaker" size={15} />{SCENE_STATION.name}</b>{landscape ? translate : <span>{w("en")}</span>}</div>}
     <div className="spoken">
-      <b className="scene-speaker">{cue.speaker === "learner" ? w("learner") : NPCS[cue.speaker]?.name}</b>
+      <b className="scene-speaker">{cue.speaker === "learner" ? w("learner") : NPCS[cue.speaker]?.name}<span className="scene-title" lang="en"> · {title}</span></b>
       <p lang="en">{cue.text}</p>
       {show && <p className="walk-translation" lang="lt">{cue.translation}</p>}
     </div>
-    <button className="translate" aria-expanded={show} onClick={() => radio.toggleSceneTranslation()}>{w(show ? "hideTranslation" : "showTranslation")}</button>
+    {(!landscape || folded) && translate}
   </>;
 }
 
 function SpokenScene({ folded = false }: { folded?: boolean }) {
   const player = radio.talk!.player;
-  const current = () => player.getSnapshot().cue as SceneCue | null;
-  const cue = useSyncExternalStore(player.subscribe, current, current);
+  const state = useSyncExternalStore(player.subscribe, player.getSnapshot, player.getSnapshot);
+  const cue = state.cue as SceneCue | null;
   if (!cue) return null;
-  return <SceneLine cue={cue} folded={folded} />;
+  return <SceneLine cue={cue} title={(state.item as SceneItem | null)?.title.en ?? ""} folded={folded} />;
 }
 
 export function WalkingSceneLine() {

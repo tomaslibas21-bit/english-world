@@ -1,3 +1,4 @@
+import { BOOK_FILES_ROOT, bookSourceConfigured } from "./bookCapability";
 import { filesToken } from "../game/audio";
 import { createBookSource, type BookProfile } from "../radio/books";
 import { createBookReviewSource } from "./bookReviewSource";
@@ -6,7 +7,6 @@ import narrationRevisions from "./book-narration-revisions.json";
 
 export const BOOK_EDITION_KEY = "fluentsteps.books.edition.v1";
 const revisions: Readonly<Record<string, string>> = narrationRevisions;
-const filesRoot = "https://audio.dvikalbesdainos.lt/fluent-steps";
 // The free text allowlist in the course's src/lib/files/rules.ts.
 const freeBooks = new Set([
   "BOOK-CANT-01", "BOOK-NOTE-01", "BOOK-OZ-01", "BOOK-JEKYLL-01", "BOOK-HOUND-01",
@@ -45,8 +45,9 @@ export const EM_BOOK_PROFILE: BookProfile = {
 
 /** Intended for the lazy talk entry point. Construction makes no requests. */
 export function bookSource(env: Record<string, unknown> = import.meta.env ?? {}, site = globalThis.location?.origin) {
+  if (!bookSourceConfigured(env)) return null;
   if (import.meta.env.VITE_BOOK_REVIEW === "1") return createBookReviewSource(env, site, EM_BOOK_PROFILE);
   const files = typeof env.VITE_RADIO_FILES === "string" ? env.VITE_RADIO_FILES.trim().replace(/\/$/, "") : "";
-  if (!site || files !== filesRoot) return null;
+  if (!site || files !== BOOK_FILES_ROOT) return null;
   return createBookSource({ profile: EM_BOOK_PROFILE, site, files, token: filesToken });
 }

@@ -17,6 +17,7 @@ import { debugBaristaLink, debugGoFishLink, debugBilliardsLink, takeAutoStart, l
 import { refreshLocalState } from "../convo/speech";
 import { audio } from "../game/audio";
 import { radio } from "../radio";
+import { bindLibraryBookFM } from "./libraryBookFM";
 import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
 import { startPlayStats } from "../state/playStats";
@@ -53,7 +54,9 @@ function Play({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     // three.js and the town are a separate download, fetched only in town mode
     let g: Game | null = null, gone = false;
+    let stopLibrary: (() => void) | undefined;
     const dispose = () => {
+      stopLibrary?.(); stopLibrary = undefined;
       if (g && game === g) setGame(null);
       if (g && (window as any).__ew?.game === g) delete (window as any).__ew;
       g?.dispose();
@@ -70,6 +73,18 @@ function Play({ onBack }: { onBack: () => void }) {
       current.onReady = () => {
         if (gone) return;
         setGame(current);
+        stopLibrary?.();
+        stopLibrary = bindLibraryBookFM(current, radio, {
+          zone: () => current.zoneId ?? "",
+          subscribe: (update) => useStore.subscribe(update),
+          defer: (action) => requestAnimationFrame(() => requestAnimationFrame(action)),
+          canFocus: () => {
+            const state = useStore.getState();
+            return !state.conv.active && !state.hud.panel && !state.hud.fade;
+          },
+          focusStand: () => document.querySelector<HTMLElement>("[data-library-stand]")?.focus({ preventScroll: true }),
+          focusWorld: () => stage.current?.querySelector("canvas")?.focus({ preventScroll: true }),
+        });
         (window as any).__ew = {
           game: current, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
           barista: current.debugBarista(), gofish: current.debugGoFish(), billiards: current.debugBilliards(), carStats: () => current.carStats(),

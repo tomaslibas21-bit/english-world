@@ -29,6 +29,8 @@ export interface RadioState {
   available: boolean;
   /** Music keeps its own availability and readiness in a books-only build. */
   musicAvailable: boolean;
+  /** Library dialogs sit over the room, with no radio cabinet behind them. */
+  libraryOpen: boolean;
   shelfOpen: boolean;
   readerOpen: boolean;
   settingsOpen: boolean;
@@ -155,7 +157,7 @@ export class Radio {
     const firstTalk = this.talkStations.find((s) => s.id === this.saved.station) ?? (!deps.config ? this.talkStations[0] : undefined);
     this.store = createStore<RadioState>(() => ({
       available: !!talk || (!!deps.config && deps.stations.length > 0),
-      musicAvailable: !!deps.config, shelfOpen: false, readerOpen: false, settingsOpen: false,
+      musicAvailable: !!deps.config, libraryOpen: false, shelfOpen: false, readerOpen: false, settingsOpen: false,
       sceneTranslation: false, showTalkText: this.saved.talkText !== false,
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
       station: firstTalk?.id ?? station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
@@ -284,7 +286,35 @@ export class Radio {
 
   setOpen(open: boolean) {
     this.foldOnPlayback = false;
-    this.set(open ? { open } : { open, shelfOpen: false, readerOpen: false, settingsOpen: false });
+    const clearChildren = !open || this.state.libraryOpen;
+    this.set({ open, libraryOpen: false, ...(clearChildren ? { shelfOpen: false, readerOpen: false, settingsOpen: false } : {}) });
+  }
+
+  /** Browsing the room does not tune away from music/scenes or change play intent. */
+  openLibraryShelf() {
+    if (!this.books) return false;
+    this.foldOnPlayback = false;
+    this.set({ open: true, libraryOpen: true, shelfOpen: true, readerOpen: false, settingsOpen: false });
+    return true;
+  }
+
+  /** Joining an active book is a view change. A saved book restored from another station stays paused. */
+  openLibraryReader() {
+    if (!this.books || !this.bookStation) return false;
+    this.foldOnPlayback = false;
+    const current = this.books.player.getSnapshot().selection;
+    if (!this.onBooks || !current) {
+      const ledger = this.books.progress.getSnapshot(), key = ledger.lastBook;
+      const chapterId = key && ledger.items[key]?.lastChapter;
+      const saved = key && chapterId ? { itemKey: key, chapterId } : this.books.progress.continueListening();
+      if (!saved) return this.openLibraryShelf();
+      this.setStation(this.bookStation.id, false);
+      this.set({ on: false });
+      void this.books.player.select(saved, false);
+      this.save();
+    }
+    this.set({ open: true, libraryOpen: true, shelfOpen: false, readerOpen: true, settingsOpen: false });
+    return true;
   }
 
   browse() {
@@ -294,7 +324,10 @@ export class Radio {
     this.set({ open: true, shelfOpen: true });
   }
 
-  closeShelf() { this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false }); }
+  closeShelf() {
+    if (this.state.libraryOpen) this.setOpen(false);
+    else this.set({ shelfOpen: false, readerOpen: false, settingsOpen: false });
+  }
 
   openReader() {
     if (!this.onBooks || !this.books!.player.getSnapshot().selection) return;
@@ -302,7 +335,10 @@ export class Radio {
     this.set({ open: true, readerOpen: true });
   }
 
-  closeReader() { this.set({ readerOpen: false, settingsOpen: false }); }
+  closeReader() {
+    if (this.state.libraryOpen) this.setOpen(false);
+    else this.set({ readerOpen: false, settingsOpen: false });
+  }
 
   openSettings() {
     if (!this.onBooks) return;
@@ -314,6 +350,7 @@ export class Radio {
 
   /** An explicit chapter choice starts listening in the reader, above the same picker. */
   read(selection: TalkSelection) {
+    if (this.state.libraryOpen && this.bookStation && !this.onBooks) this.setStation(this.bookStation.id, false);
     if (!this.onBooks) return;
     this.foldOnPlayback = false;
     this.set({ on: true, open: true, readerOpen: true });
@@ -436,9 +473,11 @@ export class Radio {
   previous() { if (this.onTalk) this.talk!.player.stepSentence(-1); else this.go(-1); }
 
   /** The learner picks a station. It goes on from where it was left (from that song's beginning), or starts at its
-   *  first song. A station with no songs can't be picked. */
-  setStation(id: string) {
+   *  first song. A station with no songs can't be picked. With restore=false a caller supplies its own explicit
+   *  selection and play intent, without first loading the old bookmark. */
+  setStation(id: string, restore = true) {
     if (this.talkStations.some((station) => station.id === id)) {
+      if (restore && this.state.libraryOpen) this.setOpen(false);
       if (this.state.station !== id) {
         this.foldOnPlayback = false;
         if (this.onTalk) this.talk!.player.clear();
@@ -451,9 +490,9 @@ export class Radio {
         this.set({ station: id, shelfOpen: false, readerOpen: false, settingsOpen: false, sceneTranslation: false,
           song: null, spot: null, timeline: null, upNext: null, lineNotes: null, linePictures: null,
           needsTap: false, failed: false, playing: false });
-        if (this.state.on && !this.holds.size) this.deps.tune?.();
+        if (restore && this.state.on && !this.holds.size) this.deps.tune?.();
       }
-      if (!this.talk!.player.getSnapshot().selection) {
+      if (restore && !this.talk!.player.getSnapshot().selection) {
         const saved = this.savedTalk();
         if (saved) {
           if (this.onScenes && this.state.on && !this.holds.size) this.deps.output.unlock();
@@ -468,6 +507,7 @@ export class Radio {
     const station = this.deps.stations.find((s) => s.id === id);
     if (!station || station.id === this.state.station) return;
     if (this.state.ready && !(this.state.counts[station.id] > 0)) return;
+    if (restore && this.state.libraryOpen) this.setOpen(false);
     if (this.onTalk) {
       this.foldOnPlayback = false;
       this.talk!.player.clear();

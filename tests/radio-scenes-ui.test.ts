@@ -14,8 +14,14 @@ import { SceneOutput } from "../src/radio/sceneOutput";
 import { sceneSelection, type SceneItem } from "../src/radio/sceneProgram";
 import { loadScene, playableScenes } from "../src/radio/scenes";
 import { LyricStrip, RadioSetLayer } from "../src/ui/Radio";
+import { useScenePlayback } from "../src/ui/SceneRadio";
 
 let radio: Radio;
+let landscape = false;
+vi.mock("../src/ui/bookHooks", async (original) => ({
+  ...await original<typeof import("../src/ui/bookHooks")>(),
+  useBookMedia: (query: string) => landscape && query === "(max-height: 500px) and (orientation: landscape)",
+}));
 vi.mock("../src/radio", () => ({
   get radio() { return radio; }, bindRadio() {},
   useRadio: <T,>(pick: (state: RadioState) => T) => pick(radio.store.getState()),
@@ -55,6 +61,7 @@ function setup({ booksAvailable = false } = {}) {
 }
 
 beforeEach(async () => {
+  landscape = false;
   const data = new Map<string, string>();
   vi.stubGlobal("localStorage", { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => data.set(k, v) });
   vi.spyOn(audio, "init").mockResolvedValue();
@@ -70,13 +77,18 @@ describe("Conversation FM in the radio set", () => {
     const html = set();
     expect(html).toContain('data-station="scenes"');
     expect(html).toContain("98,5");
-    expect(html).toContain("Leisti atsitiktinį pokalbį");
+    expect(html).toContain('aria-label="Leisti atsitiktinį pokalbį"');
+    expect(html).toContain('class="scene-shuffle-short" aria-hidden="true">Atsitiktinis</span>');
+    const index = html.split('<nav class="scene-place-index"')[1]?.split("</nav>")[0];
+    const locations = [...new Set(playableScenes.map((scene) => scene.location))];
+    expect(index?.match(/<a /g)).toHaveLength(locations.length);
+    for (const id of locations) expect(index).toContain(`href="#scene-place-${id}"`);
     expect(html.match(/class="rs-key[ "]/g)).toHaveLength(5);
     expect(html).not.toMatch(/data-scene="(?:p26-complaint|p28-kitchen)"|<img/);
     expect(html.match(/data-scene="/g)).toHaveLength(playableScenes.length);
     for (const scene of playableScenes) {
       const section = html.split(`data-place="${scene.location}"`)[1]?.split("</section>")[0];
-      expect(section).toContain(renderToStaticMarkup(createElement("h2", { id: `scene-place-${scene.location}` }, LOCATIONS[scene.location].lt)));
+      expect(section).toContain(renderToStaticMarkup(createElement("h2", { id: `scene-place-${scene.location}`, tabIndex: -1 }, LOCATIONS[scene.location].lt)));
       expect(section).toContain(`data-scene="${scene.id}"`);
     }
     expect(html).toContain('data-sit-icon="coffee"');
@@ -125,6 +137,7 @@ describe("Conversation FM in the radio set", () => {
     const [npc, learner] = item().tracks.target.cues;
     expect(output.play).toHaveBeenLastCalledWith(npc.recording(), 0, true);
     expect(strip()).toContain("Mia");
+    expect(strip()).toContain(renderToStaticMarkup(createElement("span", { className: "scene-title", lang: "en" }, ` · ${item().title.en}`)));
     expect(strip()).toContain('aria-expanded="false"');
     radio.toggleSceneTranslation();
     expect(strip()).toContain('aria-expanded="true"');
@@ -142,6 +155,38 @@ describe("Conversation FM in the radio set", () => {
     expect(set()).toContain("Čia ar išsinešti?");
     expect(set()).toContain("Rodyti vertimą");
     expect(strip()).toBe("");
+  });
+
+  it("puts the landscape translation action in the meta row without duplicating it or its language label", async () => {
+    const { pick } = setup(); radio.setStation("scenes"); await pick();
+    landscape = true;
+    const html = strip(), meta = html.split('class="walk-meta"')[1]?.split("</div>")[0];
+    expect(meta).toContain('class="translate"');
+    expect(html.match(/class="translate"/g)).toHaveLength(1);
+    expect(html).not.toContain("Angliškai");
+    radio.toggleSceneTranslation();
+    expect(strip()).toContain('aria-expanded="true"');
+    expect(strip()).toContain('class="walk-translation" lang="lt"');
+    landscape = false;
+    expect(strip().split('class="walk-meta"')[1]?.split("</div>")[0]).not.toContain('class="translate"');
+    expect(strip()).toContain("Angliškai");
+  });
+
+  it("keeps the portrait task-fold episode across clip handoffs and ends it on pause or an open picker", async () => {
+    const { pick, output } = setup(); radio.setStation("scenes"); await pick();
+    const Probe = () => createElement("i", { "data-scene-playback": useScenePlayback() });
+    const visible = () => renderToStaticMarkup(createElement(Probe));
+    expect(visible()).toContain('data-scene-playback="true"');
+    let finish!: (ok: boolean) => void;
+    output.play.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    radio.next();
+    expect(radio.store.getState().playing).toBe(false);
+    expect(visible()).toContain('data-scene-playback="true"');
+    finish(true);
+    await vi.waitFor(() => expect(radio.store.getState().playing).toBe(true), { interval: 1 });
+    radio.browse(); expect(visible()).toContain('data-scene-playback="false"');
+    radio.closeShelf(); expect(visible()).toContain('data-scene-playback="true"');
+    radio.pause(); expect(visible()).toContain('data-scene-playback="false"');
   });
 
   it("hands playback and the strip between Book FM and Conversation FM in both directions", async () => {

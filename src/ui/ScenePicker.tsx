@@ -35,11 +35,21 @@ export function ScenePicker() {
       <div className="scene-layout">
         <header className="scene-intro">
           <h1 id="scene-picker-title">{w("browseScenes")}</h1>
-          <button ref={any} className="primary" data-pad-default onClick={() => radio.playAnyScene()}><Icon name="shuffle" />{w("playAny")}</button>
+          <button ref={any} className="primary" data-pad-default aria-label={w("playAny")} onClick={() => radio.playAnyScene()}><Icon name="shuffle" />
+            <span className="scene-shuffle-full">{w("playAny")}</span><span className="scene-shuffle-short" aria-hidden="true">{w("playAnyShort")}</span>
+          </button>
+          <nav className="scene-place-index" aria-label={w("scenePlaces")}>
+            {places.map(({ place }) => <a key={place.id} href={`#scene-place-${place.id}`} onClick={(event) => {
+              event.preventDefault();
+              const heading = dialog.current?.querySelector<HTMLElement>(`#scene-place-${place.id}`);
+              heading?.scrollIntoView({ block: "start", behavior: "instant" });
+              heading?.focus({ preventScroll: true });
+            }}>{bookLocale === "en" ? place.name : place.lt}</a>)}
+          </nav>
         </header>
         <div className="scene-places scroll">
           {places.map(({ place, scenes }) => <section key={place.id} data-place={place.id} aria-labelledby={`scene-place-${place.id}`}>
-            <h2 id={`scene-place-${place.id}`}>{bookLocale === "en" ? place.name : place.lt}</h2>
+            <h2 id={`scene-place-${place.id}`} tabIndex={-1}>{bookLocale === "en" ? place.name : place.lt}</h2>
             {scenes.map((scene) => <button key={scene.id} data-scene={scene.id}
               className="scene-row" aria-label={`${w("play")} · ${scene.title[bookLocale]}`} onClick={() => radio.listenScene(scene.id)}>
               <span className="scene-icon"><SitIcon id={scene.id} size={24} /></span>

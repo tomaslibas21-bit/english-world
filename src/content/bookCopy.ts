@@ -6,6 +6,8 @@ export const bookCopy = {
   sceneDescription: { en: "Conversations around town", lt: "Miestelio pokalbiai" },
   browseScenes: { en: "Browse scenes", lt: "Rinktis pokalbį" },
   playAny: { en: "Play any", lt: "Leisti atsitiktinį pokalbį" },
+  playAnyShort: { en: "Random", lt: "Atsitiktinis" },
+  scenePlaces: { en: "Places", lt: "Vietos" },
   turn: { en: "Turn {n}/{total}", lt: "Replika {n}/{total}" },
   learner: { en: "You", lt: "Tu" },
   previousTurn: { en: "Previous line", lt: "Ankstesnė eilutė" },

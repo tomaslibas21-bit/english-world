@@ -26,6 +26,7 @@ import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
 import { radio, useRadio } from "../radio";
+import { useScenePlayback } from "./SceneRadio";
 import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { useTownQuests } from "../game/photowalk/store";
 import { Guide } from "./Guide";
@@ -102,7 +103,8 @@ export function Hud() {
   const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
   const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
-  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast });
+  const scenePlayback = useScenePlayback();
+  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast, scenePlayback: portrait && scenePlayback });
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -150,7 +152,7 @@ export function Hud() {
   const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = streetCard || (task.collapsedForNote
+  const collapsed = streetCard || (task.sceneCollapsed ?? task.collapsedForNote
     ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (libraryContext || screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -177,7 +179,8 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "library" || kind === "library-stand" ? " library-prompt" : "") + (libraryDoorPrompt ? " library-door-prompt" : "")} lang={libraryDoorPrompt ? "lt" : undefined} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "library" || kind === "library-stand" ? " library-prompt" : "") + (libraryDoorPrompt ? " library-door-prompt" : "")} lang={libraryDoorPrompt ? "lt" : undefined} data-library-stand={kind === "library-stand" || undefined}
+          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") event.stopPropagation(); }} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.label === ROAD_UI.drive ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
@@ -206,10 +209,13 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast }: {
-  directions: string | undefined; photoReady: boolean; phoneToast: boolean;
+function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast, scenePlayback }: {
+  directions: string | undefined; photoReady: boolean; phoneToast: boolean; scenePlayback: boolean;
 }) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
+  const [sceneFold, setSceneFold] = useState<{ id: string | null; layout: string; collapsed: boolean } | null>(null);
+  if (scenePlayback && (!sceneFold || sceneFold.id !== taskId || sceneFold.layout !== layout)) setSceneFold({ id: taskId, layout, collapsed: true });
+  else if (!scenePlayback && sceneFold) setSceneFold(null);
   const note = directions ? `directions:${directions}:${photoReady}` : photoReady ? "photo" : phoneToast ? "toast" : null;
   const [openedDuringNote, setOpenedDuringNote] = useState<string | null>(null);
   if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(null);
@@ -223,10 +229,13 @@ function useTaskCard(taskId: string | null, visible: boolean, layout: string, { 
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
+    // A scene's temporary fold never overwrites the task card's existing manual state.
+    if (scenePlayback) { setSceneFold({ id: taskId, layout, collapsed: manual }); return; }
     if (!directions) setState((current) => ({ ...current, manual }));
     setOpenedDuringNote(manual ? null : note);
   }
-  return { ...state, collapsedForNote: note === null ? null : openedDuringNote !== note, setManual };
+  return { ...state, sceneCollapsed: scenePlayback ? sceneFold?.collapsed ?? true : null,
+    collapsedForNote: note === null ? null : openedDuringNote !== note, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.

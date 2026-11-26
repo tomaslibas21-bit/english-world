@@ -1478,7 +1478,7 @@ export class Game implements GameApi {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if (this.modes.world && radio.store.getState().open) return;
+      if (this.modes.world && radio.store.getState().open && k !== "r") return;
       const world = this.modes.world;
       const handled = (!this.transitioning || (k === "escape" && (gym || this.modes.owns("surf"))))
         && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey });
