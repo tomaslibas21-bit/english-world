@@ -318,12 +318,15 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       const npcGenders = [...new Set(people.map((n) => n.gender))];
       for (const [gid, g] of Object.entries(sit.hints)) {
         const ents = g.slot ? sit.entities?.[g.slot] ?? [] : [];
+        // the group's own list first, as the game's hints look an item up (suggest.ts groupLookup: s84's „café“)
+        const own = g.slot ? sit.entities?.[g.slot] : undefined;
+        const glook: typeof look = own ? (id) => own.find((e) => e.id === id) ?? look(id) : look;
         for (const it of g.items) {
           const pool = ents.filter((e) => !it.only || it.only(e));
           // as the game binds the item in a hint (target.ts hintBinding: an always-plural item with two)
           const binds = pool.length ? pool.map((e) => ({ X: hintBinding(e, e.id) })) : [{}];
           for (const b of binds) for (const formal of registers) for (const learner of GENDERS) for (const sp of npcGenders) {
-            try { add(coachVoice(learner), 1, compose(it.s, { ...b, name: NAMES[0], surname: NAMES[1], letters: NAMES[1] }, { look, addressee: learner, speaker: sp, formal }), `${sit.id}:hint:${gid}.${it.id}`, sit.id, "hint", true); } catch { /* skip */ }
+            try { add(coachVoice(learner), 1, compose(it.s, { ...b, name: NAMES[0], surname: NAMES[1], letters: NAMES[1] }, { look: glook, addressee: learner, speaker: sp, formal }), `${sit.id}:hint:${gid}.${it.id}`, sit.id, "hint", true); } catch { /* skip */ }
           }
         }
       }
