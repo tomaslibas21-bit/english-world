@@ -7,13 +7,13 @@ import { notebookClips, type NotebookLine } from "./notebookAudio";
 /** Mounted only for the current detail or revealed review answer. Focus never plays a clip. */
 export function NotebookSound({ line }: { line: NotebookLine }) {
   const gender = useStore((s) => s.progress.profile?.gender);
-  const [ready, setReady] = useState(audio.ready);
+  const [state, setState] = useState<"loading" | "ready" | "offline">(audio.ready ? "ready" : "loading");
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState("");
   const playback = useRef<AbortController | null>(null);
   useEffect(() => {
     let current = true;
-    void audio.init(attempt > 0).then(() => { if (current) setReady(audio.ready); });
+    void audio.init(attempt > 0).then(() => { if (current) setState(audio.ready ? "ready" : "offline"); });
     return () => { current = false; };
   }, [attempt]);
   useLayoutEffect(() => {
@@ -27,7 +27,7 @@ export function NotebookSound({ line }: { line: NotebookLine }) {
       window.removeEventListener("pagehide", stop);
     };
   }, [line.en, line.sentence.say, line.sentence.en, line.speakerId, gender]);
-  const clips = ready ? notebookClips(line, gender, (v, s, t) => audio.hasClip(v, s, t)) : [];
+  const clips = state === "ready" ? notebookClips(line, gender, (v, s, t) => audio.hasClip(v, s, t)) : [];
   const play = async (clip: typeof clips[number]) => {
     playback.current?.abort();
     const request = new AbortController();
@@ -45,8 +45,8 @@ export function NotebookSound({ line }: { line: NotebookLine }) {
     }
   };
   return <div className="nb-sound">
-    {(!clips.length || failed) && <span role="status">Garso įrašas nepasiekiamas</span>}
-    {!ready && <button onClick={() => setAttempt((n) => n + 1)}>Bandyti dar kartą</button>}
+    {state !== "loading" && (!clips.length || failed) && <span role="status">Garso įrašas nepasiekiamas</span>}
+    {state === "offline" && <button onClick={() => { setState("loading"); setAttempt((n) => n + 1); }}>Bandyti dar kartą</button>}
     {clips.map((clip) => {
       const label = clip.kind === "phrase" ? "Klausytis frazės" : "Klausytis viso sakinio";
       return <button key={clip.kind} onClick={() => void play(clip)}>

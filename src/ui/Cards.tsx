@@ -353,7 +353,6 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
   return (
     <div className="review">
       <div className="rv-top">
-        <button className="btn ghost small" onClick={onExit}><Icon name="arrowLeft" size={16} /> Baigti</button>
         <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
         <span className="rv-count" aria-label={`Kortelė ${p + 1} iš ${queue.length}`}>{p + 1}/{queue.length}</span>
       </div>
@@ -364,7 +363,6 @@ export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => v
           <div className="rv-answer">
             <div className="rv-en-row">
               <span className="rv-en" lang="en">{card.en}</span>
-
             </div>
             <NotebookSound key={card.id} line={card} />
             {card.ipa && <div className="rv-ipa">{card.ipa}</div>}

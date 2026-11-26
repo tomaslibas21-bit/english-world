@@ -37,7 +37,8 @@ export function keepsakePockets(progress: Progress) {
 }
 
 export function sourceName(situationId: string, stored?: string) {
-  const title = SITUATION_BY_ID[situationId]?.title.lt ?? (situationId === "street" ? STREET_WORDS.cards : undefined);
+  const title = Object.hasOwn(SITUATION_BY_ID, situationId) ? SITUATION_BY_ID[situationId].title.lt :
+    situationId === "street" ? STREET_WORDS.cards : undefined;
   return [title, stored && stored !== title ? stored : undefined].filter(Boolean).join(" · ");
 }
 

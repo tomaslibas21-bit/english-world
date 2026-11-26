@@ -29,6 +29,7 @@ function Source({ id, label }: { id: string; label?: string }) {
 
 function Reading({ card, phrase, now, afterRemove }: { card?: Card; phrase?: PracticedPhrase; now: number; afterRemove: () => void }) {
   const [meaning, setMeaning] = useState(false);
+  const hasContext = card && (card.sentence.en !== card.en || card.sentence.lt !== card.lt);
   const inCards = useCards((s) => s.keys.has(cardKey((card ?? phrase)!.en)));
   const line = card ?? phrase!;
   return <article className="nb-reading">
@@ -38,7 +39,7 @@ function Reading({ card, phrase, now, afterRemove }: { card?: Card; phrase?: Pra
       {meaning ? "Slėpti reikšmę" : "Rodyti reikšmę"}</button>
     {meaning && <p lang="lt" className="nb-meaning">{line.lt}</p>}
     {card?.ipa && <p className="rv-ipa">{card.ipa}</p>}
-    {card && <section className="nb-context">
+    {hasContext && <section className="nb-context">
       <h4>Sakinys, iš kurio išsaugojai kortelę</h4>
       <p lang="en">{marked(card.sentence.en, card.en)}</p>
       {meaning && <p lang="lt">{card.sentence.lt}</p>}
@@ -78,16 +79,23 @@ export function Notebook({ close }: { close: () => void }) {
   const sheet = useRef<HTMLDivElement>(null);
   const nextFocus = useRef<string | null>('[aria-selected="true"]');
   const fabric = usePackFabric();
+  const [spreadQuery] = useState(() => window.matchMedia("(min-width: 671px)"));
+  const [wide, setWide] = useState(spreadQuery.matches);
+  useLayoutEffect(() => {
+    const resize = () => setWide(spreadQuery.matches);
+    spreadQuery.addEventListener("change", resize);
+    return () => spreadQuery.removeEventListener("change", resize);
+  }, [spreadQuery]);
   const today = useReviewDay();
   const cards = useCards((s) => s.cards);
   const keys = useCards((s) => s.keys);
   const progress = useStore((s) => s.progress);
   const saved = useMemo(() => [...cards].reverse().sort((a, b) => b.createdAt - a.createdAt), [cards]);
-  const rows = useMemo(() => practicedRows(progress.phrases, source?.id), [progress.phrases, source]);
+  const rows = useMemo(() => leaf === "phrases" ? practicedRows(progress.phrases, source?.id) : [], [progress.phrases, source, leaf]);
+  const phraseCount = useMemo(() => Object.keys(progress.phrases).length, [progress.phrases]);
   const pockets = useMemo(() => keepsakePockets(progress), [progress]);
   const due = useMemo(() => dueCards(cards, today).length, [cards, today]);
-  const counts = { cards: cards.length, phrases: rows.length, keepsakes: pockets.size };
-  const course = <CourseLink />;
+  const counts = { cards: cards.length, phrases: source ? rows.length : phraseCount, keepsakes: pockets.size };
   const returnTo = (id: string) => { nextFocus.current = '[data-entry="' + CSS.escape(id) + '"]'; };
   const changeLeaf = (tab: Leaf) => {
     setLeaf(lastLeaf = tab);
@@ -203,11 +211,11 @@ export function Notebook({ close }: { close: () => void }) {
           returnTo(first); setLimit(limit + BATCH);
         }}>Rodyti daugiau</button>}
         {!counts[leaf] && <p className="nb-empty">{empty[leaf]}</p>}
-        {leaf === "cards" && !round && <div className="nb-links">{course}{cards.length > 0 && <ExportCards />}</div>}
+        {leaf === "cards" && !round && <div className="nb-links"><CourseLink />{cards.length > 0 && <ExportCards />}</div>}
       </div>
       <div className={"nb-detail" + (round ? " grading" : "")} key={round ? "round" : leaf + selection}>
         {round ? <Review key={round.n} ids={round.ids} onExit={endReview} onMore={review} /> :
-          read ?? <Icon name={leaf === "keepsakes" ? "gift" : "bookOpen"} size={52} />}
+          (wide || hasDetail) && (read ?? <Icon name={leaf === "keepsakes" ? "gift" : "bookOpen"} size={52} />)}
       </div>
     </div>
     <footer><button data-pad-back onClick={back}><Icon name="arrowLeft" size={17} />Grįžti</button></footer>
