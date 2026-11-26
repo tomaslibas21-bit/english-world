@@ -1,4 +1,5 @@
-import { ROAD_EDITION, ROAD_UI as words } from "../content/road";
+import { RETURN_TO_ARCADE, useArcade } from "../game/arcade/mode";
+import { ROAD_EDITION, ROAD_UI as nativeWords } from "../content/road";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { useRoad } from "../game/road/store";
@@ -7,6 +8,11 @@ import { GlossLine } from "./kit/GlossLine";
 import { PhraseSave } from "./kit/PhraseSave";
 import { GateKaraoke, GateLabels, WordGateHeader, WordGateResult, WordGateStart } from "./kit/WordGates";
 import "./road.css";
+
+function useRoadWords() {
+  const cabinet = useArcade((s) => s.playing === "road");
+  return cabinet ? { ...nativeWords, town: RETURN_TO_ARCADE } : nativeWords;
+}
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("road", name, value);
 const done = () => game?.modeExit();
@@ -22,6 +28,7 @@ function LiftLine() {
 }
 
 function LiftOffer({ touch }: { touch: boolean }) {
+  const words = useRoadWords();
   const choices = useRoad((s) => s.choices);
   const mic = useRoad((s) => s.mic);
   const micOn = useRoad((s) => s.micOn);
@@ -47,6 +54,7 @@ function LiftOffer({ touch }: { touch: boolean }) {
 }
 
 function DriveOverlay({ touch }: { touch: boolean }) {
+  const words = useRoadWords();
   const prompt = useRoad((s) => s.prompt);
   const sayIt = useRoad((s) => s.sayIt);
   const gateId = useRoad((s) => s.gateId);
@@ -69,6 +77,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
 const scoreActions = { again: () => act("again"), done, guide: () => act("guide") };
 
 export function RoadOverlay({ touch }: { touch: boolean }) {
+  const words = useRoadWords();
   const phase = useRoad((s) => s.phase);
   const result = useRoad((s) => s.result);
   const way = useRoad((s) => s.way);

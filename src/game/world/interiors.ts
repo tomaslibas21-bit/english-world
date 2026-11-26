@@ -11,6 +11,7 @@ import { DINING, DINING_SEATS, DINNER_PROPS } from "../gofish/framing";
 import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
+import { addCabinets } from "../arcade/props";
 import { rack } from "../billiards/rules";
 import { Ledges } from "../ledges";
 import { Hop } from "../movement";
@@ -798,15 +799,7 @@ function poolHall(c: Ctx) {
   sign(c, "JUKEBOX", jx, 1.32, jz + 0.312, 0.56, "#384150", "#f9cf91");
   col.addBox(jx, jz, 0.87, 0.63);
 
-  // A covered practice table.
-  const spare = new TableView();
-  spare.root.name = "pool-hall-spare";
-  spare.root.scale.set(0.79, 0.94, 0.83);
-  spare.root.position.set(3.7, 0, 2.63);
-  spare.root.rotation.y = Math.PI / 2;
-  g.add(spare.root);
-  box(1.89, 0.10, 1.04, 3.7, 0.85, 2.63, "#4e5157");
-  col.addBox(3.7, 2.63, 1.89, 1.04);
+  addCabinets(g, col);
 }
 
 const B: Record<string, () => Interior> = {

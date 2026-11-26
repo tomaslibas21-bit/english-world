@@ -38,6 +38,8 @@ import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
+import { cabinetNear, type TownGame } from "./arcade/cabinets";
+import { ArcadeMode, useArcade } from "./arcade/mode";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
 import { SEA_EDITION } from "../content/sea";
@@ -60,7 +62,7 @@ import type { LizzieMeeting } from "./phone/meeting";
 import { scoreShot } from "./kit/scoreShot";
 import { useSurf } from "./surf/store";
 import { createSurfMode } from "./surf/mode";
-import { createTaxiMode } from "./taxi/mode";
+import { createTaxiMode, TAXI_APPROACH } from "./taxi/mode";
 import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
 import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
@@ -69,6 +71,8 @@ import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { GYM_MAT } from "./world/gym";
+import { PHOTO_WALK_NPC } from "../content/photo-walk-lines";
 import { createGymMode } from "./gym/entry";
 import type { OcclusionField } from "./occlusion";
 import { STYLED } from "./style";
@@ -256,6 +260,7 @@ export class Game implements GameApi {
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
+  private arcade?: ArcadeMode;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private gofish: ReturnType<typeof createGoFishMode> | null = null;
@@ -287,6 +292,8 @@ export class Game implements GameApi {
   private chest = new THREE.Vector3();
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
+  private cabinetPin = new THREE.Vector2(NaN, NaN);
+  private lastCabinetCue?: string;
   private disposed = false;
   private coveArt = new SlateCoveArt();
   private get caveCode() { return this.caveTravel.code; }
@@ -616,7 +623,12 @@ export class Game implements GameApi {
       },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
       entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
-      left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
+      left: (id) => {
+        if (!this.modes.owns(id)) return;
+        this.modes.left(id);
+        audio.bed(null);
+        this.arcade?.returnedFrom(id);
+      }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
       place: (x, z, rot) => this.placeOnFoot(x, z, rot),
@@ -688,9 +700,28 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       save: () => this.savePlace(),
     }));
+    this.modes.register(this.arcade = new ArcadeMode(host, {
+      here: () => this.zone.id === BILLIARDS_PLACE,
+      place: ({ x, z, rot }) => {
+        useStore.getState().setHud({ ride: null, prompt: null });
+        this.placeOnFoot(x, z, rot, true);
+      },
+      start: (id, option) => this.modes.start(id, option),
+      holdRadio: (playing) => playing ? radio.hold("arcade") : radio.release("arcade"),
+      visit: (id) => this.visitArcadeGame(id),
+      refocus: () => {
+        if (this.disposed) return;
+        this.updateHud();
+        requestAnimationFrame(() => {
+          if (useStore.getState().hud.prompt?.kind === "arcade" && !this.modes.engaged)
+            document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus({ preventScroll: true });
+        });
+      },
+    }));
     if (ROAD_EDITION.enabled) {
       this.road = new RoadEntry({
         ...host,
+        cabinetAvailable: () => this.zone.id === BILLIARDS_PLACE && useArcade.getState().playing === "road",
         environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
           environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity, exitHills: this.town.exitHills }),
         roadSign: () => this.town.group.getObjectByName("desert-road-sign"),
@@ -1098,6 +1129,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z || (!instant && this.transitioning)) return;
     if (id !== CAVE_ZONE) this.caveTravel.cancel();
+    this.arcade?.forgetReturn();
     if (this.modes.owns("surf")) this.modes.exit(true);
     this.pad?.cancel();
     const doIt = () => {
@@ -1183,7 +1215,7 @@ export class Game implements GameApi {
         this.restoreCaveScene = undefined;
       }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, cabinetCorner: id === BILLIARDS_PLACE };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -1482,6 +1514,7 @@ export class Game implements GameApi {
     if (this.billiards.release(key)) e.preventDefault();
   };
   private onBlur = () => {
+    this.cancelCabinetDrive();
     this.keys.clear();
     this.caveKeys.clear();
     this.caveStickHeld = false;
@@ -2637,7 +2670,12 @@ export class Game implements GameApi {
     return true;
   }
 
+  private cancelCabinetDrive() {
+    if (useArcade.getState().playing === "road" && this.modes.owns("road")) this.modes.exit(true);
+  }
+
   private phoneVisibility = () => {
+    if (document.hidden) this.cancelCabinetDrive();
     this.wasHidden = true;
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.observeStreetAndPhone();
@@ -2871,6 +2909,8 @@ export class Game implements GameApi {
     if (!release && (this.transitioning || useStore.getState().hud.panel)) return;
     if (id === "directions") this.quests.directionAction(name);
     else if (this.modes.owns(id)) {
+      // The native result can explicitly send the learner to a lesson in town.
+      if (id === "road" && name === "guide") this.arcade?.forgetReturn();
       if (id === "surf" && name === "clear") this.setJoystick(0, 0);
       this.modes.get(id)?.action?.(name, value);
     }
@@ -2969,6 +3009,38 @@ export class Game implements GameApi {
     if (DROPOFF[loc]) return DROPOFF[loc];
     const o = OUTDOOR_NPCS.find((n) => this.sitsForNpc(n.npc).some((s) => s.location === loc));
     return o ? { x: o.ax ?? o.x, z: (o.az ?? o.z) + 2.5, rot: Math.PI } : null;
+  }
+
+  private visitArcadeGame(id: TownGame) {
+    // Take the ordinary approach. The room, conversation and mode keep ownership of their offers.
+    if (id === "barista" || id === "gofish") {
+      const cafe = id === "barista";
+      const { location } = cafe ? BARISTA_CONVERSATION : GOFISH_CONVERSATION;
+      const unlocked = cafe ? this.barista?.available() : this.gofish?.available();
+      const host = getInterior(location)?.npcs.find((n) => n.npc === (cafe ? BARISTA_CONVERSATION.npc : GOFISH_CONVERSATION.host));
+      let spawn = cafe ? BARISTA_PROMPT : GOFISH_PROMPT;
+      if (!unlocked && host) {
+        spawn = host.ax !== undefined && host.az !== undefined
+          ? { x: host.ax, z: host.az, rot: host.rot + Math.PI }
+          : inFrontOf(host.x, host.z, host.rot, 1);
+      }
+      this.enterZone(location, spawn);
+    } else if (id === "gym") {
+      this.enterZone(GYM_ENTRY.location, { x: GYM_MAT.x, z: GYM_MAT.z, rot: Math.PI / 2 });
+    } else if (id === "surf") {
+      this.enterZone("town", HARBOR_SURF.approach);
+    } else if (id === "photowalk") {
+      const hana = OUTDOOR_NPCS.find((n) => n.npc === PHOTO_WALK_NPC)!;
+      const { x, z } = talkAt(hana);
+      this.enterZone("town", { x, z, rot: Math.atan2(hana.x - x, hana.z - z) });
+    } else if (id === "taxi") {
+      this.enterZone("town", TAXI_APPROACH);
+    } else {
+      const boat = RIDES.boats.find((b) => b.id === "beach")!;
+      const beach = { x: boat.x, z: boat.z + 3 };
+      const approach = this.rides.boatApproach(beach.x, beach.z) ?? beach;
+      this.enterZone("town", { x: approach.x, z: approach.z, rot: Math.PI });
+    }
   }
 
   teleportTo(loc: string) {
@@ -3229,7 +3301,8 @@ export class Game implements GameApi {
     const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
-    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
+    const corner = this.rig.mode === "interior" ? this.rig.cabinetCornerFrame() : 0;
+    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift - 0.13 * corner;
     this.rig.applyViewShift(w, h, 0, h * (stageShift ?? this.rig.standView?.shiftY ?? -shift));
   }
 
@@ -4155,6 +4228,18 @@ export class Game implements GameApi {
   private updateTags() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
+    const overlay = useStore.getState().hud;
+    const anchor = overlay.prompt?.anchor;
+    if (anchor && !overlay.modeScreen && !overlay.panel) {
+      v.set(anchor.x, anchor.y, anchor.z).project(this.rig.cam);
+      const x = Math.round((1 + v.x) * w / 2), y = Math.round((1 - v.y) * h / 2);
+      if (x !== this.cabinetPin.x || y !== this.cabinetPin.y) {
+        this.cabinetPin.set(x, y);
+        const style = this.container.parentElement!.style;
+        style.setProperty("--cabinet-x", x + "px");
+        style.setProperty("--cabinet-y", y + "px");
+      }
+    }
     const obj = this.currentObjective();
     // in a conversation the header names the person and every line its speaker: no tags over heads
     const talking = !!this.session?.active, modeMenu = useStore.getState().hud.modeScreen?.kind === "menu";
@@ -4331,7 +4416,7 @@ export class Game implements GameApi {
         const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd, !!this.zone.interior);
         if (m) {
           bd = m.distance;
-          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind } };
+          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind, anchor: m.anchor } };
         }
       }
       if (!this.zone.interior) {
@@ -4351,10 +4436,19 @@ export class Game implements GameApi {
         if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
       }
     }
-    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id;
+    // Closing a menu restores the prompt under the learner. Only a new approach rings the cabinet.
+    if (this.lastCabinetCue && (this.zone.id !== BILLIARDS_PLACE || !cabinetNear(p.x, p.z))) this.lastCabinetCue = undefined;
+    const changed = best?.kind !== this.nearest?.kind || best?.id !== this.nearest?.id
+      || (best?.prompt?.kind === "arcade" && best.label !== this.nearest?.label);
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
-      if (changed && best) audio.sfx("tick");
+      if (changed && best) {
+        if (best.prompt?.kind !== "arcade") audio.sfx("tick");
+        else if (this.lastCabinetCue !== best.label) {
+          this.lastCabinetCue = best.label;
+          audio.sfx("coin", 0.35);
+        }
+      }
       const names = RIDE_NAMES;
       const keeperPrompt = best?.kind === "npc" ? this.caveZone?.keeperPrompts.get(best.id) : undefined;
       st.setHud({ prompt: !best ? null

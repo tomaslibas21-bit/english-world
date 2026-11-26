@@ -162,7 +162,7 @@ export class BilliardsMode implements GameMode {
   start(option?: string) {
     if (this.active || !this.host.canStart(true)) return false;
     const table = this.world.table();
-    if (!table) return false;
+    if (!table || (option === "cabinet" && !this.world.tina())) return false;
     this.table = table;
     this.host.prepare();
     const tinaCue = this.world.tina()?.rightHand.getObjectByName("tina-cue");

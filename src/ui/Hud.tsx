@@ -1,3 +1,5 @@
+import { useRoad } from "../game/road/store";
+import { RETURN_TO_ARCADE } from "../game/arcade/mode";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
@@ -71,7 +73,7 @@ const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverl
 const GymOverlay = lazy(() => import("./Gym"));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
   photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay,
-  gym: GymOverlay,
+  arcade: lazy(() => import("./Arcade")), gym: GymOverlay,
 };
 const CaveHud = lazy(() => import("./Cave"));
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
@@ -83,6 +85,7 @@ export function Hud() {
   const inConversation = useStore((s) => s.conv.active);
   const screen = useScreen();
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
+  const loadingCabinet = useRoad((s) => s.loadingCabinet);
   const surfing = useSurf((s) => s.active);
   const surfPicking = useSurf((s) => s.picking);
   const baristaOffer = useBarista((s) => s.offered);
@@ -119,10 +122,13 @@ export function Hud() {
   if (hud.modeScreen?.kind === "menu") {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
-    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
-    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk" && hud.modeScreen.id !== "gym";
+    const Overlay = road && loadingCabinet ? undefined : road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
+    const tools = hud.modeScreen.id !== "arcade" && !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk" && hud.modeScreen.id !== "gym";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
+        {road && loadingCabinet && <div className="arcade-loading" data-pad-scope="road-status">
+          <strong role="status">Įkeliama…</strong><button className="btn" autoFocus data-pad-back onClick={() => game?.modeExit()}>{RETURN_TO_ARCADE}</button>
+        </div>}
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
         {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
@@ -140,12 +146,12 @@ export function Hud() {
   const namedTalk = talk && hud.prompt?.label.startsWith("Kalbėtis: ") === true;
   const zone = hud.minimap.zone;
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
-  const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || baristaOffer || goFishOffer;
+  const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || kind === "arcade" || baristaOffer || goFishOffer;
   const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = streetCard || (task.collapsedForNote
-    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
+    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (portrait && zone === "pool-hall" && !!target && target !== zone) || (!task.fresh && (moving || foldForContext))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
@@ -170,7 +176,7 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "arcade" ? " cabinet-prompt" : "")} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.label === ROAD_UI.drive ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
@@ -689,7 +695,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && prompt.kind !== "arcade" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"

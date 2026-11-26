@@ -73,7 +73,7 @@ export class CameraRig {
   } | null = null;
   taxiSnapRays = 0;
   private manualT = 0;
-  interiorBounds = { w: 16, d: 12 };
+  interiorBounds: { w: number; d: number; cabinetCorner?: boolean } = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
@@ -324,6 +324,12 @@ export class CameraRig {
     }
   }
 
+  // Open up the portrait view as the learner enters the front half of The Corner Pocket.
+  cabinetCornerFrame() {
+    if (!this.interiorBounds.cabinetCorner) return 0;
+    return smoothstep(0, 2.8, this.target.z) * (1 - smoothstep(0.68, 0.87, this.cam.aspect));
+  }
+
   /** Indoors the view stays centred inside the room (never on the dark area beyond the open front). */
   private interiorLook() {
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
@@ -334,7 +340,9 @@ export class CameraRig {
     const back = this.cam.aspect < 0.87 ? ROOM_BACK : 0;
     const lo = -halfD + 3, hi = Math.max(lo, halfD - 3.5);
     const tz = THREE.MathUtils.clamp(this.target.z - 0.5 - back, lo, hi);
-    return new THREE.Vector3(tx, 1.2, tz);
+    const corner = this.cabinetCornerFrame();
+    const center = 1.78 + clamp(this.target.x, 0, 4.2) * 0.30;
+    return new THREE.Vector3(THREE.MathUtils.lerp(tx, center, corner), 1.2, tz);
   }
 
   private desiredLook() {
@@ -345,9 +353,11 @@ export class CameraRig {
     if (this.mode === "talk" && this.talk) return this.talk.pos;
     if (this.mode === "interior") {
       const d = Math.max(9, Math.min(15, this.interiorBounds.w * 0.55 + 4));
-      const pitch = 0.78;
+      const corner = this.cabinetCornerFrame();
+      const reach = d + corner * (4.8 - clamp(this.target.x, 0, 4.2) * 0.72);
+      const pitch = 0.78 - 0.15 * corner;
       const L = this.interiorLook();
-      return new THREE.Vector3(L.x, L.y + Math.sin(pitch) * d, L.z + Math.cos(pitch) * d);
+      return new THREE.Vector3(L.x, L.y + Math.sin(pitch) * reach, L.z + Math.cos(pitch) * reach);
     }
     const h = Math.sin(this.pitch) * this.dist, r = Math.cos(this.pitch) * this.dist;
     return new THREE.Vector3(this.target.x - Math.sin(this.yaw) * r, this.target.y + 1.3 + h, this.target.z - Math.cos(this.yaw) * r);
