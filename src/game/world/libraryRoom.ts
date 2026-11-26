@@ -68,8 +68,8 @@ function bookcase(parts: Pieces, col: Colliders, z: number, seed: number) {
   col.addBox(x, z, 0.71, w + 0.08);
 }
 
-const coverX = (i: number) => LIBRARY_DISPLAY.x - 1.93 + i * 1.13;
-const coverHeight = 1.06, lean = -0.25;
+const coverX = (i: number) => LIBRARY_DISPLAY.x - 1.93 + i * 1.10;
+const coverHeight = 1.30, lean = -0.25;
 function display(parts: Pieces, col: Colliders) {
   const { x, z, w, d } = LIBRARY_DISPLAY, c = joinery(parts, x, z);
   for (const side of [-1, 1]) {
@@ -183,11 +183,11 @@ export function furnishLibrary({ g, col }: { g: THREE.Group; col: Colliders }) {
   const solid = new THREE.Mesh(mergeGeometries([furniture, rug], false)!, new THREE.MeshLambertMaterial({ vertexColors: true }));
   furniture.dispose(); rug.dispose();
   solid.receiveShadow = true;
-  solid.name = "library-furniture";
+  solid.geometry.name = solid.material.name = solid.name = "library-furniture";
   const lamps = new THREE.Mesh(colourMerge(lights), new THREE.MeshLambertMaterial({
     vertexColors: true, emissive: "#b57a38", emissiveIntensity: 0.75,
   }));
-  lamps.name = "library-lamps";
+  lamps.geometry.name = lamps.material.name = lamps.name = "library-lamps";
   g.add(solid, lamps);
 }
 
@@ -217,6 +217,7 @@ async function featuredJackets(signal: AbortSignal) {
 export function mountLibraryCovers(group: THREE.Group) {
   const controller = new AbortController(), { signal } = controller;
   let jackets: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | undefined;
+  let pages: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial> | undefined;
   let canvas: HTMLCanvasElement | undefined;
   async function load() {
     const featured = await featuredJackets(signal);
@@ -224,7 +225,7 @@ export function mountLibraryCovers(group: THREE.Group) {
     canvas = document.createElement("canvas");
     canvas.width = canvas.height = 512;
     const ctx = canvas.getContext("2d")!;
-    const planes: THREE.BufferGeometry[] = [], bookIds: string[] = [];
+    const planes: THREE.BufferGeometry[] = [], blocks: THREE.BufferGeometry[] = [], bookIds: string[] = [];
     // Decode one small image at a time. Each bitmap can be released as soon as it has been painted.
     for (const [i, { id, url }] of featured.entries()) {
       if (signal.aborted) break;
@@ -238,26 +239,32 @@ export function mountLibraryCovers(group: THREE.Group) {
           const w = bitmap.width * scale, h = bitmap.height * scale;
           const px = (i % 2) * 256 + (256 - w) / 2, py = Math.floor(i / 2) * 256 + (256 - h) / 2;
           ctx.drawImage(bitmap, px, py, w, h);
-          const bookScale = Math.min(0.85 / w, coverHeight / h);
-          const height = h * bookScale;
-          const plane = new THREE.PlaneGeometry(w * bookScale, height);
+          const bookScale = Math.min(0.95 / w, coverHeight / h);
+          const height = h * bookScale, width = w * bookScale;
+          const plane = new THREE.PlaneGeometry(width, height);
           plane.translate(0, height / 2, 0).rotateX(lean).translate(coverX(i), 1.08, LIBRARY_DISPLAY.z + 0.23);
           const uv = plane.attributes.uv;
           for (let k = 0; k < uv.count; k++) uv.setXY(k, (px + 0.5 + uv.getX(k) * (w - 1)) / 512,
             1 - (py + 0.5 + (1 - uv.getY(k)) * (h - 1)) / 512);
           planes.push(plane); bookIds.push(id);
+          blocks.push(new THREE.BoxGeometry(width - 0.02, height - 0.02, 0.07)
+            .translate(0, height / 2, -0.04).rotateX(lean).translate(coverX(i), 1.08, LIBRARY_DISPLAY.z + 0.23));
         } finally { bitmap.close(); }
       } catch { /* A missing jacket reveals its row of cloth spines. */ }
     }
     if (planes.length && !signal.aborted) {
       const map = new THREE.CanvasTexture(canvas);
+      map.name = "library-cover-atlas";
       map.colorSpace = THREE.SRGBColorSpace; map.generateMipmaps = false; map.minFilter = THREE.LinearFilter;
       jackets = new THREE.Mesh(mergeGeometries(planes, false)!, new THREE.MeshBasicMaterial({ map, toneMapped: false }));
-      jackets.name = "library-jackets";
+      jackets.geometry.name = jackets.material.name = jackets.name = "library-jackets";
       jackets.userData.bookIds = bookIds; // two consecutive triangles per selectable jacket
-      group.add(jackets);
+      pages = new THREE.Mesh(mergeGeometries(blocks, false)!, new THREE.MeshLambertMaterial({ color: "#f1e3c4" }));
+      pages.geometry.name = pages.material.name = pages.name = "library-pages";
+      group.add(jackets, pages);
     }
     planes.forEach((p) => p.dispose());
+    blocks.forEach((p) => p.dispose());
   }
   void load().catch(() => { /* The room also opens when the course catalog is offline. */ });
   return () => {
@@ -265,6 +272,10 @@ export function mountLibraryCovers(group: THREE.Group) {
     if (jackets) {
       group.remove(jackets); jackets.material.map!.dispose(); jackets.material.dispose(); jackets.geometry.dispose();
       jackets = undefined;
+    }
+    if (pages) {
+      group.remove(pages); pages.material.dispose(); pages.geometry.dispose();
+      pages = undefined;
     }
     if (canvas) { canvas.width = canvas.height = 0; canvas = undefined; }
   };

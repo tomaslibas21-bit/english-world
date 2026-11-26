@@ -1,9 +1,10 @@
-import { Group, Mesh, Light, Vector3, type MeshBasicMaterial, type BufferGeometry } from "three";
+import { Group, Mesh, Light, Vector3, type MeshBasicMaterial, type MeshLambertMaterial, type BufferGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { hasLibraryShelf } from "../src/content/library";
 import { LOCATIONS } from "../src/content/locations";
 import { iconForEmoji } from "../src/ui/icons";
 import { Game } from "../src/game/Game";
+import { Guidance } from "../src/game/guidance";
 import { Gait, Hop, Steer } from "../src/game/movement";
 import { audio } from "../src/game/audio";
 import { coach } from "../src/game/coach";
@@ -195,6 +196,12 @@ it("batches the four uncropped jackets, fits the phone budgets and releases ever
     expect(fetch.mock.calls.filter(([url]) => url.endsWith(".160.webp"))).toHaveLength(4 * (visit + 1));
     expect(close).toHaveBeenCalledTimes(4 * (visit + 1));
     expect(jackets.userData.bookIds).toEqual(ids);
+    const pages = room.group.getObjectByName("library-pages") as Mesh<BufferGeometry, MeshLambertMaterial>;
+    expect(pages).toBeDefined();
+    expect(pages.geometry.index!.count / 3).toBe(48);
+    const cover = jackets.geometry.attributes.position;
+    const bottom = new Vector3().fromBufferAttribute(cover, 2), top = new Vector3().fromBufferAttribute(cover, 0);
+    expect(top.distanceTo(bottom)).toBeCloseTo(1.30);
     const map = jackets.material.map!, canvas = map.image as HTMLCanvasElement;
     expect(map.image).toMatchObject({ width: 512, height: 512 });
     expect(map.generateMipmaps).toBe(false);
@@ -214,9 +221,9 @@ it("batches the four uncropped jackets, fits the phone budgets and releases ever
     expect(bytes).toBeLessThanOrEqual(4 * 1024 ** 2);
     if (visit === 0) console.info("Library geometry budget", { meshes: library.length, materials: materials.size, triangles, bytes, fullRoomMeshes: meshes().length });
     const disposed = vi.fn();
-    for (const resource of [map, jackets.material, jackets.geometry]) resource.addEventListener("dispose", disposed);
+    for (const resource of [map, jackets.material, jackets.geometry, pages.material, pages.geometry]) resource.addEventListener("dispose", disposed);
     leave();
-    expect(disposed).toHaveBeenCalledTimes(3);
+    expect(disposed).toHaveBeenCalledTimes(5);
     expect(meshes()).toHaveLength(baseCount);
     expect(canvas.width).toBe(0);
   }
@@ -273,4 +280,27 @@ it("leaves cloth spines in the empty stands when a thumbnail is missing", async 
     expect(room.group.getObjectByName("library-furniture")).toBeDefined();
     expect(close).toHaveBeenCalledOnce();
   } finally { leave(); }
+});
+
+it("uses a floor exit ring and zero vertical walking shift in the library, restoring the town beacon", () => {
+  const guidance = new Guidance(), rig = new CameraRig(390 / 844);
+  const game: Game = Object.assign(Object.create(Game.prototype), { guidance, rig, zone: { id: "library" } });
+  rig.mode = "interior";
+  game["showBeacon"]({ kind: "exit", x: 0, z: 4.4 });
+  expect(guidance["beam"].visible).toBe(false);
+  expect(guidance["gem"].visible).toBe(false);
+  expect(guidance["ring"].scale.x).toBe(0.72);
+  expect((guidance["ring"].material as MeshBasicMaterial).opacity).toBe(0.4);
+  const shift = vi.spyOn(rig, "applyViewShift");
+  game["applyWalkingViewShift"](390, 844, false);
+  expect(shift).toHaveBeenLastCalledWith(390, 844, 0, 0);
+  game["screenW"] = 844; game["screenH"] = 390;
+  game["applyWalkingViewShift"](844, 390, false);
+  expect(shift).toHaveBeenLastCalledWith(844, 390, 0, 0);
+  game["zone"].id = "town";
+  game["showBeacon"]({ kind: "door", x: 22, z: 46.8 });
+  expect(guidance["beam"].visible).toBe(true);
+  expect(guidance["gem"].visible).toBe(true);
+  expect(guidance["ring"].scale.x).toBe(1);
+  expect((guidance["ring"].material as MeshBasicMaterial).opacity).toBe(0.8);
 });

@@ -3202,7 +3202,8 @@ export class Game implements GameApi {
     if (!tgt) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     const y = this.islandGuide && LIGHTHOUSE_ISLAND && !this.zone.interior ? islandGroundY(LIGHTHOUSE_ISLAND, over.x, over.z) : undefined;
-    this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? tgt : undefined, y);
+    const floorOnly = this.zone.id === "library" && tgt.kind === "exit";
+    this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" || tgt.person ? 2.9 : 3.8, tgt.person ? tgt : undefined, y, floorOnly);
   }
 
   // ------------------------------------------------------------------ loop
@@ -3252,7 +3253,8 @@ export class Game implements GameApi {
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
     const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
-    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+    const vertical = this.zone.id === "library" && walkingLens ? 0 : h * (stageShift ?? -shift);
+    this.rig.applyViewShift(w, h, 0, vertical);
   }
 
   private updateViewLights() {

@@ -24,6 +24,7 @@ const progress = {
   coach: { done: true, run: true, view: true, seen: { list: true, walk: true } },
 };
 if (shots) await mkdir(shots, { recursive: true });
+const failures = [];
 const browser = await chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true,
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
@@ -55,7 +56,7 @@ try {
         let seed = 20261126;
         Math.random = () => (seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296;
       }, [`${storage}-progress-v1`, progress]);
-      const page = await context.newPage(), errors = [], metrics = [];
+      const page = await context.newPage(), errors = [], metrics = [], viewportChecks = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(base.href, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => window.__ew?.game?.zoneId === "town" && !window.__ew.store.getState().hud.fade,
@@ -67,7 +68,51 @@ try {
       assert.deepEqual([door.x, door.z], [22, 49]);
       await page.evaluate(() => {
         window.__libraryActions = [];
-        window.__ew.game.onLibraryAction = (action, chairIndex) => window.__libraryActions.push([action, chairIndex ?? null]);
+        const g = window.__ew.game;
+        g.onLibraryAction = (action, chairIndex) => window.__libraryActions.push([action, chairIndex ?? null]);
+        // Track resources actually submitted to WebGL and remove them on disposal. Retain duplicate names
+        // so an orphaned atlas, jacket or page block from a previous visit fails the ownership check.
+        const live = new Map();
+        const track = (kind, resource, name) => {
+          if (!resource || live.has(resource.uuid)) return;
+          live.set(resource.uuid, { kind, name });
+          const disposed = () => {
+            live.delete(resource.uuid);
+            resource.removeEventListener("dispose", disposed);
+          };
+          resource.addEventListener("dispose", disposed);
+        };
+        const geometryName = (object, geometry) => {
+          if (geometry.name) return geometry.name;
+          const path = [];
+          for (let node = object; node; node = node.parent) {
+            const npc = g.npcs.find((n) => n.ch.root === node);
+            if (npc) return `town-npc/${npc.id}/${geometry.type}`;
+            path.unshift(node.name || `${node.type}[${node.parent?.children.indexOf(node) ?? 0}]`);
+          }
+          return path.join("/");
+        };
+        const prototype = Object.getPrototypeOf(Object.getPrototypeOf(g.zone.group));
+        const afterRender = prototype.onAfterRender;
+        prototype.onAfterRender = function(renderer, scene, camera, geometry, material, group) {
+          afterRender.call(this, renderer, scene, camera, geometry, material, group);
+          if (!geometry) return;
+          const name = geometryName(this, geometry);
+          track("geometries", geometry, name);
+          if (name.startsWith("library-")) {
+            track("materials", material, material.name);
+            if (material.map) track("textures", material.map, material.map.name);
+          }
+        };
+        window.__libraryResources = () => {
+          const result = { library: { geometries: [], materials: [], textures: [] }, townGeometryNames: [] };
+          for (const { kind, name } of live.values()) {
+            if (name.startsWith("library-")) result.library[kind].push(name);
+            else if (kind === "geometries") result.townGeometryNames.push(name);
+          }
+          for (const names of [...Object.values(result.library), result.townGeometryNames]) names.sort();
+          return result;
+        };
       });
       const waitZone = (id) => page.waitForFunction((zone) => {
         const { game, store } = window.__ew;
@@ -102,12 +147,32 @@ try {
       const settle = () => page.waitForTimeout(1200);
       const sample = () => page.evaluate(() => {
         const g = window.__ew.game, info = g.renderer.info;
-        return { calls: info.render.calls, triangles: info.render.triangles, ...info.memory };
+        return { calls: info.render.calls, triangles: info.render.triangles, ...info.memory, ...window.__libraryResources() };
       });
       const capture = async (state) => {
         await settle();
-        const reading = await sample();
-        if (["doorstep", "display", "chair"].includes(state)) assert(reading.calls <= 50, `${label} ${state} draw calls ${reading.calls}`);
+        const { townGeometryNames, ...reading } = await sample();
+        try {
+          if (["doorstep", "display", "chair"].includes(state)) {
+            assert(reading.calls <= 50, `${label} ${state} draw calls ${reading.calls}`);
+            assert.equal(await page.locator(".objective-card.collapsed").count(), 1, "The unrelated task starts folded");
+            assert.equal(await page.locator(".objective-summary .dist").count(), 0, "The summary omits exit-distance metres");
+            assert(await page.evaluate(() => {
+              const g = window.__ew.game;
+              return !g.guidance.beam.visible && !g.guidance.gem.visible
+                && g.guidance.ring.scale.x === 0.72 && g.guidance.ring.material.opacity === 0.4
+                && (!g.rig.cam.view || g.rig.cam.view.offsetY === 0);
+            }), "The library has a floor exit ring and a vertically centered view");
+          }
+          if (phone && ["display", "chair"].includes(state)) {
+            const prompt = page.locator(".prompt.touch.library-prompt");
+            assert.equal(await prompt.count(), 1);
+            assert.equal(await prompt.locator("small[lang=lt]").count(), 1);
+            assert.equal(await page.locator(".act-btn").count(), 0, "One bilingual touch action");
+          }
+        } catch (error) {
+          viewportChecks.push(new Error(`${label} ${state} visual check failed`, { cause: error }));
+        }
         metrics.push({ state, ...reading });
         if (shots) await page.screenshot({ path: join(shots, `${label}-${state}.png`) });
       };
@@ -134,7 +199,8 @@ try {
         await waitZone("town");
         assert(await page.evaluate(() => {
           const g = window.__ew.game, p = g.player.root.position;
-          return g.town.walkableAt(p.x, p.z) && !g.zones.get("library").group.getObjectByName("library-jackets");
+          return g.town.walkableAt(p.x, p.z) && !g.zones.get("library").group.getObjectByName("library-jackets")
+            && !g.zones.get("library").group.getObjectByName("library-pages");
         }), "The outside return is walkable and the visit atlas has been detached");
       };
 
@@ -156,17 +222,41 @@ try {
       await exit();
       await capture("exit");
       const firstOutside = await sample();
+      const expectedLibrary = {
+        geometries: ["library-furniture", "library-lamps"],
+        materials: ["library-furniture", "library-lamps"], textures: [],
+      };
+      assert.deepEqual(firstOutside.library, expectedLibrary, "Cached furniture survives the first exit");
+      const extraNames = (names, baseline) => {
+        const remaining = [...baseline];
+        return names.filter((name) => {
+          const at = remaining.indexOf(name);
+          if (at < 0) return true;
+          remaining.splice(at, 1);
+          return false;
+        });
+      };
       const allocation = [];
       for (let visit = 1; visit < repeats; visit++) {
         await enter();
         await exit();
         await settle();
-        allocation.push(await sample());
+        const { townGeometryNames, ...reading } = await sample();
+        allocation.push({
+          ...reading,
+          addedTownGeometries: extraNames(townGeometryNames, firstOutside.townGeometryNames),
+          removedTownGeometries: extraNames(firstOutside.townGeometryNames, townGeometryNames),
+        });
       }
-      assert(allocation.every((s) => s.textures <= firstOutside.textures && s.geometries <= firstOutside.geometries),
-        `${label} visit allocations accumulate ${JSON.stringify({ firstOutside, allocation })}`);
+      console.log(JSON.stringify({ viewport: label, metrics, visits: repeats, allocation }));
+      for (const [visit, reading] of allocation.entries())
+        assert.deepEqual(reading.library, expectedLibrary, `${label} visit ${visit + 2} library-owned resources`);
       assert.deepEqual(errors, [], `${label} page errors`);
-      console.log(JSON.stringify({ viewport: label, metrics, visits: repeats, settled: allocation.at(-1) }));
+      if (viewportChecks.length) throw new AggregateError(viewportChecks, `${label} visual checks failed`);
+    } catch (error) {
+      failures.push(error);
+      console.error(`${label} failed`, error);
     } finally { await context.close(); }
   }
+  if (failures.length) throw new AggregateError(failures, "Library viewport checks failed");
 } finally { await browser.close(); }
