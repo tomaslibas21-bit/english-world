@@ -28,7 +28,7 @@ function actor() {
   } as GameCharacter;
 }
 
-async function fixture({ configured = true, ready = true, player = actor() } = {}) {
+async function fixture({ configured = true, ready = true, player = actor(), guests = [actor(), actor()] } = {}) {
   const out: RadioOutput = {
     play: vi.fn(async () => true), pause: vi.fn(), position: () => 7.25,
     setVolume() {}, unlock() {}, onEnded: null, onStopped: null,
@@ -42,7 +42,6 @@ async function fixture({ configured = true, ready = true, player = actor() } = {
     ] } : { L: [{ s: 1, e: 5, src: "Every evening", u: [["Every", "Kiekvieną", 1], ["evening", "vakarą", 1]], w: [[1, 2], [2, 5]] }] },
   });
   if (ready) await radio.init();
-  const guests = [actor(), actor()];
   player.root.position.set(KARAOKE_PROMPT.x, 0, KARAOKE_PROMPT.z);
   player.root.rotation.y = 0.72;
   player.joint("foreR").rotation.x = 0.3;
@@ -225,6 +224,45 @@ describe("the café karaoke mode", () => {
       expect(player.rightHand.getObjectByName("karaoke-hand-mic")).toBeUndefined();
       if (player instanceof Character) player.dispose();
     }
+  });
+
+  it("restores the walking yaw and both seated guests across repeated takes and applause", async () => {
+    vi.stubGlobal("document", townCanvasDocument());
+    vi.spyOn(audio, "sfx").mockImplementation(() => {});
+    const player = new Character(NPCS.mia.look);
+    const guests: GameCharacter[] = [new Character(NPCS.mia.look), new StyledCharacter(NPCS.rosa.look)];
+    const f = await fixture({ player, guests });
+    // The walk from the café door ends beyond 90°. Quaternion → Euler conversion can instead return a
+    // smaller yaw with 180° pitch/roll: equivalent now, but wrong when walking next updates yaw alone.
+    player.root.rotation.y = 2.35;
+    guests.forEach((guest, i) => {
+      guest.root.position.set(3, 0, i ? -0.45 : 1.45);
+      guest.root.rotation.y = i ? 0 : Math.PI;
+      guest.seatY = 0.5; guest.setAnim("sit"); guest.update(0.05);
+    });
+    const actors = [player, ...guests];
+    const before = actors.map(({ root }) => ({ position: root.position.toArray(), rotation: root.rotation.toArray() }));
+    const checkRestored = () => expect(actors.map(({ root }) => ({
+      position: root.position.toArray(), rotation: root.rotation.toArray(),
+    }))).toEqual(before);
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01");
+    for (let take = 0; take < 2; take++) {
+      f.mode.action("start"); await flush();
+      for (let frame = 0; frame < 10; frame++) {
+        f.mode.update({ dt: 0.05, time: frame * 0.05, x: 0, y: 0, blocked: true, brake: false });
+        guests.forEach((guest) => guest.update(0.05));
+      }
+      f.out.onEnded!();
+      guests.forEach((guest) => guest.update(0.05));
+      f.mode.action(take ? "leave" : "back");
+      checkRestored();
+    }
+    actors.forEach((actor) => actor.update(0.05));
+    checkRestored();
+    expect(guests.every((guest) => guest.anim === "sit")).toBe(true);
+    expect(player.rightHand.getObjectByName("karaoke-hand-mic")).toBeUndefined();
+    player.dispose(); guests.forEach((guest) => guest.dispose?.());
   });
 
   it("updates portrait framing on rotation and snaps the new shot with reduced motion", async () => {

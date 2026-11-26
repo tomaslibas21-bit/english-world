@@ -19,13 +19,15 @@ interface CafeHost {
 type BoothRadio = Pick<Radio, "store" | "init" | "karaokeCatalog" | "openKaraoke" | "hold" | "release">;
 
 function parkActor(actor: GameCharacter) {
-  const position = actor.root.position.clone(), rotation = actor.root.quaternion.clone(), scale = actor.root.scale.clone();
+  // Walking writes rotation.y directly. Preserve its Euler representation: restoring a quaternion at a yaw
+  // beyond 90° can produce the same pose with 180° pitch/roll, which the next walking turn would retain.
+  const position = actor.root.position.clone(), rotation = actor.root.rotation.clone(), scale = actor.root.scale.clone();
   const { anim, watch, steady, attentive, busy, bank, moveSpeed } = actor;
   const joints: CharacterJoint[] = ["body", "head", "armL", "armR", "foreL", "foreR", "legL", "legR", "shinL", "shinR"];
   const poses = joints.map((name) => ({ joint: actor.joint(name), rotation: actor.joint(name).quaternion.clone() }));
   return () => {
     actor.root.position.copy(position);
-    actor.root.quaternion.copy(rotation);
+    actor.root.rotation.copy(rotation);
     actor.root.scale.copy(scale);
     actor.setAnim(anim);
     Object.assign(actor, { watch, steady, attentive, busy, bank, moveSpeed });
