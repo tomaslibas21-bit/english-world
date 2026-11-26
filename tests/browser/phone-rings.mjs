@@ -393,7 +393,11 @@ try {
   await checkFollowUpGuide(office, "office");
   await page.evaluate(() => window.__ew.game.teleportTo("office"));
   await waitFor(() => conv("s34-meeting"), "arriving at the office starts the meeting");
-  assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.phone.office), undefined);
+  // The office task stays open while the scene card is up (closing the card leaves it for later);
+  // it clears once the learner starts the meeting.
+  assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.phone.office), true);
+  await press(panel.locator(".scene-intro").getByRole("button", { name: ui("Pradėti", "Start"), exact: true }));
+  await waitFor(() => page.evaluate(() => window.__ew.store.getState().progress.phone.office === undefined), "starting the meeting closes the office task");
   if (savedTickets) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitFor(() => page.locator(".toolbar").isVisible(), "town toolbar returns after reload");
