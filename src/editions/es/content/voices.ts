@@ -7,7 +7,7 @@
 // esn_<npcId> neutral Latin American Spanish, esp_<npcId> Spain's (Castilian), with the same Gemini voice and manner. One manifest holds both sets
 // (the voice id is part of every clip's key), so text and pronunciation always match.
 import type { NpcDef } from "./npcs";
-import { variety } from "../../../convo/compose";
+import { variety, type Variety } from "../../../convo/compose";
 
 /** The Spanish edition has one kind of voices. */
 export const VOICES_V2 = true;
@@ -16,13 +16,13 @@ export const VOICES_V2 = true;
 export const audioDir = (_v2 = VOICES_V2) => "audio-es/";
 
 /** The voice set of the Spanish the learner chose: "es" (Mexican, the default), "esn" (neutral) or "esp" (Spain's). */
-const set = () => { const v = variety(); return v === "neutral" ? "esn" : v === "spain" ? "esp" : "es"; };
+const set = (v: Variety = variety()) => v === "neutral" ? "esn" : v === "spain" ? "esp" : "es";
 
 /** A character's voice id. */
-export const npcVoice = (n: NpcDef | undefined, _v2 = VOICES_V2): string => (n ? `${set()}_${n.id}` : `${set()}_coach_f`);
+export const npcVoice = (n: NpcDef | undefined, _v2 = VOICES_V2, v = variety()): string => (n ? `${set(v)}_${n.id}` : `${set(v)}_coach_f`);
 
 /** The voice of the example answers: the learner's own gender. */
-export const coachVoice = (gender: "m" | "f" | undefined, _v2 = VOICES_V2): string => `${set()}_coach_${gender === "m" ? "m" : "f"}`;
+export const coachVoice = (gender: "m" | "f" | undefined, _v2 = VOICES_V2, v = variety()): string => `${set(v)}_coach_${gender === "m" ? "m" : "f"}`;
 
 /** Every coach voice a hint must be recorded in (in the Spanish chosen now). */
 export const coachVoices = (_v2 = VOICES_V2): string[] => [`${set()}_coach_f`, `${set()}_coach_m`];

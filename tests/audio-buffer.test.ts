@@ -144,6 +144,26 @@ describe("iOS recorded Web Audio", () => {
     contexts[0].finish(); expect(await done).toBe(true);
   });
 
+  it("hangs up an optional recorded call while its MP3 is still downloading", async () => {
+    let download: AbortSignal | undefined;
+    fetcher.mockImplementationOnce((_url, opts) => new Promise((_resolve, reject) => {
+      download = opts.signal as AbortSignal;
+      download.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+    }));
+    const receiver = new AbortController();
+    const playing = audio.play(voice, 1, lines[0], { signal: receiver.signal, recordingOnly: true, optional: true });
+    await tick();
+    expect(download?.aborted).toBe(false);
+    receiver.abort();
+    expect(await playing).toBe(false);
+    expect(download?.aborted).toBe(true);
+    const retry = audio.play(voice, 1, lines[0], { signal: new AbortController().signal, recordingOnly: true, optional: true });
+    await tick();
+    contexts[0].finish();
+    expect(await retry).toBe(true);
+    expect(synth).not.toHaveBeenCalled();
+  });
+
   it("uses cached decoded recordings offline and separates repair versions", async () => {
     let done = audio.play(voice, 1, lines[0]); await tick(); contexts[0].finish(); await done;
     const downloads = fetcher.mock.calls.length; fetcher.mockRejectedValue(new TypeError("offline"));

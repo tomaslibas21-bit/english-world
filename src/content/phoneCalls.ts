@@ -2,7 +2,7 @@ import { NPCS } from "./npcs";
 import { invitationDetails, LT_RELATIVE_DAYS, LT_WEEKDAYS, type Invitation } from "./phoneInvitation";
 import { L } from "../ui/i18n";
 
-type Caller = { npc: string; name: string };
+type Caller = { npc: string; name: string; organization?: string };
 export type PhoneCall = Caller & ({ kind: "incoming"; video?: boolean } | { kind: "reminder"; reason: string });
 
 const caller = (npc: string, organization?: string): Caller => ({

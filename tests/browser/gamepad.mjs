@@ -1301,6 +1301,27 @@ async function checkFocusRing(h, selector, key, scope = "convo") {
     effect.contrast >= 3 && effect.inBounds && !effect.clipped && effect.onTop && effect.color === "rgb(8, 124, 120)" && effect.offset === "2px", effect);
 }
 
+async function stationPhoneContract({ page, attach, when, tap, focusWith, focused, until, check, step }) {
+  await page.evaluate(() => window.__ew.game.enterZone("station", { x: -5.2, z: 6.65, rot: 0 }, true));
+  await attach();
+  await when("at the station listening mark with a controller", s => s.pad?.connected && s.prompt === "phonebooth");
+  await tap("X");
+  await until("X opens the directory", () => page.locator(".booth-book").isVisible());
+  await focusWith('[data-contact="harris"]');
+  await tap("A");
+  await focusWith(".booth-offer-row .booth-primary");
+  await tap("A");
+  await until("A starts the call to Ingeniero Montes", () => page.locator(".booth-line").textContent().then(s => s === "¿Bueno? Buenos días."));
+  await focusWith(".booth-actions .booth-primary");
+  await tap("A");
+  await until("A advances to the learner", () => page.locator(".booth-line").textContent().then(s => s === "Voy tarde."));
+  await tap("B");
+  check("B hangs up at the same contact", await focused('[data-contact="harris"]'));
+  await tap("B");
+  await step(2);
+  check("B returns to the station prompt", await focused(".hud .prompt"));
+}
+
 async function townUi(h) {
   const { page, mobile, focused, focusWith, press, tap, sample, step, until, when, state, check } = h;
   const counts = await playCounts(h);
@@ -3234,6 +3255,7 @@ const cases = [
   ["town", "town-dispose-pending", disposePending],
   ["light", "light-dispose-pending", disposePending],
   ["town", "phone-menu", townUi],
+  ["town", "station-phone", stationPhoneContract],
   ["town", "settings-edit", settingsAdjustments],
   ["town", "street-translation", townHudChoices],
   ["town", "cafe-town-choice", (h) => cafeChoices(h, false)],

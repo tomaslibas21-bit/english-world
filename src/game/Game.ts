@@ -107,6 +107,7 @@ import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
 import type { GameApi, NametagLayout, PlacedNametag, TagBox, WalkPlace } from "./gameRef";
 import { attachPad, effectiveStick, type PadLink } from "./padLink";
+import { STATION_PHONE } from "./world/stationPhone";
 import { THEME } from "./world/theme";
 import { caveLure } from "./cave";
 import { CAVE_ZONE, caveWays, groundsBounds, preferredCaveEntry } from "./cave/groundsPlan";
@@ -267,7 +268,7 @@ export class Game implements GameApi {
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
   private placedNametags: PlacedNametag[] = [];
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode" | "phonebooth"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -1192,7 +1193,7 @@ export class Game implements GameApi {
       this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor && !wild ? "interior" : "follow";
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, frontMark: THEME.roomExtras.terminalMx && id === "station" ? STATION_PHONE : undefined };
       else this.rig.yaw = this.heading;
       // (the follow camera's lean and distance: the town's, or the place's own)
       // (the town's, as the player left it with the wheel, is kept for when they come back up)
@@ -1521,7 +1522,7 @@ export class Game implements GameApi {
     const k = e.key.toLowerCase();
     if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active) return; // the conversation panel handles its own keys
-    if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    if (st.hud.panel) { if (k === "escape" && st.hud.panel !== "phonebooth") st.setHud({ panel: null }); return; }
     // (at a glyph stone: its card has the keys; Esc puts it away)
     if (st.hud.glyph) { if (k === "escape" && !e.defaultPrevented) { e.preventDefault(); if (!e.repeat) this.cave?.close(); } return; }
     if (this.modes.owns("gym")) {
@@ -2269,6 +2270,18 @@ export class Game implements GameApi {
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "phonebooth") {
+      const st = useStore.getState();
+      if (this.zone.id !== "station" || st.hud.phoneCard || st.hud.panel || st.conv.active || this.conversationLoads) return;
+      this.stopAutoWalk();
+      this.steer.reset();
+      this.stepOut = 0;
+      this.vel.set(0, 0, 0);
+      this.moveVel.set(0, 0, 0);
+      this.keys.clear();
+      this.setJoystick(0, 0);
+      st.setHud({ panel: "phonebooth" });
+    }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -4366,6 +4379,13 @@ export class Game implements GameApi {
         if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
         // the great tree, once the heart is found: it speaks to whoever stands on its island
         else if (!best && this.cave?.treeNear(p)) { bd = 1; best = { kind: "tree", id: "yaxche", label: NPCS.yaxche?.name ?? "Yaxché" }; }
+        if (THEME.roomExtras.terminalMx && this.zone.id === "station" && !this.hop.air) {
+          const reach = Math.hypot(p.x - STATION_PHONE.x, p.z - STATION_PHONE.markZ);
+          if (reach < STATION_PHONE.reach && reach < bd) {
+            bd = reach;
+            best = { kind: "phonebooth", id: "phonebooth", label: L("Naudotis viešuoju telefonu") };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (!this.wild && d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
@@ -4388,6 +4408,7 @@ export class Game implements GameApi {
         : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
+        : best.kind === "phonebooth" ? { label: best.label, kind: "phonebooth" }
         : best.kind === "mode" ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });

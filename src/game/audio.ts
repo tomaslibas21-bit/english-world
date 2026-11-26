@@ -468,14 +468,16 @@ export class AudioSystem {
     }));
   }
 
-  private cacheRecording(key: string): Promise<void> {
+  private cacheRecording(key: string, owner?: AbortSignal): Promise<void> {
     const id = this.cacheKey(key);
-    if (this.recordings.has(id)) return Promise.resolve();
+    if (owner?.aborted || this.recordings.has(id)) return Promise.resolve();
     const existing = this.downloads.get(id);
     if (existing) return existing;
     const work = (async () => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
+      const abort = () => controller.abort();
+      owner?.addEventListener("abort", abort, { once: true });
+      const timer = setTimeout(abort, 10000);
       try {
         const r = await fetch(clipUrl(this.base, key, this.repairVersions[key], filesToken()), { signal: controller.signal });
         if (!r.ok || !/^(audio\/|application\/octet-stream)/i.test(r.headers.get("content-type") ?? "")) return;
@@ -489,13 +491,13 @@ export class AudioSystem {
         this.recordings.set(id, `data:${blob.type.startsWith("audio/") ? blob.type : "audio/mpeg"};base64,${btoa(binary)}`);
         if (this.recordings.size > 64) this.recordings.delete(this.recordings.keys().next().value!);
       } catch { /* warming a clip never interrupts the conversation */ }
-      finally { clearTimeout(timer); }
-    })().finally(() => { this.downloads.delete(id); });
-    this.downloads.set(id, work);
+      finally { clearTimeout(timer); owner?.removeEventListener("abort", abort); }
+    })().finally(() => { if (!owner) this.downloads.delete(id); });
+    if (!owner) this.downloads.set(id, work);
     return work;
   }
 
-  private async recordingBuffer(key: string, slow: boolean): Promise<AudioBuffer> {
+  private async recordingBuffer(key: string, slow: boolean, owner?: AbortSignal): Promise<AudioBuffer> {
     const id = `${this.cacheKey(key)}${slow ? "#slow" : ""}`;
     const cached = this.buffers.get(id);
     if (cached) return cached;
@@ -507,17 +509,19 @@ export class AudioSystem {
       this.decoder ??= new OAC(1, 1, 44100);
       let buffer: AudioBuffer;
       if (slow) {
-        const original = await this.recordingBuffer(key, false);
+        const original = await this.recordingBuffer(key, false, owner);
         const channels = stretchSpeech(Array.from({ length: original.numberOfChannels }, (_, i) => original.getChannelData(i)), original.sampleRate, 0.82);
         buffer = this.decoder.createBuffer(channels.length, channels[0].length, original.sampleRate);
         channels.forEach((channel, i) => buffer.getChannelData(i).set(channel));
       } else {
-        await this.cacheRecording(key);
+        await this.cacheRecording(key, owner);
+        owner?.throwIfAborted();
         const source = this.recordings.get(this.cacheKey(key));
         if (!source) throw { name: "RecordingUnavailable" };
-        const response = await fetch(source);
+        const response = await fetch(source, { signal: owner });
         buffer = await this.decoder.decodeAudioData(await response.arrayBuffer());
       }
+      owner?.throwIfAborted();
       if (!Number.isFinite(buffer.duration) || buffer.duration <= 0 || buffer.duration > 180) throw { name: "InvalidRecordingDuration" };
       const bytes = buffer.length * buffer.numberOfChannels * Float32Array.BYTES_PER_ELEMENT;
       const limit = 24 * 1024 * 1024;
@@ -525,17 +529,20 @@ export class AudioSystem {
         const [oldId, old] = this.buffers.entries().next().value!;
         this.buffers.delete(oldId); this.bufferBytes -= old.length * old.numberOfChannels * Float32Array.BYTES_PER_ELEMENT;
       }
-      if (bytes <= limit) { this.buffers.set(id, buffer); this.bufferBytes += bytes; }
+      if (bytes <= limit && !this.buffers.has(id)) { this.buffers.set(id, buffer); this.bufferBytes += bytes; }
       return buffer;
-    })().finally(() => { this.decodings.delete(id); });
-    this.decodings.set(id, work);
+    })().finally(() => { if (!owner) this.decodings.delete(id); });
+    if (!owner) this.decodings.set(id, work);
     return work;
   }
 
   /** The same authenticated MP3, decoded once and sent through the existing Web Audio
    *  context. No HTML media play/pause and no automatic pipeline/voice fallback on iOS. */
-  private playBufferRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
+  private playBufferRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean; signal?: AbortSignal }) {
     this.lastRecordingKey = key;
+    // Signalled optional clips may be skipped or hung up while still downloading.
+    // Scope their network work to this playback without cancelling a shared prefetch.
+    const download = opts.signal && request.optional ? new AbortController() : undefined;
     let disposed = false, run = 0, playing = false;
     let buffer: AudioBuffer | null = null, ctx: AudioContext | null = null;
     let source: AudioBufferSourceNode | null = null, gain: GainNode | null = null;
@@ -571,6 +578,7 @@ export class AudioSystem {
     const cleanup = () => {
       if (disposed) return;
       disposed = true; run++; clip.done = true;
+      download?.abort();
       clearTimeout(timer); stopOutput();
       ctx?.removeEventListener("statechange", interrupted);
       document.removeEventListener("visibilitychange", hidden);
@@ -641,7 +649,7 @@ export class AudioSystem {
       clearTimeout(timer); this.setState("loading");
       diagnostic("buffer.load");
       timer = setTimeout(() => { if (current() && attempt === run) waiting("unavailable", "RecordingLoadTimeout"); }, 15000);
-      void this.recordingBuffer(key, !!opts.slow).then((decoded) => {
+      void this.recordingBuffer(key, !!opts.slow, download?.signal).then((decoded) => {
         if (!current() || attempt !== run) return;
         clearTimeout(timer); buffer = decoded;
         this.envelope(envelopeKey, decoded);

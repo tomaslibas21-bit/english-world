@@ -568,6 +568,22 @@ describe("the radio", () => {
     expect(radio.store.getState()).toMatchObject({ playing: true, held: false });
   });
 
+  it("keeps the station quiet between practice turns and yields to another audio owner on hang-up", async () => {
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    out.at = 37;
+    radio.hold("phonebooth", true);
+    radio.hold("voice"); radio.release("voice");
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS);
+    expect(out.sounding).toBe(false);
+    radio.hold("bed"); radio.release("phonebooth");
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS);
+    expect(out.sounding).toBe(false);
+    radio.release("bed");
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS);
+    expect(out.last).toBe("play A.mp3@37");
+  });
+
   it("is cut at once for a microphone, and stays silent until every hold is gone", async () => {
     const radio = new Radio(deps());
     radio.setOn(true); await settle();
@@ -636,13 +652,13 @@ describe("the radio", () => {
     expect(radio.store.getState()).toMatchObject({ playing: true, held: false });
   });
 
-  it("pause is pause: no hold's end turns it back on", async () => {
+  it.each(["conversation", "phonebooth"] as const)("ending %s honors a user pause", async (owner) => {
     const radio = new Radio(deps());
     radio.setOn(true); await settle();
-    radio.hold("conversation");
+    radio.hold(owner, owner === "phonebooth");
     await vi.advanceTimersByTimeAsync(FADE_OUT_MS);
     radio.setOn(false);
-    radio.release("conversation");
+    radio.release(owner);
     await vi.advanceTimersByTimeAsync(5000);
     expect(out.sounding).toBe(false);
     expect(saved().on).toBe(false);

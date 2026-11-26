@@ -75,7 +75,7 @@ export class CameraRig {
   taxiSnapRays = 0;
   get hasTaxiShot() { return this.taxiShot !== null; }
   private manualT = 0;
-  interiorBounds = { w: 16, d: 12 };
+  interiorBounds: { w: number; d: number; frontMark?: { x: number; markZ: number } } = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
@@ -328,8 +328,12 @@ export class CameraRig {
     // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
     // once they step in the bottom of the view is the room, not the doormat and the street outside the door; at the door
     // itself (the same limit as before) they stay well above the bottom edge
-    const back = this.cam.aspect < 0.87 ? ROOM_BACK : 0;
-    const lo = -halfD + 3, hi = Math.max(lo, halfD - 3.5);
+    // At a front-wall listening mark, keep the handset above the portrait interaction prompt.
+    const mark = this.interiorBounds.frontMark;
+    const near = mark && this.cam.aspect < 0.87
+      ? 1 - THREE.MathUtils.smoothstep(Math.hypot(tx - mark.x, this.target.z - mark.markZ), 1.35, 3.5) : 0;
+    const back = this.cam.aspect < 0.87 ? ROOM_BACK * (1 - near) : 0;
+    const lo = -halfD + 3, hi = Math.max(lo, halfD - 3.5 + near * 1.5);
     const tz = THREE.MathUtils.clamp(this.target.z - 0.5 - back, lo, hi);
     return new THREE.Vector3(tx, 1.2, tz);
   }

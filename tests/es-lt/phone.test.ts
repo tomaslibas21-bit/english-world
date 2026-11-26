@@ -1,3 +1,4 @@
+import { checkPhoneBooth } from "../phone-booth-checks";
 import { expect, it } from "vitest";
 import { PHONE_CALLS, FLOOD_INCOMING_INTRO, MEETING_DONE, OFFICE_TASK, concertInvitation, invitationTitle } from "@/content/phoneCalls";
 import { loadSituation } from "@/content/situations/catalog";
@@ -21,3 +22,5 @@ it("loads all four Lithuanian glosses through the s83 catalog", async () => {
   expect(sit?.lines.phone_meet_tickets[0]).toMatchObject({ lt: "Labas! | Čia | atsinešiau | bilietus.", nat: "Labas! Bilietai pas mane." });
   expect(sit?.lines.phone_meet_go[0]).toMatchObject({ lt: "Jau | noriu, | kad prasidėtų! | Einam.", nat: "Nekantrauju, kad prasidėtų! Einam." });
 });
+
+checkPhoneBooth("lt");

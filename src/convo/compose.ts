@@ -50,11 +50,12 @@ export function addressInformal(npc: { informal?: boolean; informalSpain?: boole
   return !!npc?.informal || (VARIETY === "spain" && !!npc?.informalSpain);
 }
 
-export interface ComposeOpts { look: EntityLookup; addressee?: Gender; speaker?: Gender; /** jūs (true, default) or tu (false) */ formal?: boolean }
+export interface ComposeOpts { variety?: Variety; look: EntityLookup; addressee?: Gender; speaker?: Gender; /** jūs (true, default) or tu (false) */ formal?: boolean }
 
 /** Compose a concrete sentence. Throws on authoring errors (validated at build time). */
 export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
-  const src: SentSrc = VARIETY === "spain" ? src0.spain ?? src0.neutral ?? src0 : VARIETY === "neutral" ? src0.neutral ?? src0 : src0;
+  const selected = opts.variety ?? VARIETY;
+  const src: SentSrc = selected === "spain" ? src0.spain ?? src0.neutral ?? src0 : selected === "neutral" ? src0.neutral ?? src0 : src0;
   const g = opts.addressee ?? "m";
   const sp = opts.speaker ?? "f";
   const formal = opts.formal ?? true;
