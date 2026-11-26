@@ -35,12 +35,26 @@ describe("Fill in a word", () => {
     expect(wordGap(many)?.word).toBeLessThan(3);
   });
 
+  it("excludes repeated answers across case and punctuation, including repeats inside other units", () => {
+    const mixed: SongLine = { ...line, src: "Night, night BRIGHT!", wt: ["Night,", "night", "BRIGHT!"],
+      u: [["Night, night", "Naktis", 2], ["BRIGHT!", "šviesu", 1]] };
+    expect(wordGap(mixed)?.answer).toBe("BRIGHT");
+    const repeats: SongLine = { ...line, src: "Every evening, every (EVENING!)", wt: ["Every", "evening,", "every", "(EVENING!)"],
+      w: [[1, 1.5], [1.5, 2], [2, 3], [3, 4]], u: [["Every", "Kiekvieną", 1], ["evening,", "vakarą", 1], ["every", "kiekvieną", 1], ["(EVENING!)", "vakarą", 1]] };
+    expect(wordGap(repeats)).toBeNull();
+    expect(renderStage(take([repeats, next]), 2)).not.toContain("karaoke-blank");
+    expect(renderStage(take([repeats, next]), 7)).toContain("karaoke-blank");
+    const repeatInPhrase = { ...line, src: "night and NIGHT!", wt: ["night", "and", "NIGHT!"], u: [["night and", "naktis ir", 2], ["NIGHT!", "naktis", 1]] as SongLine["u"] };
+    expect(wordGap(repeatInPhrase)).toBeNull();
+  });
+
   it("leaves short, helper, partial, mismatched and multiword-only rows intact", () => {
     const invalid: SongLine[] = [
       { ...line, part: "translation" }, { ...line, wt: ["Hear", "night"] }, { ...line, w: line.w.slice(1) },
       { ...line, w: [[1, 1.5], [1.5, 2], [2, 10]] },
       { ...line, u: [["Hear the", "Išgirsk", 2], ["different", "kita", 1]] },
       { ...line, u: [[line.src, line.lt, 3]] }, { ...line, u: [[line.src, line.lt, 0]] },
+      { ...line, u: [...line.u, ["", "", 1]] },
     ];
     for (const row of invalid) expect(wordGap(row)).toBeNull();
     const html = renderStage(take([{ ...line, u: [[line.src, line.lt, 3]] }]));
@@ -67,11 +81,12 @@ describe("Fill in a word", () => {
     expect(blank).not.toContain("visibility:hidden");
   });
 
-  it("masks future target previews, suppresses an answering helper preview, and shows a helper when sung", () => {
+  it("suppresses unrevealed target and helper previews, keeps shown previews English, and shows a helper when sung", () => {
     const state = take();
     const preview = renderToStaticMarkup(createElement(KaraokeNextLine, { take: state, row: 1, seconds: 0 }));
-    expect(preview).toContain(KARAOKE_UI.missing);
-    expect(preview).not.toContain("night");
+    expect(preview).toBe("");
+    const shown = renderToStaticMarkup(createElement(KaraokeNextLine, { take: { ...state, practice: { ...state.practice!, revealed: [1] } }, row: 1, seconds: 0 }));
+    expect(shown).toContain("night"); expect(shown).not.toContain(KARAOKE_UI.missing);
     const bilingual = withSungTranslations([{ ...line, s: 3, e: 6, w: line.w.map(([s, e]) => [s + 2, e + 2]) as SongLine["w"],
       lt: "The answer is night", en: { s: 1, e: 2.5 } }]);
     const sb = take(bilingual);

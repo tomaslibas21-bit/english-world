@@ -1,6 +1,7 @@
 import { L } from "../ui/i18n";
 
 export const KARAOKE_SIGN = "Karaoke";
+export const KARAOKE_DIRECTION = `${KARAOKE_SIGN} →`;
 
 export const KARAOKE_UI = {
   enter: L("Dainuoti karaokę"),
@@ -19,6 +20,9 @@ export const KARAOKE_UI = {
   back: L("Grįžti"),
   mode: L("Praktikos būdas"),
   along: L("Dainuoti kartu"),
+  alongHelp: L("Sek paryškintus žodžius ir dainuok kartu."),
+  more: L("Daugiau"),
+  seconds: (seconds: string) => L("{seconds} s", { seconds }),
   echo: L("Kartoti po eilutę"),
   echoHelp: L("Išklausyk eilutę ir per pauzę ją pakartok."),
   word: L("Atspėti praleistą žodį"),

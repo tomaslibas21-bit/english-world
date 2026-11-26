@@ -75,7 +75,7 @@ export function KaraokePicker({ entries, favorites, view, take = idleTake, act }
                   <option value="echo">{words.echo}</option>
                   <option value="word">{words.word}</option>
                 </select>
-                <small id="karaoke-mode-note">{view.mode === "word" ? words.wordHelp : words.echoHelp}</small>
+                <small id="karaoke-mode-note">{view.mode === "word" ? words.wordHelp : view.mode === "echo" ? words.echoHelp : words.alongHelp}</small>
               </fieldset>
               <p className="karaoke-status" role="status">{karaokeStatus(selectedTake)}</p>
             </div>

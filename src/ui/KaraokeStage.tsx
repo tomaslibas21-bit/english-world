@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { KARAOKE_SIGN, KARAOKE_UI as words } from "../content/karaokeCopy";
 import { game } from "../game/gameRef";
 import { lineGap, type EchoCall, type WordGap } from "../game/karaoke/practice";
@@ -81,13 +81,13 @@ export function KaraokeLyricLine({ line, word, meaning, gap, heard = [] }: { lin
       {spans ? line.u.map((unit, index) => {
         const from = offset;
         offset += unit[2];
-        return <span className="karaoke-unit" key={index}>
+        return <Fragment key={index}>{index > 0 && " "}<span className="karaoke-unit">
           <span className="karaoke-unit-words" lang={lang}>{line.wt.slice(from, offset).map((text, w) =>
             <span className={"karaoke-word" + (from + w === word ? " now" : "") + (heard.includes(from + w) ? " heard" : "")} key={from + w}>{w > 0 && " "}{gap?.gap.word === from + w
               ? <>{gap.gap.prefix}<span className={"karaoke-word-slot" + (gap.hidden ? " karaoke-blank" : " karaoke-revealed")}
                 style={{ width: `${Math.max(2, Array.from(gap.gap.answer).length)}ch` }}>{gap.hidden ? "\u00a0" : gap.gap.answer}</span>{gap.gap.suffix}</> : text}</span>)}</span>
           {meaning && !gap?.hidden && line.part !== "translation" && <small lang={EDITION.helper}>{unit[1]}</small>}
-        </span>;
+        </span></Fragment>;
       }) : <span lang={lang}><LyricText line={line} gap={gap?.hidden ? gap.gap : undefined} /></span>}
     </div>
     {meaning && !gap?.hidden && line.part !== "translation" && <>
@@ -112,7 +112,8 @@ export function KaraokeNextLine({ take, row, seconds }: { take: KaraokeState; ro
   const target = take.timeline?.lines[row + 1];
   if (line.part === "translation" && target && lineGap(target, row + 1, take.practice, seconds)?.hidden) return null;
   const gap = lineGap(line, row, take.practice, seconds);
-  return <p className="karaoke-next" aria-label={words.next} lang={line.part === "translation" ? EDITION.helper : EDITION.target}><LyricText line={line} gap={gap?.hidden ? gap.gap : undefined} /></p>;
+  if (gap?.hidden) return null;
+  return <p className="karaoke-next" aria-label={words.next} lang={line.part === "translation" ? EDITION.helper : EDITION.target}>{line.src}</p>;
 }
 
 export function KaraokeSpeed({ take, act }: { take: KaraokeState; act: KaraokeAction }) {
@@ -142,6 +143,51 @@ export function KaraokeMic({ take, act }: { take: KaraokeState; act: KaraokeActi
     {(mic.phase === "starting" || mic.phase === "listening") && <button type="button" data-pad-back onClick={() => act("microphone-stop")}>{words.stopMicrophone}</button>}
     {mic.matches.length > 0 && <p className="karaoke-heard" role="status">{words.heard}</p>}
     {mic.phase === "unavailable" && <p role="status">{words.microphoneOff}</p>}
+  </div>;
+}
+
+export function karaokeCountdown(seconds: number) {
+  return words.seconds(new Intl.NumberFormat(EDITION.helper).format(Math.ceil(seconds)));
+}
+
+export function KaraokeMore({ take, act, close }: { take: KaraokeState; act: KaraokeAction; close(): void }) {
+  const panel = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { panel.current?.querySelector<HTMLElement>("[data-pad-default]")?.focus({ preventScroll: true }); }, []);
+  const running = !!take.practice?.turn && !take.turnPaused;
+  return <div ref={panel} id="karaoke-more" className="karaoke-more" role="group" aria-label={words.more}
+    data-pad-scope="karaoke-more" onKeyDown={(event) => karaokeDialogKeys(event, close)}>
+    <button type="button" data-pad-default onClick={() => act("another")}>{words.another}</button>
+    {take.practice?.turn && <button type="button" disabled={take.held} onClick={() => { act(running ? "pause" : "resume"); close(); }}>{running ? words.pause : words.resume}</button>}
+    {!take.canSlow && <p>{words.normalOnly}</p>}
+    <button type="button" data-pad-back onClick={close}>{words.back}</button>
+  </div>;
+}
+
+/** Four stable positions: a turn changes the primary label, never the number of controls or rows. */
+export function KaraokeTransport({ take, hasLine, act }: { take: KaraokeState; hasLine: boolean; act: KaraokeAction }) {
+  const [more, setMore] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null), root = useRef<HTMLDivElement>(null);
+  const turn = take.practice?.turn;
+  const running = take.status === "playing" || (!!turn && !take.turnPaused);
+  const close = () => { setMore(false); toggle.current?.focus({ preventScroll: true }); };
+  useEffect(() => {
+    if (!more) return;
+    const outside = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setMore(false); };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [more]);
+  return <div ref={root} className="karaoke-transport">
+    <div className="karaoke-transport-grid">
+      <button type="button" className="karaoke-transport-replay" disabled={!hasLine || take.status === "loading" || take.held} onClick={() => act("replay")}>{words.replay}</button>
+      <button type="button" className="karaoke-primary karaoke-transport-primary" data-pad-default disabled={take.held || take.status === "loading"}
+        onClick={() => act(take.status === "error" ? "retry" : turn ? "continue" : running ? "pause" : "resume")}>
+        {take.status === "error" ? words.retry : turn ? words.continue : running ? words.pause : words.resume}
+      </button>
+      <KaraokeSpeed take={take} act={act} />
+      <button ref={toggle} type="button" className="karaoke-transport-more" aria-expanded={more} aria-controls="karaoke-more"
+        onClick={() => setMore(!more)}>{words.more}</button>
+    </div>
+    {more && <KaraokeMore take={take} act={act} close={close} />}
   </div>;
 }
 
@@ -227,7 +273,7 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
     </header>
     {take.status === "ended" ? <KaraokeFinish take={take} act={action} /> : <>
       {lines.length > 0 && <section className={"karaoke-reader" + (meaning && small ? " karaoke-meaning-sheet" : "")} aria-label={words.lyrics}>
-        {turn && <div className="karaoke-turn"><span role="status">{words.yourTurn}</span><span aria-hidden>{Math.ceil(take.practice!.remaining)}</span></div>}
+        {turn && <div className="karaoke-turn"><span role="status">{words.yourTurn}</span><span aria-hidden>{karaokeCountdown(take.practice!.remaining)}</span></div>}
         <div ref={reading} className="karaoke-reading" tabIndex={-1} onClick={() => { if (canReadMeaning) toggleMeaning(); }}>
           {lines.map((line, index) => <KaraokeLyricLine key={`${line.i}-${index}`} line={line} word={turn || index > 0 ? -1 : frame.word} meaning={meaning} gap={gaps[index]}
             heard={take.microphone?.matches.filter((match) => match.row === indices[index]).map((match) => match.word)} />)}
@@ -240,15 +286,7 @@ export function KaraokeStage({ session, take }: { session: KaraokeSession; take:
       </section>}
       <div ref={footer} className="karaoke-stage-bottom">
         <p className="karaoke-status" role="status">{karaokeStatus(take)}</p>
-        <div className="karaoke-stage-actions">
-          <KaraokeSpeed take={take} act={action} />
-          <button type="button" data-pad-back={!meaning || undefined} onClick={() => action("back")}>{words.back}</button>
-          {lines.length > 0 && <button type="button" disabled={take.status === "loading" || take.held} onClick={() => action("replay")}>{words.replay}</button>}
-          {turn && <button type="button" className="karaoke-primary" data-pad-default disabled={take.held} onClick={() => action("continue")}>{words.continue}</button>}
-          <button type="button" data-pad-default={!turn || undefined} disabled={take.held || take.status === "loading"} onClick={() => action(take.status === "error" ? "retry" : running ? "pause" : "resume")}>
-            {take.status === "error" ? words.retry : running ? words.pause : words.resume}
-          </button>
-        </div>
+        <KaraokeTransport take={take} hasLine={lines.length > 0} act={action} />
       </div>
     </>}
   </section>;

@@ -33,6 +33,20 @@ describe("Café La Ceiba performance", () => {
     expect(html).toContain(lithuanian ? "Pradėti dainą" : "Start song");
     expect(KARAOKE_UI.enter).toBe(lithuanian ? "Dainuoti karaokę" : "Sing karaoke");
     expect(KARAOKE_UI.lyrics).toBe(lithuanian ? "Dainos tekstas" : "Lyrics");
+    expect(html).toContain(lithuanian ? "Sek paryškintus žodžius ir dainuok kartu." : "Follow the highlighted words and sing along.");
+    expect(html).not.toContain(KARAOKE_UI.echoHelp);
+  });
+
+  it("uses a unique Spanish answer across case, punctuation and phrase units", () => {
+    const [line] = readSongLines({ L: [{
+      s: 1, e: 4, src: "Mañana, MAÑANA sí.", lt: "",
+      wt: ["Mañana,", "MAÑANA", "sí."], w: [[1, 2], [2, 3], [3, 4]],
+      u: [["Mañana, MAÑANA", "", 2], ["sí.", "", 1]],
+    }] }, true);
+    expect(wordGap(line)?.answer).toBe("sí");
+    const repeated = { ...line, src: "Mañana, MAÑANA mañana!", wt: ["Mañana,", "MAÑANA", "mañana!"],
+      u: [["Mañana, MAÑANA", "", 2], ["mañana!", "", 1]] as typeof line.u };
+    expect(wordGap(repeated)).toBeNull();
   });
 
   it("offers word mode and formats speed in the active learner layer", () => {
@@ -122,9 +136,13 @@ describe("Café La Ceiba performance", () => {
     const preview = (row: number) => renderToStaticMarkup(createElement(KaraokeNextLine, { take, row, seconds: 0 }));
     expect(preview(0)).toBe("");
     const gap = wordGap(lines[1])!;
-    expect(preview(1)).not.toContain(gap.answer);
-    expect(preview(1)).toContain("Missing word");
-    expect(preview(1)).toContain('lang="es-MX"');
+    expect(preview(1)).toBe("");
+    const revealed = renderToStaticMarkup(createElement(KaraokeNextLine, {
+      take: { ...take, practice: { ...take.practice, revealed: [1] } }, row: 1, seconds: 0,
+    }));
+    expect(revealed).toContain(lines[1].src);
+    expect(revealed).toContain('lang="es-MX"');
+    expect(revealed).not.toContain("Missing word");
     expect(wordGap(lines[0])).toBeNull();
     const sung = renderToStaticMarkup(createElement(KaraokeStage, {
       take, session: { position: () => 5.29 } as KaraokeSession,

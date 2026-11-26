@@ -13,12 +13,16 @@ export interface WordGap {
 /** One repeatable single-word unit. The source text and every unit must agree with the word clock. */
 export function wordGap(line: SongLine): WordGap | null {
   if (line.part === "translation" || line.wt.length < 3 || !karaokeWordTiming(line)) return null;
+  const tokenKey = (text: string) => text.normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const occurrences = new Map<string, number>();
+  for (const token of line.wt) { const key = tokenKey(token); occurrences.set(key, (occurrences.get(key) ?? 0) + 1); }
   const choices: WordGap[] = [];
   let from = 0;
   for (let unit = 0; unit < line.u.length; unit++) {
     const [text, , count] = line.u[unit];
-    if (!Number.isInteger(count) || count < 1 || line.wt.slice(from, from + count).join(" ") !== text.trim()) return null;
-    if (count === 1) {
+    if (!Number.isInteger(count) || count < 1 || from + count > line.wt.length ||
+      line.wt.slice(from, from + count).join(" ") !== text.trim()) return null;
+    if (count === 1 && occurrences.get(tokenKey(line.wt[from])) === 1) {
       const match = /^([^\p{L}\p{N}]*)([\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*)([^\p{L}\p{N}]*)$/u.exec(line.wt[from]);
       if (match) choices.push({ word: from, unit, prefix: match[1], answer: match[2], suffix: match[3] });
     }

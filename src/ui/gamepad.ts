@@ -54,6 +54,7 @@ const POLICIES: Record<string, Policy> = {
   radio: { rank: 55, first: ".rs-knob", back: ".rs-x" },
   karaoke: { rank: 60, first: `${DEFAULT}, [data-song], select`, back: BACK },
   "karaoke-stage": { rank: 60, first: DEFAULT, back: BACK },
+  "karaoke-more": { rank: 70, first: DEFAULT, back: BACK },
   "phone-ring": { rank: 50, first: DEFAULT },
   street: { rank: 50, first: ".street-choice, .street-line", back: ".street-head button" },
   drawer: { rank: 20, first: "[data-pad-tool=scenarios]" },
@@ -713,6 +714,10 @@ export class GamepadView {
       this.prepareReturn(root, target);
       this.debug.lastAction = "back";
       target.click();
+      this.sync();
+    } else if (kind(root) === "karaoke-stage") {
+      this.debug.lastAction = "back";
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
       this.sync();
     } else if (fallback) {
       this.prepareReturn(root);

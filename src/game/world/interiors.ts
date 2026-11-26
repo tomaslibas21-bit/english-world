@@ -15,6 +15,7 @@ import { Ledges } from "../ledges";
 import { Hop } from "../movement";
 import { radioConfig } from "../../radio/songs";
 import { addKaraokeBooth } from "../karaoke/stage";
+import { KARAOKE_DIRECTION } from "../../content/karaokeCopy";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
  *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
@@ -1005,6 +1006,17 @@ const B: Record<string, () => Interior> = {
       S.done();
     }
     c.g.add(props);
+    if (radioConfig()) {
+      const cue = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.5), new THREE.MeshBasicMaterial({
+        map: textTexture(KARAOKE_DIRECTION, {
+          bg: THEME.karaoke?.panel ?? "#223b52", fg: THEME.karaoke?.stand ?? "#faf5e9", w: 512, h: 128,
+        }), toneMapped: false, alphaTest: 0.5,
+      }));
+      cue.name = "karaoke-wayfinding";
+      // The talavera petals reach z = -2.629. Keep the sign's face clear of the complete tiled counter.
+      cue.position.set(0, 0.70, -2.61);
+      c.g.add(cue);
+    }
     wallPanel(c, menuBoard(["                    small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00", "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50", "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00", "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], "SUNNY CUP · DRINKS"), -3.6, 2.75, -c.d / 2 + 0.2, 4.2, 3.2);
     wallPanel(c, menuBoard(["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75", "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], "FOOD"), 0.9, 2.75, -c.d / 2 + 0.2, 3.2, 2);
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");

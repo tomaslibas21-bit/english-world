@@ -8,6 +8,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { keepRadioLocal, silence } from "./radio-fixtures.mjs";
+import { freezeConfettiBurst } from "./fixtures/confetti.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = new URL(process.env.WORLD_TEST_URL || "http://127.0.0.1:5188");
@@ -28,10 +29,12 @@ const token = "karaoke-pc+fixture &";
 const words = lt ? {
   enter: "Dainuoti karaokę", start: "Pradėti dainą", show: "Rodyti reikšmę", hide: "Slėpti reikšmę",
   back: "Grįžti", mode: "Praktikos būdas", repeat: "Išklausyti eilutę dar kartą",
+  more: "Daugiau", another: "Pasirinkti kitą dainą",
   next: "Tęsti", leave: "Nulipti nuo scenos", missing: "Praleistas žodis", reveal: "Parodyti žodį", speed: "Greitis",
 } : {
   enter: "Sing karaoke", start: "Start song", show: "Show meaning", hide: "Hide meaning",
   back: "Go back", mode: "Practice mode", repeat: "Replay line",
+  more: "More", another: "Choose another song",
   next: "Continue", leave: "Leave stage", missing: "Missing word", reveal: "Reveal word", speed: "Speed",
 };
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
@@ -139,6 +142,12 @@ try {
       await row.scrollIntoViewIfNeeded();
       await press(row);
     };
+    const anotherSong = async (id) => {
+      await press(button(words.more));
+      await press(page.locator(".karaoke-more").getByRole("button", { name: words.another, exact: true }));
+      await page.locator(".karaoke-picker").waitFor();
+      if (id) await choose(id);
+    };
     const pauseAt = (seconds) => page.evaluate(async (at) => {
       const take = window.__ew.radio.store.getState().karaoke;
       await take.seek(at);
@@ -196,6 +205,7 @@ try {
       assert(size && size.height >= 44 && size.y >= 0 && size.y + size.height <= height);
       await press(button(words.start));
       await page.locator(".karaoke-performance").waitFor();
+      assert(await page.evaluate(() => window.__ew.game.rig.cam.position.distanceTo(window.__ew.game.rig.stage.pos) < 0.001));
       assert(Math.abs(await pauseAt(7.1) - 7.1) < 0.15);
       assert(routes.some((request) => request.path === `${lt ? "/karaoke-files" : ""}/songs/data/SG01.json` && request.signed === lt));
       assert(routes.some((request) => request.path.endsWith("/songs/v1/SG01.mp3") && request.signed));
@@ -206,16 +216,30 @@ try {
       });
       assert(await page.evaluate(() => !!window.__ew.game.player.rightHand.getObjectByName("karaoke-hand-mic")));
       await shot("sg01-line");
+      const primaryBefore = await page.locator(".karaoke-transport-primary").boundingBox();
+      if (width <= 600) {
+        const unitText = (await page.locator(".karaoke-current-line .karaoke-units").textContent()).trim().replace(/\s+/g, " ");
+        assert.equal(unitText, texts.get("SG01").L[0].src, "wrapped units preserve their word boundaries");
+      }
       await press(button(words.show));
       const natural = page.locator(".karaoke-natural");
       assert.equal(await natural.textContent(), texts.get("SG01").L[0].lt);
       assert.equal(await natural.getAttribute("lang"), lt ? "lt" : "en");
+      if (width <= 600) {
+        const card = await page.locator(".karaoke-reader").boundingBox();
+        const controls = await page.locator(".karaoke-stage-bottom").boundingBox();
+        assert(card.height <= height * 0.46 + 1);
+        assert(card.y + card.height <= controls.y, "meaning card stays above the controls");
+      }
       await shot("sg01-meaning");
       await press(button(words.hide));
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused");
 
-      await press(button(words.back));
-      await picker.waitFor();
+      await press(button(words.more));
+      await page.keyboard.press("Escape");
+      await page.locator(".karaoke-more").waitFor({ state: "detached" });
+      assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("karaoke-transport-more")), true);
+      await anotherSong("SG01");
       await picker.getByRole("combobox", { name: words.mode }).selectOption("word");
       await press(button(words.start));
       await until(() => window.__ew.radio.store.getState().karaoke?.store.getState().status === "playing");
@@ -265,10 +289,7 @@ try {
         assert.equal(await speed.locator('option[value="0.8"]').count(), 0);
       }
       await shot("slow");
-      await press(button(words.back));
-      await picker.waitFor();
-      await press(picker.locator("[data-pad-back]"));
-      await choose("SV64");
+      await anotherSong("SV64");
       await press(button(words.start));
       await page.locator(".karaoke-performance").waitFor();
       assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().rate), 1);
@@ -277,9 +298,7 @@ try {
       const sv64 = texts.get("SV64").L[0];
       await pauseAt(sv64.s + 0.25);
       assert.equal(await page.locator(".karaoke-current-line .karaoke-accessible").first().textContent(), sv64.src);
-      await press(button(words.back));
-      await picker.waitFor();
-      await press(picker.locator("[data-pad-back]"));
+      await anotherSong();
 
       const echoId = lt ? "SG01" : "SB01", lyric = texts.get(echoId);
       await choose(echoId);
@@ -299,6 +318,14 @@ try {
       const progress = () => page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice);
       await turn.waitFor();
       assert.equal((await progress()).completed, 1);
+      if (width <= 600) {
+        const primary = await page.locator(".karaoke-transport-primary").boundingBox();
+        assert(Math.abs(primary.y - primaryBefore.y) < 1 && Math.abs(primary.height - primaryBefore.height) < 1);
+        const controls = await page.locator(".karaoke-transport-grid > button, .karaoke-transport-grid > .karaoke-rate")
+          .evaluateAll((nodes) => nodes.map((node) => ({ y: Math.round(node.getBoundingClientRect().top), h: node.getBoundingClientRect().height })));
+        assert.equal(new Set(controls.map((control) => control.y)).size, 2);
+        assert(controls.every((control) => control.h >= 44));
+      }
       if (microphone) await button(lt ? "Naudoti mikrofoną šiai eilutei" : "Use microphone for this line").focus();
       await shot("echo-turn");
       if (microphone) {
@@ -350,8 +377,10 @@ try {
       assert.equal(result.total, lyric.L.length);
       assert(result.completed >= 2 && result.completed < result.total);
       assert.equal(await page.evaluate(() => window.__karaokeCheers), 1);
-      if (!reduced) await page.locator(".confetti").waitFor();
-      else assert.equal(await page.locator(".confetti").count(), 0);
+      if (!reduced) {
+        await page.locator(".confetti").waitFor({ state: "attached" });
+        await page.waitForFunction(freezeConfettiBurst);
+      } else assert.equal(await page.locator(".confetti").count(), 0);
       await shot("finish");
       await press(button(words.leave));
       await until(() => window.__ew.store.getState().hud.prompt?.kind === "karaoke");

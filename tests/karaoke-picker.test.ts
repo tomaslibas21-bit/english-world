@@ -49,8 +49,12 @@ describe("the silent song stand", () => {
     expect(html).toContain('G01.adb9ab38.320.webp');
     expect(html.match(/<option[^>]*value="along"[^>]*>/)?.[0]).toContain('selected=""');
     expect(html.match(/<option[^>]*value="echo"[^>]*>/)?.[0]).not.toContain('disabled=""');
-    expect(html).toContain(KARAOKE_UI.echoHelp);
-    expect(render({ detail: "G01", mode: "echo" }).match(/<option[^>]*value="echo"[^>]*>/)?.[0]).toContain('selected=""');
+    expect(html).toContain(KARAOKE_UI.alongHelp);
+    expect(html).not.toContain(KARAOKE_UI.echoHelp);
+    const echo = render({ detail: "G01", mode: "echo" });
+    expect(echo.match(/<option[^>]*value="echo"[^>]*>/)?.[0]).toContain('selected=""');
+    expect(echo).toContain(KARAOKE_UI.echoHelp);
+    expect(echo).not.toContain(KARAOKE_UI.alongHelp);
     const word = render({ detail: "G01", mode: "word" });
     expect(word.match(/<option[^>]*value="word"[^>]*>/)?.[0]).toContain('selected=""');
     expect(word).toContain(KARAOKE_UI.wordHelp);
