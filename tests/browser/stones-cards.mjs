@@ -38,7 +38,7 @@ const { ROAD_UI } = await tsImport("../../src/content/road.ts", import.meta.url)
 const { STREET_WORDS } = await tsImport("../../src/game/street/words.ts", import.meta.url);
 const lithuanian = {
   ...PHRASE_CARD_UI, choice: "Kaip žaisime?", drive: ROAD_UI.drive, score: ROAD_UI.finish,
-  roadSource: ROAD_UI.title, book: "Frazių knygelė", cards: "Mano kortelės",
+  roadSource: ROAD_UI.title, book: pc ? "Frazių knygelė" : "Kuprinė", cards: pc ? "Mano kortelės" : "Išsaugotos kortelės",
   overheard: STREET_WORDS.overheard,
 };
 const ui = learner === "lt" ? lithuanian : {

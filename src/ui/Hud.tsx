@@ -1,6 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
+import { useReviewDay } from "./useReviewDay";
+import { BackpackTool } from "./BackpackTool";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { useBarista } from "../game/barista/store";
@@ -51,9 +53,9 @@ function unreadTextSuffix(unread = 0) {
   return unread ? `, ${unread} neperskaitytos žinutės` : "";
 }
 
-function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
+function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
+    <button className="icon-btn" data-pad-tool={panel} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -63,7 +65,8 @@ function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconN
 /** How many saved cards are due for review today. */
 export function useDueCards(): number {
   const cards = useCards((c) => c.cards);
-  return dueCards(cards, Date.now()).length;
+  const now = useReviewDay();
+  return useMemo(() => dueCards(cards, now).length, [cards, now]);
 }
 
 const TaxiOverlay = lazy(() => import("./Taxi").then(({ TaxiOverlay }) => ({ default: TaxiOverlay })));
@@ -320,7 +323,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   useLayoutEffect(() => {
     if (!folds) setMenuOpen(false);
     else if (panel || (phone && radioOpen)) {
-      closeMenu();
+      if (panel !== "phrasebook") closeMenu();
       if (panel && radioOpen) radio.setOpen(false);
     }
   }, [folds, phone, panel, radioOpen, closeMenu]);
@@ -333,7 +336,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     <ToolButton key="map" icon="map" title={surf ? "Žemėlapis" : "Žemėlapis (M)"} panel="map" hotkey={surf ? undefined : "M"} />,
     <ToolButton key="journal" icon={phone ? "clipboard" : "journal"} title={surf ? "Užduotys" : "Užduotys (J)"} panel="journal" hotkey={surf ? undefined : "J"} />,
     <ToolButton key="phone" icon="smartphone" title={surf ? "Telefonas" : "Telefonas (P)"} panel="phone" hotkey={surf ? undefined : "P"} badge={missedCalls + unread} unread={unread} />,
-    <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
+    <BackpackTool key="phrasebook" due={due} />,
     <ToolButton key="settings" icon="settings" title={surf ? "Nustatymai" : "Nustatymai (Esc)"} panel="settings" />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
   ];
@@ -689,7 +692,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "bench" || prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"

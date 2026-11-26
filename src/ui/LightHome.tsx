@@ -2,7 +2,7 @@ import { ROUTE } from "../content/route";
 // The light mode (no 3D town): the situation list is the home screen, and a tap starts the conversation
 // at once. Face-to-face conversations show their illustrated pictures (SceneBackdrop); calls, and
 // conversations without a picture, a calm call screen (CallBackdrop).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
@@ -14,6 +14,7 @@ import type { SituationMeta } from "../content/types";
 import { sitProgress, stars } from "../state/progress";
 import { Conversation, avatarColor } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
+import { BackpackTool } from "./BackpackTool";
 import { Panels, CHAPTERS, START_WITH } from "./Panels";
 import { useDueCards, COURSE_URL } from "./Hud";
 import { Toasts } from "./Toasts";
@@ -90,8 +91,15 @@ export function LightPlay() {
 }
 
 function LightHome() {
-  const progress = useStore((s) => s.progress);
   const covered = useStore((s) => s.conv.active || !!s.hud.panel);
+  return <div className="lh" data-pad-scope={covered ? undefined : "home"} inert={covered} aria-hidden={covered || undefined}>
+    <LightHomeContents />
+  </div>;
+}
+
+// Opening a panel only covers the catalog. Keep its situation cards mounted and their focus intact.
+const LightHomeContents = memo(function LightHomeContents() {
+  const progress = useStore((s) => s.progress);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
     for (const s of [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
@@ -102,10 +110,9 @@ function LightHome() {
   const isDone = (s: SituationMeta) => sitProgress(progress, s.id).completions > 0;
   const done = ROUTE.filter(isDone).length;
   const totalStars = ROUTE.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
-  const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
+  const open = (panel: "journal" | "settings") => useStore.getState().setHud({ panel });
   const due = useDueCards();
   return (
-    <div className="lh" data-pad-scope={covered ? undefined : "home"} inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">English World</span><span className="lh-town">Maple Harbor</span><span className="lh-town-lt" lang="lt">{TOWN_LT}</span></div>
@@ -113,7 +120,7 @@ function LightHome() {
             <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
             <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title="Grįžti į kursą"><Icon name="home" size={24} /><span>Kursas</span></a>}
-            <button className="lh-tool" onClick={() => open("phrasebook")} title="Frazių knygelė" aria-label={due ? `Frazių knygelė (${due})` : "Frazių knygelė"}><Icon name="bookOpen" size={24} /><span>Frazės</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
+            <BackpackTool due={due} picture />
             <button className="lh-tool" onClick={() => open("journal")} title="Užduotys" aria-label="Užduotys"><Icon name="journal" size={24} /><span>Užduotys</span></button>
             <button className="lh-tool" onClick={() => open("settings")} title="Nustatymai" aria-label="Nustatymai"><Icon name="settings" size={24} /><span>Nustatymai</span></button>
           </nav>
@@ -160,9 +167,8 @@ function LightHome() {
           <span>Vaikščiok po Maple Harbor ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.</span>
         </footer>
       </div>
-    </div>
   );
-}
+});
 
 function SitCard({ s }: { s: SituationMeta }) {
   const progress = useStore((st) => st.progress);

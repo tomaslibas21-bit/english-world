@@ -311,7 +311,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {received} {KIND[kind].accusative}</div>}
-        {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
+        {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių užrašinėje: {newExpressions.length}</div>}
       </div>}
       {completed && Ending && <Suspense fallback={null}><Ending /></Suspense>}
       {!baristaOffer && modeAction}
@@ -459,6 +459,7 @@ function groupLines(lines: TranscriptLine[]): TranscriptLine[][] {
 }
 
 function NpcGroup({ lines, speakingId, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speakingId: number | null; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
+  const situationId = useStore((s) => s.conv.sitId);
   const npc = NPCS[lines[0].npc!];
   const replay = (slow: boolean) => void replayNpc(lines, slow);
   return (
@@ -470,7 +471,7 @@ function NpcGroup({ lines, speakingId, lt, ipa, nat, reveal }: { lines: Transcri
       <div className="bubble">
         {lines.map((l) => (
           <div className={"bubble-part" + (l.id === speakingId ? " speaking" : "")} key={l.id}>
-            <Interlinear s={l.sentence!} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} natTip />
+            <Interlinear s={l.sentence!} source={{ situationId, speakerId: l.npc }} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} natTip />
           </div>
         ))}
       </div>
@@ -688,6 +689,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 }
 
 function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
+  const situationId = useStore((s) => s.conv.sitId);
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
     const replay = (slow: boolean) => void replayNpc([l], slow);
@@ -699,7 +701,7 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
         </div>
         <div className="bubble">
           <div className={"bubble-part" + (speaking ? " speaking" : "")}>
-            <Interlinear s={l.sentence} lt={lt} ipa={ipa} nat={nat} natTip />
+            <Interlinear s={l.sentence} source={{ situationId, speakerId: l.npc }} lt={lt} ipa={ipa} nat={nat} natTip />
           </div>
         </div>
       </div>

@@ -61,7 +61,7 @@ async function checkOpen(page, width, height) {
   const radio = await radioButton.count() ? await radioButton.getAttribute("title") : null;
   const course = await page.locator(".toolbar .course-link").count();
   assert.deepEqual(ordered.map((button) => button.title), [
-    "Visos situacijos", "Žemėlapis (M)", "Užduotys (J)", "Telefonas (P)", "Frazių knygelė", "Nustatymai (Esc)",
+    "Visos situacijos", "Žemėlapis (M)", "Užduotys (J)", "Telefonas (P)", "Kuprinė", "Nustatymai (Esc)",
     ...(help ? ["Kaip žaisti?"] : []), ...(radio ? [radio] : []), "Lengvas režimas", ...(course ? ["Grįžti į kursą"] : []),
   ]);
 }

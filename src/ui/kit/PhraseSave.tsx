@@ -5,7 +5,7 @@ import { cardKey, sentenceInput, useCards, type CardInput } from "../../state/ca
 import { Icon } from "../icons";
 import "./phraseSave.css";
 
-export type PhraseSource = Pick<CardInput, "situationId" | "sourceLabel">;
+export type PhraseSource = Pick<CardInput, "situationId" | "sourceLabel" | "speakerId">;
 export type PhraseSaveLabels = { add: string; inCards: string };
 
 export type PhraseSaveProps = PhraseSource & {
@@ -22,7 +22,7 @@ function saveKey(event: KeyboardEvent) {
   if (event.key === " " || event.key === "Enter") event.stopPropagation();
 }
 
-export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, labels, iconOnly, stableLabel, describedBy }: PhraseSaveProps) {
+export function PhraseSave({ sentence, situationId, sourceLabel, speakerId, onSaved, popover, labels, iconOnly, stableLabel, describedBy }: PhraseSaveProps) {
   const key = cardKey(sentence.en);
   const saved = useCards((cards) => cards.keys.has(key));
   const words = labels ?? PHRASE_CARD_UI;
@@ -39,7 +39,7 @@ export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popove
       event.stopPropagation();
       const cards = useCards.getState();
       const alreadySaved = cards.keys.has(key);
-      if (cards.add({ ...sentenceInput(sentence, situationId), sourceLabel }) && !alreadySaved) onSaved?.();
+      if (cards.add({ ...sentenceInput(sentence, situationId), sourceLabel, speakerId }) && !alreadySaved) onSaved?.();
     }}>{icon}{!iconOnly && (stableLabel ? <span className="phrase-save-label">
       <span>{label}</span>
       <span aria-hidden="true">{saved ? words.add : words.inCards}</span>

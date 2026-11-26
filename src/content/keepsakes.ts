@@ -26,107 +26,107 @@ const black = 0x2a2e36;
 
 export const KIND = {
   cue_chalk: {
-    nominative: "Biliardo kreida", accusative: "biliardo kreidą",
+    en: "Pool chalk", nominative: "Biliardo kreida", accusative: "biliardo kreidą",
     shape: [box(blue, 4.8, 4.6, 4.8), box(0x8cc8e6, 4.8, 0.4, 4.8, 0, 2.4)],
   },
   passport_stamp: {
-    nominative: "Antspaudas pase", accusative: "antspaudą pase",
+    en: "Passport stamp", nominative: "Antspaudas pase", accusative: "antspaudą pase",
     shape: [box(darkBlue, 14, 10, 0.7), box(white, 6.3, 9, 0.25, -3.4, 0, 0.4),
       box(white, 6.3, 9, 0.25, 3.4, 0, 0.4), loop(red, 1.8, 0.2, 3.6, 0.8, 0.57)],
   },
   boarding_pass: {
-    nominative: "Įlaipinimo talonas", accusative: "įlaipinimo taloną",
+    en: "Boarding pass", nominative: "Įlaipinimo talonas", accusative: "įlaipinimo taloną",
     shape: [box(white, 14, 6, 0.22), box(blue, 3, 6, 0.28, 5.5), box(blue, 6, 0.6, 0.28, -2, 1.2)],
   },
   baggage_tag: {
-    nominative: "Bagažo kvitas", accusative: "bagažo kvitą",
+    en: "Baggage claim ticket", nominative: "Bagažo kvitas", accusative: "bagažo kvitą",
     shape: [box(0xed852d, 5, 9, 0.45, 0, -3.5), loop(white, 2, 0.25, 0, 2.5), box(white, 3.5, 2, 0.48, 0, -4.5)],
   },
   ticket: {
-    nominative: "Bilietas", accusative: "bilietą",
+    en: "Ticket", nominative: "Bilietas", accusative: "bilietą",
     shape: [box(0xf3cb52, 12, 5.5, 0.24), box(0x976925, 0.5, 5.5, 0.28, 3), box(white, 4, 0.6, 0.28, -2, 0.7)],
   },
   room_key: {
-    nominative: "Kambario raktas", accusative: "kambario raktą",
+    en: "Room key", nominative: "Kambario raktas", accusative: "kambario raktą",
     shape: [box(0x855533, 4.5, 6, 1.2, -2, 2, 0, -0.2), loop(gold, 1.6, 0.33, 0.5, -0.6),
       box(gold, 1.3, 7, 0.55, 1.4, -4.8, 0, 0.17), box(gold, 2.7, 1.2, 0.55, 2.6, -7)],
   },
   home_key: {
-    nominative: "Buto raktas", accusative: "buto raktą",
+    en: "Apartment key", nominative: "Buto raktas", accusative: "buto raktą",
     shape: [loop(silver, 2.4, 0.34, 0, 2.2), box(silver, 3.4, 2.5, 0.55, 0, -1.5),
       box(silver, 1.3, 6.5, 0.55, 0, -5.2), box(silver, 2.5, 1.3, 0.55, 0.6, -7)],
   },
   car_key: {
-    nominative: "Automobilio raktelis", accusative: "automobilio raktelį",
+    en: "Car key", nominative: "Automobilio raktelis", accusative: "automobilio raktelį",
     shape: [box(black, 4.5, 7.5, 1.6), box(silver, 1.5, 3.3, 0.55, 0, -5.1),
       box(0x6a7179, 2.5, 3.4, 0.25, 0, 0.7, 0.85)],
   },
   map: {
-    nominative: "Miesto žemėlapis", accusative: "miesto žemėlapį",
+    en: "Town map", nominative: "Miesto žemėlapis", accusative: "miesto žemėlapį",
     shape: [box(0x84bda1, 4.6, 10, 0.22, -4.5, 0.3, 0, 0.12),
       box(white, 4.6, 10, 0.22), box(0x7ab5d9, 4.6, 10, 0.22, 4.5, -0.3, 0, -0.12),
       box(gold, 13.3, 0.7, 0.3, 0, 0.6, 0, 0.1)],
   },
   coffee_cup: {
-    nominative: "Kavos puodelis", accusative: "kavos puodelį",
+    en: "Coffee cup", nominative: "Kavos puodelis", accusative: "kavos puodelį",
     shape: [cylinder(white, 4, 2.8, 10, 1), cylinder(paper, 3.8, 3.2, 4.4, 0.8),
       cylinder(0x473329, 3.8, 4.3, 1.4, 6.4)],
   },
   receipt: {
-    nominative: "Kvitas", accusative: "kvitą",
+    en: "Receipt", nominative: "Kvitas", accusative: "kvitą",
     shape: [box(white, 5, 14, 0.18), box(0xa4a2a0, 2.7, 0.45, 0.22, 0, 3),
       box(0xa4a2a0, 2.7, 0.45, 0.22, 0, 1), box(0xa4a2a0, 1.6, 0.45, 0.22, -0.55, -2)],
   },
   shopping_bag: {
-    nominative: "Pirkinių maišelis", accusative: "pirkinių maišelį",
+    en: "Shopping bag", nominative: "Pirkinių maišelis", accusative: "pirkinių maišelį",
     shape: [box(paper, 10, 10, 4.7, 0, -6.5), loop(0x845937, 2.6, 0.32, 0, -0.7, 1.7),
       loop(0x845937, 2.6, 0.32, 0, -0.7, -1.7)],
   },
   business_card: {
-    nominative: "Vizitinė kortelė", accusative: "vizitinę kortelę",
+    en: "Business card", nominative: "Vizitinė kortelė", accusative: "vizitinę kortelę",
     shape: [box(white, 10, 6, 0.26), box(darkBlue, 3, 0.6, 0.3, -2, 1), box(blue, 5, 0.4, 0.3, -1, -1)],
   },
   badge: {
-    nominative: "Darbuotojo kortelė", accusative: "darbuotojo kortelę",
+    en: "Employee badge", nominative: "Darbuotojo kortelė", accusative: "darbuotojo kortelę",
     shape: [box(blue, 7, 10, 0.55, 0, -2), box(white, 5.7, 6.6, 0.59, 0, -2.8),
       box(silver, 1.8, 2.6, 0.75, 0, 3.8), box(darkBlue, 2.7, 0.55, 0.62, 0, -3.4)],
   },
   note: {
-    nominative: "Raštelis", accusative: "raštelį",
+    en: "Note", nominative: "Raštelis", accusative: "raštelį",
     shape: [box(0xffdf63, 9, 9, 0.26), box(0xa28746, 5, 0.36, 0.3, -0.5, 1.5),
       box(0xa28746, 3.3, 0.36, 0.3, -1.35, -0.3)],
   },
   flower: {
-    nominative: "Gėlė", accusative: "gėlę",
+    en: "Flower", nominative: "Gėlė", accusative: "gėlę",
     shape: [cylinder(green, 0.35, 0.4, 11, -0.4), sphere(red, 2.5, 6, 0.8), box(green, 3.6, 1.3, 0.65, 1.2, 0.6, 0, 0.55)],
   },
   balloon: {
-    nominative: "Balionas", accusative: "balioną",
+    en: "Balloon", nominative: "Balionas", accusative: "balioną",
     shape: [cylinder(white, 0.18, 0.18, 18, 9), cylinder(red, 0.55, 1, 1.5, 18),
       sphere(red, 6.6, 25.8, 1.16)],
   },
   water_bottle: {
-    nominative: "Gertuvė", accusative: "gertuvę",
+    en: "Water bottle", nominative: "Gertuvė", accusative: "gertuvę",
     shape: [cylinder(0x328f95, 2.5, 2.7, 11, 0), cylinder(blue, 2.7, 2.7, 2.7, 6.2), cylinder(silver, 1.05, 1.05, 1.1, 8)],
   },
   prescription: {
-    nominative: "Receptas", accusative: "receptą",
+    en: "Prescription", nominative: "Receptas", accusative: "receptą",
     shape: [box(white, 10, 13, 0.22), box(green, 4.1, 1.2, 0.26, 0, 2.3), box(green, 1.2, 4.1, 0.26, 0, 2.3)],
   },
   wallet: {
-    nominative: "Piniginė", accusative: "piniginę",
+    en: "Wallet", nominative: "Piniginė", accusative: "piniginę",
     shape: [box(0x74472d, 11, 7.5, 1.45), box(0x9b633e, 11.1, 2.9, 0.5, 0, 1.8, 0.75),
       box(gold, 0.95, 0.95, 0.55, 0, 0.3, 0.85)],
   },
   slate_pebble: {
-    nominative: "Mažas skalūno akmenėlis", accusative: "mažą skalūno akmenėlį",
+    en: "Small slate pebble", nominative: "Mažas skalūno akmenėlis", accusative: "mažą skalūno akmenėlį",
     shape: [sphere(0x59656e, 2.4, 0, 0.48)],
   },
   oak_leaf: {
-    nominative: "Ąžuolo lapas", accusative: "ąžuolo lapą",
+    en: "Oak leaf", nominative: "Ąžuolo lapas", accusative: "ąžuolo lapą",
     shape: [box(0x77502a, 0.45, 8, 0.2), sphere(gold, 2, 1.7, 1.15), sphere(gold, 2.4, -0.7, 0.9)],
   },
-} satisfies Record<string, { nominative: string; accusative: string; shape: KeepsakePart[] }>;
+} satisfies Record<string, { en: string; nominative: string; accusative: string; shape: KeepsakePart[] }>;
 
 export type KeepsakeKind = keyof typeof KIND;
 

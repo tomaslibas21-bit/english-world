@@ -17,7 +17,7 @@ import type { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
+import { VISITOR_BENCH, OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
 import { HARBOR_SURF_PLATE } from "./world/harborSurf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
@@ -253,7 +253,8 @@ export class Game implements GameApi {
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
+  private benchReturn: THREE.Vector3 | null = null;
+  private nearest: { kind: "bench" | "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode" | "cave-entry" | "tree" | "glyph"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private billiards!: BilliardsMode;
@@ -814,6 +815,10 @@ export class Game implements GameApi {
           (state.conv.active && !previous.conv.active) || (state.screen !== "play" && previous.screen === "play"))) {
         this.pad.cancel();
       }
+      if (state.hud.panel === "phrasebook" && previous.hud.panel !== "phrasebook" && !this.rides.riding && !this.modes.active) {
+        this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
+        this.gaitOn = false; this.keys.clear(); this.stepOut = 0;
+      }
       if (state.conv.active !== previous.conv.active || state.hud.panel !== previous.hud.panel || state.hud.phoneCard !== previous.hud.phoneCard) {
         this.reactions.observe(state.conv.active);
       }
@@ -1097,6 +1102,7 @@ export class Game implements GameApi {
     if (id === CAVE_ZONE && !this.caveZone) return this.openCave(PREFERRED_COVE_DOOR, spawn, instant, false, onEntered);
     const z = this.getZone(id);
     if (!z || (!instant && this.transitioning)) return;
+    this.leaveBench();
     if (id !== CAVE_ZONE) this.caveTravel.cancel();
     if (this.modes.owns("surf")) this.modes.exit(true);
     this.pad?.cancel();
@@ -1642,6 +1648,7 @@ export class Game implements GameApi {
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player || this.rides.water?.suppressInput) return;
+    this.leaveBench();
     if (this.modes.input({ kind: "jump" })) return;
     // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
     if (this.rides.riding) return;
@@ -2307,6 +2314,14 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ interaction
 
+  private leaveBench() {
+    if (!this.benchReturn) return;
+    this.player.root.position.copy(this.benchReturn);
+    this.player.setAnim("idle");
+    this.player.seatY = 0.5;
+    this.benchReturn = null;
+  }
+
   interact(repeat = false) {
     if (this.transitioning || this.caveTravel?.pending || useStore.getState().hud.glyph) return;
 
@@ -2336,7 +2351,24 @@ export class Game implements GameApi {
     if (!this.nearest) this.updateHud();
     const n = this.nearest;
     if (!n) return;
-    if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
+    if (n.kind === "bench") {
+      if (repeat || useStore.getState().hud.panel || this.session?.active) return;
+      if (this.benchReturn) this.leaveBench();
+      else {
+        // The reader occupies the west half. The east seat faces south.
+        const p = this.player.root.position;
+        if (this.zone.id !== "town" || Math.hypot(p.x - VISITOR_BENCH.x, p.z - VISITOR_BENCH.z) > 2) return;
+        this.benchReturn = p.clone();
+        this.cancelManualPath();
+        this.gaitOn = false; this.stepOut = 0;
+        p.set(VISITOR_BENCH.x + .45, 0, VISITOR_BENCH.z);
+        this.player.root.rotation.y = this.heading = 0;
+        this.player.seatY = .55;
+        this.player.setAnim("sit");
+      }
+      this.updateHud();
+    }
+    else if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -2689,6 +2721,7 @@ export class Game implements GameApi {
   }
 
   private startSession(sit: SituationDef, actor: TalkActor | null, introOverride?: string) {
+    this.leaveBench();
     this.townTalk?.release();
     this.stopNaturalTalk(false);
     this.modes.exit(true);
@@ -3709,6 +3742,7 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    this.leaveBench();
     if (this.modes.owns("surf")) this.setJoystick(0, 0);
     // A key the workout takes over must be released before its repeats can move the player again.
     if (this.modes.owns("gym")) for (const key of this.keys) this.gymHeldKeys.add(key);
@@ -3791,6 +3825,10 @@ export class Game implements GameApi {
     // camera's own swing behind the player doesn't turn it, the player's drag does); the stick pushed far: a run
     const source = this.inputStick();
     const stick = (!blocked || through) && (source.x !== 0 || source.y !== 0);
+    if (this.benchReturn) {
+      if (!blocked && (ix || iz || stick || this.autoPath?.length)) this.leaveBench();
+      else { this.updateModePose(dt, this.heading); return; }
+    }
     const jm = Math.hypot(source.x, source.y);
     this.joyRun = stick && (jm > 0.9 || (this.joyRun && jm > 0.8));
     const turned = this.rig.manualTurn;
@@ -4335,6 +4373,11 @@ export class Game implements GameApi {
         }
       }
       if (!this.zone.interior) {
+        // The normal, throttled town prompt; the backpack itself has no world hit target.
+        if (!best && (this.benchReturn || (!this.hop.air && Math.hypot(p.x - VISITOR_BENCH.x, p.z - VISITOR_BENCH.z) <= 2))) {
+          const label = this.benchReturn ? "Atsistoti" : "Prisėsti ant suolelio";
+          best = { kind: "bench", id: label, label, prompt: { label, kind: "bench" } };
+        }
         for (const dd of this.town.doors) {
           const d = Math.hypot(dd.outX - p.x, dd.outZ - p.z);
           if (d < 3 && d < bd && !this.swimming) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
@@ -4392,7 +4435,7 @@ export class Game implements GameApi {
 
   private savePlace() {
     if (!this.player || !this.zone || this.surf?.active || this.caveTravel?.pending) return;
-    const p = this.player.root.position;
+    const p = this.benchReturn ?? this.player.root.position;
     const safe = this.rides.water?.safeSave();
     if (!safe && (this.rides.water?.wet || this.rides.water?.returning)) return;
     useStore.getState().updateProgress((pr) => {

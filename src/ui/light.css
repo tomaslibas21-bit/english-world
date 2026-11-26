@@ -82,7 +82,8 @@ body.light-mode { background: #f5efe5; }
   .lh-3d .ui-icon { width: 20px; height: 20px; }
   .lh-3d > span { font-size: calc(13px * var(--scale)); }
   .lh-tool:not(.lh-3d) { width: 44px; }
-  .lh-tool:not(.lh-3d) > span { display: none; }
+  .lh-tool:not(.lh-3d) > span:not(.due-badge) { display: none; }
+  .lh-tool.phrasebook-tool { padding-inline: 0; }
 }
 @media (min-width: 761px) { .lh-foot { display: none; } }
 @media (max-width: 480px) {

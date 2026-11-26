@@ -206,8 +206,8 @@ async function main(run) {
   assert.deepEqual(restored.cave, saved.cave);
   assert.equal(restored.course, course);
   assert.equal(restored.visits, saved.visits);
-  await toolbar(run, "Frazių knygelė");
-  await run.press(run.page.getByRole("tab", { name: "Mano kortelės" }));
+  await toolbar(run, "Kuprinė");
+  await run.press(run.page.getByRole("tab", { name: /^Išsaugotos kortelės/ }));
   const row = run.page.locator(".cd-row").filter({ has: run.page.getByText(TIDE_LINE[0], { exact: true }) });
   await surface(run, row, TIDE_LINE);
   assert.equal(await row.count(), 1);

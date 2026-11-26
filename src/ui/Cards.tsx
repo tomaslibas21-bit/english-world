@@ -5,14 +5,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
-import { STREET_WORDS } from "../game/street/words";
 import { useCards, unitInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
 import { PHRASE_CARD_UI } from "../content/phrase-card-ui";
-import { coachVoice } from "../content/voices";
+import { NotebookSound } from "./NotebookSound";
+import { sourceName, unitRange } from "./notebookData";
+import { useReviewDay } from "./useReviewDay";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { SitIcon } from "./SitIcon";
-import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { PhraseSave, type PhraseSource } from "./kit/PhraseSave";
 import { ltCount } from "./lt";
@@ -220,12 +220,12 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
           {!dash && (wordIn
             ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.inCards}</span>
             : <button className="btn small" onClick={() => {
-              if (useCards.getState().add({ ...word, sourceLabel: source?.sourceLabel })) setSaved(true);
+              if (useCards.getState().add({ ...word, sourceLabel: source?.sourceLabel, speakerId: source?.speakerId })) setSaved(true);
             }}><Icon name="plus" size={16} />{" " + PHRASE_CARD_UI.add}</button>)}
-          <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel}
+          <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel} speakerId={source?.speakerId}
             popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
         </div>
-        {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
+        {saved && <div className="wpop-hint">Kortelę rasi kuprinėje.</div>}
       </div>
     </div>,
     portalHost ?? document.body,
@@ -235,14 +235,16 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
 // ---------------------------------------------------------------------------------------------
 // the cards tab
 
-const ROUND = 20;
+export const startReview = () => dueCards(useCards.getState().cards, Date.now()).slice(0, 20).map((c) => c.id);
+
+export function nextReviewLabel(cards: Card[], now: number) {
+  const next = nextDue(cards, now);
+  return next == null ? "" : "Kitas kartojimas · " + new Date(next).toLocaleDateString("lt-LT", { month: "long", day: "numeric", year: "numeric" });
+}
 
 function whenLt(days: number): string {
   return days <= 0 ? "šiandien" : days === 1 ? "rytoj" : days === 2 ? "poryt" : `po ${days} d.`;
 }
-
-const listen = (text: string) => { audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, text); };
-const cardSay = (c: Card) => (c.en === c.sentence.en && c.sentence.say ? c.sentence.say : c.en);
 
 function Pips({ box }: { box: number }) {
   return (
@@ -262,99 +264,65 @@ function download(name: string, text: string) {
   } catch { /* nothing to do: the browser blocked it */ }
 }
 
-/** „Mano kortelės“: today's review, then every saved card (newest first). */
-export function MyCards() {
-  const cards = useCards((c) => c.cards);
-  const [round, setRound] = useState<{ n: number; ids: string[] } | null>(null);
-  const now = Date.now();
-  const due = dueCards(cards, now);
-  const start = () => setRound((r) => ({ n: (r?.n ?? 0) + 1, ids: dueCards(useCards.getState().cards, Date.now()).slice(0, ROUND).map((c) => c.id) }));
-  if (round) return <Review key={round.n} ids={round.ids} onExit={() => setRound(null)} onMore={start} />;
-
-  if (!cards.length) {
-    return (
-      <div className="cards-empty">
-        <span className="cards-empty-ico"><Glyph name="cards" size={30} /></span>
-        <b>Kol kas kortelių nėra</b>
-        <p>Pokalbyje paspausk anglišką žodį – pamatysi jo vertimą ir galėsi išsaugoti jį ar visą sakinį. Frazes iš knygelės pridėsi mygtuku <span className="cards-plus"><Glyph name="plus" size="1em" /></span>.</p>
-      </div>
-    );
-  }
-  const next = nextDue(cards, now);
-  const list = [...cards].sort((a, b) => b.createdAt - a.createdAt);
-  return (
-    <div className="my-cards">
-      <div className={"cards-hero" + (due.length ? "" : " done")}>
-        <span className="hero-ico">{due.length ? <Glyph name="cards" size={26} /> : <Icon name="checkCircle" size={26} />}</span>
-        <div className="hero-txt">
-          {due.length ? (
-            <><b>Šiandien kartoti: {due.length}</b><span>Pamatysi lietuviškai – pasakyk angliškai ir pasitikrink.</span></>
-          ) : (
-            <><b>Šiandien viskas pakartota!</b><span>{next ? `Kitos kortelės laukia ${whenLt(daysUntil(next, now))}.` : "Puikiai sekasi."}</span></>
-          )}
-        </div>
-        {due.length > 0 && <button className="btn" onClick={start}><Icon name="play" size={15} /> Kartoti</button>}
-      </div>
-      <h3 className="cards-h">Visos kortelės · {cards.length}</h3>
-      <div className="cd-list">{list.map((c) => <CardRow key={c.id} c={c} now={now} />)}</div>
-      <button className="cards-export" onClick={() => download("english-world-korteles.json", exportCardsJSON(useCards.getState().cards))}>
-        <Glyph name="download" size={16} /> Atsisiųsti korteles (JSON)
-      </button>
-    </div>
-  );
+export function ExportCards() {
+  return <button className="cards-export" onClick={() => download("english-world-korteles.json", exportCardsJSON(useCards.getState().cards))}>
+    <Glyph name="download" size={16} /> Atsisiųsti korteles (JSON)
+  </button>;
 }
 
-function CardRow({ c, now }: { c: Card; now: number }) {
+export function CardTools({ c, now, afterRemove }: { c: Card; now: number; afterRemove: () => void }) {
   const [confirm, setConfirm] = useState(false);
   useEffect(() => { if (!confirm) return; const t = setTimeout(() => setConfirm(false), 4000); return () => clearTimeout(t); }, [confirm]);
   const days = daysUntil(c.due, now);
   return (
-    <div className="cd-row">
-      <div className="cd-txt">
-        <div className="cd-en" lang="en">{c.en}</div>
-        <div className="cd-lt" lang="lt">{c.lt}</div>
-      </div>
+    <div className="nb-card-tools">
       <div className="cd-meta">
         <Pips box={c.box} />
         <span className={"cd-when" + (days <= 0 ? " now" : "")}>{whenLt(days)}</span>
       </div>
-      <button className="cd-btn" onClick={() => listen(cardSay(c))} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
       {confirm
-        ? <button className="cd-btn del sure" onClick={() => useCards.getState().remove(c.id)} aria-label="Taip, ištrinti">Ištrinti?</button>
+        ? <button className="cd-btn del sure" onClick={() => { useCards.getState().remove(c.id); afterRemove(); }} aria-label="Taip, ištrinti">Ištrinti?</button>
         : <button className="cd-btn del" onClick={() => setConfirm(true)} title="Ištrinti kortelę" aria-label="Ištrinti kortelę"><Glyph name="trash" size={19} /></button>}
     </div>
   );
 }
 
 /** The English of the source sentence with the card's words marked. */
-function marked(sentence: string, part: string): ReactNode {
-  const i = part ? sentence.toLowerCase().indexOf(part.toLowerCase()) : -1;
-  if (i < 0) return sentence;
-  return <>{sentence.slice(0, i)}<mark>{sentence.slice(i, i + part.length)}</mark>{sentence.slice(i + part.length)}</>;
+export function marked(sentence: string, part: string): ReactNode {
+  const range = unitRange(sentence, part);
+  if (!range) return sentence;
+  return <>{sentence.slice(0, range[0])}<mark>{sentence.slice(...range)}</mark>{sentence.slice(range[1])}</>;
 }
 
 /** One round: the Lithuanian → try to say it → reveal → „Mokėjau“ (box up) or „Dar kartą“ (box 1;
  *  seen again at the end of the round, which doesn't change its schedule again). */
-function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; onMore: () => void }) {
+export function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; onMore: () => void }) {
   const cards = useCards((c) => c.cards);
   const [queue, setQueue] = useState(ids);
   const [pos, setPos] = useState(0);
-  const [shown, setShown] = useState(false);
+  const [revealed, setRevealed] = useState<number | null>(null);
+  const today = useReviewDay();
   const [stats, setStats] = useState({ knew: 0, again: 0 });
   const failed = useRef(new Set<string>());
   const repeats = useRef(new Map<string, number>());
   const handled = useRef(-1);
   const focusRef = useRef<HTMLButtonElement>(null);
-  const byId = new Map(cards.map((c) => [c.id, c]));
+  const byId = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
   let p = pos;
   while (p < queue.length && !byId.has(queue[p])) p++; // deleted meanwhile (another tab)
   const card = p < queue.length ? byId.get(queue[p])! : null;
+  const activeRow = useRef<HTMLLIElement>(null);
+  useLayoutEffect(() => {
+    if (activeRow.current?.getClientRects().length) activeRow.current.scrollIntoView({ block: "nearest" });
+  }, [p, card?.id]);
+  const shown = p === revealed;
   useEffect(() => { focusRef.current?.focus({ preventScroll: true }); }, [p, shown]);
 
   const answer = (knew: boolean) => {
     if (!card || handled.current === p) return; // a double tap answers once
     handled.current = p;
     const id = card.id;
+    if (!useCards.getState().cards.some((c) => c.id === id)) { setPos(p + 1); return; }
     if (!failed.current.has(id)) {
       useCards.getState().answer(id, knew);
       setStats((s) => (knew ? { ...s, knew: s.knew + 1 } : { ...s, again: s.again + 1 }));
@@ -362,63 +330,86 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
     }
     const n = repeats.current.get(id) ?? 0;
     if (!knew && n < 2) { repeats.current.set(id, n + 1); setQueue((q) => [...q, id]); }
-    setShown(false);
+    setRevealed(null);
     setPos(p + 1);
   };
 
+  let page: ReactNode;
   if (!card) {
     const done = stats.knew + stats.again;
-    const more = dueCards(cards, Date.now()).length;
-    return (
+    const more = dueCards(cards, today).length;
+    page = (
       <div className="rv-done">
         <div className="rv-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>
         <b>{more ? "Puiku!" : "Šiandien viskas!"}</b>
         <p>Pakartojai {done} {ltCount(done, "kortelę", "korteles", "kortelių")}.{done > 0 && <> Mokėjai – {stats.knew}, dar kartą – {stats.again}.</>}</p>
+        {!more && <p>{nextReviewLabel(cards, today)}</p>}
         <div className="rv-done-acts">
           {more > 0 && <button className="btn" onClick={onMore} ref={focusRef}><Icon name="play" size={15} /> Kartoti dar ({more})</button>}
           <button className={"btn " + (more ? "ghost" : "soft")} onClick={onExit} ref={more ? undefined : focusRef}>Grįžti į korteles</button>
         </div>
       </div>
     );
-  }
-
-  const sit = SITUATION_BY_ID[card.situationId];
-  const isSentence = cardKey(card.en) === cardKey(card.sentence.en);
-  const long = card.lt.length > 42 || card.en.length > 42;
-  return (
-    <div className="review">
-      <div className="rv-top">
-        <button className="btn ghost small" onClick={onExit}><Icon name="arrowLeft" size={16} /> Baigti</button>
-        <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
-        <span className="rv-count" aria-label={`Kortelė ${p + 1} iš ${queue.length}`}>{p + 1}/{queue.length}</span>
-      </div>
-      <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")} onClick={() => !shown && setShown(true)}>
-        <div className="rv-label">Pasakyk angliškai{sit ? <span className="rv-sit"> · <SitIcon id={sit.id} size="1.15em" />{"\u00a0"}{sit.title.lt}</span> : card.situationId === "street" ? <span className="rv-sit"> · {STREET_WORDS.cards}{card.sourceLabel && ` · ${card.sourceLabel}`}</span> : null}</div>
-        <div className="rv-lt" lang="lt">{card.lt}</div>
-        {shown ? (
-          <div className="rv-answer">
-            <div className="rv-en-row">
-              <span className="rv-en" lang="en">{card.en}</span>
-              <button className="rv-play" onClick={(e) => { e.stopPropagation(); listen(cardSay(card)); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={21} /></button>
-            </div>
-            {card.ipa && <div className="rv-ipa">{card.ipa}</div>}
-            {!isSentence && (
-              <div className="rv-src">
-                <div className="rv-src-en" lang="en">{marked(card.sentence.en, card.en)}</div>
-                <div className="rv-src-lt" lang="lt">{card.sentence.lt}</div>
+  } else {
+    const sit = Object.hasOwn(SITUATION_BY_ID, card.situationId) ? SITUATION_BY_ID[card.situationId] : undefined;
+    const source = sourceName(card.situationId, card.sourceLabel);
+    const isSentence = cardKey(card.en) === cardKey(card.sentence.en);
+    const ordinal = ids.indexOf(card.id) + 1;
+    const retries = queue.slice(ids.length).filter((id) => byId.has(id));
+    const retryTurn = queue.slice(ids.length, p + 1).filter((id) => byId.has(id)).length;
+    const retryLabel = retryTurn ? `Pakartojimas ${retryTurn}/${retries.length}` :
+      `${retries.length} ${ltCount(retries.length, "pakartojimas", "pakartojimai", "pakartojimų")}`;
+    const long = card.lt.length > 42 || card.en.length > 42;
+    page = (
+      <div className="review">
+        <div className="rv-top">
+          <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
+          <span className="rv-count" role="status" aria-atomic="true" aria-label={`Kortelė ${ordinal} iš ${ids.length}${retries.length ? " · " + retryLabel : ""}`}>
+            {ordinal}/{ids.length}{retries.length > 0 && <span className="rv-retries"> · {retryLabel}</span>}
+          </span>
+        </div>
+        <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")}>
+          <div className="rv-label">Pasakyk angliškai{source && <span className="rv-sit"> · {sit && <SitIcon id={sit.id} size="1.15em" />} {source}</span>}</div>
+          <div className="rv-lt" lang="lt">{card.lt}</div>
+          {shown ? (
+            <div className="rv-answer">
+              <div className="rv-en-row">
+                <span className="rv-en" lang="en">{card.en}</span>
               </div>
-            )}
+              <NotebookSound key={card.id} line={card} />
+              {card.ipa && <div className="rv-ipa">{card.ipa}</div>}
+              {!isSentence && (
+                <div className="rv-src">
+                  <div className="rv-src-en" lang="en">{marked(card.sentence.en, card.en)}</div>
+                  <div className="rv-src-lt" lang="lt">{card.sentence.lt}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setRevealed(p); }}>Rodyti atsakymą</button>
+          )}
+        </div>
+        {shown && (
+          <div className="rv-acts">
+            <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> Kartoti dar kartą</button>
+            <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> Pažymėti kaip išmoktą</button>
           </div>
-        ) : (
-          <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setShown(true); }}>Rodyti atsakymą</button>
         )}
       </div>
-      {shown && (
-        <div className="rv-acts">
-          <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> Dar kartą</button>
-          <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> Mokėjau</button>
-        </div>
-      )}
-    </div>
-  );
+    );
+  }
+
+  return <>
+    <div className="nb-index"><ol className="nb-round-index">
+      {ids.map((id, i) => {
+        const item = byId.get(id);
+        if (!item) return null;
+        const current = id === card?.id;
+        return <li key={id} value={i + 1} ref={current ? activeRow : undefined} aria-current={current ? "step" : undefined}>
+          <span className="nb-round-number" aria-hidden>{i + 1}</span><span>{item.lt}</span>
+        </li>;
+      })}
+    </ol></div>
+    <div className="nb-detail grading">{page}</div>
+  </>;
 }
