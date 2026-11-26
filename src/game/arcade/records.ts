@@ -26,7 +26,7 @@ export function prerequisite(id: TownGame | Cabinet, progress: Progress) {
 export function arcadeRecord(id: TownGame | Cabinet, progress: Progress) {
   if (id === "road" || id === "sea") {
     const points = readBest("maple-harbor", undefined, id)?.points;
-    return { label: "Asmeninis rekordas · Taškai", value: points ?? "Rezultato dar nėra" };
+    return { label: "Asmeninis rekordas", value: points ?? "Rezultato dar nėra" };
   }
   if (id === "surf") {
     const waves = progress.surf?.waves;
@@ -37,5 +37,21 @@ export function arcadeRecord(id: TownGame | Cabinet, progress: Progress) {
     const count = PHOTO_THINGS.filter(({ id }) => Array.isArray(found) && found.includes(id)).length;
     return { label: "Nufotografuoti objektai", value: `${count} / ${PHOTO_THINGS.length}` };
   }
-  return { label: id === "barista" ? "Pradėtos pamainos" : "Pradėtų žaidimų skaičius", value: readPlayStats(progress).games[id] ?? 0 };
+  return { label: id === "barista" ? "Pradėtos pamainos" : "Pradėti žaidimai", value: readPlayStats(progress).games[id] ?? 0 };
+}
+
+const pointUnits = ["taškas", "taškai", "taškų"] as const;
+const gameUnits = ["žaidimas", "žaidimai", "žaidimų"] as const;
+const shiftUnits = ["pamaina", "pamainos", "pamainų"] as const;
+const waveUnits = ["banga", "bangos", "bangų"] as const;
+const ltPlural = new Intl.PluralRules("lt");
+const ltNumber = new Intl.NumberFormat("lt-LT");
+
+/** Keep the measurement with its unit, including the genitive after zero, tens and teens. */
+export function formatArcadeMetric(id: TownGame | Cabinet, value: string | number) {
+  if (typeof value === "string") return value;
+  const units = id === "road" || id === "sea" ? pointUnits : id === "surf" ? waveUnits
+    : id === "barista" ? shiftUnits : gameUnits;
+  const plural = ltPlural.select(value);
+  return ltNumber.format(value) + "\u00a0" + units[plural === "one" ? 0 : plural === "few" ? 1 : 2];
 }

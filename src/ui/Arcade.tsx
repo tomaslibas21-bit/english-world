@@ -1,9 +1,11 @@
 import { useLayoutEffect, useMemo, useRef, type KeyboardEvent } from "react";
-import { CABINETS, TOWN_GAMES } from "../game/arcade/cabinets";
+import { CABINETS, TOWN_GAMES, type Cabinet } from "../game/arcade/cabinets";
 import { useArcade } from "../game/arcade/mode";
-import { arcadeRecord, prerequisite, TOWN_DETAILS } from "../game/arcade/records";
+import { arcadeRecord, formatArcadeMetric, prerequisite, TOWN_DETAILS } from "../game/arcade/records";
 import { game } from "../game/gameRef";
 import { useStore } from "../state/store";
+import { paintCabinetArt } from "../game/arcade/art";
+import { Icon } from "./icons";
 import "./arcade.css";
 
 const action = (name: string, value?: string) => game?.modeAction("arcade", name, value);
@@ -18,6 +20,16 @@ function keepTabInMenu(event: KeyboardEvent<HTMLElement>) {
   }
 }
 
+function CabinetPrint({ cabinet }: { cabinet: Cabinet }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useLayoutEffect(() => {
+    const ctx = canvas.current?.getContext("2d");
+    if (!ctx) return;
+    ctx.save(); ctx.scale(2, 2); paintCabinetArt(ctx, cabinet); ctx.restore();
+  }, [cabinet]);
+  return <canvas className="arcade-print" ref={canvas} width={512} height={272} aria-hidden="true" />;
+}
+
 export default function Arcade() {
   const { cabinet, selected, page } = useArcade();
   const progress = useStore((s) => s.progress);
@@ -30,22 +42,33 @@ export default function Arcade() {
   const townGame = page === "featured" ? null : selected;
   const current = townGame ?? cabinet;
   const record = useMemo(() => current && arcadeRecord(current, progress), [current, progress]);
-  if (!cabinet || !record) return null;
+  if (!cabinet || !current || !record) return null;
+  const best = current === "road" || current === "sea";
   const featured = CABINETS[cabinet];
   const details = townGame ? TOWN_DETAILS[townGame] : featured;
   const where = townGame ? TOWN_DETAILS[townGame].place : cabinet === "road" ? "Prie šio vairo." : "Prie biliardo stalo su Tina.";
   const firstStep = prerequisite(townGame ?? cabinet, progress);
   return <div className="arcade" data-pad-scope="arcade" data-pad-phase={page} lang="lt">
-    <section ref={panel} className="arcade-panel" data-page={page} role="dialog" aria-modal="true" aria-labelledby="arcade-title"
+    <section ref={panel} className="arcade-panel" data-cabinet={cabinet} data-page={page} role="dialog" aria-modal="true" aria-labelledby="arcade-title"
       onKeyDown={keepTabInMenu}>
-      <header><h2 id="arcade-title"><span lang="en">{featured.title}</span><small>Žaidimų automatai</small></h2>
-        <button data-pad-back onClick={() => action("back")}>{page === "featured" ? "Uždaryti" : "Grįžti"}</button></header>
+      <header>
+        <div className="arcade-bar"><span>Žaidimų automatai</span>
+          <button data-pad-back onClick={() => action("back")}>{page === "featured" ? "Uždaryti" : "Grįžti"}</button>
+        </div>
+        <div className="arcade-hero">
+          <h2 id="arcade-title"><span lang="en">{featured.title}</span><small>{featured.lt}</small></h2>
+          <CabinetPrint cabinet={cabinet} />
+        </div>
+      </header>
       <div className="arcade-columns">
         <div className="arcade-body">
           <div className="arcade-detail">
-            {townGame && <h3 lang="en">{details.title}</h3>}<p className="arcade-subtitle">{details.lt}</p>
+            {townGame && <><h3 lang="en">{details.title}</h3><p className="arcade-subtitle">{details.lt}</p></>}
             <p>{where}</p>
-            <dl><dt>{record.label}</dt><dd>{record.value}</dd></dl>
+            <dl className="arcade-metric" data-best={best && typeof record.value === "number" || undefined}>
+              <dt><Icon name={best ? "medal" : "ticket"} size={18} />{record.label}</dt>
+              <dd>{formatArcadeMetric(current, record.value)}</dd>
+            </dl>
             {firstStep && <p className="arcade-step">{firstStep}</p>}
           </div>
           {page !== "list" && <button className="arcade-primary" data-pad-default onClick={() => action(townGame ? "visit" : "play")}>

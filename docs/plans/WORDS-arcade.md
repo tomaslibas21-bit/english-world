@@ -34,14 +34,18 @@ The cabinet prints and activity titles use American English. The menu pairs the 
 | Café prerequisite | Finish the café conversation first. | Pirmiausia užbaik pokalbį kavinėje. |
 | Gym title | Gym workout | Treniruotė sporto klube |
 | Gym location | At the mat in the gym. | Sporto klube, prie kilimėlio. |
-| Road and Sea best | Personal best · Points | Asmeninis rekordas · Taškai |
+| Road and Sea best | Personal best | Asmeninis rekordas |
 | Empty best | No score yet | Rezultato dar nėra |
-| Pool, Taxi, Go Fish and Gym counts | Games started | Pradėtų žaidimų skaičius |
+| Pool, Taxi, Go Fish and Gym counts | Games started | Pradėti žaidimai |
 | Barista count | Shifts started | Pradėtos pamainos |
 | Surf count | Waves ridden | Įveiktos bangos |
 | Photo count | Objects photographed | Nufotografuoti objektai |
+| Best score value | {n} point / points | {n} taškas / taškai / taškų |
+| Game count value | {n} game / games | {n} žaidimas / žaidimai / žaidimų |
+| Shift count value | {n} shift / shifts | {n} pamaina / pamainos / pamainų |
+| Wave count value | {n} wave / waves | {n} banga / bangos / bangų |
 | Album value | {found} / {total} | {found} / {total} |
 
 The painted ball carries the numeral 8. Score and count values use the saved numbers. Featured games keep their existing dialogue, recordings, briefings, gates and results.
 
-**Audio TODO for editorial review.** The new menu and location copy is text-only. Keep browsing and the stationary machines silent. Any future spoken help needs a matching entry in the existing voice manifest.
+**Audio TODO for editorial review.** The new menu and location copy is text-only. Approaching a cabinet plays the existing quiet two-note coin effect. The artwork and directory are silent at rest. Any future spoken help needs a matching entry in the existing voice manifest.

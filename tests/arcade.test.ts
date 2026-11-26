@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PHOTO_THINGS } from "../src/content/photo-walk-lines";
 import { cabinetNear, cabinetPose, TOWN_GAMES, type Cabinet } from "../src/game/arcade/cabinets";
 import { ArcadeMode, useArcade } from "../src/game/arcade/mode";
-import { arcadeRecord, prerequisite } from "../src/game/arcade/records";
+import { arcadeRecord, formatArcadeMetric, prerequisite } from "../src/game/arcade/records";
 import type { ModeHost } from "../src/game/kit/host";
 import { ModeRegistry, type ModeScreen } from "../src/game/kit/modes";
 import { saveBest } from "../src/game/road/ghost";
+import { Vector3 } from "three";
+import { CameraRig } from "../src/game/camera";
+import { TABLE_X, TABLE_Z, TINA_HOME } from "../src/game/billiards/table";
 import { emptyPlayStats } from "../src/state/playStats";
 import { type Progress } from "../src/state/progress";
 
@@ -20,6 +23,36 @@ it("resolves two independent front approaches and leaves the table, host and exi
     expect(cabinetNear(x, 2)).toBeNull();
   }
   for (const [x, z] of [[0, 1.58], [1.55, 1.28], [0, 4.1]]) expect(cabinetNear(x, z)).toBeNull();
+});
+
+it.each([[390, 844], [390, 664], [844, 390], [1280, 800]])("frames the hall doorway at %i by %i", (w, h) => {
+  const rig = new CameraRig(w / h);
+  rig.mode = "interior";
+  rig.interiorBounds = { w: 11, d: 10, cabinetCorner: true };
+  rig.target.set(0, 0, 4.1);
+  rig.cam.fov = rig.fovFor(w, h, false);
+  rig.cam.updateProjectionMatrix();
+  rig.snap();
+  rig.update(1 / 60, Math.PI, false, true, true);
+  rig.cam.updateMatrixWorld();
+  const landmarks = [new Vector3(TINA_HOME.x, 1.7, TINA_HOME.z)];
+  for (const x of [-TABLE_X, TABLE_X]) for (const z of [-TABLE_Z, TABLE_Z]) landmarks.push(new Vector3(x, 0.9, z));
+  for (const x of [3.20 - 0.39, 4.20 + 0.39]) for (const y of [0, 2.34]) landmarks.push(new Vector3(x, y, 2.98));
+  for (const point of landmarks) {
+    const ndc = point.project(rig.cam);
+    expect(Math.abs(ndc.x)).toBeLessThan(1);
+    expect(Math.abs(ndc.y)).toBeLessThan(1);
+  }
+});
+
+it("keeps each Lithuanian number with its correctly inflected unit", () => {
+  for (const [points, unit] of [[0, "taškų"], [1, "taškas"], [2, "taškai"], [11, "taškų"], [21, "taškas"], [100, "taškų"]] as const)
+    expect(formatArcadeMetric("road", points)).toBe(points + "\u00a0" + unit);
+  expect(formatArcadeMetric("billiards", 1)).toBe("1\u00a0žaidimas");
+  expect(formatArcadeMetric("barista", 2)).toBe("2\u00a0pamainos");
+  expect(formatArcadeMetric("surf", 11)).toBe("11\u00a0bangų");
+  expect(formatArcadeMetric("photowalk", "2 / 12")).toBe("2 / 12");
+  expect(formatArcadeMetric("sea", "Rezultato dar nėra")).toBe("Rezultato dar nėra");
 });
 
 it("reads separate Road and Sea bests, ignoring damaged ghosts and preserving a higher score", () => {
