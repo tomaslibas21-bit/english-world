@@ -10,7 +10,7 @@ export type PhraseSaveLabels = { add: string; inCards: string };
 
 export type PhraseSaveProps = PhraseSource & {
   sentence: Sentence;
-  onSaved?: () => void;
+  onSaved?: (persisted: boolean) => void;
   popover?: "primary" | "soft";
   labels?: PhraseSaveLabels;
   iconOnly?: boolean;
@@ -37,9 +37,7 @@ export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popove
     onKeyDown={saveKey} onKeyUp={saveKey}
     onClick={(event) => {
       event.stopPropagation();
-      const cards = useCards.getState();
-      const alreadySaved = cards.keys.has(key);
-      if (cards.add({ ...sentenceInput(sentence, situationId), sourceLabel }) && !alreadySaved) onSaved?.();
+      useCards.getState().add({ ...sentenceInput(sentence, situationId), sourceLabel }, onSaved);
     }}>{icon}{!iconOnly && (stableLabel ? <span className="phrase-save-label">
       <span>{label}</span>
       <span aria-hidden="true">{saved ? words.add : words.inCards}</span>

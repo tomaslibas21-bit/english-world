@@ -1,6 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
+import { BOARD, makeNoticeboard } from "../noticeboard/prop";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -46,6 +47,7 @@ export interface Town {
   colliders: Colliders;
   doors: Door[];
   photoSpots: PhotoSpot[];
+  noticeboard: ReturnType<typeof makeNoticeboard>;
   parkedCars: ParkedCars;
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
@@ -269,6 +271,9 @@ export function buildTown(): Town {
   }
   addTrees(group, colliders, r, photo);
   addSquareAndMarket(M, colliders, group, r, photo);
+  const noticeboard = makeNoticeboard();
+  group.add(noticeboard.mesh);
+  colliders.addBox(BOARD.x, BOARD.z, BOARD.width, BOARD.depth, "edge");
   addHarbor(M, colliders, group, r, photo);
   const island = LIGHTHOUSE_ISLAND;
   const tower = island?.center ?? LIGHTHOUSE;
@@ -329,7 +334,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening, exitHills,
+    group, colliders, doors, photoSpots, parkedCars, noticeboard, seats: [...seats], groundCanvas, sea, roadOpening, exitHills,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;

@@ -102,7 +102,8 @@ export function Hud() {
   const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
   const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
-  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast });
+  const readingBoard = layout !== "full" && questHud && hud.prompt?.kind === "read";
+  const task = useTaskCard(taskId, inTown && !hud.panel, layout, { directions, photoReady, phoneToast, readingBoard });
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -147,7 +148,7 @@ export function Hud() {
   const collapsed = streetCard || (task.collapsedForNote
     ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
   return (
-    <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")} hidden={hud.panel === "noticeboard"} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
         <div className={"objective-notes" + (inCave ? " cave-notes task-folded" : "") + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           {inCave ? <Suspense><CaveHud phoneToast={phoneToast} /></Suspense>
@@ -199,11 +200,11 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast }: {
-  directions: string | undefined; photoReady: boolean; phoneToast: boolean;
+function useTaskCard(taskId: string | null, visible: boolean, layout: string, { directions, photoReady, phoneToast, readingBoard }: {
+  directions: string | undefined; photoReady: boolean; phoneToast: boolean; readingBoard: boolean;
 }) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const note = directions ? `directions:${directions}:${photoReady}` : photoReady ? "photo" : phoneToast ? "toast" : null;
+  const note = readingBoard ? "noticeboard" : directions ? `directions:${directions}:${photoReady}` : photoReady ? "photo" : phoneToast ? "toast" : null;
   const [openedDuringNote, setOpenedDuringNote] = useState<string | null>(null);
   if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(null);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
@@ -216,7 +217,7 @@ function useTaskCard(taskId: string | null, visible: boolean, layout: string, { 
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    if (!directions) setState((current) => ({ ...current, manual }));
+    if (!directions && !readingBoard) setState((current) => ({ ...current, manual }));
     setOpenedDuringNote(manual ? null : note);
   }
   return { ...state, collapsedForNote: note === null ? null : openedDuringNote !== note, setManual };
@@ -689,7 +690,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "read" ? prompt.label : prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "read" ? "Skaityti" : prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
