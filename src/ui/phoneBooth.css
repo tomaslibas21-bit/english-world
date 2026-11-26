@@ -1,0 +1,74 @@
+.overlay[data-pad-phase="phonebooth"] {
+  background: rgb(26 21 18 / 35%);
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+.booth-book {
+  --enamel: #702638; --paper: #fff6e1; --rule: #cbbba2;
+  display: flex; flex-direction: column;
+  width: min(860px, 100%); height: min(590px, 100%); min-height: 0;
+  background: var(--paper); color: #382f29; overflow: hidden;
+  border: 4px solid var(--enamel); border-radius: 10px 16px 16px 10px;
+  box-shadow: 0 5px 0 #c7b69c, 0 12px 30px #281e1744;
+  font-size: calc(16px * var(--scale)); line-height: 1.35;
+}
+.booth-heading {
+  display: flex; align-items: center; gap: 12px; padding: 4px 16px;
+  min-height: 52px; color: #fff6e1; background: var(--enamel);
+}
+.booth-heading h2 { font: 600 1.55em/1.12 var(--en); margin: 0; }
+.booth-book button, .booth-book a {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 7px 12px; border: 1px solid var(--rule);
+  border-radius: 6px; background: transparent; color: var(--enamel);
+  font: 750 1em/1.18 var(--ui); text-align: center; text-decoration: none;
+}
+.booth-book :is(button, a):focus-visible { outline: 3px solid #136f77; outline-offset: -3px; }
+.booth-book .booth-close { margin-left: auto; min-width: 44px; border-color: transparent; color: inherit; }
+.booth-pages { display: grid; grid-template-columns: 35% 1fr; min-height: 0; flex: 1; }
+.booth-index { overflow-y: auto; padding: 14px 12px; border-right: 1px solid var(--rule); background: #f7ecd6; }
+.booth-index h3, .booth-body h4 {
+  margin: 0 0 8px; color: var(--enamel); font-size: .88em; font-weight: 850;
+}
+.booth-index section + section { margin-top: 20px; }
+.booth-index button {
+  width: 100%; display: block; text-align: left; border: 0; border-bottom: 1px solid var(--rule);
+  border-radius: 0; padding: 7px 10px; color: inherit;
+}
+.booth-index button[aria-current="true"] { box-shadow: inset 4px 0 var(--enamel); background: #edddbc; }
+.booth-index button:disabled { cursor: default; }
+.booth-index strong { display: block; font: 650 1.25em/1.1 var(--en); }
+.booth-index button span { font-size: .90em; font-weight: 500; }
+.booth-leaf { min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.booth-body { padding: 20px 24px; flex: 1; min-height: 0; overflow-y: auto; overflow-wrap: anywhere; }
+.booth-body h3 { font: 600 2.1em/1.05 var(--en); margin: 0 0 3px; }
+.booth-body p { margin: 4px 0 10px; }
+.booth-body section { margin: 18px 0 0; border-top: 1px solid var(--rule); padding-top: 12px; }
+.booth-personal { margin: 0 0 8px; }
+.booth-personal span { display: block; }
+.booth-body .booth-topic { border-bottom: 1px solid var(--rule); padding-bottom: 10px; margin-bottom: 16px; }
+.booth-body .booth-line { font: 600 1.95em/1.12 var(--en); margin: 6px 0 14px; }
+.booth-body button, .booth-body a { margin: 2px 6px 4px 0; }
+.booth-body .booth-meaning { color: #584535; margin: 6px 0; }
+.booth-actions { display: flex; align-items: stretch; gap: 6px; border-top: 1px solid var(--rule); padding: 10px 14px; }
+.booth-actions:empty { display: none; }
+.booth-actions > * { flex: 1; }
+.booth-actions .booth-primary { color: var(--paper); border-color: var(--enamel); background: var(--enamel); }
+.booth-actions :disabled { opacity: .55; cursor: default; }
+@media (max-width: 620px) {
+  .booth-pages { grid-template-columns: 1fr; }
+  .booth-book[data-page="index"] .booth-leaf, .booth-book:not([data-page="index"]) .booth-index { display: none; }
+  .booth-index { border: 0; }
+  .booth-body { padding: 14px; }
+  .booth-actions { padding: 8px; }
+}
+@media (max-height: 500px) {
+  .booth-heading { min-height: 44px; }
+  .booth-index, .booth-body { padding: 8px 12px; }
+  .booth-body h3 { font-size: 1.45em; }
+  .booth-body .booth-topic { margin-bottom: 6px; padding-bottom: 4px; }
+  .booth-actions { padding: 4px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay[data-pad-phase="phonebooth"] { animation: none; }
+}

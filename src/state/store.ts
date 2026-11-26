@@ -187,6 +187,7 @@ export interface HudState {
   phoneCard: string | null;
   textArrival?: string | null;
   textThread?: string | null;
+  phoneMissedFocus?: string;
   reaction?: import("../game/life/reacts").ReactionLine | null;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios" | "phonebooth";
   showTouch: boolean;
@@ -277,7 +278,7 @@ export const useStore = create<Store>((set, get) => ({
   setConv: (p) => set((st) => ({ conv: { ...st.conv, ...(typeof p === "function" ? p(st.conv) : p) } })),
   setHud: (p) => set((st) => {
     const hud = { ...st.hud, ...p };
-    if (hud.panel !== "phone") hud.textThread = null;
+    if (hud.panel !== "phone") { hud.textThread = null; hud.phoneMissedFocus = undefined; }
     if (p.fade !== undefined) hud.fadeOnFrames = p.fadeOnFrames ?? false;
     const ride = townRide(hud.ride);
     if (ride === townRide(st.hud.ride)) return { hud };
