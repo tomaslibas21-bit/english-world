@@ -6,6 +6,7 @@
 // WORLD_GLOW_B9=1 captures the police entry and rental displays; rides.mjs supplies the two vehicle comparisons.
 // WORLD_GLOW_B10=1 captures harvest bales, standing tables, a curb barrel and a hydrant.
 // WORLD_GLOW_B11=1 captures Threads/salon finishes and logs the normal wallet/musician frames.
+// WORLD_GLOW_B12=1 captures street benches, shore chairs and working-harbor cargo.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -287,8 +288,14 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9", "WORLD_GLOW_B10", "WORLD_GLOW_B11"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
-      const poses = process.env.WORLD_GLOW_B11 === "1" ? [
+    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8", "WORLD_GLOW_B9", "WORLD_GLOW_B10", "WORLD_GLOW_B11", "WORLD_GLOW_B12"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B12 === "1" ? [
+        ["glow-street-bench", 40, -0.4, 0],
+        ["glow-shore-chairs", 18, -64.9, Math.PI],
+        ["glow-shore-chairs-east", 52, -64.6, Math.PI],
+        ["glow-shore-traps", -38.2, -66.6, Math.PI],
+        ["glow-fish-crates", -21.4, -66.6, Math.PI],
+      ] : process.env.WORLD_GLOW_B11 === "1" ? [
         ["glow-threads-west", -28.5, -2.1, 0],
         ["glow-threads-east", -19.5, -2.1, 0],
         ["glow-salon-front", -10, -3.3, 0],

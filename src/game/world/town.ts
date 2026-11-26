@@ -1,7 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
-import { finishBank, finishHydrant, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishSalonFront, finishStreetBin, finishThreadsDisplay } from "./townFinishes";
+import { finishBank, finishHydrant, finishPlazaBench, finishPoliceEntry, finishPoolHallDoor, finishPostOffice, finishRentalDisplay, finishSalonFront, finishStreetBench, finishStreetBin, finishThreadsDisplay } from "./townFinishes";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -1597,6 +1597,7 @@ function streetBench(M: Merger, col: Colliders, x: number, z: number, rot: numbe
   const g2 = boxGeo(1.8, 0.5, 0.08, 0, 0.8, -0.22).rotateY(rot).translate(x, 0, z);
   M.add("bench", mat("#9c6b43"), g1); M.add("bench", mat("#9c6b43"), g2);
   for (const s of [-0.75, 0.75]) M.add("bench-leg", mat("#333"), boxGeo(0.08, 0.5, 0.4, s, 0.25, 0).rotateY(rot).translate(x, 0, z));
+  finishStreetBench(M, x, z, rot);
   col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
   for (const u of [-0.45, 0.45]) seats.push({ x: x + Math.cos(rot) * u, z: z - Math.sin(rot) * u, rot, y: 0.55 });
 }

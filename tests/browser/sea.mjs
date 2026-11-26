@@ -1,4 +1,5 @@
 // Use the Vite dev server for the sea debug hooks. SEA_SIZE sets the viewport and SEA_SHOTS saves the handoff and gates.
+// WORLD_GLOW_B12=1 also captures the existing lobster-boat boarding stage before reduced motion is enabled.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
@@ -898,6 +899,16 @@ try {
   await waitFor(async () => (await read()).town?.phase === "on", "boards the lobster boat");
   assert.equal((await read()).town.id, "lobster-1");
   await ready();
+  if (process.env.WORLD_GLOW_B12 === "1") {
+    const frame = await evaluate("read lobster cargo framing", () => {
+      const g = window.__ew.game, r = g.rides.riding;
+      return { player: g.player.root.position.toArray(), camera: g.rig.cam.position.toArray(),
+        boat: r?.id, x: r?.m.x, z: r?.m.z, heading: r?.m.heading, speed: r?.m.speed,
+        calls: g.renderer.info.render.calls, triangles: g.renderer.info.render.triangles };
+    });
+    trace("glow-lobster-cargo", frame);
+    await shot("glow-lobster-cargo");
+  }
   await run("enable reduced motion", () => page.emulateMedia({ reducedMotion: "reduce" }));
   await sailOut("reduced-motion lobster boat run");
   mark("reload from open water");

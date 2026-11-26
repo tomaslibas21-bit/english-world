@@ -19,7 +19,8 @@ import { MAPLE_BLOCKS } from "./styled";
 import { addHarborSurf } from "./harborSurf";
 import { HARBOR_SURF, SURF_SPOT } from "./surf";
 import { visualOnly } from "../collisionGeometry";
-import { finishCurbBarrel, finishHarvestBale, finishSquarePlanter, finishStandingTable } from "./townFinishes";
+import { finishCurbBarrel, finishHarvestBale, finishShoreChair, finishSquarePlanter, finishStandingTable } from "./townFinishes";
+import { crateFinishParts, trapFinishParts } from "./harborFinishes";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -73,6 +74,7 @@ function trap(add: Add, x: number, y: number, z: number, rot: number, c: string)
   add(P(boxGeo(0.92, 0.38, 0.52, 0, 0.23, 0)), c);
   for (const u of [-0.45, 0, 0.45]) add(P(boxGeo(0.05, 0.43, 0.57, u, 0.225, 0)), "#3d4a44");
   add(P(boxGeo(0.96, 0.04, 0.56, 0, 0.02, 0)), "#8a6a48");
+  for (const [g, color] of trapFinishParts()) add(P(g), color as string);
 }
 /** A lobster buoy: a painted float with a band and its stick, standing on y. */
 export function buoy(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], x: number, y: number, z: number, a: string, b: string, lean = 0) {
@@ -114,6 +116,7 @@ function lobsterBoat(hullC: string, trimC: string, material: THREE.Material, x: 
     [new THREE.BoxGeometry(0.6, 0.3, 0.42).translate(0.6, 0.8, -1.0), "#4a7bb7"],
   ];
   const add: Add = (g, c) => { parts.push([g, c]); };
+  for (const [g, color] of crateFinishParts(0.6, 0.42)) add(g.translate(0.6, 0.65, -1.0), color as string);
   // traps stacked aft, two rows and one on top; buoys along the stern
   for (const [tx, ty, tz, c] of [[-0.5, 0.65, -2.7, "#d9b23a"], [0.5, 0.65, -2.7, "#3f7d5c"], [-0.5, 0.65, -2.05, "#3f7d5c"], [0.5, 0.65, -2.05, "#d9b23a"], [0, 1.08, -2.4, "#d9b23a"]] as [number, number, number, string][]) trap(add, tx, ty, tz, 0, c);
   buoy(parts, -1.0, 0.65, -3.2, "#e45b4f", "#ffffff", 0.5); buoy(parts, -0.7, 0.65, -3.25, "#f2c14e", "#2f6db5", -0.4); buoy(parts, 1.0, 0.65, -3.2, "#e45b4f", "#ffffff", -0.5);
@@ -379,7 +382,7 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
   addBoats();
   if (!LIGHTHOUSE_ISLAND) addLighthouse(add, LIGHTHOUSE);
   addHarborGear(add, col, group, updates);
-  addBeach(add, col);
+  addBeach(add, col, M);
   return (t, dt) => { for (const u of updates) u(t, dt); };
 }
 
@@ -513,7 +516,10 @@ function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((
     const x0 = -23.4, z0 = -68.6, rot = 0.22;
     trap(add, x0 - 0.5, 0, z0, rot, TRAPS[1]); trap(add, x0 + 0.5, 0, z0 + 0.22, rot, TRAPS[0]); trap(add, x0, 0.43, z0 + 0.1, rot, TRAPS[3]);
     col.addBox(x0, z0 + 0.1, 2.1, 0.9);
-    for (const [cx, cy, cc] of [[0, 0, "#4a7bb7"], [0.03, 0.32, "#e45b4f"], [-0.02, 0.64, "#4a7bb7"]] as [number, number, string][]) add(boxGeo(0.72, 0.3, 0.5, x0 + 2.0 + cx, cy + 0.15, z0 - 0.5, 0.1), cc);
+    for (const [cx, cy, cc] of [[0, 0, "#4a7bb7"], [0.03, 0.32, "#e45b4f"], [-0.02, 0.64, "#4a7bb7"]] as [number, number, string][]) {
+      add(boxGeo(0.72, 0.3, 0.5, x0 + 2.0 + cx, cy + 0.15, z0 - 0.5, 0.1), cc);
+      for (const [g, color] of crateFinishParts(0.72, 0.5)) add(g.rotateY(0.1).translate(x0 + 2.0 + cx, cy, z0 - 0.5), color as string);
+    }
     col.addBox(x0 + 2.0, z0 - 0.5, 0.8, 0.6);
   }
   // the buoy rack: two posts, a beam, the buoys hanging by their sticks
@@ -563,12 +569,13 @@ function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((
 }
 
 /** The beach: pairs of painted chairs looking out to sea, driftwood, tufts of beach grass along the promenade. */
-function addBeach(add: Add, col: Colliders) {
+function addBeach(add: Add, col: Colliders, M: Merger) {
   const chair = (x: number, z: number, rot: number, c: string) => {
     const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
     add(P(boxGeo(0.62, 0.06, 0.6, 0, 0.36, 0.02).rotateX(-0.14)), c);
     add(P(boxGeo(0.62, 0.95, 0.06, 0, 0, 0).rotateX(0.32).translate(0, 0.78, -0.42)), c);
     for (const s of [-1, 1]) { add(P(boxGeo(0.12, 0.05, 0.72, s * 0.38, 0.58, 0.02)), c); add(P(boxGeo(0.07, 0.56, 0.07, s * 0.36, 0.28, 0.3)), c); add(P(boxGeo(0.07, 0.4, 0.07, s * 0.36, 0.2, -0.3)), c); }
+    finishShoreChair(M, x, z, rot);
     col.addCircle(x, z, 0.42);
   };
   // (their backs to the town, facing the water: north)

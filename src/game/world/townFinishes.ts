@@ -292,3 +292,28 @@ export function finishSalonFront(M: Merger, x: number, z: number, rotation: numb
     for (const offset of [-0.25, 0, 0.25]) face("reed", "#b77f8c", 0.018, 1.35, cx + offset * panelWidth, 1.51, 0.021);
   }
 }
+
+/** The street bench's back is toward -Z, unlike the fountain benches finished in B7. */
+export function finishStreetBench(M: Merger, x: number, z: number, rotation: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  for (const side of [-1, 1]) {
+    for (const y of [0.63, 0.75, 0.87, 0.99]) M.addVisual("glow-b12-street-bench-wood", mat("#b18d66"),
+      place(new THREE.PlaneGeometry(1.72, 0.105).rotateY(side === 1 ? 0 : Math.PI).translate(0, y, -0.22 + side * 0.043)));
+    for (const u of [-0.72, 0.72]) M.addVisual("glow-b12-street-bench-fastener", mat("#a8b8aa"),
+      place(new THREE.CircleGeometry(0.014, 6).rotateY(side === 1 ? 0 : Math.PI).translate(u, 0.75, -0.22 + side * 0.046)));
+  }
+  for (const depth of [-0.16, 0, 0.16]) M.addVisual("glow-b12-street-bench-wood", mat("#b18d66"),
+    place(new THREE.PlaneGeometry(1.74, 0.145).rotateX(-Math.PI / 2).translate(0, 0.552, depth)));
+}
+
+/** Board joints follow both faces of the original tilted back and the original seat transform. */
+export function finishShoreChair(M: Merger, x: number, z: number, rotation: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  for (const side of [-1, 1]) for (const u of [-0.155, 0, 0.155]) M.addVisual("glow-b12-shore-chair-joint", mat("#58695e"),
+    place(new THREE.PlaneGeometry(0.012, 0.83).rotateY(side === 1 ? 0 : Math.PI)
+      .translate(u, 0, side * 0.033).rotateX(0.32).translate(0, 0.78, -0.42)));
+  for (const u of [-0.1, 0.1]) M.addVisual("glow-b12-shore-chair-joint", mat("#58695e"),
+    place(new THREE.PlaneGeometry(0.012, 0.51).rotateX(-Math.PI / 2).translate(u, 0.392, 0.02).rotateX(-0.14)));
+  for (const u of [-0.38, 0.38]) for (const depth of [-0.12, 0.12]) M.addVisual("glow-b12-shore-chair-screw", mat("#c4c3a2"),
+    place(new THREE.CircleGeometry(0.011, 6).rotateX(-Math.PI / 2).translate(u, 0.607, depth)));
+}
