@@ -5,5 +5,5 @@
   "done": "mask",
   "phases": {"invite": "welcome", "interest": "mask", "ready": "mask", "closing": "welcome"},
   "lines": {"greet": "welcome", "again": "welcome", "g_repeat_intro": "welcome", "g_slow_intro": "welcome", "g_dont_understand": "welcome", "g_not_understood": "welcome", "later": "welcome", "ask_interest": "mask", "fish_plan": "mask", "turtle_plan": "mask", "ask_ready": "mask", "meet_deck": "mask"},
-  "focus": [48, 36]
+  "focus": [50, 24]
 }

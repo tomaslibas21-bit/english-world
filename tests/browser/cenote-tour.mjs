@@ -35,7 +35,8 @@ const natural = (key) => lines[key][local(2, 4)];
 const distance = (pose, [x, z]) => Math.hypot(pose.x - x, pose.z - z);
 const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 const requestedStage = (url) => /\/CenoteTour(?:[-.]|$)|\/cenoteTour\/(?:mode|animals|route|store)\.ts/i.test(new URL(url).pathname);
-const requestedChat = (url) => /\/(?:x14-cenote|cenote-tour-lines)(?:-[^/]+)?\.(?:js|ts|json)$/i.test(new URL(url).pathname);
+// (the scene file of Inés's pictures, scene-data/x14-cenote.json, is the eager scene list's like every other one: not the chat)
+const requestedChat = (url) => { const p = new URL(url).pathname; return !p.includes("/scene-data/") && /\/(?:x14-cenote|cenote-tour-lines)(?:-[^/]+)?\.(?:js|ts|json)$/i.test(p); };
 const pendingArt = (url) => /\/x14-cenote(?:[/.\-_]|$).*\.(?:webp|avif|png|jpe?g|svg)$/i.test(new URL(url).pathname);
 
 function seed(play) {
@@ -416,7 +417,9 @@ async function visit(browser, viewport, play, run) {
     await run({ page, context, phone, label, setPhase, read, step, advance, wait, press, shot, narration, monitor, boot });
     await monitor.flush();
     assert.deepEqual(monitor.errors, [], "browser errors and failed resources");
-    assert.deepEqual(monitor.requests.filter(pendingArt), [], "pending x14 scene pictures were never requested");
+    // 3D (pictures off) never fetches Inés's stills; picture mode fetches both
+    if (play === "light") assert.deepEqual([...new Set(monitor.requests.filter(pendingArt).map((u) => new URL(u).pathname.replace(/^.*\//, "")))].sort(), ["mask.webp", "welcome.webp"], "picture mode fetches Inés's two stills");
+    else assert.deepEqual(monitor.requests.filter(pendingArt), [], "3D mode never requests the x14 scene pictures");
   } catch (error) {
     const state = page && !page.isClosed() ? await read().catch(() => null) : null;
     let failureShot;
@@ -1139,21 +1142,22 @@ async function town(h) {
 
 async function light(h) {
   const { page, press, wait, shot, read, monitor, setPhase } = h;
-  setPhase("LightHome picker and picture fallback");
+  setPhase("LightHome picker and Inés's pictures");
   const initial = await read();
   assert(initial.light && initial.pictures);
   assert.equal(initial.tour, undefined);
   const card = await checkPicker(page, "lh");
   const run = await enterChat(h, true, card);
-  await visibleText(page.locator(".lc .lc-name"), outing.displayName);
-  const avatar = page.locator(".lc-avatar");
-  assert(await avatar.isVisible());
-  const fallback = await avatar.evaluate((el) => {
-    const photo = el.querySelector("img");
-    return photo ? photo.complete && photo.naturalWidth > 0 : el.textContent.trim() === "I";
-  });
-  assert(fallback, "the picture-mode portrait or initial is visible");
-  assert.equal(await page.locator(".stage canvas, .scene-backdrop img").count(), 0);
+  // Inés's stills (review round pictures): picture mode shows her welcome picture behind the chat, both stills loaded
+  // ahead for the crossfade (the portrait card stays away while a scene is on)
+  await page.waitForFunction(() => {
+    const imgs = [...document.querySelectorAll(".scene-backdrop img")];
+    return imgs.length === 2 && imgs.every((img) => img.complete && img.naturalWidth > 0);
+  }, undefined, { timeout: 30000 });
+  const backdrop = await page.locator(".scene-backdrop img.on").evaluate((img) => new URL(img.currentSrc || img.src).pathname);
+  assert(/\/scenes-es\/x14-cenote\/welcome\.webp$/.test(backdrop), `the picture mode opens on Inés's welcome still: ${backdrop}`);
+  assert.equal(await page.locator(".lc-avatar").count(), 0, "no portrait card over the scene");
+  assert.equal(await page.locator(".stage canvas").count(), 0);
   await shot("11-light");
 
   setPhase("LightHome can finish the affirmative chat");

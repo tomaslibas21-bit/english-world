@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { GLOBAL } from "@/content/global";
 import { NPCS } from "@/content/npcs";
@@ -77,8 +79,12 @@ describe("Inés's invitation", () => {
     }
   });
 
-  it("keeps pending art out of the picture renderer", () => {
-    expect(sceneFor(id, "ines")).toBeUndefined();
+  it("shows Inés's two stills (review round pictures), both on disk, her face in view", () => {
+    const scene = sceneFor(id, "ines");
+    expect(scene).toBeDefined();
+    expect(scene!.images).toEqual(["x14-cenote/welcome", "x14-cenote/mask"]);
+    for (const stem of scene!.images) expect(existsSync(join(import.meta.dirname, "../../public/scenes-es", `${stem}.webp`)), stem).toBe(true);
+    expect(scene!.focus).toEqual([50, 24]);
   });
 });
 
