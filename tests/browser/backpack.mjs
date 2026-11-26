@@ -92,7 +92,13 @@ try {
   assert.deepEqual(await readDeck(page), stored);
   await tab(/^Suvenyrai/).click();
   assert.equal(await book.locator(".nb-pocket-row").count(), 2);
-  await book.locator('[data-entry="ticket"]').click();
+  const ticketPocket = book.locator('[data-entry="ticket"]');
+  assert.equal(await ticketPocket.locator('[lang="en"]').innerText(), "Ticket");
+  assert.equal(await ticketPocket.locator('[lang="lt"]').innerText(), "Bilietas");
+  await ticketPocket.click();
+  const pocketTitle = book.locator("[data-reading-title]");
+  assert.equal(await pocketTitle.locator('[lang="en"]').innerText(), "Ticket");
+  assert.equal(await pocketTitle.locator('[lang="lt"]').innerText(), "Bilietas");
   assert.equal(await book.locator("[data-source]").count(), 2);
   await shot(page, "390x664-ticket");
   await book.locator('[data-source="s70-museum"]').click();

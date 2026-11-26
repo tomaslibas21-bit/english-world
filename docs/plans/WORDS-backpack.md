@@ -1,6 +1,6 @@
 # Maple Harbor backpack copy
 
-English is the editorial reference. Maple Harbor displays Lithuanian controls, English targets and the Lithuanian helper stored with each entry. Counts in braces are values supplied by the game.
+Maple Harbor displays Lithuanian controls, English targets with their stored Lithuanian helpers, and bilingual keepsake names. English control labels below serve as the editorial reference. Counts in braces are values supplied by the game.
 
 | Location | American English | Lithuanian |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ English is the editorial reference. Maple Harbor displays Lithuanian controls, E
 
 ## Pocket names
 
-The labels use the existing nominative forms in `src/content/keepsakes.ts`. Each source button uses its situation’s existing Lithuanian title.
+These are the owner-approved English names for the backpack and town hall. Each pocket shows the English name and its Lithuanian nominative from `KIND` in `src/content/keepsakes.ts`. Each source button uses its situation’s Lithuanian title.
 
 | American English | Lithuanian |
 | --- | --- |
@@ -65,7 +65,7 @@ The labels use the existing nominative forms in `src/content/keepsakes.ts`. Each
 | Room key | Kambario raktas |
 | Apartment key | Buto raktas |
 | Car key | Automobilio raktelis |
-| City map | Miesto žemėlapis |
+| Town map | Miesto žemėlapis |
 | Coffee cup | Kavos puodelis |
 | Receipt | Kvitas |
 | Shopping bag | Pirkinių maišelis |

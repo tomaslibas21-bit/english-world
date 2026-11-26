@@ -22,6 +22,11 @@ const empty = {
   keepsakes: "Užbaik pokalbį ir gausi suvenyrą.",
 };
 
+function PocketName({ kind }: { kind: KeepsakeKind }) {
+  const { en, nominative } = KIND[kind];
+  return <span className="nb-pocket-name"><span lang="en">{en}</span>{" "}<span lang="lt">{nominative}</span></span>;
+}
+
 function Source({ id, label }: { id: string; label?: string }) {
   const name = sourceName(id, label);
   return name ? <span className="nb-source">{Object.hasOwn(SITUATION_BY_ID, id) && <SitIcon id={id} size="16" />}{name}</span> : null;
@@ -168,7 +173,7 @@ export function Notebook({ close }: { close: () => void }) {
     leaf === "phrases" ? phrase && <Reading key={phrase[0]} phrase={phrase[1]} now={today} afterRemove={remove} /> :
     kind && <article className="nb-reading nb-pocket">
       <div className="nb-envelope"><KeepsakeIcon kind={kind} /></div>
-      <h3 data-reading-title tabIndex={-1}>{KIND[kind].nominative}</h3>
+      <h3 data-reading-title tabIndex={-1}><PocketName kind={kind} /></h3>
       <h4>Peržiūrėti frazes</h4>
       {pockets.get(kind)!.map((sit) => <button key={sit.id} data-source={sit.id}
         onClick={() => filteredPhrases(kind, sit.id)}><SitIcon id={sit.id} size={18} />{sit.title.lt}<Icon name="arrowRight" size={16} /></button>)}
@@ -217,7 +222,7 @@ export function Notebook({ close }: { close: () => void }) {
           </>}
           {leaf === "keepsakes" && [...pockets].slice(0, limit).map(([k, sources]) =>
             <button className="nb-pocket-row" key={k} {...entry(k)}>
-              <span className="nb-envelope"><KeepsakeIcon kind={k} /></span>{KIND[k].nominative}<small>{sources.length}</small>
+              <span className="nb-envelope"><KeepsakeIcon kind={k} /></span><PocketName kind={k} /><small>{sources.length}</small>
             </button>)}
           {counts[leaf] > limit && <button onClick={() => {
             const first = leaf === "cards" ? saved[limit].id : rows[limit][0];
