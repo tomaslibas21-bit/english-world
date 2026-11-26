@@ -18,3 +18,11 @@
     max-height: 73%;
   }
 }
+
+@media (max-width: 900px) and (orientation: portrait) and (height > 700px) {
+  /* An upright phone without a recognizer keeps the typing form open under the answers: the transcript gives up
+     a little height so both model answers and their actions show above it (390x844: 28 px short before). */
+  .convo:has([data-keeper-answer]):has(.yt-bottom > .typebox) > .transcript {
+    flex-basis: 18%;
+  }
+}
