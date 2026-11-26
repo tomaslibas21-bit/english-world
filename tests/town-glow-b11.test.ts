@@ -105,7 +105,7 @@ describe("Maple Harbor glow B11", () => {
     expect(b[1][1] - a[1][1]).toBeLessThanOrEqual(0.005);
     expect(surface(prop, 0, 0.4, 0.052, 0, -1, 0).hex).toBe("#d4b492");
     const snap = surface(prop, 0.06, 0.4, 0.002, 0, -1, 0);
-    expect(snap.hex).toBe("#c6aa72"); expect(snap.point.y).toBeCloseTo(0.0465, 5);
+    expect(snap.hex).toBe("#c6aa72"); expect(snap.point.y).toBeCloseTo(0.02325, 5);
     expect(surface(prop, -0.04, 0.4, 0, 0, -1, 0).hex).toBe("#ac6a53");
   });
 

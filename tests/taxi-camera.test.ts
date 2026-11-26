@@ -277,7 +277,7 @@ describe("Gas & Go follow camera", () => {
     expect(vertices / 3).toBeLessThanOrEqual(60 + 120); // original slab and two six-sided posts
   });
 
-  it("shares the hotel sign draw with Harborview lettering inside the street-facing fascia", () => {
+  it("shares the hotel sign draw with the backed Harborview valance on the street-facing fascia", () => {
     const sign = town.group.getObjectByName("hotel-sign") as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
     expect(sign).toBeInstanceOf(THREE.Mesh);
     expect(paintedText).toContain("Harborview");
@@ -288,12 +288,16 @@ describe("Gas & Go follow camera", () => {
     const canvas = sign.material.map!.image as HTMLCanvasElement;
     expect([canvas.width, canvas.height]).toEqual([768, 240]);
     const pos = sign.geometry.attributes.position, uv = sign.geometry.attributes.uv;
+    const valance = new THREE.Box3();
     for (let i = 4; i < pos.count; i++) {
       const p = sign.localToWorld(new THREE.Vector3().fromBufferAttribute(pos, i));
-      expect(p.y).toBeGreaterThan(3.365); expect(p.y).toBeLessThan(3.575);
-      expect(p.z).toBeGreaterThan(-14.02); expect(p.z).toBeLessThan(-14);
+      valance.expandByPoint(p);
+      // The backed name hangs in front of the cream edge, with over 3 m of clearance below.
+      expect(p.y).toBeGreaterThan(3.02); expect(p.y).toBeLessThan(3.575);
+      expect(p.z).toBeCloseTo(-13.988, 3);
       expect(uv.getY(i)).toBeGreaterThanOrEqual(0); expect(uv.getY(i)).toBeLessThanOrEqual(1 / 3 + 1e-6);
     }
+    expect(valance.max.y - valance.min.y).toBeCloseTo(0.54);
   });
 
   it.each([[1280, 800], [390, 844]])("sees the hotel fascia, cab and stop bay on route 1 at %i×%i", (w, h) => {

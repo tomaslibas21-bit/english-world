@@ -494,7 +494,13 @@ function ticketWell(S: Smalls, x: number, y: number, z: number) {
   punch.absarc(0.082, farLength - 0.032, 0.016, 0, Math.PI * 2, true);
   paper.holes.push(punch);
   S.add(onCoupon(new THREE.ShapeGeometry(paper, 4)), "#f2deb5");
-  S.add(onCoupon(new THREE.PlaneGeometry(0.118, 0.012).translate(-0.025, 0.31, 0.001)), "#826c50");
+  S.add(onCoupon(new THREE.PlaneGeometry(0.118, 0.017).translate(-0.025, 0.31, 0.001)), "#826c50");
+  // The learner sees the near leaf first. Broad conductor's marks read at conversational distance.
+  const onTicket = (g: THREE.BufferGeometry) => g.rotateX(nearPitch - Math.PI / 2).translate(x, base, front);
+  for (const [length, along] of [[0.144, 0.15], [0.09, 0.185]]) {
+    S.add(onTicket(new THREE.PlaneGeometry(length, 0.014).translate(-0.08 + length / 2, along, 0.002)), "#795a47");
+  }
+  S.add(onTicket(new THREE.PlaneGeometry(0.021, 0.20).translate(0.084, 0.126, 0.002)), "#985750");
 }
 /** A till on a counter top at height y, its screen towards the cashier (north). */
 function till(S: Smalls, x: number, y: number, z: number) {
