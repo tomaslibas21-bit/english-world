@@ -41,5 +41,11 @@ export const KARAOKE_UI = {
   replay: L("Išklausyti eilutę dar kartą"),
   continue: L("Tęsti"),
   applause: L("Plojimai tau!"),
+  microphone: L("Naudoti mikrofoną šiai eilutei"),
+  privacy: L("Tavo balsas lieka šiame įrenginyje. Jis neįrašomas ir niekur nesiunčiamas."),
+  listening: L("karaoke:Klausau…"),
+  stopMicrophone: L("karaoke:Išjungti mikrofoną"),
+  heard: L("Girdžiu tave!"),
+  microphoneOff: L("Gali toliau dainuoti be mikrofono."),
   tally: (done: string, total: string) => L("Pakartotos eilutės · {done} iš {total}", { done, total }),
 };

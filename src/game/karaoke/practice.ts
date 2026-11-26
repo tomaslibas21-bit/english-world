@@ -34,6 +34,31 @@ export function lineGap(line: SongLine, row: number, practice: PracticeSnapshot 
   const gap = practice?.mode === "word" ? wordGap(line) : null;
   return gap ? { gap, hidden: seconds < line.e && !practice?.revealed?.includes(row) } : undefined;
 }
+
+const speechWords = (text: string) => text.normalize("NFC").toLowerCase().replace(/[’‘]/g, "'").match(/[\p{L}\p{N}]+(?:'[\p{L}\p{N}]+)*/gu) ?? [];
+/** Pick one alternative's ordered matches. A single spoken repetition never lights two target repetitions. */
+export function heardWordMatches(target: readonly string[], alternatives: readonly string[]): number[] {
+  const tokens = target.flatMap((text, word) => speechWords(text).map((token) => ({ token, word }))).slice(0, 96);
+  let best: number[] = [];
+  for (const alternative of alternatives.slice(0, 8)) {
+    const heard = speechWords(alternative).slice(0, 128);
+    const lengths = Array.from({ length: tokens.length + 1 }, () => new Uint8Array(heard.length + 1));
+    for (let i = tokens.length - 1; i >= 0; i--) for (let j = heard.length - 1; j >= 0; j--)
+      lengths[i][j] = tokens[i].token === heard[j] ? 1 + lengths[i + 1][j + 1] : Math.max(lengths[i + 1][j], lengths[i][j + 1]);
+    const matched = new Set<number>();
+    for (let i = 0, j = 0; i < tokens.length && j < heard.length;) {
+      if (tokens[i].token === heard[j]) { matched.add(i); i++; j++; }
+      else if (lengths[i + 1][j] > lengths[i][j + 1]) i++;
+      else j++;
+    }
+    const words = target.flatMap((_, word) => {
+      const indices = tokens.flatMap((token, index) => token.word === word ? [index] : []);
+      return indices.length && indices.every((index) => matched.has(index)) ? [word] : [];
+    });
+    if (words.length > best.length) best = words;
+  }
+  return best;
+}
 export interface EchoCall {
   start: number;
   targetStart: number;

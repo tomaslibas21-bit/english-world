@@ -3,6 +3,7 @@ import { buildTimeline, karaokeReading, withSungTranslations, type Timeline } fr
 import { NeedsTap, type RadioOutput } from "./output";
 import { fetchSongJson, readSongLines, songAudioUrls, type RadioConfig, type SongMeta } from "./songs";
 import { KaraokePractice, type KaraokePracticeMode, type PracticeSnapshot } from "../game/karaoke/practice";
+import type { KaraokeMicState } from "../game/karaoke/microphone";
 
 export interface KaraokeState {
   status: "idle" | "loading" | "playing" | "paused" | "blocked" | "ended" | "error" | "closed";
@@ -14,6 +15,7 @@ export interface KaraokeState {
   turnPaused?: boolean;
   rate?: 1 | 0.8;
   canSlow?: boolean;
+  microphone?: KaraokeMicState;
 }
 
 interface SessionDeps {
@@ -45,6 +47,7 @@ export class KaraokeSession {
   private reading = false;
   private resumePending = false;
   private tickAt = performance.now();
+  private microphoneFocused = false;
 
   constructor(private deps: SessionDeps) {
     this.store = createStore<KaraokeState>(() => ({
@@ -67,9 +70,10 @@ export class KaraokeSession {
     this.sampledAt = 0;
     this.practice = undefined;
     this.mode = mode;
+    this.microphoneFocused = false;
     this.endedInTurn = this.reading = false;
     this.wantsPlay = true;
-    this.store.setState({ song, timeline: null, practice: undefined, turnPaused: false, issue: null, status: "paused", rate: 1, canSlow: this.canSlow() });
+    this.store.setState({ song, timeline: null, practice: undefined, microphone: undefined, turnPaused: false, issue: null, status: "paused", rate: 1, canSlow: this.canSlow() });
     return this.resume();
   }
 
@@ -84,6 +88,7 @@ export class KaraokeSession {
   }
 
   resume() {
+    if (this.state.practice?.turn && this.state.microphone?.used && this.state.held) return;
     const { song, status, held } = this.state;
     if (!song || (status !== "paused" && status !== "blocked")) return;
     this.tickAt = performance.now();
@@ -111,6 +116,7 @@ export class KaraokeSession {
     this.sampledAt = this.at;
     this.endedInTurn = false;
     this.practice?.seek(this.at);
+    this.microphoneFocused = false;
     this.store.setState({ status: status === "blocked" ? "blocked" : "paused", practice: this.practice?.snapshot() });
     if (requested && !this.state.held && !this.reading) return this.play(song);
   }
@@ -121,14 +127,15 @@ export class KaraokeSession {
     const elapsed = seconds ?? Math.max(0, (now - this.tickAt) / 1000);
     this.tickAt = now;
     if (this.state.status === "playing") this.sample();
-    else if (this.state.status === "paused" && this.wantsPlay && !this.state.held && !this.reading && !this.resumePending) {
+    else if (this.state.status === "paused" && this.wantsPlay && !this.state.held && !this.reading && !this.resumePending && !this.microphoneFocused) {
       if (this.practice?.elapse(elapsed)) { this.continueTurn(); return; }
       this.publishPractice();
     }
   }
 
   continueTurn() {
-    if (!this.practice?.snapshot().turn) return;
+    if (this.state.held || !this.practice?.snapshot().turn) return;
+    this.microphoneFocused = false;
     this.practice.continue();
     this.publishPractice();
     if (this.endedInTurn) { this.finish(); return; }
@@ -136,6 +143,7 @@ export class KaraokeSession {
   }
 
   replayLine() {
+    if (this.state.held) return;
     const call = this.practice?.replayAt(this.position());
     if (!call) return;
     this.pause();
@@ -149,6 +157,9 @@ export class KaraokeSession {
     this.practice?.reveal(row);
     this.publishPractice();
   }
+
+  /** A keyboard/controller learner can inspect the opt-in without racing the quiet-turn timer. */
+  focusMicrophone(focused: boolean) { this.microphoneFocused = focused; this.tickAt = performance.now(); }
 
   /** Change the same output in place: media seconds, play intent, holds and an existing quiet turn stay intact. */
   setRate(rate: number) {
@@ -236,7 +247,8 @@ export class KaraokeSession {
     this.at = this.length = 0;
     this.practice = undefined;
     this.reading = false;
-    this.store.setState({ status: "closed", song: null, timeline: null, practice: undefined, turnPaused: false, issue: null, held: false, rate: 1 });
+    this.microphoneFocused = false;
+    this.store.setState({ status: "closed", song: null, timeline: null, practice: undefined, microphone: undefined, turnPaused: false, issue: null, held: false, rate: 1 });
     this.deps.close(resumeStreet);
   }
 

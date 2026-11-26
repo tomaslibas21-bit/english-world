@@ -6,6 +6,7 @@ import { NPCS } from "../src/content/npcs";
 import type { GameCharacter, CharacterJoint } from "../src/game/characters";
 import { Character } from "../src/game/characters/Character";
 import { StyledCharacter } from "../src/game/characters/StyledCharacter";
+import { KaraokeMicrophone } from "../src/game/karaoke/microphone";
 import { KaraokeMode } from "../src/game/karaoke/mode";
 import { KARAOKE_MARK, KARAOKE_PROMPT, addKaraokeBooth, makeKaraokeMic, karaokeShot } from "../src/game/karaoke/stage";
 import { resetKaraokeUi, useKaraoke } from "../src/game/karaoke/store";
@@ -79,6 +80,31 @@ const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve()
 afterEach(() => { resetKaraokeUi(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe("the café karaoke mode", () => {
+  it.each(["back", "another", "leave"])("routes private microphone actions and disposes its owner on %s", async (exit) => {
+    const start = vi.spyOn(KaraokeMicrophone.prototype, "start").mockImplementation(() => {});
+    const stop = vi.spyOn(KaraokeMicrophone.prototype, "stop");
+    const dispose = vi.spyOn(KaraokeMicrophone.prototype, "dispose");
+    const f = await fixture();
+    f.registry.start("karaoke"); await flush();
+    f.mode.action("select", "G01"); f.mode.action("mode", "echo"); f.mode.action("start"); await flush();
+    const take = f.radio.store.getState().karaoke!;
+    const focus = vi.spyOn(take, "focusMicrophone");
+    stop.mockClear();
+    f.mode.action("microphone-focus", true);
+    f.mode.action("microphone");
+    f.mode.action("microphone-stop");
+    f.mode.action("microphone-focus", false);
+    expect(start).toHaveBeenCalledOnce();
+    expect(stop).toHaveBeenCalledOnce();
+    expect(focus.mock.calls).toEqual([[true], [false]]);
+    f.mode.action(exit);
+    expect(dispose).toHaveBeenCalledOnce();
+    expect(f.radio.store.getState().karaoke).toBeNull();
+    expect(useKaraoke.getState().take).toBeNull();
+    f.mode.dispose();
+  });
+
+
   it("starts the word mode and routes its Reveal and native speed actions to the borrowed take", async () => {
     const f = await fixture();
     f.registry.start("karaoke"); await flush();

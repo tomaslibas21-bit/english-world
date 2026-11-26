@@ -6,6 +6,16 @@ export const CAPTURE_RELEASE_TIMEOUT = 1200;
 let recoveryPending = false;
 let playbacks = 0;
 let leaseId = 0, unconfirmed = 0;
+const confirmedWaiters = new Set<() => void>();
+function settleConfirmed() {
+  if (captures.size || unconfirmed) return;
+  for (const ready of confirmedWaiters) ready();
+  confirmedWaiters.clear();
+}
+/** Private capture owners cannot treat a watchdog as proof that any microphone has released. */
+export function waitForConfirmedCaptureRelease(): Promise<void> {
+  return captures.size || unconfirmed ? new Promise((resolve) => confirmedWaiters.add(resolve)) : Promise.resolve();
+}
 export const microphoneHandoffState = () => ({ captures: captures.size, unconfirmed });
 
 const microphoneWatchers = new Set<(listening: boolean) => void>();
@@ -71,7 +81,7 @@ export async function waitForMicrophone() {
   playbackRoute();
 }
 
-export function captureAudio(recognizerId?: number) {
+export function captureAudio(recognizerId?: number, options: { requireEnd?: boolean; onUncertain?(): void } = {}) {
   const id = ++leaseId;
   const detail = () => ({ leaseId: id, recognizerId, ...microphoneHandoffState() });
   tellMicrophoneWatchers(true);
@@ -93,6 +103,7 @@ export function captureAudio(recognizerId?: number) {
     captures.delete(done);
     if (!captures.size) tellMicrophoneWatchers(false);
     if (reason !== "recognition-end") { timedOut = true; unconfirmed++; }
+    settleConfirmed();
     audioDiagnostic("capture.release", { ...detail(), reason });
     // An old recogniser ending must not change a newer recogniser's capture route.
     // Restore the requested category, but keep the one-shot recovery for the actual
@@ -100,11 +111,18 @@ export function captureAudio(recognizerId?: number) {
     playbackRoute();
     resolve();
   };
+  const uncertain = (reason: "timeout-unknown" | "abort-error-unknown") => {
+    if (options.requireEnd) options.onUncertain?.();
+    else release(reason);
+  };
   return {
+    /** Strict owners keep their silence lease until this actual capture release. */
+    released: done,
     ended() {
       if (ended) return;
       ended = true;
       if (timedOut) { timedOut = false; unconfirmed--; }
+      settleConfirmed();
       audioDiagnostic("capture.recognition-end", detail());
       // A timeout only unblocks the UI. A late real end can invalidate the native route,
       // but changing category during playback can reconfigure active iOS audio.
@@ -115,14 +133,14 @@ export function captureAudio(recognizerId?: number) {
     failed(error?: unknown) {
       abortFailed = true;
       audioDiagnostic("capture.abort-error", { ...detail(), error: diagnosticError(error) });
-      if (!released && timer === undefined) timer = setTimeout(() => release("abort-error-unknown"), CAPTURE_RELEASE_TIMEOUT);
+      if (!released && timer === undefined) timer = setTimeout(() => uncertain("abort-error-unknown"), CAPTURE_RELEASE_TIMEOUT);
     },
     stopping() {
       // Some engines never send onend after denial/abort. Bound the handoff without adding
       // a fixed delay to browsers that do release promptly.
       if (!released && timer === undefined) {
         audioDiagnostic("capture.stop-request", detail());
-        timer = setTimeout(() => release(abortFailed ? "abort-error-unknown" : "timeout-unknown"), CAPTURE_RELEASE_TIMEOUT);
+        timer = setTimeout(() => uncertain(abortFailed ? "abort-error-unknown" : "timeout-unknown"), CAPTURE_RELEASE_TIMEOUT);
       }
     },
   };

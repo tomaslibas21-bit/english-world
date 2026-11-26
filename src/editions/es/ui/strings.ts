@@ -4,6 +4,12 @@ import { LOTERIA_UI_EN } from "../content/loteria";
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
   // Karaoke
+  "karaoke:Klausau…": "Listening on this device…",
+  "karaoke:Išjungti mikrofoną": "Stop listening",
+  "Naudoti mikrofoną šiai eilutei": "Use microphone for this line",
+  "Tavo balsas lieka šiame įrenginyje. Jis neįrašomas ir niekur nesiunčiamas.": "Your voice stays on this device. Nothing is recorded or sent.",
+  "Girdžiu tave!": "Heard you!",
+  "Gali toliau dainuoti be mikrofono.": "You can keep singing with the mic off.",
   "Atspėti praleistą žodį": "Fill in a word",
   "Klausykis ir pabandyk atspėti praleistą žodį.": "Think of the missing word as you listen.",
   "Praleistas žodis": "Missing word",

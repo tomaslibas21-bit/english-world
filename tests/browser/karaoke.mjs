@@ -37,7 +37,7 @@ const words = lt ? {
 const sizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
 await mkdir(shots, { recursive: true });
 
-function install({ token, short }) {
+function install({ token, short, microphone }) {
   localStorage.setItem("puerto-colibri-progress-v1", JSON.stringify({
     version: 1,
     profile: { name: "Test", surname: "Singer", gender: "f", lookId: "f1",
@@ -51,6 +51,31 @@ function install({ token, short }) {
   sessionStorage.setItem("ew-play-now", "1");
   window.SpeechRecognition = undefined;
   window.webkitSpeechRecognition = undefined;
+  if (microphone) {
+    // A complete fake local service, never the headless browser's native recognizer. Production keeps its guard.
+    Object.defineProperty(navigator, "userAgent", { get: () => "Chrome/143.0" });
+    Object.defineProperty(navigator, "userAgentData", { get: () => ({ brands: [{ brand: "Google Chrome" }] }) });
+    window.__karaokeMicStarts = 0; window.__karaokeRemoteStarts = 0; window.__karaokeMicInstalls = 0;
+    window.SpeechRecognition = class {
+      static async available(options) {
+        assertLocal(options); return "available";
+      }
+      static async install() { window.__karaokeMicInstalls++; return false; }
+      local = false; lang = "";
+      get processLocally() { return this.local; }
+      set processLocally(value) { this.local = value === true; }
+      start() {
+        if (this.processLocally === true && this.lang === "es-MX") window.__karaokeMicStarts++;
+        else window.__karaokeRemoteStarts++;
+        window.__karaokeActiveRecognizer = this;
+        queueMicrotask(() => this.onstart?.());
+      }
+      abort() { queueMicrotask(() => this.onend?.()); }
+    };
+    function assertLocal(options) {
+      if (options.processLocally !== true || options.langs.length !== 1 || options.langs[0] !== "es-MX") throw new Error("unexpected local pack probe");
+    }
+  }
 }
 
 async function serveTrack(route, recording) {
@@ -80,7 +105,8 @@ try {
     const label = `${width}x${height}`, phone = width < 900, reduced = width === 1280;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: phone, deviceScaleFactor: 1,
       reducedMotion: reduced ? "reduce" : "no-preference" });
-    await context.addInitScript(install, { token, short: height === 664 });
+    const microphone = height === 664 || width === 1280;
+    await context.addInitScript(install, { token, short: height === 664, microphone });
     const page = await context.newPage(), errors = [], routes = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await keepRadioLocal(page, base.href);
@@ -273,11 +299,39 @@ try {
       const progress = () => page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().practice);
       await turn.waitFor();
       assert.equal((await progress()).completed, 1);
+      if (microphone) await button(lt ? "Naudoti mikrofoną šiai eilutei" : "Use microphone for this line").focus();
       await shot("echo-turn");
+      if (microphone) {
+        const mic = button(lt ? "Naudoti mikrofoną šiai eilutei" : "Use microphone for this line");
+        await mic.waitFor();
+        await mic.focus();
+        await page.locator("#karaoke-mic-privacy").scrollIntoViewIfNeeded();
+        await shot("mic-optin");
+        await press(mic);
+        await until(() => window.__ew.radio.store.getState().karaoke.store.getState().microphone.phase === "listening");
+        assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().held), true);
+        assert.equal(await page.evaluate(() => window.__karaokeMicStarts), 1);
+        assert.equal(await page.evaluate(() => window.__karaokeRemoteStarts), 0);
+        assert.equal(await page.evaluate(() => window.__karaokeMicInstalls), 0);
+        await page.evaluate((sentence) => {
+          const rec = window.__karaokeActiveRecognizer;
+          rec.onresult?.({ results: [Object.assign([{ transcript: sentence }], { isFinal: true })] });
+          rec.onend?.();
+        }, lyric.L[0].src);
+        await until(() => {
+          const take = window.__ew.radio.store.getState().karaoke.store.getState();
+          return !take.held && take.microphone.phase === "done" && take.microphone.matches.length > 0;
+        });
+        await page.locator(".karaoke-word.heard").first().waitFor();
+        await page.locator(".karaoke-heard").scrollIntoViewIfNeeded();
+        await shot("mic-heard");
+        assert.equal(await page.evaluate(() => window.__ew.radio.store.getState().karaoke.store.getState().status), "paused");
+      }
       await press(button(words.repeat));
       await turn.waitFor({ state: "detached" });
       await turn.waitFor();
       assert.equal((await progress()).completed, 1);
+      if (microphone) assert.equal(await page.evaluate(() => window.__karaokeMicStarts), 1);
       await page.evaluate(() => {
         const audio = window.__ew.audio, sfx = audio.sfx.bind(audio);
         window.__karaokeCheers = 0;

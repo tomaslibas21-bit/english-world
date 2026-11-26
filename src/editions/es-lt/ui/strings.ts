@@ -3,6 +3,8 @@
 // edition's Lithuanian, and those that addressed the learner with Jūs (here with tu). Replaces
 // src/editions/es/ui/strings.ts (English) in this layer.
 export const STRINGS: Record<string, string> = {
+  "karaoke:Klausau…": "Klausau…",
+  "karaoke:Išjungti mikrofoną": "Išjungti mikrofoną",
   "karaoke:Tęsti": "Tęsti",
   "Sklandus sustojimas prie durų": "Sklandus sustojimas prie durų",
   "Kelionė be susidūrimų": "Kelionė be susidūrimų",

@@ -109,6 +109,123 @@ export async function localAvailability(): Promise<LocalAvailability> {
     return await SPEECH_REC.available({ langs: [EDITION.target], processLocally: true });
   } catch { return "unsupported"; }
 }
+export type PrivateSpeechStatus = "checking" | "starting" | "listening" | "stopping" | "waiting" | "ended" | "unavailable";
+const PRIVATE_QUIET_MS = 10_000;
+
+/** A real WebIDL setter is required: assigning an expando must never masquerade as local recognition. */
+function configurePrivateRecognition(rec: SpeechRecognizer, lang: string) {
+  let owner: object | null = rec;
+  let setter: PropertyDescriptor | undefined;
+  while (owner && !setter) { setter = Object.getOwnPropertyDescriptor(owner, "processLocally"); owner = Object.getPrototypeOf(owner); }
+  if (typeof setter?.set !== "function") return false;
+  try {
+    rec.processLocally = true;
+    rec.lang = lang;
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 5;
+    return rec.processLocally === true && rec.lang === lang;
+  } catch { return false; }
+}
+
+async function privateRecognition(lang: string): Promise<SpeechRecognizer | null> {
+  if (!supportsOnDeviceRecognition() || !["en-US", "es-MX"].includes(lang)) return null;
+  const handoff = microphoneHandoffState();
+  if (handoff.captures || handoff.unconfirmed) return null;
+  try {
+    if (await SPEECH_REC.available({ langs: [lang], processLocally: true }) !== "available" || !supportsOnDeviceRecognition()) return null;
+    const rec: SpeechRecognizer = new SPEECH_REC();
+    return configurePrivateRecognition(rec, lang) ? rec : null;
+  } catch { return null; }
+}
+
+/** Read-only capability probe. Never installs a pack, requests capture or starts a recognizer. */
+export async function privateSpeechAvailable(lang = EDITION.target) { return !!(await privateRecognition(lang)); }
+
+/** One explicit, local-only turn. No diagnostics, transcript snapshots, reconnect or vendor-service fallback. */
+export function createPrivateSpeechTurn(options: {
+  lang: string;
+  onWords(alternatives: readonly string[]): void;
+  onStatus(status: PrivateSpeechStatus): void;
+  onReleased(): void;
+}) {
+  let rec: SpeechRecognizer | null = null;
+  let lease: ReturnType<typeof captureAudio> | undefined;
+  let consumed = false, cancelled = false, stopping = false, ended = false, released = false;
+  let quiet: ReturnType<typeof setTimeout> | undefined;
+  let lastWords: number | undefined;
+  const release = () => { if (!released) { released = true; options.onReleased(); } };
+  const detachWords = () => {
+    if (!rec) return;
+    rec.onresult = rec.onstart = rec.onerror = rec.onspeechstart = rec.onspeechend = null;
+  };
+  const stop = () => {
+    cancelled = true;
+    lastWords = undefined;
+    clearTimeout(quiet);
+    if (!rec) { options.onStatus("ended"); release(); return; }
+    if (ended || stopping) return;
+    stopping = true;
+    detachWords();
+    options.onStatus("stopping");
+    lease?.stopping();
+    try { rec.abort(); } catch (error) { lease?.failed(error); }
+  };
+  const armQuiet = () => { if (!ended && !cancelled) { clearTimeout(quiet); quiet = setTimeout(stop, PRIVATE_QUIET_MS); } };
+  return {
+    async start() {
+      if (consumed) return false;
+      consumed = true;
+      options.onStatus("checking");
+      const checked = await privateRecognition(options.lang);
+      if (cancelled) { release(); return false; }
+      if (!checked || !configurePrivateRecognition(checked, options.lang)) {
+        options.onStatus("unavailable"); release(); return false;
+      }
+      // Re-check ownership after the asynchronous pack query, immediately before acquiring the capture route.
+      const handoff = microphoneHandoffState();
+      if (handoff.captures || handoff.unconfirmed) { options.onStatus("unavailable"); release(); return false; }
+      rec = checked;
+      lease = captureAudio(undefined, { requireEnd: true, onUncertain: () => options.onStatus("waiting") });
+      rec.onend = () => {
+        if (ended) return;
+        ended = true;
+        lastWords = undefined;
+        clearTimeout(quiet);
+        detachWords();
+        rec!.onend = null;
+        lease!.ended();
+        options.onStatus("ended");
+        release();
+        rec = null; lease = undefined;
+      };
+      rec.onstart = () => { if (!cancelled && !ended) { options.onStatus("listening"); armQuiet(); } };
+      rec.onspeechstart = rec.onspeechend = armQuiet;
+      rec.onresult = (event) => {
+        if (cancelled || ended) return;
+        if (rec?.processLocally !== true || rec.lang !== options.lang) { options.onStatus("unavailable"); stop(); return; }
+        let candidates = [""];
+        for (const result of Array.from(event.results).slice(0, 32)) {
+          const parts = Array.from(result).slice(0, 5).map((alternative) => alternative.transcript.slice(0, 2000));
+          candidates = candidates.flatMap((prefix) => parts.map((part) => `${prefix} ${part}`.trim().slice(0, 2000))).slice(0, 8);
+        }
+        // Repeated unchanged interim events do not turn ten quiet seconds into an endless capture.
+        let signature = 2166136261;
+        for (const char of candidates.join("\n")) signature = Math.imul(signature ^ char.charCodeAt(0), 16777619) >>> 0;
+        if (candidates.some((text) => text.trim()) && signature !== lastWords) { lastWords = signature; armQuiet(); }
+        options.onWords(candidates);
+      };
+      rec.onerror = () => { if (!ended && !cancelled) { options.onStatus("unavailable"); stop(); } };
+      options.onStatus("starting"); armQuiet();
+      try {
+        // No start is reachable without the exact local setting's successful readback.
+        if (rec.processLocally !== true || rec.lang !== options.lang) { stop(); return false; }
+        rec.start(); return true;
+      } catch { options.onStatus("unavailable"); stop(); return false; }
+    },
+    stop,
+  };
+}
 /** Must be called from a user gesture. Downloads the browser's English language pack (free, one time). */
 export async function installLocal(): Promise<boolean> {
   if (!supportsOnDeviceRecognition() || typeof SPEECH_REC.install !== "function") return false;
