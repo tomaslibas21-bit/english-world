@@ -1162,7 +1162,9 @@ async function cafe(route) {
   const opening = route.frames.filter((f) => f.conv.run === start.conv.run && f.conv.lineKey === "greet_order");
   checkFixture(route, "mia", opening);
   const gestureFrames = route.frames.slice(route.entryAt);
-  motionPeak(route, gestureFrames, "mia", ["headGreeting", "question", "greeting"], "gesture-peak", { head: true });
+  // "¿Qué le ofrezco?" now brings her hand up over the counter (an offer always gets its hand); other openings nod.
+  const offers = gestureFrames.some((f) => f.p?.speakerId === "mia" && f.p.gesture === "offer" && f.p.gestureWeight > 0.20);
+  motionPeak(route, gestureFrames, "mia", offers ? ["offer"] : ["headGreeting", "question", "greeting"], "gesture-peak", { head: !offers });
   assert(rows.some((f) => f.p.blink > 0.45 && f.actual.mia.eyeScale < 0.65), "Mariana's real eye bones blink");
   const camera = await layoutEvidence(route, "mia");
   const mouthPoint = camera.landmarks.find(({ name }) => name === "mouth");
