@@ -6,6 +6,12 @@ Each call has four turns from its original situation. The contact speaks first. 
 
 The directory lists each person once, with their role, organization, authored places and available calls. Choosing an outstanding missed call opens the existing personal phone with that call’s callback button focused. Reading or practicing leaves appointments, missed calls and learning progress intact.
 
+## Second-round art review
+
+- **844 × 390, A++** — Mr. Harris’s ETA and its Lithuanian meaning scroll above two fixed control rows. Show/Hide meaning and Replay each measure 44 px high. The browser hit-tested all four corners of both buttons, played Replay with the meaning open, then advanced to the learner’s reply. [Landscape call](phonebooth/landscape.webp)
+- **1280 × 800 doorway and 390 × 844 mark** — A cream receiver fills the upper half of the raised burgundy sign, above “Public Phone.” Both sides use the same 256 × 128 painted face with upright lettering. Brass trim and brackets are merged into the station mesh. [Entrance and listening mark](phonebooth/station.webp)
+- **390 × 664, A++** — “Pakviesti draugę” shares a row with “Pradėti mokomąjį skambutį.” Lizzie’s personal-phone topics appear beneath them under “Tavo telefone.” The directory carries the sign’s burgundy and brass into the binding, with a cream paper gutter and ruled headings. [Lizzie’s directory page](phonebooth/directory.webp)
+
 ## Implementation
 
 | Area | Files | What changed |
@@ -22,8 +28,8 @@ The directory lists each person once, with their role, organization, authored pl
 | Check | Result |
 | --- | --- |
 | TypeScript and production build | `npx tsc --noEmit` and `npx vite build` passed. Both production manifests have one JS entry and one CSS file at the home screen, and 21 statically required JS chunks on entering the game. The directory JavaScript and CSS load on demand. The browser saw neither practice script while browsing names. |
-| Related Vitest suites | 171 passed in seven files covering phone, audio, Web Audio buffers, radio, radio spots, controller input and the meeting camera. |
-| Full Vitest suite | 1,697 of 1,699 passed in the full run (122 files). One case each in `cave-content.test.ts` and `example-names.test.ts` exceeded the five-second default. Rerunning both files with one worker and the same timeout passed all 19 cases. Every case passed across the two runs. |
+| Related Vitest suites | 181 passed in nine files covering phone, audio, Web Audio buffers, radio, radio spots, controller input, the meeting camera, sign fit and indoor jumping. |
+| Full Vitest suite | All 1,699 tests passed across 122 files in one run with one worker and the repository’s original timeouts. |
 | Fresh-save browser test | Walked from the station door to the listening mark, around the booth to Walter’s ticket counter and back outside. Exercised both calls, replay, failed recording and Retry, hidden-page Resume, rotation, both course routes, retained focus and ten start/hang-up cycles. The production build also completed the route without a course origin. The save still had empty situation, phrase and card records and no phone record. |
 | Native phone browser test | A real missed support reminder and an incoming flood call survived rehearsal. With the flood call at the three-presentation cap, the handoff focused Lizzie’s exact row. Completing the native callback left only NetWave. S83 produced the café appointment and staged meeting. S90 produced the office objective and office arrival started S34. The existing browser harness accelerates scheduling and uses its native situation-completion hook. |
 | Controls and layout | Chromium at 390 × 844, 390 × 664, 844 × 390 and 1280 × 800. Checked A++, reduced motion, touch, keyboard and sound off. The controller harness passed X, D-pad, A and B at 390 × 844 and 1280 × 800. |
@@ -35,13 +41,13 @@ Compared with `c7e844b2` at the same 390 × 844 low-preset station pose. The geo
 
 | Measurement | Base | With booth |
 | --- | ---: | ---: |
-| Room triangles | 2,226 | 2,678 (+452) |
+| Room triangles | 2,226 | 2,726 (+500) |
 | Room meshes | 12 | 13 (+1) |
 | Visible draws | 21 | 22 (+1) |
 | Added outdoor draws | — | 0 |
-| Synchronized render p95, software Chromium | 43.9 ms | 48.3 ms (+4.4 ms) |
+| Synchronized render p95, software Chromium | 40.5 ms | 46.2 ms (+5.7 ms) |
 
-At 844 × 390, before and after ten calls, the renderer held 64 geometries and 23 textures and drew 29 calls from the same pose. Both snapshots had four document visibility listeners, three window page-hide listeners, zero radio holds, idle voice and zero pending playback requests. The player returned to the same coordinates. At that landscape pose, synchronized render p95 measured 115.7 ms before opening the book and 54.9 ms after the tenth return.
+At 844 × 390, before and after ten calls, the renderer held 64 geometries and 23 textures and drew 29 calls from the same pose. Both snapshots had four document visibility listeners, three window page-hide listeners, zero radio holds, idle voice and zero pending playback requests. The player returned to the same coordinates. At that landscape pose, synchronized render p95 measured 55.2 ms before opening the book and 78.8 ms after the tenth return.
 
 Timing samples used five warm-up frames and 40 measured draws with a WebGL pixel readback. The browser used SwiftShader at DPR 1. The functional browser harness throttled repeated software draws during manual simulation steps. Timing samples used direct renders.
 
@@ -49,10 +55,10 @@ Timing samples used five warm-up frames and 40 measured draws with a WebGL pixel
 
 | Review | Frames |
 | --- | --- |
-| [Station approach and handset](phonebooth/station.webp) | Doorway, touch listening mark and annotated receiver and cord. |
+| [Station approach and handset](phonebooth/station.webp) | Doorway, touch listening mark and annotated cream sign, receiver and cord. |
 | [Directory at A++](phonebooth/directory.webp) | Index, Lizzie’s Friday practice and Walter’s in-person listing. |
 | [Friday reply and recording recovery](phonebooth/practice.webp) | The same target line with and without its Lithuanian meaning, plus the readable failed turn. |
-| [Landscape and desktop](phonebooth/landscape.webp) | Formal ETA with helper, focus after hang-up, and the open book above the station shelf. |
+| [Landscape and desktop](phonebooth/landscape.webp) | Formal ETA with its helper and both 44 px utility controls, focus after hang-up, and the open book above the station shelf. |
 | [Native callbacks](phonebooth/callbacks.webp) | Two missed rows, the remaining support row after returning Lizzie’s call and the next incoming walking call after leaving the booth. |
 | [Live appointments](phonebooth/appointments.webp) | S83 café objective, Lizzie at the meeting and the S90 office objective. |
 
