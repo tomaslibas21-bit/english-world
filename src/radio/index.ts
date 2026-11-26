@@ -5,10 +5,14 @@ import { useStore as useZustand } from "zustand";
 import { audio, clipUrl, filesToken, usesBufferRecordings } from "../game/audio";
 import { audioKey } from "../audio-key";
 import { RADIO_SPOT_VOICE } from "../content/radioSpots";
-import { watchMicrophone } from "../convo/audioFocus";
+import { microphoneHandoffState, watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
-import { STATIONS, songOfSituation } from "../content/radio";
+import { bookSource } from "../content/bookSource";
+import { createBookChannel } from "./bookChannel";
+import { createBookOutput } from "./bookOutput";
+import type { BookItem } from "./books";
+import { BOOK_STATION, STATIONS, songOfSituation } from "../content/radio";
 import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
 import { Radio, type RadioState } from "./radio";
@@ -32,7 +36,7 @@ async function fetchJson(url: string): Promise<unknown> {
 function tune() {
   const volume = useStore.getState().settings.volume;
   const ctx = audio.context();
-  if (!ctx || volume <= 0) return;
+  if (!ctx || volume <= 0 || microphoneHandoffState().captures) return;
   if (ctx.state !== "running") { try { void ctx.resume().catch(() => {}); } catch { /* the next tap */ } return; }
   try {
     const now = ctx.currentTime, length = 0.55;
@@ -61,7 +65,9 @@ function tune() {
   } catch { /* no sweep: the station changes all the same */ }
 }
 
+const shelf = typeof window === "undefined" ? null : bookSource();
 export const radio = new Radio({
+  books: shelf ? { station: BOOK_STATION, channel: createBookChannel(shelf, createBookOutput()) } : undefined,
   config: typeof window === "undefined" ? null : radioConfig(),
   stations: STATIONS,
   output: usesBufferRecordings() ? new BufferOutput(() => audio.context()) : new HtmlOutput(),
@@ -109,6 +115,7 @@ export function bindRadio() {
   const voice = () => { const state = audio.getState(); if (state === "loading" || state === "playing") radio.hold("voice"); else radio.release("voice"); };
   audio.subscribe(voice);
   watchMicrophone((listening) => { if (listening) radio.hold("microphone", true); else radio.release("microphone"); });
+  if (microphoneHandoffState().captures) radio.hold("microphone", true);
   // a mini-game's own music (audio.bed): the radio waits until it stops
   audio.subscribeBed((music) => { if (music) radio.hold("bed"); else radio.release("bed"); });
   // the town's quiet loops (the surf, a market's murmur) play lower under the radio's music, and its own far-off
@@ -119,6 +126,7 @@ export function bindRadio() {
   // the holds that stand already, before the list arrives and anything could play
   if (useStore.getState().conv.active) { conversation = true; radio.hold("conversation"); }
   voice();
+  document.addEventListener("visibilitychange", () => radio.books?.player.tick());
   const gesture = () => radio.gesture();
   document.addEventListener("click", gesture, true);
   document.addEventListener("keydown", gesture, true);
@@ -129,18 +137,26 @@ export function bindRadio() {
   const session = typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
   if (session) {
     const handle = (action: MediaSessionAction, run: () => void) => { try { session.setActionHandler(action, run); } catch { /* not offered by this browser */ } };
-    handle("play", () => radio.setOn(true));
-    handle("pause", () => radio.setOn(false));
+    handle("play", () => radio.play());
+    handle("pause", () => radio.pause());
     handle("nexttrack", () => radio.next());
     handle("previoustrack", () => radio.previous());
-    radio.store.subscribe((s, before) => {
-      if (s.song === before.song && s.station === before.station) return;
+    let lastTitle = "", lastStation = "";
+    const metadata = () => {
+      const state = radio.store.getState();
+      const item = radio.onBooks ? radio.books?.player.getSnapshot().item as BookItem | null : null;
+      const title = item?.chapter.title ?? state.song?.t ?? "";
+      if (title === lastTitle && state.station === lastStation) return;
+      lastTitle = title;
+      lastStation = state.station;
       try {
-        session.metadata = s.song && typeof MediaMetadata !== "undefined"
-          ? new MediaMetadata({ title: s.song.t, artist: STATIONS.find((x) => x.id === s.station)?.name ?? "" })
-          : null;
+        const artist = radio.onBooks ? BOOK_STATION.name : STATIONS.find((x) => x.id === state.station)?.name;
+        session.metadata = title && typeof MediaMetadata !== "undefined"
+          ? new MediaMetadata({ title, artist, album: item?.book?.title }) : null;
       } catch { /* no lock-screen card */ }
-    });
+    };
+    radio.store.subscribe(metadata);
+    radio.books?.player.subscribe(metadata);
   }
   // the power button has no room for words: a radio that can't play says so in a toast, once
   radio.store.subscribe((s, before) => {

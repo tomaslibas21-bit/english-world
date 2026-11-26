@@ -1,9 +1,12 @@
 // The town's radio set opens over the town from the dial plate, or from the radio button in a phone's menu.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
+import { bookLocale, bookWord as w } from "../content/bookCopy";
+import { BookPicker } from "./BookPicker";
+import { BookRadioControls, WalkingBookLine } from "./BookRadio";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
 import { notedLineAt } from "../radio/extras";
-import { LYRIC_SIZES, type Station } from "../radio/playlist";
+import { LYRIC_SIZES, type Station, type TalkStation } from "../radio/playlist";
 import { bindRadio, radio, useRadio } from "../radio";
 import { lineAt, shortGloss, unitAt } from "../radio/lyrics";
 import { spotLineAt, type ReadySpot } from "../radio/spots";
@@ -64,11 +67,13 @@ function RadioPlate() {
     const t = setTimeout(() => setTitle(null), 5000);
     return () => clearTimeout(t);
   }, [playing, song]);
-  const name = STATIONS.find((s) => s.id === station)?.name ?? "";
+  const talk = radio.bookStation?.id === station;
+  const name = talk ? radio.bookStation!.name : STATIONS.find((s) => s.id === station)?.name ?? "";
+  const label = talk ? w("stations") : "Stotys ir dainos";
   return (
-    <button className={"radio-plate" + (playing ? " playing" : "")} onClick={() => radio.setOpen(true)} title="Stotys ir dainos" aria-label={`${name}. Stotys ir dainos`}>
+    <button className={"radio-plate" + (playing ? " playing" : "")} onClick={() => radio.setOpen(true)} title={label} aria-label={`${name}. ${label}`}>
       <span className="radio-eq" aria-hidden><i /><i /><i /></span>
-      <span className="radio-plate-text" lang="en" key={title ?? name}>{title ?? name}</span>
+      <span className="radio-plate-text" lang="en" key={title ?? name}>{talk ? name : title ?? name}</span>
       <Icon name="chevronDown" size={15} strokeWidth={2.25} className="radio-plate-more" />
     </button>
   );
@@ -101,43 +106,46 @@ const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.fl
 const two = (n: number) => String(n).padStart(2, "0");
 
 /** How far into the song the radio is, while the set is open: the display's counter and the line under it. */
-function useElapsed(): number {
+function useElapsed(active: boolean): number {
   const [at, setAt] = useState(() => radio.position());
   useEffect(() => {
+    if (!active) return;
     const read = () => setAt(radio.position());
     read();
     const timer = setInterval(read, 500);
     return () => clearInterval(timer);
-  }, []);
+  }, [active]);
   return at;
 }
 
 /** A station's row: what stands before its name (its number among the course's kinds of song; a sign for the mix
  *  and for the favorites), the name, what plays there, and how many songs it has. */
-function StationRow({ station, number, count, current, playing }: { station: Station; number: number; count: number; current: boolean; playing: boolean }) {
+function StationRow({ station, number, count, current, playing }: { station: Station | TalkStation; number: number; count: number; current: boolean; playing: boolean }) {
   const on = useRadio((s) => s.on);
   const ref = useRef<HTMLButtonElement>(null);
   // on a small screen the stations scroll: the one that plays is always in view
   useEffect(() => { if (current) ref.current?.scrollIntoView?.({ block: "nearest" }); }, [current]);
-  const empty = count === 0; // only the favorites are shown without songs: they say how to get some
+  const talk = station.source === "books" || station.source === "scenes";
+  const kind = "kind" in station ? station.kind : undefined;
+  const empty = !talk && count === 0; // only the favorites are shown without songs: they say how to get some
   const pick = () => {
     if (empty) return;
     radio.setStation(station.id);
     if (!on) radio.setOn(true);
   };
   return (
-    <button ref={ref} role="radio" aria-checked={current} aria-disabled={empty} className={"rs-st" + (current ? " on" : "") + (empty ? " empty" : "") + (station.kind ? ` rs-st-${station.kind}` : "")} onClick={pick}>
+    <button ref={ref} data-pad-default={current || undefined} data-station={station.id} role="radio" aria-checked={current} aria-disabled={empty} className={"rs-st" + (current ? " on" : "") + (empty ? " empty" : "") + (kind ? ` rs-st-${kind}` : "")} onClick={pick}>
       <span className="rs-st-n" aria-hidden>
         {current && playing ? <span className="radio-eq"><i /><i /><i /></span>
-          : station.kind === "favorites" ? <Icon name="heart" size={17} strokeWidth={2.25} />
-          : station.kind === "mix" ? <Icon name="shuffle" size={17} strokeWidth={2.25} />
-          : number}
+          : kind === "favorites" ? <Icon name="heart" size={17} strokeWidth={2.25} />
+          : kind === "mix" ? <Icon name="shuffle" size={17} strokeWidth={2.25} />
+          : talk ? <Icon name="bookOpen" size={17} /> : number}
       </span>
       <span className="rs-st-text">
         <b lang="en">{station.name}</b>
         <small>{empty ? "Paspausk širdelę prie dainos, kuri patinka" : station.lt}</small>
       </span>
-      {!empty && <span className="rs-st-count">{count}</span>}
+      {!empty && <span className="rs-st-count">{talk ? station.freq.toLocaleString(bookLocale) : count}</span>}
     </button>
   );
 }
@@ -145,7 +153,34 @@ function StationRow({ station, number, count, current, playing }: { station: Sta
 function RadioSet() {
   const s = useRadio((x) => x);
   const ref = useRef<HTMLDivElement>(null);
-  const elapsed = useElapsed();
+  const talkStation = radio.bookStation;
+  const talk = !!talkStation && s.station === talkStation.id;
+  const elapsed = useElapsed(!talk);
+  const [bank, setBank] = useState<"music" | "talk">(talk ? "talk" : "music");
+  useLayoutEffect(() => {
+    const opener = document.activeElement;
+    return () => {
+      requestAnimationFrame(() => {
+        if (document.activeElement !== document.body || useStore.getState().conv.active || useStore.getState().hud.panel) return;
+        const controls = [opener, ...document.querySelectorAll(".radio-plate, .toolbar .ride-menu, .radio-btn")];
+        const target = controls.find((el): el is HTMLButtonElement =>
+          el instanceof HTMLButtonElement && el.isConnected && !el.closest("[inert]") && el.getClientRects().length > 0);
+        target?.focus({ preventScroll: true });
+      });
+    };
+  }, []);
+  const previousShelf = useRef(false);
+  const launcher = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (s.shelfOpen) {
+      previousShelf.current = true;
+      return;
+    }
+    const selected = ref.current?.querySelector<HTMLElement>(".rs-st:not(.empty)");
+    const back = previousShelf.current && launcher.current?.isConnected ? launcher.current : null;
+    (back ?? ref.current?.querySelector<HTMLElement>(".rs-st.on") ?? selected)?.focus({ preventScroll: true });
+    previousShelf.current = false;
+  }, [bank, s.shelfOpen]);
   // what the heart just did, said for a few seconds
   const [hearted, setHearted] = useState<"added" | "removed" | null>(null);
   const [beat, setBeat] = useState(0);
@@ -159,29 +194,34 @@ function RadioSet() {
   useEffect(() => {
     const away = (e: PointerEvent) => {
       const t = e.target as Element | null;
-      if (t && (ref.current?.contains(t) || t.closest(".radio-btn"))) return;
+      if (t && (ref.current?.contains(t) || t.closest(".radio-btn, .book-picker, .book-walking .translate"))) return;
       radio.setOpen(false);
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); radio.setOpen(false); } };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") {
+      if (radio.store.getState().shelfOpen) return; // native dialog cancel unwinds one picker level
+      e.stopPropagation(); radio.setOpen(false);
+    } };
     document.addEventListener("pointerdown", away, true);
     window.addEventListener("keydown", esc, true);
     return () => { document.removeEventListener("pointerdown", away, true); window.removeEventListener("keydown", esc, true); };
   }, []);
-  const station = STATIONS.find((st) => st.id === s.station) ?? STATIONS[0];
+  const station = talk ? talkStation : STATIONS.find((st) => st.id === s.station) ?? STATIONS[0];
   // the stations on offer: the course's kinds of song that it has, the mix, and the favorites (also while empty)
-  const offered = STATIONS.filter((st) => st.kind === "favorites" || !s.ready || (s.counts[st.id] ?? 0) > 0);
+  const music = STATIONS.filter((st) => st.kind === "favorites" || !s.ready || (s.counts[st.id] ?? 0) > 0);
+  const offered: (Station | TalkStation)[] = bank === "talk" && talkStation ? [talkStation] : s.musicAvailable ? music : [];
   const note = s.failed ? "Radijas dabar nepasiekiamas. Pabandyk vėliau."
     : s.on && !s.ready ? "Kraunamas dainų sąrašas…"
     : s.needsTap ? "Paspausk bet kur, kad radijas grotų."
     : !s.on ? "Radijas išjungtas."
     : null;
-  const always = station.kind === "mix"; // this station is shuffled whatever the key says
+  const always = "kind" in station && station.kind === "mix"; // this station is shuffled whatever the key says
   const shuffleLabel = always ? "Ši stotis visada maišo dainas" : "Maišyti šios stoties dainas";
   const heartLabel = s.liked ? "Pašalinti iš mėgstamų" : "Pridėti prie mėgstamų";
   const length = s.song?.d ?? 0;
   const like = () => { setHearted(s.liked ? "removed" : "added"); setBeat((n) => n + 1); radio.like(); };
   return (
-    <div className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label="Radijas">
+    <>
+    <div inert={s.shelfOpen} data-pad-scope="radio" data-bank={bank} data-book-tuned={talk || undefined} onClickCapture={(e) => { launcher.current = (e.target as Element).closest("button"); }} className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label="Radijas">
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
@@ -194,11 +234,13 @@ function RadioSet() {
           {offered.map((st) => <i key={st.id} className="rs-tick" style={{ left: onDial(st.freq) }} />)}
           <i className="rs-needle" style={{ left: onDial(station.freq) }} />
         </div>
+        {talk ? <BookRadioControls /> : <>
         {/* the display: the station and the song's place in it, the time, the song, its heart */}
         <div className="rs-display">
           <div className="rs-line" aria-hidden>
             <span className="rs-spectrum"><i /><i /><i /><i /><i /><i /><i /></span>
             <span className="rs-station" lang="en">{station.name}</span>
+            {bank === "talk" && <span>{station.freq.toLocaleString(bookLocale)}</span>}
             {s.place && <span className="rs-place">{two(s.place.n)}/{two(s.place.of)}</span>}
             {s.song && <span className="rs-time">{clock(elapsed)}</span>}
           </div>
@@ -251,13 +293,21 @@ function RadioSet() {
             <span className="rs-opt-text">Paveikslėliai</span>
           </button>
         </div>
+        </>}
       </div>
-      <div className="rs-stations" role="radiogroup" aria-label="Stotys">
+      <div className="rs-stations">
+        {talkStation && <div className="rs-bank" role="group" aria-label={w("banks")}>{(["music", "talk"] as const).map((key) =>
+          <button key={key} disabled={key === "music" && !s.musicAvailable} aria-pressed={bank === key}
+            onClick={() => setBank(key)}>{w(key)}</button>)}</div>}
+        <div className="rs-rows" role="radiogroup" aria-label="Stotys">
         {offered.map((st, i) => (
           <StationRow key={st.id} station={st} number={i + 1} count={s.counts[st.id] ?? 0} current={st.id === s.station} playing={s.playing} />
         ))}
+        </div>
       </div>
     </div>
+    {s.shelfOpen && radio.books && <BookPicker channel={radio.books} />}
+    </>
   );
 }
 
@@ -271,6 +321,9 @@ function RadioSet() {
 export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const spot = useRadio((s) => s.spot);
+  const talk = useRadio((s) => s.station === radio.bookStation?.id);
+  const showBook = useRadio((s) => s.on && s.showTalkText && s.playing && !s.shelfOpen);
+  if (talk) return showBook ? <WalkingBookLine /> : null;
   if (show && spot) return <SpotStrip key={spot.spot.id} recording={spot} />;
   return <SongStrip show={show} sidewaysPhone={sidewaysPhone} />;
 }

@@ -8,12 +8,21 @@
 import type { SongMeta } from "./songs";
 
 /** A station: a name the town shows, what it is in the learner's language, and which songs it plays. */
-export interface Station {
+interface StationLabel {
   id: string;
   name: string;
   lt: string;
   /** its place on the radio set's FM dial (88–108): where the needle goes */
   freq: number;
+}
+
+export interface TalkStation extends StationLabel {
+  source: "books" | "scenes";
+}
+
+export interface Station extends StationLabel {
+  /** Omitted only by legacy song station providers. */
+  source?: "songs";
   /** none: one of the course's kinds of song, played in the course's order unless the learner shuffles it */
   kind?: "mix" | "favorites";
   /** the songs it plays ("favorites": never asked, the hearts decide) */
@@ -106,6 +115,7 @@ export interface RadioSaved {
   places: Record<string, string>;
   /** the lyric strip is shown */
   lyrics: boolean;
+  talkText?: boolean;
   /** the strip's type, a step of LYRIC_SIZES */
   size: number;
   /** under the line in the strip: the whole sentence's translation, the course's notes on it; beside it: its picture */
@@ -140,6 +150,7 @@ export function readSaved(raw: string | null): RadioSaved {
       at: Number.isFinite(v.at) && Number(v.at) > 0 ? Number(v.at) : 0,
       places,
       lyrics: v.lyrics !== false,
+      ...(v.talkText === false && { talkText: false }),
       size: Number.isInteger(v.size) && Number(v.size) >= 0 && Number(v.size) < LYRIC_SIZES.length ? Number(v.size) : LYRIC_SIZE,
       nat: v.nat === true,
       notes: v.notes === true,
