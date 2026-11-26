@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import sceneIndex from "./src/generated/convfm/index.json" with { type: "json" };
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { loadingScreen } from "./tools/loading-screen.ts";
@@ -11,6 +12,8 @@ import { LOADING_ART } from "./src/ui/loadingArt.ts";
 // VITE_AUDIO_BASE=https://cdn.example.com/english-world/audio/ loads the voice clips from elsewhere.
 // The loading screen (the town's logo, src/ui/loadingArt.ts) is put into index.html here: tools/loading-screen.ts.
 export default defineConfig({
+  // The picker reuses town metadata. Only IDs of playable pools enter the startup bundle.
+  define: { __PLAYABLE_SCENE_IDS__: JSON.stringify(sceneIndex.filter((s) => s.poolSize > 0).map((s) => s.id)) },
   base: process.env.GAME_BASE || "/",
   plugins: [loadingScreen("Kraunamas „English World“", LOADING_ART), react(), townCollisionAsset(), fleetPackAsset()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },

@@ -9,10 +9,15 @@ import { microphoneHandoffState, watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { bookSource } from "../content/bookSource";
-import { createBookChannel } from "./bookChannel";
+import { createTalkChannel } from "./bookChannel";
 import { createBookOutput } from "./bookOutput";
 import type { BookItem } from "./books";
-import { BOOK_STATION, STATIONS, songOfSituation } from "../content/radio";
+import { playableScenes } from "./scenes";
+import { SceneOutput } from "./sceneOutput";
+import type { SceneItem } from "./sceneProgram";
+import { bookLocale } from "../content/bookCopy";
+import { VOICES_V2 } from "../content/voices";
+import { BOOK_STATION, SCENE_STATION, STATIONS, songOfSituation } from "../content/radio";
 import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
 import { Radio, type RadioState } from "./radio";
@@ -66,11 +71,15 @@ function tune() {
 }
 
 const shelf = typeof window === "undefined" ? null : bookSource();
+const clips = usesBufferRecordings() ? new BufferOutput(() => audio.context()) : new HtmlOutput();
+const hasScenes = typeof window !== "undefined" && VOICES_V2 && playableScenes.length > 0 && (!shelf || shelf.profile === "em-lt");
+const talk = shelf || hasScenes ? createTalkChannel(shelf, createBookOutput(), hasScenes ? new SceneOutput(clips) : undefined) : null;
 export const radio = new Radio({
-  books: shelf ? { station: BOOK_STATION, channel: createBookChannel(shelf, createBookOutput()) } : undefined,
+  books: shelf && talk ? { station: BOOK_STATION, channel: { ...talk, source: shelf } } : undefined,
+  scenes: hasScenes && talk ? { station: SCENE_STATION, channel: talk } : undefined,
   config: typeof window === "undefined" ? null : radioConfig(),
   stations: STATIONS,
-  output: usesBufferRecordings() ? new BufferOutput(() => audio.context()) : new HtmlOutput(),
+  output: clips,
   token: filesToken,
   fetchJson,
   volume: () => useStore.getState().settings.volume,
@@ -126,7 +135,7 @@ export function bindRadio() {
   // the holds that stand already, before the list arrives and anything could play
   if (useStore.getState().conv.active) { conversation = true; radio.hold("conversation"); }
   voice();
-  document.addEventListener("visibilitychange", () => radio.books?.player.tick());
+  document.addEventListener("visibilitychange", () => radio.talk?.player.tick());
   const gesture = () => radio.gesture();
   document.addEventListener("click", gesture, true);
   document.addEventListener("keydown", gesture, true);
@@ -145,18 +154,19 @@ export function bindRadio() {
     const metadata = () => {
       const state = radio.store.getState();
       const item = radio.onBooks ? radio.books?.player.getSnapshot().item as BookItem | null : null;
-      const title = item?.chapter.title ?? state.song?.t ?? "";
+      const scene = radio.onScenes ? radio.talk?.player.getSnapshot().item as SceneItem | null : null;
+      const title = scene?.title[bookLocale] ?? item?.chapter.title ?? state.song?.t ?? "";
       if (title === lastTitle && state.station === lastStation) return;
       lastTitle = title;
       lastStation = state.station;
       try {
-        const artist = radio.onBooks ? BOOK_STATION.name : STATIONS.find((x) => x.id === state.station)?.name;
+        const artist = radio.onScenes ? SCENE_STATION.name : radio.onBooks ? BOOK_STATION.name : STATIONS.find((x) => x.id === state.station)?.name;
         session.metadata = title && typeof MediaMetadata !== "undefined"
           ? new MediaMetadata({ title, artist, album: item?.book?.title }) : null;
       } catch { /* no lock-screen card */ }
     };
     radio.store.subscribe(metadata);
-    radio.books?.player.subscribe(metadata);
+    radio.talk?.player.subscribe(metadata);
   }
   // the power button has no room for words: a radio that can't play says so in a toast, once
   radio.store.subscribe((s, before) => {

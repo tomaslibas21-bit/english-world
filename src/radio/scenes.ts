@@ -3,6 +3,13 @@ import { unpackScene, type PackedRadioScene } from "../content/radioScenes/pack"
 import { learnerTake, learnerVoices, type LearnerVoice } from "../content/radioScenes/voice";
 import { audio, clipUrl, filesToken } from "../game/audio";
 
+import { SITUATIONS } from "../content/situations/catalog";
+
+declare const __PLAYABLE_SCENE_IDS__: string[];
+
+// The small local catalog determines dial availability without opening a situation or its recordings.
+export const playableScenes = SITUATIONS.filter((scene) => __PLAYABLE_SCENE_IDS__.includes(scene.id));
+
 const sceneFiles = import.meta.glob<PackedRadioScene>([
   "../generated/convfm/*.json",
   "!../generated/convfm/index.json",

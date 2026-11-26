@@ -8,7 +8,7 @@ export interface SceneBag {
 
 export type SceneBags = Partial<Record<`scene/${string}`, SceneBag>>;
 
-function validBag(value: unknown, scene: RadioScene): value is SceneBag {
+export function validBag(value: unknown, scene: RadioScene): value is SceneBag {
   if (!value || typeof value !== "object") return false;
   const bag = value as SceneBag;
   return bag.version === scene.version && Array.isArray(bag.order) && bag.order.length === scene.routes.length &&
