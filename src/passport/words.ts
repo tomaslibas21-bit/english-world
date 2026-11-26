@@ -31,14 +31,14 @@ export const copy = {
   complete: words("Book completed", "Knyga užbaigta"), prevPage: words("Previous page", "Ankstesnis puslapis"),
   nextPage: words("Next page", "Kitas puslapis"), loading: words("Opening the page…", "Atverčiamas puslapis…"),
   unavailable: words("This page is unavailable.", "Šis puslapis nepasiekiamas."),
-  waves: words("Waves ridden", "Įveiktos bangos"), finds: words("Photo finds", "Fotografijų radiniai"),
+  waves: words("Waves ridden", "Įveiktos bangos"), finds: words("Photo finds", "Nufotografuoti objektai"),
 };
 export const withCount = (label: Words, count: number | string) => words(label.en + " · " + count, label.lt + " · " + count);
 export const games = {
   road: words("Desert Road", "Kelias per dykumą"), sea: words("Open Sea", "Atvira jūra"),
   taxi: words("Taxi", "Taksi"), billiards: words("Billiards", "Biliardas"),
   barista: words("Barista", "Barista"), gofish: words("Go Fish", "Kortų žaidimas „Go Fish“"),
-  surf: words("Surf lesson", "Banglenčių pamoka"), photowalk: words("Photo Walk", "Fotopasivaikščiojimas"),
+  surf: words("Surf lesson", "Banglenčių pamoka"), photowalk: words("Photo Walk", "Fotografavimo žygis"),
   gym: words("Workout", "Treniruotė"),
 };
 export const keepsakeNames: Record<KeepsakeKind, string> = {

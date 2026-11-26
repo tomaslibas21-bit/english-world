@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
+import { townHallPrint } from "./townHallPrint";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
@@ -984,9 +985,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
   if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: townHall ? "#214e41" : signInk(b), border: townHall ? "#436353" : b.trim, w: townHall ? 512 : 768, h: townHall ? 108 : 160 });
     const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    const sign = townHall ? townHallPrint(sw, sw / 4)
+      : new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({
+        map: textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 }), toneMapped: false,
+      }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     if (poolHall) sy = 4.29;
     if (townHall) sy = 4.25;

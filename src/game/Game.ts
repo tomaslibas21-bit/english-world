@@ -16,6 +16,7 @@ import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
+import { passportPrompt } from "./world/townHallPrint";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
@@ -4351,8 +4352,7 @@ export class Game implements GameApi {
           const distance = Math.hypot(p.x, p.z - 0.1);
           if (distance < 1.55 && distance < bd) {
             bd = distance;
-            best = { kind: "passport", id: "passport", label: "Open passport",
-              prompt: { kind: "passport", label: "Open passport", lt: "Atversti pasą" } };
+            best = { kind: "passport", id: "passport", label: passportPrompt.label, prompt: passportPrompt };
           }
         }
         const ex = this.zone.interior.exit;

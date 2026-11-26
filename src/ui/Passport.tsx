@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { inEnglishMaster } from "../passport/course";
 import { copy, sections, withCount, type Section, type Words } from "../passport/words";
 import type { Stamp } from "../passport/stamps";
@@ -43,7 +44,7 @@ export default function Passport({ close }: { close(): void }) {
   const [pressed, setPressed] = useState<string | null>(null);
   const [announcement, announce] = useState("");
   const root = useRef<HTMLDivElement>(null);
-  const opening = useRef(true), interacted = useRef(false);
+  const opened = useRef<string | null>(null), interacted = useRef(false);
   const focusAfter = useRef<string | null>(".passport-picker");
   const [tick, redraw] = useState(0);
   const bySection = useMemo(() => {
@@ -73,24 +74,38 @@ export default function Passport({ close }: { close(): void }) {
     select(row.id); setPressed(reveal ? row.id : null);
     focusAfter.current = ".passport-proof h3";
   }
-  function nextStamp() {
-    const next = source.history.pending(earned)?.[0];
-    const row = source.rows.find(s => s.id === next);
-    if (row) openRow(row, true);
+  function nextStamp(onOpen = false) {
+    const present = () => {
+      if (!root.current || root.current.dataset.save !== source.prefix) return;
+      const fresh = source.history.pending(earned);
+      if (fresh === null) {
+        source.history.presentBaseline(earned);
+      } else if (!(onOpen && interacted.current)) {
+        const row = source.rows.find(s => s.id === fresh[0]);
+        if (row) {
+          // Hold the cross-tab lock until the detail is actually in the DOM.
+          flushSync(() => openRow(row, true));
+          source.history.present(row.id);
+          announce(copy.earned.lt + " · " + row.title.lt);
+        }
+      }
+      redraw(n => n + 1);
+    };
+    if (navigator.locks) void navigator.locks.request(source.prefix, present).catch(() => present());
+    else void Promise.resolve().then(present);
   }
-  // The opening leaf must be on screen before recording any presentation. Reread the
-  // shared keys here as another tab can acknowledge between render and commit.
   useEffect(() => {
-    if (!opening.current || source.loading) return;
-    opening.current = false;
-    const fresh = source.history.pending(earned);
-    if (fresh === null) { source.history.presentBaseline(earned); redraw(n => n + 1); }
-    else if (fresh.length && !interacted.current) nextStamp();
-  }, [source.history, earned, source.loading]);
+    if (opened.current === source.prefix || source.loading) return;
+    if (opened.current) {
+      select(null); setSection("situations"); setPage(0); setPressed(null); setShowFavorites(false);
+      interacted.current = false;
+    }
+    opened.current = source.prefix;
+    nextStamp(true);
+  }, [source.prefix, source.loading]);
   useEffect(() => {
-    if (!current?.earned || !source.history.pending(earned)?.includes(current.id)) return;
+    if (!current?.earned || current.id === pressed || !source.history.pending(earned)?.includes(current.id)) return;
     source.history.present(current.id);
-    if (pressed === current.id) announce(copy.earned.lt + " · " + current.title.lt);
     redraw(n => n + 1);
   }, [current, pressed, source.history, earned]);
   useLayoutEffect(() => {
@@ -119,7 +134,7 @@ export default function Passport({ close }: { close(): void }) {
     focusAfter.current = showFavorites ? ".passport-favorite-link" : ".passport-cell";
   }
   return <div ref={root} className="passport" role="dialog" aria-modal="true" aria-labelledby="passport-title"
-    data-detail={!!current} data-large={large} onPointerDown={() => { interacted.current = true; }}
+    data-detail={!!current} data-large={large} data-save={source.prefix} onPointerDown={() => { interacted.current = true; }}
     onKeyDown={e => {
       interacted.current = true;
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (!e.repeat) back(); }
@@ -150,7 +165,7 @@ export default function Passport({ close }: { close(): void }) {
         {showFavorites ? source.favorites.slice(start, start + pageSize).map(s => <a key={s.id} className="passport-favorite-link" href={"/songs/" + s.id} target="_blank" rel="noopener noreferrer"><Caption label={s.title} /></a>)
           : <div className="passport-grid">{cells.map((row, i) => <Fragment key={row.id}>
             {row.book && (!i || row.book !== cells[i-1].book) && <h4><Caption label={row.book} /></h4>}
-            <button type="button" data-stamp={row.id} className="passport-cell" data-earned={row.earned} aria-pressed={current?.id === row.id}
+            <button type="button" title={copy.view.lt} data-stamp={row.id} className="passport-cell" data-earned={row.earned} aria-pressed={current?.id === row.id}
               onClick={() => openRow(row)}><Mark row={row} /><strong><Caption label={row.title} /></strong>
               <span className="passport-condition"><Caption label={row.earned ? copy.earned : row.condition} /></span></button>
           </Fragment>)}</div>}
@@ -160,7 +175,7 @@ export default function Passport({ close }: { close(): void }) {
     </div>
     <footer>
       <button type="button" data-pad-back onClick={back}><Icon name="arrowLeft" size={16} /><Caption label={current || showFavorites ? copy.back : copy.close} /></button>
-      {pendingRows.length > 0 && <button type="button" className="passport-new" onClick={nextStamp} title={copy.next.lt}>
+      {pendingRows.length > 0 && <button type="button" className="passport-new" onClick={() => nextStamp()} title={copy.next.lt}>
         <Caption label={withCount(copy.fresh, pendingRows.length)} /></button>}
       <div className="passport-pages">
         <button type="button" aria-label={copy.prevPage.lt} disabled={leaf === 0} onClick={() => turn(-1)}><Icon name="arrowLeft" /></button>

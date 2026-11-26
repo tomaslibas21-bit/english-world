@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { ROAD_EDITION } from "../../content/road";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
+import { townHallPrint } from "./townHallPrint";
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
@@ -823,6 +824,13 @@ const B: Record<string, () => Interior> = {
       s.add(boxGeo(0.47, 0.065, 0.64, 0, 0, 0).rotateZ(side * 0.07)
         .translate(-0.27 + side * 0.245, 1.105, z), "#fff1d0");
     }
+    // A few ink rules at the top of the left leaf read from the doorway.
+    for (const dz of [-0.17, -0.11, -0.05]) s.add(boxGeo(0.29, 0.004, 0.012, 0, 0, 0)
+      .rotateZ(-0.07).translate(-0.51, 1.14, z + dz), ink);
+    const label = townHallPrint(1, 0.25, true);
+    label.rotation.x = -0.48;
+    label.position.set(-0.28, 1.12, z - 0.45);
+    c.g.add(label);
     s.add(boxGeo(0.31, 0.075, 0.23, 0.55, 1.054, z + 0.16), "#633d29");
     s.add(boxGeo(0.27, 0.02, 0.19, 0.55, 1.1, z + 0.16), ink);
     s.add(boxGeo(0.2, 0.07, 0.16, 0.65, 1.054, z - 0.17), "#51382b");

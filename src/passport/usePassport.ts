@@ -27,7 +27,10 @@ export function usePassport(section: Section) {
   const prefix = presentationPrefix(inEnglishMaster, progress.started);
   const history = useMemo(() => presentation(prefix, storage()), [prefix]);
   useEffect(() => {
-    const onCourse = () => setSnapshot(courseSnapshot());
+    const onCourse = () => {
+      setSnapshot(courseSnapshot());
+      setMissing(old => old.length ? [] : old);
+    };
     const changed = (e: StorageEvent) => {
       if (!e.key || e.key === COURSE_KEY || e.key === FAVORITES_KEY) onCourse();
       if (e.key === PROGRESS_KEY && e.newValue) {
