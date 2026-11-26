@@ -19,6 +19,7 @@ import { MAPLE_BLOCKS } from "./styled";
 import { addHarborSurf } from "./harborSurf";
 import { HARBOR_SURF, SURF_SPOT } from "./surf";
 import { visualOnly } from "../collisionGeometry";
+import { finishSquarePlanter } from "./townFinishes";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -371,7 +372,7 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
   }
 
   addDoorPumpkins(placePumpkin);
-  addSquare(add, col, placePumpkin);
+  addSquare(add, col, placePumpkin, M);
   addLobsterTruck(add, col, group, photo, placePumpkin);
   addBoats();
   if (!LIGHTHOUSE_ISLAND) addLighthouse(add, LIGHTHOUSE);
@@ -399,13 +400,14 @@ function addDoorPumpkins(placePumpkin: PlacePumpkin) {
 
 /** The square in October: planters of mums round the fountain, hay bales, pumpkins and corn stalks at the farmers'
  *  market. */
-function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin) {
+function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin, M: Merger) {
   const { x: fx, z: fz } = FOUNTAIN;
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     const x = fx + sx * 5.6, z = fz + sz * 5.6;
     add(boxGeo(1.0, 0.5, 1.0, x, 0.25, z), "#8a5a3c");
     add(boxGeo(1.08, 0.07, 1.08, x, 0.5, z), "#6b4a34", { cast: false });
     mums(add, x - 0.18, 0.46, z - 0.12, 0.44, sx + 2); mums(add, x + 0.22, 0.46, z + 0.2, 0.36, sz + 3);
+    finishSquarePlanter(M, x, z, sx, sz);
     col.addBox(x, z, 1.05, 1.05);
   }
   // between the stalls (behind the line the shoppers walk): bales with pumpkins on and around them, corn stalks

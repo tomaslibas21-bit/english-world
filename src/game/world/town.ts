@@ -1,6 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
+import { finishBank, finishPlazaBench, finishPoolHallDoor } from "./townFinishes";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -909,6 +910,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     if (poolHall) {
       M.add("pool-hall-path", mat("#c9b89a"), boxGeo(2.3, 0.025, 2.24, 0, 0.013, 0)
         .rotateY(rotY).translate(dx + n[0] * 1.12, 0, dz + n[1] * 1.12), false);
+      finishPoolHallDoor(M, dx, dz, rotY, doorW);
     }
     // welcome mat
     M.add("mat", mat("#7a4b36"), boxGeo(doorW + 0.4, 0.04, 1.1, 0, 0.02, 0).rotateY(rotY).translate(dx + n[0] * 0.7, 0, dz + n[1] * 0.7), false);
@@ -1167,6 +1169,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("atm-screen", glassMat, boxGeo(0.6, 0.45, 0.04, 0, 1.5, 0).rotateY(rotY).translate(dx + t[0] * au + n[0] * 0.57, 0, dz + t[1] * au + n[1] * 0.57));
     col.addBox(dx + t[0] * au + n[0] * 0.3, dz + t[1] * au + n[1] * 0.3, Math.abs(t[0]) * 1.05 + Math.abs(n[0]) * 0.6, Math.abs(t[1]) * 1.05 + Math.abs(n[1]) * 0.6);
     for (const s of [-1, 1]) M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * s * cu + n[0] * 0.6, 2.5, dz + t[1] * s * cu + n[1] * 0.6, 10));
+    finishBank(M, dx, dz, rotY, b.w, doorW, cu);
   }
   if (b.id === "post") {
     // Place the mailbox at the west end of the frontage, clear of the SUV at the curb.
@@ -1900,6 +1903,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   for (const [bx, bz, rot] of [[18, -23.2, Math.PI], [30, -22.6, Math.PI], [40, -30, -Math.PI / 2]] as [number, number, number][]) {
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(bx, 0, bz));
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.5, 0.08, 0, 0.8, 0.22).rotateY(rot).translate(bx, 0, bz));
+    finishPlazaBench(M, bx, bz, rot);
     col.addBox(bx, bz, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
     // a place on each one facing away from the fountain (Rosa's bench is hers)
     if (bx !== 18) seats.push({ x: bx, z: bz, rot: rot + Math.PI, y: 0.55 });

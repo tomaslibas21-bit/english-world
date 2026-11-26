@@ -1,6 +1,7 @@
 // Run with a local development server. Optionally set WORLD_TEST_URL, WORLD_STORAGE,
 // WORLD_PLAYWRIGHT_MODULE, WORLD_BROWSER_CHANNEL, WORLD_SHOTS, WORLD_PHONE_WIDTH/HEIGHT or WORLD_SPAWN ("x,z,rot").
 // WORLD_GLOW_B6=1 adds four stationary town-art comparisons before the normal checks, with the HUD visible.
+// WORLD_GLOW_B7=1 captures the square bench, bank frontage, Corner Pocket entry and square planter instead.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -274,13 +275,19 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (process.env.WORLD_GLOW_B6 === "1") await withGame(viewport, {}, async ({ page, step, shot }) => {
-      for (const [name, x, z, rot] of [
+    if (process.env.WORLD_GLOW_B6 === "1" || process.env.WORLD_GLOW_B7 === "1") await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B7 === "1" ? [
+        ["glow-square-bench", 30, -18.4, Math.PI],
+        ["glow-bank-front", 13, -2.6, 0],
+        ["glow-pocket-entry", -12.5, 31.4, Math.PI],
+        ["glow-square-planter", 20.8, -21.4, Math.PI],
+      ] : [
         ["glow-market-fruit", 26, -38.5, Math.PI],
         ["glow-market-flowers", 14, -37.5, Math.PI],
         ["glow-lobster-hatch", 15.7, -30.2, -Math.PI / 2],
         ["glow-pier-seaward", -30, -87, 0],
-      ]) {
+      ];
+      for (const [name, x, z, rot] of poses) {
         await page.evaluate(([x, z, rot]) => window.__ew.game.placeOnFoot(x, z, rot), [x, z, rot]);
         await step(30);
         const frame = await page.evaluate(() => {
