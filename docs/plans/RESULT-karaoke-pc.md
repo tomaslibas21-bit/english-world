@@ -23,7 +23,7 @@ These are my visual and interaction ratings from the two Puerto Colibrí builds.
 
 ## Comparison with Maple Harbor
 
-I built the fetched Maple Harbor reference at `32076c6e` and the original Puerto Colibrí port at `46353503`. I compared their doorway, picker, song detail and first sung line at all four sizes. In the original wide PC shot a guest’s hat crossed the singer. Maple Harbor’s position in the aisle cleared the face. I also played G01 through Echo, a word reveal, slowdown, applause and the walk back to the counter in the reference build. La Ceiba now uses that wide shot and centres the performer in the left side of the landscape layout.
+I built the fetched Maple Harbor reference at `32076c6e` and the original Puerto Colibrí port at `46353503`. I compared their doorway, picker, song detail and first sung line at all four sizes. In the original wide PC shot a guest’s hat crossed the singer. Maple Harbor’s position in the aisle cleared the face. At each size I also played G01 through Echo, a word reveal, slowdown, applause and the walk back to Sunny Cup’s counter. La Ceiba now uses that wide shot and centres the performer in the left side of the landscape layout.
 
 | Original Puerto Colibrí | Maple Harbor reference | Revised Puerto Colibrí |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ The browser runs used headless Chromium 156 with software WebGL, at one device p
 
 Both local origins served their course’s own index, sampled song jackets and complete timed lyrics. The English layer listed 186 songs and exercised SB01’s English call before its Spanish target. The Lithuanian layer listed 130. Each loaded its own SV64 take. The tests used local, duration-matched silent WAVs, checked the media clock at 0.8× and sought to the last call for the finish. The private-mic checks used an on-device recognizer fixture. Listening quality and physical-phone audio were outside this Chromium review.
 
-Both production builds passed `tsc --noEmit` and the localization audit passed. For the local review, both builds used `VITE_RADIO_INDEX=/songs/index.json`, `VITE_RADIO_FILES=/karaoke-files` and `VITE_RADIO_RECORDINGS=https://audio.dvikalbesdainos.lt/spanish-master`. The files and recordings settings let the test server intercept the course’s indexed recording URLs.
+Both production builds passed `tsc --noEmit`. The localization audit passed. Vitest ran the `en`, `es` and `es-lt` projects with `--maxWorkers=2 --testTimeout=30000`. All 234 test files passed, with 2,901 tests passed and 8 skipped. For the local review, both builds used `VITE_RADIO_INDEX=/songs/index.json`, `VITE_RADIO_FILES=/karaoke-files` and `VITE_RADIO_RECORDINGS=https://audio.dvikalbesdainos.lt/spanish-master`. The files and recordings settings let the test server intercept the course’s indexed recording URLs.
 
 The base branch’s two town-atlas checks produced different canvas-command hashes on Linux x64. I verified both hashes with the original painters from before `567ffbee`. The test now accepts those exact streams alongside the existing digests. The atlas dimensions, draw counts, UV hashes and text checks still run.
 
