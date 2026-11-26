@@ -18,7 +18,22 @@ try {
   await page.locator(".hud .prompt").tap();
   await page.waitForFunction(() => !window.__ew.game.transitioning && window.__ew.game.zone.id === "town-hall");
   await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "passport");
-  await shot(page, "doorway");
+  for (const [width, height] of [[390, 844], [1280, 800]]) {
+    await page.setViewportSize({ width, height });
+    // Measure the open book's fore-edge and the two tools in the player's actual entry camera.
+    await page.waitForFunction(() => {
+      const { rig } = window.__ew.game, camera = rig.cam;
+      const project = (x, y, z) => rig.target.clone().set(x, y, z).project(camera);
+      const left = project(-.85, 1.16, -.94), right = project(.31, 1.16, -.94);
+      const pad = project(.63, 1.14, -1.11), stamp = project(.70, 1.41, -1.52);
+      return Math.abs(camera.aspect - innerWidth / innerHeight) < .01 && camera.position.y < 4.2
+        && [left, right, pad, stamp].every(p => Math.abs(p.x) < .95 && Math.abs(p.y) < .75)
+        && (right.x - left.x) * innerWidth / 2 >= 75
+        && Math.hypot((pad.x - stamp.x) * innerWidth / 2, (pad.y - stamp.y) * innerHeight / 2) > 17;
+    }, null, { timeout: 5000 });
+    if (width === 390) await shot(page, "doorway");
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.__ew.game.walkTo(0, 0.1, { kind: "point" }));
   await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "passport");
   await page.locator(".hud .prompt").tap();
