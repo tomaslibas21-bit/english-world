@@ -292,6 +292,7 @@ export class Game implements GameApi {
   private chest = new THREE.Vector3();
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
+  private cabinetPin = new THREE.Vector2(NaN, NaN);
   private disposed = false;
   private coveArt = new SlateCoveArt();
   private get caveCode() { return this.caveTravel.code; }
@@ -1213,7 +1214,7 @@ export class Game implements GameApi {
         this.restoreCaveScene = undefined;
       }
       this.rig.mode = this.walkCamera;
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, cabinetCorner: id === BILLIARDS_PLACE };
       else this.rig.yaw = this.heading;
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
@@ -3299,7 +3300,8 @@ export class Game implements GameApi {
     const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
     const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
     const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
-    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
+    const corner = this.rig.mode === "interior" ? this.rig.cabinetCornerFrame() : 0;
+    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift - 0.13 * corner;
     this.rig.applyViewShift(w, h, 0, h * (stageShift ?? this.rig.standView?.shiftY ?? -shift));
   }
 
@@ -4225,6 +4227,18 @@ export class Game implements GameApi {
   private updateTags() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
+    const overlay = useStore.getState().hud;
+    const anchor = overlay.prompt?.anchor;
+    if (anchor && !overlay.modeScreen && !overlay.panel) {
+      v.set(anchor.x, anchor.y, anchor.z).project(this.rig.cam);
+      const x = Math.round((1 + v.x) * w / 2), y = Math.round((1 - v.y) * h / 2);
+      if (x !== this.cabinetPin.x || y !== this.cabinetPin.y) {
+        this.cabinetPin.set(x, y);
+        const style = this.container.parentElement!.style;
+        style.setProperty("--cabinet-x", x + "px");
+        style.setProperty("--cabinet-y", y + "px");
+      }
+    }
     const obj = this.currentObjective();
     // in a conversation the header names the person and every line its speaker: no tags over heads
     const talking = !!this.session?.active, modeMenu = useStore.getState().hud.modeScreen?.kind === "menu";
@@ -4401,7 +4415,7 @@ export class Game implements GameApi {
         const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd, !!this.zone.interior);
         if (m) {
           bd = m.distance;
-          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind } };
+          best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind, anchor: m.anchor } };
         }
       }
       if (!this.zone.interior) {
@@ -4425,7 +4439,10 @@ export class Game implements GameApi {
       || (best?.prompt?.kind === "arcade" && best.label !== this.nearest?.label);
     this.nearest = best;
     if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
-      if (changed && best) audio.sfx("tick");
+      if (changed && best) {
+        if (best.prompt?.kind === "arcade") audio.sfx("coin", 0.35);
+        else audio.sfx("tick");
+      }
       const names = RIDE_NAMES;
       const keeperPrompt = best?.kind === "npc" ? this.caveZone?.keeperPrompts.get(best.id) : undefined;
       st.setHud({ prompt: !best ? null

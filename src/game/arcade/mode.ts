@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { GameMode, ModeInput } from "../kit/modes";
 import type { ModeHost } from "../kit/host";
-import { CABINETS, cabinetNear, cabinetPose, TOWN_GAMES, type TownGame, type Cabinet } from "./cabinets";
+import { CABINETS, CABINET_Z, cabinetNear, cabinetPose, TOWN_GAMES, type TownGame, type Cabinet } from "./cabinets";
 
 type Menu = { cabinet: Cabinet | null; playing: Cabinet | null; page: "featured" | "list" | "detail"; selected: TownGame | null };
 export const useArcade = create<Menu>(() => ({ cabinet: null, playing: null, page: "featured", selected: null }));
@@ -28,7 +28,9 @@ export class ArcadeMode implements GameMode {
   prompt(x: number, z: number) {
     const near = this.room.here() && cabinetNear(x, z);
     if (!near) return null;
-    return { distance: near.distance, kind: "arcade" as const, label: CABINETS[near.id].title, hint: "Pasirinkti žaidimą" };
+    const cabinet = CABINETS[near.id];
+    return { distance: near.distance, kind: "arcade" as const, label: cabinet.title, hint: "Pasirinkti žaidimą",
+      anchor: { x: cabinet.x, y: 1.05, z: CABINET_Z + 0.43 } };
   }
 
   start() {

@@ -20,6 +20,7 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
+  anchor?: { x: number; y: number; z: number };
   kind: "surf" | "taxi" | "barista" | "gofish" | "billiards" | "arcade" | "gym";
 }
 

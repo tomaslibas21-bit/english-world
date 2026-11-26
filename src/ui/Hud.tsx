@@ -146,12 +146,12 @@ export function Hud() {
   const namedTalk = talk && hud.prompt?.label.startsWith("Kalbėtis: ") === true;
   const zone = hud.minimap.zone;
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
-  const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || baristaOffer || goFishOffer;
+  const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || kind === "arcade" || baristaOffer || goFishOffer;
   const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = streetCard || (task.collapsedForNote
-    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext))))));
+    ?? ((moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (portrait && zone === "pool-hall" && !!target && target !== zone) || (!task.fresh && (moving || foldForContext))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
@@ -176,7 +176,7 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "arcade" ? " cabinet-prompt" : "")} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.label === ROAD_UI.drive ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
@@ -695,7 +695,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "arcade" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
+      {prompt && prompt.kind !== "arcade" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} aria-label={prompt.kind === "listen" ? prompt.lt : undefined}>{prompt.kind === "listen" ? "Klausyti" : prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
