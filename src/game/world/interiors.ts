@@ -138,13 +138,13 @@ function patternedFloor(w: number, d: number, floor: string, kind: "wood" | "til
   return floorMesh;
 }
 
-function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone" | "parquet"; accent?: string; warm?: boolean; entryZ?: number } = {}): Interior {
+function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone" | "planks"; accent?: string; warm?: boolean; entryZ?: number } = {}): Interior {
   const g = new THREE.Group();
   g.name = "interior-" + id;
   const M = new Merger();
   const col = new Colliders();
   const r = rand(id.length * 97 + w);
-  if (opts.floorKind !== "parquet") g.add(patternedFloor(w, d, floor, opts.floorKind ?? "wood"));
+  if (opts.floorKind !== "planks") g.add(patternedFloor(w, d, floor, opts.floorKind ?? "wood"));
   // walls: back (north), sides, low front with a gap for the door
   const wm = mat(wall);
   const base = mat(opts.accent ?? "#8a6a4a");
@@ -167,7 +167,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
   g.add(outside(w, d));
-  if (opts.floorKind !== "parquet") g.add(wallShade(w, d));
+  if (opts.floorKind !== "planks") g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
   build({ M, col, g, w, d, r, anim });
   M.build(g, { name: "room-solid" });
@@ -874,12 +874,15 @@ function passportRoom({ M, col, g, w, d }: Ctx) {
       add(boxGeo(width, height, depth, 0, 0, 0).rotateZ(tilt).translate(x, y, deskZ + .025), color);
     leaf(.53, .085, .70, 1.147, "#dbcdb3");
     leaf(.53, .015, .70, 1.196, "#f6f4ec");
+    // The fore-edge of the folded sheets catches a narrow horizontal highlight.
+    add(new THREE.PlaneGeometry(.51, .012).rotateZ(tilt).translate(x, 1.15, deskZ + .376), "#f3ead5");
   }
   for (let i = 0; i < 4; i++) {
     const length = i === 3 ? .19 : .32;
     add(boxGeo(length, .004, .011, 0, 0, 0).rotateZ(-.11).translate(bookX - .27, 1.212, deskZ - .16 + i * .052), "#849387");
   }
   add(new THREE.RingGeometry(.071, .084, 20).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.214, deskZ + .04), spruce);
+  add(leafShape().scale(.10, .10, 1).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.215, deskZ + .04), spruce);
   slab(bookX + .01, 1.121, deskZ + .405, .052, .017, .12, "#995441");
   // Lid swung back, with the stamp standing separately from the felt pad.
   slab(.63, 1.09, deskZ + .19, .41, .084, .33, walnut);
@@ -892,12 +895,12 @@ function passportRoom({ M, col, g, w, d }: Ctx) {
   add(cylGeo(.065, .065, .026, .70, 1.175, deskZ - .22, 10), brass);
   const card = townHallDeskCard();
   card.rotation.x = -.27;
-  card.position.set(bookX, 1.25, deskZ - .465);
+  card.position.set(bookX, 1.305, deskZ - .465);
   g.add(card);
 }
 
 const B: Record<string, () => Interior> = {
-  "town-hall": () => room("town-hall", 9, 7, "#876954", "#dfd5bd", passportRoom, [], { floorKind: "parquet", accent: "#475c4d", entryZ: 1.45 }),
+  "town-hall": () => room("town-hall", 9, 7, "#876954", "#dfd5bd", passportRoom, [], { floorKind: "planks", accent: "#475c4d", entryZ: 1.45 }),
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: "tina", ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {

@@ -17,11 +17,12 @@ export function townHallLintel(batch: Merger, place: (g: BufferGeometry) => Buff
   const y = 4.25;
   function face(w: number, h: number, x: number, dy: number, z: number, color: string, angle = 0) {
     const shape = new PlaneGeometry(w, h).rotateZ(angle).translate(x, y + dy, z);
-    batch.add("town-hall-lintel-" + color, mat(color), place(shape), false);
+    const paint = color === "#eddfc2" ? mat(color, { emissive: "#a49a82" }) : mat(color);
+    batch.add("town-hall-lintel-" + color, paint, place(shape), false);
   }
-  face(5.1, 1.07, 0, 0, .12, "#285244");
-  face(5.01, .98, 0, 0, .123, "#eddfc2");
-  for (const dy of [-.383, .383]) face(4.82, .016, 0, dy, .125, "#ad8957");
+  face(5.1, 1.07, 0, 0, .12, "#eddfc2");
+  for (const dy of [-.47, .47]) face(4.98, .045, 0, dy, .145, "#476658");
+  for (const dx of [-2.47, 2.47]) face(.045, .945, dx, 0, .145, "#476658");
   const text = "TOWN HALL", scale = .5, advance = .99, space = .48;
   let start = -((text.length - 1) * advance + space - .31) * scale / 2;
   for (const letter of text) {
@@ -29,8 +30,8 @@ export function townHallLintel(batch: Merger, place: (g: BufferGeometry) => Buff
     for (const path of strokes[letter]) for (let i = 2; i < path.length; i += 2) {
       const [ax, ay, bx, by] = path.slice(i - 2, i + 2);
       const dx = bx - ax, dy = by - ay;
-      face(Math.hypot(dx, dy) * scale + .022, .055, start + (ax + bx) * scale / 2,
-        (ay + by - 1) * scale / 2, .129, "#193f35", Math.atan2(dy, dx));
+      face(Math.hypot(dx, dy) * scale + .026, .065, start + (ax + bx) * scale / 2,
+        (ay + by - 1) * scale / 2, .146, "#254d40", Math.atan2(dy, dx));
     }
     start += advance * scale;
   }
