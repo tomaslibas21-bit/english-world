@@ -187,7 +187,8 @@ function checkGuidance(view, touch, key) {
   assert(chip.top >= cue.bottom && chip.bottom < roadY, `the chip stays between the cue and the road: ${measured}`);
   assert(controls.every((control) => chip.bottom < control.top), `the chip clears the touch controls: ${measured}`);
   const arrowSize = touch ? 40 : 48;
-  assert(icon.width >= arrowSize && icon.height >= arrowSize, `the chip has a prominent direction icon: ${measured}`);
+  // (half a pixel of slack: the chip bobs, so its box is measured mid-transform, e.g. 47.99998 for 48)
+  assert(icon.width >= arrowSize - 0.5 && icon.height >= arrowSize - 0.5, `the chip has a prominent direction icon: ${measured}`);
   assert(view.fontSize >= 20 && view.fontSize <= 22 && view.fontWeight >= 800, `the chip has large bold text: ${measured}`);
   assert(cue.width <= (viewport.width <= 600 ? Math.min(385, viewport.width - 80) : 620) + 1, `the cue stays within its width limit: ${measured}`);
   assert(view.label && !/[\u2190-\u21ff]/u.test(view.label), `the chip label has no arrow characters: ${measured}`);
