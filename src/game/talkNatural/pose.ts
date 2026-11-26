@@ -754,19 +754,24 @@ class ConversationPose implements NaturalPoseDriver {
       const listenBeat = nod * this.nodSize * this.weight * (1 - Math.min(1, Math.max(cueWeight, responseWeight)));
       const hip = learner && this.learnerHip && !supported;
       const e = this.energy;
-      if (!supported) this.mixTorso(0.055 * listen, hip ? 0.014 * listenBeat : 0);
+      const t = this.time, pace = this.pace, stress = this.stress;
+      const attend = Math.max(listen, ease(this.rest) * this.weight) * (1 - responseWeight);
+      const talk = ease(this.talk) * this.weight * (1 - responseWeight) * (1 - 0.6 * Math.min(1, cueWeight)) * e;
       if (!supported) {
-        if (left) r.foreL.rotation.x -= 0.13 * listen;
-        if (right) r.foreR.rotation.x -= 0.13 * listen;
+        // A person on their feet is never a post from the neck down: the weight drifts slowly from side to side,
+        // the body leans a touch into a stressed word, and the forearms lift with it (one more than the other).
+        const sway = learner ? 0 : Math.sin(t * 0.55 * pace + this.swayB) * 0.012 * Math.max(attend, talk);
+        this.mixTorso(0.055 * listen + 0.014 * stress * talk, (hip ? 0.014 * listenBeat : 0) + sway);
+        const lift = stress * talk * (1 - Math.min(1, cueWeight));
+        if (left) r.foreL.rotation.x -= 0.13 * listen + 0.075 * lift;
+        if (right) r.foreR.rotation.x -= 0.13 * listen + 0.05 * lift;
       }
       if (!hip) r.head.rotation.x += (learner ? 0.055 : 0.075 * e) * listenBeat;
       // An attentive head: a little to one side, the mouth a touch warmer, for as long as the learner has the turn,
       // and in the quiet before and after the speaker's own line. It is never a statue: the head drifts very slowly,
       // each person at their own pace, and the eyes flick to the learner's mouth and back.
-      const t = this.time, pace = this.pace;
-      const attend = Math.max(listen, ease(this.rest) * this.weight) * (1 - responseWeight);
-      r.head.rotation.z += (0.042 * this.attendNow + Math.sin(t * 0.37 * pace + this.swayB) * 0.009) * e * attend;
-      r.head.rotation.y += (Math.sin(t * 0.53 * pace + this.swayA) * 0.014 + Math.sin(t * 0.21 * pace + this.swayB) * 0.009) * e * attend;
+      r.head.rotation.z += (0.042 * this.attendNow + Math.sin(t * 0.6 * pace + this.swayB) * 0.009) * e * attend;
+      r.head.rotation.y += (Math.sin(t * 0.8 * pace + this.swayA) * 0.014 + Math.sin(t * 0.33 * pace + this.swayB) * 0.009) * e * attend;
       if (r.corners) r.corners.position.y += 0.005 * attend;
       const dart = oneShot(this.dartAge, 0.06, 0.26, 0.09) * attend;
       if (dart > 0) {
@@ -783,11 +788,9 @@ class ConversationPose implements NaturalPoseDriver {
         r.browL.position.y += brow;
         if (r.browR) r.browR.position.y += brow;
       }
-      const talk = ease(this.talk) * this.weight * (1 - responseWeight) * (1 - 0.6 * Math.min(1, cueWeight)) * e;
       if (talk > 0) {
         // The head rides the voice: down a little on a stressed syllable, and it never sits dead still mid-sentence.
         // Two slow waves of different lengths on each axis, at this person's pace: no loop to spot, no two alike.
-        const stress = this.stress;
         r.head.rotation.x += (0.07 * stress - 0.012) * talk;
         r.head.rotation.y += (Math.sin(t * 1.9 * pace + this.swayA) * 0.024 + Math.sin(t * 0.83 * pace + this.swayB) * 0.016) * talk;
         r.head.rotation.z += (Math.sin(t * 1.3 * pace + this.swayB) * 0.017 + Math.sin(t * 0.61 * pace + this.swayA) * 0.012) * talk;
