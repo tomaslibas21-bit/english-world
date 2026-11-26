@@ -1,0 +1,205 @@
+import * as THREE from "three";
+import { KARAOKE_UI } from "../../content/karaokeCopy";
+import type { Radio } from "../../radio/radio";
+import type { KaraokeSession } from "../../radio/karaokeSession";
+import type { GameCharacter, CharacterJoint } from "../characters";
+import type { ModeHost } from "../kit/host";
+import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { useKaraoke, resetKaraokeUi } from "./store";
+import { KARAOKE_MARK, KARAOKE_PROMPT, disposeKaraokeMic, karaokeShot, makeKaraokeMic } from "./stage";
+
+interface CafeHost {
+  room(): THREE.Group | null;
+  audience(): GameCharacter[];
+  place(x: number, z: number, rot: number): void;
+}
+type BoothRadio = Pick<Radio, "store" | "init" | "karaokeCatalog" | "openKaraoke">;
+
+function parkActor(actor: GameCharacter) {
+  const position = actor.root.position.clone(), rotation = actor.root.quaternion.clone(), scale = actor.root.scale.clone();
+  const { anim, watch, steady, attentive, busy, bank, moveSpeed } = actor;
+  const joints: CharacterJoint[] = ["body", "head", "armL", "armR", "foreL", "foreR", "legL", "legR", "shinL", "shinR"];
+  const poses = joints.map((name) => ({ joint: actor.joint(name), rotation: actor.joint(name).quaternion.clone() }));
+  return () => {
+    actor.root.position.copy(position);
+    actor.root.quaternion.copy(rotation);
+    actor.root.scale.copy(scale);
+    actor.setAnim(anim);
+    Object.assign(actor, { watch, steady, attentive, busy, bank, moveSpeed });
+    for (const pose of poses) pose.joint.quaternion.copy(pose.rotation);
+  };
+}
+
+export class KaraokeMode implements GameMode {
+  readonly id = "karaoke";
+  readonly cleanScreen = "menu";
+  readonly indoorPrompt = true;
+  readonly exitLabel = KARAOKE_UI.leave;
+  private opened = false;
+  private staged = false;
+  private request = 0;
+  private take: KaraokeSession | null = null;
+  private unsubscribe?: () => void;
+  private restoreCamera?: () => void;
+  private restorePlayer?: () => void;
+  private restoreActors: (() => void)[] = [];
+  private mic?: THREE.Group;
+  private docked?: THREE.Object3D;
+  private dockedVisible = true;
+  private origin?: { x: number; z: number; rot: number };
+  private watched = new THREE.Vector3();
+
+  constructor(private host: ModeHost, private cafe: CafeHost, private radio: BoothRadio) {}
+
+  get active() { return this.opened; }
+  get modal() { return this.opened; }
+  get performing() { return this.staged; }
+  get camera() { return this.staged ? "stage" as const : undefined; }
+  available() { return this.radio.store.getState().available; }
+
+  prompt(x: number, z: number) {
+    if (this.opened || !this.available() || !this.cafe.room()) return null;
+    const distance = Math.hypot(x - KARAOKE_PROMPT.x, z - KARAOKE_PROMPT.z);
+    return distance <= 1.2 ? { distance, label: KARAOKE_UI.enter, kind: "karaoke" as const } : null;
+  }
+
+  start() {
+    if (this.opened || !this.available() || !this.cafe.room() || !this.host.canStart(true)) return false;
+    this.opened = true;
+    const player = this.host.player(), p = player.root.position;
+    this.origin = { x: p.x, z: p.z, rot: player.root.rotation.y };
+    this.restoreCamera = this.host.rig.parkView();
+    this.restorePlayer = parkActor(player);
+    this.host.prepare();
+    player.moveSpeed = 0;
+    player.setAnim("idle");
+    this.host.entered(this.id);
+    resetKaraokeUi();
+    useKaraoke.setState({ phase: "picker" });
+    void this.loadCatalog();
+    return true;
+  }
+
+  private async loadCatalog() {
+    const request = ++this.request;
+    useKaraoke.setState({ loading: true, failed: false });
+    await this.radio.init();
+    if (!this.opened || request !== this.request) return;
+    useKaraoke.setState({ loading: false, failed: !this.radio.store.getState().ready });
+  }
+
+  private startSong(id: string) {
+    if (!this.radio.karaokeCatalog().some(({ song }) => song.id === id)) return;
+    this.take ??= this.radio.openKaraoke();
+    if (!this.take) return;
+    this.unsubscribe?.();
+    useKaraoke.setState({ take: this.take });
+    this.unsubscribe = this.take.store.subscribe((state) => {
+      if (this.opened && state.status === "playing" && !this.staged) this.stage();
+      if (this.opened && state.status === "closed") this.exit(true);
+    });
+    void this.take.start(id);
+  }
+
+  private stage() {
+    const room = this.cafe.room();
+    if (!room || !this.opened) { this.exit(true); return; }
+    this.staged = true;
+    const player = this.host.player();
+    this.restoreActors = [player, ...this.cafe.audience()].map(parkActor);
+    this.cafe.place(KARAOKE_MARK.x, KARAOKE_MARK.z, KARAOKE_MARK.rot);
+    player.root.position.y = KARAOKE_MARK.y;
+    player.setAnim("idle");
+    player.busy = null;
+    this.mic = makeKaraokeMic();
+    player.rightHand.add(this.mic);
+    this.docked = room.getObjectByName("karaoke-docked-mic");
+    if (this.docked) { this.dockedVisible = this.docked.visible; this.docked.visible = false; }
+    this.host.rig.stage = karaokeShot(this.host.rig.cam.aspect);
+    this.host.rig.mode = "stage";
+    if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) this.host.rig.stageSnap();
+    useKaraoke.setState({ phase: "stage" });
+  }
+
+  update(frame: ModeFrame) {
+    if (!this.opened) return;
+    this.host.updatePose(frame.dt, this.staged ? KARAOKE_MARK.rot : this.origin!.rot);
+    if (!this.staged) return;
+    const player = this.host.player(), guests = this.cafe.audience();
+    this.watched.copy(player.root.position).y += player.height * 0.8;
+    for (const guest of guests) {
+      guest.watch = this.watched;
+      guest.steady = guest.attentive = true;
+    }
+    player.watch = null;
+    player.steady = true;
+    this.host.rig.stage!.fov = this.host.rig.cam.aspect < 0.9 ? 53 : 43;
+  }
+
+  private leaveMark() {
+    if (!this.staged) return;
+    this.staged = false;
+    if (this.mic) disposeKaraokeMic(this.mic);
+    this.mic = undefined;
+    if (this.docked) this.docked.visible = this.dockedVisible;
+    this.docked = undefined;
+    if (this.origin) this.cafe.place(this.origin.x, this.origin.z, this.origin.rot);
+    for (const restore of this.restoreActors) restore();
+    this.restoreActors = [];
+    this.restoreCamera?.();
+  }
+
+  action(name: string, value?: string | boolean) {
+    if (!this.opened) return;
+    if (name === "leave") { this.exit(false); return; }
+    if (name === "back") {
+      if (this.staged) {
+        this.take?.pause();
+        this.leaveMark();
+        useKaraoke.setState({ phase: "picker" });
+      } else if (useKaraoke.getState().detail) {
+        this.take?.pause();
+        useKaraoke.setState({ detail: null });
+      } else this.exit(false);
+      return;
+    }
+    if (name === "filter" && typeof value === "string") useKaraoke.setState({ filter: value, scroll: 0, selected: null });
+    if (name === "select" && typeof value === "string" && this.radio.karaokeCatalog().some(({ song }) => song.id === value)) {
+      useKaraoke.setState({ detail: value, selected: value });
+    }
+    if (name === "start") {
+      const id = useKaraoke.getState().detail;
+      if (id) this.startSong(id);
+    }
+    if (name === "catalog-retry") void this.loadCatalog();
+    if (name === "pause") this.take?.pause();
+    if (name === "resume") void this.take?.resume();
+    if (name === "retry") void this.take?.retry();
+  }
+
+  input(input: ModeInput) {
+    if (!this.opened || input.kind !== "key" || input.repeat) return false;
+    if (input.key === "escape") { this.action("back"); return true; }
+    return false;
+  }
+
+  exit(_immediate: boolean) {
+    if (!this.opened) return;
+    this.opened = false;
+    this.request++;
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
+    this.take?.close();
+    this.take = null;
+    this.leaveMark();
+    this.restoreCamera?.();
+    this.restoreCamera = undefined;
+    this.restorePlayer?.();
+    this.restorePlayer = undefined;
+    this.origin = undefined;
+    resetKaraokeUi();
+    this.host.left(this.id);
+  }
+
+  dispose() { this.exit(true); }
+}

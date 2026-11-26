@@ -1,5 +1,7 @@
 // The town's radio set opens over the town from the dial plate, or from the radio button in a phone's menu.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useStore as useZustand } from "zustand";
+import type { KaraokeSession } from "../radio/karaokeSession";
 import { useStore } from "../state/store";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
 import { notedLineAt } from "../radio/extras";
@@ -268,11 +270,18 @@ function RadioSet() {
  *  line's picture beside them, and the course's notes on the line under the plate. The strip's type follows the
  *  set's size key: one factor on the strip, which every size in it is a share of. Between lines it shows nothing;
  *  taps go through it to the ground. */
-export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
+export function LyricStrip({ sidewaysPhone, karaoke = false }: { sidewaysPhone: boolean; karaoke?: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const spot = useRadio((s) => s.spot);
+  const take = useRadio((s) => s.karaoke);
+  if (karaoke && take) return <KaraokeStrip take={take} />;
   if (show && spot) return <SpotStrip key={spot.spot.id} recording={spot} />;
   return <SongStrip show={show} sidewaysPhone={sidewaysPhone} />;
+}
+
+function KaraokeStrip({ take }: { take: KaraokeSession }) {
+  const state = useZustand(take.store, (s) => s);
+  return <SongStrip show={!!state.timeline && state.status !== "error"} sidewaysPhone={false} take={take} />;
 }
 
 function SpotStrip({ recording }: { recording: ReadySpot }) {
@@ -304,12 +313,13 @@ function SpotStrip({ recording }: { recording: ReadySpot }) {
   </div>;
 }
 
-function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: boolean }) {
-  const timeline = useRadio((s) => s.timeline);
+function SongStrip({ show, sidewaysPhone, take }: { show: boolean; sidewaysPhone: boolean; take?: KaraokeSession }) {
+  const streetTimeline = useRadio((s) => s.timeline);
+  const timeline = take ? take.store.getState().timeline : streetTimeline;
   const size = useRadio((s) => s.lyricSize);
   const nat = useRadio((s) => s.nat);
-  const lineNotes = useRadio((s) => (s.notes ? s.lineNotes : null));
-  const pictures = useRadio((s) => (s.pictures ? s.linePictures : null));
+  const lineNotes = useRadio((s) => (!take && s.notes ? s.lineNotes : null));
+  const pictures = useRadio((s) => (!take && s.pictures ? s.linePictures : null));
   const glosses = useStore((s) => s.settings.lt);
   const [at, setAt] = useState<{ line: number; unit: number; notes: number }>({ line: -1, unit: -1, notes: -1 });
   const row = useRef<HTMLDivElement>(null);
@@ -326,7 +336,7 @@ function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: bool
     if (!show || !timeline) { setAt({ line: -1, unit: -1, notes: -1 }); return; }
     let frame = 0;
     const tick = () => {
-      const t = radio.position();
+      const t = take ? take.position() : radio.position();
       const line = lineAt(timeline, t);
       const unit = line < 0 ? -1 : unitAt(timeline.lines[line], t);
       // the line whose notes show: this one, or an earlier one whose notes are still being read
@@ -336,7 +346,7 @@ function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: bool
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [show, timeline, lineNotes]);
+  }, [show, timeline, lineNotes, take]);
   if (!show || !timeline || at.line < 0) return null;
   const line = timeline.lines[at.line];
   const translation = line.part === "translation";

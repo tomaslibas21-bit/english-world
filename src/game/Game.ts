@@ -85,6 +85,8 @@ import { NavGrid, openIslandNav } from "./nav";
 import { Session } from "./session";
 import { Ambient, Chatter, walkerLook } from "./ambient";
 import { ROOM_PEOPLE } from "./world/roomPeople";
+import { KaraokeMode } from "./karaoke/mode";
+import { KARAOKE_PLACE } from "./karaoke/stage";
 import { AMBIENT_LINES, STAFF_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
@@ -258,6 +260,7 @@ export class Game implements GameApi {
   private transitioning = false;
   private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
+  private karaoke: KaraokeMode | null = null;
   private gofish: ReturnType<typeof createGoFishMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: true }));
   private readonly phone = new TownPhone();
@@ -674,6 +677,15 @@ export class Game implements GameApi {
       savePlace: () => this.savePlace(),
     });
     this.modes.register(this.barista);
+    this.modes.register(this.karaoke = new KaraokeMode({
+      ...host,
+      entered: (id) => this.modes.entered(id),
+      left: (id) => this.modes.left(id),
+    }, {
+      room: () => this.zone.id === KARAOKE_PLACE ? this.zone.group : null,
+      audience: () => this.extras.slice(0, 2),
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+    }, radio));
     this.modes.register(this.gofish = createGoFishMode(stageHost, {
       room: () => this.zone.id === GOFISH_CONVERSATION.location ? this.zone.group : null,
       npc: (id) => this.npcs.find((actor) => actor.id === id)?.ch,
@@ -3442,6 +3454,8 @@ export class Game implements GameApi {
         const tags = document.querySelector(".gofish-opponents")?.getBoundingClientRect();
         const panel = document.querySelector(".gofish-bottom, .gofish-result .mode-score-card")?.getBoundingClientRect();
         this.gofish.frameView(w, h, top ?? 0, tags, panel);
+      } else if (this.karaoke?.performing && mode === this.karaoke) {
+        this.rig.applyViewShift(w, h, this.sidewaysPhone ? w * 0.2 : 0, this.sidewaysPhone ? 0 : h * 0.06);
       } else this.applyWalkingViewShift(w, h, talking);
     }
     this.applySeaReturnView(dt, w, h);
@@ -4110,8 +4124,10 @@ export class Game implements GameApi {
     this.learnerAt.set(p.x, p.y + (this.player.lift ?? 0) + 1.5, p.z);
     const partner = talking ? this.talkNpc : null;
     if (partner && !this.naturalTalk?.speaker) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
-    this.player.watch = partner ? this.talkAt : null;
-    this.player.steady = !!partner;
+    if (!this.karaoke?.performing) {
+      this.player.watch = partner ? this.talkAt : null;
+      this.player.steady = !!partner;
+    }
     for (const n of this.npcs) {
       if (mode?.ownsNpc?.(n.id)) continue;
       if (n.spirit && this.caveCode) {
@@ -4142,7 +4158,7 @@ export class Game implements GameApi {
       }
       n.ch.update(dt);
     }
-    for (const c of this.extraChats) c.update(dt);
+    if (!this.karaoke?.performing) for (const c of this.extraChats) c.update(dt);
     for (const ch of this.extras) ch.update(dt);
   }
 
@@ -4391,7 +4407,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone || this.surf?.active || this.caveTravel?.pending) return;
+    if (!this.player || !this.zone || this.surf?.active || this.caveTravel?.pending || this.karaoke?.performing) return;
     const p = this.player.root.position;
     const safe = this.rides.water?.safeSave();
     if (!safe && (this.rides.water?.wet || this.rides.water?.returning)) return;

@@ -52,6 +52,8 @@ const surfaces: Record<string, Surface> = {
   billiards: { priority: 60, first: ".bl-ball-option, .bl-choice", slot: ".bl-header" },
   photo: { priority: 60, first: "[data-choice], .photo-choices [data-line], .photo-quiz > button" },
   radio: { priority: 50, back: ".rs-x", slot: ".radio-set" },
+  karaoke: { priority: 60, first: "[data-pad-default], [data-song], select", slot: ".karaoke-mast" },
+  "karaoke-stage": { priority: 60, first: DEFAULT, slot: ".karaoke-stage-head" },
   "phone-ring": { priority: 50, first: ".phone-ring-actions .btn:not(.soft)", back: ".phone-ring-actions .soft" },
   street: { priority: 50, first: ".street-choice", back: ".street-head button" },
   drawer: { priority: 20, first: "[data-pad-tool=scenarios]" },

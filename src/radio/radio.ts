@@ -167,6 +167,7 @@ export class Radio {
   private level() { return Math.max(0, Math.min(1, this.deps.volume() * MUSIC_LEVEL)); }
 
   karaokeCatalog() { return karaokeCatalog(this.deps.config, this.songs); }
+  karaokeFavorites() { return [...this.hearts]; }
 
   /** Park the street program in place until the booth closes. No booth state goes into the radio save. */
   openKaraoke(): KaraokeSession | null {
