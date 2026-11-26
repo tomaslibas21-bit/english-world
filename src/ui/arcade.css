@@ -15,3 +15,5 @@
 .arcade-detail dl { border-top: 1px solid #bea980; padding-top: 10px; }
 .arcade-detail dd { margin: 0; font-size: 1.3em; font-weight: 800; }
 .arcade-panel .arcade-primary { color: #fff6df; background: #29513f; font-weight: 800; }
+.arcade-loading { pointer-events: auto; position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+  gap: 12px; background: #22382fee; color: #fff6df; }

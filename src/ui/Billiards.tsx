@@ -1,3 +1,4 @@
+import { RETURN_TO_ARCADE, useArcade } from "../game/arcade/mode";
 import { memo, useRef, type CSSProperties, type PointerEvent } from "react";
 import { BILLIARDS_SITUATION as situationId } from "../content/billiards-lines";
 import { game } from "../game/gameRef";
@@ -124,6 +125,7 @@ function PowerBar({ power }: { power: number }) {
 }
 
 export function BilliardsOverlay({ touch }: { touch: boolean }) {
+  const cabinet = useArcade((s) => s.playing === "billiards");
   const state = useBilliards();
   const { phase, side, line, choices, selection, pockets, available, call, sayIt, reveal, correct, result } = state;
   const aiming = phase === "aim" || phase === "break";
@@ -141,7 +143,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
           <BallRow name="Tina" balls={state.balls.tina} active={side === "tina"} />
         </div>
       </section>
-      <button className="bl-exit" data-pad-back onClick={() => game?.modeExit()}><Icon name="close" size={15} />Baigti partiją</button>
+      <button className="bl-exit" data-pad-back onClick={() => game?.modeExit()}><Icon name="close" size={15} />{cabinet ? RETURN_TO_ARCADE : "Baigti partiją"}</button>
     </header>
     <div className="bl-stage">
       <TablePad aiming={aiming} usable={picking || aiming} />
@@ -217,7 +219,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         { label: "Įmušti tavo kamuoliai", value: <><ScoreNumber value={result.sunk} />/4</> },
       ]}
       again={{ label: "Dar vieną partiją", run: () => act("again") }}
-      done={{ label: "Baigti", run: () => game?.modeExit() }}>
+      done={{ label: cabinet ? RETURN_TO_ARCADE : "Baigti", run: () => game?.modeExit() }}>
       {line?.key === "bl_rematch" && <Speech line={line} />}
     </ScoreCard>}
   </div>;

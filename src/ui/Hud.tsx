@@ -1,3 +1,5 @@
+import { useRoad } from "../game/road/store";
+import { RETURN_TO_ARCADE } from "../game/arcade/mode";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
@@ -83,6 +85,7 @@ export function Hud() {
   const inConversation = useStore((s) => s.conv.active);
   const screen = useScreen();
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
+  const loadingCabinet = useRoad((s) => s.loadingCabinet);
   const surfing = useSurf((s) => s.active);
   const surfPicking = useSurf((s) => s.picking);
   const baristaOffer = useBarista((s) => s.offered);
@@ -119,10 +122,13 @@ export function Hud() {
   if (hud.modeScreen?.kind === "menu") {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
-    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
+    const Overlay = road && loadingCabinet ? undefined : road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
     const tools = hud.modeScreen.id !== "arcade" && !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk" && hud.modeScreen.id !== "gym";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
+        {road && loadingCabinet && <div className="arcade-loading" data-pad-scope="road-status">
+          <strong role="status">Įkeliama…</strong><button className="btn" autoFocus data-pad-back onClick={() => game?.modeExit()}>{RETURN_TO_ARCADE}</button>
+        </div>}
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
         {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}

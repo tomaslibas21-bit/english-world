@@ -12,7 +12,7 @@ import { PhraseRun } from "../kit/phrases";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
 import type { SpeedFeel } from "../rides/speedFeel";
-import { carHasRoof, carModelEntry } from "../world/carModels";
+import { carHasRoof, carModelEntry, loadCarModel, type CarModel } from "../world/carModels";
 import { exitCoordinates } from "../world/roadExit";
 import { TAXI } from "../world/layout";
 import type { RoadHost, WalkEdge } from "./entry";
@@ -114,6 +114,7 @@ export class PreparedRoad {
 export class RoadMode {
   private phase: "town" | "briefing" | "loading" | "approach" | "offer" | "depart" | "drive" | "result" | "unavailable" = "town";
   private source?: Ride;
+  private cabinet = false;
   private run?: Run;
   private lift?: Lift;
   private returnedTaxi?: { lift: Lift; ride: Ride };
@@ -160,6 +161,13 @@ export class RoadMode {
     useRoad.setState({ phase: "lift" });
   }
 
+  startFromCabinet() {
+    this.session = {};
+    this.cabinet = true;
+    resetRoadUi();
+    this.brief();
+  }
+
   startFromCrest(prepared: PreparedRoad) {
     this.session = {};
     this.source = prepared.source;
@@ -202,7 +210,7 @@ export class RoadMode {
   private async begin(session: object, way: PlayWay) {
     this.phase = "loading";
     useRoad.setState({ phase: "loading", way });
-    const pool = await (way === "phrases" ? loadPhrasePool().catch(() => undefined) : this.pool);
+    const pool = await (way === "phrases" ? loadPhrasePool().catch(() => undefined) : this.pool ??= loadWordPrompts());
     if (this.session !== session) return;
     const pick = pool && runPicker(pool, edition, way);
     const first = pick?.([], 18);
@@ -210,12 +218,17 @@ export class RoadMode {
     if (this.session !== session) return;
     if (!first || !pick) { this.unavailable(); return; }
     if (this.driveFromCrest(way, pick, first)) return;
-    const mesh = this.source?.mesh ?? this.lift?.take();
+    let sedan: CarModel | undefined;
+    if (this.cabinet) {
+      sedan = await loadCarModel("sedan");
+      if (this.session !== session) return;
+    }
+    const mesh = sedan?.createInstance("#ad5447") ?? this.source?.mesh ?? this.lift?.take();
     if (!mesh) { this.unavailable(); return; }
-    const size = this.source ? rideSize(this.source) : taxiSize;
+    const size = this.source ? rideSize(this.source) : sedan?.entry.collisionBox ?? taxiSize;
     const seat = this.run?.view.seatedPose();
     this.clearRun();
-    const model = carModelEntry(this.source?.model ?? TAXI.model);
+    const model = sedan?.entry ?? carModelEntry(this.source?.model ?? TAXI.model);
     const track = new Track(this.host.roadOpening());
     const view = new RoadView(mesh, size, model, this.host.environment().exitHills), car = new RoadCar();
     view.scene.add(track.group);
@@ -345,7 +358,7 @@ export class RoadMode {
         this.host.speedFeel(() => {
           if (this.feelRequest !== request) return false;
           this.feelRequest = undefined;
-          return this.run === run && this.phase === "drive" && this.host.owns("road") && this.host.canStart();
+          return this.run === run && this.phase === "drive" && this.host.owns("road") && this.host.canStart(this.cabinet);
         });
       }
       audio.motor("car", 0);
@@ -538,7 +551,12 @@ export class RoadMode {
     if (way === "phrases") audio.primeFile();
     const first = this.run?.gate?.prompt;
     if (way === "words" && this.crest && first) return this.driveFromCrest(way, runPicker(this.crest, edition, way), first);
-    void this.begin(this.session, way);
+    const session = this.session;
+    void this.begin(session, way).catch((error) => {
+      if (this.session !== session) return;
+      console.warn("Road game could not start", error);
+      this.unavailable();
+    });
     return true;
   }
 
@@ -576,6 +594,7 @@ export class RoadMode {
     } else if (this.source && !immediate) this.host.returnCar(this.source, onFoot);
     this.lift = undefined;
     this.source = undefined;
+    this.cabinet = false;
     this.pool = undefined;
     this.crest = undefined;
     resetRoadUi();

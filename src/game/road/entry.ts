@@ -9,12 +9,14 @@ import type { SpeedFeel } from "../rides/speedFeel";
 import { WORLD } from "../world/layout";
 import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
 import type { RoadEnvironment } from "./view";
+import { useRoad } from "./store";
 import type { PreparedRoad, RoadMode } from "./mode";
 import type { PlayWay } from "./save";
 import type { RoadOpening } from "./track";
 
 export type WalkEdge = { x: number; z: number; inward: number };
 export interface RoadHost extends ModeHost {
+  cabinetAvailable(): boolean;
   environment(): RoadEnvironment;
   roadOpening(): RoadOpening | undefined;
   roadSign(): Object3D | undefined;
@@ -151,8 +153,9 @@ export class RoadEntry implements GameMode {
   }
 
   start(option?: string) {
-    if (this.active || !this.host.canStart()) return false;
-    if (option !== "walk") {
+    const cabinet = option === "cabinet";
+    if (this.active || !this.host.canStart(cabinet) || (cabinet && !this.host.cabinetAvailable())) return false;
+    if (!cabinet && option !== "walk") {
       const car = this.host.rides.riding, stage = this.prepared;
       if (!car || !stage || !this.mode || this.host.rides.phase !== "on" || !this.shouldStart(car)) return false;
       this.prepared = undefined;
@@ -162,30 +165,44 @@ export class RoadEntry implements GameMode {
       stage.dispose();
       return true;
     }
-    const edge = this.edge;
-    if (!edge) return false;
-    this.edge = undefined;
-    this.nextLift = this.host.time() + 60;
+    const edge = cabinet ? undefined : this.edge;
+    if (cabinet) {
+      this.host.prepare();
+      this.host.clearTownHud();
+      useRoad.setState({ loadingCabinet: true });
+      this.host.entered(this.id);
+    } else {
+      if (!edge) return false;
+      this.edge = undefined;
+      this.nextLift = this.host.time() + 60;
+    }
     const pending = this.pending = {};
     const load = this.mode ? Promise.resolve(this.mode) : Promise.all([import("./mode"), import("../../ui/roadOverlay").then(({ preloadRoadOverlay }) => preloadRoadOverlay())])
       .then(([{ RoadMode }]) => new RoadMode(this.host));
     void load.then((mode) => {
       if (this.pending !== pending || !this.host.owns(this.id)) { if (mode !== this.mode) mode.dispose(); return; }
       this.mode = mode;
-      mode.start(edge);
+      if (edge) mode.start(edge); else mode.startFromCabinet();
       this.pending = null;
     }).catch((error) => {
       if (this.pending !== pending) return;
       this.pending = null;
       if (this.mode?.active) this.mode.exit(true);
-      this.host.place(edge.x + Math.sin(edge.inward), edge.z + Math.cos(edge.inward), edge.inward);
+      useRoad.setState({ loadingCabinet: false });
+      if (edge) this.host.place(edge.x + Math.sin(edge.inward), edge.z + Math.cos(edge.inward), edge.inward);
       this.host.left(this.id);
       console.warn("Road game could not load", error);
     });
     return true;
   }
 
-  input(input: ModeInput) { return this.mode?.input(input) ?? false; }
+  input(input: ModeInput) {
+    if (this.pending && input.kind === "key" && input.key === "escape") {
+      if (!input.repeat) this.exit(true);
+      return true;
+    }
+    return this.mode?.input(input) ?? false;
+  }
   padTick(_input: unknown, pressed: number) {
     if (this.padDriving && (pressed & PadButton.X)) this.action("horn");
   }
@@ -210,6 +227,7 @@ export class RoadEntry implements GameMode {
   deferLift() { this.nextLift = this.host.time() + 60; }
 
   exit(immediate: boolean) {
+    if (this.pending) useRoad.setState({ loadingCabinet: false });
     this.pending = null;
     if (this.mode?.active) this.mode.exit(immediate);
     this.host.left(this.id);

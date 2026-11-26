@@ -38,7 +38,7 @@ import { RIDES } from "./world/rides";
 import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { attachLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
-import { ArcadeMode } from "./arcade/mode";
+import { ArcadeMode, useArcade } from "./arcade/mode";
 import { RoadEntry, walkEdge } from "./road/entry";
 import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
 import { SEA_EDITION } from "../content/sea";
@@ -711,6 +711,7 @@ export class Game implements GameApi {
     if (ROAD_EDITION.enabled) {
       this.road = new RoadEntry({
         ...host,
+        cabinetAvailable: () => this.zone.id === BILLIARDS_PLACE && useArcade.getState().playing === "road",
         environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
           environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity, exitHills: this.town.exitHills }),
         roadSign: () => this.town.group.getObjectByName("desert-road-sign"),
@@ -1503,6 +1504,7 @@ export class Game implements GameApi {
     if (this.billiards.release(key)) e.preventDefault();
   };
   private onBlur = () => {
+    this.cancelCabinetDrive();
     this.keys.clear();
     this.caveKeys.clear();
     this.caveStickHeld = false;
@@ -2658,7 +2660,12 @@ export class Game implements GameApi {
     return true;
   }
 
+  private cancelCabinetDrive() {
+    if (useArcade.getState().playing === "road" && this.modes.owns("road")) this.modes.exit(true);
+  }
+
   private phoneVisibility = () => {
+    if (document.hidden) this.cancelCabinetDrive();
     this.wasHidden = true;
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.observeStreetAndPhone();

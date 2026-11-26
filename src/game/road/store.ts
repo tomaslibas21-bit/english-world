@@ -16,6 +16,7 @@ export type RoadResult = {
 };
 
 type RoadUi = {
+  loadingCabinet: boolean;
   phase: "briefing" | "loading" | "lift" | "drive" | "result" | "unavailable";
   way: PlayWay;
   line: KitLine | null; choices: KitLine[]; mic: KitMic; micOn: boolean;
@@ -26,7 +27,7 @@ type RoadUi = {
 };
 
 const initial: RoadUi = {
-  phase: "loading", way: "words", line: null, choices: [], mic: { status: "off", heard: "" }, micOn: true,
+  loadingCabinet: false, phase: "loading", way: "words", line: null, choices: [], mic: { status: "off", heard: "" }, micOn: true,
   ghost: false, remaining: 150, streak: 0,
 };
 
