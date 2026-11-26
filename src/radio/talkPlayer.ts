@@ -50,6 +50,7 @@ export interface TalkOutput {
   /** Current source seconds for the active request, null while it has no clock. */
   position(): number | null;
   setRates(rates: MediaRates): void;
+  setVolume?(volume: number): void;
   /** Capture and source changes also cancel any fade still in progress. */
   stop(reason: TalkStopReason): void;
 }

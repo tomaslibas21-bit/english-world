@@ -42,6 +42,7 @@ const isBlocked = (error: unknown) => (error as { name?: string })?.name === "No
 
 export class BookOutput implements TalkOutput {
   private generation = 0;
+  private volume = 1;
   private current?: Session;
 
   constructor(private readonly makeAudio = streamingAudio, private readonly fetchStatus: typeof fetch = fetch) {}
@@ -94,6 +95,12 @@ export class BookOutput implements TalkOutput {
     const { currentTime } = part.media;
     if (!part.excerpt) return currentTime;
     return Math.min(part.excerpt.cue.end, Math.max(part.excerpt.cue.start, currentTime + part.offset));
+  }
+
+  setVolume(volume: number): void {
+    this.volume = volume;
+    if (this.current?.part) this.current.part.media.volume = volume;
+    if (this.current?.next) this.current.next.media.volume = volume;
   }
 
   setRates(rates: Rates): void {
@@ -152,6 +159,7 @@ export class BookOutput implements TalkOutput {
       media, abort: new AbortController(), url, track, offset, startTime: mediaAt,
       lastPosition: position, excerpt, playing: false,
     };
+    media.volume = this.volume;
     media.preservesPitch = true;
     // The native fragment end stops speech even while page timers are throttled.
     media.muted = true;

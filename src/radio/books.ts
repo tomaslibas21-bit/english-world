@@ -90,6 +90,7 @@ export type BookParagraph = { kind: "break" } | {
 };
 export interface BookItem extends TalkItem {
   chapter: BookChapter;
+  book?: ShelfBook;
   paragraphs: BookParagraph[];
   languages: { target: TalkLanguage; helper: TalkLanguage };
 }
@@ -471,10 +472,16 @@ export function createBookSource({ profile, site, files, recordings = files, tok
   const catalog = async (signal?: AbortSignal, edition?: "author" | "easy") =>
     normalizeBookCatalog(profile, ...await indexes("index", signal), edition);
 
+  const chapterText = (chapter: BookChapter, signal: AbortSignal) => {
+    const path = `/${chapter.section}/data/${chapter.fileId}.json`;
+    return json(profile.jsonOnSite(chapter.section, chapter.id) ? app.origin + path : () => sign(workerBase + path, true), signal);
+  };
+
   const load = sharedLoads(async (key: string, signal) => {
     const [kind, itemId, edition, chapterId] = key.split("/");
     const available = await catalog(signal, edition === "author" || edition === "easy" ? edition : undefined);
-    const chapter = kind === "book" ? available.books.find((book) => book.id === itemId)?.chapters.find((row) => row.id === chapterId)
+    const book = kind === "book" ? available.books.find((row) => row.id === itemId) : undefined;
+    const chapter = kind === "book" ? book?.chapters.find((row) => row.id === chapterId)
       : available.stories.find((story) => story.id === itemId && story.id === chapterId);
     if (!chapter || key !== `${chapter.selection.itemKey}/${chapter.id}`) throw new BookSourceError("missing");
     const { section, fileId, id } = chapter;
@@ -489,7 +496,7 @@ export function createBookSource({ profile, site, files, recordings = files, tok
       if (error instanceof BookSourceError) return error;
       throw error;
     });
-    const text = content(`/${section}/data/${fileId}.json`);
+    const text = chapterText(chapter, signal);
     const [body, config, paired, target, helper, words] = chapter.hasAudio ? await Promise.all([
       text, optional(configs(section, signal)), optional(timing("timing")),
       profile.targetClock === "file" ? optional(timing("english-timing")) : undefined,
@@ -506,13 +513,17 @@ export function createBookSource({ profile, site, files, recordings = files, tok
       const address = `${workerBase}${path}/${id}.mp3${hash ? `?v=${hash}` : ""}`;
       return { open: () => sign(address, !profile.freeRecording(section, id)), key: address };
     };
-    return normalizeBookItem(profile, chapter, { text: body, timing: { paired, target, helper }, words, recording });
+    return { ...normalizeBookItem(profile, chapter, { text: body, timing: { paired, target, helper }, words, recording }), book };
   });
   return {
     profile: profile.id,
     catalog,
     load: (selection: TalkSelection, signal?: AbortSignal) => load(`${selection.itemKey}/${selection.chapterId}`, signal),
+    async introduction(chapter: BookChapter, signal: AbortSignal) {
+      const body = await chapterText(chapter, signal);
+      return isRecord(body) && body.id === chapter.id ? string(body.intro) : "";
+    },
     storyCover: async (id: string) => coverUrls(await profile.storyCovers(), "stories", id),
-    links: (chapter: BookChapter) => courseReadingLinks(profile, chapter.section, chapter.id),
+    links: (chapter: Pick<BookChapter, "section" | "id">) => courseReadingLinks(profile, chapter.section, chapter.id),
   };
 }

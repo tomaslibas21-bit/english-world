@@ -12,7 +12,7 @@ const BACK = "[data-pad-back]";
 const DEFAULT = "[data-pad-default]";
 const AUXILIARY = "button[data-pad-aux], [data-pad-aux] button";
 const NOTES = ".objective-notes";
-const GRIDS = ".scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
+const GRIDS = ".catalog-grid, .rs-keys, .rs-bank, .scn-grid, .lh-grid, .toolbar, .barista-chips, .gofish-hand, .gofish-opponents, .bl-ball-chips, .word-gate-ways, .road-choices, .surf-levels, .lh-tools";
 const ANSWERS = "[data-pad-answer], .dym-opt";
 const MEETING_ANSWERS = "[data-meeting-answer]";
 const FOCUS_OPENS = "[data-pad-focus-opens]";
@@ -51,7 +51,9 @@ const surfaces: Record<string, Surface> = {
   gofish: { priority: 60, first: ".gofish-card, .gofish-choice, .gofish-fish, [data-target]", slot: ".gofish-header" },
   billiards: { priority: 60, first: ".bl-ball-option, .bl-choice", slot: ".bl-header" },
   photo: { priority: 60, first: "[data-choice], .photo-choices [data-line], .photo-quiz > button" },
-  radio: { priority: 50, back: ".rs-x", slot: ".radio-set" },
+  "book-shelf": { priority: 52, first: DEFAULT, slot: ".mast" },
+  "book-detail": { priority: 54, first: DEFAULT, slot: ".mast" },
+  radio: { priority: 50, first: DEFAULT, back: ".rs-x", slot: ".radio-set" },
   "phone-ring": { priority: 50, first: ".phone-ring-actions .btn:not(.soft)", back: ".phone-ring-actions .soft" },
   street: { priority: 50, first: ".street-choice", back: ".street-head button" },
   drawer: { priority: 20, first: "[data-pad-tool=scenarios]" },
