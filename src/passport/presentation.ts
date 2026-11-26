@@ -40,9 +40,9 @@ export function presentation(prefix: string, storage: Storage | null) {
             const key = storage!.key(i);
             if (key && stale(key)) storage!.removeItem(key);
           }
-          for (const key of memory.keys()) if (stale(key)) memory.delete(key);
         }
       } catch { /* denied storage */ }
+      for (const key of memory.keys()) if (stale(key)) memory.delete(key);
       put(baselineKey, JSON.stringify(ids));
     },
     present(id: string) { put(prefix + id, "1"); },

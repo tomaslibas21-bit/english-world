@@ -100,5 +100,6 @@ describe("visual presentation history", () => {
     expect(fresh.pending([])).toBeNull();
     fresh.presentBaseline([]);
     expect([...kv.keys()].some(k => k.startsWith(key))).toBe(false);
+    expect(a.pending([])).toBeNull();
   });
 });
