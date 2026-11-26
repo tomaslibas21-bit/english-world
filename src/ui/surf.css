@@ -177,12 +177,35 @@ button.surf-move { cursor: pointer; }
   .surf-move { min-height: 40px; padding: 6px 14px; }
   .surf-move-text { font-size: 20px; }
 }
+/* The lesson's cue pictures (review round, 26 Nov 2026), as in Puerto Colibrí's surf lesson: on a short upright phone
+   the answers sit low; on an upright ride the cue, its picture and the move stay compact so the whole board shows
+   between the move label and the pad, also when the gloss wraps. */
+@media (max-width: 520px) and (max-height: 700px) and (orientation: portrait) {
+  .surf.touch .surf-choices { align-self: end; }
+}
+@media (max-width: 520px) and (orientation: portrait) {
+  .surf.touch[data-phase="ride"] .surf-say { gap: 6px; }
+  .surf.touch[data-phase="ride"] .surf-card { gap: 6px; padding-block: 6px; }
+  .surf.touch[data-phase="ride"] .surf-card .il:not(.plain) { column-gap: 0.34em; row-gap: 3px; line-height: 1.1; }
+  .surf.touch[data-phase="ride"] .surf-card .nat { margin-top: 4px; padding-top: 4px; line-height: 1.2; }
+  .surf.touch[data-phase="ride"] .surf-balance { margin-top: 5px; }
+  .surf.touch[data-phase="ride"] .surf-move { min-height: 40px; padding-block: 6px; }
+}
+.surf.touch .surf-say:has(.surf-move) { gap: 4px; }
+.surf.touch .surf-card:has(+ .surf-move) { padding-block: 4px; }
+.surf.touch .surf-card:has(+ .surf-move) .nat { margin-top: 2px; padding-top: 2px; }
+.surf.touch .surf-move { row-gap: 3px; }
 @media (max-height: 520px) and (orientation: landscape) {
   .surf.touch { --pad-space: calc(3 * var(--arrow-size) + 2 * var(--pad-gap) + 26px + env(safe-area-inset-right)); }
   .surf.touch .surf-say { top: calc(56px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); transform: none; }
   .surf.touch .surf-card { max-width: min(44vw, 400px); }
   .surf.touch:has(.surf-choices) { justify-items: start; padding-bottom: var(--pad-bottom); }
   .surf.touch:has(.surf-choices) .surf-card { width: max-content; max-width: min(620px, 100%); }
+  /* with her line's picture (as Puerto Colibrí): the cue row takes the full width, so the picture and glosses sit
+     side by side and the answers keep their height */
+  .surf.touch:has(.surf-choices):has(.surf-card.has-pic) { row-gap: 6px; }
+  .surf.touch:has(.surf-choices) .surf-say:has(.surf-card.has-pic) { width: min(620px, 100%); align-items: start; }
+  .surf.touch:has(.surf-choices) .surf-card.has-pic { width: 100%; max-width: 100%; }
   .surf.touch .surf-choices { align-self: end; width: min(540px, calc(100vw - var(--pad-space) - 12px - env(safe-area-inset-left))); }
   .surf.touch .surf-said { left: calc(12px + env(safe-area-inset-left)); transform: none; bottom: var(--pad-bottom); max-width: calc(100vw - var(--pad-space) - 20px); }
 }
@@ -223,4 +246,13 @@ button.surf-move { cursor: pointer; }
 @media (max-height: 520px) and (orientation: landscape) and (max-width: 740px) {
   .surf.touch .surf-choice-row { grid-template-columns: minmax(0, 1fr); }
   .surf.touch .surf-choice-row > [data-phrase-save] { display: none; }
+  /* while three answers are up, her line keeps the width its picture would take (664×390: 32 px over with it); the
+     picture comes back with her next line */
+  .surf.touch:has(.surf-choices) .surf-pic { display: none; }
+}
+/* Any phone on its side while her line shows its picture (review round, 26 Nov 2026): the picture takes the room
+   the saves had beside three answers (844×390 overflowed by 14 px), so the said line and the score card save them. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .surf.touch:has(.surf-card.has-pic) .surf-choice-row { grid-template-columns: minmax(0, 1fr); }
+  .surf.touch:has(.surf-card.has-pic) .surf-choice-row > [data-phrase-save] { display: none; }
 }

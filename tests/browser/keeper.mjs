@@ -308,13 +308,21 @@ async function visit(context, view, speech) {
         actor: same && g.talkNpc?.ch === island.keeper && g.talkNpc === island.keeperActor && root.visible,
         copies, townCopies: g.npcs.filter((a) => a.id === c.hostId).length, cast: g.talkCast.map((a) => a.id), camera: g.rig.mode,
         fallback: !g.covered && !document.body.classList.contains("scene-on") && !document.querySelector(".scene-backdrop img"),
+        picture: g.covered && document.body.classList.contains("scene-on")
+          && new URL(document.querySelector(".scene-backdrop img.on")?.src ?? "about:blank").pathname,
         zone: g.zone.id, x: g.player.root.position.x, dialog: document.querySelectorAll(".convo").length };
     }, sameActor);
+    // Pictures on (the speech runs): the keeper's review-round pictures cover the 3D talk, opening on his cottage.
+    // Pictures off: the live 3D keeper in the talk view.
+    const view = speech ? /\/scenes\/x05-lighthouse-keeper\/cottage\.webp$/.test(found.picture || "") : found.fallback;
     assert(found.active && found.session === sit && found.host === keeper && found.actor && found.copies === 1 && found.townCopies === 0
-      && found.camera === "talk" && found.fallback && found.zone === "town" && found.x > 105 && found.dialog === 1,
+      && found.camera === "talk" && view && found.zone === "town" && found.x > 105 && found.dialog === 1,
     JSON.stringify(found));
     assert.deepEqual(found.cast, [keeper]);
     await visible(page.locator(".stage canvas"), "the live town canvas behind the keeper");
+    if (speech) return;
+    await stateWait("the corner chip offers the keeper's cottage picture", () =>
+      /\/scenes\/x05-lighthouse-keeper\/cottage\.webp$/.test(document.querySelector(".view-chip.to-picture img")?.src ?? ""));
     await stateWait("the keeper's face in the open part of the talk view", () => {
       const g = window.__ew.game, ch = g.islandScene.keeper;
       const face = ch.root.position.clone();
@@ -493,7 +501,10 @@ async function visit(context, view, speech) {
 
   async function quietResources() {
     await until("outstanding resources", () => net.requests.size === 0);
-    assert.deepEqual(net.pictureRequests, [], "no planned x05 WebPs requested");
+    if (speech) assert.deepEqual([...new Set(net.pictureRequests.map((p) => p.replace(/^.*\//, "")))].sort(),
+      ["cottage.webp", "light.webp", "morning.webp", "note.webp", "weather.webp"], "pictures on: the keeper's five x05 WebPs");
+    // pictures off: only the corner chip's preview of the cottage („Piešinys“, ViewSwitch.tsx)
+    else assert.deepEqual([...new Set(net.pictureRequests)], ["/scenes/x05-lighthouse-keeper/cottage.webp"], "pictures off: only the chip's cottage preview");
     assert.deepEqual(net.errors, [], "page, console and network errors");
   }
 

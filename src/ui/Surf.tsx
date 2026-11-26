@@ -172,7 +172,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   const score = s.score, R = S.results, C = S.control;
   const tally = R.tally.lt.replace("{followed}", String(score.followed)).replace("{asked}", String(score.asked));
 
-  return <div className={"surf" + (touch ? " touch" : "")} lang="lt" onKeyDown={(e) => {
+  return <div className={"surf" + (touch ? " touch" : "")} data-phase={s.phase} lang="lt" onKeyDown={(e) => {
     if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches("button:focus-visible")) e.stopPropagation();
   }}>
     <div className="surf-top">

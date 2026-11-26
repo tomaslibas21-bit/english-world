@@ -1,0 +1,61 @@
+{
+  "npc": "Maren Pike, Harbor Surf",
+  "images": [
+    "greet",
+    "gear",
+    "hours",
+    "deposit",
+    "deposit_cash",
+    "pay",
+    "experience",
+    "lesson_offer",
+    "board",
+    "moves",
+    "safety",
+    "outer",
+    "invite",
+    "go",
+    "bye"
+  ],
+  "start": "greet",
+  "done": "go",
+  "phases": {
+    "what": "greet",
+    "howareyou": "greet",
+    "gear": "gear",
+    "hours": "hours",
+    "deposit": "deposit",
+    "deposit_offer": "deposit_cash",
+    "rent_pay": "pay",
+    "lesson_pay": "pay",
+    "experience": "experience",
+    "lesson_offer": "lesson_offer",
+    "board": "board",
+    "moves": "moves",
+    "safety": "safety",
+    "pe_been": "outer",
+    "invite": "invite",
+    "closing": "bye"
+  },
+  "focus": [
+    37,
+    32
+  ],
+  "jobs": {
+    "greet": "53dd4379-bd5a-4186-8e40-3d6c7244337a",
+    "gear": "877c1ad6-4b37-489b-8100-d27f92dfd295",
+    "hours": "4871eaee-11f5-4c53-be24-a8b5aeb5891b",
+    "deposit": "cb093297-2858-4031-8add-e042f304038a",
+    "deposit_cash": "2db8a1ae-7487-4588-8b30-23ffff480a6f",
+    "pay": "5e6f2483-df72-4348-ae0e-29ddc82a7509",
+    "experience": "d1207683-5bae-4304-898b-e650807fe890",
+    "lesson_offer": "5515986e-702b-4589-8602-1c3576f46f9e",
+    "board": "61eccd21-5d99-4c8d-a9a2-ac7068dafe3e",
+    "moves": "cf333603-cb5e-4b44-a55b-ce752aa78519",
+    "safety": "7cf7f4e3-4570-4f66-8ea4-886db9de7314",
+    "outer": "6c8c4400-14c7-43a1-a614-ec323f47217a",
+    "invite": "8c13e499-49c5-492a-94e4-f97683a2bd34",
+    "go": "b4d12757-e614-4ca4-8e1d-6529713982de",
+    "bye": "d16d7df5-40d1-404b-8948-e57e2113186d"
+  }
+}

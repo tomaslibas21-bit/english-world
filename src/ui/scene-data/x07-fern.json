@@ -1,0 +1,22 @@
+{
+  "npc": "Fern, bridge keeper",
+  "images": [
+    "bridge"
+  ],
+  "start": "bridge",
+  "done": "bridge",
+  "phases": {
+    "ready": "bridge",
+    "riddle": "bridge",
+    "hint_offer": "bridge",
+    "howareyou": "bridge",
+    "closing": "bridge"
+  },
+  "focus": [
+    37,
+    25
+  ],
+  "jobs": {
+    "bridge": "1eaf4f43-7cfd-4b7c-acd9-0e86ea85a5fc"
+  }
+}

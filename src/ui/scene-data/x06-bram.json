@@ -1,0 +1,24 @@
+{
+  "npc": "Bram, path keeper",
+  "images": [
+    "path"
+  ],
+  "start": "path",
+  "done": "path",
+  "phases": {
+    "name": "path",
+    "from": "path",
+    "why": "path",
+    "way": "path",
+    "more": "path",
+    "howareyou": "path",
+    "closing": "path"
+  },
+  "focus": [
+    26,
+    38
+  ],
+  "jobs": {
+    "path": "2e0df820-61aa-4f78-9147-7583c154fa50"
+  }
+}

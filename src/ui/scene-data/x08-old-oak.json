@@ -1,0 +1,22 @@
+{
+  "npc": "The Old Oak",
+  "images": [
+    "island"
+  ],
+  "start": "island",
+  "done": "island",
+  "phases": {
+    "who": "island",
+    "home": "island",
+    "promise": "island",
+    "howareyou": "island",
+    "closing": "island"
+  },
+  "focus": [
+    50,
+    45
+  ],
+  "jobs": {
+    "island": "a1d61f9b-ade7-49b1-a19c-a94f70408d2a"
+  }
+}
