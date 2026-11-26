@@ -37,7 +37,11 @@ export function App() {
     const { playing, spot } = radio.store.getState();
     return playing && !spot;
   }, subscribe: (fn) => radio.store.subscribe(fn) }), []);
-  useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
+  useEffect(() => {
+    const state = useStore.getState();
+    if (!mode) state.setScreen("title");
+    if (state.settings.onDevice) void refreshLocalState();
+  }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts />{EDITION.id === "en" && <AudioDiagnostics />}</>;
   return <>{mode === "light" ? <LightPlay /> : <Play onBack={() => { useStore.getState().setScreen("title"); setMode(null); }} />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
   void screen;
