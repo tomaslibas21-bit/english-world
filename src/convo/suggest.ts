@@ -74,6 +74,13 @@ export function entityLookup(sit: SituationDef): EntityLookup {
   };
 }
 
+/** The lookup a hint group's sentences use: the group's own slot list first. An id can name items in two lists
+ *  (s84's "coffee" is a drink, „café“, and an activity, „tomar un café“), and the first list would win. */
+function groupLookup(sit: SituationDef, g: HintGroup, look: EntityLookup): EntityLookup {
+  const own = g.slot ? sit.entities?.[g.slot] : undefined;
+  return own ? (id) => own.find((e) => e.id === id) ?? look(id) : look;
+}
+
 /** The item a hint row shows when nothing is chosen: the group's examples in turn. */
 function exampleFor(i: number, pool: EntityDef[], exIds: string[]): string | undefined {
   return exIds.find((x, k) => pool.some((e) => e.id === x) && k === i % exIds.length) ?? pool.find((e) => exIds.includes(e.id))?.id ?? pool[0]?.id;
@@ -97,7 +104,7 @@ export function modelAnswers(sit: SituationDef, g: HintGroup, chosen: string | u
     const it = g.items[i];
     const pool = ents.filter((e) => !it.only || it.only(e));
     if (g.slot && chosen && !pool.some((e) => e.id === chosen)) continue;
-    const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, look);
+    const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, groupLookup(sit, g, look));
     if (s) out.push(s);
   }
   return out;
@@ -114,7 +121,7 @@ export function answerFrames(sit: SituationDef, g: HintGroup, chosen: string | u
     const it = g.items[i];
     const pool = ents.filter((e) => !it.only || it.only(e));
     if (g.slot && chosen && !pool.some((e) => e.id === chosen)) continue;
-    const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, look, true);
+    const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, groupLookup(sit, g, look), true);
     // ("My last name is …", not "….": the gap ends the sentence)
     const f = s && (JSON.parse(JSON.stringify(s).split("….").join("…")) as Sentence);
     if (f && !out.some((x) => x.s.en === f.en)) out.push({ s: f, note: it.note });
@@ -157,7 +164,7 @@ export function answerCandidates(sit: SituationDef, groups: { g: HintGroup; chos
       if (g.slot && chosen && !pool.some((e) => e.id === chosen)) return;
       const xs = chosen ? [chosen] : [...new Set([...named.filter((id) => pool.some((e) => e.id === id)), exampleFor(i, pool, exIds)])];
       for (const X of xs) {
-        const s = composeFull(g, i, X, o, look);
+        const s = composeFull(g, i, X, o, groupLookup(sit, g, look));
         if (s && !seen.has(s.en)) { seen.add(s.en); out.push(s); }
       }
     });

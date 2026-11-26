@@ -34,6 +34,22 @@ function guessFor(sitId: string, heard: string, turns: string[] = []) {
 }
 const marked = (g: ReturnType<typeof guessFor>) => g!.heard.filter((h) => h.miss).map((h) => h.w);
 
+describe("hint examples", () => {
+  // s84 has "coffee" twice: a drink and an activity. The activity group must use its own list, not "to coffee".
+  it("fill a slot from the group's own list when an id is in two lists", () => {
+    const sit = SITUATION_BY_ID["s84-date"];
+    let checked = 0;
+    for (const g of Object.values(sit.hints ?? {})) {
+      if (g.slot !== "activity" || !sit.entities?.activity?.some((e) => e.id === "coffee")) continue;
+      for (const s of modelAnswers(sit, g, "coffee", OPTS, g.items.length)) {
+        expect(s.en).not.toMatch(/to coffee on|gustaría café el/);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});
+
 describe("did you mean", () => {
   it("offers the closest model answer, with the item the learner named", () => {
     const g = guessFor("s72-cafe", "I'd like a flat way");
