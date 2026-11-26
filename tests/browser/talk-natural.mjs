@@ -1319,6 +1319,8 @@ async function taxi(route) {
   const opening = await openingThrough(route, (f) => f.conv.phase === "you", "driver greets the learner");
   if (!pc) {
     assert(opening.some((f) => f.conv.text === taxiText && isVoice(f)), "authored Vinnie recording for the film");
+    // His wave lasts about as long as this short line: watch the hand come down as the learner's turn begins.
+    opening.push(...await route.series(15, 1000 / 30));
     const beat = motionPeak(opening, /Hey! Where can I take you\?/, ["greeting"]);
     route.row.peaks.push({ kind: beat.p.gesture, time: beat.gameTime, weight: beat.p.gestureWeight,
       text: beat.conv.text, joints: beat.actual[host].joints, request: beat.request });

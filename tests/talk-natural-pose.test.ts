@@ -51,10 +51,9 @@ describe("natural conversation on the baked rig", () => {
       const w = u * u * (3 - 2 * u);
       expect(rig.upperR.quaternion.angleTo(upper.clone().slerp(base.upperR.quaternion, w))).toBeLessThan(1e-6);
       expect(rig.foreR.quaternion.angleTo(fore.clone().slerp(base.foreR.quaternion, w))).toBeLessThan(1e-6);
-      if (frame / hz <= 0.2) {
-        expect(rig.upperR.rotation.z).toBeLessThan(last);
-        expect(last - rig.upperR.rotation.z).toBeLessThan(0.55);
-      }
+      // The greeting is a raised hand too: the arm comes down into it without a jump and never drops to the side.
+      expect(Math.abs(last - rig.upperR.rotation.z)).toBeLessThan(0.55);
+      expect(rig.upperR.rotation.z).toBeGreaterThan(1.05);
       last = rig.upperR.rotation.z;
     }
     actor.dispose(); target.dispose();
@@ -360,7 +359,7 @@ describe("natural conversation on the baked rig", () => {
     const next = bindConversationPose(actor)!;
     next.speak(2, null, { kind: "greeting" });
     step(actor, 0.3);
-    expect(rig.upperR.rotation.z).toBeCloseTo(0.75);
+    expect(rig.upperR.rotation.z).toBeGreaterThan(1.3); // a hand up beside the head
     parent.remove(actor.root);
     expect(actor.talkPose).toBeUndefined();
     expect(next.applied.active).toBe(false);
@@ -374,18 +373,29 @@ describe("natural conversation on the baked rig", () => {
     step(actor, 0.3);
     const { applied: a } = pose;
     const yaw = a.headYaw, pitch = a.headPitch, arm = a.upperR;
+    // The hand comes up from below the counter close to the body, and is held out over the top.
     pose.speak("offer", null, { kind: "offer" });
-    step(actor, 0.3);
-    expect(a.upperR).toBeCloseTo(arm);
-    expect(a.headPitch - pitch).toBeCloseTo(0.033);
-    step(actor, 0.8);
+    const hand = new Vector3(), chest = new Vector3();
+    for (let i = 0; i < 18; i++) {
+      actor.update(1 / 60);
+      actor.rightHand.getWorldPosition(hand);
+      actor.root.getWorldPosition(chest);
+      if (hand.y < 1.08 + 0.065) expect(hand.z - chest.z).toBeLessThan(0.3);
+    }
+    step(actor, 0.2);
+    actor.rightHand.getWorldPosition(hand);
+    expect(hand.y).toBeGreaterThan(1.08 + 0.065);
+    expect(a.upperR).toBeLessThan(arm - 0.8);
+    expect(Math.abs(a.headPitch - pitch)).toBeLessThan(0.01);
+    step(actor, 0.6);
+    const facing = a.headYaw; // the quiet, attentive head (it drifts a few thousandths of a radian)
     pose.glanceAt(new Vector3(1.8, 1.15, 3), 0);
     step(actor, 0.05);
     expect(a.eyeX).toBeGreaterThan(0);
-    expect(a.headYaw).toBeCloseTo(yaw);
+    expect(a.headYaw).toBeCloseTo(facing);
     step(actor, 0.2);
-    expect(a.headYaw - yaw).toBeGreaterThan(0.09);
-    expect(a.headYaw - yaw).toBeLessThanOrEqual(0.12 + 1e-10);
+    expect(a.headYaw - facing).toBeGreaterThan(0.09);
+    expect(a.headYaw - facing).toBeLessThanOrEqual(0.125);
     expect(a.eyeX).toBeLessThanOrEqual(0.009);
     expect(Math.abs(a.eyeY)).toBeLessThanOrEqual(0.004);
     const turned = a.headYaw;
@@ -423,7 +433,7 @@ describe("natural conversation on the baked rig", () => {
     expect(a.listeningWeight).toBe(1);
     expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
     expect(rig.head.rotation.x - pitch).toBeCloseTo(0.024, 3);
-    expect(a.deltas.headYaw).toBe(0);
+    expect(Math.abs(a.deltas.headYaw)).toBeLessThan(0.03); // attentive, never a statue: a very slow drift
     expect(a.watching).toBe(true);
     expect(a.mouth).toBe(0);
     expect(arms.map((joint) => joint.quaternion.toArray())).toEqual(holds);
@@ -439,7 +449,7 @@ describe("natural conversation on the baked rig", () => {
     expect(a.deltas.headPitch).toBeCloseTo(0.012, 8);
     step(actor, 0.1, hz);
     expect(a.deltas.headPitch).toBeCloseTo(0, 8);
-    step(actor, 0.8, hz);
+    step(actor, 1.2, hz); // the "hm?" is held a moment before the head comes back
     expect(a.deltas.headPitch).toBeCloseTo(0.024, 8);
     pose.speak("reply", null);
     step(actor, 0.1, hz);
@@ -463,7 +473,7 @@ describe("natural conversation on the baked rig", () => {
     for (const line of [1, 2]) {
       pose.speak(line, null, { kind: "shrug" });
       let peak = 0;
-      for (let i = 0; i < 2 * hz; i++) {
+      for (let i = 0; i < 2.5 * hz; i++) {
         actor.update(1 / hz);
         shoulders.forEach((joint, side) => {
           const rise = joint.position.y - base[side];
