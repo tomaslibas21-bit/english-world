@@ -167,15 +167,30 @@ try {
     return { position: cam.position.toArray(), quaternion: cam.quaternion.toArray() };
   });
   const resources = async () => ({ visibility: await listeners("document", "visibilitychange"),
-    pagehide: await listeners("window", "pagehide"), ...await page.evaluate(pose => {
+    pagehide: await listeners("window", "pagehide"), ...await page.evaluate(({ pose, timed }) => {
     const { game, audio, radio } = window.__ew;
     const cam = game.rig.cam.clone();
     cam.position.fromArray(pose.position);
     cam.quaternion.fromArray(pose.quaternion);
-    game.renderer.render(game.scene, cam);
-    return { ...game.renderer.info.memory, calls: game.renderer.info.render.calls, holds: [...radio.holds],
+    const draw = () => game.renderer.render(game.scene, cam);
+    draw();
+    let p95;
+    if (timed) {
+      const gl = game.renderer.getContext(), pixel = new Uint8Array(4);
+      // The harness advances simulation time manually. Use the browser's real clock for draws.
+      const now = Performance.prototype.now.bind(performance);
+      const samples = [];
+      for (let i = 0; i < 45; i++) {
+        const start = now();
+        draw();
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        if (i >= 5) samples.push(now() - start);
+      }
+      p95 = samples.sort((a, b) => a - b)[Math.ceil(samples.length * .95) - 1];
+    }
+    return { p95, ...game.renderer.info.memory, calls: game.renderer.info.render.calls, holds: [...radio.holds],
       voice: audio.getState(), pendingVoice: !!audio.request };
-  }, fixedView) });
+  }, { pose: fixedView, timed: process.env.WORLD_PHONE_TIMING === "1" }) });
   await step(5);
   await page.setViewportSize({ width: 1280, height: 800 });
   await open();
@@ -200,7 +215,7 @@ try {
   await cdp.send("Runtime.releaseObjectGroup", { objectGroup: "station-check" });
   await cdp.detach();
   assert(after.calls <= before.calls, `draws grew from ${before.calls} to ${after.calls}`);
-  assert.deepEqual({ ...after, calls: before.calls }, before);
+  assert.deepEqual({ ...after, calls: before.calls, p95: before.p95 }, before);
   console.log("Ten returns", after);
   assert.deepEqual(await world(), mark);
   assert.deepEqual(await snapshot(), baseline);
