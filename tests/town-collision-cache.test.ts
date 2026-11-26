@@ -98,7 +98,8 @@ describe("Maple Harbor collision asset", () => {
     const bytes = fieldBytes(restored.field);
     expect(bytes.equals(fieldBytes(field))).toBe(true);
     // Pin the camera field with the west ridge, the surf school and Slate Cove's headland, ring and maples (mh-cave).
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("5597ceb5b0038029789071a376beede929e33a6f8ae4512470ffcbc7e45d2046");
+    // (re-pinned 26 Nov for the glow8/mh geometry: fountain, curbs, hotel canopy, shore, branching maples, market finishes)
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("ffc9b7f44e6918309dc8028283bb60dc13491c29dfa366993a708a72bac9671e");
     expect(restored.field.solidAt(120.75, 4.6, 4)).toBe(false);
     const { approach, shack } = HARBOR_SURF;
     const ridgeY = sandY(shack.x, shack.z) + shack.ridge;

@@ -1863,6 +1863,23 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   // stalls
   for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
+    // Painted board aprons sit inside the blocking envelope, leaving the old timber as their frame.
+    // All 36 added triangles per stall join the counter's existing opaque shadow bucket.
+    for (const side of [-1, 1]) {
+      const apron = (w: number, h: number, y: number, short: boolean) => new THREE.PlaneGeometry(w, h)
+        .rotateY(short ? side * Math.PI / 2 : side === 1 ? 0 : Math.PI)
+        .translate(s.x + (short ? side * 2.006 : 0), y, s.z + (short ? 0 : side * 0.806));
+      for (const short of [false, true]) {
+        const w = short ? 1.28 : 3.68;
+        M.addVisual("market-apron", mat("#768577"), apron(w, 0.54, 0.46, short));
+        for (const y of [0.37, 0.55]) {
+          const joint = apron(w, 0.016, y, short);
+          joint.translate(short ? side * 0.003 : 0, 0, short ? 0 : side * 0.003);
+          M.addVisual("market-joint", mat("#596c60"), joint);
+        }
+      }
+    }
+    M.addVisual("market-cap", mat("#c69b6e"), boxGeo(4.012, 0.08, 1.612, s.x, 0.864, s.z));
     for (const [dx, dz] of [[-1.9, -0.7], [1.9, -0.7], [-1.9, 0.7], [1.9, 0.7]]) M.add("stall-pole", mat("#e8e2d6"), cylGeo(0.05, 0.05, 2.6, s.x + dx, 1.3, s.z + dz, 5));
     // the roof tilted about its own middle, then set on the poles' tops (tilted after the move, it turned about the
     // world's origin and hung about 3 m above the stall)
@@ -2027,6 +2044,32 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   const wood = mat("#b8895a");
   M.add("pier", wood, boxGeo(4.4, 0.3, 14, -30, 0.15, -69));
   M.add("pier", wood, boxGeo(22, 0.3, 16, -30, 0.15, -80));
+  // Coastal siding on the actual restaurant, distinct from the distant open-sea shore model.
+  // Avoid pier-* keys: those are retained separately by M.build. These 72 triangles share town-solid buckets.
+  const restaurant = BUILDINGS.find((b) => b.id === "pier")!;
+  const shoreZ = restaurant.z - restaurant.d / 2;
+  const seaward = (w: number, h: number, x: number, y: number, offset = 0) => new THREE.PlaneGeometry(w, h)
+    .rotateY(Math.PI).translate(restaurant.x + x, y, shoreZ - 0.016 - offset);
+  M.addVisual("harbor-siding", mat("#55747c"), seaward(restaurant.w, 2.6, 0, 1.8));
+  for (const side of [-1, 1]) {
+    const end = (h: number, y: number, offset = 0) => new THREE.PlaneGeometry(2, h).rotateY(side * Math.PI / 2)
+      .translate(restaurant.x + side * (restaurant.w / 2 + 0.016 + offset), y, shoreZ + 1);
+    M.addVisual("harbor-siding", mat("#55747c"), end(2.6, 1.8));
+    for (const y of [0.60, 0.78, 0.96]) M.addVisual("harbor-siding-joint", mat("#48636c"), end(0.018, y, 0.003));
+    M.addVisual("harbor-corner", mat("#d0b99b"), seaward(0.24, 5.1, side * (restaurant.w / 2 - 0.12), 3.05, 0.006));
+  }
+  for (const y of [0.60, 0.78, 0.96]) M.addVisual("harbor-siding-joint", mat("#48636c"), seaward(restaurant.w, 0.018, 0, y, 0.003));
+  for (let y = 1.32; y < 5.7; y += 0.32) {
+    const color = y < 3.1 ? "#48636c" : "#cbd4d2";
+    M.addVisual("harbor-clapboard-" + color, mat(color), seaward(restaurant.w, 0.018, 0, y, 0.003));
+  }
+  for (const y of [3.25, 5.78]) M.addVisual("harbor-trim", mat("#d0b99b"), seaward(restaurant.w, 0.12, 0, y, 0.006));
+  // The dock faces remain below its walking surface and inside its existing edge colliders.
+  for (const [h, y, color] of [[0.14, 0.19, "#756b59"], [0.075, 0.048, "#52645f"]] as const) {
+    M.addVisual("harbor-deck-" + color, mat(color), new THREE.PlaneGeometry(22, h).rotateY(Math.PI).translate(-30, y, -88.012));
+    for (const side of [-1, 1]) M.addVisual("harbor-deck-" + color, mat(color), new THREE.PlaneGeometry(16, h)
+      .rotateY(side * Math.PI / 2).translate(-30 + side * 11.012, y, -80));
+  }
   // the posts: the row along the beach side stands up over the boards like mooring posts (one hops from post to post:
   // ledges.ts), the far row is cut off at the deck
   for (let i = -10; i <= 10; i += 2.5) {

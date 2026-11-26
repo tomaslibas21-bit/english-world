@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { STYLED, IS_REAL, styledMat, refineForKey, wantsOutline, makeOutline, outlineColorFor, bevelRadius } from "../style";
 import { chamferBox, boxProjectUV } from "./shapes";
+import { mergeCollisionRanges, visualOnly } from "../collisionGeometry";
 
 type BakeMaterial = Pick<THREE.MeshLambertMaterial, "color" | "emissive" | "emissiveIntensity" | "flatShading">;
 type BakePart = THREE.BufferGeometry | { geo: THREE.BufferGeometry; mat: BakeMaterial };
@@ -31,11 +32,16 @@ export class Merger {
       }
     }
     const ng = geo.index ? geo.toNonIndexed() : geo;
+    if (geo.userData.collisionRanges !== undefined) ng.userData.collisionRanges = geo.userData.collisionRanges;
     if (this.borrowedGeometries && (ng === geo || geo.toNonIndexed !== THREE.BufferGeometry.prototype.toNonIndexed)) {
       this.borrowedGeometries.add(ng);
     }
     if (STYLED && g.mat.userData.uvScale) boxProjectUV(ng, g.mat.userData.uvScale);
     g.geos.push(ng);
+  }
+  /** Paint and small service details share render batches but retain the underlying collision geometry. */
+  addVisual(key: string, mat: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
+    this.add(key, mat, visualOnly(geo), cast, receive);
   }
   /** `bake` (the original look only): every shape in a plain colour (an opaque, one-sided Lambert material with no
    *  texture: nearly all of a town's or a room's props) is drawn in a few meshes that carry the colours in their
@@ -72,6 +78,7 @@ export class Merger {
       }
       const merged = mergeGeometries(g.geos.map(normalizeAttrs), false);
       if (!merged) continue;
+      mergeCollisionRanges(merged, g.geos);
       const key = g.key;
       const mesh = new THREE.Mesh(merged, g.mat);
       mesh.name = name;
@@ -90,6 +97,7 @@ export class Merger {
     for (const ch of chunks.values()) {
       const merged = mergeBakeParts(ch.parts, !!this.borrowedGeometries);
       if (!merged) continue;
+      mergeCollisionRanges(merged, ch.parts.map((part) => part instanceof THREE.BufferGeometry ? part : part.geo));
       const mesh = new THREE.Mesh(merged, bakedMaterial());
       mesh.name = `${bake!.name}-${n++}`;
       mesh.castShadow = ch.cast;

@@ -18,6 +18,7 @@ import { addLighthouse } from "./lighthouseTower";
 import { MAPLE_BLOCKS } from "./styled";
 import { addHarborSurf } from "./harborSurf";
 import { HARBOR_SURF, SURF_SPOT } from "./surf";
+import { visualOnly } from "../collisionGeometry";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -437,6 +438,14 @@ function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: Ad
   // the window: a dark opening, its shelf, what stands on it
   add(boxGeo(0.06, 0.95, 2.7, X + 1.2, 2.0, Z + 0.8), dark, { cast: false });
   add(boxGeo(0.42, 0.06, 2.9, X + 1.38, 1.5, Z + 0.8), "#e9e2d2");
+  // Enamel reveal, a dim preparation band and a steel counter edge, all inside the existing serving ledge.
+  // The dark upper opening, condiments, striped awning and roof sign stay clear (74 added triangles).
+  const finish = (geometry: THREE.BufferGeometry, color: string) => add(visualOnly(geometry), color, { cast: false });
+  for (const y of [1.54, 2.50]) finish(boxGeo(0.04, 0.08, 2.82, X + 1.244, y, Z + 0.8), "#e4d6ba");
+  for (const dz of [-1.375, 1.375]) finish(boxGeo(0.04, 0.96, 0.07, X + 1.244, 2.02, Z + 0.8 + dz), "#e4d6ba");
+  finish(new THREE.PlaneGeometry(2.55, 0.34).rotateY(Math.PI / 2).translate(X + 1.234, 1.78, Z + 0.8), "#53645e");
+  finish(boxGeo(0.04, 0.035, 2.82, X + 1.56, 1.52, Z + 0.8), "#b6c2bd");
+  finish(boxGeo(0.22, 0.035, 0.32, X + 1.4, 1.5475, Z + 1.40), "#ead8b6");
   for (const [dz, cc] of [[-0.9, "#c8392f"], [-0.72, "#f2c14e"], [0.2, "#f6ecd9"], [0.38, "#f6ecd9"]] as [number, string][]) add(cylGeo(0.05, 0.05, 0.2, X + 1.42, 1.63, Z + 0.8 + dz, 6), cc, { cast: false });
   add(boxGeo(0.2, 0.14, 0.3, X + 1.4, 1.6, Z + 1.75), "#8a939b", { cast: false });
   // the awning: five stripes sloping out over the window, on two struts

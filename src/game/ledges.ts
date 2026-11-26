@@ -11,6 +11,7 @@
 // camera's field holds solid (a gazebo, a kiosco) keep the ground plan. What stands by someone one talks to keeps
 // the lower limit (LAND). Way-finding, passers-by and the camera use the original ground plan.
 import * as THREE from "three";
+import { collisionRanges } from "./collisionGeometry";
 import type { AABB, Colliders } from "./world/util";
 import { triOverlapsRect } from "./occlusion";
 import { Hop } from "./movement";
@@ -628,23 +629,27 @@ export class Ledges {
     };
 
     const v = new THREE.Vector3();
-    let mi = 0, ti = 0;
+    let mi = 0, ti = 0, ri = 0;
     const work = () => {
       const t0 = performance.now();
       while (mi < meshes.length) {
         const m = meshes[mi], pos = m.geometry.attributes.position as THREE.BufferAttribute, idx = m.geometry.index;
         thin = thins.has(m);
-        const n = idx ? idx.count : pos.count, a = pos.array as Float32Array, flat = !idx && pos.itemSize === 3 && !(pos as unknown as { isInterleavedBufferAttribute?: boolean }).isInterleavedBufferAttribute && isIdentity(m.matrixWorld);
+        const ranges = collisionRanges(m.geometry), a = pos.array as Float32Array, flat = !idx && pos.itemSize === 3 && !(pos as unknown as { isInterleavedBufferAttribute?: boolean }).isInterleavedBufferAttribute && isIdentity(m.matrixWorld);
         const p = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-        for (; ti + 2 < n; ti += 3) {
-          if (flat) { const o = ti * 3; tri(a[o], a[o + 1], a[o + 2], a[o + 3], a[o + 4], a[o + 5], a[o + 6], a[o + 7], a[o + 8]); }
-          else {
-            for (let k = 0; k < 3; k++) { v.fromBufferAttribute(pos, idx ? idx.getX(ti + k) : ti + k).applyMatrix4(m.matrixWorld); p[k * 3] = v.x; p[k * 3 + 1] = v.y; p[k * 3 + 2] = v.z; }
-            tri(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+        for (; ri < ranges.length; ri++) {
+          const [start, end] = ranges[ri];
+          ti = Math.max(ti, start);
+          for (; ti + 2 < end; ti += 3) {
+            if (flat) { const o = ti * 3; tri(a[o], a[o + 1], a[o + 2], a[o + 3], a[o + 4], a[o + 5], a[o + 6], a[o + 7], a[o + 8]); }
+            else {
+              for (let k = 0; k < 3; k++) { v.fromBufferAttribute(pos, idx ? idx.getX(ti + k) : ti + k).applyMatrix4(m.matrixWorld); p[k * 3] = v.x; p[k * 3 + 1] = v.y; p[k * 3 + 2] = v.z; }
+              tri(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+            }
+            if (slice && (ti & 2047) === 0 && performance.now() - t0 > 5) { ti += 3; slice(work); return; }
           }
-          if (slice && (ti & 2047) === 0 && performance.now() - t0 > 5) { ti += 3; slice(work); return; }
         }
-        mi++; ti = 0;
+        mi++; ti = 0; ri = 0;
       }
       finish();
     };

@@ -1,5 +1,6 @@
 // Run with a local development server. Optionally set WORLD_TEST_URL, WORLD_STORAGE,
 // WORLD_PLAYWRIGHT_MODULE, WORLD_BROWSER_CHANNEL, WORLD_SHOTS, WORLD_PHONE_WIDTH/HEIGHT or WORLD_SPAWN ("x,z,rot").
+// WORLD_GLOW_B6=1 adds four stationary town-art comparisons before the normal checks, with the HUD visible.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -273,6 +274,24 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
+    if (process.env.WORLD_GLOW_B6 === "1") await withGame(viewport, {}, async ({ page, step, shot }) => {
+      for (const [name, x, z, rot] of [
+        ["glow-market-fruit", 26, -38.5, Math.PI],
+        ["glow-market-flowers", 14, -37.5, Math.PI],
+        ["glow-lobster-hatch", 15.7, -30.2, -Math.PI / 2],
+        ["glow-pier-seaward", -30, -87, 0],
+      ]) {
+        await page.evaluate(([x, z, rot]) => window.__ew.game.placeOnFoot(x, z, rot), [x, z, rot]);
+        await step(30);
+        const frame = await page.evaluate(() => {
+          const g = window.__ew.game;
+          return { player: g.player.root.position.toArray(), camera: g.rig.cam.position.toArray(),
+            calls: g.renderer.info.render.calls, triangles: g.renderer.info.render.triangles };
+        });
+        console.log(JSON.stringify({ glow: name, viewport, ...frame }));
+        await shot(name);
+      }
+    });
     await withGame(viewport, {}, async ({ page, step, state, force, wait, turn, closed, press, card, shot }) => {
       if (index === 0) assert(await force("i_dropped", "a"));
       await wait(() => card.locator(".street-scene").isVisible(), "the street scene is shown");

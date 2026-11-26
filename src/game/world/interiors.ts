@@ -916,7 +916,18 @@ const B: Record<string, () => Interior> = {
 
   trattoria: () => room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
     c.M.add("host-stand", mat("#5a3a2a"), boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2)); c.col.addBox(-5.5, 4.2, 0.9, 0.6);
-    for (const [tx, tz] of [[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5], [6.5, -0.8]]) table(c, tx, tz, { cloth: "#c0392b", chairs: 2, w: 1.1, d: 1.1 });
+    for (const [tx, tz] of [[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5], [6.5, -0.8]]) {
+      table(c, tx, tz, { cloth: "#d9c8a7", chairs: 2, w: 1.1, d: 1.1 });
+      // A runner crosses between the seats; the service leaves room around the unchanged central candle.
+      // Fifty added triangles per table bake into room-solid, without a separate small-prop mesh.
+      c.M.addVisual("trattoria-runner", mat("#914b43"), new THREE.PlaneGeometry(1.1, 0.24).rotateX(-Math.PI / 2).translate(tx, 0.793, tz));
+      for (const side of [-1, 1]) {
+        c.M.addVisual("trattoria-runner", mat("#914b43"), new THREE.PlaneGeometry(0.24, 0.10).rotateY(side * Math.PI / 2).translate(tx + side * 0.551, 0.742, tz));
+        c.M.addVisual("trattoria-plate", mat("#f3ebda"), new THREE.CircleGeometry(0.16, 10).rotateX(-Math.PI / 2).translate(tx, 0.798, tz + side * 0.32));
+        c.M.addVisual("trattoria-well", mat("#d8d4c8"), new THREE.CircleGeometry(0.112, 10).rotateX(-Math.PI / 2).translate(tx, 0.801, tz + side * 0.32));
+        c.M.addVisual("trattoria-napkin", mat("#eee2cb"), new THREE.PlaneGeometry(0.10, 0.20).rotateX(-Math.PI / 2).translate(tx + 0.25, 0.798, tz + side * 0.32));
+      }
+    }
     for (const [tx, tz] of [[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5]]) c.M.add("candle", mat("#fff3c4", { emissive: "#c99a2e" }), cylGeo(0.04, 0.04, 0.18, tx, 0.88, tz, 6), false);
     shelf(c, 7.4, -5.8, 3, 2.4, "#5a3a2a", ["#6b1d2a", "#8a2b3a", "#2e4a2e"], 0, 0.45);
     c.M.add("kitchen-door", mat("#5a3a2a"), boxGeo(1.6, 2.6, 0.12, -7, 1.3, -c.d / 2 + 0.1));

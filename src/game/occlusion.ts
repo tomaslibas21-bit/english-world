@@ -10,6 +10,7 @@
 // from a wall by a hand's breadth or less (windows, sills: EDGE), and posts and lamps (`minCells`: pieces with a
 // footprint that small only hide a sliver of the picture; pulling the camera in for each would make it pump).
 import * as THREE from "three";
+import { collisionRanges } from "./collisionGeometry";
 
 export interface OcclusionOptions {
   /** The cell's size (m). */
@@ -81,9 +82,8 @@ export class OcclusionField {
     const pos = g.attributes.position as THREE.BufferAttribute | undefined;
     if (!pos) return;
     const idx = g.index;
-    const n = idx ? idx.count : pos.count;
     const p = new Float32Array(9);
-    for (let i = 0; i + 2 < n; i += 3) {
+    for (const [start, end] of collisionRanges(g)) for (let i = start; i + 2 < end; i += 3) {
       for (let k = 0; k < 3; k++) {
         const j = idx ? idx.getX(i + k) : i + k;
         v.fromBufferAttribute(pos, j).applyMatrix4(matrix);
