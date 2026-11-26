@@ -167,7 +167,7 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "listen" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "listen" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "barista" | "gofish" | "billiards" | "gym" | "cinema" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";

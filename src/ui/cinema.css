@@ -1,0 +1,43 @@
+.cinema-view {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  color: #fff1d3;
+}
+.cinema-card {
+  position: absolute;
+  top: calc(50% - 26px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: min(84%, 36em);
+  padding: 0.75em 0.5em 0.95em;
+  border-block: 3px double #eac480;
+  background: #233c48;
+}
+.cinema-card h1 {
+  margin: 0;
+  font: italic bold clamp(1.9em, 6vw, 4em)/1.12 "EB Garamond", Georgia, serif;
+  color: #fff2d8;
+}
+.cinema-card small { display: block; margin-top: 0.35em; font-size: 0.95em; }
+.cinema-controls {
+  position: absolute;
+  inset-inline: env(safe-area-inset-left, 0) env(safe-area-inset-right, 0);
+  bottom: max(6px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+}
+.cinema-controls button {
+  color: #ffedc8;
+  background: #252b38;
+  border: 1px solid #b9a780;
+  border-radius: 0.5em;
+  font: inherit;
+  padding: 0.35em 0.8em;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+.cinema-controls button:focus-visible { outline: 3px solid #ffd477; outline-offset: 1px; }

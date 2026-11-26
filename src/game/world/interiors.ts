@@ -6,6 +6,7 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, c
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
+import { CINEMA_SEAT, CINEMA_TITLE } from "../cinema/program";
 import { GYM_MAT } from "./gym";
 import { DINING, DINING_SEATS, DINNER_PROPS } from "../gofish/framing";
 import { leafShape } from "./maple";
@@ -1254,6 +1255,12 @@ const B: Record<string, () => Interior> = {
     // plinths in the new exhibition, a ship model from the harbor's past, postcards at the gift shop, plants, two
     // more paintings on the east wall
     const S = smalls(c);
+    // The theater faces the unused west side of the exhibition partition.
+    seatRowS(c, S, CINEMA_SEAT.x, CINEMA_SEAT.z, CINEMA_SEAT.heading, 3, "#943e45");
+    S.add(boxGeo(0.10, 2.05, 3.55, 5.79, 1.88, -3), "#252741");
+    S.add(boxGeo(0.04, 1.91, 3.41, 5.72, 1.88, -3), "#f6edd4");
+    S.add(boxGeo(0.08, 0.06, 3.48, 5.70, 0.79, -3), "#b28b48");
+    sign(c, CINEMA_TITLE.en, 5.69, 1.88, -3, 2.8, "#f6edd4", "#252741", -Math.PI / 2);
     rugS(S, -2, -2, 4.6, 4.6, "#7d2a35", "#c9a227", 0.16);
     rugS(S, 0, 7.4, 3.2, 3.6, "#2b2d6e", "#c9a227", 0.14);
     rugS(S, 9.6, 6.1, 3.4, 3.6, "#e8dcb4", "#2b2d6e", 0.12);

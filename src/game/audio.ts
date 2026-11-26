@@ -1038,6 +1038,21 @@ export class AudioSystem {
   private out(ctx: AudioContext): AudioNode { this.buses(ctx); return this.worldBus!; }
   /** Where an effect goes. */
   private fx(ctx: AudioContext): AudioNode { this.buses(ctx); return this.fxBus!; }
+  /** A short plucked note on the existing effects bus. Return a cut-off for a film cut or a hidden tab. */
+  pluck(hz: number, length: number, level: number) {
+    const ctx = this.context();
+    if (!ctx || ctx.state !== "running" || !this.volume || !this.soundsLevel) return;
+    const at = ctx.currentTime, osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = hz;
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, this.volume * level), at + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    osc.connect(gain); gain.connect(this.fx(ctx));
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    osc.start(at); osc.stop(at + length);
+    return () => { gain.disconnect(); };
+  }
   private levelBuses(seconds: number) {
     const ctx = this.busCtx;
     if (!ctx || ctx.state === "closed") return;

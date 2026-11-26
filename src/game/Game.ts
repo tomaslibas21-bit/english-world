@@ -69,6 +69,7 @@ import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
 import { GYM_ENTRY } from "../content/gym-entry";
+import { CinemaMode } from "./cinema/mode";
 import { createGymMode } from "./gym/entry";
 import type { OcclusionField } from "./occlusion";
 import { STYLED } from "./style";
@@ -275,6 +276,7 @@ export class Game implements GameApi {
   private meeting: LizzieMeeting | undefined;
   private loadMeeting = false;
   private officeRequested = false;
+  private cinema?: CinemaMode;
   private modeHost!: ModeHost;
   private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
@@ -732,6 +734,13 @@ export class Game implements GameApi {
       });
       this.modes.register(this.sea);
     }
+    this.cinema = new CinemaMode({
+      ...host,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      entered: id => { this.tagLayer.style.visibility = "hidden"; host.entered(id); },
+      left: id => { this.tagLayer.style.visibility = ""; host.left(id); },
+    }, () => this.zone.id === "museum");
+    this.modes.register(this.cinema);
     this.modes.register(createGymMode(stageHost, {
       room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
       trainer: () => this.npcs.find(isGymTrainer)?.ch,
@@ -2639,6 +2648,7 @@ export class Game implements GameApi {
 
   private phoneVisibility = () => {
     this.wasHidden = true;
+    if (document.hidden) this.cinema?.silence();
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.observeStreetAndPhone();
   };
@@ -3293,6 +3303,11 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const talking = !!this.session?.active;
     const mode = this.modes.active;
+    if (this.cinema?.active) {
+      this.cinema.project(this.renderer, w, h, this.wasHidden ? 0 : elapsed);
+      this.wasHidden = document.hidden;
+      return;
+    }
     if (this.naturalView && !this.naturalView.update(st.conv, dt)) this.naturalView = undefined;
     const speaker = this.naturalTalk?.speaker;
     if (speaker) {
