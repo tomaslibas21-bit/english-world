@@ -24,13 +24,15 @@ function Mark({ row }: { row: Stamp }) {
 }
 function Proof({ row, press }: { row: Stamp; press: boolean }) {
   return <article className="passport-proof" data-earned={row.earned}>
-    <div className={"passport-proof-mark" + (press ? " printing" : "")}><Mark row={row} /></div>
     <p className="passport-status"><Caption label={row.earned ? copy.earned : copy.available} /></p>
     {row.book && row.book.en !== row.title.en && <p className="passport-group"><Caption label={row.book} /></p>}
     <h3><Caption label={row.title} /></h3>
-    {row.stars !== undefined && <Stars n={row.stars} />}
-    {!row.earned && <p><Caption label={row.condition} /></p>}
-    <ul>{row.proof.map((p, i) => <li key={i}><Caption label={p} /></li>)}</ul>
+    <div className="passport-impression">
+      <div className={"passport-proof-mark" + (press ? " printing" : "")}><Mark row={row} /></div>
+      {row.stars !== undefined && <Stars n={row.stars} size={22} />}
+    </div>
+    {row.proof.length > 0 && <ul>{row.proof.map((p, i) => <li key={i}><Caption label={p} /></li>)}</ul>}
+    {!row.earned && <p className="passport-requirement"><Caption label={row.condition} /></p>}
     {row.href && <a className="passport-link" target="_blank" rel="noopener noreferrer" href={row.href}><Caption label={copy.link} /><Icon name="arrowRight" size={18} /></a>}
   </article>;
 }
@@ -67,7 +69,6 @@ export default function Passport({ close }: { close(): void }) {
   const pages = Math.max(1, Math.ceil(count / pageSize)), leaf = Math.min(page, pages - 1);
   const start = leaf * pageSize, cells = list.slice(start, start + pageSize);
   const current = list.find(s => s.id === selected);
-  const proof = current ?? cells[0];
   const pendingRows = pending ?? [];
 
   function openRow(row: Stamp, reveal = false) {
@@ -158,13 +159,8 @@ export default function Passport({ close }: { close(): void }) {
         <nav>{visibleSections.map(k => <button type="button" key={k} aria-pressed={section === k} onClick={() => choose(k)}>
           <Icon name={sectionIcons[k]} size={17} /><Caption label={sections[k]} /></button>)}</nav>
       </div>
-      <div className="passport-index">
-        <div className="passport-page-title"><h3><Caption label={showFavorites ? copy.favorites : sections[section]} /></h3>
-          {!!count && <span>{showFavorites ? count : list.filter(s => s.earned).length + " / " + count}</span>}</div>
-        {section === "situations" && !list.some(s => s.earned) && <p className="passport-instruction"><Caption label={copy.empty} /></p>}
-        {section === "songs" && !!source.favorites.length && !showFavorites && <button type="button" className="passport-favorites" onClick={() => {
-          setShowFavorites(true); select(null); setPage(0); focusAfter.current = ".passport-favorite-link";
-        }}><Caption label={copy.favorites} /></button>}
+      <div className="passport-index" key={section + ":" + leaf + ":" + showFavorites}>
+        {showFavorites && <h3 className="passport-favorites-title"><Caption label={copy.favorites} /></h3>}
         {showFavorites ? source.favorites.slice(start, start + pageSize).map(s => <a key={s.id} className="passport-favorite-link" href={"/songs/" + s.id} target="_blank" rel="noopener noreferrer"><Caption label={s.title} /></a>)
           : <div className="passport-grid">{cells.map((row, i) => <Fragment key={row.id}>
             {row.book && (!i || row.book !== cells[i-1].book) && <h4><Caption label={row.book} /></h4>}
@@ -172,10 +168,15 @@ export default function Passport({ close }: { close(): void }) {
               onClick={() => openRow(row)}><Mark row={row} /><strong><Caption label={row.title} /></strong>
               <span className="passport-condition"><Caption label={row.earned ? copy.earned : row.condition} /></span></button>
           </Fragment>)}</div>}
+        {section === "songs" && !!source.favorites.length && !showFavorites && <button type="button" className="passport-favorites" onClick={() => {
+          setShowFavorites(true); select(null); setPage(0); focusAfter.current = ".passport-favorite-link";
+        }}><Caption label={copy.favorites} /></button>}
+        {section === "situations" && leaf === 0 && !list.some(s => s.earned) && <p className="passport-instruction"><Caption label={copy.empty} /></p>}
         {!count && <p><Caption label={source.loading ? copy.loading : copy.unavailable} /></p>}
       </div>
-      {proof && !showFavorites && <div className="passport-evidence"><Proof key={proof.id} row={proof} press={pressed === proof.id} /></div>}
+      {current && !showFavorites && <div className="passport-evidence"><Proof key={current.id} row={current} press={pressed === current.id} /></div>}
     </div>
+    <div className="passport-pad-dock" aria-hidden="true" />
     <footer>
       <button type="button" data-pad-back onClick={back}><Icon name="arrowLeft" size={16} /><Caption label={current || showFavorites ? copy.back : copy.close} /></button>
       {pendingRows.length > 0 && <button type="button" className="passport-new" onClick={() => nextStamp()} title={copy.next.lt}>

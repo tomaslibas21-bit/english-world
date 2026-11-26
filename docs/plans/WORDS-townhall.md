@@ -10,7 +10,7 @@ English is the learning language. Lithuanian is the helper language. The counter
 | Open passport | Atversti pasą |
 | Maple Harbor | Meipl Harboras |
 
-The street sign and the seal carry the town’s English lettering. The map, nearest prompt and printed desk card supply the Lithuanian. The existing door and map controls supply „Įeiti“ and „Nuvesk mane“.
+The street sign reads “TOWN HALL” in painted capitals. The seal carries the town’s English name. The map, nearest prompt and printed desk card supply the Lithuanian. The existing door and map controls supply „Įeiti“ and „Nuvesk mane“.
 
 ## Leaves, proof and controls
 
@@ -113,7 +113,6 @@ The street sign and the seal carry the town’s English lettering. The map, near
 | Earned · {n} | Gauta · {n} |
 | Earned · {n} / {total} | Gauta · {n} / {iš viso} |
 | Earned · {title} | Gauta · {pavadinimas} |
-| {earned} / {eligible} | {gauta} / {galima gauti} |
 | {page} / {pages} | {puslapis} / {puslapių skaičius} |
 
 The situation titles and their register come from the game’s situation catalog. Place names come from the location catalog. Song, book and chapter captions use English Master’s indexed English and Lithuanian titles. The star graphic uses the journal’s existing accessible label, for example „1 iš 3“. The status announcement uses the Lithuanian title.
