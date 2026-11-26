@@ -292,6 +292,7 @@ try {
     await real(470);
     await waitFor(() => heard("tx_hello"), "Don Rigo greets the learner");
     if (phone) {
+      await shot("greeting");
       const { taxi, controls, cue } = await page.evaluate(greetingLayout);
       assert(taxi.left >= 0 && taxi.right <= width && taxi.top >= 0 && taxi.bottom <= height
         && controls.length === 2 && [...controls, cue].every(({ left, right, top, bottom }) =>
