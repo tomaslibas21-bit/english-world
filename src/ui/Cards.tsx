@@ -220,9 +220,9 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
           {!dash && (wordIn
             ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.inCards}</span>
             : <button className="btn small" onClick={() => {
-              if (useCards.getState().add({ ...word, sourceLabel: source?.sourceLabel })) setSaved(true);
+              if (useCards.getState().add({ ...word, sourceLabel: source?.sourceLabel, speakerId: source?.speakerId })) setSaved(true);
             }}><Icon name="plus" size={16} />{" " + PHRASE_CARD_UI.add}</button>)}
-          <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel}
+          <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel} speakerId={source?.speakerId}
             popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
         </div>
         {saved && <div className="wpop-hint">Kortelę rasi kuprinėje.</div>}

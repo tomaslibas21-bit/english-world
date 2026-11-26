@@ -22,6 +22,8 @@ export interface Card {
   situationId: string;
   /** A resolved source label for cards earned outside the situation catalog. */
   sourceLabel?: string;
+  /** Actual speaker of an explicitly saved NPC line, when known at save time. */
+  speakerId?: string;
   /** ms since the epoch. */
   createdAt: number;
   /** Leitner box 1–5 (1 = new or forgotten). */
@@ -34,7 +36,7 @@ export interface Card {
   lastReview?: number;
 }
 
-export type CardInput = Pick<Card, "en" | "lt" | "ipa" | "sentence" | "situationId" | "sourceLabel">;
+export type CardInput = Pick<Card, "en" | "lt" | "ipa" | "sentence" | "situationId" | "sourceLabel" | "speakerId">;
 
 /** Days until the next review for a card in box 1…5. */
 export const INTERVALS = [1, 2, 4, 8, 16] as const;
@@ -151,6 +153,7 @@ export function newCard(input: CardInput, now: number, taken?: Set<string>): Car
     due: startOfDay(now), // new cards can be reviewed today
   };
   if (input.ipa) c.ipa = input.ipa;
+  if (input.speakerId) c.speakerId = input.speakerId;
   if (input.sourceLabel) c.sourceLabel = input.sourceLabel;
   return c;
 }
@@ -228,6 +231,7 @@ export function parseCards(raw: unknown, now = Date.now()): Card[] {
     };
     if (str(s.say).trim()) c.sentence.say = str(s.say).trim();
     if (str(x.ipa).trim()) c.ipa = str(x.ipa).trim();
+    if (str(x.speakerId).trim()) c.speakerId = str(x.speakerId).trim();
     if (str(x.sourceLabel).trim()) c.sourceLabel = str(x.sourceLabel).trim();
     for (const f of ["reviews", "lapses", "lastReview"] as const) if (typeof x[f] === "number" && Number.isFinite(x[f])) c[f] = x[f];
     keys.add(k); ids.add(id); out.push(c);

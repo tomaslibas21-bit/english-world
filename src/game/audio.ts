@@ -172,9 +172,9 @@ export class AudioSystem {
     for (const listener of this.diagnosticListeners) listener();
   }
 
-  init(): Promise<void> {
+  init(retry = false): Promise<void> {
     if (this.initializing) return this.initializing;
-    if (this.ready || Date.now() < this.retryInitAt) return Promise.resolve();
+    if (this.ready || (!retry && Date.now() < this.retryInitAt)) return Promise.resolve();
     if (typeof speechSynthesis !== "undefined") {
       const load = () => { this.fallbackVoices = speechSynthesis.getVoices().filter((v) => /^en(?:[-_]|$)/i.test(v.lang)); };
       load();
