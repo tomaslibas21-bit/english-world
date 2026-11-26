@@ -1,5 +1,6 @@
 import { filesToken } from "../game/audio";
 import { createBookSource, type BookProfile } from "../radio/books";
+import { createBookReviewSource } from "./bookReviewSource";
 import covers from "./book-covers/books.json";
 import narrationRevisions from "./book-narration-revisions.json";
 
@@ -44,6 +45,7 @@ export const EM_BOOK_PROFILE: BookProfile = {
 
 /** Intended for the lazy talk entry point. Construction makes no requests. */
 export function bookSource(env: Record<string, unknown> = import.meta.env ?? {}, site = globalThis.location?.origin) {
+  if (import.meta.env.VITE_BOOK_REVIEW === "1") return createBookReviewSource(env, site, EM_BOOK_PROFILE);
   const files = typeof env.VITE_RADIO_FILES === "string" ? env.VITE_RADIO_FILES.trim().replace(/\/$/, "") : "";
   if (!site || files !== filesRoot) return null;
   return createBookSource({ profile: EM_BOOK_PROFILE, site, files, token: filesToken });

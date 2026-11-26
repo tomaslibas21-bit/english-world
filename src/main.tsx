@@ -13,4 +13,8 @@ import { initVariety } from "./state/variety";
 
 // the Spanish edition: Mexican or neutral Spanish, as the learner chose (nothing in the English edition)
 initVariety();
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root")!;
+if ((import.meta.env.DEV || import.meta.env.VITE_BOOK_REVIEW === "1") &&
+    new URLSearchParams(location.search).get("bookHarness") === "1") {
+  void import("./radio/bookHarness").then(({ mountBookHarness }) => mountBookHarness(root));
+} else createRoot(root).render(<App />);

@@ -1,3 +1,4 @@
+import { bookCueIndex } from "./bookTiming";
 import { TALK_LANGUAGES, TALK_RATES, isTalkMode, type TalkBookmark, type TalkLanguage, type TalkMode,
   type TalkPreferences, type TalkProgress, type TalkSelection } from "./talkProgress";
 
@@ -33,6 +34,8 @@ export type TalkStopReason = "pause" | "hold" | "capture" | "sleep" | "change" |
 type MediaRates = Readonly<Partial<Record<TalkLanguage, number>>>;
 
 export interface TalkOutput {
+  /** An output can expose the text-only state before the first Play. */
+  readonly unavailable?: TalkFailure;
   /** One source. A start canceled by signal or stop must never subsequently sound. */
   start(request: {
     item: TalkItem;
@@ -84,14 +87,7 @@ const sameSelection = (a: TalkSelection | null, b: TalkSelection) =>
 
 function cueAt(track: TalkTrack | undefined, position: number): TalkCue | null {
   if (!track?.cues.length) return null;
-  let lo = 0;
-  let hi = track.cues.length - 1;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (track.cues[mid].start <= position) lo = mid;
-    else hi = mid - 1;
-  }
-  return track.cues[lo];
+  return track.cues[bookCueIndex(track.cues, position)];
 }
 
 /** Stable across mode changes, while still distinguishing revised versions of a display sentence. */
@@ -231,7 +227,7 @@ export class TalkPlayer {
     const prefs = { ...this.state.prefs, mode };
     const track = this.state.item?.tracks[mode];
     const position = track ? restoredPosition(track, previous, false) : 0;
-    const error = this.state.item && !track ? this.state.item.issues?.[mode] ?? "unavailable" : null;
+    const error = this.state.item ? this.trackError(this.state.item, mode) : null;
     // Changing to a missing track still saves the place in the previous recording.
     if (this.started && previous && this.state.selection && !track) this.options.progress.checkpoint(this.state.selection, previous, prefs);
     else if (!this.started || !track) this.options.progress.setPreferences(prefs);
@@ -261,7 +257,8 @@ export class TalkPlayer {
     this.capturePosition();
     this.stopOutput(immediate ? "capture" : "hold");
     this.checkpoint();
-    this.patch({ held: true, status: this.restingStatus() });
+    this.state = { ...this.state, held: true };
+    this.patch({ status: this.restingStatus() });
   }
 
   release(reason: string): void {
@@ -270,7 +267,8 @@ export class TalkPlayer {
     this.cancelResume = this.options.clock.setTimeout(() => {
       this.cancelResume = undefined;
       this.checkSleep();
-      this.patch({ held: false, status: this.restingStatus() });
+      this.state = { ...this.state, held: false };
+      this.patch({ status: this.restingStatus() });
       this.maybeStart();
     }, 700);
   }
@@ -324,7 +322,7 @@ export class TalkPlayer {
       const track = item.tracks[mode];
       const saved = retryPosition ?? (resume ? this.options.progress.get(selection) : undefined);
       const position = track ? restoredPosition(track, saved) : 0;
-      const error = track ? null : item.issues?.[mode] ?? "unavailable";
+      const error = this.trackError(item, mode);
       this.loading = null;
       this.state = { ...this.state, item, position, cue: cueAt(track, position), error, playIntent: !error && this.state.playIntent };
       this.patch({ status: this.restingStatus(false) });
@@ -334,6 +332,10 @@ export class TalkPlayer {
       this.loading = null;
       this.patch({ status: "error", error: failureOf(error), playIntent: false });
     }
+  }
+
+  private trackError(item: TalkItem, mode: TalkMode): TalkFailure | null {
+    return this.options.output.unavailable ?? (item.tracks[mode] ? null : item.issues?.[mode] ?? "unavailable");
   }
 
   private maybeStart(): void {
@@ -346,7 +348,7 @@ export class TalkPlayer {
       this.capturePosition();
       this.stopOutput("pause");
       this.savePosition();
-      this.patch({ status: "error", playIntent: false, error });
+      this.patch({ status: error === "blocked" ? "paused" : "error", playIntent: false, error });
     };
     this.patch({ status: "starting" });
     if (this.playing !== request) return;
@@ -425,7 +427,7 @@ export class TalkPlayer {
   private restingStatus(keepEnded = true): Status {
     if (this.loading) return "loading";
     if (!this.state.selection) return "idle";
-    if (this.state.error) return "error";
+    if (this.state.error) return this.state.error === "blocked" ? "paused" : "error";
     if (keepEnded && this.state.status === "ended") return "ended";
     return this.state.held && this.state.playIntent ? "held" : "paused";
   }

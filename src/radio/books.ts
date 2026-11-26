@@ -1,3 +1,4 @@
+import { bookRateSwitches, englishBookCues } from "./bookTiming";
 import { isRecord, safeTalkId, TALK_LANGUAGES, type TalkLanguage, type TalkMode, type TalkProfile, type TalkSelection } from "./talkProgress";
 import { talkFingerprint, type TalkCue, type TalkFailure, type TalkItem, type TalkTrack } from "./talkPlayer";
 
@@ -111,8 +112,9 @@ const normalized = (s: string) => s.replaceAll("*", "").normalize("NFC").trim().
 
 function httpUrl(value: string): URL | null {
   // Reject path encodings and dot segments before URL normalization can reinterpret them.
-  if (/[\\\s]/.test(value) || !/^https?:\/\//i.test(value) ||
-      /(?:^|\/)\.{1,2}(?=\/|\?|#|$)/.test(value.split("?")[0])) return null;
+  const path = value.split("?")[0];
+  if (/[\\\s]/.test(value) || !/^https?:\/\//i.test(value) || path.includes("%") ||
+      /(?:^|\/)\.{1,2}(?=\/|#|$)/.test(path)) return null;
   try {
     const url = new URL(value);
     return url.username || url.password || url.hash || /[%\\]|\/\//.test(url.pathname) ? null : url;
@@ -257,24 +259,6 @@ interface Timing {
   rateSwitches?: TalkTrack["rateSwitches"];
 }
 
-function readSwitches(cues: TalkCue[], raw: unknown, hash?: string): TalkTrack["rateSwitches"] {
-  if (!isRecord(raw) || raw.version !== 1 || !hash || raw.audio_sha256 !== hash ||
-      !Array.isArray(raw.sw) || !Array.isArray(raw.speech) || raw.sw.length !== cues.length ||
-      raw.speech.length !== cues.length || raw.sw[0] !== 0) return;
-  const zones: NonNullable<TalkTrack["rateSwitches"]>[number][] = [];
-  let previousEnd = 0;
-  for (const [i, cue] of cues.entries()) {
-    const span: unknown = raw.speech[i];
-    const from: unknown = raw.sw[i];
-    if (!Array.isArray(span) || span.length !== 2 || !time(span[0]) || !time(span[1]) || !time(from) ||
-        span[0] < cue.start - 0.001 || span[1] > cue.end + 0.001 || span[1] <= span[0] ||
-        (i > 0 && (from <= zones[i - 1].from || from < previousEnd + 0.149 || from > span[0] - 0.079))) return;
-    previousEnd = span[1];
-    zones.push({ from, until: i ? span[0] - 0.079 : 0, language: cue.language });
-  }
-  return zones;
-}
-
 function readTiming(profile: BookProfile, id: string, sentences: BookSentence[], raw: unknown, mode: TalkMode,
   expectedIds?: readonly string[]): Timing {
   const legacyMode = COURSE_MODES[mode];
@@ -318,19 +302,12 @@ function readTiming(profile: BookProfile, id: string, sentences: BookSentence[],
       text: row.text, start: row.start, end: row.end });
   }
   return { cues, duration: Math.max(raw.duration_seconds, previousEnd), hash,
-    rateSwitches: mode === "paired" ? readSwitches(cues, raw.rate_switches, hash) : undefined };
+    rateSwitches: mode === "paired" ? bookRateSwitches(cues, raw.rate_switches, hash) : undefined };
 }
 
 function englishClock(profile: BookProfile, paired: Timing, raw: unknown): Timing {
   const target = paired.cues.filter((cue) => cue.language === TALK_LANGUAGES[profile.id].target);
-  let samples = 0;
-  const cues = target.map((cue, i) => {
-    const start = samples / 24_000;
-    samples += Math.round((cue.end - cue.start) * 24_000);
-    const end = samples / 24_000;
-    if (i + 1 < target.length) samples += 13_200;
-    return { ...cue, start, end };
-  });
+  const cues = englishBookCues(target);
   const hash = isRecord(raw) && isRecord(raw.audio_sha256) ? raw.audio_sha256.english : undefined;
   return { cues, duration: cues.at(-1)!.end, hash: sha(hash) ? hash : undefined };
 }
@@ -466,9 +443,20 @@ export function createBookSource({ profile, site, files, recordings = files, tok
   }
   const workerBase = worker.href.replace(/\/$/, "");
   const sign = (url: string, paid: boolean) => bookWorkerUrl(workerBase, url, paid ? token?.() : null)!;
-  const json = async (url: string, signal: AbortSignal): Promise<unknown> => {
+  const json = async (address: string | (() => string), signal: AbortSignal): Promise<unknown> => {
     let result: Response;
-    try { result = await fetchJson(url, { signal, redirect: "error", referrerPolicy: "no-referrer" }); }
+    const init = { signal, redirect: "error", referrerPolicy: "no-referrer" } as const;
+    try {
+      const url = typeof address === "string" ? address : address();
+      result = await fetchJson(url, init);
+      if (result.status === 401 && typeof address === "function") {
+        const renewed = address();
+        if (renewed !== url) {
+          await result.body?.cancel();
+          result = await fetchJson(renewed, init);
+        }
+      }
+    }
     catch (error) { if (signal.aborted) throw error; throw new BookSourceError("unavailable"); }
     if (!result.ok) throw new BookSourceError(result.status === 401 || result.status === 403 ? "access"
       : result.status === 404 ? "missing" : "unavailable", result.status);
@@ -495,7 +483,7 @@ export function createBookSource({ profile, site, files, recordings = files, tok
     if (!chapter || key !== `${chapter.selection.itemKey}/${chapter.id}`) throw new BookSourceError("missing");
     const { section, fileId, id } = chapter;
     const onSite = profile.jsonOnSite(section, id);
-    const content = (path: string) => json(onSite ? app.origin + path : sign(workerBase + path, true), signal);
+    const content = (path: string) => json(onSite ? app.origin + path : () => sign(workerBase + path, true), signal);
     const timing = (kind: TimingKind) => {
       const revision = profile.timingRevision?.(section, kind, fileId);
       const path = `/${section}/audio/${kind}/${fileId}.json${revision ? `?v=${encodeURIComponent(revision)}` : ""}`;
@@ -514,7 +502,8 @@ export function createBookSource({ profile, site, files, recordings = files, tok
     const folders = chapter.edition === "easy" && isRecord(config) ? config.easy : config;
     const recording = (mode: TalkMode, hash?: string) => {
       if (config instanceof BookSourceError) throw config;
-      const folder = isRecord(folders) ? rootUrl(string(folders[FOLDER_FIELDS[mode]])) : null;
+      const configured = isRecord(folders) ? string(folders[FOLDER_FIELDS[mode]]) : "";
+      const folder = rootUrl(configured.startsWith("/") ? app.origin + configured : configured);
       if (!folder || !underRoot(recordingRoot, folder.href)) return null;
       const path = folder.pathname.replace(/\/$/, "").slice(recordingRoot.pathname.length);
       if (!profile.recordingFolder(path, section, mode)) return null;
