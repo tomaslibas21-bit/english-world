@@ -80,9 +80,22 @@ describe("Hotel Mar Azul's pool", () => {
     ground.updateMatrixWorld();
     const parts = [...solid, ...flat], caps = solid.filter(([, color]) => color === "#bb7958");
     const shades = flat.filter(([, color]) => color === "#b5ada0");
+    const cores = flat.filter(([, color]) => color === "#929e96");
+    const courses = flat.filter(([, color]) => color === "#b6a58b");
     try {
       expect(caps).toHaveLength(5);
       expect(shades).toHaveLength(2);
+      expect(cores).toHaveLength(2);
+      expect(courses.length).toBeGreaterThan(40);
+      const decoration = [...courses, ...shades, ...cores];
+      const triangles = decoration.reduce((count, [g]) => count + (g.index?.count ?? g.attributes.position.count) / 3, 0);
+      expect(triangles).toBeLessThanOrEqual(200);
+      for (const [g] of decoration) {
+        g.computeBoundingBox();
+        const { min, max } = g.boundingBox!;
+        expect(outside(min.x, min.z, max.x, max.z)).toBe(true);
+        expect(max.y).toBeLessThan(0.01);
+      }
       for (const [g, color] of [...caps, ...shades]) {
         g.computeBoundingBox();
         const { min, max } = g.boundingBox!;

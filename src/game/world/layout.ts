@@ -187,10 +187,12 @@ export function taxiBoardingInlay() {
   const shape = (color: string, vertices: [number, number][]) =>
     ({ color, outline: vertices.map(([dx, dz]): [number, number] => [x + dx, z + dz]) });
   return [
-    shape("#e9d9b9", [[-2.25, -0.375], [2.25, -0.375], [2.25, 0.375], [1.82, 0.375],
-      [1.82, 0.105], [-1.82, 0.105], [-1.82, 0.375], [-2.25, 0.375]]),
-    ...[-1.55, 0, 1.55].map(dx => shape("#276a50", [[dx - 0.34, -0.135], [dx, -0.335],
-      [dx + 0.34, -0.135], [dx, 0.065]])),
+    shape("#e9d9b9", [[-2.25, -0.375], [2.25, -0.375], [2.25, 0.375], [-2.25, 0.375]]),
+    // A one-texel sawcut along the waiting side turns back at the ends, within the original footprint.
+    shape("#a79373", [[-2.25, -0.375], [-2.08, -0.375], [-2.08, 0.205], [2.08, 0.205],
+      [2.08, -0.375], [2.25, -0.375], [2.25, 0.375], [-2.25, 0.375]]),
+    ...[-1.5, 0, 1.5].map(dx => shape("#276a50", [[dx - 0.41, -0.05], [dx, -0.30],
+      [dx + 0.41, -0.05], [dx, 0.20]])),
   ];
 }
 

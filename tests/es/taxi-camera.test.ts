@@ -11,12 +11,18 @@ it("keeps both turned ends and all three diamonds on the boardable cab's sidewal
   const main = ROADS.find(road => road.name === "Main Street")!, curb = main.z1 + main.w / 2;
   const other = PARKED_CARS.find(car => car.model === "taxi" && car !== TAXI)!;
   const besideOther = carFootprint(other);
-  const [stone, ...diamonds] = taxiBoardingInlay();
+  const [stone, sawcut, ...diamonds] = taxiBoardingInlay();
   const xs = stone.outline.map(([x]) => x), zs = stone.outline.map(([, z]) => z);
   expect([Math.min(...xs), Math.max(...xs)]).toEqual([TAXI.x - 2.25, TAXI.x + 2.25]);
   expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(0.75);
   expect(diamonds.map(d => d.color)).toEqual(Array(3).fill("#276a50"));
-  for (const { outline } of [stone, ...diamonds]) for (const [x, z] of outline) {
+  // At six ground texels per metre, the end returns and each diamond need a full texel across their short axis.
+  expect(sawcut.outline[1][0] - sawcut.outline[0][0]).toBeGreaterThanOrEqual(1 / 6);
+  for (const { outline } of diamonds) {
+    const depths = outline.map(([, z]) => z);
+    expect((Math.max(...depths) - Math.min(...depths)) * 6).toBeGreaterThanOrEqual(3 - 1e-6);
+  }
+  for (const { outline } of [stone, sawcut, ...diamonds]) for (const [x, z] of outline) {
     expect(z).toBeGreaterThan(curb + 0.13); // clear of the raised kerb
     expect(z).toBeLessThan(curb + SIDEWALK);
     expect(x).toBeGreaterThan(besideOther.maxX);

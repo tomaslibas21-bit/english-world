@@ -12,7 +12,7 @@ import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { colourMerge, rand, roundRect, type Colliders } from "./util";
 import { groundFace } from "./shapes";
-import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
+import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, hotelPoolDeckPads, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods, TownTheme } from "./theme";
 
@@ -891,28 +891,35 @@ export function cenoteWater(parts: Part[], x: number, z: number) {
     parts.push([g.translate(x, 0, z), color]);
   };
   // Each contour ends on the shore. Only the eastern third opens onto the pale shelf.
-  const contours: { edge: number; north: Point; south: Point }[] = [
-    { edge: 6, north: [2.05, -1.55], south: [2.55, 1.8] },
-    { edge: 9, north: [0.7, -2.45], south: [0.1, 1.2] },
-    { edge: 13, north: [-3.75, -1.7], south: [-2.85, 2.05] },
+  const contours: { edge: number; across: Point[] }[] = [
+    { edge: 6, across: [[4.55, -2.6], [2.95, -1.55], [2.35, -0.65], [2.65, 0.15],
+      [2.9, 0.9], [3.2, 1.65], [4.65, 2.8]] },
+    { edge: 9, across: [[0.75, -2.6], [-0.35, -1.45], [0.25, -0.8], [0.65, 0.15],
+      [0.1, 1.05], [0.8, 2.0], [1.4, 2.9]] },
+    { edge: 13, across: [[-3.75, -2.5], [-3.0, -1.5], [-3.25, -0.7], [-3.55, 0.45],
+      [-2.85, 1.25], [-3.4, 2.2], [-3.25, 3.1]] },
   ];
   const [shelf, , deep] = contours;
   const foam: Point[][] = [
     [[3.16, -1.42], [3.12, -1.06], [3.23, -0.56], [3.31, -0.71], [3.24, -1.12]],
     [[2.95, 0.15], [2.98, 0.68], [3.16, 1.26], [3.15, 0.88], [3.06, 0.57]],
   ];
-  bank(-6, -3, [shelf.north], "#8acbbd");
-  bank(-3, 3, [shelf.south, shelf.north], "#9fd8c7", foam);
-  bank(3, 6, [shelf.south], "#95d1bf");
+  bank(-6, -3, [shelf.across[0]], "#8acbbd");
+  bank(-3, 3, [...shelf.across].reverse(), "#9fd8c7", foam);
+  bank(3, 6, [shelf.across.at(-1)!], "#95d1bf");
   for (const stroke of foam) face(stroke, "#d6ead4");
   const tones = [["#60aaa4", "#6dbbb0", "#7bc4b6"], ["#398e92", "#388e91", "#419998"]];
   for (let i = 0; i < tones.length; i++) {
     const east = contours[i], west = contours[i + 1], [north, middle, south] = tones[i];
-    bank(-west.edge, -east.edge, [east.north, west.north], north);
-    face([west.north, east.north, east.south, west.south], middle);
-    bank(east.edge, west.edge, [west.south, east.south], south);
+    bank(-west.edge, -east.edge, [east.across[0], west.across[0]], north);
+    // Short, staggered joins follow the step shelf, with small hue changes across the broad water facets.
+    for (let k = 1; k < east.across.length; k++) {
+      const color = k % 3 === 0 ? middle : k % 2 ? north : south;
+      face([west.across[k - 1], east.across[k - 1], east.across[k], west.across[k]], color);
+    }
+    bank(east.edge, west.edge, [west.across.at(-1)!, east.across.at(-1)!], south);
   }
-  bank(deep.edge, 36 - deep.edge, [deep.north, deep.south], "#16646e");
+  bank(deep.edge, 36 - deep.edge, deep.across, "#16646e");
 }
 
 /** A cenote in the meadow west of town (TOWN.md task 8; graphics round 6), seen from the end of avenida Juárez 25–40 m
@@ -2473,6 +2480,16 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   const addBox = (target: Part[], color: string, px: number, y: number, pz: number, width: number, height: number, length: number) =>
     target.push([box(width, height, length, x + px, y, z + pz), color]);
 
+  // Continuous course joints stay sharp where the ground canvas's small flags are viewed at a low angle.
+  const north = z + deck.north, course = 0.55, joint = 0.035;
+  for (const [x0, z0, x1, z1] of hotelPoolDeckPads()) {
+    for (let row = Math.ceil((z0 - north) / course); north + row * course < z1; row++) {
+      const top = north + row * course;
+      flat.push([groundFace([[x0, top], [x1, top], [x1, Math.min(z1, top + joint)],
+        [x0, Math.min(z1, top + joint)]]).translate(0, 0.006, 0), "#b6a58b"]);
+    }
+  }
+
   // Back and side walls of the basin, with separately laid coping tiles.
   const stepL = steps.x - steps.width / 2, stepR = steps.x + steps.width / 2;
   const rim = (ax: number, az: number, bx: number, bz: number) => {
@@ -2561,9 +2578,11 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   }
   for (const px of [-2.95, 2.65]) {
     const pz = -7.5;
-    // A low octagonal stain falls to the north-east of both parasol feet in the afternoon sun.
-    flat.push([new THREE.CircleGeometry(1, 8).rotateZ(Math.PI / 8).rotateX(-Math.PI / 2)
-      .scale(0.86, 1, 0.49).translate(x + px + 0.52, 0.008, z + pz - 0.36), "#b5ada0"]);
+    // A cool core and a lighter edge extend beyond the feet, in the afternoon sun's north-east direction.
+    for (const [scale, height, color] of [[1, 0.008, "#b5ada0"], [0.78, 0.009, "#929e96"]] as const) {
+      flat.push([new THREE.CircleGeometry(1, 8).rotateZ(Math.PI / 8).rotateX(-Math.PI / 2)
+        .scale(0.86 * scale, 1, 0.49 * scale).translate(x + px + 0.8, height, z + pz - 0.48), color]);
+    }
     parts.push([cyl(0.035, 0.045, 2.45, x + px, 1.23, z + pz, 8), "#9b704f"]);
     parts.push([cyl(0.29, 0.38, 0.12, x + px, 0.06, z + pz, 8), "#bda485"]);
     const ribs = 10;
