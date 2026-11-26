@@ -17,6 +17,7 @@
 import * as THREE from "three";
 import type { Colliders } from "../world/util";
 import { rand } from "../world/util";
+import { groundFace } from "../world/shapes";
 import { FLOORS, POOLS, poolBedY, type Pool } from "../water";
 import { R, REACH, GAPS, SALTO, OJO, ang, polar, ways, trail, atLedge } from "./groundsPlan";
 
@@ -96,6 +97,44 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
 const LIME = ["#d8cfb8", "#c9bfa6", "#b8ad93", "#e2dac6"], PALE = "#e6dcc3";
 const box = (w: number, h: number, d: number, x: number, y: number, z: number, rot = 0) => new THREE.BoxGeometry(w, h, d).rotateY(rot).translate(x, y, z);
 
+/** On the walk from Juárez the learner passes south of the first stones, then turns in towards the cleft. */
+function grietaTrace(parts: Part[], x: number, z: number, stones: [number, number][]) {
+  type Point = [number, number];
+  const exit = ways(x, z)[1].out;
+  const run: Point[] = [
+    [x + 12.4, z + 13.0], [x + 10.8, z + 12.8], [x + 9.0, z + 12.5],
+    [x + 7.4, z + 12.05], [x + 5.6, z + 11.8], [x + 3.7, z + 11.35],
+    [x + 1.8, z + 10.95], stones[1], stones[2], [exit.x, exit.z],
+  ];
+  // Each section has a skewed joint and an uneven shoulder of sage beside the crushed stone.
+  const sections = run.map(([px, pz], i) => {
+    const prev = run[Math.max(0, i - 1)], next = run[Math.min(run.length - 1, i + 1)];
+    const dx = next[0] - prev[0], dz = next[1] - prev[1], length = Math.hypot(dx, dz);
+    const tx = dx / length, tz = dz / length, half = [0.58, 0.69, 0.60, 0.65][i % 4];
+    const at = (side: number, along: number): Point => [px - tz * side + tx * along, pz + tx * side + tz * along];
+    return [at(-half, 0.18), at([-0.23, 0.15, -0.34, -0.08][i % 4], -0.16), at(half, i % 2 ? 0.31 : -0.26)];
+  });
+  // The visible meadow west of town lies at -0.05 m. Keep these faces on the grass and beneath the stepping stones.
+  const patch = (outline: Point[], y: number, color: string) => parts.push([groundFace(outline).translate(0, y, 0), color]);
+  for (let i = 1; i < sections.length; i++) {
+    const [left, middle, right] = sections[i - 1], [endL, endM, endR] = sections[i];
+    patch([left, middle, endM, endL], -0.038, i % 3 === 0 ? "#b5b28a" : "#9ea375");
+    patch([middle, right, endR, endM], -0.038, i % 3 === 1 ? "#bcb68e" : "#c9be98");
+  }
+  // Little pockets of leaf litter at the outer elbow. Both sit away from the guide dots and glyph stone.
+  for (const [px, pz] of [run[3], run[7]]) {
+    for (const [dx, dz, tip] of [[-0.30, 1.0, 0.13], [-0.05, 1.22, -0.11], [0.18, 0.94, 0.04], [0.36, 1.18, -0.16]]) {
+      const ax = px + dx, az = pz + dz;
+      patch([[ax - 0.19, az - tip], [ax, az + 0.085], [ax + 0.19, az + tip], [ax + 0.04, az - 0.075]], -0.037, "#997052");
+    }
+  }
+  // Shade beneath the palm clump at the clearing and the ceiba outside the final bend.
+  for (const [px, pz] of [[x + R + 7.5, z + 9.5], [x - 11, z + 15]]) {
+    patch([[px - 1.7, pz], [px - 1.2, pz - 0.8], [px + 0.5, pz - 1.1], [px + 1.6, pz - 0.5],
+      [px + 1.9, pz + 0.2], [px + 0.7, pz + 0.8], [px - 0.6, pz + 0.72]], -0.041, "#657857");
+  }
+}
+
 /** The grounds' own shapes, for the town's merged mesh the cenote is in: the beach's sand, the rock steps, the stair
  *  and the ledge of El Salto with its two posts and rope, La Grieta's slabs and its dark, the sinkhole's ring of
  *  stones and roots, the trail's stones, a small glyph stone at each way in (their glyphs are lit in `groundsGlow`). */
@@ -161,6 +200,7 @@ export function groundsShapes(parts: Part[], x: number, z: number) {
   }
   // the trail: pale flat stones a step apart
   const pts = trail(x, z);
+  grietaTrace(parts, x, z, pts);
   for (let i = 0; i + 1 < pts.length; i++) {
     const [ax, az] = pts[i], [bx, bz] = pts[i + 1], L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 1.25));
     for (let k = 0; k < n; k++) {

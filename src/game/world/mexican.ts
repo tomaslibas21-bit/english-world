@@ -11,6 +11,7 @@ import * as GROUNDS from "../cave/grounds";
 import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { colourMerge, rand, roundRect, type Colliders } from "./util";
+import { groundFace } from "./shapes";
 import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods, TownTheme } from "./theme";
@@ -864,6 +865,56 @@ function farPalm(parts: Part[], r: () => number, x: number, z: number, h: number
   for (let i = 0; i < 4; i++) parts.push([new THREE.OctahedronGeometry(0.17, 0).translate(T.x + Math.cos(i * 1.6) * 0.25, T.y - 0.3, T.z + Math.sin(i * 1.6) * 0.25), i % 2 ? "#6b4a2b" : "#6f8a2f"]);
 }
 
+/** Adjoining facets at the swim surface, with the old 36-sided lip falling to the beach's waterline. */
+export function cenoteWater(parts: Part[], x: number, z: number) {
+  type Point = [number, number];
+  const inside = GROUNDS.R - 0.3, outside = GROUNDS.R + 0.5;
+  const face = (points: Point[], color: string, holes: Point[][] = []) =>
+    parts.push([groundFace(points, holes).translate(x, 0.04, z), color]);
+  // Each bank owns its segment of the rim. The foam fits into cutouts at the same height as the shelf.
+  const bank = (first: number, last: number, inland: Point[], color: string, holes: Point[][] = []) => {
+    const arc: Point[] = [], lip: number[] = [], indices: number[] = [];
+    for (let i = first; i <= last; i++) {
+      const angle = ((i + 36) % 36) * Math.PI / 18, c = Math.cos(angle), s = Math.sin(angle);
+      arc.push([inside * c, inside * s]);
+      lip.push(inside * c, 0.04, inside * s, outside * c, 0.03, outside * s);
+      if (i > first) {
+        const a = (i - first - 1) * 2;
+        indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+      }
+    }
+    face([...arc, ...inland], color, holes);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(lip, 3));
+    g.setIndex(indices);
+    g.computeVertexNormals();
+    parts.push([g.translate(x, 0, z), color]);
+  };
+  // Each contour ends on the shore. Only the eastern third opens onto the pale shelf.
+  const contours: { edge: number; north: Point; south: Point }[] = [
+    { edge: 6, north: [2.05, -1.55], south: [2.55, 1.8] },
+    { edge: 9, north: [0.7, -2.45], south: [0.1, 1.2] },
+    { edge: 13, north: [-3.75, -1.7], south: [-2.85, 2.05] },
+  ];
+  const [shelf, , deep] = contours;
+  const foam: Point[][] = [
+    [[3.16, -1.42], [3.12, -1.06], [3.23, -0.56], [3.31, -0.71], [3.24, -1.12]],
+    [[2.95, 0.15], [2.98, 0.68], [3.16, 1.26], [3.15, 0.88], [3.06, 0.57]],
+  ];
+  bank(-6, -3, [shelf.north], "#8acbbd");
+  bank(-3, 3, [shelf.south, shelf.north], "#9fd8c7", foam);
+  bank(3, 6, [shelf.south], "#95d1bf");
+  for (const stroke of foam) face(stroke, "#d6ead4");
+  const tones = [["#60aaa4", "#6dbbb0", "#7bc4b6"], ["#398e92", "#388e91", "#419998"]];
+  for (let i = 0; i < tones.length; i++) {
+    const east = contours[i], west = contours[i + 1], [north, middle, south] = tones[i];
+    bank(-west.edge, -east.edge, [east.north, west.north], north);
+    face([west.north, east.north, east.south, west.south], middle);
+    bank(east.edge, west.edge, [west.south, east.south], south);
+  }
+  bank(deep.edge, 36 - deep.edge, [deep.north, deep.south], "#16646e");
+}
+
 /** A cenote in the meadow west of town (TOWN.md task 8; graphics round 6), seen from the end of avenida Juárez 25–40 m
  *  away: turquoise water at the foot of a curved limestone cliff round its far side (west), high in the middle and
  *  leaning out over the water at the top, a dark cave mouth in it, a curtain of hanging roots and vines from its lip to
@@ -874,11 +925,8 @@ function farPalm(parts: Part[], r: () => number, x: number, z: number, h: number
  *  it is seen from afar, beyond the town's edge); nothing to walk on. */
 export function cenote(parts: Part[], atlas: SignAtlas, { x, z, sign, open, guide }: NonNullable<TownTheme["cenote"]>) {
   const r = rand(808);
-  const R = 6.0;
-  // the water: dark at the edge, turquoise, light over the white sand in the middle
-  parts.push([new THREE.CircleGeometry(R + 0.5, 36).rotateX(-Math.PI / 2).translate(x, 0.03, z), "#0f6f7c"]);
-  parts.push([new THREE.CircleGeometry(R - 0.3, 36).rotateX(-Math.PI / 2).translate(x, 0.04, z), "#1fa9b0"]);
-  parts.push([new THREE.CircleGeometry(R * 0.5, 24).rotateX(-Math.PI / 2).translate(x + 0.9, 0.05, z), "#5fd3c8"]);
+  const R = GROUNDS.R;
+  cenoteWater(parts, x, z);
   // the cliff round the far side (west), highest in the middle, its top rows leaning in over the water
   const top = (k: number) => 3.4 + k * 2.4;
   for (let i = 0; i <= 18; i++) {
@@ -2421,16 +2469,9 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
 /** All opaque pool furniture and the tiled basin join the town's existing static batches. */
 export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   const { x, z, steps, deck, bench, halfWidth: w, halfLength: d, shallow, deep, water } = HOTEL_POOL;
-  const paving = "#eadac0", coping = "#f7ead5", tile = "#5dacc1", deepTile = "#318ca7";
+  const coping = "#f7ead5", tile = "#5dacc1", deepTile = "#318ca7";
   const addBox = (target: Part[], color: string, px: number, y: number, pz: number, width: number, height: number, length: number) =>
     target.push([box(width, height, length, x + px, y, z + pz), color]);
-  const slab = (x0: number, x1: number, z0: number, z1: number) =>
-    addBox(flat, paving, (x0 + x1) / 2, -0.021, (z0 + z1) / 2, x1 - x0, 0.06, z1 - z0);
-
-  slab(-deck.halfWidth, -w, deck.north, deck.south);
-  slab(w, deck.halfWidth, deck.north, deck.south);
-  slab(-w, w, deck.north, -d);
-  slab(-w, w, d, deck.south);
 
   // Back and side walls of the basin, with separately laid coping tiles.
   const stepL = steps.x - steps.width / 2, stepR = steps.x + steps.width / 2;
@@ -2500,7 +2541,7 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
 
   const wall = (px: number, pz: number, width: number, length: number) => {
     addBox(parts, "#f2dfbf", px, 0.38, pz, width, 0.76, length);
-    addBox(parts, "#d99269", px, 0.77, pz, width + 0.12, 0.16, length + 0.12);
+    addBox(parts, "#bb7958", px, 0.76, pz, width + 0.12, 0.18, length + 0.12);
     col.addBox(x + px, z + pz, width, length, "edge");
   };
   const span = deck.south - deck.north;
@@ -2520,6 +2561,9 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   }
   for (const px of [-2.95, 2.65]) {
     const pz = -7.5;
+    // A low octagonal stain falls to the north-east of both parasol feet in the afternoon sun.
+    flat.push([new THREE.CircleGeometry(1, 8).rotateZ(Math.PI / 8).rotateX(-Math.PI / 2)
+      .scale(0.86, 1, 0.49).translate(x + px + 0.52, 0.008, z + pz - 0.36), "#b5ada0"]);
     parts.push([cyl(0.035, 0.045, 2.45, x + px, 1.23, z + pz, 8), "#9b704f"]);
     parts.push([cyl(0.29, 0.38, 0.12, x + px, 0.06, z + pz, 8), "#bda485"]);
     const ribs = 10;

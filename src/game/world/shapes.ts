@@ -4,6 +4,14 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 type V3 = [number, number, number];
+/** An upward-facing patch cut from an outline in the x/z plane. */
+export function groundFace(outline: [number, number][], holes: [number, number][][] = []) {
+  const points = (loop: [number, number][]) => loop.map(([x, z]) => new THREE.Vector2(x, -z));
+  const shape = new THREE.Shape(points(outline));
+  shape.holes = holes.map(loop => new THREE.Path(points(loop)));
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2);
+}
+
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

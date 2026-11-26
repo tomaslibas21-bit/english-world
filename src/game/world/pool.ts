@@ -47,6 +47,31 @@ export function hotelPoolBounds() {
   return { x0: x - halfWidth, x1: x + halfWidth, z0: z - halfLength, z1: z + halfLength };
 }
 
+/** Paint the four deck strips in one running bond, clipped to the basin even across the stair opening. */
+export function paintHotelPoolPaving(rect: (x0: number, z0: number, x1: number, z1: number, color: string) => void) {
+  const { x, z, deck } = HOTEL_POOL, basin = hotelPoolBounds();
+  const left = x - deck.halfWidth, right = x + deck.halfWidth;
+  const north = z + deck.north, south = z + deck.south;
+  const pads = [
+    [left, north, right, basin.z0], [left, basin.z1, right, south],
+    [left, basin.z0, basin.x0, basin.z1], [basin.x1, basin.z0, right, basin.z1],
+  ];
+  const width = 0.9, depth = 0.55, joint = 0.045;
+  for (const [x0, z0, x1, z1] of pads) {
+    rect(x0, z0, x1, z1, "#c2b097");
+    for (let row = Math.floor((z0 - north) / depth); north + row * depth < z1; row++) {
+      const top = north + row * depth;
+      const start = left - (row % 2) * width / 2;
+      for (let col = Math.floor((x0 - start) / width); start + col * width < x1; col++) {
+        const edge = start + col * width;
+        const ax = Math.max(x0, edge), bx = Math.min(x1, edge + width - joint);
+        const az = Math.max(z0, top), bz = Math.min(z1, top + depth - joint);
+        if (ax < bx && az < bz) rect(ax, az, bx, bz, (col + row * 3) % 5 < 2 ? "#d4bf9d" : "#ddcbab");
+      }
+    }
+  }
+}
+
 export function inHotelPool(x: number, z: number) {
   const { halfWidth, halfLength } = HOTEL_POOL;
   return Math.abs(x - HOTEL_POOL.x) < halfWidth && Math.abs(z - HOTEL_POOL.z) < halfLength;

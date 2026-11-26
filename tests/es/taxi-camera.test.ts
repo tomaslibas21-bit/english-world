@@ -3,8 +3,26 @@ import * as THREE from "three";
 import { CameraRig } from "../../src/game/camera";
 import { PropFader } from "../../src/game/fade";
 import { OcclusionField } from "../../src/game/occlusion";
-import { TAXI, WORLD } from "../../src/game/world/layout";
+import { carFootprint } from "../../src/game/world/carModels";
+import { PARKED_CARS, ROADS, SIDEWALK, TAXI, taxiBoardingInlay, WORLD } from "../../src/game/world/layout";
 import { buildTown } from "../../src/game/world/town";
+
+it("keeps both turned ends and all three diamonds on the boardable cab's sidewalk", () => {
+  const main = ROADS.find(road => road.name === "Main Street")!, curb = main.z1 + main.w / 2;
+  const other = PARKED_CARS.find(car => car.model === "taxi" && car !== TAXI)!;
+  const besideOther = carFootprint(other);
+  const [stone, ...diamonds] = taxiBoardingInlay();
+  const xs = stone.outline.map(([x]) => x), zs = stone.outline.map(([, z]) => z);
+  expect([Math.min(...xs), Math.max(...xs)]).toEqual([TAXI.x - 2.25, TAXI.x + 2.25]);
+  expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(0.75);
+  expect(diamonds.map(d => d.color)).toEqual(Array(3).fill("#276a50"));
+  for (const { outline } of [stone, ...diamonds]) for (const [x, z] of outline) {
+    expect(z).toBeGreaterThan(curb + 0.13); // clear of the raised kerb
+    expect(z).toBeLessThan(curb + SIDEWALK);
+    expect(x).toBeGreaterThan(besideOther.maxX);
+    expect(x).toBeLessThan(main.x2);
+  }
+});
 
 it("keeps the gas canopy out of the walking camera at the taxi prompt", () => {
   const draw = () => {};
@@ -30,7 +48,10 @@ it("keeps the gas canopy out of the walking camera at the taxi prompt", () => {
     const sample = new THREE.Vector2();
     const samples = [-0.9, -0.75, -0.5, 0, 0.5, 0.75, 0.9];
     let foregroundHits = 0;
-    for (const [w, h] of [[1280, 800], [390, 844], [390, 664]]) {
+    const visibleMeshes: THREE.Mesh[] = [], standMeshes = new Set<THREE.Object3D>();
+    group.traverseVisible(o => { if ((o as THREE.Mesh).isMesh) visibleMeshes.push(o as THREE.Mesh); });
+    parkedCars.taxi!.root.traverse(o => standMeshes.add(o));
+    for (const [w, h] of [[1280, 800], [390, 844], [390, 664], [844, 390]]) {
       const rig = new CameraRig(w / h);
       rig.space = { free: (a, b) => field.free(a, b), inside: (p) => field.solidAt(p.x, p.y, p.z, 0.15), overSolid: (x, z) => field.overSolid(x, z) };
       rig.target.set(TAXI.x, 0, -2.4);
@@ -38,7 +59,8 @@ it("keeps the gas canopy out of the walking camera at the taxi prompt", () => {
       rig.motion.next.copy(rig.target);
       rig.cam.fov = rig.fovFor(w, h, false);
       rig.cam.updateProjectionMatrix();
-      rig.applyViewShift(w, h, 0, w < h ? -h * 0.12 : 0);
+      const followShift = w < h ? 0.12 : h <= 520 ? 0.1 : 0;
+      rig.applyViewShift(w, h, 0, -h * followShift);
       rig.snap();
       const chest = rig.target.clone().setY(1.35);
       const taxi = new THREE.Vector3(TAXI.x, 0.9, TAXI.z);
@@ -60,6 +82,20 @@ it("keeps the gas canopy out of the walking camera at the taxi prompt", () => {
             }
           }
         }
+      }
+      // Cast through the settled shot after the foreground fade, up to each subject's actual depth.
+      for (const point of [chest, taxi]) {
+        const ndc = point.clone().project(rig.cam);
+        expect(Math.max(Math.abs(ndc.x), Math.abs(ndc.y), Math.abs(ndc.z))).toBeLessThan(1);
+        const direction = point.clone().sub(rig.cam.position);
+        const sight = new THREE.Raycaster(rig.cam.position, direction.clone().normalize(), rig.cam.near, direction.length());
+        const first = sight.intersectObjects(visibleMeshes, false).find(hit => {
+          const m = (hit.object as THREE.Mesh).material;
+          const material = Array.isArray(m) ? m[hit.face?.materialIndex ?? 0] : m;
+          return material.visible && material.opacity > 0.01;
+        });
+        if (point === taxi) expect(standMeshes.has(first?.object ?? group), `cab sightline at ${w}×${h}`).toBe(true);
+        else expect(first?.object.name, `learner sightline at ${w}×${h}`).toBeUndefined();
       }
       fader.update(0.05, rig.cam.position, chest, false);
       for (const material of materials) expect(material.opacity).toBe(1);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { Mesh, MeshBasicMaterial, Raycaster, Vector3 } from "three";
 import * as P from "@/game/cave/plan";
-import { groundsWalk } from "@/game/cave/grounds";
+import { groundsShapes, groundsWalk } from "@/game/cave/grounds";
 import { groundsBounds, preferredCaveEntry, trail, ways } from "@/game/cave/groundsPlan";
 import { caveGateGrid, caveGateTarget, caveQuestTarget, firstClosedGate } from "@/game/cave/routing";
 import { NavGrid } from "@/game/nav";
@@ -8,7 +9,7 @@ import { Colliders } from "@/game/world/util";
 import { WORLD } from "@/game/world/layout";
 import { THEME } from "@/game/world/theme";
 import { caveBounds, groundBounds, mapPoint, mapWindow, townBounds, townMapBounds } from "@/ui/worldMap";
-import { FLOORS, POOLS } from "@/game/water";
+import { floorY, FLOORS, POOLS, waterY } from "@/game/water";
 
 const fresh = P.emptyCave();
 const [kin, nikte] = P.ALUXES;
@@ -43,6 +44,45 @@ describe("grotto maps", () => {
 });
 
 describe("grotto guidance", () => {
+  it("puts a continuous dry trace under the next steps at the portrait capture and around the cleft", () => {
+    const parts: Parameters<typeof groundsShapes>[0] = [], col = new Colliders();
+    const floors = FLOORS.length, pools = POOLS.length;
+    const material = new MeshBasicMaterial();
+    try {
+      groundsWalk(col, cenote.x, cenote.z, WORLD.minX, THEME.meadow?.ceibas);
+      groundsShapes(parts, cenote.x, cenote.z);
+      const traceColors = new Set(["#9ea375", "#b5b28a", "#bcb68e", "#c9be98"]);
+      const trace = parts.filter(([, color]) => traceColors.has(String(color))).map(([g]) => new Mesh(g, material));
+      const litter = parts.filter(([, color]) => color === "#997052");
+      const shade = parts.filter(([, color]) => color === "#657857");
+      expect(litter.length).toBeGreaterThanOrEqual(2);
+      expect(shade.length).toBeGreaterThan(0);
+      const triangles = [...trace.map(mesh => mesh.geometry), ...[...litter, ...shade].map(([g]) => g)]
+        .reduce((sum, g) => sum + (g.index?.count ?? g.attributes.position.count) / 3, 0);
+      expect(triangles).toBeLessThanOrEqual(110);
+      const ray = new Raycaster(new Vector3(), new Vector3(0, -1, 0));
+      const crossed = new Set<number>();
+      const sample = (x: number, z: number) => {
+        expect(waterY(x, z, 0)).toBeNull();
+        expect(col.blocked(x, z, 0.45)).toBe(false);
+        ray.ray.origin.set(x, 1, z);
+        const hit = ray.intersectObjects(trace, false)[0];
+        expect(hit, `paint underfoot at (${x}, ${z})`).toBeDefined();
+        expect(Math.abs(hit.point.y - floorY(x, z))).toBeLessThan(0.05);
+        return hit.object.id;
+      };
+      // From the frozen guide walk, check the whole corridor between the feet and the first stones ahead.
+      for (let step = 0; step <= 16; step++) crossed.add(sample(-127 - step * 0.25, 6.5 - step * 0.055));
+      expect(crossed.size).toBeGreaterThanOrEqual(2);
+      for (const [x, z] of trail(cenote.x, cenote.z).slice(1, 3)) sample(x, z);
+      sample(grieta.out.x + 0.35, grieta.out.z + 0.12);
+    } finally {
+      FLOORS.length = floors; POOLS.length = pools;
+      for (const [g] of parts) g.dispose();
+      material.dispose();
+    }
+  });
+
   it("can walk from avenida Juárez to a point on dry ground within reach of La Grieta", () => {
     expect(preferredCaveEntry()).toEqual(grieta);
     const col = new Colliders();

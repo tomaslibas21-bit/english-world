@@ -4,14 +4,14 @@ import { addBeachHammock } from "./beachHammock";
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import { EDITION } from "../../edition";
 import { loteriaTables } from "../loteria/scene";
-import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
+import { HOTEL_POOL_ENABLED, hotelPoolBounds, paintHotelPoolPaving } from "./pool";
 import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, taxiBoardingInlay, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mergeCarParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
@@ -785,6 +785,15 @@ function drawGround(): HTMLCanvasElement {
   }
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, sidewalkEdge);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, sidewalkInner);
+  if (THEME.mexican) {
+    for (const { outline, color } of taxiBoardingInlay()) {
+      x.fillStyle = color;
+      x.beginPath();
+      x.moveTo(...toC(...outline[0]));
+      for (const point of outline.slice(1)) x.lineTo(...toC(...point));
+      x.closePath(); x.fill();
+    }
+  }
   // roads
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2, asphalt);
   // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
@@ -830,9 +839,8 @@ function drawGround(): HTMLCanvasElement {
   }
   if (STYLED) groundExtras(x, toC, PPM);
   if (HOTEL_POOL_ENABLED) {
-    const { x: px, z: pz, deck } = HOTEL_POOL;
     const { x0, x1, z0, z1 } = hotelPoolBounds();
-    rectW(x, px - deck.halfWidth, pz + deck.north, px + deck.halfWidth, pz + deck.south, "#eadac0");
+    paintHotelPoolPaving((ax, az, bx, bz, color) => rectW(x, ax, az, bx, bz, color));
     rectW(x, x0, z0, x1, z1, "#33b4bd");
   }
   return c;

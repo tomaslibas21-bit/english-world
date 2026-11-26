@@ -15,7 +15,7 @@ import { NavGrid } from "@/game/nav";
 import { floorY, POOLS, SWIM, waterY } from "@/game/water";
 import { BUILDINGS, OUTDOOR_NPCS, ROADS, SEA_Z, SIDEWALK, WORLD } from "@/game/world/layout";
 import { hotelPool } from "@/game/world/mexican";
-import { HOTEL_POOL, hotelPoolKidY, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, POOL_TALK } from "@/game/world/pool";
+import { HOTEL_POOL, hotelPoolBounds, hotelPoolKidY, paintHotelPoolPaving, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, POOL_TALK } from "@/game/world/pool";
 import { groundGeometry, outerGeometry } from "@/game/world/town";
 import { THEME } from "@/game/world/theme";
 import { Colliders } from "@/game/world/util";
@@ -46,6 +46,65 @@ describe("Hotel Mar Azul's pool", () => {
       const z0 = Math.min(road.z1, road.z2) - (horizontal ? width : 0);
       const z1 = Math.max(road.z1, road.z2) + (horizontal ? width : 0);
       expect(east <= x0 || west >= x1 || south <= z0 || north >= z1, road.name).toBe(true);
+    }
+  });
+
+  it("clips the flags, coral caps and parasol shade to dry ground and keeps the stair entry flush", () => {
+    const basin = hotelPoolBounds(), { x, z, deck } = HOTEL_POOL;
+    const outside = (x0: number, z0: number, x1: number, z1: number) =>
+      x1 <= basin.x0 || x0 >= basin.x1 || z1 <= basin.z0 || z0 >= basin.z1;
+    let pavedArea = 0;
+    const flags = new Set<string>();
+    paintHotelPoolPaving((x0, z0, x1, z1, color) => {
+      expect(outside(x0, z0, x1, z1)).toBe(true);
+      expect(x0).toBeGreaterThanOrEqual(x - deck.halfWidth);
+      expect(z0).toBeGreaterThanOrEqual(z + deck.north);
+      expect(x1).toBeLessThanOrEqual(x + deck.halfWidth);
+      expect(z1).toBeLessThanOrEqual(z + deck.south);
+      if (color === "#c2b097") pavedArea += (x1 - x0) * (z1 - z0);
+      else {
+        flags.add(color);
+        expect(x1 - x0).toBeLessThanOrEqual(0.9);
+        expect(z1 - z0).toBeLessThanOrEqual(0.55);
+      }
+    });
+    expect(flags).toEqual(new Set(["#ddcbab", "#d4bf9d"]));
+    expect(pavedArea).toBeCloseTo(2 * deck.halfWidth * (deck.south - deck.north) -
+      (basin.x1 - basin.x0) * (basin.z1 - basin.z0));
+
+    const solid: Parameters<typeof hotelPool>[0] = [], flat: typeof solid = [];
+    hotelPool(solid, flat, new Colliders());
+    const ground = new THREE.Mesh(groundGeometry(), new THREE.MeshBasicMaterial());
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set((WORLD.minX + WORLD.maxX) / 2, 0, (SEA_Z - 2 + WORLD.maxZ) / 2);
+    ground.updateMatrixWorld();
+    const parts = [...solid, ...flat], caps = solid.filter(([, color]) => color === "#bb7958");
+    const shades = flat.filter(([, color]) => color === "#b5ada0");
+    try {
+      expect(caps).toHaveLength(5);
+      expect(shades).toHaveLength(2);
+      for (const [g, color] of [...caps, ...shades]) {
+        g.computeBoundingBox();
+        const { min, max } = g.boundingBox!;
+        expect(outside(min.x, min.z, max.x, max.z)).toBe(true);
+        if (color === "#bb7958") {
+          expect(max.y - min.y).toBeCloseTo(0.18);
+          expect(max.y).toBeCloseTo(0.85);
+        } else {
+          expect(max.y).toBeLessThan(0.01);
+          expect(max.x - min.x).toBeCloseTo(1.6, 1);
+          expect(max.z - min.z).toBeCloseTo(0.9, 1);
+        }
+      }
+      const meshes = [ground, ...parts.map(([g]) => new THREE.Mesh(g, ground.material))];
+      const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
+      for (const dz of [deck.south, POOL_ENTRY.z - z, HOTEL_POOL.halfLength + 0.05]) {
+        ray.ray.origin.set(POOL_ENTRY.x, 2, z + dz);
+        expect(ray.intersectObjects(meshes, false)[0]?.point.y).toBeCloseTo(0, 5);
+      }
+    } finally {
+      ground.geometry.dispose(); ground.material.dispose();
+      for (const [g] of parts) g.dispose();
     }
   });
 

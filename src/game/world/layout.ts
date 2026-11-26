@@ -180,6 +180,20 @@ export const TAXI: CarPlacement = {
   color: THEME.taxi?.body ?? "#f5c518", trim: THEME.taxi?.trim,
 };
 
+/** Limestone with two turned ends and three green diamonds on the boardable cab's sidewalk. */
+export function taxiBoardingInlay() {
+  const street = ROADS.find(road => road.name === "Main Street")!;
+  const x = TAXI.x, z = street.z1 + street.w / 2 + 0.6;
+  const shape = (color: string, vertices: [number, number][]) =>
+    ({ color, outline: vertices.map(([dx, dz]): [number, number] => [x + dx, z + dz]) });
+  return [
+    shape("#e9d9b9", [[-2.25, -0.375], [2.25, -0.375], [2.25, 0.375], [1.82, 0.375],
+      [1.82, 0.105], [-1.82, 0.105], [-1.82, 0.375], [-2.25, 0.375]]),
+    ...[-1.55, 0, 1.55].map(dx => shape("#276a50", [[dx - 0.34, -0.135], [dx, -0.335],
+      [dx + 0.34, -0.135], [dx, 0.065]])),
+  ];
+}
+
 /** Keep the pack inventory and Ambient's high/low traffic draws on the same placements. */
 export const TRAFFIC_PLACEMENTS = (() => {
   let everyday = 0;

@@ -1,4 +1,4 @@
-import { Group, Mesh, PerspectiveCamera, Vector3 } from "three";
+import { Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, Vector3 } from "three";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { EDITION } from "../../src/edition";
 import { loadSituation } from "../../src/content/situations/catalog";
@@ -13,6 +13,8 @@ import { ModeRegistry, type ModeScreen } from "../../src/game/kit/modes";
 import { Undersea } from "../../src/game/rides/undersea";
 import { BAY, floorY, SEA_LEVEL, SHORE, waterY } from "../../src/game/water";
 import { CENOTE_ROUTE } from "../../src/game/world/cenoteTour";
+import { cenoteWater, type Part } from "../../src/game/world/mexican";
+import { THEME } from "../../src/game/world/theme";
 import { RIDES } from "../../src/game/world/rides";
 import { useCards } from "../../src/state/cards";
 import { readPlayStats } from "../../src/state/playStats";
@@ -268,6 +270,57 @@ describe("cenote tour ownership", () => {
 });
 
 describe("cenote tour route and meshes", () => {
+  it("covers the original rim once, from the bathing steps to the deep water under the mouth", () => {
+    const { x, z } = THEME.cenote!, parts: Part[] = [];
+    cenoteWater(parts, x, z);
+    const material = new MeshBasicMaterial();
+    const faces = parts.map(([geometry, color]) => Object.assign(new Mesh(geometry, material), { name: String(color) }));
+    const ray = new Raycaster(new Vector3(), new Vector3(0, -1, 0));
+    const at = (dx: number, dz: number) => {
+      ray.ray.origin.set(x + dx, 1, z + dz);
+      return ray.intersectObjects(faces, false);
+    };
+    try {
+      let area = 0, triangles = 0;
+      for (const { geometry } of faces) {
+        const pos = geometry.attributes.position, index = geometry.index;
+        const count = index?.count ?? pos.count;
+        for (let i = 0; i < count; i += 3) {
+          const [a, b, c] = [i, i + 1, i + 2].map(k => index?.getX(k) ?? k);
+          const twiceArea = (pos.getZ(b) - pos.getZ(a)) * (pos.getX(c) - pos.getX(a))
+            - (pos.getX(b) - pos.getX(a)) * (pos.getZ(c) - pos.getZ(a));
+          expect(twiceArea).toBeGreaterThan(0);
+          area += twiceArea / 2;
+        }
+        triangles += count / 3;
+      }
+      expect(area).toBeCloseTo(36 * 6.5 ** 2 * Math.sin(Math.PI / 18) / 2, 3);
+      expect(triangles - (36 + 36 + 24)).toBeLessThanOrEqual(180);
+      for (const [dx, dz, color] of [
+        [3.48, 0.07, "#9fd8c7"], [3.19, -1.03, "#d6ead4"], [3.04, 0.68, "#d6ead4"],
+        [-0.31, 0.18, "#388e91"], [-4.8, 0.23, "#16646e"],
+      ] as const) {
+        const hits = at(dx, dz);
+        expect(hits).toHaveLength(1);
+        expect(hits[0].point.y).toBeCloseTo(0.04, 6);
+        expect(hits[0].object.name).toBe(color);
+      }
+      for (let sector = 0; sector < 36; sector++) {
+        const a = (sector + 0.43) * Math.PI / 18;
+        for (const r of [0.5, 2.7, 4.5, 5.9, 6.45]) {
+          const hits = at(r * Math.cos(a), r * Math.sin(a));
+          expect(hits).toHaveLength(1);
+          expect(hits[0].point.y).toBeGreaterThanOrEqual(0.03 - 1e-6);
+          expect(hits[0].point.y).toBeLessThanOrEqual(0.04 + 1e-6);
+        }
+        expect(at(6.51 * Math.cos(a), 6.51 * Math.sin(a))).toHaveLength(0);
+      }
+    } finally {
+      for (const [geometry] of parts) geometry.dispose();
+      material.dispose();
+    }
+  });
+
   it("keeps the moving envelopes clear of the real bay, seeded reef and wave extremes", () => {
     expect(route).not.toBeNull();
     const world = new Group(), animals = new CenoteAnimals(route), undersea = new Undersea(RIDES.deep, RIDES.rocks);
