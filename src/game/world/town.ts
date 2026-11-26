@@ -1501,13 +1501,24 @@ const GOODS: Record<string, (add: Add, k: number) => void> = {
   pharmacy: (add) => {
     add(new THREE.BoxGeometry(0.5, 0.15, 0.02).translate(0, 1.45, 0.03), "#2e8b57");
     add(new THREE.BoxGeometry(0.15, 0.5, 0.02).translate(0, 1.45, 0.03), "#2e8b57");
+    const colibri = EDITION.id === "es";
+    if (colibri) {
+      for (const y of [0.65, 1.15]) add(new THREE.PlaneGeometry(2.3, 0.38).translate(0, y, 0.026), "#c7d4c5");
+      for (const x of [-1.14, 1.14]) add(new THREE.PlaneGeometry(0.025, 0.92).translate(x, 0.88, 0.032), "#648577");
+    }
     for (const y of [0, 0.5]) {
       add(gB(2.3, 0.03, 0.28, 0, y + 0.42, 0.16), "#f4f6f8");
+      if (colibri) add(new THREE.PlaneGeometry(2.3, 0.025).translate(0, y + 0.435, 0.301), "#648577");
       if (y === 0) add(gB(2.3, 0.42, 0.04, 0, 0, 0.3), "#e3ebe6");
       for (let i = 0; i < 9; i++) {
         const x = -1 + i * 0.25, top = y + 0.45;
-        if (i % 3 === 1) bottle(add, x, top, 0.16, "#c77d2e", 0.16, "#ffffff");
-        else add(gB(0.12, 0.16 + (i % 2) * 0.04, 0.09, x, top, 0.16), ["#ffffff", "#4a90c2", "#2e8b57"][i % 3]);
+        if (i % 3 === 1) {
+          bottle(add, x, top, 0.16, "#c77d2e", 0.16, "#ffffff");
+          if (colibri) add(new THREE.CircleGeometry(0.020, 6).rotateX(-Math.PI / 2).translate(x, top + 0.161, 0.16), "#4b665b");
+        } else {
+          add(gB(0.12, 0.16 + (i % 2) * 0.04, 0.09, x, top, 0.16), ["#ffffff", "#4a90c2", "#2e8b57"][i % 3]);
+          if (colibri) add(new THREE.PlaneGeometry(0.08, 0.035).translate(x, top + 0.07, 0.206), "#e6e2d2");
+        }
       }
     }
   },

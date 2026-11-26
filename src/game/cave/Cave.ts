@@ -11,6 +11,7 @@
 import * as THREE from "three";
 import { Colliders, rand } from "../world/util";
 import { groundFace } from "../world/shapes";
+import { lilyBloom, lilyPadVeins } from "./lilies";
 import * as P from "./plan";
 
 const FOG = "#05232c";
@@ -444,10 +445,14 @@ export function buildCave(): CaveView {
       // (not where one wades across, nor under the bridge, nor on the island)
       if (q.ford && (nearPath(x, z) < 2.4 || Math.hypot(x - P.ISLAND.x, z - P.ISLAND.z) < P.ISLAND.r + 2.2 || Math.abs(x - q.x) < 1.6)) continue;
       const s2 = 0.32 + r() * 0.22;
-      sink.geo(new THREE.CircleGeometry(s2, 7, 0.5, Math.PI * 2 - 0.9).rotateX(-Math.PI / 2).rotateY(r() * 6.28).translate(x, -0.03, z), pick(["#3f9a62", "#4fae6a", "#2f8a58"]), 0.35);
+      const angle = r() * 6.28;
+      sink.geo(new THREE.CircleGeometry(s2, 7, 0.5, Math.PI * 2 - 0.9).rotateX(-Math.PI / 2).rotateY(angle).translate(x, -0.03, z), pick(["#3f9a62", "#4fae6a", "#2f8a58"]), 0.35);
+      sink.geo(lilyPadVeins(s2).rotateX(-Math.PI / 2).rotateY(angle).translate(x, -0.03, z), "#87b889", 0.35);
       if (i % 2 === 0) {
         const colour = pick(["#ffd7ee", "#fff3c4", "#ffffff", "#ffc2dd"]);
-        sink.geo(new THREE.ConeGeometry(0.11, 0.16, 6).rotateX(Math.PI).translate(x + 0.1, 0.06, z), colour, 1);
+        const bloom = lilyBloom();
+        sink.geo(bloom.petals.translate(x + 0.1, 0, z), colour, 1);
+        sink.geo(bloom.center.translate(x + 0.1, 0, z), "#edc66c", 0.8);
         sparks.add(2, x + 0.1, 0.12, z, colour, 0.9, 0, r);
       }
     }

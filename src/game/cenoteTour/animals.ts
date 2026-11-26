@@ -1,5 +1,5 @@
 import {
-  Box3, BufferGeometry, CylinderGeometry, DynamicDrawUsage, Euler, Float32BufferAttribute, Group, InstancedMesh, Matrix4, MeshLambertMaterial,
+  Box3, BufferGeometry, Color, CylinderGeometry, DynamicDrawUsage, Euler, Float32BufferAttribute, Group, InstancedMesh, Matrix4, MeshLambertMaterial,
   Quaternion, SphereGeometry, TetrahedronGeometry, Vector3, type ColorRepresentation, type PerspectiveCamera,
 } from "three";
 import { floorY, waterY } from "../water";
@@ -59,13 +59,26 @@ export class CenoteAnimals {
     const { fish, turtles } = route;
     this.group.name = "cenote-tour-wildlife";
     this.group.visible = false;
+    const fishBody = egg(0.105, 0.122, 0.355, 0, 0, 0.05, 8, 5);
+    const bodyVertices = fishBody.index!.count;
     this.fish = this.mesh("cenote-fish", fish.count, [
-      [egg(0.105, 0.122, 0.355, 0, 0, 0.05, 8, 5), fish.side],
+      [fishBody, fish.side],
       [egg(0.077, 0.064, 0.252, 0, -0.07, 0.09, 6, 3), "#cce0cf"],
-      [new TetrahedronGeometry(0.13).scale(0.26, 0.95, 1.15).translate(0, 0.092, -0.04), fish.side],
+      [new TetrahedronGeometry(0.13).scale(0.26, 0.95, 1.15).translate(0, 0.092, -0.04), "#538c77"],
       [egg(0.026, 0.027, 0.024, 0.071, 0.021, 0.272, 4, 2), eyeColor],
       [egg(0.026, 0.027, 0.024, -0.071, 0.021, 0.272, 4, 2), eyeColor],
     ]);
+    // Paint the original body facets: a darker back and a warm shoulder stripe. No new surfaces,
+    // and the pale belly, eyes, tail hinge and measured swimming envelope keep their old geometry.
+    const { position, color } = this.fish.geometry.attributes, ink = new Color();
+    for (let i = 0; i < bodyVertices; i += 3) {
+      const y = (position.getY(i) + position.getY(i + 1) + position.getY(i + 2)) / 3;
+      const z = (position.getZ(i) + position.getZ(i + 1) + position.getZ(i + 2)) / 3;
+      const shade = z > 0.085 && z < 0.19 && Math.abs(y) < 0.10 ? "#dec88b" : y > 0.065 ? "#42897d" : null;
+      if (!shade) continue;
+      ink.set(shade);
+      for (let j = 0; j < 3; j++) color.setXYZ(i + j, ink.r, ink.g, ink.b);
+    }
     this.tails = this.mesh("cenote-fish-tails", fish.count, [
       [new TetrahedronGeometry(0.17).scale(0.22, 1.35, 0.95).rotateX(-0.27).translate(0, 0.07, -0.11), fish.tail],
       [new TetrahedronGeometry(0.16).scale(0.22, 1.25, 0.95).rotateX(0.27).translate(0, -0.065, -0.11), fish.tail],

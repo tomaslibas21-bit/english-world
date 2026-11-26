@@ -1,5 +1,7 @@
 // The surf lesson's shapes (the boards in the water, and the ones in a surf school's rack: world/mexican.ts).
 import * as THREE from "three";
+import { EDITION } from "../../edition";
+import { groundFace } from "../world/shapes";
 
 export type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 const box = (w: number, h: number, d: number, x: number, y: number, z: number) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
@@ -27,6 +29,18 @@ export function surfboardParts(len: number, wid: number, deck: THREE.ColorRepres
   const parts: Part[] = [[flat(s, thick, 0), deck]];
   parts.push([box(wid * 0.07, 0.012, len * 0.9, 0, thick + 0.006, 0), stripe]);
   parts.push([box(wid * 0.72, 0.012, len * 0.06, 0, thick + 0.006, -h * 0.55), stripe]);
+  if (EDITION.id === "es") {
+    // La Ola's sun and two painted waves, below the middle so the board-choice caption leaves them visible.
+    const x = -wid * 0.21, z = -len * 0.09, top = thick + 0.0015;
+    parts.push([new THREE.CircleGeometry(wid * 0.10, 8).rotateX(-Math.PI / 2).translate(x, top, z), stripe]);
+    for (const offset of [0.15, 0.20]) {
+      const width = wid * 0.24, rise = len * 0.012, stroke = len * 0.006, cz = -len * offset;
+      const outline: [number, number][] = [[-0.5, 0], [-1 / 6, 1], [1 / 6, 0], [0.5, 1],
+        [0.5, 1 + stroke / rise], [1 / 6, stroke / rise], [-1 / 6, 1 + stroke / rise], [-0.5, stroke / rise]]
+        .map(([u, v]) => [x + u * width, cz + v * rise]);
+      parts.push([groundFace(outline).translate(0, top, 0), stripe]);
+    }
+  }
   for (const [x, z] of [[0, -h * 0.86], [-w * 0.55, -h * 0.72], [w * 0.55, -h * 0.72]]) parts.push([new THREE.ConeGeometry(0.07, 0.16, 4).scale(0.3, 1, 1).rotateX(Math.PI).translate(x, -0.08, z), stripe]);
   return parts;
 }
