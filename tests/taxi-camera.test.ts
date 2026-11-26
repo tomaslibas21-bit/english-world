@@ -32,13 +32,17 @@ describe("Gas & Go follow camera", () => {
   let brickWalk: THREE.Object3D;
   let town: ReturnType<typeof buildTown>;
   const overhead: THREE.Vector3[][] = [];
+  const paintedText: string[] = [];
   const ray = new THREE.Raycaster();
   const sample = new THREE.Vector2();
   const sightline = new THREE.Line3(CUT.a.value, CUT.b.value);
   const closest = new THREE.Vector3();
 
   beforeAll(() => {
-    vi.stubGlobal("document", townCanvasDocument());
+    const document = townCanvasDocument();
+    const pen = document.createElement().getContext() as unknown as CanvasRenderingContext2D;
+    pen.fillText = (text) => { paintedText.push(text); };
+    vi.stubGlobal("document", document);
     try {
       town = buildTown();
       ({ field, fader } = initTownCollision(town, undefined, () => {}));
@@ -271,6 +275,25 @@ describe("Gas & Go follow camera", () => {
     expect(posts.min.z).toBeCloseTo(-14.28); expect(posts.max.z).toBeCloseTo(-14.12);
     expect(posts.min.y).toBeCloseTo(0); expect(posts.max.y).toBeCloseTo(3.4);
     expect(vertices / 3).toBeLessThanOrEqual(60 + 120); // original slab and two six-sided posts
+  });
+
+  it("shares the hotel sign draw with Harborview lettering inside the street-facing fascia", () => {
+    const sign = town.group.getObjectByName("hotel-sign") as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+    expect(sign).toBeInstanceOf(THREE.Mesh);
+    expect(paintedText).toContain("Harborview");
+    expect(paintedText).toContain("Harborview Hotel");
+    expect(sign.geometry.type).toBe("PlaneGeometry");
+    expect(sign.geometry.index!.count / 3).toBe(4);
+    expect(sign.material.alphaTest).toBe(0.5);
+    const canvas = sign.material.map!.image as HTMLCanvasElement;
+    expect([canvas.width, canvas.height]).toEqual([768, 240]);
+    const pos = sign.geometry.attributes.position, uv = sign.geometry.attributes.uv;
+    for (let i = 4; i < pos.count; i++) {
+      const p = sign.localToWorld(new THREE.Vector3().fromBufferAttribute(pos, i));
+      expect(p.y).toBeGreaterThan(3.365); expect(p.y).toBeLessThan(3.575);
+      expect(p.z).toBeGreaterThan(-14.02); expect(p.z).toBeLessThan(-14);
+      expect(uv.getY(i)).toBeGreaterThanOrEqual(0); expect(uv.getY(i)).toBeLessThanOrEqual(1 / 3 + 1e-6);
+    }
   });
 
   it.each([[1280, 800], [390, 844]])("sees the hotel fascia, cab and stop bay on route 1 at %i×%i", (w, h) => {

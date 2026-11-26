@@ -1006,7 +1006,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.sign) {
     const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
     const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    const sign = new THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>(
+      new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     if (poolHall) sy = 4.29;
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
@@ -1019,6 +1020,30 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     if (b.style === "museum") sign.position.set(dx + n[0] * out, MUSEUM_FRIEZE.y, dz + n[1] * out);
     else sign.position.set(dx - t[0] * doorOff + n[0] * out, sy, dz - t[1] * doorOff + n[1] * out);
     sign.rotation.y = rotY;
+    if (MAPLE_BLOCKS && b.style === "hotel") {
+      // Share the upper sign's texture and draw with the name on the street-facing fascia.
+      const canvas = tex.image as HTMLCanvasElement, original = document.createElement("canvas");
+      original.width = 768; original.height = 160;
+      original.getContext("2d")!.drawImage(canvas, 0, 0);
+      canvas.height = 240;
+      const brush = canvas.getContext("2d")!;
+      brush.drawImage(original, 0, 0);
+      brush.fillStyle = "#ead8b5"; brush.font = "800 68px Nunito, Arial";
+      brush.textAlign = "center"; brush.textBaseline = "middle";
+      brush.fillText("Harborview", 384, 200);
+      tex.needsUpdate = true;
+      const upperUV = sign.geometry.getAttribute("uv");
+      for (let i = 0; i < upperUV.count; i++) upperUV.setY(i, (80 + upperUV.getY(i) * 160) / 240);
+      const fascia = new THREE.PlaneGeometry(4.8, 0.205).translate(-doorOff, 3.47 - sy, 3.981 - out);
+      const fasciaUV = fascia.getAttribute("uv");
+      for (let i = 0; i < fasciaUV.count; i++) fasciaUV.setY(i, fasciaUV.getY(i) / 3);
+      const lettering = mergeGeometries([sign.geometry, fascia], false)!;
+      // Keep the upper plane's authored dimensions available to the sign audit.
+      sign.geometry.copy(lettering);
+      lettering.dispose(); fascia.dispose();
+      sign.material.alphaTest = 0.5;
+      sign.name = "hotel-sign";
+    }
     if (b.style !== "house") { group.add(sign); signs.push(sign); }
   }
 
@@ -1712,18 +1737,42 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: Ad
   for (const [x, z, sc] of RING_MAPLES) add(x, z, sc);
 
   const n = spots.length;
-  const trunkGeo = STYLED ? trunkGeometry() : new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
-  const leafGeo = STYLED ? canopyGeometry() : mergeGeometries([
-    new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0),
-    new THREE.IcosahedronGeometry(1.05, 1).translate(0.35, 4.45, -0.2),
-    new THREE.IcosahedronGeometry(0.9, 0).translate(-0.85, 3.7, 0.55),
-    // (a maple's crown is broad: one more bough low on the other side)
-    new THREE.IcosahedronGeometry(0.95, 0).translate(1.0, 3.25, 0.5),
+  const branch = (x: number, y: number, z: number, fromY: number) => {
+    const direction = new THREE.Vector3(x, y - fromY, z);
+    const turn = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+    return new THREE.CylinderGeometry(0.07, 0.16, direction.length(), 3, 1, true)
+      .applyQuaternion(turn).translate(x / 2, (y + fromY) / 2, z / 2);
+  };
+  const trunkGeo = STYLED ? trunkGeometry() : mergeGeometries([
+    new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0),
+    branch(-0.8, 3.2, -0.1, 1.55), branch(0.95, 2.95, 0.45, 1.72),
   ], false)!;
-  const trunks = new THREE.InstancedMesh(trunkGeo, mat("#7a5236"), n);
-  const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true })), n);
+  const leafGeo = STYLED ? canopyGeometry() : mergeGeometries([
+    new THREE.IcosahedronGeometry(1.6, 1).scale(0.75, 0.86, 0.98).translate(-0.415, 3.37, 0),
+    new THREE.IcosahedronGeometry(1.05, 1).scale(0.78, 0.94, 0.92).translate(-0.45, 4.45, -0.2),
+    new THREE.IcosahedronGeometry(0.9, 0).scale(0.76, 1.04, 0.86).translate(0.92, 4.34, 0.02),
+    new THREE.IcosahedronGeometry(0.95, 0).scale(1, 0.65, 1).translate(1, 3.03, 0.5),
+  ], false)!;
+  if (!STYLED) {
+    // Vertex shade multiplies each instance's fall colour. Copper's underplane becomes russet.
+    const copper = new THREE.Color("#d67d41"), shade = new THREE.Color("#945034");
+    shade.r /= copper.r; shade.g /= copper.g; shade.b /= copper.b;
+    leafGeo.computeVertexNormals();
+    const normal = leafGeo.getAttribute("normal"), colors = new Float32Array(normal.count * 3);
+    for (let i = 0; i < normal.count; i++) {
+      const sun = THREE.MathUtils.clamp(normal.getY(i) * 1.5 + 0.1, 0, 1);
+      colors[i * 3] = THREE.MathUtils.lerp(shade.r, 1, sun);
+      colors[i * 3 + 1] = THREE.MathUtils.lerp(shade.g, 1, sun);
+      colors[i * 3 + 2] = THREE.MathUtils.lerp(shade.b, 1, sun);
+    }
+    leafGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  }
+  const trunks = new THREE.InstancedMesh(trunkGeo, mat(STYLED ? "#7a5236" : "#70543e"), n);
+  const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true, vertexColors: true })), n);
+  trunks.name = "maple-trunks"; leaves.name = "maple-crowns";
   // maples in their fall colours (one in eight has not turned yet)
   const palette = STYLED ? ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"] : FALL;
+  const fallTint = ["#d67d41", "#dba751", "#dba751", "#c8402f", "#dba751", "#b5382c", "#d67d41", "#9bb04a"];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
     const own = i >= town, rr = own ? ring : r;
@@ -1733,7 +1782,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: Ad
     leaves.setMatrixAt(i, m4);
     // (the ring's maples have all turned: they stand against the slate, not among the street's greens)
     const leafCol = own ? FALL[Math.floor(rr() * 7)] : palette[Math.floor(r() * palette.length)];
-    leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
+    leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(fallTint[FALL.indexOf(leafCol)]));
     if (own) { col.addCircle(x, z, 0.35 * sc); return; }
     treeSpots.push({ x, z, s: sc, color: leafCol });
     if (["#d9542b", "#c8402f", "#b5382c", "#e0692c"].includes(leafCol)) photo("maple", x, 3.2 * s.y, z);

@@ -300,18 +300,19 @@ function menuBoard(lines: string[], title: string, colors = { bg: "#2f3a33", fg:
   return t;
 }
 
-function cafeMenu(c: Ctx, title: string, lines: string[], cx: number, w: number, h: number) {
+function cafeMenu(c: Ctx, title: string, lines: string[], cx: number, w: number, h: number, bottomLift = 0) {
   const H = Math.max(640, 150 + lines.length * 50);
+  const paintedHeight = H * (1 - bottomLift / h);
   const texture = canvasTex(1024, H, (x) => {
-    roundRect(x, 0, 0, 1024, H, 28);
+    roundRect(x, 0, 0, 1024, paintedHeight, 28);
     x.save(); x.clip();
     x.fillStyle = "#745441"; x.fillRect(0, 0, 1024, H);
-    x.fillStyle = "#394c47"; x.fillRect(9, 9, 1006, H - 18);
-    const railTop = H * (1 - 0.20 / h), railHeight = H * 0.12 / h;
+    x.fillStyle = "#394c47"; x.fillRect(9, 9, 1006, paintedHeight - 18);
+    const railTop = H * (1 - (0.20 + bottomLift) / h), railHeight = H * 0.12 / h;
     x.fillStyle = "#43544c"; x.fillRect(9, H * 0.81, 1006, railTop - H * 0.81);
     x.fillStyle = "#745441"; x.fillRect(0, railTop, 1024, railHeight);
     x.fillStyle = "#977660"; x.fillRect(0, railTop, 1024, 3);
-    x.fillStyle = "#544236"; x.fillRect(0, railTop + railHeight, 1024, H - railTop - railHeight);
+    x.fillStyle = "#544236"; x.fillRect(0, railTop + railHeight, 1024, paintedHeight - railTop - railHeight);
     x.restore();
 
     x.textAlign = "center"; x.fillStyle = "#edc66f"; x.font = "800 56px Nunito, Arial";
@@ -330,7 +331,13 @@ function cafeMenu(c: Ctx, title: string, lines: string[], cx: number, w: number,
       x.textAlign = "right"; x.fillText(price, 928, y);
     });
   });
-  wallPanel(c, texture, cx, 2.75, -c.d / 2 + 0.2, w, h);
+  const board = wallPanel(c, texture, cx, 2.75, -c.d / 2 + 0.2, w, h);
+  const position = board.geometry.getAttribute("position"), uv = board.geometry.getAttribute("uv");
+  for (let i = 0; i < position.count; i++) {
+    if (position.getY(i) >= 0) continue;
+    position.setY(i, position.getY(i) + bottomLift);
+    uv.setY(i, bottomLift / h);
+  }
 }
 function painting(seed: number, w = 256, h = 200) {
   const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
@@ -896,7 +903,7 @@ const B: Record<string, () => Interior> = {
     cafeMenu(c, "SUNNY CUP · DRINKS", ["small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00",
       "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50",
       "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00",
-      "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], -3.6, 4.2, 3.2);
+      "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], -3.6, 4.2, 3.2, 0.24);
     cafeMenu(c, "FOOD", ["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75",
       "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], 0.9, 3.2, 2);
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");

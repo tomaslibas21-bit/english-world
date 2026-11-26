@@ -56,7 +56,9 @@ describe("rendering the first sea approach", () => {
       const pos = a.geometry.getAttribute("position"), colors = a.geometry.getAttribute("color");
       // B1's same coast: 2 shore slabs, 7 hills, 14 houses, 2 pines, steeple and lighthouse.
       expect((pos.count - first) / 3).toBeLessThanOrEqual(804 + 480);
-      const lamp = new Box3(), wharf = new Box3(), p = new Vector3(), color = new Color();
+      const lamp = new Box3(), wharf = new Box3(), shed = new Box3(), p = new Vector3(), color = new Color();
+      const walls = new Set(SEA_VIEW.coast.walls.map((wall) => new Color(wall).getHex()));
+      const wharfX = (shore.x0 + shore.x1) / 2 - (shore.x1 - shore.x0) * 0.16;
       const towerX = (shore.x0 + shore.x1) / 2 + (shore.x1 - shore.x0) * 0.12;
       let steeple = false;
       for (let i = first; i < pos.count; i++) {
@@ -64,6 +66,7 @@ describe("rendering the first sea approach", () => {
         color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
         if (color.getHex() === 0x3d4a57) lamp.expandByPoint(p);
         if (color.getHex() === 0x556272) wharf.expandByPoint(p);
+        if (walls.has(color.getHex()) && Math.abs(p.x - wharfX) < 10 && p.z < shore.z + 18) shed.expandByPoint(p);
         if (Math.abs(p.x - towerX) < 0.001 && p.y === 27 && p.z === shore.z + 44) steeple = true;
       }
       expect(steeple).toBe(true);
@@ -73,6 +76,8 @@ describe("rendering the first sea approach", () => {
       expect(lamp.max.z).toBe(LIGHTHOUSE.z + 2);
       expect(wharf.max.y).toBeCloseTo(4.2);
       expect(wharf.min.z).toBe(shore.z - 11);
+      expect(shed.isEmpty()).toBe(false);
+      expect(shed.min.z).toBeLessThan(shore.z + 8);
     } finally {
       for (const mesh of [a, b, offshore]) { mesh.geometry.dispose(); mesh.material.dispose(); }
       sky.dispose();

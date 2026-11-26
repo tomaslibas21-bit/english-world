@@ -180,19 +180,23 @@ function coast(view: SeaView, r: () => number, { x0, x1, z, lighthouse }: Coast)
     const x = mid + (i - 3) * (wide + 500) / 6 + (r() - 0.5) * 60, radius = 70 + r() * 80;
     parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : maple ? "#afa391" : green[1]]);
   }
+  let foregroundShed = false;
   for (let x = x0 + 6; x < x1 - 6;) {
     const w = 7 + r() * 9, tall = 4.5 + r() * 6.5, deep = 8 + r() * 6, back = z + 18 + r() * 30;
     if (r() < 0.78) {
       const wall = walls[Math.floor(r() * walls.length)], roof = roofs[Math.floor(r() * roofs.length)];
       const body = new THREE.BoxGeometry(w, tall, deep);
       if (maple) {
+        const forward: boolean = !foregroundShed && x + w / 2 >= mid - wide * 0.16;
+        const depth = forward ? z + 10 : back;
+        foregroundShed ||= forward;
         // Turn the ridge slightly to show both a gable end and the seaward slope.
         const pitch = new THREE.Shape();
         pitch.moveTo(-w / 2 - 0.5, 0); pitch.lineTo(0, w * 0.48); pitch.lineTo(w / 2 + 0.5, 0); pitch.closePath();
         const gable = new THREE.ExtrudeGeometry(pitch, { depth: deep + 1, bevelEnabled: false }).translate(0, 0, -(deep + 1) / 2);
         const angle = (tall - 7) * 0.09;
-        parts.push([at(body.rotateY(angle), x + w / 2, 1 + tall / 2, back), wall],
-          [at(gable.rotateY(angle), x + w / 2, tall + 1, back), roof]);
+        parts.push([at(body.rotateY(angle), x + w / 2, 1 + tall / 2, depth), wall],
+          [at(gable.rotateY(angle), x + w / 2, tall + 1, depth), roof]);
       } else {
         parts.push([at(body, x + w / 2, 1 + tall / 2, back), wall],
           [at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roof]);

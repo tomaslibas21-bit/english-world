@@ -100,6 +100,9 @@ it("fits the café chalk copy inside both maps and keeps the counter targets and
       [0.9, "FOOD", "Muffin (blueberry, chocolate)", "$3.50", 6, 640],
     ] as const) {
       const panel = room.group.children.find((obj) => obj instanceof Mesh && obj.position.x === cx && obj.position.y === 2.75) as Mesh;
+      const bounds = new Box3().setFromObject(panel);
+      expect(bounds.min.y).toBeCloseTo(cx === -3.6 ? 1.39 : 1.75);
+      expect(bounds.max.y).toBeCloseTo(cx === -3.6 ? 4.35 : 3.75);
       const map = (panel.material as MeshBasicMaterial).map!.image as ReturnType<typeof recordingCanvas>;
       expect([map.width, map.height]).toEqual([1024, height]);
       expect(map.text[0]).toMatchObject({ value: title, color: "#edc66f" });
