@@ -17,7 +17,7 @@ import type { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { startupTask } from "./startupTask";
 import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, taxiStandFrameAt } from "./world/layout";
 import { HARBOR_SURF } from "./world/surf";
 import { HARBOR_SURF_PLATE } from "./world/harborSurf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
@@ -3379,7 +3379,11 @@ export class Game implements GameApi {
     if (actorTalk) this.talkCamera?.update(dt);
     // Keep the visible view while the talk chunk or measured panel is pending.
     const awaitingShot = actorTalk && !this.rig.talk;
-    if (!awaitingShot) this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    if (!awaitingShot) {
+      const standFrame = this.zone.id === "town" && !riding && !mode && !this.aloft
+        ? taxiStandFrameAt(position.x, position.z) : undefined;
+      this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down, standFrame);
+    }
     this.frameKeeper(dt, blocked || !!mode);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {

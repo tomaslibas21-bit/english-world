@@ -164,6 +164,12 @@ export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }
 
 export const TAXI: CarPlacement = { model: "taxi", x: 121, z: -4.8, rot: -Math.PI / 2, color: "#f5c518" };
 
+/** From the open side of the stand, east of the forecourt and below its roofline. */
+const TAXI_STAND_FRAME = { eye: [132, 3.7, 11.5], look: [122.4, 1.05, -1.6] } as const;
+export function taxiStandFrameAt(x: number, z: number) {
+  return Math.hypot(x - 122.5, z + 1.45) <= 3.2 ? TAXI_STAND_FRAME : undefined;
+}
+
 const gas = BUILDINGS.find(({ id }) => id === "gas");
 export const GAS_FORECOURT = gas && { x: gas.x, z: gas.z - gas.d / 2 - 6.5, width: 18, depth: 9 };
 

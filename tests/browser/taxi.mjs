@@ -109,30 +109,47 @@ function atTaxiStand(routeId) {
 async function taxiStandView() {
   const game = window.__ew.game, camera = game.rig.cam, ray = game.raycaster;
   const { CUT } = await import("/src/game/cutout.ts");
+  const { carModelEntry } = await import("/src/game/world/carModels.ts");
+  const { width, length, height } = carModelEntry("taxi").collisionBox;
+  camera.updateMatrixWorld();
   const root = game.town.parkedCars.taxi.root;
-  const taxi = root.position.clone().setY(0.9);
-  const point = taxi.clone().project(camera);
-  const taxiInFrame = [point.x, point.y, point.z].every((coordinate) => Math.abs(coordinate) < 1);
-  // The gas-station canopy no longer fades near the camera: its roof stays, and the follow camera looks through it
-  // where it stands on the line to the learner (cutout.ts; Sol's 01-gas-canopy-camera, 24 Nov 2026, the same rule as
-  // tests/taxi-camera.test.ts). So whatever of it is between the camera and the taxi (its roof, middle and both ends)
-  // must be inside that see-through tube.
-  const canopy = game.town.group.getObjectByName("gas-canopy-assembly");
-  const roof = canopy.children.filter((o) => !o.material.alphaHash || o.material.opacity > 0);
-  const a = CUT.a.value, b = CUT.b.value, r = CUT.r.value, ab = b.clone().sub(a);
-  const inTube = (p) => {
-    const t = Math.min(1, Math.max(0, p.clone().sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-4)));
-    return r > 0 && t > 0.03 && t < 0.9 && a.clone().addScaledVector(ab, t).distanceTo(p) < r;
+  const taxiPoint = (x, y, z) => root.localToWorld(root.position.clone().set(x, y, z));
+  const inFrame = (p) => p.clone().project(camera).toArray().every((coordinate) => Math.abs(coordinate) < 1);
+  const learner = game.player.root.position;
+  const vinnie = game.npcs.find(({ id, ch }) => id === "vinnie" && ch.root.visible)?.ch;
+  const points = {
+    "taxi roof": taxiPoint(0, height, 0),
+    "taxi centre": taxiPoint(0, height / 2, 0),
+    "taxi front": taxiPoint(0, height / 2, length / 2),
+    "taxi rear": taxiPoint(0, height / 2, -length / 2),
+    "learner chest": learner.clone().setY(learner.y + 1.35),
   };
-  for (const [along, y] of [[0, 0.5], [0, 1.3], [-1.6, 0.8], [1.6, 0.8]]) {
-    const target = root.localToWorld(root.position.clone().set(0, y, along));
+  if (vinnie) points.Vinnie = vinnie.root.position.clone().setY(vinnie.root.position.y + 1.65);
+  const roof = game.town.group.getObjectByName("gas-canopy-assembly").children;
+  const clipped = Object.entries(points).filter(([, point]) => !inFrame(point)).map(([name]) => name);
+  for (const x of [-width / 2, width / 2]) for (const z of [-length / 2, length / 2]) {
+    for (const y of [0, height]) if (!inFrame(taxiPoint(x, y, z))) clipped.push("taxi corner");
+  }
+  if (!inFrame(learner) || !inFrame(learner.clone().setY(learner.y + game.player.height))) clipped.push("learner");
+  const blocked = [];
+  for (const [name, target] of Object.entries(points)) {
     const direction = target.clone().sub(camera.position);
     const depth = direction.length();
     ray.set(camera.position, direction.normalize());
-    const hits = ray.intersectObjects(roof, false).filter((hit) => hit.distance < depth && !inTube(hit.point));
-    if (hits.length) return { taxiInFrame, canopyClear: false, blocked: [along, y], at: hits[0].point.toArray() };
+    const hit = ray.intersectObjects(roof, false).find((hit) => hit.distance < depth);
+    if (hit) blocked.push({ name, at: hit.point.toArray() });
   }
-  return { taxiInFrame, canopyClear: true };
+  const tube = points["learner chest"].clone().sub(camera.position);
+  const tubeStart = camera.position.clone().addScaledVector(tube, 0.03);
+  const tubeLength = tube.length() * 0.87;
+  ray.set(tubeStart, tube.normalize());
+  const cutout = roof.filter((mesh) => {
+    mesh.geometry.computeBoundingBox();
+    const bounds = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld).expandByScalar(CUT.r.value);
+    const hit = ray.ray.intersectBox(bounds, tube.clone());
+    return hit && hit.distanceTo(tubeStart) < tubeLength;
+  }).map((mesh) => mesh.name);
+  return { clipped, blocked, cutout };
 }
 
 async function checkSightlines(page, moment) {
@@ -175,10 +192,11 @@ const browser = await chromium.launch({
 });
 
 try {
-  for (const phone of [true, false]) {
-    const label = phone ? "phone" : "computer";
+  for (const label of ["phone", "computer", "sideways-phone"]) {
+    const phone = label !== "computer", sideways = label === "sideways-phone";
     const context = await browser.newContext(phone
-      ? { viewport: { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
+      ? { viewport: sideways ? { width: 844, height: 390 } : { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) },
+        deviceScaleFactor: 2, isMobile: true, hasTouch: true }
       : { viewport: { width: 1280, height: 800 } });
     const page = await context.newPage();
     const errors = [];
@@ -203,6 +221,25 @@ try {
       assert.fail(`${label}: ${description}: ${JSON.stringify(state)}`);
     };
     const shot = async (name) => { if (shots) { await step(2); await real(320); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
+    const checkStandView = async (moment, frames = 30) => {
+      await step(frames);
+      const view = await page.evaluate(taxiStandView);
+      assert(!view.clipped.length && !view.blocked.length && !view.cutout.length, `${label} ${moment}: ${JSON.stringify(view)}`);
+    };
+    const checkMapDrop = async () => {
+      await waitFor(() => page.evaluate(() => !window.__ew.game.transitioning), "town transition finishes");
+      await page.evaluate(() => window.__ew.game.teleportTo("taxi-stand"));
+      await waitFor(async () => {
+        await real(15);
+        return page.evaluate(() => {
+          const { player, transitioning } = window.__ew.game;
+          const { x, z } = player.root.position;
+          return !transitioning && Math.hypot(x - 124, z - 1.2) < 0.2;
+        });
+      }, "arrives at the map's taxi stand drop-off");
+      await checkStandView("at the map drop-off");
+      await shot("map-drop");
+    };
     const heard = (key) => page.locator(`.taxi-cue [data-line="${key}"]`).count();
     const choice = (key) => page.locator(`.taxi-choice[data-line="${key}"]`);
     const phase = (value) => page.evaluate((p) => window.__ew.game.modes.get("taxi").run?.phase === p, value);
@@ -222,15 +259,18 @@ try {
       const game = window.__ew.game, stand = game.town.parkedCars.taxi;
       return stand && stand.instance?.parent === stand.root && !stand.fallback?.parent; // (no fallback when the model is ready first)
     }), "the Kenney model replaces the stand taxi's fallback");
-    // Let the standing follow camera finish its swing before checking the framing.
-    await step(80);
+    await checkStandView("at the prompt", 80);
     assert(await standPrompt.isVisible(), "taxi prompt remains visible after the camera settles");
     assert(await page.evaluate(atTaxiStand), "the Kenney taxi is parked at the layout's stand");
-    if (!phone) {
-      const view = await page.evaluate(taxiStandView);
-      assert(view.taxiInFrame && view.canopyClear, `the taxi is in view with a clear foreground: ${JSON.stringify(view)}`);
-    }
     await shot("start");
+
+    if (sideways) {
+      await checkMapDrop();
+      assert.deepEqual(errors, []);
+      console.log("ok", label);
+      await context.close();
+      continue;
+    }
 
     await page.evaluate(() => {
       window.__taxiLines = [];
@@ -444,7 +484,13 @@ try {
       await waitFor(() => page.locator(".minimap").count(), "menu exits the ride and restores the HUD");
       assert(await page.evaluate(() => window.__ew.game.player.root.visible), "on foot again after the menu's way out, in sight");
       await checkNoRideHints(page, "after exiting from the menu");
+      // With screenshots enabled, the second taxi has already driven out to its first cue.
+      if (!shots) {
+        assert(await page.evaluate(atTaxiStand), "the taxi is back at the stand after the menu exit");
+        await checkStandView("after getting out of the taxi at the stand");
+      }
     }
+    await checkMapDrop();
     assert.deepEqual(errors, []);
     console.log("ok", label);
     await context.close();
