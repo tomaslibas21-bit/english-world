@@ -92,16 +92,25 @@ export interface SpeechOptions {
 
 export type LocalAvailability = "available" | "downloadable" | "downloading" | "unavailable" | "unsupported";
 
+/** Some Chromium-based browsers expose the methods without backing the on-device
+ * service. Probing it can terminate the renderer before a promise can reject. */
+export function supportsOnDeviceRecognition(): boolean {
+  if (typeof navigator === "undefined" || typeof SPEECH_REC?.available !== "function") return false;
+  if (/HeadlessChrome|SamsungBrowser|SamsungInternet|Electron|Edg\/|OPR\//i.test(navigator.userAgent)) return false;
+  const brands = (navigator as Navigator & { userAgentData?: { brands?: readonly { brand: string }[] } }).userAgentData?.brands;
+  return brands?.some(({ brand }) => brand === "Google Chrome") ?? false;
+}
+
 export async function localAvailability(): Promise<LocalAvailability> {
+  if (!supportsOnDeviceRecognition()) return "unsupported";
   try {
-    if (!SPEECH_REC || typeof SPEECH_REC.available !== "function") return "unsupported";
     return await SPEECH_REC.available({ langs: ["en-US"], processLocally: true });
   } catch { return "unsupported"; }
 }
 /** Must be called from a user gesture. Downloads the browser's English language pack (free, one time). */
 export async function installLocal(): Promise<boolean> {
+  if (!supportsOnDeviceRecognition() || typeof SPEECH_REC.install !== "function") return false;
   try {
-    if (!SPEECH_REC || typeof SPEECH_REC.install !== "function") return false;
     return !!(await SPEECH_REC.install({ langs: ["en-US"], processLocally: true }));
   } catch { return false; }
 }
