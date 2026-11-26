@@ -137,11 +137,13 @@ function freighter(x: number, z: number, heading: number): Part[] {
   return parts;
 }
 
-/** One sloping sandbank. The crest follows the waterline into two shallow inlets. */
+/** One sloping sandbank, with a deep inlet between the two seeded palapa groups. */
 function sandLip(x0: number, x1: number, z: number) {
   const edge = [[x0 - 1600, -5], ...[
-    [0.04, -5], [0.12, -8], [0.17, 12], [0.21, 14], [0.26, -4],
-    [0.31, -8], [0.35, 7], [0.39, 9], [0.44, -6], [0.54, -5],
+    [0.04, -5], [0.12, -8], [0.17, 12], [0.21, 14],
+    // Broad water between the palapas. The shoulders keep both flanking palms on sand.
+    [0.245, -7], [0.263, 36], [0.282, 42], [0.30, 18], [0.32, -6],
+    [0.35, 7], [0.39, 9], [0.44, -6], [0.54, -5],
   ].map(([fraction, depth]) => [x0 + fraction * (x1 - x0), depth]), [x1 + 1600, -5]];
   const g = new THREE.PlaneGeometry(1, 1, edge.length - 1, 2);
   const p = g.attributes.position;
