@@ -2,6 +2,7 @@
 // WORLD_PLAYWRIGHT_MODULE, WORLD_BROWSER_CHANNEL, WORLD_SHOTS, WORLD_PHONE_WIDTH/HEIGHT or WORLD_SPAWN ("x,z,rot").
 // WORLD_GLOW_B6=1 adds four stationary town-art comparisons before the normal checks, with the HUD visible.
 // WORLD_GLOW_B7=1 captures the square bench, bank frontage, Corner Pocket entry and square planter instead.
+// WORLD_GLOW_B8=1 captures the street bin/post office and fresh entry views of the practice table/living-room sofa.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -56,7 +57,7 @@ const browser = await chromium.launch({
 
 const real = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function withGame([width, height], settings, check, params = "") {
+async function withGame([width, height], settings, check, params = "", place = progress.place) {
   const mobile = Math.min(width, height) <= 520;
   const context = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile,
@@ -66,7 +67,7 @@ async function withGame([width, height], settings, check, params = "") {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ status: 204, body: "" }));
-    await page.addInitScript(installTestControls, { key, progress: { ...progress, settings: { ...progress.settings, ...settings } } });
+    await page.addInitScript(installTestControls, { key, progress: { ...progress, place, settings: { ...progress.settings, ...settings } } });
     const target = new URL(url);
     for (const [k, v] of new URLSearchParams(params)) target.searchParams.set(k, v);
     await page.goto(target.href, { waitUntil: "domcontentloaded" });
@@ -275,8 +276,11 @@ try {
   });
 
   for (const [index, viewport] of size.entries()) {
-    if (process.env.WORLD_GLOW_B6 === "1" || process.env.WORLD_GLOW_B7 === "1") await withGame(viewport, {}, async ({ page, step, shot }) => {
-      const poses = process.env.WORLD_GLOW_B7 === "1" ? [
+    if (["WORLD_GLOW_B6", "WORLD_GLOW_B7", "WORLD_GLOW_B8"].some((key) => process.env[key] === "1")) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      const poses = process.env.WORLD_GLOW_B8 === "1" ? [
+        ["glow-directions-bin", 5.8, -15.3, Math.PI / 2],
+        ["glow-post-front", 27, -1.8, 0],
+      ] : process.env.WORLD_GLOW_B7 === "1" ? [
         ["glow-square-bench", 30, -18.4, Math.PI],
         ["glow-bank-front", 13, -2.6, 0],
         ["glow-pocket-entry", -12.5, 31.4, Math.PI],
@@ -299,6 +303,19 @@ try {
         await shot(name);
       }
     });
+    if (process.env.WORLD_GLOW_B8 === "1") for (const [name, place] of [
+      ["glow-practice-cover", { zone: "pool-hall", x: 0, z: 3.4, rot: Math.PI }],
+      ["glow-living-sofa", { zone: "dans-house", x: 0, z: 4.2, rot: Math.PI }],
+    ]) await withGame(viewport, {}, async ({ page, step, shot }) => {
+      await step(30);
+      const frame = await page.evaluate(() => {
+        const g = window.__ew.game;
+        return { zone: g.zone.id, player: g.player.root.position.toArray(), camera: g.rig.cam.position.toArray(),
+          calls: g.renderer.info.render.calls, triangles: g.renderer.info.render.triangles };
+      });
+      console.log(JSON.stringify({ glow: name, viewport, ...frame }));
+      await shot(name);
+    }, "", place);
     await withGame(viewport, {}, async ({ page, step, state, force, wait, turn, closed, press, card, shot }) => {
       if (index === 0) assert(await force("i_dropped", "a"));
       await wait(() => card.locator(".street-scene").isVisible(), "the street scene is shown");

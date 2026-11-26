@@ -14,6 +14,7 @@ import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/ta
 import { rack } from "../billiards/rules";
 import { Ledges } from "../ledges";
 import { Hop } from "../movement";
+import { finishLivingSofa, finishPracticeCover } from "./townFinishes";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
  *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
@@ -880,6 +881,7 @@ function poolHall(c: Ctx) {
   spare.root.rotation.y = Math.PI / 2;
   g.add(spare.root);
   box(1.89, 0.10, 1.04, 3.7, 0.85, 2.63, "#4e5157");
+  finishPracticeCover(M, 3.7, 2.63);
   col.addBox(3.7, 2.63, 1.89, 1.04);
 }
 
@@ -1725,6 +1727,7 @@ const B: Record<string, () => Interior> = {
     c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5.2, 0.5, -5.3)); c.col.addBox(5.2, -5.3, 4, 0.7, "counter");
     c.M.add("stove", mat("#2b2b2b"), boxGeo(0.9, 0.05, 0.6, 4.2, 1.03, -5.3), false);
     sofa(c, -5, 2.5, "#b5452f", 0, 2.4);
+    finishLivingSofa(c.M, -5, 2.5);
     rug(c, -5, 1.2, 3.4, 2.4, "#e8c07a");
     framedArt(c, 7, -5, 2.4, -c.d / 2 + 0.2, 1.8, 1.3);
     framedArt(c, 11, -1.5, 2.6, -c.d / 2 + 0.2, 1.2, 1);

@@ -1,6 +1,7 @@
 // Small surface finishes: keep the authored solids, seats, paths and RNG while sharing their render batches.
 import * as THREE from "three";
 import { boxGeo, cylGeo, mat, type Merger } from "./util";
+import { chamferBox } from "./shapes";
 
 /** Fountain benches use the opposite back orientation from streetBench. Coordinates below match their local frame. */
 export function finishPlazaBench(M: Merger, x: number, z: number, rotation: number) {
@@ -75,4 +76,73 @@ export function finishSquarePlanter(M: Merger, x: number, z: number, sx: number,
       M.addVisual("glow-b7-planter-bloom", mat(palette[(seed + i) % palette.length], { flat: true }), bloom);
     }
   }
+}
+
+/** Five existing street bins, with an inset dark mouth and ribs over their original ten-sided bodies. */
+export function finishStreetBin(M: Merger, x: number, z: number) {
+  M.addVisual("glow-b8-bin-rim", mat("#526b5d"), cylGeo(0.307, 0.307, 0.05, x, 0.88, z, 10));
+  M.addVisual("glow-b8-bin-lid", mat("#68816e"), new THREE.RingGeometry(0.105, 0.306, 10)
+    .rotateX(-Math.PI / 2).translate(x, 0.907, z));
+  M.addVisual("glow-b8-bin-mouth", mat("#1d2e29"), new THREE.CircleGeometry(0.105, 10)
+    .rotateX(-Math.PI / 2).translate(x, 0.909, z));
+  for (let i = 0; i < 10; i++) {
+    const angle = (i + 0.5) * Math.PI / 5;
+    M.addVisual("glow-b8-bin-rib", mat("#263f35"), new THREE.PlaneGeometry(0.028, 0.68).rotateY(angle)
+      .translate(x + Math.sin(angle) * 0.289, 0.46, z + Math.cos(angle) * 0.289));
+  }
+}
+
+export function finishPostOffice(M: Merger, x: number, z: number, rotation: number, width: number, doorWidth: number) {
+  const place = (g: THREE.BufferGeometry) => g.rotateY(rotation).translate(x, 0, z);
+  const gap = (doorWidth + 0.44) / 2, span = width / 2 - gap;
+  for (const side of [-1, 1]) {
+    const center = side * (gap + span / 2);
+    M.addVisual("glow-b8-post-brick", mat("#a76d55"), place(new THREE.PlaneGeometry(span, 0.54).translate(center, 0.79, 0.018)));
+    for (const y of [0.70, 0.88]) M.addVisual("glow-b8-post-mortar", mat("#c7b89b"),
+      place(new THREE.PlaneGeometry(span, 0.018).translate(center, y, 0.021)));
+    for (let row = 0; row < 3; row++) for (let joint = 1; joint <= 5; joint++) {
+      const along = gap + span * (joint / 6 + (row % 2) / 12);
+      M.addVisual("glow-b8-post-mortar", mat("#c7b89b"), place(new THREE.PlaneGeometry(0.015, 0.162)
+        .translate(side * along, 0.61 + row * 0.18, 0.021)));
+    }
+    M.addVisual("glow-b8-post-stone", mat("#dad1bc"), place(new THREE.PlaneGeometry(span, 0.04).translate(center, 1.075, 0.024)));
+    M.addVisual("glow-b8-post-stone", mat("#dad1bc"), place(new THREE.PlaneGeometry(0.24, 2.65)
+      .translate(side * (width / 2 - 0.12), 1.835, 0.026)));
+  }
+}
+
+/** Only the spare table's dust cover changes; the playable table, spare model and its collider stay intact. */
+export function finishPracticeCover(M: Merger, x: number, z: number) {
+  const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
+  M.addVisual("glow-b8-practice-top", mat("#66796d"), place(chamferBox(1.92, 0.10, 1.07, 0.012).translate(0, 0.88, 0)));
+  for (const side of [-1, 1]) {
+    for (const offset of [-0.62, 0, 0.62]) M.addVisual("glow-b8-practice-fold", mat(offset === 0 ? "#52665b" : "#5f7168"),
+      place(new THREE.PlaneGeometry(0.612, 0.19).rotateY(side === 1 ? 0 : Math.PI).translate(offset, 0.785, side * 0.538)));
+    M.addVisual("glow-b8-practice-fold", mat("#5f7168"), place(new THREE.PlaneGeometry(0.99, 0.19)
+      .rotateY(side * Math.PI / 2).translate(side * 0.963, 0.785, 0)));
+    M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(1.86, 0.018)
+      .rotateY(side === 1 ? 0 : Math.PI).translate(0, 0.704, side * 0.541)));
+    M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(0.99, 0.018)
+      .rotateY(side * Math.PI / 2).translate(side * 0.966, 0.704, 0)));
+    M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(1.77, 0.018)
+      .rotateX(-Math.PI / 2).translate(0, 0.932, side * 0.45)));
+  }
+}
+
+export function finishLivingSofa(M: Merger, x: number, z: number) {
+  const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
+  for (const side of [-1, 1]) {
+    M.addVisual("glow-b8-sofa-seat", mat("#bf725d"), place(chamferBox(0.94, 0.09, 0.64, 0.03).translate(side * 0.5, 0.6, 0.07)));
+    M.addVisual("glow-b8-sofa-back", mat("#b46653"), place(chamferBox(0.9, 0.38, 0.12, 0.04).translate(side * 0.5, 0.83, -0.17)));
+    M.addVisual("glow-b8-sofa-piping", mat("#d7baa1"), place(new THREE.PlaneGeometry(0.84, 0.012).translate(side * 0.5, 0.60, 0.393)));
+    M.addVisual("glow-b8-sofa-piping", mat("#d7baa1"), place(new THREE.PlaneGeometry(0.012, 0.26).translate(side * 0.5, 0.83, -0.107)));
+  }
+  M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.21, 0.72)
+    .rotateX(-Math.PI / 2).translate(-1.1, 0.827, 0.02)));
+  M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.72, 0.35)
+    .rotateY(-Math.PI / 2).translate(-1.227, 0.65, 0.02)));
+  M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(new THREE.PlaneGeometry(0.72, 0.018)
+    .rotateY(-Math.PI / 2).translate(-1.23, 0.49, 0.02)));
+  M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(new THREE.PlaneGeometry(0.21, 0.018)
+    .rotateX(-Math.PI / 2).translate(-1.1, 0.829, 0.36)));
 }

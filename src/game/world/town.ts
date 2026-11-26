@@ -1,7 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
-import { finishBank, finishPlazaBench, finishPoolHallDoor } from "./townFinishes";
+import { finishBank, finishPlazaBench, finishPoolHallDoor, finishPostOffice, finishStreetBin } from "./townFinishes";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
@@ -1172,6 +1172,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     finishBank(M, dx, dz, rotY, b.w, doorW, cu);
   }
   if (b.id === "post") {
+    finishPostOffice(M, dx, dz, rotY, b.w, doorW);
     // Place the mailbox at the west end of the frontage, clear of the SUV at the curb.
     const mailboxX = dx - t[0] * 7 + n[0] * 2;
     const mailboxZ = dz - t[1] * 7 + n[1] * 2;
@@ -1655,6 +1656,7 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   const trash = (x: number, z: number) => {
     photo("trash_can", x, 0.5, z);
     M.add("trash", mat("#3f5a4a"), cylGeo(0.3, 0.28, 0.9, x, 0.45, z, 10));
+    finishStreetBin(M, x, z);
     col.addCircle(x, z, 0.32);
   };
   for (const [x, z] of [[-45, -15], [8, -15], [-30, -1], [26, -1], [-14, 43]]) trash(x, z);
