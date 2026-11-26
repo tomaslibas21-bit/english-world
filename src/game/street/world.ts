@@ -425,6 +425,12 @@ class TownActor implements StreetActor {
       this.person.rightHand.add(this.prop);
       this.prop.position.z = id === "guitar" || id === "small_guitar" ? 0.12 : 0.05;
       if (this.twoHanded) this.prop.position.x = -0.12;
+      if (id === "guitar" || id === "small_guitar") {
+        // Strumming hand over the body, with the neck pointing across the player.
+        this.prop.position.x = -0.30;
+        this.prop.scale.x = -1;
+        this.prop.rotation.z = -0.32;
+      }
       if (id === "coffee_cup" || id === "water_bottle" || id === "water_jug") this.prop.rotation.x = -0.14;
       if (id === "bread_bag") {
         this.pigeons = new Pigeons(place.stop.x, place.stop.z, 0.55, 1.6, 3);
@@ -489,7 +495,8 @@ class TownActor implements StreetActor {
     const sinceAnswer = this.age - this.answeredAt;
     const hand = this.thread || this.dog ? this.person.rightHand.getWorldPosition(this.hand) : this.hand;
     if (this.drop && prop && object && prop.parent === this.stage) {
-      prop.position.y = object.y + 0.055 + Math.max(0, 1 - this.age * 2.4) ** 2 * 0.82;
+      const restingHeight = this.draw.cast.prop === "wallet" ? 0.0325 * prop.scale.y : 0.055;
+      prop.position.y = object.y + restingHeight + Math.max(0, 1 - this.age * 2.4) ** 2 * 0.82;
       if (this.glint) {
         this.glint.visible = this.age > 0.38 && sinceAnswer < 0;
         this.glint.rotation.y = this.age * 2.8;

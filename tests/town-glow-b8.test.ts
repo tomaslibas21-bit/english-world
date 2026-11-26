@@ -97,6 +97,7 @@ describe("Maple Harbor glow B8", () => {
     for (const [x, z] of BINS) {
       const mouth = surface(town.group, x, 1.2, z);
       expect(mouth.hex).toBe("#1d2e29"); expect(mouth.hit.point.y).toBeCloseTo(0.909);
+      expect(surface(town.group, x + 0.14, 1.2, z).hex).toBe("#1d2e29");
       expect(surface(town.group, x + 0.19, 1.2, z + 0.03).hex).toBe("#68816e");
       const a = Math.PI / 10, sx = Math.sin(a), sz = Math.cos(a);
       expect(surface(town.group, x + sx * 0.6, 0.46, z + sz * 0.6, -sx, 0, -sz).hex).toBe("#263f35");
@@ -120,7 +121,7 @@ describe("Maple Harbor glow B8", () => {
 
   it("drapes the spare table with a hem while preserving its model, collider and Tina's approach", () => {
     const cover = finish(hall.group, PALETTE.cover, "room-solid-");
-    expect(cover.triangles).toBe(72); expect(cover.triangles).toBeLessThanOrEqual(96);
+    expect(cover.triangles).toBe(82); expect(cover.triangles).toBeLessThanOrEqual(96);
     for (const p of cover.points) {
       expect(Math.abs(p.x - 3.7)).toBeLessThan(0.971);
       expect(Math.abs(p.z - 2.63)).toBeLessThan(0.545);
@@ -130,6 +131,9 @@ describe("Maple Harbor glow B8", () => {
     expect(top.hex).toBe("#66796d"); expect(top.hit.point.y).toBeCloseTo(0.93);
     const hem = new Box3().setFromPoints(records.get(hall.group)!.get("#b5a77b")!.points);
     expect(hem.min.y).toBeCloseTo(0.695); expect(hem.max.y).toBeCloseTo(0.932);
+    // The binding wraps from the long side to the end, with cloth covering the corner pocket.
+    expect(surface(hall.group, 3.7 + 0.95, 0.82, 3.5, 0, 0, -1).hex).toBe("#5f7168");
+    expect(surface(hall.group, 5.0, 0.82, 2.63 + 0.52, -1, 0, 0).hex).toBe("#5f7168");
     const spare = hall.group.getObjectByName("pool-hall-spare")!;
     expect(spare.position.toArray()).toEqual([3.7, 0, 2.63]);
     expect(spare.scale.toArray()).toEqual([0.79, 0.94, 0.83]); expect(spare.rotation.y).toBe(Math.PI / 2);
@@ -141,7 +145,7 @@ describe("Maple Harbor glow B8", () => {
 
   it("pads the living-room sofa and drapes its arm without moving its frame or the dining props", () => {
     const cushions = finish(house.group, PALETTE.sofa, "room-solid-");
-    expect(cushions.triangles).toBe(192); expect(cushions.triangles).toBeLessThanOrEqual(224);
+    expect(cushions.triangles).toBe(198); expect(cushions.triangles).toBeLessThanOrEqual(224);
     for (const p of cushions.points) {
       expect(p.x).toBeGreaterThan(-6.231); expect(p.x).toBeLessThan(-3.77);
       expect(Math.abs(p.z - 2.5)).toBeLessThan(0.46); expect(p.y).toBeLessThan(1.021);

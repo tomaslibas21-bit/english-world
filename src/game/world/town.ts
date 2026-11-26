@@ -6,7 +6,7 @@ import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
-import { chamferBox } from "./shapes";
+import { chamferBox, mumHead } from "./shapes";
 import { carParts } from "./car";
 import type { CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
@@ -1014,6 +1014,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     if (poolHall) sy = 4.29;
+    if (b.id === "post") sy = 6.25; // Clear the pennants on the approach from the square.
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
     if (b.style === "terminal") sy = Math.min(b.h - 0.4 - sw * 80 / 768, TERMINAL_CANOPY_TOP + 0.25 + sw * 80 / 768);
     signW = sw; signH = sw * 160 / 768; signY = sy;
@@ -1032,13 +1033,15 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       canvas.height = 240;
       const brush = canvas.getContext("2d")!;
       brush.drawImage(original, 0, 0);
-      brush.fillStyle = "#ead8b5"; brush.font = "800 68px Nunito, Arial";
+      // A backed valance keeps mipmapped letter edges intact at street distance.
+      brush.fillStyle = "#783e43"; brush.fillRect(0, 160, 768, 80);
+      brush.fillStyle = "#fff1ca"; brush.font = "800 93px Nunito, Arial";
       brush.textAlign = "center"; brush.textBaseline = "middle";
       brush.fillText("Harborview", 384, 200);
       tex.needsUpdate = true;
       const upperUV = sign.geometry.getAttribute("uv");
       for (let i = 0; i < upperUV.count; i++) upperUV.setY(i, (80 + upperUV.getY(i) * 160) / 240);
-      const fascia = new THREE.PlaneGeometry(4.8, 0.205).translate(-doorOff, 3.47 - sy, 3.981 - out);
+      const fascia = new THREE.PlaneGeometry(4.24, 0.54).translate(-doorOff, 3.30 - sy, 4.012 - out);
       const fasciaUV = fascia.getAttribute("uv");
       for (let i = 0; i < fasciaUV.count; i++) fasciaUV.setY(i, fasciaUV.getY(i) / 3);
       const lettering = mergeGeometries([sign.geometry, fascia], false)!;
@@ -1345,7 +1348,9 @@ const GOODS: Record<string, (add: Add, k: number) => void> = {
       add(gC(0.022, 0.6, x, 0.03, 0.24), "#3a3d42");
       add(gC(0.15, 0.26, x, 0.6, 0.24, 14, 0.16), bottoms[i]);
       add(new THREE.CapsuleGeometry(0.17, 0.26, 4, 12).scale(1, 1, 0.72).translate(x, 1.08, 0.24), tops[i]);
-      add(gC(0.05, 0.08, x, 1.36, 0.24), "#ece6dc");
+      // A warm dress form against a cool backing keeps the head and neckline together through the glass.
+      add(new THREE.PlaneGeometry(0.70, 1.59).translate(x, 0.89, 0.032), "#908395");
+      add(gC(0.06, 0.135, x, 1.325, 0.24), "#c6b899");
       add(gS(0.11, x, 1.54, 0.24), "#ece6dc");
     });
     add(gB(0.5, 0.3, 0.3, 0.85, 0, 0.24), "#f4f1ea");
@@ -1371,7 +1376,15 @@ const GOODS: Record<string, (add: Add, k: number) => void> = {
   // the car rental: a model car on a turntable, keys on a hook board
   rental: (add, k) => {
     add(gC(0.45, 0.08, -0.2, 0, 0.24, 24), "#e3f2ec");
-    for (const [g, c] of carParts(k % 2 ? "#4a7bb7" : "#e45b4f")) add(g.scale(0.17, 0.17, 0.17).rotateY(0.6).translate(-0.2, 0.08, 0.24), c);
+    // A two-colour coastal road print sets off the silhouette of the dealer's model.
+    add(new THREE.PlaneGeometry(1.32, 0.86).translate(-0.29, 0.82, 0.031), "#87afb0");
+    add(new THREE.CircleGeometry(0.13, 16).translate(-0.67, 1.01, 0.036), "#f6d698");
+    const hill = new THREE.Shape().moveTo(-0.95, 0.39).lineTo(0.37, 0.39).lineTo(0.37, 0.81)
+      .quadraticCurveTo(0.01, 0.82, -0.34, 0.62).quadraticCurveTo(-0.61, 0.53, -0.95, 0.60).closePath();
+    add(new THREE.ShapeGeometry(hill, 4).translate(0, 0, 0.038), "#557c71");
+    for (const [g, c] of carParts(k % 2 ? "#4a7bb7" : "#e45b4f")) {
+      add(g.scale(0.19, 0.19, 0.19).rotateY(1.44).translate(-0.2, 0.08, 0.24), c);
+    }
     add(new THREE.BoxGeometry(0.5, 0.36, 0.02).translate(0.8, 1.2, 0.03), "#1f8a70");
     for (let i = 0; i < 6; i++) add(gS(0.025, 0.65 + (i % 3) * 0.15, 1.13 + Math.floor(i / 3) * 0.14, 0.05), "#e8c547");
     bunting(add, ["#1f8a70", "#f4f1ea", "#e8c547"]);
@@ -1860,6 +1873,11 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   course(cut, 24, [3.43, 0.78], [3.48, 0.82], [3.48, 0.88], [3.20, 0.88]);
   course(wet, 24, [3.20, 0.88], [3.02, 0.81]);
   pool(teal, 3.02, 0.81, 24);
+  // Broken glints at the spray's landing, low enough to sit beneath the inner lip.
+  for (const [radius, start, arc] of [[1.92, 0.25, 0.92], [2.12, 0.59, 0.70], [2.18, 2.22, 1.32], [2.34, 4.38, 1.14]]) {
+    M.addVisual("fountain-ripple", mat("#75acaa"), new THREE.RingGeometry(radius, radius + 0.048, 7, 1, start, arc)
+      .rotateX(-Math.PI / 2).translate(x, 0.818, z), false);
+  }
   // A splayed foot and narrow neck open into the upper bowl. Its level rim is the second landing.
   course(granite, 16, [0.72, 0.81], [0.62, 1.03], [0.38, 1.16], [0.29, 2.22], [0.40, 2.32]);
   course(granite, 16, [0.40, 2.32], [0.88, 2.42], [1.20, 2.66]);
@@ -1899,7 +1917,25 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     col.addRoof(s.x, s.z, 4.4, 2.2); // (boards, not cloth: the second jump lands on it)
     const goodsCol = s.goods === "flowers" ? ["#e84a5f", "#ffd166", "#b56576", "#f7a072"] : s.goods === "fruit" ? ["#e63946", "#f4a261", "#ffbe0b"] : s.goods === "veg" ? ["#2a9d8f", "#e76f51", "#8ab17d"] : ["#d4a373", "#e9c46a"];
     for (let i = 0; i < 14; i++) {
-      const g = new THREE.SphereGeometry(0.16 + r() * 0.08, 6, 5).translate(s.x - 1.6 + (i % 7) * 0.53, 1.02, s.z - 0.35 + Math.floor(i / 7) * 0.5);
+      const radius = 0.16 + r() * 0.08;
+      const px = s.x - 1.6 + (i % 7) * 0.53, pz = s.z - 0.35 + Math.floor(i / 7) * 0.5;
+      const g = new THREE.SphereGeometry(radius, 6, 5);
+      if (s.goods === "bread") {
+        g.scale(1.22, 0.68, 0.82).rotateY((i % 3 - 1) * 0.24);
+        M.addVisual("loaf-score", mat("#f0d5a5"), new THREE.CircleGeometry(radius * 0.46, 4)
+          .scale(0.35, 1, 1).rotateZ(-0.6).rotateX(-Math.PI / 2).translate(px, 1.023 + radius * 0.68, pz), false);
+      }
+      if (s.goods === "veg") g.scale(0.76, 0.70, 1.18).rotateY(i * 0.4);
+      if (s.goods === "flowers") {
+        g.scale(0.72, 0.58, 0.72);
+        M.addVisual("market-flowers", mat(goodsCol[i % goodsCol.length], { flat: true }),
+          mumHead(radius * 1.1).rotateY(i).translate(px, 1.08, pz), false);
+      }
+      if (s.goods === "fruit") {
+        M.addVisual("fruit-leaf", mat("#58754b"), new THREE.CircleGeometry(radius * 0.45, 4)
+          .scale(1, 0.52, 1).rotateX(-1.12).translate(px + radius * 0.22, 1.016 + radius, pz), false);
+      }
+      g.translate(px, 1.02, pz);
       M.add("goods-" + goodsCol[i % goodsCol.length], mat(goodsCol[i % goodsCol.length], { flat: true }), g, false);
     }
     col.addBox(s.x, s.z, 4.2, 1.8);

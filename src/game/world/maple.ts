@@ -13,6 +13,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { BUILDINGS, FOUNTAIN, LIGHTHOUSE, STALLS, BEACH_Z } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, colourMerge } from "./util";
 import { STYLED } from "../style";
+import { mumHead } from "./shapes";
 import { LIGHTHOUSE_ISLAND } from "./island";
 import { addLighthouse } from "./lighthouseTower";
 import { MAPLE_BLOCKS } from "./styled";
@@ -61,11 +62,14 @@ function bale(add: Add, M: Merger, x: number, y: number, z: number, rot: number)
   finishHarvestBale(M, x, y, z, rot);
 }
 /** A clump of mums: a green mound with blooms on it, `r` across, its foot at y. */
-export function mums(add: Add, x: number, y: number, z: number, r: number, k: number) {
-  add(new THREE.IcosahedronGeometry(r, 0).scale(1, 0.62, 1).translate(x, y + r * 0.45, z), "#4f8f3f", { flat: true });
+export function mums(add: Add, x: number, y: number, z: number, r: number, k: number, bed = false) {
+  add(new THREE.IcosahedronGeometry(r, 0).scale(1, 0.62, 1).translate(x, y + r * 0.45, z), bed ? "#57764c" : "#4f8f3f", { flat: true });
   for (let i = 0; i < 4; i++) {
     const a = i * 1.7 + k;
-    add(new THREE.OctahedronGeometry(r * 0.42, 0).translate(x + Math.cos(a) * r * 0.5, y + r * 0.8 + (i % 2) * r * 0.12, z + Math.sin(a) * r * 0.5), MUMS[(k + i) % MUMS.length], { flat: true });
+    const head = new THREE.OctahedronGeometry(r * 0.42, 0);
+    if (bed) head.scale(0.86, 0.46, 0.86);
+    add(head.translate(x + Math.cos(a) * r * 0.5, y + r * 0.8 + (i % 2) * r * 0.12, z + Math.sin(a) * r * 0.5),
+      bed ? "#9b794a" : MUMS[(k + i) % MUMS.length], { flat: true });
   }
 }
 /** A lobster trap: a wire cage on wooden runners, 0.95 m long (along x before turning), its foot at y. */
@@ -324,7 +328,12 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
         if (!col.blocked(bx, z, 0.45)) {
           add(cylGeo(0.36, 0.3, 0.5, bx, 0.25, z, 10), "#8a5a3c");
           for (const y of [0.12, 0.4]) add(cylGeo(0.37, 0.37, 0.05, bx, y, z, 10), "#3d4a44", { cast: false });
-          mums(add, bx, 0.44, z, 0.42, i);
+          mums(add, bx, 0.44, z, 0.42, i, true);
+          for (let j = 0; j < 4; j++) {
+            const angle = j * 1.7 + i;
+            M.addVisual("barrel-mum", mat(MUMS[(i + j) % MUMS.length], { flat: true }),
+              mumHead(0.18).rotateY(angle).translate(bx + Math.cos(angle) * 0.21, 0.836 + (j % 2) * 0.05, z + Math.sin(angle) * 0.21));
+          }
           finishCurbBarrel(M, bx, z);
           col.addCircle(bx, z, 0.38);
         }
@@ -340,7 +349,10 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
     };
     let n = 0;
     for (const [a, b] of strings) {
+      // Keep the hotel arrival open between its two banner poles. Even short flags conceal the low valance.
       const H = 4.42, SAG = 0.7, len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const count = Math.floor((len - 1.6) / 0.66);
+      if (a[0] < -80) { n += count; continue; }
       const dx = (b[0] - a[0]) / len, dz = (b[1] - a[1]) / len, nx = -dz, nz = dx;
       const pt = (u: number) => [a[0] + (b[0] - a[0]) * u, H - 4 * SAG * u * (1 - u), a[1] + (b[1] - a[1]) * u];
       const SEG = 22, none = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
@@ -349,7 +361,6 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
         tri(p0, p1, [p1[0], p1[1] - 0.035, p1[2]], "#3a3d42", none);
         tri(p0, [p1[0], p1[1] - 0.035, p1[2]], [p0[0], p0[1] - 0.035, p0[2]], "#3a3d42", none);
       }
-      const count = Math.floor((len - 1.6) / 0.66);
       for (let j = 0; j < count; j++) {
         const u = (0.8 + j * 0.66 + 0.33) / len, p = pt(u);
         tri([p[0] - dx * 0.24, p[1] - 0.02, p[2] - dz * 0.24], [p[0] + dx * 0.24, p[1] - 0.02, p[2] + dz * 0.24], [p[0], p[1] - 0.62, p[2]], PENNANTS[n++ % PENNANTS.length], [[0, 0, 0], [0, 0, 0], [nx, 0, nz]]);
@@ -411,7 +422,7 @@ function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin, M: Merg
     const x = fx + sx * 5.6, z = fz + sz * 5.6;
     add(boxGeo(1.0, 0.5, 1.0, x, 0.25, z), "#8a5a3c");
     add(boxGeo(1.08, 0.07, 1.08, x, 0.5, z), "#6b4a34", { cast: false });
-    mums(add, x - 0.18, 0.46, z - 0.12, 0.44, sx + 2); mums(add, x + 0.22, 0.46, z + 0.2, 0.36, sz + 3);
+    mums(add, x - 0.18, 0.46, z - 0.12, 0.44, sx + 2, true); mums(add, x + 0.22, 0.46, z + 0.2, 0.36, sz + 3, true);
     finishSquarePlanter(M, x, z, sx, sz);
     col.addBox(x, z, 1.05, 1.05);
   }
@@ -453,6 +464,9 @@ function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: Ad
   finish(new THREE.PlaneGeometry(2.55, 0.34).rotateY(Math.PI / 2).translate(X + 1.234, 1.78, Z + 0.8), "#53645e");
   finish(boxGeo(0.04, 0.035, 2.82, X + 1.56, 1.52, Z + 0.8), "#b6c2bd");
   finish(boxGeo(0.22, 0.035, 0.32, X + 1.4, 1.5475, Z + 1.40), "#ead8b6");
+  for (const dz of [-0.9, -0.72]) {
+    finish(cylGeo(0.013, 0.041, 0.065, X + 1.42, 1.76, Z + 0.8 + dz, 6), "#e9e2d2");
+  }
   for (const [dz, cc] of [[-0.9, "#c8392f"], [-0.72, "#f2c14e"], [0.2, "#f6ecd9"], [0.38, "#f6ecd9"]] as [number, string][]) add(cylGeo(0.05, 0.05, 0.2, X + 1.42, 1.63, Z + 0.8 + dz, 6), cc, { cast: false });
   add(boxGeo(0.2, 0.14, 0.3, X + 1.4, 1.6, Z + 1.75), "#8a939b", { cast: false });
   // the awning: five stripes sloping out over the window, on two struts
@@ -482,7 +496,12 @@ function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: Ad
     add(cylGeo(0.42, 0.42, 0.05, tx, 1.06, tz, 12), cream); add(cylGeo(0.04, 0.04, 1.05, tx, 0.52, tz, 6), "#3a3d42"); add(cylGeo(0.26, 0.28, 0.04, tx, 0.02, tz, 10), "#3a3d42", { cast: false });
     add(cylGeo(0.035, 0.035, 0.16, tx + 0.12, 1.16, tz - 0.08, 6), "#c8392f", { cast: false }); add(cylGeo(0.035, 0.035, 0.16, tx + 0.02, 1.16, tz + 0.1, 6), "#f2c14e", { cast: false });
     add(boxGeo(0.14, 0.1, 0.12, tx - 0.14, 1.13, tz), "#e9e2d2", { cast: false });
-    if (!STYLED) finishStandingTable(M, tx, tz);
+    if (!STYLED) {
+      finishStandingTable(M, tx, tz);
+      for (const [ox, oz, color] of [[0.12, -0.08, "#c8392f"], [0.02, 0.10, "#f2c14e"]] as const) {
+        finish(cylGeo(0.009, 0.032, 0.048, tx + ox, 1.264, tz + oz, 6), color);
+      }
+    }
     col.addCircle(tx, tz, 0.44);
   }
   for (const s of [-1, 1]) add(boxGeo(0.62, 1.0, 0.04, 0, 0.5, 0).rotateX(s * 0.2).translate(14.1, 0, -27.3 + s * 0.14), "#2f3a33");

@@ -157,6 +157,7 @@ export function makeStreetProp(id: StreetProp, kind?: string) {
   const builder: (kind?: string) => Part[] = catalog[id];
   const parts = builder(kind);
   if (parts.length) root.add(mesh(parts));
+  if (id === "wallet") root.scale.y = 0.5; // A folded billfold stays low in profile.
   return root;
 }
 

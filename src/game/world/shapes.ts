@@ -60,6 +60,20 @@ export function chamferBox(w: number, h: number, d: number, r: number, smooth = 
   return g;
 }
 
+/** A ten-petal mum. The notched rim alternates sunlit petal tips and deep folds. */
+export function mumHead(radius: number) {
+  const g = new THREE.CircleGeometry(radius, 20);
+  const pos = g.getAttribute("position");
+  pos.setZ(0, radius * 0.26);
+  for (let i = 1; i < pos.count; i++) {
+    const tip = i % 2 === 1, spread = tip ? 1 : 0.70;
+    pos.setXYZ(i, pos.getX(i) * spread, pos.getY(i) * spread, radius * (tip ? 0.30 : -0.09));
+  }
+  const petals = g.toNonIndexed().rotateX(-Math.PI / 2);
+  petals.computeVertexNormals();
+  return petals;
+}
+
 /** World-space box projection of UVs (1 texture repeat per `scale` metres). Walls get v = height. */
 export function boxProjectUV(g: THREE.BufferGeometry, scale: number) {
   const p = g.attributes.position, n = g.attributes.normal;

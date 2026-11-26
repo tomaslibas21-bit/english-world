@@ -197,6 +197,17 @@ function coast(view: SeaView, r: () => number, { x0, x1, z, lighthouse }: Coast)
         const angle = (tall - 7) * 0.09;
         parts.push([at(body.rotateY(angle), x + w / 2, 1 + tall / 2, depth), wall],
           [at(gable.rotateY(angle), x + w / 2, tall + 1, depth), roof]);
+        if (forward) {
+          // Large, seaward-facing openings survive the long approach across the bay.
+          const opening = (width: number, height: number, u: number, y: number, color: string) => {
+            const panel = new THREE.PlaneGeometry(width, height).rotateY(Math.PI)
+              .translate(u, y, -deep / 2 - 0.04).rotateY(angle);
+            parts.push([at(panel, x + w / 2, 1, depth), color]);
+          };
+          opening(w * 0.30, tall * 0.68, -w * 0.15, tall * 0.34, "#405258");
+          opening(w * 0.19, tall * 0.25, w * 0.25, tall * 0.51, "#647f87");
+          opening(w * 0.22, tall * 0.045, w * 0.25, tall * 0.35, "#bcac8e");
+        }
       } else {
         parts.push([at(body, x + w / 2, 1 + tall / 2, back), wall],
           [at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roof]);

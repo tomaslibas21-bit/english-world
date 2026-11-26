@@ -1,7 +1,7 @@
 // Small surface finishes: keep the authored solids, seats, paths and RNG while sharing their render batches.
 import * as THREE from "three";
 import { boxGeo, cylGeo, mat, type Merger } from "./util";
-import { chamferBox } from "./shapes";
+import { chamferBox, mumHead } from "./shapes";
 
 /** Fountain benches use the opposite back orientation from streetBench. Coordinates below match their local frame. */
 export function finishPlazaBench(M: Merger, x: number, z: number, rotation: number) {
@@ -69,9 +69,8 @@ export function finishSquarePlanter(M: Merger, x: number, z: number, sx: number,
   for (const [cx, cz, radius, seed] of [[x - 0.18, z - 0.12, 0.44, sx + 2], [x + 0.22, z + 0.2, 0.36, sz + 3]]) {
     for (let i = 0; i < 4; i++) {
       const angle = i * 1.7 + seed;
-      // The icosahedron encloses the original pointed bloom. Its unchanged geometry still supplies collision data.
-      const bloom = new THREE.IcosahedronGeometry(radius * 0.55, 0).translate(
-        cx + Math.cos(angle) * radius * 0.5, 0.46 + radius * 0.8 + (i % 2) * radius * 0.12,
+      const bloom = mumHead(radius * 0.48).rotateY(angle).translate(
+        cx + Math.cos(angle) * radius * 0.5, 0.46 + radius * 0.96 + (i % 2) * radius * 0.12,
         cz + Math.sin(angle) * radius * 0.5);
       M.addVisual("glow-b7-planter-bloom", mat(palette[(seed + i) % palette.length], { flat: true }), bloom);
     }
@@ -81,9 +80,9 @@ export function finishSquarePlanter(M: Merger, x: number, z: number, sx: number,
 /** Five existing street bins, with an inset dark mouth and ribs over their original ten-sided bodies. */
 export function finishStreetBin(M: Merger, x: number, z: number) {
   M.addVisual("glow-b8-bin-rim", mat("#526b5d"), cylGeo(0.307, 0.307, 0.05, x, 0.88, z, 10));
-  M.addVisual("glow-b8-bin-lid", mat("#68816e"), new THREE.RingGeometry(0.105, 0.306, 10)
+  M.addVisual("glow-b8-bin-lid", mat("#68816e"), new THREE.RingGeometry(0.16, 0.306, 10)
     .rotateX(-Math.PI / 2).translate(x, 0.907, z));
-  M.addVisual("glow-b8-bin-mouth", mat("#1d2e29"), new THREE.CircleGeometry(0.105, 10)
+  M.addVisual("glow-b8-bin-mouth", mat("#1d2e29"), new THREE.CircleGeometry(0.16, 10)
     .rotateX(-Math.PI / 2).translate(x, 0.909, z));
   for (let i = 0; i < 10; i++) {
     const angle = (i + 0.5) * Math.PI / 5;
@@ -114,16 +113,35 @@ export function finishPostOffice(M: Merger, x: number, z: number, rotation: numb
 /** Only the spare table's dust cover changes; the playable table, spare model and its collider stay intact. */
 export function finishPracticeCover(M: Merger, x: number, z: number) {
   const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
-  M.addVisual("glow-b8-practice-top", mat("#66796d"), place(chamferBox(1.92, 0.10, 1.07, 0.012).translate(0, 0.88, 0)));
+  M.addVisual("glow-b8-practice-top", mat("#66796d"), place(chamferBox(1.92, 0.052, 1.07, 0.022).translate(0, 0.904, 0)));
+  // A crease radiates in from each pulled corner of the cover.
   for (const side of [-1, 1]) {
-    for (const offset of [-0.62, 0, 0.62]) M.addVisual("glow-b8-practice-fold", mat(offset === 0 ? "#52665b" : "#5f7168"),
-      place(new THREE.PlaneGeometry(0.612, 0.19).rotateY(side === 1 ? 0 : Math.PI).translate(offset, 0.785, side * 0.538)));
-    M.addVisual("glow-b8-practice-fold", mat("#5f7168"), place(new THREE.PlaneGeometry(0.99, 0.19)
-      .rotateY(side * Math.PI / 2).translate(side * 0.963, 0.785, 0)));
-    M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(1.86, 0.018)
-      .rotateY(side === 1 ? 0 : Math.PI).translate(0, 0.704, side * 0.541)));
-    M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(0.99, 0.018)
-      .rotateY(side * Math.PI / 2).translate(side * 0.966, 0.704, 0)));
+    const pleat = new THREE.Shape().moveTo(-0.86, -0.48).lineTo(-0.49, -0.24)
+      .lineTo(-0.74, -0.47).closePath();
+    M.addVisual("glow-b8-practice-fold", mat("#5f7168"), place(new THREE.ShapeGeometry(pleat)
+      .rotateX(-Math.PI / 2).rotateY(side === 1 ? 0 : Math.PI).translate(0, 0.931, 0)));
+    // Carry the binding along the same uneven lower edge as the cloth.
+    // Follow one long edge and the adjoining short edge. Rotating the pair closes all four corners.
+    const edge = [
+      [-0.962, 0.538, 0.746], [-0.33, 0.541, 0.695], [0.27, 0.538, 0.729],
+      [0.962, 0.538, 0.757], [0.962, -0.538, 0.746],
+    ];
+    for (let i = 0; i < edge.length - 1; i++) {
+      const panel = (binding: boolean) => {
+        const g = new THREE.PlaneGeometry(1, 1);
+        const pos = g.getAttribute("position");
+        for (let vertex = 0; vertex < 4; vertex++) {
+          const [u, depth, hem] = edge[i + vertex % 2];
+          const y = vertex < 2 ? (binding ? hem + 0.018 : 0.910) : hem;
+          const lift = binding ? 1.003 : 1;
+          pos.setXYZ(vertex, u * lift, y, depth * lift);
+        }
+        g.computeVertexNormals();
+        return place(g.rotateY(side === 1 ? 0 : Math.PI));
+      };
+      M.addVisual("glow-b8-practice-fold", mat(i === 1 ? "#52665b" : "#5f7168"), panel(false));
+      M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), panel(true));
+    }
     M.addVisual("glow-b8-practice-hem", mat("#b5a77b"), place(new THREE.PlaneGeometry(1.77, 0.018)
       .rotateX(-Math.PI / 2).translate(0, 0.932, side * 0.45)));
   }
@@ -137,14 +155,17 @@ export function finishLivingSofa(M: Merger, x: number, z: number) {
     M.addVisual("glow-b8-sofa-piping", mat("#d7baa1"), place(new THREE.PlaneGeometry(0.84, 0.012).translate(side * 0.5, 0.60, 0.393)));
     M.addVisual("glow-b8-sofa-piping", mat("#d7baa1"), place(new THREE.PlaneGeometry(0.012, 0.26).translate(side * 0.5, 0.83, -0.107)));
   }
-  M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.21, 0.72)
-    .rotateX(-Math.PI / 2).translate(-1.1, 0.827, 0.02)));
+  M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.21, 0.812)
+    .rotateX(-Math.PI / 2).translate(-1.1, 0.827, 0.046)));
   M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.72, 0.35)
     .rotateY(-Math.PI / 2).translate(-1.227, 0.65, 0.02)));
   M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(new THREE.PlaneGeometry(0.72, 0.018)
     .rotateY(-Math.PI / 2).translate(-1.23, 0.49, 0.02)));
   M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(new THREE.PlaneGeometry(0.21, 0.018)
     .rotateX(-Math.PI / 2).translate(-1.1, 0.829, 0.36)));
+  M.addVisual("glow-b8-sofa-throw", mat("#cbb99a"), place(new THREE.PlaneGeometry(0.21, 0.34).translate(-1.1, 0.657, 0.452)));
+  for (const y of [0.514, 0.55]) M.addVisual("glow-b8-sofa-hem", mat("#9c8870"), place(
+    new THREE.PlaneGeometry(0.21, 0.018).translate(-1.1, y, 0.455)));
 }
 
 export function finishPoliceEntry(M: Merger, x: number, z: number, rotation: number, doorWidth: number) {
@@ -188,7 +209,8 @@ export function finishHarvestBale(M: Merger, x: number, y: number, z: number, ro
       const face = (g: THREE.BufferGeometry) => place(g.rotateY(side === 1 ? 0 : Math.PI).translate(center, 0, side * 0.278));
       M.addVisual("glow-b10-bale-straw", mat("#d7bb7e"), face(new THREE.PlaneGeometry(width, 0.38).translate(0, 0.25, 0)));
       for (const h of [0.15, 0.29]) M.addVisual("glow-b10-bale-grain", mat("#b69b62"),
-        face(new THREE.PlaneGeometry(width * 0.92, 0.012).translate(0, h, 0.003)));
+        face(new THREE.PlaneGeometry(width * (h < 0.2 ? 0.76 : 0.60), 0.023)
+          .rotateZ((h < 0.2 ? 0.14 : -0.19) * side).translate(0, h, 0.003)));
     }
     M.addVisual("glow-b10-bale-top", mat("#e4cb91"), place(new THREE.PlaneGeometry(width, 0.5)
       .rotateX(-Math.PI / 2).translate(center, 0.502, 0)));
@@ -240,14 +262,14 @@ export function finishHydrant(M: Merger, x: number, z: number) {
   const body = mat("#bd594a"), cap = mat("#9eaca7"), brass = mat("#d3c6a8");
   const place = (g: THREE.BufferGeometry) => g.translate(x, 0, z);
   for (const side of [-1, 1]) {
-    M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.062, 0.062, 0.05, 8, 1, true)
+    M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.075, 0.095, 0.05, 8, 1, true)
       .rotateZ(-side * Math.PI / 2).translate(side * 0.18, 0.5, 0)));
-    M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.062, 8)
+    M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.075, 8)
       .rotateY(side * Math.PI / 2).translate(side * 0.2055, 0.5, 0)));
   }
-  M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.065, 0.065, 0.05, 8, 1, true)
+  M.addVisual("glow-b10-hydrant-boss", body, place(new THREE.CylinderGeometry(0.095, 0.075, 0.05, 8, 1, true)
     .rotateX(Math.PI / 2).translate(0, 0.5, -0.18)));
-  M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.065, 8).rotateY(Math.PI).translate(0, 0.5, -0.2055)));
+  M.addVisual("glow-b10-hydrant-cap", cap, place(new THREE.CircleGeometry(0.075, 8).rotateY(Math.PI).translate(0, 0.5, -0.2055)));
   M.addVisual("glow-b10-hydrant-nut", brass, place(new THREE.CircleGeometry(0.025, 6).rotateY(Math.PI).translate(0, 0.5, -0.2085)));
   M.addVisual("glow-b10-hydrant-nut", brass, place(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 6).translate(0, 0.9, 0)));
   M.addVisual("glow-b10-hydrant-foot", mat("#596b62"), place(new THREE.CylinderGeometry(0.205, 0.212, 0.06, 8, 1, true).translate(0, 0.09, 0)));
