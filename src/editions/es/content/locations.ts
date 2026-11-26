@@ -17,6 +17,7 @@ const L = (id: string, name: string, lt: string, district: LocationDef["district
 export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("airport", "Aeropuerto de Puerto Colibrí", "The airport", "airport", "interior", "✈️"),
   L("taxi-stand", "Sitio de Taxis", "Taxi stand", "transport", "outdoor", "🚕"),
+  L("library", "Biblioteca de Puerto Colibrí", "Puerto Colibrí Library", "residential", "interior", "📖"),
   L("station", "Terminal de Autobuses", "Bus station", "transport", "interior", "🚌"),
   L("bus-stop", "Parada · Calle Ceiba", "Bus stop", "transport", "outdoor", "🚌"),
   L("car-rental", "Renta de Autos Colibrí", "Car rental", "transport", "interior", "🚗"),

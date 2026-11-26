@@ -124,7 +124,7 @@ const drawBlade = (name: string): Draw => (x, w, h) => {
 
 /** A hand-painted sign (a rótulo): a coloured board with a darker edge, the name in big outlined letters with a
  *  shadow, a smaller line under it, and little painted flowers in the corners. */
-const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: string): Draw => (x, w, h) => {
+export const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: string): Draw => (x, w, h) => {
   x.fillStyle = edge; roundRect(x, 0, 0, w, h, h * 0.12); x.fill();
   x.fillStyle = bg; roundRect(x, h * 0.06, h * 0.06, w - h * 0.12, h - h * 0.12, h * 0.1); x.fill();
   const ty = sub ? h * 0.42 : h * 0.52;

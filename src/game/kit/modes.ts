@@ -2,8 +2,8 @@ import type { Ride } from "../rides/Rides";
 
 import type { PadScope } from "../gamepad";
 
-export type CleanScreen = "menu" | "overlay";
-export interface ModeScreen { kind: CleanScreen; id: string; exitLabel?: string }
+export type CleanScreen = "menu" | "overlay" | "world";
+export interface ModeScreen { kind: Exclude<CleanScreen, "world">; id: string; exitLabel?: string }
 
 export type ModeInput =
   | { kind: "key"; key: string; repeat: boolean; keys: Set<string>; shift?: boolean }
@@ -70,6 +70,7 @@ export class ModeRegistry {
   get modal() { return !!this.selected?.modal; }
   get hasQueued() { return this.queued !== null; }
   get engaged() { return this.selected !== null; }
+  get world() { return this.selected?.cleanScreen === "world"; }
 
   start(id: string, option?: string) {
     const mode = this.get(id);
@@ -89,7 +90,7 @@ export class ModeRegistry {
     if (this.selected?.id !== id || this.screenBefore !== undefined) return;
     this.screenBefore = this.screen.read();
     const { cleanScreen, exitLabel } = this.selected;
-    this.screen.set({ kind: cleanScreen, id, exitLabel });
+    if (cleanScreen !== "world") this.screen.set({ kind: cleanScreen, id, exitLabel });
   }
 
   left(id: string) {

@@ -6,5 +6,6 @@ spanishBookUiTests("lt", new URL("./fixtures/books/", import.meta.url), {
   titleHelper: "Milžiniškas vėžlys", firstGloss: "Kartą gyveno (pažod. buvo vieną kartą)", nextLine: "Pereiti į 1 eilutę",
   paired: "Lietuviškai, tada ispaniškai", targetSpeed: "Ispanų kalbos greitis", helperSpeed: "Lietuvių kalbos greitis", off: "Išjungta",
   play: "Leisti", meanings: "Žodžių reikšmės", settings: "Klausymo nustatymai", retry: "Bandyti dar kartą", translate: "Rodyti vertimą",
+  stoppedHere: "Čia sustojai", listeningOptions: "Rodyti klausymo parinktis", browse: "Rinktis knygą", reader: "Atverti skaityklę",
   rates: ["0,75×", "0,9×", "1,75×"], minutes: "min.", route: "/knygos", bilingualStation: false,
 });

@@ -13,7 +13,7 @@ import { useStore } from "../../src/state/store";
 import { BookInterlinear, readerUnits, readerWord } from "../../src/ui/BookInterlinear";
 import { BookDetail, BookPicker, Jacket } from "../../src/ui/BookPicker";
 import { BookCourseLink, BookReader, ReaderPage } from "../../src/ui/BookReader";
-import { ListeningForm } from "../../src/ui/TalkSettings";
+import { ListeningForm, TalkSettings } from "../../src/ui/TalkSettings";
 import { bookWord, chapterCount } from "../../src/ui/bookCopy";
 import { ReaderFollow } from "../../src/ui/bookReaderFollow";
 import { chapterPlace, continueEntry, coverButtonId, loadShelf, pickerFocus, shelfEntries } from "../../src/ui/bookShelf";
@@ -41,6 +41,10 @@ interface ExpectedCopy {
   settings: string;
   retry: string;
   translate: string;
+  stoppedHere: string;
+  listeningOptions: string;
+  browse: string;
+  reader: string;
   rates: [string, string, string];
   minutes: string;
   route: string;
@@ -102,7 +106,17 @@ export function spanishBookUiTests(helper: "en" | "lt", fixtures: URL, copy: Exp
       channel.progress.checkpoint(book.chapters[1].selection, mark);
       const html = detail();
       expect(html).toContain('id="chapter-BK01-01" class="chapter current" data-pad-default="true" aria-current="true"');
-      expect(html).toContain(bookWord("current"));
+      expect(html).toContain(copy.stoppedHere);
+      expect(html).not.toContain(bookWord("current"));
+      const paused = channel.player.getSnapshot();
+      const playback = vi.spyOn(channel.player, "getSnapshot");
+      try {
+        playback.mockReturnValue({ ...paused, status: "playing", selection: book.chapters[1].selection });
+        expect(detail()).toContain(bookWord("current"));
+        expect(detail()).not.toContain(copy.stoppedHere);
+        playback.mockReturnValue({ ...paused, status: "playing", selection: story.chapters[0].selection });
+        expect(detail()).toContain(copy.stoppedHere);
+      } finally { playback.mockRestore(); }
       expect(html).toContain(bookWord("finished"));
       expect(html).toContain(copy.resume);
       for (const row of book.chapters) channel.progress.checkpoint(row.selection, { ...mark, complete: true, fraction: 1 });
@@ -289,6 +303,13 @@ export function spanishBookUiTests(helper: "en" | "lt", fixtures: URL, copy: Exp
       expect(player.getSnapshot().prefs.rates).toEqual({ es: 0.9, [helper]: 1.75 });
     });
 
+    it("places a single listening settings heading beside Back", () => {
+      const { channel } = setup();
+      const html = renderToStaticMarkup(createElement(TalkSettings, { channel }));
+      expect(html.match(/<h1>/g)).toHaveLength(1);
+      expect(html).toContain(`<h1>${copy.settings}</h1></header><form class="settings-form scroll"><fieldset>`);
+    });
+
     it.each([15, 30] as const)("expires a %s minute wall-clock sleep ahead of hold release, even when page timers were delayed", async (minutes) => {
       vi.useFakeTimers();
       const { channel, player, output } = setup();
@@ -378,6 +399,9 @@ export function spanishBookUiTests(helper: "en" | "lt", fixtures: URL, copy: Exp
       expect(picker).toContain('<span class="brand" lang="es">');
       expect(picker).toContain('class="book-picker radio-skin-colibri"');
       expect(bookWord("showTranslation")).toBe(copy.translate);
+      expect(bookWord("listeningOptions")).toBe(copy.listeningOptions);
+      expect(bookWord("browse")).toBe(copy.browse);
+      expect(bookWord("reader")).toBe(copy.reader);
       const source = readFileSync(new URL("../../src/ui/bookCopy.ts", import.meta.url), "utf8");
       for (const [, key] of source.matchAll(/\bL\("([^"]+)"/g)) {
         if (helper === "en") expect(STRINGS[key], key).toBeTruthy();

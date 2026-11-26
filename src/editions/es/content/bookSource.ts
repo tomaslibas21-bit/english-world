@@ -2,9 +2,8 @@ import { filesToken } from "../../../game/audio";
 import { createBookReviewSource } from "../../../content/bookReviewSource";
 import { createBookSource, type BookProfile } from "../../../radio/books";
 import covers from "./book-covers/books.json";
+import { bookSourceConfigured, SM_FILES, SME_FILES } from "../../../content/bookCapability";
 
-const SM_FILES = "https://audio.dvikalbesdainos.lt/spanish-master";
-const SME_FILES = `${SM_FILES}-en`;
 const freeChapters = /^BK(?:0[1-9]|10)-01$/;
 
 export function spanishBookProfile(id: "sme-en" | "sm-lt", artwork: Pick<BookProfile, "covers" | "storyCovers">): BookProfile {
@@ -31,19 +30,13 @@ export const SME_BOOK_PROFILE = spanishBookProfile("sme-en", {
   storyCovers: () => import("./book-covers/stories.json").then((data) => data.default),
 });
 
-const trimRoot = (value: unknown) => typeof value === "string" ? value.trim().replace(/\/+$/, "") : "";
-
 export function spanishBookSource(profile: BookProfile, env: Record<string, unknown>, site?: string) {
-  if (import.meta.env.VITE_BOOK_REVIEW === "1") {
-    return env.VITE_BOOK_PROFILE === profile.id ? createBookReviewSource(env, site) : null;
-  }
-  const sme = profile.id === "sme-en";
-  const files = trimRoot(env.VITE_RADIO_FILES);
-  if (!site || files !== (sme ? SME_FILES : SM_FILES)) return null;
+  if (!site || profile.id === "em-lt" || !bookSourceConfigured(profile.id, env)) return null;
+  if (import.meta.env.VITE_BOOK_REVIEW === "1") return createBookReviewSource(env, site);
+  if (env.VITE_BOOK_REVIEW === "1") return null;
+  const files = profile.id === "sme-en" ? SME_FILES : SM_FILES;
   // SME's audio configs name SM's storage prefix. The adapter resolves it through SME's Worker.
-  const recordings = sme ? trimRoot(env.VITE_RADIO_RECORDINGS) || SM_FILES : SM_FILES;
-  if (recordings !== SM_FILES) return null;
-  return createBookSource({ profile, site, files, recordings, token: filesToken });
+  return createBookSource({ profile, site, files, recordings: SM_FILES, token: filesToken });
 }
 
 export function bookSource(env: Record<string, unknown> = import.meta.env ?? {}, site = globalThis.location?.origin) {

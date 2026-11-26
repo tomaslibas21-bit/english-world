@@ -1572,6 +1572,17 @@ body.scene-on .tag-layer { display: none; }
 }
 .hud:has(.brake-btn.beside) .drive-horn { right: calc(134px + env(safe-area-inset-right)); bottom: calc(107px + env(safe-area-inset-bottom)); }
 .drive-horn:active { background: #59686e; }
+
+/* The library's single bilingual action stays beside the jump button under the right thumb. */
+.hud.has-touch .prompt.touch.library-prompt {
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  width: 128px; max-width: 128px; min-height: 60px;
+  box-sizing: border-box; padding: 8px 10px; line-height: 1.2; justify-content: center;
+}
+.hud.has-touch .prompt.touch.library-prompt .prompt-text { min-width: 0; align-items: center; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.jump-btn.beside.library-prompt-beside { right: calc(152px + env(safe-area-inset-right)); }
+.hud.has-touch .prompt.touch.library-prompt .prompt-text small { font-size: calc(14px * var(--scale)); }
 .cave-guide { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
 .cave-guide .arrow { width: 16px; height: 16px; flex: none; }
 .cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }

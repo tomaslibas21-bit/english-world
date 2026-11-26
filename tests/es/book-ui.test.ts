@@ -6,5 +6,6 @@ spanishBookUiTests("en", new URL("./fixtures/books/", import.meta.url), {
   titleHelper: "The Giant Turtle", firstGloss: "Once upon a time (lit. there was one time)", nextLine: "Go to line 1",
   paired: "English, then Spanish", targetSpeed: "Spanish speed", helperSpeed: "English speed", off: "Off",
   play: "Play", meanings: "Word meanings", settings: "Listening settings", retry: "Try again", translate: "Show translation",
+  stoppedHere: "You stopped here", listeningOptions: "Show listening options", browse: "Browse books", reader: "Open reader",
   rates: ["0.75×", "0.9×", "1.75×"], minutes: "min", route: "/books", bilingualStation: true,
 });

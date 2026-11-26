@@ -12,7 +12,10 @@ import { BILLIARDS_NPC } from "../../content/billiards-lines";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
 import { rack } from "../billiards/rules";
 import { Ledges } from "../ledges";
+import { LIBRARY_ENABLED } from "../../content/library";
+import { furnishLibrary, mountLibraryCovers, LIBRARY_VIEW, LIBRARY_STOPS } from "./libraryRoom";
 import { Hop } from "../movement";
+import { papelPicadoWall } from "./papelPicado";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
  *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
@@ -32,6 +35,9 @@ export interface Interior {
   /** optional named spots for scripted moves */
   spots?: Record<string, { x: number; z: number }>;
   warm?: boolean;
+  camera?: import("../camera").InteriorView;
+  /** Attach visit-owned art after the zone transition, and release it on departure. */
+  onEnter?(group: THREE.Group): () => void;
   background?: string;
   /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
   update?(t: number, dt: number): void;
@@ -982,6 +988,13 @@ function poolHall(c: Ctx) {
 }
 
 const B: Record<string, () => Interior> = {
+  ...(LIBRARY_ENABLED && { library: () => {
+    const it = room("library", 12, 10, "#b28c69", "#f6eedc", furnishLibrary, [], { accent: "#a67c56", warm: true, openEntry: true });
+    it.onEnter = mountLibraryCovers;
+    it.camera = LIBRARY_VIEW;
+    it.spots = Object.fromEntries(LIBRARY_STOPS.map(({ id, approach }) => [id, approach]));
+    return it;
+  } }),
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: BILLIARDS_NPC, ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {
@@ -4637,17 +4650,6 @@ function elFaro4(c: Ctx, S: Smalls) {
   }
   S.add(boxGeo(0.95, 0.22, 0.04, bx, 1.86, bz - 0.18), "#f6c000");
   c.col.addBox(bx, bz, 1.0, 0.5);
-}
-
-/** A string of papel picado across a room's upper back wall (at height y, z out from it), sagging, its flags in the
- *  fiesta's colors (`k` turns where the colors start). In the smalls. */
-function papelPicadoWall(S: Smalls, w: number, y: number, z: number, k: number) {
-  const PAPEL = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"], n = Math.round((w - 1) / 0.42);
-  S.add(boxGeo(w - 1, 0.02, 0.02, 0, y + 0.02, z), "#f4f1ea");
-  for (let i = 0; i < n; i++) {
-    const t = (i + 0.5) / n, x = -w / 2 + 0.5 + t * (w - 1);
-    S.add(boxGeo(0.34, 0.42, 0.01, x, y - 0.2 - Math.sin(t * Math.PI) * 0.22, z), PAPEL[(i + k) % PAPEL.length]);
-  }
 }
 
 /** The fuel prices as a station's board shows them (s71b): the three fuels' names on their colors, the prices per liter

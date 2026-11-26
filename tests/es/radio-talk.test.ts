@@ -87,6 +87,44 @@ describe("Book FM in the radio", () => {
     expect(state()).toMatchObject({ shelfOpen: false, open: false });
   });
 
+  it("browses a jacket silently and carries the same chapter from the chair back to the street", async () => {
+    const { radio, channel, state, load, output, songOutput } = setup();
+    radio.setOn(true); await settle();
+    radio.openLibraryShelf("BK01");
+    expect(state()).toMatchObject({ station: "grammar", playing: true, library: { bookId: "BK01" }, shelfOpen: true });
+    expect(renderToStaticMarkup(createElement(RadioSetLayer))).toContain('data-pad-scope="book-detail"');
+    radio.closeShelf();
+    expect(state()).toMatchObject({ open: false, playing: true, station: "grammar" });
+    radio.openLibraryReader();
+    expect(state().shelfOpen).toBe(true);
+    expect(load).not.toHaveBeenCalled();
+
+    radio.read(chapter.selection); await settle();
+    const snapshot = channel.player.getSnapshot();
+    expect(state()).toMatchObject({ station: "books", playing: true, shelfOpen: true, readerOpen: true });
+    expect(snapshot.status).toBe("playing");
+    radio.closeReader();
+    expect(state()).toMatchObject({ open: false, playing: true, library: undefined });
+    radio.openLibraryReader();
+    expect(state().readerOpen).toBe(true);
+    radio.closeReader();
+    expect(channel.player.getSnapshot()).toBe(snapshot);
+    expect(output.start).toHaveBeenCalledTimes(1);
+    radio.pause();
+    radio.openLibraryReader();
+    expect(channel.player.getSnapshot().playIntent).toBe(false);
+    radio.closeReader();
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(songOutput.play).toHaveBeenCalledTimes(1);
+
+    radio.setStation("grammar"); await settle();
+    radio.openLibraryReader(); await settle();
+    expect(state()).toMatchObject({ station: "books", readerOpen: true, on: false });
+    expect(channel.player.getSnapshot()).toMatchObject({ selection: chapter.selection, playIntent: false });
+    radio.closeReader();
+    expect(channel.player.getSnapshot()).toMatchObject({ status: "paused", playIntent: false });
+  });
+
   it("keeps song and spot ends inside music and preserves the station's place through a talk visit", async () => {
     const { radio, songOutput, state } = setup();
     radio.setOn(true); await settle();

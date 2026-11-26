@@ -72,9 +72,19 @@ export function RadioTool({ phone = false, shortcut = true }: { phone?: boolean;
   );
 }
 
+function BookDialogs() {
+  const s = useRadio((state) => state);
+  return <>
+    {s.shelfOpen && radio.books && <BookPicker key={s.library?.bookId} channel={radio.books} bookId={s.library?.bookId} covered={s.readerOpen || s.settingsOpen} />}
+    {s.readerOpen && radio.books && <BookReader channel={radio.books} covered={s.settingsOpen} restoreFocus={!s.library} />}
+    {s.settingsOpen && radio.books && <TalkSettings channel={radio.books} />}
+  </>;
+}
+
 export function RadioSetLayer() {
   const open = useRadio((s) => s.available && s.open);
-  return open ? <RadioSet /> : null;
+  const library = useRadio((s) => !!s.library);
+  return open ? library ? <BookDialogs /> : <RadioSet /> : null;
 }
 
 /** While the radio plays: the station's name on a small plate beside the button. A new song's title shows on it for
@@ -349,11 +359,7 @@ function RadioSet() {
       </div>
     </div>
     {s.shelfOpen && talk?.source === "scenes" && <ScenePicker />}
-    {talk?.source === "books" && radio.books && <>
-      {s.shelfOpen && <BookPicker channel={radio.books} covered={s.readerOpen || s.settingsOpen} />}
-      {s.readerOpen && <BookReader channel={radio.books} covered={s.settingsOpen} />}
-      {s.settingsOpen && <TalkSettings channel={radio.books} />}
-    </>}
+    {talk?.source === "books" && <BookDialogs />}
     </>
   );
 }

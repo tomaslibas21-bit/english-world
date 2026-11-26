@@ -55,6 +55,7 @@ const POLICIES: Record<string, Policy> = {
   "book-shelf": { rank: 56, first: DEFAULT, back: BACK, flow: ".catalog-pane" },
   "book-detail": { rank: 57, first: DEFAULT, back: BACK, flow: ".contents" },
   "book-reader": { rank: 58, first: DEFAULT, back: BACK, flow: ".reading" },
+  "book-options": { rank: 59, first: ".reader-menu button", back: BACK },
   "book-settings": { rank: 59, first: DEFAULT, back: BACK, flow: ".settings-form" },
   "phone-ring": { rank: 50, first: DEFAULT },
   street: { rank: 50, first: ".street-choice, .street-line", back: ".street-head button" },

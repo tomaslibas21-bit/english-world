@@ -6,7 +6,7 @@ import type { Door } from "./world/town";
 import type { Do, SurfArrow } from "./surf/logic";
 import { watchSituations } from "./prefetch";
 
-export type WalkPlace = "pool-hall" | "gym";
+export type WalkPlace = "pool-hall" | "gym" | "library";
 
 export type TagBox = { x0: number; x1: number; y0: number; y1: number };
 export type PlacedNametag = TagBox & { tag: HTMLElement };
@@ -47,6 +47,11 @@ export interface GameApi {
   setObjective(sitId: string | null): void;
   // the 3D world
   interact(): void;
+  onLibraryAction?(action: import("./world/libraryRoom").LibraryAction, chairIndex?: number, bookId?: string): void;
+  onLibraryReader?(chairIndex: number): void;
+  onLibraryShelf?(bookId?: string): void;
+  readonly libraryChair?: number | null;
+  standFromLibrary?(): void;
   autoWalkToObjective(mode?: "objective" | "cave"): void;
   objectiveTarget?(mode: "objective", townMap: true): { x: number; z: number } | null;
   guideToPoolHall?(): void;

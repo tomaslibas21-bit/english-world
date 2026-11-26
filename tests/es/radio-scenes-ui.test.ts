@@ -198,6 +198,39 @@ describe("Conversaciones FM in the radio set", () => {
     expect(strip()).not.toContain("scene-speaker");
   });
 
+  it("keeps the scene through a library browse, then restores a saved book only for the chair", async () => {
+    const { source, talk, state, output, bookOut, pick } = setup({ booksAvailable: true });
+    const { chapter, item } = spanishBookUiFixture(new URL(lithuanian ? "../es-lt/fixtures/books/" : "./fixtures/books/", import.meta.url), helper);
+    const loadBook = vi.spyOn(source, "load").mockResolvedValue(item);
+    radio.setStation("scenes");
+    await pick();
+    const scene = state();
+    const pauses = output.pause.mock.calls.length;
+    radio.openLibraryReader();
+    expect(radio.store.getState()).toMatchObject({ station: "scenes", library: {}, shelfOpen: true, readerOpen: false });
+    radio.closeShelf();
+    expect(state()).toBe(scene);
+
+    const track = item.tracks.paired!;
+    const cue = track.cues[0];
+    talk.progress.checkpoint(chapter.selection, { sentence: cue.sentenceId, leg: cue.language, offsetSec: 0,
+      fraction: 0, complete: false, audioVersion: track.audioVersion, textHash: cue.textHash });
+    radio.openLibraryShelf("BK01");
+    expect(set()).toContain('data-pad-scope="book-detail"');
+    expect(set()).not.toContain("scene-picker");
+    expect(loadBook).not.toHaveBeenCalled();
+    radio.closeShelf();
+    expect(state()).toBe(scene);
+    expect(output.pause).toHaveBeenCalledTimes(pauses);
+
+    radio.openLibraryReader();
+    await vi.waitFor(() => expect(state().status).toBe("paused"), { interval: 1 });
+    expect(radio.store.getState()).toMatchObject({ station: "books", on: false, readerOpen: true });
+    expect(state().selection?.chapterId).toBe(chapter.id);
+    expect(bookOut.start).not.toHaveBeenCalled();
+    expect(loadBook).toHaveBeenCalledTimes(1);
+  });
+
   it("stops even a pending clip for capture and waits for every hold before starting the same turn", async () => {
     const { output, bookOut, state, item } = setup();
     let finish!: (ok: boolean) => void;

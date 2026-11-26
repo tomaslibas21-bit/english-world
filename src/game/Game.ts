@@ -7,6 +7,9 @@ import type { StreetSnapshot } from "./street/schedule";
 import * as THREE from "three";
 import townCollisionAsset from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
+import { LIBRARY_COPY } from "../content/library";
+import { ReadingSeat, READING_SEAT, libraryStandingPoint } from "./library/readingSeat";
+import { LIBRARY_STOPS, LIBRARY_DISPLAY, LIBRARY_CHAIRS } from "./world/libraryRoom";
 import { buildTown, type Town, type Door } from "./world/town";
 import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
 import { CarVisuals } from "./world/carVisuals";
@@ -119,7 +122,7 @@ export type { GameApi } from "./gameRef";
 
 const CAVE_TREE_AT = TREES[1];
 
-type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: WalkPlace; directions?: Destination | null };
+type WalkTarget = { kind: "library" | "library-seat" | "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; bookId?: string; onward?: WalkPlace; directions?: Destination | null };
 type GuideTarget = WalkTarget & { x: number; z: number; person?: { x: number; z: number } };
 type GuideMode = "objective" | "cave";
 
@@ -267,7 +270,7 @@ export class Game implements GameApi {
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
   private placedNametags: PlacedNametag[] = [];
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
+  private nearest: { kind: "library" | "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -428,6 +431,46 @@ export class Game implements GameApi {
   private zoneTimers = new Set<ReturnType<typeof setTimeout>>();
   private collisionPreparation: ReturnType<typeof prepareTownCollision>;
   private ledgeTimer?: ReturnType<typeof setTimeout>;
+  private readingSeat?: ReadingSeat;
+  onLibraryReader?: GameApi["onLibraryReader"];
+  onLibraryShelf?: GameApi["onLibraryShelf"];
+  onLibraryAction(action: Parameters<NonNullable<GameApi["onLibraryAction"]>>[0], chairIndex?: number, bookId?: string) {
+    if (this.zone?.id !== "library" || this.transitioning || this.disposed) return;
+    if (action === "browse") this.onLibraryShelf?.(bookId);
+    else if (chairIndex !== undefined) {
+      if (!this.readingSeat) this.registerReadingSeat();
+      this.modes.start(READING_SEAT, String(chairIndex));
+    }
+  }
+  private registerReadingSeat() {
+    this.readingSeat = new ReadingSeat({
+      room: () => this.zone?.id === "library" ? this.zone : null,
+      player: () => this.player, rig: this.rig,
+      canStart: () => this.modeHost.canStart(true) && !useStore.getState().conv.active
+        && !radio.store.getState().open && !this.rides.riding && !this.swimming && !this.hop.air,
+      prepare: () => this.prepareMode(),
+      approach: (x, z, index) => {
+        this.walkTo(x, z, { kind: "library-seat", id: String(index) });
+        return !!this.autoPath?.length;
+      },
+      approaching: () => this.autoTarget?.kind === "library-seat" && !!this.autoPath?.length,
+      cancelApproach: () => { if (this.autoTarget?.kind === "library-seat") this.stopAutoWalk(); },
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      // A chair keeps the walking HUD and the existing listening source, with no mini-game audio bed.
+      entered: () => { this.modes.entered(READING_SEAT); this.updateHud(); },
+      left: () => {
+        this.modes.left(READING_SEAT);
+        this.nearest = null;
+        useStore.getState().setHud({ prompt: null });
+      },
+      save: () => this.savePlace(), reader: (index) => this.onLibraryReader?.(index),
+      reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+    });
+    this.modes.register(this.readingSeat);
+  }
+  get libraryChair() { return this.readingSeat?.chairIndex ?? null; }
+  standFromLibrary() { if (this.modes.owns(READING_SEAT)) this.modes.exit(true); }
+  private releaseRoomArt?: () => void;
   onReady?: () => void;
   onExteriorError?: (retry: () => void, back: () => void) => void;
 
@@ -1132,7 +1175,7 @@ export class Game implements GameApi {
       if (this.rides.water?.returning || this.rides.water?.wet) this.endRide();
       this.greeting?.release(0);
       this.phone.dismiss();
-      if (this.modes.active || this.modes.owns("barista") || this.modes.owns("surf")) this.modes.exit(true);
+      if (this.modes.active || this.modes.owns("barista") || this.modes.owns("surf") || this.modes.owns(READING_SEAT)) this.modes.exit(true);
       if (this.flight) {
         this.flight = null;
         this.rig.stage = null;
@@ -1144,6 +1187,8 @@ export class Game implements GameApi {
       if (this.zone !== z) this.clearNametagLayout();
       this.clearActorColliders();
       if (this.zone) this.scene.remove(this.zone.group);
+      this.releaseRoomArt?.();
+      this.releaseRoomArt = z.interior?.onEnter?.(z.group);
       this.zone = z;
       this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
@@ -1155,7 +1200,8 @@ export class Game implements GameApi {
       this.endRide();
       this.rides.group.visible = !indoor;
       this.surface(true);
-      const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
+      const requestedSpawn = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
+      const sp = id === "library" ? libraryStandingPoint(z, requestedSpawn) : requestedSpawn;
       // (on the sand where it slopes under the sea, if that is where they were)
       const floor = wild ? wild.floor(sp.x, sp.z) : indoor ? 0 : floorY(sp.x, sp.z);
       this.player.root.position.set(sp.x, floor, sp.z);
@@ -1191,6 +1237,7 @@ export class Game implements GameApi {
       this.hemi.groundColor.set(wild ? wild.hemi[1] : "#8fbf6a");
       this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
+      this.rig.interiorView = z.interior?.camera;
       this.rig.mode = indoor && !wild ? "interior" : "follow";
       if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
@@ -1429,9 +1476,9 @@ export class Game implements GameApi {
       scope: () => {
         const { screen, conv, hud } = useStore.getState();
         if (screen !== "play" || conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
-            hud.panel || hud.glyph || hud.phoneCard || this.caveLoading || this.flight || this.modes.modal ||
+            hud.panel || hud.glyph || hud.phoneCard || this.caveLoading || this.flight || (this.modes.modal && !this.modes.world) ||
             radio.store.getState().open || useStreet.getState().moment || useSurf.getState().picking) return null;
-        const mode = this.modes.active;
+        const mode = this.modes.active ?? (this.modes.owns(READING_SEAT) ? this.readingSeat : null);
         if (this.modes.engaged || hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : null;
         const ride = this.rides.riding;
         return ride ? this.rides.phase === "on" ? ride.kind : null : "foot";
@@ -1530,6 +1577,12 @@ export class Game implements GameApi {
       if (handled || k.startsWith("arrow")) e.preventDefault();
       return;
     }
+    if (this.modes.world) {
+      if (this.transitioning || (radio.store.getState().open && k !== "r")) return;
+      if (this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) {
+        e.preventDefault(); return;
+      }
+    }
     if (this.modes.modal) {
       if (k === "escape") this.modes.exit();
       return;
@@ -1537,7 +1590,7 @@ export class Game implements GameApi {
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
-    if (this.modes.active) {
+    if (this.modes.active && !this.modes.world) {
       if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
@@ -1555,7 +1608,7 @@ export class Game implements GameApi {
     }
     if (k === "e" || k === "enter") {
       const returning = !!this.rides.water?.returning;
-      if (!e.repeat || !this.waterActionHeld) this.interact();
+      if (!e.repeat || !this.waterActionHeld) this.interact(e.repeat);
       this.waterActionHeld ||= returning || !!this.rides.water?.returning;
       e.preventDefault(); return;
     }
@@ -2061,8 +2114,9 @@ export class Game implements GameApi {
     if (this.rides.water?.returning) return;
     const st = useStore.getState();
     if (this.modes.active || this.modes.modal) {
-      if (!st.hud.panel && !this.transitioning) this.modes.input({ kind: "tap" });
-      return;
+      if (st.hud.panel || this.transitioning || (this.modes.world && radio.store.getState().open)) return;
+      const world = this.modes.world;
+      if (this.modes.input({ kind: "tap" }) || !world) return;
     }
     if (st.conv.active || st.hud.panel || st.hud.glyph || this.transitioning || this.flight) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
@@ -2084,6 +2138,22 @@ export class Game implements GameApi {
       this.rideGoal = { x: p.x, z: p.z, still: 0, stopping: false, back: 0, turn: false, tries: 0, age: 0 };
       this.clickMarker(p.x, p.z);
       return;
+    }
+    if (this.zone.id === "library") {
+      // Hit the visible surface, so a tap on a raised book or cushion stops in the aisle.
+      const hit = this.raycaster.intersectObjects(this.zone.group.children)[0];
+      if (hit) {
+        const { x, y, z } = hit.point, display = LIBRARY_DISPLAY;
+        const chair = LIBRARY_CHAIRS.findIndex((c) => Math.hypot(c.x - x, c.z - z) < 0.86);
+        const stop = y > 0.14 && (Math.abs(x - display.x) < display.w / 2 && Math.abs(z - display.z) < display.d / 2 + 0.02
+          ? LIBRARY_STOPS[0] : chair >= 0 ? LIBRARY_STOPS[chair + 1] : undefined);
+        if (stop) {
+          const bookId = hit.object.name === "library-jackets" && hit.faceIndex != null
+            ? hit.object.userData.bookIds[Math.floor(hit.faceIndex / 2)] : undefined;
+          this.walkTo(stop.approach.x, stop.approach.z, { kind: "library", id: stop.id, bookId });
+          return;
+        }
+      }
     }
     // a passer-by?
     if (!this.zone.interior) {
@@ -2158,6 +2228,7 @@ export class Game implements GameApi {
 
   private startWalk(x: number, z: number, target: WalkTarget | null) {
     const p = this.player.root.position;
+    if (this.readingSeat && target?.kind !== "library-seat" && this.modes.owns(READING_SEAT)) this.modes.exit(true);
     const nav = this.zone.nav;
     const outdoors = !this.zone.interior;
     const toSea = outdoors && z < SHORE.limit;
@@ -2241,7 +2312,7 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ interaction
 
-  interact() {
+  interact(repeat = false) {
     if (this.rides.water?.returning || this.rides.water?.owns(this.rides.riding)) {
       const st = useStore.getState();
       if (this.rides.riding && !this.session?.active && !st.conv.active && !st.hud.panel
@@ -2249,6 +2320,7 @@ export class Game implements GameApi {
       return;
     }
     if (this.modes.active) {
+      if (this.modes.world && (repeat || radio.store.getState().open)) return;
       if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
       return;
     }
@@ -2275,6 +2347,7 @@ export class Game implements GameApi {
     else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
     else if (n.kind === "tree") this.talkToTree();
+    else if (n.kind === "library" && !repeat) this.libraryAction(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior(this.wild ? n.id : undefined);
   }
@@ -2291,6 +2364,11 @@ export class Game implements GameApi {
     this.afterRide();
     audio.splash(0.6);
     audio.land(this.underfoot(true), 0.6);
+  }
+
+  private libraryAction(id: string, bookId?: string) {
+    const stop = LIBRARY_STOPS.find((s) => s.id === id);
+    if (this.zone.id === "library" && stop) this.onLibraryAction?.(stop.action, stop.chairIndex, bookId);
   }
 
   private enterDoor(loc: string) {
@@ -3099,7 +3177,7 @@ export class Game implements GameApi {
     if (!tgt) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     this.guidance.setBeacon(over.x, over.z, this.cave ? 1.8 : tgt.kind === "npc" ? 2.9 : 3.8,
-      tgt.person ? { x: tgt.x, z: tgt.z } : undefined, hideBeam || !!this.cave);
+      tgt.person ? { x: tgt.x, z: tgt.z } : undefined, hideBeam || !!this.cave, this.zone?.id === "library" && tgt.kind === "exit");
   }
 
   // ------------------------------------------------------------------ loop
@@ -3156,7 +3234,7 @@ export class Game implements GameApi {
     // (sideways the stick and the brake keep to the sides: the taxi goes lower, under Don Rigo's words)
     const lifted = this.sidewaysPhone ? -0.05 : 0.14 - 0.075 * this.shortGreeting(w, h);
     const viewShift = greetingLift ? THREE.MathUtils.lerp(-shift, lifted, greetingLift) : -shift;
-    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? viewShift));
+    this.rig.applyViewShift(w, h, 0, this.zone?.id === "library" && walkingLens ? 0 : h * (stageShift ?? viewShift));
   }
 
   private updateViewLights() {
@@ -3214,7 +3292,8 @@ export class Game implements GameApi {
       flightAt(THEME.flyover, this.flight.t / FLIGHT_SECONDS, this.rig.stage.pos, this.rig.stage.look);
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
-    const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || !!this.caveLoading || this.modes.modal || !!this.flight;
+    const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || !!this.caveLoading || !!this.flight
+      || (this.modes.world ? radio.store.getState().open : this.modes.modal);
     this.greeting?.pause(blocked || document.hidden);
     const support = this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !st.hud.glyph && !mode);
     this.rides.water?.learnerFace(this.player, this.t);
@@ -3662,6 +3741,7 @@ export class Game implements GameApi {
   }
 
   private placeOnFoot(x: number, z: number, rot: number, stayInside = false) {
+    if (this.readingSeat?.active) this.readingSeat.exit(true);
     this.pad?.cancel();
     if (this.zone.interior && !stayInside) { this.enterZone("town", { x, z, rot }, true); return; }
     const p = this.player.root.position;
@@ -3860,7 +3940,11 @@ export class Game implements GameApi {
         const d = Math.hypot(tx - p.x, tz - p.z);
         if (d < 0.35) {
           this.autoPath.shift();
-          if (!this.autoPath.length) this.arrived();
+          if (!this.autoPath.length) {
+            this.arrived();
+            // A seat owns its pose and position from this frame, before walking collision or animation runs again.
+            if (this.readingSeat?.active) return;
+          }
         } else {
           want.set(tx - p.x, 0, tz - p.z).normalize();
           let remaining = d;
@@ -4146,6 +4230,8 @@ export class Game implements GameApi {
     this.guidedWalk = null;
     // The walk to Inés ends at her hut prompt so the learner opens the invitation.
     if (t.kind === "npc" && t.id && t.id !== cenoteGuide?.npc) this.talkTo(t.id);
+    else if (t.kind === "library" && t.id) this.libraryAction(t.id, t.bookId);
+    else if (t.kind === "library-seat") this.readingSeat?.arrive(Number(t.id));
     else if (t.kind === "glyph" && t.id && this.cave?.near(this.player.root.position)?.id === t.id) this.cave.open(t.id);
     else if (t.kind === "tree") this.talkToTree();
   }
@@ -4158,7 +4244,7 @@ export class Game implements GameApi {
     const partner = talking ? this.talkNpc : null;
     if (partner) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
     this.player.watch = partner ? this.talkAt : null;
-    this.player.steady = !!partner;
+    this.player.steady = !!partner || !!this.readingSeat?.active;
     for (const n of this.npcs) {
       if ((this.barista && mode === this.barista && n.id === BARISTA_CONVERSATION.npc) || mode?.controlsNpc?.(n.id)) continue;
       if (n.alux) {
@@ -4319,6 +4405,11 @@ export class Game implements GameApi {
     let best: Game["nearest"] = null;
     let bd = Infinity;
     const riding = this.rides.riding;
+    if (this.readingSeat?.active) {
+      this.nearest = { kind: "mode", id: READING_SEAT, label: LIBRARY_COPY.stand.label };
+      if (st.hud.prompt?.kind !== "library-stand") st.setHud({ prompt: { kind: "library-stand", ...LIBRARY_COPY.stand } });
+      return;
+    }
     if (this.modes.active) { this.nearest = null; return; }
     if (riding) {
       // at the wheel: only the way out (nobody is talked to, no door gone through)
@@ -4366,6 +4457,15 @@ export class Game implements GameApi {
         if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
         // the great tree, once the heart is found: it speaks to whoever stands on its island
         else if (!best && this.cave?.treeNear(p)) { bd = 1; best = { kind: "tree", id: "yaxche", label: NPCS.yaxche?.name ?? "Yaxché" }; }
+        if (this.zone.id === "library") {
+          for (const stop of LIBRARY_STOPS) {
+            const d = Math.hypot(stop.approach.x - p.x, stop.approach.z - p.z);
+            if (d < 1.15 && d < bd) {
+              bd = d;
+              best = { kind: "library", id: stop.id, label: stop.label, prompt: { kind: "library", label: stop.label, lt: stop.lt } };
+            }
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (!this.wild && d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
@@ -4388,7 +4488,7 @@ export class Game implements GameApi {
         : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
-        : best.kind === "mode" ? best.prompt!
+        : (best.kind === "mode" || best.kind === "library") ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
@@ -4424,7 +4524,7 @@ export class Game implements GameApi {
 
   private savePlace() {
     if (!this.initialDrawn || this.enteringFirstExterior || !this.player || !this.zone) return;
-    const safe = this.zone.id === "town" ? this.rides.water?.safeSave() : undefined;
+    const safe = this.readingSeat?.standingPoint ?? (this.zone.id === "town" ? this.rides.water?.safeSave() : undefined);
     const p = safe ?? this.player.root.position;
     useStore.getState().updateProgress((pr) => {
       pr.place = this.cenoteTour?.savedPlace()
@@ -4484,6 +4584,8 @@ export class Game implements GameApi {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.releaseRoomArt?.();
+    this.releaseRoomArt = undefined;
     this.greeting?.release(0);
     this.pad?.dispose();
     this.clearNametagLayout();

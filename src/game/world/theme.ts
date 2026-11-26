@@ -27,6 +27,11 @@ export type Vehicle = "car" | "taxi" | "colectivo" | "bus";
 export interface OutdoorSpot { npc: string; x: number; z: number; rot: number; ax?: number; az?: number }
 
 export interface TownTheme {
+  library: {
+    door: string; surround: string; fascia: string; lettering: string;
+    shelf: string; endGrain: string; shade: string;
+    upholstery: { base: string; seat: string; back: string; cushion: string; arm: string; seam: string };
+  };
   // --- the rooms (interiors.ts) and the conversations' spots (docs/es/TOWN.md tasks 6 and 7) ---
   /** The rooms' signs and posters: an English text (interiors.ts `sign()`, `textTexture()`, the words on its posters)
    *  → this edition's text. A "\n" makes a sign of two lines, the second one smaller (the airport's Spanish over
@@ -433,6 +438,11 @@ export type FloorKind = "wood" | "tile" | "carpet" | "stone" | "pasta" | "barro"
 export type TianguisGoods = "flowers" | "fruit" | "veg" | "bread" | "pinatas" | "pottery" | "hats" | "textiles" | "hammocks";
 
 export const THEME: TownTheme = {
+  library: {
+    door: "#845638", surround: "#223b52", fascia: "#223b52", lettering: "#f2dba7",
+    shelf: "#c89560", endGrain: "#a16d47", shade: "#ffe1a1",
+    upholstery: { base: "#243b4e", seat: "#405d72", back: "#2c465b", cushion: "#38566b", arm: "#344f64", seam: "#60788a" },
+  },
   signs: {},
   boards: {},
   restaurant: "trattoria",

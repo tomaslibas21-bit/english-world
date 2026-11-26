@@ -174,6 +174,9 @@ export function Hud() {
   const talk = kind === "talk";
   const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards";
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
+  const libraryDoor = zone === "town" ? game?.doors?.find((door) => door.loc === "library") : undefined;
+  const libraryContext = target !== "library" && (zone === "library" || (libraryDoor !== undefined
+    && Math.hypot(hud.minimap.px - libraryDoor.outX, hud.minimap.pz - libraryDoor.outZ) < 4));
   const foldForContext = portrait && !hud.panel && target !== undefined && target !== zone
     && ((zone !== "town" && localOffer) || (talk && note === "guide" && !hud.roadApproach));
   const moving = hud.walking || riding;
@@ -182,12 +185,12 @@ export function Hud() {
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const movingFollowUp = moving && !!hud.objective?.followUp;
   const collapsed = !hud.cave && ((!directions && streetCard) || (task.note ? !task.openedDuringNote
-    : movingFollowUp || (task.manual ?? (screen.sidewaysPhone || foldForContext || (!task.fresh && moving)))));
+    : movingFollowUp || (task.manual ?? (libraryContext || screen.sidewaysPhone || foldForContext || (!task.fresh && moving)))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
-          {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
+          {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible && !libraryContext} hideExitDistance={libraryContext && zone === "library"} setCollapsed={task.setManual} />}
           {streetCard && portrait && <StreetCard compact={screen.h <= 720} />}
           {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && subtitle !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
@@ -206,9 +209,10 @@ export function Hud() {
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
-        <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
+        <button className={"prompt" + (hud.showTouch ? " touch" : "") + (kind === "library" || kind === "library-stand" ? " library-prompt" : "")}
+          data-library-stand={kind === "library-stand" || undefined} onClick={() => game?.interact()}>
           <kbd>{hud.prompt.kind === "drive" && hud.prompt.label === L(ROAD_UI.drive) ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
-          <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
+          <span className="prompt-text" lang={kind === "library" || kind === "library-stand" ? TL : undefined}>{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
       {riding && hud.rideStartedAt !== null && !hud.showTouch && (
@@ -266,7 +270,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card, .street-bubble, .reaction-bubble, .town-toasts) :focus-visible, .street-bubble:focus-visible, [data-library-stand]")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
@@ -480,7 +484,9 @@ function Fade() {
   return <div className="fade" style={{ opacity: fade, transition: fadeOnFrames ? "none" : undefined }} />;
 }
 
-function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
+function Objective({ collapsed, fresh, hideExitDistance = false, setCollapsed }: {
+  collapsed: boolean; fresh: boolean; hideExitDistance?: boolean; setCollapsed: (collapsed: boolean) => void;
+}) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
   const situation = o && !o.followUp ? o.sitId : null;
@@ -493,7 +499,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const place = phone ? undefined : person && sit && LOCATIONS[sit.location]?.kind === "outdoor"
     ? NPCS[person]?.name ?? o?.where
     : o?.where;
-  const meters = o?.dist != null ? `${o.dist} m` : null;
+  const meters = o?.dist != null && !(collapsed && hideExitDistance) ? `${o.dist} m` : null;
   const details = (place || meters) && <span className="objective-meta">
     {place && <span className="objective-destination">{place}</span>}
     {meters && <span className="dist">{o?.angle != null && <Arrow angle={o.angle} />}{meters}</span>}
@@ -699,7 +705,7 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
+      {prompt && prompt.kind !== "library" && prompt.kind !== "library-stand" && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()} onTouchEnd={prompt.kind === "out" ? (e) => {
         // Ending a second touch while holding the brake or stick may produce no click.
         e.preventDefault();
         const touch = e.changedTouches[0];
@@ -710,7 +716,8 @@ function TouchControls({ road = false, stickOnly = false, rideControls }: { road
         ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
-          : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
+          : prompt?.kind === "library-stand" ? null
+          : <button className={"jump-btn" + (prompt ? " beside" : "") + (prompt?.kind === "library" ? " library-prompt-beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );
 }

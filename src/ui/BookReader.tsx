@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { bookLocale, bookWord as w } from "./bookCopy";
 import { BOOK_STATION, RADIO_SKIN } from "../content/radio";
 import { radio } from "../radio";
@@ -7,7 +7,7 @@ import type { BookItem, BookSentence } from "../radio/books";
 import type { TalkSnapshot } from "../radio/talkPlayer";
 import { useStore } from "../state/store";
 import { BookInterlinear, readerWord } from "./BookInterlinear";
-import { useBookState, usePageVisible } from "./bookHooks";
+import { useBookMedia, useBookState, usePageVisible } from "./bookHooks";
 import { ReaderFollow } from "./bookReaderFollow";
 import { Icon } from "./icons";
 import { TL } from "./i18n";
@@ -109,7 +109,9 @@ export function ReaderPage({ item, state, word, roving, setRoving, seek, expande
   </article>;
 }
 
-export function BookReader({ channel, covered = false }: { channel: BookChannel; covered?: boolean }) {
+export function BookReader({ channel, covered = false, restoreFocus = true }: {
+  channel: BookChannel; covered?: boolean; restoreFocus?: boolean;
+}) {
   const state = useBookState(channel, (s) => s);
   const item = state.item as BookItem | null;
   const dialog = useRef<HTMLDialogElement>(null);
@@ -118,6 +120,15 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
   const [following, setFollowing] = useState(true);
   const [roving, setRoving] = useState("");
   const [translation, setTranslation] = useState(false);
+  const compact = useBookMedia("(max-width: 650px) and (min-height: 501px)");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const more = useRef<HTMLButtonElement>(null);
+  const options = useRef<HTMLDivElement>(null);
+  const optionsId = useId();
+  const closeOptions = useCallback(() => {
+    setMoreOpen(false);
+    more.current?.focus({ preventScroll: true });
+  }, []);
   const textSize = useStore((s) => s.settings.textSize);
   const pageVisible = usePageVisible();
   const visible = pageVisible && !covered;
@@ -126,7 +137,10 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
   const current = state.cue?.sentenceId ?? sentences.keys().next().value;
   const track = item?.tracks[state.prefs.mode];
   const seek = useCallback((id: string) => channel.player.seekSentence(id), [channel]);
-  const play = () => state.playIntent ? radio.pause() : radio.play();
+  const play = () => {
+    if (state.playIntent) radio.pause();
+    else radio.play();
+  };
 
   useLayoutEffect(() => {
     const el = dialog.current!;
@@ -135,15 +149,31 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
     el.querySelector<HTMLElement>("[data-pad-default]")?.focus({ preventScroll: true });
     return () => {
       el.close();
-      if (opener?.isConnected && !opener.closest("[inert]")) opener.focus({ preventScroll: true });
+      if (restoreFocus && opener?.isConnected && !opener.closest("[inert]")) opener.focus({ preventScroll: true });
     };
   }, []);
   useLayoutEffect(() => {
     const root = dialog.current;
     if (!covered && root && !root.contains(document.activeElement)) {
-      root.querySelector<HTMLElement>("[data-book-settings]")?.focus({ preventScroll: true });
+      const target = more.current ?? root.querySelector<HTMLElement>("[data-book-settings]");
+      target?.focus({ preventScroll: true });
     }
   }, [covered]);
+  useLayoutEffect(() => {
+    if (moreOpen) options.current?.querySelector<HTMLElement>("button, a")?.focus({ preventScroll: true });
+  }, [moreOpen]);
+  useEffect(() => {
+    if (!compact) setMoreOpen(false);
+  }, [compact]);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (target !== dialog.current && !options.current?.contains(target) && !more.current?.contains(target)) setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", outside, true);
+    return () => document.removeEventListener("pointerdown", outside, true);
+  }, [moreOpen]);
   useEffect(() => {
     setTranslation(false);
   }, [current, state.prefs.mode]);
@@ -176,9 +206,16 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
       line.querySelector<HTMLButtonElement>(".sentence")?.focus({ preventScroll: true });
     }
   };
+  const actions = <>
+    <button className="quiet" data-book-settings onClick={() => { setMoreOpen(false); radio.openSettings(); }}>
+      <Icon name="settings" /><span>{w("settings")}</span>
+    </button>
+    <BookCourseLink channel={channel} state={state} />
+  </>;
   return <dialog ref={dialog} inert={covered} className={`book-picker book-reader radio-skin-${RADIO_SKIN}`} data-pad-scope="book-reader"
-    aria-label={item?.chapter.title ?? w("reader")} onCancel={(event) => { event.preventDefault(); radio.closeReader(); }}
-    onClick={(event) => { if (event.target === event.currentTarget) radio.closeReader(); }}
+    data-enlarged={textSize > 1 || undefined}
+    aria-label={item?.chapter.title ?? w("reader")} onCancel={(event) => { event.preventDefault(); if (moreOpen) closeOptions(); else radio.closeReader(); }}
+    onClick={(event) => { if (event.target === event.currentTarget) { if (moreOpen) closeOptions(); else radio.closeReader(); } }}
     onKeyDown={(event) => { if (event.key.toLowerCase() !== "r") event.stopPropagation(); }}>
     <section className="book-sheet reader">
       <div className="reader-rail">
@@ -187,14 +224,13 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
           <span className="brand" lang={TL}><Icon name="bookOpen" />{BOOK_STATION.name}</span>
           <span className="frequency">{BOOK_STATION.freq.toLocaleString(bookLocale)} <small>{w("mhz")}</small></span>
         </header>
-        <div className="rail-chapter" lang={item?.languages.target}>{item?.chapter.title}</div>
       </div>
       <div className="reading scroll" ref={pane} onWheel={suspend} onTouchMove={suspend}
         onScroll={() => pane.current && setFollowing(follow.scrolled(pane.current.scrollTop))}
         onKeyDown={(event) => { if (["PageUp", "PageDown", "Home", "End"].includes(event.key)) suspend(); }}>
         {state.status === "loading" && <p className="reader-message" role="status">{w("finding")}</p>}
         {state.status === "error" && <div className="reader-message" role="status"><p>{w("audioError")}</p>
-          {!channel.output.unavailable && <button className="quiet" onClick={() => radio.play()}>{w("retry")}</button>}</div>}
+          {!channel.output.unavailable && <button className="quiet" onClick={play}>{w("retry")}</button>}</div>}
         {item && <ReaderPage item={item} state={state} word={word} roving={roving} setRoving={setRoving}
           seek={seek} expanded={state.prefs.interlinear} translation={translation} />}
       </div>
@@ -202,21 +238,30 @@ export function BookReader({ channel, covered = false }: { channel: BookChannel;
         {!following && <button className="rejoin quiet" onClick={rejoin}><Icon name="arrowDown" />{w("rejoin")}</button>}
         <div className="timeline" aria-hidden><span>{time(seconds)}</span><span className="track"><i style={{ width: `${track ? Math.min(100, state.position / track.duration * 100) : 0}%` }} /></span><span>{time(track?.duration ?? 0)}</span></div>
         <div className="transport">
-          <button className="round" disabled={!state.cue} aria-label={w("previous")} title={w("previous")} onClick={() => radio.previous()}><Icon name="skipBack" /></button>
+          <button className="round" disabled={!state.cue} aria-label={w("previous")} title={w("previous")} onClick={() => channel.player.stepSentence(-1)}><Icon name="skipBack" /></button>
           <button className="play-key round" disabled={!!channel.output.unavailable} data-pad-default aria-label={w(state.playIntent ? "pause" : "play")} aria-pressed={state.playIntent}
             onClick={play}><Icon name={state.playIntent ? "pause" : "play"} /></button>
-          <button className="round" disabled={!state.cue} aria-label={w("next")} title={w("next")} onClick={() => radio.next()}><Icon name="skipNext" /></button>
+          <button className="round" disabled={!state.cue} aria-label={w("next")} title={w("next")} onClick={() => channel.player.stepSentence(1)}><Icon name="skipNext" /></button>
         </div>
         <div className="reader-tools">
           {state.prefs.mode !== "helper" && <button className="meanings" aria-expanded={state.prefs.interlinear}
             onClick={() => channel.player.setInterlinear(!state.prefs.interlinear)}><Icon name="bookOpen" />{w("meanings")}<Icon name="chevronDown" /></button>}
           {state.prefs.mode === "target" && <button className="quiet" aria-expanded={translation}
             onClick={() => setTranslation(!translation)}>{w(translation ? "hideTranslation" : "showTranslation")}</button>}
+          {compact && <div className="reader-overflow" data-pad-scope={moreOpen ? "book-options" : undefined} onBlur={(event) => {
+            const next = event.relatedTarget as Node | null;
+            if (next && !event.currentTarget.contains(next)) setMoreOpen(false);
+          }}>
+            <button className="round" ref={more} data-reader-more data-pad-back={moreOpen || undefined} aria-label={w("listeningOptions")} title={w("listeningOptions")}
+              aria-haspopup="dialog" aria-expanded={moreOpen} aria-controls={moreOpen ? optionsId : undefined}
+              onClick={() => { if (moreOpen) closeOptions(); else setMoreOpen(true); }}><Icon name="menu" /></button>
+            {moreOpen && <div className="reader-menu" id={optionsId} ref={options} role="dialog" aria-label={w("listeningOptions")}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeOptions(); }
+              }}>{actions}</div>}
+          </div>}
         </div>
-        <div className="reader-links">
-          <button className="quiet" data-book-settings onClick={() => radio.openSettings()}><Icon name="settings" /><span>{w("settings")}</span></button>
-          <BookCourseLink channel={channel} state={state} />
-        </div>
+        {!compact && <div className="reader-links">{actions}</div>}
       </footer>
     </section>
   </dialog>;

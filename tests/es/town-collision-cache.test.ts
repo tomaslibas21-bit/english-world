@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { Worker as NodeWorker } from "node:worker_threads";
 import * as THREE from "three";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { LIBRARY_ENABLED } from "../../src/content/library";
 import { EDITION } from "../../src/edition";
 import { Ambient } from "../../src/game/ambient";
 import { createCharacter } from "../../src/game/characters";
@@ -24,8 +25,8 @@ import { buildTown, type Town } from "../../src/game/world/town";
 import { townCanvasDocument } from "../../tools/town-canvas-stub";
 import { bakeTownCollision } from "../../tools/town-collision-data";
 
-const fieldSHA = "7d59eb37d5a601dab65ed4a3ff25c7491aa5bf41756dfa579e41969c52c99175";
-const ledgesSHA = "9707053cbad622517b19fc568e4511a947fa9ae8e3cd90c7e2e9d7907daa9d2d";
+const fieldSHA = LIBRARY_ENABLED ? "e37a33adea5371ba374ce09d70b5baaba96d8d294b95e40bf8c71f10b3ca2172" : "7d59eb37d5a601dab65ed4a3ff25c7491aa5bf41756dfa579e41969c52c99175";
+const ledgesSHA = LIBRARY_ENABLED ? "0961a2556afaea2a2ac1b8bfffb71769dfe706834c9938638cf1dd141590bb1d" : "9707053cbad622517b19fc568e4511a947fa9ae8e3cd90c7e2e9d7907daa9d2d";
 const verifyBuild = process.env.VERIFY_TOWN_COLLISION_ARTIFACTS === "1";
 const newTown = () => buildTown({ movableParking: true });
 const flags = ({ boxes, circles }: Town["colliders"]) => [...boxes, ...circles].map(({ split }) => split);
@@ -185,7 +186,7 @@ it("restores the complete PC artifact and matches the live sliced builder", () =
     deepStrictEqual(hit.ledges.things, direct.ledges.things);
     deepStrictEqual(hitTown.colliders, directTown.colliders);
     expect(hit.ledges.pieces[0]).toEqual(hull);
-    expect(hit.ledges.pieces).toHaveLength(1847);
+    expect(hit.ledges.pieces).toHaveLength(LIBRARY_ENABLED ? 1821 : 1847);
     expect(hit.ledges.things.some(({ x }) => x < WORLD.minX)).toBe(true);
     expect(hit.field.solidAt(120.75, 4.6, 4)).toBe(true);
     expect(createHash("sha256").update(JSON.stringify([hit.ledges.pieces.slice(1), hit.ledges.things, staticFlags], encodeTownCollisionNumber)).digest("hex")).toBe(ledgesSHA);

@@ -19,6 +19,7 @@ import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
 import { radio } from "../radio";
+import { bindLibraryBookFM } from "./libraryBookFM";
 import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
 import { EDITION } from "../edition";
@@ -62,8 +63,10 @@ function Play({ onBack }: { onBack: () => void }) {
     const debugStart = debugBilliardsLink ? "billiards" : debugBaristaLink ? "barista" : undefined;
     const linked = linkedSituation();
     let g: Game | null = null, gone = false;
+    let stopLibrary: (() => void) | undefined;
     const debugWindow = window as Window & { __ew?: { game: Game } };
     const release = () => {
+      stopLibrary?.(); stopLibrary = undefined;
       if (g && game === g) setGame(null);
       if (debugWindow.__ew?.game === g) delete debugWindow.__ew;
       g?.dispose();
@@ -78,6 +81,23 @@ function Play({ onBack }: { onBack: () => void }) {
       instance.onReady = () => {
         if (gone || g !== instance) return;
         setGame(instance);
+        stopLibrary?.();
+        stopLibrary = bindLibraryBookFM(instance, radio, {
+          zone: () => instance.zoneId ?? "",
+          subscribe: useStore.subscribe,
+          defer: (action) => requestAnimationFrame(() => requestAnimationFrame(action)),
+          canFocus: () => {
+            const { conv, hud } = useStore.getState();
+            return !conv.active && !hud.panel && !hud.fade;
+          },
+          focusStand: () => document.querySelector<HTMLElement>("[data-library-stand]")?.focus({ preventScroll: true }),
+          focusWorld: () => {
+            const canvas = stage.current?.querySelector("canvas");
+            if (!canvas) return;
+            canvas.tabIndex = -1;
+            canvas.focus({ preventScroll: true });
+          },
+        });
         const debug = {
           game: instance, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => instance.carStats(),
           ...(import.meta.env.DEV ? {

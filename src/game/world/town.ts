@@ -766,6 +766,12 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, GAS_FORECOURT.x0, GAS_FORECOURT.z0, GAS_FORECOURT.x1, GAS_FORECOURT.z1, P.gasLot);
   rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
   for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, asphalt);
+  const library = BUILDINGS.find((b) => b.loc === "library");
+  if (library) {
+    const z = library.z - library.d / 2;
+    rectW(x, library.x - 1.1, z - 3.3, library.x + 1.1, z, "#d9cbb4");
+    for (const offset of [1.1, 2.2]) rectW(x, library.x - 1.1, z - offset, library.x + 1.1, z - offset + 0.05, "#b5a892");
+  }
   // sidewalks
   const sidewalkEdge = limestoneStreets ? "#d2c5ae" : P.sidewalk;
   let sidewalkInner: string | CanvasPattern = P.sidewalkInner;
@@ -870,6 +876,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const library = b.loc === "library" ? THEME.library : undefined;
   const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -997,16 +1004,29 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const dx = b.x + n[0] * halfDepth + t[0] * doorOff, dz = b.z + n[1] * halfDepth + t[1] * doorOff;
   const doorW = b.doorWidth ?? (b.style === "terminal" || b.style === "station" || b.style === "museum" || b.style === "hotel" ? 3.4 : 1.8);
   const rotY = Math.atan2(n[0], n[1]);
-  const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" || THEME.mexican ? "#8a5a44" : b.trim!) : darkGlass;
+  const doorTrim = library?.surround ?? b.trim;
+  const doorTrimMat = library ? mat(library.surround) : trimMat;
+  const doorMat = library ? mat(library.door) : b.style === "house" ? mat(b.trim === "#ffffff" || THEME.mexican ? "#8a5a44" : b.trim!) : darkGlass;
   M.add(`door-${key}`, doorMat, boxGeo(doorW, 2.5, 0.15, 0, 1.25, 0, 0).rotateY(rotY).translate(dx + n[0] * 0.05, 0, dz + n[1] * 0.05));
-  M.add(`trim-${b.trim}`, trimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
+  M.add(`trim-${doorTrim}`, doorTrimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
   const atDoor = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08);
-  for (const sd of [-1, 1]) M.add(`trim-${b.trim}`, trimMat, atDoor(boxGeo(0.14, 2.5, 0.22, sd * (doorW / 2 + 0.07), 1.25, 0)), false);
+  for (const sd of [-1, 1]) M.add(`trim-${doorTrim}`, doorTrimMat, atDoor(boxGeo(0.14, 2.5, 0.22, sd * (doorW / 2 + 0.07), 1.25, 0)), false);
   if (b.style === "house") M.add("door-handle", mat("#c9a54a"), atDoor(boxGeo(0.07, 0.07, 0.1, doorW * 0.36, 1.05, 0.06)), false);
   else M.add("door-handle", mat("#c9ced3"), atDoor(boxGeo(doorW * 0.7, 0.06, 0.08, 0, 1.05, 0.08)), false);
   if (b.style !== "terminal" && b.style !== "station") {
     M.add("wall-lamp", mat("#3a3d42"), atDoor(boxGeo(0.2, 0.3, 0.16, doorW / 2 + 0.5, 2.25, 0.06)), false);
     M.add("lamp-warm", mat("#ffe6b0", { emissive: "#9c7a2a" }), atDoor(boxGeo(0.14, 0.2, 0.06, doorW / 2 + 0.5, 2.25, 0.14)), false);
+  }
+  if (library) {
+    // Fascia and the open-book door plate are baked with the other opaque details.
+    const part = (g: THREE.BufferGeometry, color: string) => (THEME.mexican ? mxFlat : details).push([atDoor(g), color]);
+    part(boxGeo(8.25, 0.78, 0.62, 0, 3.27, 0.25), library.fascia);
+    for (const side of [-1, 1]) {
+      for (const y of [1.47, 1.78])
+        part(boxGeo(0.25, 0.028, 0.022, 0, 0, 0).rotateZ(side * 0.19).translate(side * 0.12, y, 0.125), library.lettering);
+      part(boxGeo(0.028, 0.33, 0.022, side * 0.24, 1.646, 0.125), library.lettering);
+    }
+    part(boxGeo(0.029, 0.33, 0.022, 0, 1.6, 0.125), library.lettering);
   }
   if (b.loc) {
     const out = 2.2;
@@ -1115,7 +1135,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // sign
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
-  if (b.sign) {
+  if (library && b.sign) {
+    signW = 8.05; signH = 0.72; signY = 3.27;
+    atlas!.add(b.sign, 384, 36, MX.drawPainted(b.sign, "", library.fascia, library.lettering, library.fascia),
+      signW, signH, dx + n[0] * 0.65, signY, dz + n[1] * 0.65, rotY);
+  } else if (b.sign) {
     // a shop's sign painted by hand in a Mexican town (theme.ts), else a printed board; (theme.ts `signLines`) a long
     // name painted big over a smaller line, on a taller board
     const painted = THEME.mexican && (b.style === "shop" || b.style === "restaurant");
@@ -2209,7 +2233,7 @@ function addTownMx(M: Merger, col: Colliders, photo: AddPhotoSpot) {
 
 /** A building as this edition shows it (theme.ts): its colours and its sign. In Maple Harbor, as layout.ts has it. */
 function themed(b: BuildingDef): BuildingDef {
-  const look = THEME.buildings[b.id];
+  const look = THEME.buildings[b.loc === "library" ? "library" : b.id];
   const sign = THEME.locationSigns && b.loc && LOCATIONS[b.loc] ? LOCATIONS[b.loc].name : b.sign;
   return look || sign !== b.sign ? { ...b, ...look, sign } : b;
 }
