@@ -247,6 +247,12 @@ export function malecon(parts: Part[], col: Colliders, atlas: SignAtlas, name: s
     if (len > 0.4) {
       parts.push([box(len, 0.7, 0.36, (a + o0) / 2, 0.35, z), WHITE]);
       parts.push([box(len, 0.08, 0.46, (a + o0) / 2, 0.74, z), STONE]);
+      // A glazed blue line and quiet green tile on the sea face; the named plaque stays on the road face.
+      const mid = (a + o0) / 2;
+      parts.push([new THREE.PlaneGeometry(len - 0.3, 0.055).rotateY(Math.PI).translate(mid, 0.615, z - 0.181), "#497a8c"]);
+      parts.push([new THREE.PlaneGeometry(len - 0.3, 0.03).rotateY(Math.PI).translate(mid, 0.685, z - 0.182), "#b5b8a5"]);
+      if (len > 4) parts.push([new THREE.PlaneGeometry(0.18, 0.18).rotateZ(Math.PI / 4).rotateY(Math.PI)
+        .translate(a + len / Math.ceil(len / 6) * 0.5, 0.42, z - 0.182), "#3c887c"]);
       col.addBox((a + o0) / 2, z, len, 0.5, undefined, "carRim");
       for (let k = 1; k * 6 < len - 1; k++) pillar(a + (len / Math.ceil(len / 6)) * k);
       pillar(a); pillar(o0);
@@ -1967,8 +1973,11 @@ export function terrace(parts: Part[], col: Colliders, decks: [number, number, n
   let k = 0;
   for (const [x0, x1, z0, z1] of decks) {
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
-    parts.push([box(w, 0.28, d, cx, 0.26, cz), "#b8895a"]);
-    for (let i = 0; i <= Math.round(w / 0.5); i++) parts.push([box(0.02, 0.005, d, x0 + i * (w / Math.round(w / 0.5)), 0.402, cz), "#9a6f45"]);
+    const boards = Math.max(1, Math.round(w / 0.5));
+    const bands: [number, THREE.ColorRepresentation][] = Array.from({ length: boards }, (_, i): [number, THREE.ColorRepresentation] =>
+      [1, ["#b78a60", "#c0986c", "#ad8158"][i % 3]]);
+    for (const [g, color] of boxTopBands(w, 0.28, d, "#b8895a", bands)) parts.push([g.translate(cx, 0.26, cz), color]);
+    for (let i = 0; i <= boards; i++) parts.push([box(0.02, 0.005, d, x0 + i * (w / boards), 0.402, cz), "#9a6f45"]);
     for (const [px, pz] of [[x0 + 0.2, z0 + 0.2], [x1 - 0.2, z0 + 0.2], [x0 + 0.2, z1 - 0.2], [x1 - 0.2, z1 - 0.2]]) parts.push([cyl(0.1, 0.1, 0.8, px, 0.0, pz, 6), "#7a5a3a"]);
     // the rail along its sea side and its ends
     parts.push([box(w, 0.06, 0.06, cx, 1.25, z0 + 0.05), "#f4f1ea"]);
@@ -2491,6 +2500,17 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
     put(box(0.36, 0.22, 0.05, 0, 0.5, -0.5), "#3a3a3a");
     put(cyl(0.02, 0.02, 2.1, 0, 0, 0, 5).rotateZ(Math.PI / 2).rotateY(0.5).translate(0, 0.45, 0.45), "#3a3a3a");
     for (const sd of [-1, 1]) put(box(0.34, 0.03, 0.16, sd * 1.05, 0, 0).rotateY(0.5).translate(0, 0.45, 0.45), "#17a2a2");
+    // Molded foot pads, foredeck bungees and a small access hatch inside the original kayak envelope.
+    for (const side of [-1, 1]) {
+      put(new THREE.CircleGeometry(1, 8).rotateX(-Math.PI / 2).scale(0.066, 1, 0.20)
+        .translate(side * 0.11, 0.438, 0.25), "#405c57");
+      for (const pz of [0.16, 0.34]) put(new THREE.PlaneGeometry(0.10, 0.012).rotateX(-Math.PI / 2)
+        .translate(side * 0.11, 0.439, pz), "#789187");
+    }
+    put(cyl(0.11, 0.13, 0.025, 0, 0.425, 1.10, 8), "#506660");
+    put(new THREE.CircleGeometry(0.07, 8).rotateX(-Math.PI / 2).translate(0, 0.4385, 1.10), "#a4b7a8");
+    for (const angle of [-0.5, 0.5]) put(box(0.30, 0.01, 0.012, 0, 0, 0).rotateY(angle)
+      .translate(0, 0.444, 0.72), "#354b49");
     for (const d of [-1.1, 0, 1.1]) col.addCircle(kx + Math.sin(kr) * d, kz + Math.cos(kr) * d, 0.5);
   }
 }

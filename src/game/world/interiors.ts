@@ -1020,7 +1020,8 @@ const B: Record<string, () => Interior> = {
     const props = new THREE.Group();
     props.name = "sunny-cup-counter-props";
     const M = new Merger();
-    M.add("espresso", mat("#c0c4c8"), boxGeo(1.1, 0.7, 0.6, -4.2, 1.45, -3.4));
+    const ceibaMachine = THEME.roomExtras.cafeMx && !STYLED;
+    M.add("espresso", mat("#c0c4c8"), boxGeo(1.1, 0.7, ceibaMachine ? 0.38 : 0.6, -4.2, 1.45, ceibaMachine ? -3.51 : -3.4));
     M.add("espresso", mat("#2b2b2b"), boxGeo(1.12, 0.12, 0.62, -4.2, 1.85, -3.4));
     M.add("register", mat("#34495e"), boxGeo(0.5, 0.35, 0.4, 0.6, 1.25, -3.1));
     // pastry case
@@ -1029,7 +1030,8 @@ const B: Record<string, () => Interior> = {
     M.build(props);
     if (THEME.roomExtras.cafeMx) {
       const S = smalls(c, props);
-      conchas(S, -1.6, 1.09, -3.1, 5, 2);
+      if (ceibaMachine) ceibaEspressoDetails(S);
+      conchas(S, -1.6, 1.09, -3.1, 5, 2, ceibaMachine);
       S.done();
     }
     c.g.add(props);
@@ -3299,14 +3301,35 @@ function blusa(S: Smalls, x: number, y: number, z: number, k: number) {
 
 /** Conchas (the shell-topped sweet buns) on a tray at (x, y, z): domes with their sugar crust in vanilla, chocolate or
  *  pink, the shell's grooves darker. */
-function conchas(S: Smalls, x: number, y: number, z: number, nx: number, nz: number) {
+function conchas(S: Smalls, x: number, y: number, z: number, nx: number, nz: number, trimHiddenDough = false) {
   S.add(boxGeo(nx * 0.22 + 0.06, 0.015, nz * 0.22 + 0.06, x, y + 0.008, z), "#c9ced3");
   for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
     const bx = x - (nx - 1) * 0.11 + i * 0.22, bz = z - (nz - 1) * 0.11 + k * 0.22, top = ["#f6e7c1", "#7a4a2a", "#f2b8c6"][(i + k * 2) % 3];
-    S.add(new THREE.SphereGeometry(0.095, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.65, 1).translate(bx, y + 0.015, bz), "#d9a35e");
+    // La Ceiba reuses the triangles buried under the unchanged sugar crust for its espresso fittings.
+    // Keep the lower three original rings, including the collar beneath the crust's rim.
+    S.add(new THREE.SphereGeometry(0.095, 10, trimHiddenDough ? 3 : 6, 0, Math.PI * 2,
+      trimHiddenDough ? Math.PI / 4 : 0, trimHiddenDough ? Math.PI / 4 : Math.PI / 2)
+      .scale(1, 0.65, 1).translate(bx, y + 0.015, bz), "#d9a35e");
     S.add(new THREE.SphereGeometry(0.098, 10, 4, 0, Math.PI * 2, 0, Math.PI / 3).scale(1, 0.62, 1).translate(bx, y + 0.02, bz), top);
     for (const t of [-0.6, 0, 0.6]) S.add(boxGeo(0.15, 0.008, 0.012, bx, y + 0.083, bz, t), "#b98a52");
   }
+}
+
+/** The static La Ceiba machine, in its existing pastry/prop draw; hidden with those props during a shift. */
+function ceibaEspressoDetails(S: Smalls) {
+  const add = (g: THREE.BufferGeometry, color: THREE.ColorRepresentation) => S.add(g.translate(-4.2, 0, -3.4), color);
+  add(new THREE.PlaneGeometry(1.02, 0.57).translate(0, 1.48, 0.082), "#2f7772");
+  add(new THREE.PlaneGeometry(0.92, 0.22).translate(0, 1.31, 0.085), "#335352");
+  add(boxGeo(1.04, 0.035, 0.56, 0, 1.1375, 0), "#c2c9bf");
+  for (let i = 0; i < 5; i++) add(new THREE.PlaneGeometry(0.9, 0.01).rotateX(-Math.PI / 2)
+    .translate(0, 1.156, 0.14 + i * 0.03), "#335352");
+  for (const x of [-0.28, 0.28]) {
+    add(cylGeo(0.055, 0.075, 0.075, x, 1.48, 0.17, 8), "#c2c9bf");
+    add(boxGeo(0.05, 0.035, 0.12, x, 1.49, 0.24), "#3e4e48");
+    add(boxGeo(0.025, 0.085, 0.04, x, 1.395, 0.17), "#3e4e48");
+  }
+  add(new THREE.CircleGeometry(0.055, 8).translate(0, 1.675, 0.083), "#ead9b3");
+  add(new THREE.PlaneGeometry(0.008, 0.04).rotateZ(-0.6).translate(0.006, 1.685, 0.084), "#8d6b4e");
 }
 
 /** A jarrito (a little clay mug) hanging on a peg on a wall facing `rot`'s +z. */
