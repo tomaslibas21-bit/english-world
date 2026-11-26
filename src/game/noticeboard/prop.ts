@@ -23,6 +23,14 @@ export function makeNoticeboard() {
     ctx.beginPath();
     ctx.arc(128, 24, 5, 0, 2 * Math.PI);
     ctx.fill();
+    // The glass catches light along one edge without a transparent mesh or a second draw.
+    ctx.strokeStyle = "#ffffffb0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(15, 83);
+    ctx.lineTo(15, 15);
+    ctx.lineTo(75, 15);
+    ctx.stroke();
     ctx.textAlign = "center";
     ctx.fillStyle = "#234d3b";
     ctx.font = "bold 20px Georgia, serif";

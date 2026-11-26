@@ -14,7 +14,6 @@ export function NoticeboardSheet({ board, close }: { board: DailyBoard; close: (
   const dialog = useRef<HTMLDialogElement>(null);
   const clip = useRef<FilePlayback | null>(null);
   const [failed, setFailed] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   function stop() {
     const playing = clip.current;
@@ -76,10 +75,9 @@ export function NoticeboardSheet({ board, close }: { board: DailyBoard; close: (
       </> : <p role="status">{loading ? "Įkeliama…" : "Šiandien frazės lentoje nėra."}</p>}
       <div role="status" className="posting-error">{failed && "Nepavyko paleisti garso įrašo"}</div>
     </div>
-    {row && <footer>
+    {row && <footer aria-live="polite" aria-atomic="true">
       <PhraseSave labels={labels} sentence={{ en: row.f, nat: row.p, say: row.f, units: [{ en: row.f, lt: row.p }] }}
-        situationId="" sourceLabel={"Dienos frazė · " + row.src} onSaved={() => setSaved(true)} />
-      <span className="posting-announcement" role="status">{saved && labels.inCards}</span>
+        situationId="" sourceLabel={"Dienos frazė · " + row.src} />
     </footer>}
   </dialog>;
 }
