@@ -10,4 +10,9 @@ import "@fontsource/gentium-book-plus/400.css";
 import "./ui/styles.css";
 import { App } from "./ui/App";
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
+if (import.meta.env.DEV && new URLSearchParams(location.search).get("karaokeHarness") === "1") {
+  void import("./dev/KaraokeHarness").then(({ KaraokeHarness }) => root.render(<KaraokeHarness />));
+} else {
+  root.render(<App />);
+}

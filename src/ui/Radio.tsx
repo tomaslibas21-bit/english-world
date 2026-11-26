@@ -45,7 +45,7 @@ export function RadioTool({ phone = false }: { phone?: boolean }) {
 }
 
 export function RadioSetLayer() {
-  const open = useRadio((s) => s.available && s.open);
+  const open = useRadio((s) => s.available && s.open && !s.karaoke);
   return open ? <RadioSet /> : null;
 }
 

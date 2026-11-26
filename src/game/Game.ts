@@ -821,7 +821,13 @@ export class Game implements GameApi {
       }
     }), radio.store.subscribe((state, previous) => {
       if (state.open && !previous.open) this.pad?.cancel();
-      if (state.open !== previous.open) this.observeStreetAndPhone();
+      if (state.karaoke && !previous.karaoke) {
+        this.pad?.cancel();
+        this.onBlur();
+        this.pointer.down = false;
+        this.joy = { x: 0, y: 0 };
+      }
+      if (state.open !== previous.open || state.karaoke !== previous.karaoke) this.observeStreetAndPhone();
     }));
     if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.observeStreetAndPhone()));
     document.addEventListener("visibilitychange", this.phoneVisibility);
@@ -1357,7 +1363,7 @@ export class Game implements GameApi {
         if (st.screen !== "play" || st.hud.fade || this.transitioning || this.flight || this.rideTimer !== undefined ||
             this.sea?.padHandoff) return false;
         if (st.conv.active || this.session?.active || this.conversationLoads || this.sceneDelays.size ||
-            st.hud.panel || useStreet.getState().moment || st.hud.phoneCard || radio.store.getState().open) return null;
+            st.hud.panel || useStreet.getState().moment || st.hud.phoneCard || radio.store.getState().open || radio.store.getState().karaoke) return null;
         const mode = this.modes.active;
         if (this.modes.engaged || st.hud.modeScreen) return mode?.padDriving || mode?.padAction ? mode : mode?.padMenu ? "menu" : null;
         if (useSurf.getState().picking) return null;
@@ -1390,6 +1396,7 @@ export class Game implements GameApi {
     const el = this.renderer.domElement;
     // one pointer at a time: while the first finger is down, a second one neither drags nor clicks
     el.addEventListener("pointerdown", (e) => {
+      if (radio.store.getState().karaoke) return;
       if (this.pointer.down && e.pointerId !== this.pointer.id && el.hasPointerCapture(this.pointer.id)) return;
       this.pointer = { down: true, id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0, button: e.button };
       el.setPointerCapture(e.pointerId);
@@ -1412,6 +1419,7 @@ export class Game implements GameApi {
     el.addEventListener("pointercancel", release);
     el.addEventListener("lostpointercapture", release);
     el.addEventListener("wheel", (e) => {
+      if (radio.store.getState().karaoke) return;
       if (this.rig.mode === "follow") {
         if (this.keeperFrame > 0.001) this.keeperFrameDismissed = true;
         this.rig.zoom(e.deltaY);
@@ -1426,6 +1434,7 @@ export class Game implements GameApi {
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
+    if (radio.store.getState().karaoke) return;
     if (this.typingInField(e)) return;
     // (any key ends the first visit's flight over the town)
     if (this.flight) { if (!e.metaKey && !e.ctrlKey && !e.altKey) { this.endFlight(); e.preventDefault(); } return; }
@@ -1477,6 +1486,7 @@ export class Game implements GameApi {
     this.keys.delete(key);
     this.gymHeldKeys.delete(key);
     this.caveKeys.delete(key);
+    if (radio.store.getState().karaoke) return;
     if (this.modes.owns("surf")) this.modeAction("surf", "key-up", key);
     if (this.billiards.release(key)) e.preventDefault();
   };
@@ -2108,6 +2118,7 @@ export class Game implements GameApi {
   }
 
   private onClick(cx: number, cy: number) {
+    if (radio.store.getState().karaoke) return;
     const st = useStore.getState();
     if (this.modes.active || this.modes.modal) {
       if (!st.hud.panel && !this.transitioning) this.modes.input({ kind: "tap" });
@@ -2552,7 +2563,7 @@ export class Game implements GameApi {
       enabled: st.settings.phoneCalls,
       conversation: !!this.session?.active || st.conv.active,
       panel: !!hud.panel,
-      dialog: radio.store.getState().open || (this.debugAudio && audioDiagnosticsPaused()),
+      dialog: radio.store.getState().open || !!radio.store.getState().karaoke || (this.debugAudio && audioDiagnosticsPaused()),
       guide: !!hud.coach && !hud.phoneCard,
       banner: !!hud.zoneBanner,
       cardOpen: !!hud.phoneCard,
@@ -3299,7 +3310,7 @@ export class Game implements GameApi {
       flightAt(THEME.flyover, this.flight.t / FLIGHT_SECONDS, this.rig.stage.pos, this.rig.stage.look);
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
-    const blocked = talking || !!st.hud.glyph || !!st.hud.panel || this.caveTravel.pending || this.transitioning || this.modes.modal || !!this.flight;
+    const blocked = talking || !!st.hud.glyph || !!st.hud.panel || !!radio.store.getState().karaoke || this.caveTravel.pending || this.transitioning || this.modes.modal || !!this.flight;
     this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !mode);
     const phoneState = this.phoneSnapshot();
     this.updatePhoneTasks(dt, phoneState);

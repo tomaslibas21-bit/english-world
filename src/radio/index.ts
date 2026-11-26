@@ -20,8 +20,8 @@ import { radioConfig } from "./songs";
 export const RADIO_STORAGE = "ew-radio-v2";
 const RADIO_STORAGE_BEFORE = "ew-radio-v1";
 
-async function fetchJson(url: string): Promise<unknown> {
-  const r = await fetch(url, { cache: "no-cache" });
+async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  const r = await fetch(url, { cache: "no-cache", signal });
   if (!r.ok) throw new Error(`${r.status}`);
   return r.json();
 }
@@ -113,8 +113,18 @@ export function bindRadio() {
   audio.subscribeBed((music) => { if (music) radio.hold("bed"); else radio.release("bed"); });
   // the town's quiet loops (the surf, a market's murmur) play lower under the radio's music, and its own far-off
   // notes not at all (audio.ts underRadio)
-  const music = () => audio.underRadio(radio.store.getState().playing);
-  radio.store.subscribe(music);
+  const music = () => {
+    const state = radio.store.getState();
+    audio.underRadio(state.playing || state.karaoke?.store.getState().status === "playing");
+  };
+  let unwatchMusic: (() => void) | undefined;
+  radio.store.subscribe((state, previous) => {
+    if (state.karaoke !== previous.karaoke) {
+      unwatchMusic?.();
+      unwatchMusic = state.karaoke?.store.subscribe(music);
+    }
+    music();
+  });
   music();
   // the holds that stand already, before the list arrives and anything could play
   if (useStore.getState().conv.active) { conversation = true; radio.hold("conversation"); }
@@ -122,24 +132,39 @@ export function bindRadio() {
   const gesture = () => radio.gesture();
   document.addEventListener("click", gesture, true);
   document.addEventListener("keydown", gesture, true);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) radio.store.getState().karaoke?.interrupt();
+  });
   window.addEventListener("pagehide", () => radio.shutdown());
   // a heart given or taken back on the course's own Songs page, open in another tab
   window.addEventListener("storage", (e) => { if (!e.key || e.key === FAVORITES_KEY) radio.favoritesChanged(); });
   // the system's media keys and lock-screen buttons go through the radio, so they obey its holds too
   const session = typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
   if (session) {
-    const handle = (action: MediaSessionAction, run: () => void) => { try { session.setActionHandler(action, run); } catch { /* not offered by this browser */ } };
-    handle("play", () => radio.setOn(true));
-    handle("pause", () => radio.setOn(false));
-    handle("nexttrack", () => radio.next());
-    handle("previoustrack", () => radio.previous());
-    radio.store.subscribe((s, before) => {
-      if (s.song === before.song && s.station === before.station) return;
+    const handle = (action: MediaSessionAction, run: (() => void) | null) => { try { session.setActionHandler(action, run); } catch { /* not offered by this browser */ } };
+    const metadata = (s: RadioState) => {
+      const song = s.karaoke ? s.karaoke.store.getState().song : s.song;
+      const artist = s.karaoke ? "" : STATIONS.find((x) => x.id === s.station)?.name ?? "";
       try {
-        session.metadata = s.song && typeof MediaMetadata !== "undefined"
-          ? new MediaMetadata({ title: s.song.t, artist: STATIONS.find((x) => x.id === s.station)?.name ?? "" })
-          : null;
+        session.metadata = song && typeof MediaMetadata !== "undefined" ? new MediaMetadata({ title: song.t, artist }) : null;
       } catch { /* no lock-screen card */ }
+    };
+    const actions = (s: RadioState) => {
+      const booth = s.karaoke;
+      handle("play", booth ? () => { void booth.resume(); } : () => radio.setOn(true));
+      handle("pause", booth ? () => booth.pause() : () => radio.setOn(false));
+      handle("nexttrack", booth ? null : () => radio.next());
+      handle("previoustrack", booth ? null : () => radio.previous());
+    };
+    let unsubscribe: (() => void) | undefined;
+    actions(radio.store.getState());
+    radio.store.subscribe((s, before) => {
+      if (s.karaoke !== before.karaoke) {
+        unsubscribe?.();
+        unsubscribe = s.karaoke?.store.subscribe((take, previous) => { if (take.song !== previous.song) metadata(s); });
+        actions(s);
+      }
+      if (s.karaoke !== before.karaoke || s.song !== before.song || s.station !== before.station) metadata(s);
     });
   }
   // the power button has no room for words: a radio that can't play says so in a toast, once
