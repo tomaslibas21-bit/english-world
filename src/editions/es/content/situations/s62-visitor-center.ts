@@ -637,7 +637,7 @@ function replayContent(c: Ctx, slow: boolean) {
     if (alt && ROUTE_LINE_IDS.has(alt)) c.say(alt, l.vars);
     // after the slow version he asks "¿Ahora sí?", not "¿Me explico?" for the third time
     else if (slow && (l.lineId === "confirm_ask" || l.lineId === "confirm_again")) c.say("confirm_after_slow");
-    else cv.pushLine(l.lineId, l.variant, l.vars, slow);
+    else cv.replayLine(l, slow);
   }
 }
 

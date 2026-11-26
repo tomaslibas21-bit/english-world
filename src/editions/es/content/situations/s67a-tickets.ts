@@ -64,14 +64,14 @@ const addMin = (t: Clock, min: number): Clock => ({ h: t.h + Math.floor((t.m + m
 const HOURS = ["doce", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once"];
 const MINS: Record<number, string> = { 5: "y cinco", 10: "y diez", 15: "y cuarto", 30: "y media", 35: "treinta y cinco", 40: "cuarenta" };
 const MENOS: Record<number, string> = { 5: "cinco", 10: "diez", 15: "cuarto", 20: "veinte", 25: "veinticinco" };
-function clock(t: Clock): { en: string; lt: string; say: string } {
+function clock(t: Clock, v = variety()): { en: string; lt: string; say: string } {
   const h12 = t.h % 12, hh = h12 === 0 ? 12 : h12, art = h12 === 1 ? "la" : "las";
   const part = t.h < 12 ? "de la mañana" : t.h < 19 ? "de la tarde" : "de la noche";
   const mm = String(t.m).padStart(2, "0");
   let say: string;
   if (t.m === 0) say = `${art} ${HOURS[h12]}`;
   // Spain counts down to the next hour after the half: "las once menos veinte", "las seis menos cuarto" (STYLE.md)
-  else if (t.m > 30 && variety() === "spain") { const n = (h12 + 1) % 12; say = `${n === 1 ? "la" : "las"} ${HOURS[n]} menos ${MENOS[60 - t.m] ?? String(60 - t.m)}`; }
+  else if (t.m > 30 && v === "spain") { const n = (h12 + 1) % 12; say = `${n === 1 ? "la" : "las"} ${HOURS[n]} menos ${MENOS[60 - t.m] ?? String(60 - t.m)}`; }
   else if (t.m === 45) { const n = (h12 + 1) % 12; say = `cuarto para ${n === 1 ? "la" : "las"} ${HOURS[n]}`; }
   else say = `${art} ${HOURS[h12]} ${MINS[t.m] ?? String(t.m)}`;
   return { en: `${art} ${hh}:${mm} ${part}`, lt: `${hh}:${mm} ${t.h < 12 ? "AM" : "PM"}`, say: `${say} ${part}` };
@@ -910,7 +910,7 @@ export const tickets: SituationDef = {
       ask: (c) => {
         c.twist("sold_out");
         c.s.soldTold = true; c.s.full = c.s.dest; c.s.dep = undefined; // full: this destination's morning bus, today
-        c.say("sold_out", { at: clock(dest(c.s.dest).time), late: clock(LATE) });
+        c.say("sold_out", { at: clock(dest(c.s.dest).time, c.variety), late: clock(LATE, c.variety) });
         c.expect(soldPending());
       } },
     { id: "seat", when: (c) => !!c.s.dep && c.s.askSeat, done: (c) => !!c.s.seat,
@@ -1068,14 +1068,14 @@ export const tickets: SituationDef = {
       if (tags.includes("amb")) { askTime(c); c.hold(); return; }
       let dep: "first" | "late" | undefined = tags.includes("late") ? "late" : tags.includes("first") ? "first" : undefined;
       if (!dep && slots.time) dep = depOf(c, slots.time);
-      if (!dep) { c.say("no_such_time", { at: clock(dest(c.s.dest).time), late: clock(LATE) }); c.hold(); return; }
-      if (dep === "first" && fullNow(c)) { c.say("still_full", { at: clock(dest(c.s.dest).time) }); askTime(c); return; }
+      if (!dep) { c.say("no_such_time", { at: clock(dest(c.s.dest).time, c.variety), late: clock(LATE, c.variety) }); c.hold(); return; }
+      if (dep === "first" && fullNow(c)) { c.say("still_full", { at: clock(dest(c.s.dest).time, c.variety) }); askTime(c); return; }
       if (c.s.totalSaid && dep !== c.s.dep) c.s.totalSaid = false;
       c.s.dep = dep;
       // (no "Muy bien, el de…" when the sold-out step follows: today's first bus, the twist not told yet)
       const soldNext = dep === "first" && c.s.soldTwist && !c.s.soldTold && (!c.s.travel || c.s.travel === "today");
       // (after the sold-out offers, tomorrow's bus is said with "mañana")
-      if (!soldNext) c.say(c.s.tomorrowOffered && c.s.travel === "tomorrow" ? "tomorrow_ok" : "time_ok", { at: clock(depTime(c)!) });
+      if (!soldNext) c.say(c.s.tomorrowOffered && c.s.travel === "tomorrow" ? "tomorrow_ok" : "time_ok", { at: clock(depTime(c)!, c.variety) });
     },
     // outside the sold-out question, these mean nothing yet
     accept_ctx(c) { c.say("ack"); },
@@ -1086,7 +1086,7 @@ export const tickets: SituationDef = {
       if (!c.s.dest) return;
       const tags = allTags(slots, seg);
       if (fullNow(c) || !(tags.includes("later") || tags.includes("earlier"))) { askTime(c); c.hold(); return; }
-      if (tags.includes("later")) c.say("later_one", { late: clock(LATE) }); else c.say("first_one", { at: clock(dest(c.s.dest).time) });
+      if (tags.includes("later")) c.say("later_one", { late: clock(LATE, c.variety) }); else c.say("first_one", { at: clock(dest(c.s.dest).time, c.variety) });
       c.hold();
     },
     seat_ans(c, slots, seg) {
@@ -1171,23 +1171,23 @@ export const tickets: SituationDef = {
       if (!d) { destFirst(c); return; }
       // "¿A qué hora sale el último / el primero?": both departures (the 5:15 is every route's last), not "your bus"
       if (allTags(slots, seg).includes("sched")) {
-        if (d === c.s.dest && fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE) }); c.hold(); } return; } // (the 5:15 is the last too)
+        if (d === c.s.dest && fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE, c.variety) }); c.hold(); } return; } // (the 5:15 is the last too)
         if (d === c.s.dest && !c.s.dep && c.step === "time") { askTime(c); c.hold(); return; }
-        c.say("deps_info", { at: clock(dest(d).time), late: clock(LATE) });
+        c.say("deps_info", { at: clock(dest(d).time, c.variety), late: clock(LATE, c.variety) });
         if (d === c.s.dest && !c.s.dep) c.s.timeAsked = true;
         return;
       }
-      if (d !== c.s.dest) { c.say("other_leaves", { at: clock(dest(d).time) }); return; }
+      if (d !== c.s.dest) { c.say("other_leaves", { at: clock(dest(d).time, c.variety) }); return; }
       if (!c.s.dep && c.step !== "time") {
         // asked before "¿Para qué hora?": the two departures as information; the current step asks its own question.
         // At the sold-out question, the next bus's time (not "Sí, el de…"), the question kept open; at tomorrow's
         // offer, the offer again (it says tomorrow's time)
-        if (fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE) }); c.hold(); } }
-        else { c.say("deps_info", { at: clock(dest(d).time), late: clock(LATE) }); c.s.timeAsked = true; }
+        if (fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE, c.variety) }); c.hold(); } }
+        else { c.say("deps_info", { at: clock(dest(d).time, c.variety), late: clock(LATE, c.variety) }); c.s.timeAsked = true; }
         return;
       }
       if (!c.s.dep) { askTime(c); c.hold(); return; }
-      c.say("leaves_at", { at: clock(depTime(c)!) });
+      c.say("leaves_at", { at: clock(depTime(c)!, c.variety) });
       c.s.knowTime = true;
       checkDone(c);
     },
@@ -1215,7 +1215,7 @@ export const tickets: SituationDef = {
       if (!d) { destFirst(c); return; }
       if (allTags(slots, seg).includes("arrive")) {
         const from = d === c.s.dest && c.s.dep ? depTime(c)! : dest(d).time;
-        c.say("arrives", { at: clock(addMin(from, dest(d).dur)) });
+        c.say("arrives", { at: clock(addMin(from, dest(d).dur), c.variety) });
         return;
       }
       c.say(dest(d).durLine);
@@ -1251,7 +1251,7 @@ export const tickets: SituationDef = {
         if (slots.number === d.anden) c.s.knowTrack = true; else { c.say("track_is", { num: d.anden }); said = true; }
       }
       if (slots.time) {
-        if (depOf(c, slots.time) === c.s.dep) c.s.knowTime = true; else { c.say("leaves_at", { at: clock(depTime(c)!) }); said = true; }
+        if (depOf(c, slots.time) === c.s.dep) c.s.knowTime = true; else { c.say("leaves_at", { at: clock(depTime(c)!, c.variety) }); said = true; }
       }
       if (!said) c.say("ack");
       checkDone(c);
@@ -1557,7 +1557,7 @@ export const tickets: SituationDef = {
 /** Sold out (twist): yes = the 5:15; no = tomorrow's first bus, or nothing. */
 function soldPending(): Pending {
   const again = (cc: Ctx) => cc.expect(soldPending());
-  const full = (cc: Ctx) => { cc.say("still_full", { at: clock(dest(cc.s.dest).time) }); cc.say("sold_remind", { late: clock(LATE) }); again(cc); };
+  const full = (cc: Ctx) => { cc.say("still_full", { at: clock(dest(cc.s.dest).time, cc.variety) }); cc.say("sold_remind", { late: clock(LATE, cc.variety) }); again(cc); };
   return {
     id: "sold_out", expects: ["accept_ctx", "time_ctx", "ask_earlier_ctx", "ask_other_ctx", "travel_ctx", "ok_thanks", "late_no_ctx"], hints: ["sold_out"],
     suggest: [{ lt: "Take the 5:15 bus, or ask about another", hint: "sold_out" }],
@@ -1569,24 +1569,24 @@ function soldPending(): Pending {
         if (wantedDep(cc, sl, sg, "first") === "late") { lateToday(cc); return; }
         full(cc);
       },
-      ask_earlier_ctx: (cc) => { cc.say("only_late", { late: clock(LATE) }); again(cc); },
+      ask_earlier_ctx: (cc) => { cc.say("only_late", { late: clock(LATE, cc.variety) }); again(cc); },
       // "¿Hay uno más tarde?", "¿A qué hora sale el último?": today the 5:15 is the only one left (a question, no booking)
-      ask_other_ctx: (cc, sl, sg) => { cc.say(allTags(sl, sg).includes("earlier") ? "only_late" : "today_only", { late: clock(LATE) }); again(cc); },
+      ask_other_ctx: (cc, sl, sg) => { cc.say(allTags(sl, sg).includes("earlier") ? "only_late" : "today_only", { late: clock(LATE, cc.variety) }); again(cc); },
       travel_ctx: (cc, sl, sg) => { otherDay(cc, sl.day, wantedDep(cc, sl, sg, "first"), again); },
-      ok_thanks: (cc) => { cc.say("sold_remind", { late: clock(LATE) }); again(cc); },
+      ok_thanks: (cc) => { cc.say("sold_remind", { late: clock(LATE, cc.variety) }); again(cc); },
       late_no_ctx: (cc) => { declineLate(cc); },
       ...NEW_DEST,
     },
     yes: lateToday,
     no: (cc) => { declineLate(cc); },
-    ask: (cc) => cc.say("sold_remind", { late: clock(LATE) }),
+    ask: (cc) => cc.say("sold_remind", { late: clock(LATE, cc.variety) }),
   };
   /** No to the 5:15: tomorrow's first bus, or nothing. */
   function declineLate(cc: Ctx) {
     const walkOff = (cc2: Ctx) => { cc2.say("walk_off"); cc2.end(); };
     if (cc.s.tomorrowOffered) { walkOff(cc); return; } // offered and declined once already (rule 13)
     cc.s.tomorrowOffered = true;
-    cc.say("tomorrow_offer", { at: clock(dest(cc.s.dest).time) });
+    cc.say("tomorrow_offer", { at: clock(dest(cc.s.dest).time, cc.variety) });
     // the offer is tomorrow's: "Sí" is the first bus; "el de la tarde", "a las cinco" is tomorrow's 5:15, said with
     // "mañana" ("Listo, para mañana a las 5:15"); today's 5:15, already declined, only with "Hoy"
     const tomorrowAt = (cc2: Ctx, sl: any, sg: Segment) => {
@@ -1597,7 +1597,7 @@ function soldPending(): Pending {
     // "¿Hay uno más tarde?", "¿A qué hora sale el último?": a question, never a booking (it was read as "la una" +
     // "más tarde" and booked tomorrow's 5:15): tomorrow's two buses, and which one; "¿Más temprano?": the first is that one
     const askOther = (cc2: Ctx, sl: any, sg: Segment) => {
-      if (allTags(sl, sg).includes("earlier")) { cc2.say("first_one", { at: clock(dest(cc2.s.dest).time) }); cc2.expect(offer); return; }
+      if (allTags(sl, sg).includes("earlier")) { cc2.say("first_one", { at: clock(dest(cc2.s.dest).time, cc2.variety) }); cc2.expect(offer); return; }
       otherDay(cc2, "tomorrow", undefined, again);
     };
     const offer: Pending = {
@@ -1608,21 +1608,21 @@ function soldPending(): Pending {
         ...NEW_DEST },
       yes: (cc2) => { otherDay(cc2, "tomorrow", "first", again); },
       no: walkOff,
-      ask: (cc2) => cc2.say("tomorrow_offer", { at: clock(dest(cc2.s.dest).time) }),
+      ask: (cc2) => cc2.say("tomorrow_offer", { at: clock(dest(cc2.s.dest).time, cc2.variety) }),
     };
     cc.expect(offer);
   }
 }
 /** Today's 5:15, the bus after the full one. */
-function lateToday(cc: Ctx) { cc.s.dep = "late"; cc.s.totalSaid = false; cc.say("time_ok", { at: clock(LATE) }); }
+function lateToday(cc: Ctx) { cc.s.dep = "late"; cc.s.totalSaid = false; cc.say("time_ok", { at: clock(LATE, cc.variety) }); }
 /** Another day than the sold-out one: its bus at the time said (the morning one by default), said back with the day for
  *  tomorrow. "Hoy" leaves only the 5:15: asked again. A clock time with no bus that day: the time step asks again. */
 function otherDay(cc: Ctx, day: string | undefined, dep: "first" | "late" | undefined, again: (cc: Ctx) => void) {
-  if (!day || isToday(day)) { cc.say("today_only", { late: clock(LATE) }); again(cc); return; }
+  if (!day || isToday(day)) { cc.say("today_only", { late: clock(LATE, cc.variety) }); again(cc); return; }
   setTravel(cc, day);
   if (!dep) { cc.s.dep = undefined; cc.ask("time"); return; }
   cc.s.dep = dep;
-  cc.say(day === "tomorrow" ? "tomorrow_ok" : "time_ok", { at: clock(dep === "late" ? LATE : dest(cc.s.dest).time) });
+  cc.say(day === "tomorrow" ? "tomorrow_ok" : "time_ok", { at: clock(dep === "late" ? LATE : dest(cc.s.dest).time, cc.variety) });
 }
 /** At the sold-out questions, another destination ("Mejor a Tulum", "No voy a Cancún", "Un boleto a Mérida") closes the
  *  question: the full bus is that destination's, so the time step asks again for the new one. */
@@ -1649,8 +1649,8 @@ function idDone(c: Ctx, line: string) {
 
 /** "¿Para qué hora?" with both departures; once the morning bus is full, only the 5:15 is offered. */
 function askTime(c: Ctx) {
-  if (fullNow(c)) { c.say("sold_remind", { late: clock(LATE) }); c.expect(soldPending()); return; }
-  c.say(c.s.timeAsked ? "time_again" : "ask_time", { at: clock(dest(c.s.dest).time), late: clock(LATE) });
+  if (fullNow(c)) { c.say("sold_remind", { late: clock(LATE, c.variety) }); c.expect(soldPending()); return; }
+  c.say(c.s.timeAsked ? "time_again" : "ask_time", { at: clock(dest(c.s.dest).time, c.variety), late: clock(LATE, c.variety) });
   c.s.timeAsked = true;
 }
 
@@ -1798,7 +1798,7 @@ function checkDone(c: Ctx) {
 }
 
 function tellInfo(c: Ctx) {
-  c.say("bus_info", { at: clock(depTime(c)!), num: dest(c.s.dest).anden });
+  c.say("bus_info", { at: clock(depTime(c)!, c.variety), num: dest(c.s.dest).anden });
   c.s.knowTime = true;
   c.s.knowTrack = true;
   c.s.retell = false;

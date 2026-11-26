@@ -410,7 +410,7 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
   },
   g_thanks(c) {
     // "¡A la orden!" is what someone who serves the learner says, never a friend or a colleague
-    c.say(addressInformal(c.conv.opt.npcs[c.conv.speakerId]) ? "g_welcome" : "g_welcome_staff");
+    c.say(addressInformal(c.conv.opt.npcs[c.conv.speakerId], c.variety) ? "g_welcome" : "g_welcome_staff");
     // "Buenas noches, gracias" at the end of an evening is good night
     if (/\bbuenas noches\b/.test(fold(c.heard)) && atGoodbye(c)) { c.say(byeLine(c)); c.end(); c.hold(); return; }
     if (c.conv.completed) c.hold();
