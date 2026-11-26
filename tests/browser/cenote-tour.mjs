@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { checkNotebookCard } from "./fixtures/phrase-saves.mjs";
 import { lines, outing } from "./fixtures/cenote-tour.mjs";
 
 const learner = process.env.WORLD_LEARNER || "en";
@@ -25,7 +26,7 @@ const names = {
   completed: local("Task completed!", "Užduotis įvykdyta!"),
   again: local("Try again.", "Pabandyk dar kartą."),
   leave: local("Leave the outing and return to the hut", "Baigti išvyką ir grįžti prie trobelės"),
-  phrasebook: local("Phrasebook", "Frazių knygelė"),
+  backpack: local("Backpack", "Kuprinė"),
 };
 const real = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const units = (value) => value.split(" | ");
@@ -1047,21 +1048,14 @@ async function lookAtCards(h, branch) {
   const { page, press, shot, setPhase } = h;
   setPhase("walk dry and open the actual saved cards");
   await walkDry(h);
-  await toolbarButton(h, new RegExp(`^${names.phrasebook}(?: \\(\\d+\\))?$`));
-  await press(page.locator(".pb-tabs").getByRole("tab").nth(1));
-  const list = page.locator(".my-cards .cd-list");
+  await toolbarButton(h, new RegExp(`^${names.backpack}(?: \\(\\d+\\))?$`));
+  await press(page.locator(".nb-tabs").getByRole("tab").first());
   const expected = [branch.fish, branch.turtle].map((key) => ({ en: spanish(key), lt: natural(key), situationId: id }));
   const persisted = await page.evaluate((prefix) => JSON.parse(localStorage.getItem(prefix + "-cards-v1"))?.cards, storage);
   assert.deepEqual(persisted.map(({ en, lt, situationId }) => ({ en, lt, situationId })), expected);
-  for (const card of expected) {
-    const row = list.locator(".cd-row").filter({ has: page.getByText(card.en, { exact: true }) });
-    assert.equal(await row.count(), 1, `one saved card row for "${card.en}"`);
-    await row.scrollIntoViewIfNeeded();
-    await visibleText(row.locator('.cd-en[lang="es"]'), card.en);
-    await visibleText(row.locator(`.cd-lt[lang="${learner}"]`), card.lt);
-  }
+  for (const card of expected) await checkNotebookCard(page, card, { learner, target: "es", press });
   await shot("09-cards");
-  await press(page.locator(".sheet .sheet-head").getByRole("button", { name: names.close, exact: true }));
+  await press(page.locator(".nb-head").getByRole("button", { name: names.close, exact: true }));
 }
 
 async function liveExit(h, branch) {

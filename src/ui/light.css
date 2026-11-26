@@ -82,6 +82,7 @@ body.light-mode { background: #f5efe5; }
 @media (max-width: 760px) {
   .lh-tool { min-height: 44px; border-radius: 13px; }
   button.lh-tool:not(.lh-3d) { width: 44px; }
+  .lh-tool.phrasebook-tool { padding-inline: 0; }
   button.lh-tool:not(.lh-3d) > span:not(.due-badge) { display: none; }
 }
 @media (min-width: 761px) { .lh-foot { display: none; } }

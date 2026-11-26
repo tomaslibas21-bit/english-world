@@ -45,57 +45,7 @@
 .wpop-in { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 6px 0 2px; font-weight: 800; font-size: 0.9em; color: var(--accent); }
 .wpop-hint { margin-top: 8px; padding-top: 7px; border-top: 1px dashed #eadfcc; font-size: 0.85em; color: var(--ink-soft); }
 
-/* ---------- phrasebook: tabs and „+ Į korteles“ ---------- */
-.pb-tabs { display: flex; gap: 3px; margin: 12px 18px 0; padding: 3px; background: rgba(31, 42, 51, 0.06); border-radius: 13px; flex: none; }
-.pb-tab {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; background: none; border-radius: 10px;
-  padding: 7px 10px; min-height: 40px; font-weight: 800; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
-}
-.pb-tab:hover { color: var(--ink); background: rgba(255, 255, 255, 0.6); }
-.pb-tab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(20, 30, 40, 0.14); }
-.pb-tab .n { font-weight: 800; font-size: 0.85em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.pb-tab .due {
-  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #3b2a00;
-  font-size: 0.75em; font-weight: 900; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
-}
-.pb-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 4px; }
-.pb-bar p { margin: 0; color: var(--ink-soft); font-size: 0.9em; line-height: 1.4; flex: 1 1 220px; }
-.pb-bar .all-in { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 0.88em; color: var(--accent); }
-.hint-row:has(> .pb-acts) > .ex { overflow-wrap: anywhere; }
-.hint-row .pb-acts { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 6px; align-items: flex-start; }
-
-@media (pointer: coarse) {
-  .pb-tab, .pb-bar .btn.small, .hint-row .pb-acts :is(.play, .pb-in), .rv-play, .rv-top .btn.small {
-    min-width: 44px; min-height: 44px;
-  }
-}
-
-/* ---------- the cards tab ---------- */
-.cards-empty { text-align: center; padding: 26px 16px 10px; color: var(--ink-soft); line-height: 1.5; }
-.cards-empty b { display: block; color: var(--ink); font-size: 1.08em; margin: 10px 0 4px; }
-.cards-empty p { margin: 0 auto; max-width: 430px; font-size: 0.92em; }
-.cards-empty-ico { width: 58px; height: 58px; border-radius: 18px; display: inline-grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-.cards-plus { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 50%; vertical-align: -0.3em; color: var(--accent); box-shadow: inset 0 0 0 1.5px #cfe4e1; background: #fff; }
-
-.cards-hero {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px;
-  background: linear-gradient(180deg, #eaf5f4, var(--accent-soft)); border: 1px solid #cfe4e1;
-}
-.cards-hero.done { background: #eef8f1; border-color: #cfe9d8; }
-.hero-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: #fff; color: var(--accent); flex: none; box-shadow: 0 1px 2px rgba(20, 30, 40, 0.06); }
-.cards-hero.done .hero-ico { color: #2f8f5b; }
-.hero-txt { flex: 1; min-width: 0; }
-.hero-txt b { display: block; font-size: 1.05em; }
-.hero-txt span { display: block; font-size: 0.86em; color: var(--ink-soft); line-height: 1.4; margin-top: 1px; }
-.cards-h { margin: 18px 0 10px; font-size: 0.95em; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; display: flex; align-items: center; gap: 8px; }
-.cards-h::after { content: ""; flex: 1; height: 1px; background: var(--line); margin-left: 4px; }
-.cd-list { display: flex; flex-direction: column; gap: 7px; }
-.cd-row {
-  display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #ebe3d5; border-radius: 14px;
-  padding: 8px 8px 8px 13px; box-shadow: 0 1px 2px rgba(20, 30, 40, 0.03);
-}
-.cd-txt { flex: 1; min-width: 0; }
-.cd-en { font-family: var(--en); font-size: 1.22em; line-height: 1.2; overflow-wrap: anywhere; }
+/* ---------- saved card tools ---------- */
 .cd-lt { font-size: 0.86em; color: var(--ink-soft); line-height: 1.35; overflow-wrap: anywhere; }
 .cd-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; margin-right: 2px; }
 .cd-pips { display: inline-flex; gap: 3px; }
@@ -125,13 +75,12 @@
 .rv-progress i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
 .rv-count { font-weight: 900; font-size: 0.85em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .rv-card {
-  background: var(--panel-solid); border: 1px solid #ebe1cf; border-radius: 20px; padding: 18px 18px 20px; text-align: center; min-height: 230px;
+  background: #fff; border: 1px solid #ebe1cf; border-radius: 20px; padding: 18px 18px 20px; text-align: center; min-height: 230px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 10px 26px -16px rgba(20, 30, 40, 0.35);
 }
 .rv-card.shown { cursor: default; }
-.rv-label, .rv-sit { font-size: calc(14px * var(--scale)); line-height: 1.3; color: var(--ink-soft); }
-.rv-label { max-inline-size: 100%; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; overflow-wrap: anywhere; }
+.rv-label { font-size: 0.78em; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint); }
 .rv-sit { text-transform: none; letter-spacing: 0; font-weight: 700; }
 .rv-lt { font-size: 1.55em; font-weight: 800; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; max-width: 100%; }
 .rv-card.long .rv-lt { font-size: 1.2em; }
@@ -141,12 +90,6 @@
 .rv-en-row { display: flex; align-items: center; justify-content: center; gap: 10px; max-width: 100%; }
 .rv-en { font-family: var(--en); font-size: 1.9em; line-height: 1.15; color: var(--accent-strong); overflow-wrap: anywhere; min-width: 0; }
 .rv-card.long .rv-en { font-size: 1.45em; }
-.rv-play {
-  flex: none; border: 0; background: var(--accent-soft); color: var(--accent); width: 42px; height: 42px; border-radius: 50%;
-  display: grid; place-items: center; transition: background-color 0.15s, color 0.15s, transform 0.1s;
-}
-.rv-play:hover { background: var(--accent); color: #fff; }
-.rv-play:active { transform: scale(0.93); }
 .rv-ipa { font-family: var(--ipa-font); color: var(--ipa); font-size: 1.05em; overflow-wrap: anywhere; }
 .rv-src { margin-top: 10px; background: #fbf7ef; border-radius: 14px; padding: 9px 12px; max-width: 100%; text-align: left; }
 .rv-src-en { font-family: var(--en); font-size: 1.12em; line-height: 1.3; color: var(--ink); }
@@ -165,18 +108,9 @@
 }
 
 @media (max-width: 480px) {
-  .pb-tabs { margin: 10px 14px 0; }
-  .pb-tab { padding: 7px 6px; gap: 6px; }
-  .pb-tab .ui-icon { display: none; }
-  .cards-hero { flex-wrap: wrap; }
-  .cards-hero .hero-ico { display: none; }
-  .cards-hero .hero-txt { flex-basis: 100%; }
-  .cards-hero .btn { width: 100%; }
   .rv-card { padding: 16px 14px 18px; min-height: 210px; }
-  html:lang(lt) .rv-sit { display: block; margin-block-start: 2px; }
   .rv-lt { font-size: 1.4em; }
   .rv-en { font-size: 1.7em; }
-  .cd-row { padding-left: 11px; gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .wpop, .rv-answer, .rv-badge { animation: none; }

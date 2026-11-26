@@ -20,28 +20,35 @@ export async function cardCentre(control, minimum = 1) {
 }
 
 export async function checkCardList(page, { learner, target, cards, press }) {
-  const book = learner === "lt" ? "Frazių knygelė" : "Phrasebook";
-  const tab = learner === "lt" ? "Mano kortelės" : "My cards";
+  const book = learner === "lt" ? "Kuprinė" : "Backpack";
+  const tab = learner === "lt" ? "Išsaugotos kortelės" : "Saved cards";
   const toolbar = page.locator(".toolbar");
   const fold = toolbar.locator('.ride-menu[aria-expanded="false"]');
   if (await fold.isVisible()) await press(fold);
   await press(toolbar.locator(`button[title="${book}"]`));
-  const listTab = page.getByRole("tablist", { name: book }).getByRole("tab").filter({ hasText: tab });
+  const listTab = page.getByRole("dialog").getByRole("tablist").getByRole("tab").filter({ hasText: tab });
   await press(listTab);
   assert.equal(await listTab.getAttribute("aria-selected"), "true");
   const list = page.locator(".cd-list");
   await list.waitFor();
-  for (const card of cards) {
-    const row = list.locator(".cd-row").filter({ has: page.locator(".cd-en").and(page.getByText(card.en, { exact: true })) });
-    assert.equal(await row.count(), 1, `one visible card row for ${card.en}`);
-    const en = row.locator(".cd-en"), lt = row.locator(".cd-lt");
-    assert.equal(await en.textContent(), card.en);
-    assert.equal(await lt.textContent(), card.lt);
-    assert.equal(await en.getAttribute("lang"), target);
-    assert.equal(await lt.getAttribute("lang"), learner);
-    assert(await en.isVisible() && await lt.isVisible());
-  }
-  assert(await list.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "My cards fits horizontally");
+  for (const card of cards) await checkNotebookCard(page, card, { learner, target, press });
+  assert(await list.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "Saved cards fits horizontally");
+}
+
+export async function checkNotebookCard(page, card, { learner, target, press }) {
+  const row = page.locator(".cd-row").filter({ has: page.locator(".cd-en").and(page.getByText(card.en, { exact: true })) });
+  assert.equal(await row.count(), 1, `one visible card row for ${card.en}`);
+  await press(row);
+  const detail = page.locator(".nb-reading");
+  const en = detail.locator("[data-reading-title]");
+  assert.equal(await en.textContent(), card.en);
+  assert.equal(await en.getAttribute("lang"), target);
+  await press(detail.locator(".nb-reveal"));
+  const helper = detail.locator(".nb-meaning");
+  assert.equal(await helper.innerText(), card.lt);
+  assert.equal(await helper.getAttribute("lang"), learner);
+  assert(await en.isVisible() && await helper.isVisible());
+  await press(page.locator(".notebook [data-pad-back]"));
 }
 
 export function cardsFor(page, target) {

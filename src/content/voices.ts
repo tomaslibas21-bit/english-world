@@ -34,3 +34,7 @@ export const rideVoice = (id: string, female: boolean, v2 = VOICES_V2): string =
 /** A passer-by calling after a car that went by too close (content/rides.ts RIDE_SHOUTS): two women's and two men's
  *  voices, `n` 0 or 1 (v2 only; with the first voices, the passers-by's own). */
 export const shoutVoice = (female: boolean, n: number, v2 = VOICES_V2): string => (v2 ? `g_shout_${female ? "f" : "m"}${n % 2}` : AMBIENT_VOICES[female ? "f" : "m"]);
+
+export function notebookVoice(npc: NpcDef | undefined, gender: "m" | "f" | undefined) {
+  return npc ? npcVoice(npc) : coachVoice(gender);
+}

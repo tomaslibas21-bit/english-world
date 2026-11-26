@@ -33,6 +33,7 @@ export interface BuildingDef {
   seed?: number;
 }
 
+export const VISITOR_BENCH = { x: -48, z: -17.5 };
 export const WORLD = { minX: -112, maxX: 182, minZ: -104, maxZ: 96 };
 
 export const ROADS: Road[] = [

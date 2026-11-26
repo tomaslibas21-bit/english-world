@@ -16,13 +16,13 @@ export const VOICES_V2 = true;
 export const audioDir = (_v2 = VOICES_V2) => "audio-es/";
 
 /** The voice set of the Spanish the learner chose: "es" (Mexican, the default), "esn" (neutral) or "esp" (Spain's). */
-const set = () => { const v = variety(); return v === "neutral" ? "esn" : v === "spain" ? "esp" : "es"; };
+const set = (v = variety()) => v === "neutral" ? "esn" : v === "spain" ? "esp" : "es";
 
 /** A character's voice id. */
-export const npcVoice = (n: NpcDef | undefined, _v2 = VOICES_V2): string => (n ? `${set()}_${n.id}` : `${set()}_coach_f`);
+export const npcVoice = (n: NpcDef | undefined, _v2 = VOICES_V2, v = variety()): string => (n ? `${set(v)}_${n.id}` : `${set(v)}_coach_f`);
 
 /** The voice of the example answers: the learner's own gender. */
-export const coachVoice = (gender: "m" | "f" | undefined, _v2 = VOICES_V2): string => `${set()}_coach_${gender === "m" ? "m" : "f"}`;
+export const coachVoice = (gender: "m" | "f" | undefined, _v2 = VOICES_V2, v = variety()): string => `${set(v)}_coach_${gender === "m" ? "m" : "f"}`;
 
 /** Every coach voice a hint must be recorded in (in the Spanish chosen now). */
 export const coachVoices = (_v2 = VOICES_V2): string[] => [`${set()}_coach_f`, `${set()}_coach_m`];
@@ -36,3 +36,8 @@ export const rideVoice = (id: string, _female?: boolean, _v2 = VOICES_V2): strin
 /** A passer-by calling after a car that went by too close (content/rides.ts RIDE_SHOUTS): two women's and two men's
  *  voices, `n` 0 or 1, in the Spanish chosen. */
 export const shoutVoice = (female: boolean, n: number, _v2 = VOICES_V2): string => `${set()}_shout_${female ? "f" : "m"}${n % 2}`;
+
+/** The notebook checks the stored wording against the Mexican recordings. */
+export function notebookVoice(npc: NpcDef | undefined, gender: "m" | "f" | undefined) {
+  return npc ? npcVoice(npc, VOICES_V2, "default") : coachVoice(gender, VOICES_V2, "default");
+}

@@ -11,7 +11,7 @@ import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { VISITOR_BENCH, BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mergeCarParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
@@ -1785,7 +1785,7 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   }
   // benches, hydrants, trash cans along Main Street
   const bench = (x: number, z: number, rot: number) => streetBench(M, col, x, z, rot);
-  for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) {
+  for (const [x, z, rot] of [[-75, -17.5, 0], [VISITOR_BENCH.x, VISITOR_BENCH.z, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) {
     if (THEME.church && Math.hypot(x - THEME.church.x, z - THEME.church.z) < 11) continue; // where the church stands
     bench(x, z, rot);
   }
