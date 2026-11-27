@@ -1,5 +1,5 @@
-// The game's one radio (radio.ts), tied to the rest of the game: it is silent for conversations, voices and the
-// microphone, follows the volume setting, and hears which place the learner walks into.
+// The game's one radio (radio.ts), tied to the rest of the game: it is silent for conversations, talking scenes
+// (scene.ts), voices and the microphone, follows the volume setting, and hears which place the learner walks into.
 import { useStore as useZustand } from "zustand";
 import { audio, filesToken, usesBufferRecordings } from "../game/audio";
 import { watchMicrophone } from "../convo/audioFocus";
@@ -12,6 +12,8 @@ import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
 import { Radio, type RadioState } from "./radio";
 import { radioConfig } from "./songs";
+import { holdForScenes } from "./scene";
+import { useSurf } from "../game/surf/store";
 import { L } from "../ui/i18n";
 
 /** A note of this device's, not progress: like "ew-help-closed", outside the save's "english-world-" names, which the
@@ -100,6 +102,9 @@ export function bindRadio() {
     if (st.hud.minimap.zone !== zone) { zone = st.hud.minimap.zone; radio.suggest(songsAt(zone)); }
   };
   useStore.subscribe(game);
+  // the surf lesson (and its level's choice just before it), and the grotto, where the stones call one after another
+  // (hud.cave: its card stands there while the learner is down there): the music waits for the whole scene, not each line
+  holdForScenes(radio, () => { const s = useSurf.getState(); return s.active || s.picking || !!useStore.getState().hud.cave; }, [useSurf.subscribe, useStore.subscribe]);
   // a voice that is loading or speaking; one that failed or waits for a tap makes no sound (and may stay so for long)
   const voice = () => { const state = audio.getState(); if (state === "loading" || state === "playing") radio.hold("voice"); else radio.release("voice"); };
   audio.subscribe(voice);

@@ -10,6 +10,9 @@ import { carried, lineKey, notedLineAt, readLinePictures, readSongNotes, songArt
 import { likedSongs, readFavorites, withToggled, type FavoriteStore } from "../src/radio/favorites";
 import { LYRIC_SIZES, loadSaved, nextStation, readSaved, stationOrder, stationSongs, step, type Station } from "../src/radio/playlist";
 import { FADE_IN_MS, FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, SKIP_OUT_MS, VOICE_FADE_MS, Radio, type RadioDeps } from "../src/radio/radio";
+import { holdForScenes } from "../src/radio/scene";
+import { useSurf } from "../src/game/surf/store";
+import { useStore } from "../src/state/store";
 import { radioConfig, readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type SongLine, type SongMeta } from "../src/radio/songs";
 
 const song = (id: string, g = "pop", a = `/songs/audio/${id}.mp3`): SongMeta => ({ id, c: "g", n: 1, t: `Song ${id}`, tl: `Daina ${id}`, tp: "", g, d: 200, a });
@@ -519,6 +522,69 @@ describe("the radio", () => {
     expect(out.sounding).toBe(true);
     expect(out.last).toBe("play A.mp3@42");
     expect(radio.store.getState()).toMatchObject({ playing: true, held: false });
+  });
+
+  it("stays off for the whole surf lesson, not only for each of her lines, and comes back after it, where it was", async () => {
+    // (owner, 27 Nov 2026: in a talking scene that isn't a conversation the music came back between the lines)
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    out.at = 51;
+    useSurf.getState().reset();
+    holdForScenes(radio, () => { const s = useSurf.getState(); return s.active || s.picking; }, [useSurf.subscribe]);
+    // the lines alone, with no scene: the music comes back in the gap (the old pumping)
+    radio.hold("voice"); radio.release("voice");
+    await vi.advanceTimersByTimeAsync(VOICE_FADE_MS + RESUME_AFTER_MS);
+    expect(out.sounding).toBe(true);
+    out.at = 51;
+    // the level's choice, then the lesson: off at once, and it stays off through a line, a long gap, another line
+    useSurf.getState().set({ picking: true });
+    await vi.advanceTimersByTimeAsync(FADE_OUT_MS);
+    expect(out.sounding).toBe(false);
+    useSurf.getState().set({ picking: false, active: true });
+    for (let i = 0; i < 2; i++) {
+      radio.hold("voice");
+      await vi.advanceTimersByTimeAsync(2000);
+      radio.release("voice");
+      await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS * 10);
+      expect(out.sounding).toBe(false);
+    }
+    expect(radio.store.getState()).toMatchObject({ on: true, playing: false, held: true });
+    // the lesson over, back on the sand: the music a moment later, from where it stopped
+    useSurf.getState().reset();
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS - 1);
+    expect(out.sounding).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(out.sounding).toBe(true);
+    expect(out.last).toBe("play A.mp3@51");
+    expect(radio.store.getState()).toMatchObject({ playing: true, held: false });
+    radio.shutdown();
+  });
+
+  it("stays off for the whole grotto, where the stones call one after another, and comes back on the way up", async () => {
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    out.at = 33;
+    useSurf.getState().reset();
+    const card = { n: 1, of: 3, name: "Sala", lt: "Salė", lit: 0, stones: 3, next: "", open: 1 };
+    useStore.getState().setHud({ cave: null });
+    holdForScenes(radio, () => { const s = useSurf.getState(); return s.active || s.picking || !!useStore.getState().hud.cave; }, [useSurf.subscribe, useStore.subscribe]);
+    expect(out.sounding).toBe(true);
+    // down in the grotto: its card stands there; a stone's card says its line, the gap, another stone
+    useStore.getState().setHud({ cave: card });
+    await vi.advanceTimersByTimeAsync(FADE_OUT_MS);
+    expect(out.sounding).toBe(false);
+    for (let i = 0; i < 2; i++) {
+      radio.hold("voice"); radio.release("voice");
+      useStore.getState().setHud({ cave: { ...card, lit: i + 1 } }); // (the card changes, the scene goes on)
+      await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS * 10);
+      expect(out.sounding).toBe(false);
+    }
+    // back up in the town
+    useStore.getState().setHud({ cave: null });
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS);
+    expect(out.sounding).toBe(true);
+    expect(out.last).toBe("play A.mp3@33");
+    radio.shutdown();
   });
 
   it("is cut at once for a microphone, and stays silent until every hold is gone", async () => {

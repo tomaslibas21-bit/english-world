@@ -190,6 +190,7 @@ stands:
 | Hold | From | How |
 | --- | --- | --- |
 | conversation | `conv.active` in the store | fades out over 0.9 s, then pauses |
+| scene | a talking scene that is not a conversation: the surf lesson (`useSurf` `active` or `picking`) and the grotto, where the stones call (`hud.cave`); `src/radio/scene.ts` | fades out over 0.9 s, then pauses; held for the whole scene, so the music doesn't come back between its lines |
 | voice | the voice player is loading or speaking | fades out over 0.5 s, then pauses |
 | microphone | `watchMicrophone()` in `src/convo/audioFocus.ts`, called first thing in `captureAudio()` | pauses at once, before the audio route changes |
 

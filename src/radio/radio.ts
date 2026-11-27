@@ -14,8 +14,9 @@ import type { FavoriteStore } from "./favorites";
 import { LYRIC_SIZES, loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type RadioConfig, type SongMeta } from "./songs";
 
-/** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
-export type Hold = "conversation" | "voice" | "microphone";
+/** What stops the music: a conversation is open, a talking scene that is not a conversation runs (the surf lesson,
+ *  the grotto: scene.ts), a voice is loading or speaking, a microphone is listening. */
+export type Hold = "conversation" | "scene" | "voice" | "microphone";
 
 export interface RadioState {
   /** this build has songs to play */
