@@ -6,6 +6,7 @@ import { EDITION } from "../../edition";
 import { loteriaTables } from "../loteria/scene";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
 import * as THREE from "three";
+import { townHallLintel } from "./townHallPrint";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
@@ -870,6 +871,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const townHall = b.loc === "town-hall";
   const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -1115,7 +1117,10 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // sign
   // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
   let signW = 0, signH = 0, signY = 0;
-  if (b.sign) {
+  if (townHall && b.sign) {
+    signW = 5.65; signH = .98; signY = 4.62;
+    townHallLintel(mxFlat, atDoor, b.sign, signW, signH, signY);
+  } else if (b.sign) {
     // a shop's sign painted by hand in a Mexican town (theme.ts), else a printed board; (theme.ts `signLines`) a long
     // name painted big over a smaller line, on a taller board
     const painted = THEME.mexican && (b.style === "shop" || b.style === "restaurant");
@@ -1207,7 +1212,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (b.style === "house") {
     // porch
-    M.add("porch", mat("#e8e2d6"), boxGeo(6, 0.35, 2.6, 0, 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
+    M.add("porch", mat("#e8e2d6"), boxGeo(6, townHall ? .02 : .35, 2.6, 0, townHall ? .01 : .17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     // (theme.ts `casas`: a concrete portal with the terrace on it instead, mexican.ts `casa`)
     if (THEME.casas) {
       const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
@@ -1225,7 +1230,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       MX.houseFront(mx, P, rotY, b.w, b.color, b.trim ?? "#ffffff", 1.4, P(4.5, 5));
       // (graphics round 2, theme.ts `houseFronts`: the band along the wall, the door's grille and its number, plants)
       const num = THEME.houseFronts[b.id];
-      if (num) MX.houseDetails(mxFlat, atlas!, P, rotY, halfWidth * 2, doorW, b.color, num);
+      if (num) MX.houseDetails(mxFlat, atlas!, P, rotY, halfWidth * 2, doorW, b.color, num, townHall);
     } else {
       M.add("chimney", mat("#9a5b46"), boxGeo(1, 3, 1, b.x + b.w * 0.28, b.h + 1.8, b.z + 1.5));
       // mailbox
@@ -1298,7 +1303,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     const side = dr() < 0.5 ? -1 : 1;
     // (nothing in front of the building's name: Estética Tijeras had its "Es" under the leaves, docs/SIGNS.md; on a
     // wall too narrow for the plant beside the sign, it grows at the corner and its leaves keep to the sign's side)
-    const shown = signW > 0 && b.style !== "house";
+    const shown = signW > 0 && (b.style !== "house" || townHall);
     const keep = shown ? { u0: -signW / 2 - 0.1, u1: signW / 2 + 0.1, y0: signY - signH / 2 - 0.1, y1: signY + signH / 2 + 0.1 } : undefined;
     const u0 = shown ? Math.max(halfWidth - 1.3, Math.min(halfWidth - 0.6, signW / 2 + 0.2)) : halfWidth - 1.3;
     MX.bougainvillea(mxFlat, front, side * u0, 2.6, Math.min(b.h, 7.2) + (b.roof === "flat" && THEME.mexican ? 0.9 : 0.2), 400 + b.id.length * 37 + b.x, keep);

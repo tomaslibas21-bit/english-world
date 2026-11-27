@@ -187,7 +187,7 @@ export const THEME: TownTheme = {
     sophie: { color: "#5fbfb0", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     dan: { color: "#f6bd60", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house3: { color: "#e5989b", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
-    house4: { color: "#90be6d", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
+    house4: { color: "#eed9b7", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house5: { color: "#8ecae6", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
   },
   locationSigns: true,

@@ -12,6 +12,7 @@ import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
 import { CarVisuals } from "./world/carVisuals";
 import { prepareExteriorCars } from "./exteriorAssets";
 import { loadStartupModule, startupTask } from "./startupTask";
+import { passportPrompt } from "./world/townHallPrint";
 import { getInterior, INTERIOR_IDS, type Interior, type NpcSpot } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, surfLook, withBackpack, type GameCharacter } from "./characters";
@@ -267,7 +268,7 @@ export class Game implements GameApi {
   private tagLayer: HTMLDivElement;
   private nametagLayout: NametagLayout | null = null;
   private placedNametags: PlacedNametag[] = [];
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "mode" | "passport"; id: string; label: string; prompt?: NonNullable<HudState["prompt"]> } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -1185,14 +1186,15 @@ export class Game implements GameApi {
         : indoor ? new THREE.Color(z.interior?.background ?? (z.interior?.warm ? "#2b2320" : "#23282e")) : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
       // (a place like the grotto has its own light on the people there)
-      this.hemi.intensity = wild ? wild.hemi[2] : id === BILLIARDS_PLACE ? 1.23 : indoor ? 1.9 : 1.4;
-      this.sun.intensity = wild ? wild.sun[1] : id === BILLIARDS_PLACE ? 0.92 : indoor ? 1.6 : 2.75;
+      const passportRoom = id === "town-hall";
+      this.hemi.intensity = wild ? wild.hemi[2] : id === BILLIARDS_PLACE ? 1.23 : passportRoom ? 1.95 : indoor ? 1.9 : 1.4;
+      this.sun.intensity = wild ? wild.sun[1] : id === BILLIARDS_PLACE ? 0.92 : passportRoom ? .82 : indoor ? 1.6 : 2.75;
       this.hemi.color.set(wild ? wild.hemi[0] : "#e4f3ff");
-      this.hemi.groundColor.set(wild ? wild.hemi[1] : "#8fbf6a");
-      this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
+      this.hemi.groundColor.set(wild ? wild.hemi[1] : passportRoom ? "#d2c3ae" : "#8fbf6a");
+      this.sun.color.set(wild ? wild.sun[0] : passportRoom ? "#fff4e5" : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor && !wild ? "interior" : "follow";
-      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d, counter: passportRoom };
       else this.rig.yaw = this.heading;
       // (the follow camera's lean and distance: the town's, or the place's own)
       // (the town's, as the player left it with the wheel, is kept for when they come back up)
@@ -1521,7 +1523,7 @@ export class Game implements GameApi {
     const k = e.key.toLowerCase();
     if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active) return; // the conversation panel handles its own keys
-    if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    if (st.hud.panel) { if (k === "escape" && st.hud.panel !== "passport") st.setHud({ panel: null }); return; }
     // (at a glyph stone: its card has the keys; Esc puts it away)
     if (st.hud.glyph) { if (k === "escape" && !e.defaultPrevented) { e.preventDefault(); if (!e.repeat) this.cave?.close(); } return; }
     if (this.modes.owns("gym")) {
@@ -2275,6 +2277,7 @@ export class Game implements GameApi {
     else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
     else if (n.kind === "tree") this.talkToTree();
+    else if (n.kind === "passport") useStore.getState().setHud({ panel: "passport" });
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior(this.wild ? n.id : undefined);
   }
@@ -2902,6 +2905,7 @@ export class Game implements GameApi {
     if (this.rides.riding || this.modes.active) return;
     if (this.zone.id === place) {
       if (place === GYM_ENTRY.location) this.walkTo(GYM_MAT.x, GYM_MAT.z, { kind: "point" });
+      if (place === "town-hall") this.walkTo(0, 0.1, { kind: "point" });
       return;
     }
     const door = this.town.doors.find((d) => d.loc === place);
@@ -3096,7 +3100,8 @@ export class Game implements GameApi {
   /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
    *  stays over them and its ring lies on that spot, where the trail ends. */
   private showBeacon(tgt: ReturnType<Game["objectiveTarget"]>, hideBeam = false) {
-    if (!tgt) { this.guidance.setBeacon(null); return; }
+    // The exit beam would stand between the doorway camera and the book.
+    if (!tgt || (tgt.kind === "exit" && this.zone?.id === "town-hall")) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     this.guidance.setBeacon(over.x, over.z, this.cave ? 1.8 : tgt.kind === "npc" ? 2.9 : 3.8,
       tgt.person ? { x: tgt.x, z: tgt.z } : undefined, hideBeam || !!this.cave);
@@ -4366,6 +4371,13 @@ export class Game implements GameApi {
         if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
         // the great tree, once the heart is found: it speaks to whoever stands on its island
         else if (!best && this.cave?.treeNear(p)) { bd = 1; best = { kind: "tree", id: "yaxche", label: NPCS.yaxche?.name ?? "Yaxché" }; }
+        if (this.zone.id === "town-hall" && !this.hop.air) {
+          const distance = Math.hypot(p.x, p.z - 0.1);
+          if (distance < 1.55 && distance < bd) {
+            bd = distance;
+            best = { kind: "passport", id: "passport", label: passportPrompt.label, prompt: passportPrompt };
+          }
+        }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (!this.wild && d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
@@ -4388,7 +4400,7 @@ export class Game implements GameApi {
         : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
-        : best.kind === "mode" ? best.prompt!
+        : best.kind === "mode" || best.kind === "passport" ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }

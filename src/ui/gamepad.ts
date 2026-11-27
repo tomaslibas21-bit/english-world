@@ -40,7 +40,7 @@ const POLICIES: Record<string, Policy> = {
   intro: { rank: 100, first: DEFAULT },
   info: { rank: 105 },
   thread: { rank: 108, first: `${ANSWER}, .text-bubble`, flow: ".text-thread" },
-  panel: { rank: 107, first: "button[data-sit], button.contact, [role=tab]", flow: ".sheet, .phone" },
+  panel: { rank: 107, first: "button[data-sit], button.contact, [role=tab]", flow: ".sheet, .phone, .passport" },
   glyph: { rank: 90, first: ".glyph-opt, .glyph-play", back: ".glyph-x" },
   modal: { rank: 90, first: "[data-choice], .photo-choices [data-line], .surf-level", back: CLOSE },
   "photo-confirm": { rank: 105 },
@@ -968,9 +968,10 @@ class PadNotice {
     const anchor = (active as PopoverElement | null)?.popoverAnchor;
     const context = anchor ?? active;
     const convo = context?.closest<HTMLElement>(".convo");
-    const panel = context?.closest<HTMLElement>(".overlay")?.querySelector<HTMLElement>(".sheet, .phone");
+    const panel = context?.closest<HTMLElement>(".overlay")?.querySelector<HTMLElement>(".sheet, .phone, .passport");
+    const passportDock = panel?.querySelector<HTMLElement>(".passport-pad-dock");
     const flow = active && policy(active).flow;
-    const slotHost = convo?.querySelector<HTMLElement>(".convo-tools") ?? panel ??
+    const slotHost = passportDock ?? convo?.querySelector<HTMLElement>(".convo-tools") ?? panel ??
       (flow && active ? active.matches(flow) ? active : active.querySelector<HTMLElement>(flow) : null);
     const margin = convo ?? panel ?? (!world && name !== "home" ? active : null);
     node.style.removeProperty("max-width");
@@ -1033,7 +1034,7 @@ class PadNotice {
     } : undefined;
     const margins = margin && visible(margin) ? [margin, ...separate] : separate;
     const clearSurface = cover.concat(obstacles(margins));
-    if (!this.slot?.isConnected && name !== "home" && fixed(clearSurface, below)) return;
+    if (!passportDock && !this.slot?.isConnected && name !== "home" && fixed(clearSurface, below)) return;
     const flowKey = slotHost ? `${width}x${height}:${slotHost.clientWidth}:${status.width}x${status.height}` : "";
     const retry = !this.noFlow || this.noFlow.host !== slotHost || this.noFlow.key !== flowKey;
     if (slotHost && visible(slotHost) && (retry || this.slot?.parentElement === slotHost)) {

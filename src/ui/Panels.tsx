@@ -43,6 +43,8 @@ import { useRadio } from "../radio";
 import { GYM_ENTRY } from "../content/gym-entry";
 import { SURF } from "../content/surf";
 
+const Passport = lazy(() => import("./Passport"));
+
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
 /** The NPC shown for a situation (the date is with the partner the player chose). */
@@ -69,12 +71,18 @@ export function Panels() {
   const panel = useStore((s) => s.hud.panel);
   useEffect(() => {
     if (!panel) return;
+    if (panel === "passport") return () => {
+      if (!useStore.getState().hud.panel) document.querySelector<HTMLButtonElement>(".hud .prompt")?.focus();
+    };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); useStore.getState().setHud({ panel: null }); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
+  if (panel === "passport") return <div className="overlay passport-layer" data-pad-scope="panel" data-pad-phase="passport">
+    <Suspense fallback={<button data-pad-back onClick={close} onKeyDown={e => { if (e.key === "Escape") close(); }} autoFocus>{L("Uždaryti")}</button>}><Passport close={close} /></Suspense>
+  </div>;
   return (
     <div className="overlay" data-pad-scope="panel" data-pad-phase={panel} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       {panel === "map" && <MapPanel close={close} />}

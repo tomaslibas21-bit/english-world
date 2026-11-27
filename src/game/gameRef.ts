@@ -6,7 +6,7 @@ import type { Door } from "./world/town";
 import type { Do, SurfArrow } from "./surf/logic";
 import { watchSituations } from "./prefetch";
 
-export type WalkPlace = "pool-hall" | "gym";
+export type WalkPlace = "pool-hall" | "gym" | "town-hall";
 
 export type TagBox = { x0: number; x1: number; y0: number; y1: number };
 export type PlacedNametag = TagBox & { tag: HTMLElement };

@@ -24,7 +24,7 @@ import { buildTown, type Town } from "../../src/game/world/town";
 import { townCanvasDocument } from "../../tools/town-canvas-stub";
 import { bakeTownCollision } from "../../tools/town-collision-data";
 
-const fieldSHA = "7d59eb37d5a601dab65ed4a3ff25c7491aa5bf41756dfa579e41969c52c99175";
+const fieldSHA = "f661e9989e28c69c24c442a2b786e2cf971d6e0e9733d45bfe0ae7f267c9d165";
 const ledgesSHA = "9707053cbad622517b19fc568e4511a947fa9ae8e3cd90c7e2e9d7907daa9d2d";
 const verifyBuild = process.env.VERIFY_TOWN_COLLISION_ARTIFACTS === "1";
 const newTown = () => buildTown({ movableParking: true });

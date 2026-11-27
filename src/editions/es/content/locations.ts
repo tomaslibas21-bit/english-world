@@ -33,6 +33,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("salon", "Estética Tijeras", "Hair salon “Tijeras”", "downtown", "interior", "✂️"),
   L("bank", "Banco del Puerto", "The bank", "downtown", "interior", "🏦"),
   L("post-office", "Oficina de Correos", "The post office", "downtown", "interior", "📮"),
+  L("town-hall", "Palacio Municipal", "Town Hall", "residential", "interior", "🏛️"),
   L("town-square", "Zócalo · Tianguis", "The main square and its market stalls", "square", "outdoor", "🌺"),
   L("police", "Policía Municipal", "The police station", "square", "interior", "🚓"),
   L("apartments", "Departamentos Las Palmas", "Apartment building “Las Palmas”", "residential", "interior", "🏢"),
