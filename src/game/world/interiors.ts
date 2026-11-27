@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
+import { townHallDeskCard } from "./townHallPrint";
 import { busParts, carParts } from "./car";
 import * as MX from "./mexican";
 import { THEME, type FloorKind, type RoomLook } from "./theme";
@@ -157,25 +158,12 @@ class RoomMerger extends Merger {
   }
 }
 
-function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: FloorKind; accent?: string; warm?: boolean; openEntry?: boolean } = {}): Interior {
-  const cafeDaylight = id === "sunny-cup" && !!THEME.roomExtras.cafeMx && !STYLED;
-  // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
-  const look = THEME.roomLooks[id];
-  if (look) {
-    floor = look.floor ?? floor; wall = look.wall ?? wall;
-    opts = { ...opts, floorKind: look.floorKind ?? opts.floorKind, accent: look.accent ?? opts.accent };
-  }
-  const g = new THREE.Group();
-  g.name = "interior-" + id;
-  const M = THEME.roomMerge && !STYLED ? new RoomMerger() : new Merger();
-  const col = new Colliders();
-  const r = rand(id.length * 97 + w);
+function patternedFloor(w: number, d: number, floor: string, kind: FloorKind, look?: RoomLook) {
   // floor with pattern texture
   const fc = document.createElement("canvas");
   fc.width = 512; fc.height = 512;
   const x = fc.getContext("2d")!;
   x.fillStyle = STYLED ? floorColor(floor) : floor; x.fillRect(0, 0, 512, 512);
-  const kind = opts.floorKind ?? "wood";
   if (kind === "wood") {
     for (let i = 0; i < 16; i++) {
       x.fillStyle = i % 2 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
@@ -205,18 +193,34 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), STYLED ? floorMaterial(ft, kind) : new THREE.MeshLambertMaterial({ map: ft }));
   floorMesh.rotation.x = -Math.PI / 2;
   floorMesh.receiveShadow = true;
-  g.add(floorMesh);
+  return floorMesh;
+}
+
+function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: FloorKind; accent?: string; warm?: boolean; openEntry?: boolean; furnishedFloor?: boolean; entryZ?: number } = {}): Interior {
+  const cafeDaylight = id === "sunny-cup" && !!THEME.roomExtras.cafeMx && !STYLED;
+  // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
+  const look = THEME.roomLooks[id];
+  if (look) {
+    floor = look.floor ?? floor; wall = look.wall ?? wall;
+    opts = { ...opts, floorKind: look.floorKind ?? opts.floorKind, accent: look.accent ?? opts.accent };
+  }
+  const g = new THREE.Group();
+  g.name = "interior-" + id;
+  const M = opts.furnishedFloor || (THEME.roomMerge && !STYLED) ? new RoomMerger() : new Merger();
+  const col = new Colliders();
+  const r = rand(id.length * 97 + w);
+  if (!opts.furnishedFloor) g.add(patternedFloor(w, d, floor, opts.floorKind ?? "wood", look));
   // walls: back (north), sides, low front with a gap for the door
   const wm = mat(wall);
   const base = mat(opts.accent ?? "#8a6a4a");
   // (theme.ts roomWallH: taller walls in this edition; Maple Harbor's are WALL_H)
-  const H = THEME.roomWallH ?? WALL_H;
+  const H = opts.furnishedFloor ? WALL_H : THEME.roomWallH ?? WALL_H;
   M.add("wall", wm, boxGeo(w, H, 0.3, 0, H / 2, -d / 2 - 0.15), false);
   M.add("wall", wm, boxGeo(0.3, H, d, -w / 2 - 0.15, H / 2, 0), false);
   M.add("wall", wm, boxGeo(0.3, H, d, w / 2 + 0.15, H / 2, 0), false);
-  if (THEME.roomWallH) upperWall(M, w, d, H, wall, look, opts.accent ?? "#8a6a4a");
+  if (!opts.furnishedFloor && THEME.roomWallH) upperWall(M, w, d, H, wall, look, opts.accent ?? "#8a6a4a");
   // (theme.ts roomExtras.upperMx, graphics round 5: high windows and a painted greca up there)
-  if (THEME.roomWallH && THEME.roomExtras.upperMx && !UPPER_SKIP.includes(id)) upperWindows(M, w, d, H, opts.accent ?? "#8a6a4a", THEME.roomExtras.rooms6 && id === "airport" ? { y: 0.4, h: 1.0 } : undefined);
+  if (!opts.furnishedFloor && THEME.roomWallH && THEME.roomExtras.upperMx && !UPPER_SKIP.includes(id)) upperWindows(M, w, d, H, opts.accent ?? "#8a6a4a", THEME.roomExtras.rooms6 && id === "airport" ? { y: 0.4, h: 1.0 } : undefined);
   if (look?.dado) dadoBand(M, w, d, look.dado, look.dadoH ?? 1.05, opts.accent ?? "#8a6a4a");
   M.add("baseboard", base, boxGeo(w, 0.3, 0.34, 0, 0.15, -d / 2 - 0.1), false);
   M.add("baseboard", base, boxGeo(0.34, 0.3, d, -w / 2 - 0.1, 0.15, 0), false);
@@ -239,7 +243,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
   g.add(outside(w, d, cafeDaylight));
-  g.add(wallShade(w, d));
+  if (!opts.furnishedFloor) g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
   // (theme.ts panelAtlas: the room's signs and posters gathered while it is built, then drawn as one mesh)
   roomPanels = THEME.panelAtlas && !STYLED ? [] : null;
@@ -263,7 +267,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   if (moved) npcs = npcs.map((n) => moved[n.npc] ? { ...n, ...moved[n.npc] } : n);
   const beside: [number, number][] = npcs.flatMap(({ x, z, ax, az }) => ax !== undefined && az !== undefined ? [[x, z], [ax, az]] : [[x, z]]);
   const ledges = Ledges.build(g, col, { beside, maxTop: Hop.PEAK });
-  return { id, group: g, colliders: col, ledges, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI },
+  return { id, group: g, colliders: col, ledges, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: opts.entryZ ?? d / 2 - 1.6, rot: Math.PI },
     npcs, warm: opts.warm, background: cafeDaylight ? "#bad4d2" : undefined, update };
 }
 
@@ -981,7 +985,109 @@ function poolHall(c: Ctx) {
   col.addBox(3.7, 2.63, 1.89, 1.04);
 }
 
+function colibriSeal() {
+  const shape = new THREE.Shape();
+  shape.moveTo(-.46, -.21);
+  shape.lineTo(-.09, .02);
+  shape.lineTo(-.25, .51);
+  shape.lineTo(.11, .23);
+  shape.quadraticCurveTo(.20, .34, .31, .21);
+  shape.lineTo(.56, .27);
+  shape.lineTo(.33, .13);
+  shape.quadraticCurveTo(.22, -.09, -.04, -.14);
+  shape.lineTo(-.30, -.38);
+  shape.lineTo(-.24, -.20);
+  shape.closePath();
+  return new THREE.ShapeGeometry(shape);
+}
+
+/** Single batch for the millwork, floor and desk. The printed instruction is the only mapped face. */
+function passportRoom({ M, col, g, w, d }: Ctx) {
+  const add = (geo: THREE.BufferGeometry, color: string) => M.add("hall-" + color, mat(color), geo, false);
+  const slab = (x: number, y: number, z: number, width: number, height: number, depth: number, color: string) =>
+    add(boxGeo(width, height, depth, x, y, z), color);
+  const ink = "#274a56", blueGreen = "#467775", brass = "#bf9759", oak = "#b69168", walnut = "#81604a";
+  const deskZ = -1.3, back = -d / 2;
+  // Terracotta tiles and the grout beneath them share the room's opaque batch.
+  const tiles = ["#b97858", "#bc805f", "#ad6b50", "#b67355"];
+  const floorFace = (width: number, depth: number, x: number, z: number, y: number, color: string) =>
+    add(new THREE.PlaneGeometry(width, depth).rotateX(-Math.PI / 2).translate(x, y, z), color);
+  floorFace(w, d, 0, 0, -.005, "#7e5d4f");
+  for (let row = 0; row < 9; row++) for (let column = 0; column < 9; column++) {
+    const x = (column + .5) * w / 9 - w / 2, z = back + (row + .5) * d / 9;
+    floorFace(w / 9 - .018, d / 9 - .018, x, z, 0, tiles[(column * 3 + row * 7 + (column * row) % 3) % tiles.length]);
+  }
+  // Painted wainscoting and the town seal frame the counter.
+  slab(0, .67, back + .01, w, 1.34, .09, blueGreen);
+  slab(0, 1.34, back + .06, w, .07, .14, walnut);
+  for (let i = -4; i <= 4; i++) add(new THREE.PlaneGeometry(.065, 1.26).translate(i, .68, back + .065), "#759486");
+  for (const x of [-1, 1]) {
+    slab(x * (w / 2 - .02), .67, 0, .08, 1.34, d, blueGreen);
+    slab(x * (w / 2 - .05), 1.34, 0, .13, .07, d, walnut);
+  }
+  const panel = (x: number, y: number, z: number, width: number, height: number, color: string) =>
+    add(new THREE.PlaneGeometry(width, height).translate(x, y, z), color);
+  for (const x of [-2.45, 2.45]) {
+    // Pale, divided-light windows frame the seal without a lamp or another texture.
+    panel(x, 2.44, back + .012, 1.46, 1.42, "#997e5d");
+    panel(x, 2.44, back + .022, 1.39, 1.35, "#ede2c5");
+    for (const dx of [-.306, .306]) for (const [y, h, tint] of [[2.27, .75, "#b5c7bc"], [2.91, .43, "#c6d8d1"]] as const)
+      panel(x + dx, y, back + .028, .55, h, tint);
+    slab(x, 1.74, back + .085, 1.54, .065, .17, "#d9c3a2");
+  }
+  const medallionY = 2.33;
+  add(new THREE.CircleGeometry(.47, 32).translate(0, medallionY, back + .028), brass);
+  add(new THREE.CircleGeometry(.435, 32).translate(0, medallionY, back + .033), ink);
+  add(colibriSeal().scale(.52, .52, 1).translate(0, medallionY, back + .038), "#dcc49b");
+  // The cabinet's recessed panels, raised lip and brass line read at the lower entry angle.
+  slab(0, .07, deskZ, 2.13, .14, .82, walnut);
+  slab(0, .53, deskZ, 2.24, .79, .91, oak);
+  for (const x of [-.72, 0, .72]) {
+    panel(x, .54, deskZ + .466, .64, .57, "#876648");
+    panel(x, .54, deskZ + .470, .59, .51, "#b38b64");
+  }
+  slab(0, .93, deskZ, 2.4, .13, 1.14, walnut);
+  slab(0, 1.006, deskZ, 2.4, .05, 1.14, "#b18b61");
+  slab(0, .955, deskZ + .572, 2.30, .018, .01, brass);
+  col.addBox(0, deskZ, 2.4, 1.14, "counter");
+  slab(0, 1.039, deskZ, 2.10, .014, .93, "#343d6c");
+  const bookX = -.27;
+  slab(bookX, 1.075, deskZ + .025, 1.16, .055, .76, "#28314f");
+  for (const side of [-1, 1]) {
+    const x = bookX + side * .269, tilt = side * .11;
+    const leaf = (width: number, height: number, depth: number, y: number, color: string) =>
+      add(boxGeo(width, height, depth, 0, 0, 0).rotateZ(tilt).translate(x, y, deskZ + .025), color);
+    leaf(.53, .085, .70, 1.147, "#dbcdb3");
+    leaf(.53, .015, .70, 1.196, "#f6f4ec");
+    // The fore-edge of the folded sheets catches a narrow horizontal highlight.
+    add(new THREE.PlaneGeometry(.51, .012).rotateZ(tilt).translate(x, 1.15, deskZ + .376), "#f3ead5");
+  }
+  for (let i = 0; i < 4; i++) {
+    const length = i === 3 ? .19 : .32;
+    add(boxGeo(length, .004, .011, 0, 0, 0).rotateZ(-.11).translate(bookX - .27, 1.212, deskZ - .16 + i * .052), "#849387");
+  }
+  add(new THREE.RingGeometry(.071, .084, 20).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.214, deskZ + .04), blueGreen);
+  add(colibriSeal().scale(.10, .10, 1).rotateX(-Math.PI / 2).rotateZ(.11).translate(bookX + .269, 1.215, deskZ + .04), blueGreen);
+  slab(bookX + .01, 1.121, deskZ + .405, .052, .017, .12, "#995441");
+  // A raised wood rim frames the felt. Leave space between the pad and the stamp.
+  slab(.63, 1.09, deskZ + .19, .41, .084, .33, walnut);
+  slab(.63, 1.138, deskZ + .19, .345, .024, .263, "#172d29");
+  slab(.70, 1.079, deskZ - .22, .26, .067, .21, "#2a3932");
+  slab(.70, 1.133, deskZ - .22, .27, .057, .22, oak);
+  const handle = [[.059, 0], [.068, .026], [.045, .085], [.081, .14], [.099, .18], [.094, .22], [.055, .247], [0, .25]]
+    .map(([radius, y]) => new THREE.Vector2(radius, y));
+  add(new THREE.LatheGeometry(handle, 9).translate(.70, 1.159, deskZ - .22), "#73442e");
+  add(cylGeo(.065, .065, .026, .70, 1.175, deskZ - .22, 10), brass);
+  const card = townHallDeskCard();
+  card.rotation.x = -.27;
+  card.position.set(bookX, 1.305, deskZ - .465);
+  g.add(card);
+}
+
 const B: Record<string, () => Interior> = {
+  "town-hall": () => room("town-hall", 9, 7, "#b97858", "#e9ddc6", passportRoom, [], {
+    furnishedFloor: true, openEntry: true, accent: "#526968", entryZ: 1.45,
+  }),
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: BILLIARDS_NPC, ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {

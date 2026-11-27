@@ -64,10 +64,11 @@ export function resolveMapPlaces(doors: Parameters<typeof locationPoint>[1], lig
     const sits = source.filter((s) => s.location === id && !isPhone(s) && (
       id === caveZone ? s.npc === "alux_kin" || s.npc === "alux_nikte" : !light || !isTownQuest(s.id)
     ));
-    const point = sits.length && locationPoint(id, doors, data);
+    const townHall = id === "town-hall";
+    const point = (sits.length || townHall) && locationPoint(id, doors, data);
     if (!point) return [];
     const tour = id === cenoteTour?.location ? cenoteTour : undefined;
-    const reserved = id === "airport" || id === caveZone || id === "pool-hall" || !!tour;
+    const reserved = id === "airport" || id === caveZone || id === "pool-hall" || townHall || !!tour;
     return [{ ...loc, ...project(point, data), sits, reserved, tour }];
   });
 }
@@ -303,6 +304,11 @@ export default function MapPlaces({ close, town, townName, data, groundBounds, d
             <div className="sit-list">
               {chosen.id === caveZone && !light && zone !== caveZone && (
                 <button className="btn soft small" onClick={() => { close(); town?.autoWalkToObjective("cave"); }}>
+                  <Icon name="walk" size={17} /> {L("Nuvesk mane")}
+                </button>
+              )}
+              {chosen.id === "town-hall" && town && (
+                <button className="btn soft small" onClick={() => { close(); town.guideToPlace?.("town-hall"); }}>
                   <Icon name="walk" size={17} /> {L("Nuvesk mane")}
                 </button>
               )}

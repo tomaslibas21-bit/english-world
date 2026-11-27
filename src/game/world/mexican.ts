@@ -1699,17 +1699,21 @@ const drawTile = (n: string): Draw => (x, w, h) => {
  *  wall, an iron grille (a protección) over the front door, its number on a talavera tile beside it, and potted plants
  *  either side of the door. `P(u, v)` as for houseFront, from the door (u along the front, v out of it), `rot` the
  *  front's heading, `w` the front's width, the door `doorW` wide. */
-export function houseDetails(parts: Part[], atlas: SignAtlas, P: (u: number, v: number) => [number, number], rot: number, w: number, doorW: number, wall: string, num: string) {
+export function houseDetails(parts: Part[], atlas: SignAtlas, P: (u: number, v: number) => [number, number], rot: number, w: number, doorW: number, wall: string, num: string, civic = false) {
   const at = (g: THREE.BufferGeometry, u: number, v: number, c: string) => { const [x, z] = P(u, v); parts.push([place(g, x, z, rot), c]); };
   const band = darker(wall, 0.78);
   at(box(w + 0.02, 0.62, 0.04, 0, 0.31, 0), 0, 0.02, band);
   at(box(w + 0.03, 0.05, 0.06, 0, 0.64, 0), 0, 0.02, "#f4f1ea");
   // the grille: upright bars, three cross bars and a scroll, standing out from the door's frame
   const gw = doorW + 0.1, v = 0.27;
-  for (let i = 0; i <= 8; i++) at(box(0.035, 2.45, 0.035, -gw / 2 + (i * gw) / 8, 1.25, 0), 0, v, IRON);
-  for (const y of [0.05, 1.05, 2.45]) at(box(gw + 0.04, 0.045, 0.045, 0, y, 0), 0, v, IRON);
-  at(new THREE.TorusGeometry(0.16, 0.02, 4, 12), 0, v, IRON);
-  parts[parts.length - 1][0].translate(0, 1.75, 0);
+  const barHeight = civic ? .38 : 2.45, barY = civic ? 2.26 : 1.25;
+  if (civic) at(new THREE.PlaneGeometry(gw, barHeight).translate(0, barY, 0), 0, v - .04, "#88ada4");
+  for (let i = 0; i <= 8; i++) at(box(0.035, barHeight, 0.035, -gw / 2 + (i * gw) / 8, barY, 0), 0, v, IRON);
+  for (const y of civic ? [2.07, 2.45] : [0.05, 1.05, 2.45]) at(box(gw + 0.04, 0.045, 0.045, 0, y, 0), 0, v, IRON);
+  if (!civic) {
+    at(new THREE.TorusGeometry(0.16, 0.02, 4, 12), 0, v, IRON);
+    parts[parts.length - 1][0].translate(0, 1.75, 0);
+  }
   const [tx, tz] = P(-(doorW / 2 + 0.62), 0.05);
   // (bigger, and lower: at 1.95 m the portal's slab hid half of it from the walking camera)
   atlas.add("tile:" + num, 160, 120, drawTile(num), 0.46, 0.34, tx, 1.62, tz, rot);

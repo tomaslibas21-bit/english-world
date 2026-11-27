@@ -8,6 +8,7 @@ if (T) {
   applyLearner({ locations: LOCATIONS }, T);
   for (const [id, m] of Object.entries(NAME_MEANING)) NAME_MEANING[id] = T.text[m] ?? m;
 }
+LOCATIONS["town-hall"].lt = "Rotušė";
 export * from "@/content/locations";
 export const TOWN_LT = T?.text[TOWN_ES] ?? TOWN_ES;
 
