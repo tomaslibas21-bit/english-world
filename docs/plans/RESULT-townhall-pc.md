@@ -18,7 +18,7 @@ Course exports read the enclosing origin’s existing progress and load its publ
 
 | Vitest project | Files | Tests passed | Tests failed | Tests skipped |
 |---|---:|---:|---:|---:|
-    | `en` | 102 | 1,472 | 0 | 4 |
+| `en` | 102 | 1,472 | 0 | 4 |
 | `es` | 81 | 880 | 2 | 0 |
 | `es-lt` | 21 | 206 | 0 | 0 |
 
