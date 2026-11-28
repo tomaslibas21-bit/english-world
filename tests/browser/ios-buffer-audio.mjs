@@ -73,13 +73,20 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
       assert(result.gains.every(n => Math.abs(n - 0.37) < 0.00001)); assert(result.starts.every(s => s.rate === 1 && s.offset === 0));
       const ended = result.events.filter(e => e.event === 'buffer.ended'); assert.equal(ended.length, 4);
       assert(ended.every(e => e.detail.currentTime + 0.004 >= e.detail.duration));
+      // iPhone: no voice starts within CAPTURE_SETTLE_MS (500 ms) of a microphone release; the line after the
+      // second microphone really waits for it (buffer.settle).
+      assert(result.events.some(e => e.event === 'buffer.settle'), `${name}: a voice waited for the phone to leave its mic mode`);
+      for (const release of result.events.filter(e => e.event === 'capture.release')) {
+        const next = result.events.find(e => e.event === 'buffer.playing' && e.ms > release.ms);
+        if (next) assert(next.ms - release.ms >= 495, `${name}: a voice started ${next.ms - release.ms} ms after a mic release`);
+      }
       const firstReply = result.events.filter(e => e.event === 'buffer.playing')[1];
       const lateEnd = result.events.find(e => e.event === 'capture.recognition-end');
       assert(lateEnd.ms > firstReply.ms && lateEnd.ms < ended[1].ms, `${name}: late end genuinely overlaps output`);
       const secondReply = result.events.filter(e => e.event === 'buffer.playing')[2];
       assert.equal(result.events.filter(e => e.event === 'capture.acquire' && e.ms > firstReply.ms && e.ms < secondReply.ms).length, 0);
       if (slow) assert(result.starts.every(s => Math.abs(s.duration - result.starts[0].duration) < 0.0001));
-      console.log(`${name} ${offline ? 'offline' : 'online'} ${slow ? 'pitch-preserving slow' : 'normal'}: four real clips, one context, no HTML media; post-mic two-line reply; unchanged gain; late end isolated`); checks++;
+      console.log(`${name} ${offline ? 'offline' : 'online'} ${slow ? 'pitch-preserving slow' : 'normal'}: four real clips, one context, no HTML media; post-mic two-line reply; voices wait 500 ms after the mic; unchanged gain; late end isolated`); checks++;
 
       if (!offline && !slow) {
         await page.evaluate(() => { window.interruptedDone = null; window.audio.play('test', 1, 'Pretty good, thanks!').then(v => window.interruptedDone = v); });
