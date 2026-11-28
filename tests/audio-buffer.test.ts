@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AudioSystem, usesBufferRecordings } from "../src/game/audio";
+import { AudioSystem, usesBufferRecordings, IOS_VOICE_BOOST } from "../src/game/audio";
 import { CAPTURE_SETTLE_MS, captureAudio } from "../src/convo/audioFocus";
 import { audioKey } from "../src/audio-key";
 
@@ -77,7 +77,7 @@ describe("iOS recorded Web Audio", () => {
     expect(contexts[0].sources).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(CAPTURE_SETTLE_MS);
     const ctx = contexts[0], pcm = await decode.mock.results[0].value;
-    expect(ctx.sources[0].buffer).toBe(pcm); expect(ctx.sources[0].playbackRate.value).toBe(1); expect(ctx.gains[0].gain.value).toBe(0.37);
+    expect(ctx.sources[0].buffer).toBe(pcm); expect(ctx.sources[0].playbackRate.value).toBe(1); expect(ctx.gains[0].gain.value).toBeCloseTo(0.37 * IOS_VOICE_BOOST);
     ctx.finish(); expect(await first).toBe(true);
     await vi.advanceTimersByTimeAsync(160);
     const second = audio.play(voice, 1, lines[1]); await tick(); ctx.finish(); expect(await second).toBe(true);
