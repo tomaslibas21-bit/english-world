@@ -19,7 +19,7 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
       await page.route('**/buffer-fixtures/*.mp3', route => route.fulfill({ contentType: 'audio/mpeg', body: bytes }));
       await page.goto(`${base}/buffer-harness.html?audioDebug=1`);
       await page.evaluate(async ({ duration, slow }) => {
-        const { AudioSystem } = await import('/src/game/audio.ts');
+        const { AudioSystem, IOS_VOICE_BOOST } = await import('/src/game/audio.ts');
         const { audioKey } = await import('/src/audio-key.ts');
         // Resolve Vite's compiled import URLs so HMR never creates a second focus singleton.
         const compiled = await (await fetch('/src/game/audio.ts')).text();
@@ -28,7 +28,7 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
         const { captureAudio } = await import(focusUrl);
         const { audioDiagnosticsReport } = await import(diagnosticsUrl);
         window.report = audioDiagnosticsReport;
-        window.results = { html: 0, contexts: 0, starts: [], gains: [], done: 0, fallback: 0, captures: 0, activeChanges: [], interruptedOffset: 0 };
+        window.results = { html: 0, contexts: 0, limiters: 0, voiceGain: 0.37 * IOS_VOICE_BOOST, starts: [], gains: [], done: 0, fallback: 0, captures: 0, activeChanges: [], interruptedOffset: 0 };
         const NativeAudio = window.Audio;
         window.Audio = function (...args) { window.results.html++; return new NativeAudio(...args); };
         const NativeContext = window.AudioContext || window.webkitAudioContext;
@@ -41,6 +41,7 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
               return start(...args);
             }; return s;
           }
+          createDynamicsCompressor() { window.results.limiters++; return super.createDynamicsCompressor(); }
           createGain() { const g = super.createGain(), connect = g.connect.bind(g); g.connect = (...args) => { window.results.gains.push(g.gain.value); return connect(...args); }; return g; }
         };
         speechSynthesis.speak = () => window.results.fallback++;
@@ -70,16 +71,23 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
       await page.waitForFunction(() => window.results.done === 4, undefined, { timeout: 18000 }).catch(async error => { console.log(name, slow, offline, await page.evaluate(() => ({ ...window.results, state: window.audio.getState(), report: window.report() }))); throw error; });
       const result = await page.evaluate(() => ({ ...window.results, events: window.report().events }));
       assert.equal(result.html, 0); assert.equal(result.contexts, 1); assert.equal(result.starts.length, 4); assert.equal(result.fallback, 0); assert.equal(result.captures, 2);
-      assert(result.gains.every(n => Math.abs(n - 0.37) < 0.00001)); assert(result.starts.every(s => s.rate === 1 && s.offset === 0));
+      assert(result.gains.every(n => Math.abs(n - result.voiceGain) < 0.00001)); assert.equal(result.limiters, 1); assert(result.starts.every(s => s.rate === 1 && s.offset === 0));
       const ended = result.events.filter(e => e.event === 'buffer.ended'); assert.equal(ended.length, 4);
       assert(ended.every(e => e.detail.currentTime + 0.004 >= e.detail.duration));
+      // iPhone: no voice starts within CAPTURE_SETTLE_MS (500 ms) of a microphone release; the line after the
+      // second microphone really waits for it (buffer.settle).
+      assert(result.events.some(e => e.event === 'buffer.settle'), `${name}: a voice waited for the phone to leave its mic mode`);
+      for (const release of result.events.filter(e => e.event === 'capture.release')) {
+        const next = result.events.find(e => e.event === 'buffer.playing' && e.ms > release.ms);
+        if (next) assert(next.ms - release.ms >= 495, `${name}: a voice started ${next.ms - release.ms} ms after a mic release`);
+      }
       const firstReply = result.events.filter(e => e.event === 'buffer.playing')[1];
       const lateEnd = result.events.find(e => e.event === 'capture.recognition-end');
       assert(lateEnd.ms > firstReply.ms && lateEnd.ms < ended[1].ms, `${name}: late end genuinely overlaps output`);
       const secondReply = result.events.filter(e => e.event === 'buffer.playing')[2];
       assert.equal(result.events.filter(e => e.event === 'capture.acquire' && e.ms > firstReply.ms && e.ms < secondReply.ms).length, 0);
       if (slow) assert(result.starts.every(s => Math.abs(s.duration - result.starts[0].duration) < 0.0001));
-      console.log(`${name} ${offline ? 'offline' : 'online'} ${slow ? 'pitch-preserving slow' : 'normal'}: four real clips, one context, no HTML media; post-mic two-line reply; unchanged gain; late end isolated`); checks++;
+      console.log(`${name} ${offline ? 'offline' : 'online'} ${slow ? 'pitch-preserving slow' : 'normal'}: four real clips, one context, no HTML media; post-mic two-line reply; voices wait 500 ms after the mic; boosted gain through one limiter; late end isolated`); checks++;
 
       if (!offline && !slow) {
         await page.evaluate(() => { window.interruptedDone = null; window.audio.play('test', 1, 'Pretty good, thanks!').then(v => window.interruptedDone = v); });
