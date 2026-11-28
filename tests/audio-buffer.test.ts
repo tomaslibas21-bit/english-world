@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioSystem, usesBufferRecordings } from "../src/game/audio";
-import { captureAudio } from "../src/convo/audioFocus";
+import { CAPTURE_SETTLE_MS, captureAudio } from "../src/convo/audioFocus";
 import { audioKey } from "../src/audio-key";
 
 class PCM {
@@ -33,8 +33,10 @@ let audio: AudioSystem, fetcher: ReturnType<typeof vi.fn>, decode: ReturnType<ty
 let doc: EventTarget & { hidden: boolean }, win: EventTarget;
 let html: ReturnType<typeof vi.fn>, synth: ReturnType<typeof vi.fn>;
 const tick = () => vi.advanceTimersByTimeAsync(0);
+let freshHours = 0;
 beforeEach(() => {
-  vi.useFakeTimers(); contexts.length = 0; Context.initial = "running"; Context.resumeWork = undefined;
+  // a fresh hour on the fake clock: no earlier test's microphone release is "recent" (CAPTURE_SETTLE_MS)
+  vi.useFakeTimers(); vi.setSystemTime(Date.now() + 3_600_000 * ++freshHours); contexts.length = 0; Context.initial = "running"; Context.resumeWork = undefined;
   vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X)", onLine: true, audioSession: { type: "auto" } });
   vi.stubGlobal("localStorage", { getItem: () => JSON.stringify({ token: "private-token", exp: Date.now() / 1000 + 3600 }) });
   doc = Object.assign(new EventTarget(), { hidden: false }); vi.stubGlobal("document", doc);
@@ -71,6 +73,9 @@ describe("iOS recorded Web Audio", () => {
     const first = audio.play(voice, 1, lines[0]); await tick();
     expect(contexts[0].sources).toHaveLength(0);
     mic.ended(); await tick();
+    // the phone leaves its call mode first: no voice inside the settle window
+    expect(contexts[0].sources).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(CAPTURE_SETTLE_MS);
     const ctx = contexts[0], pcm = await decode.mock.results[0].value;
     expect(ctx.sources[0].buffer).toBe(pcm); expect(ctx.sources[0].playbackRate.value).toBe(1); expect(ctx.gains[0].gain.value).toBe(0.37);
     ctx.finish(); expect(await first).toBe(true);
@@ -137,7 +142,9 @@ describe("iOS recorded Web Audio", () => {
     Context.resumeWork = () => new Promise(r => { resume = r; });
     const done = audio.play(voice, 1, lines[0]); await tick(); const mic = captureAudio();
     contexts[0].state = "running"; resume(); await tick(); expect(contexts[0].sources).toHaveLength(0);
-    mic.ended(); await tick(); expect(contexts[0].sources).toHaveLength(1);
+    mic.ended(); await tick(); expect(contexts[0].sources).toHaveLength(0); // settling after the mic
+    await vi.advanceTimersByTimeAsync(CAPTURE_SETTLE_MS - 1); expect(contexts[0].sources).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1); expect(contexts[0].sources).toHaveLength(1);
     contexts[0].finish(); expect(await done).toBe(true);
   });
 

@@ -6,7 +6,7 @@ import { EDITION } from "../edition";
 
 /** The browser voices that can stand in for a missing clip in the Spanish edition: Spanish as it speaks it (es-MX). */
 const VOICE_LANG = new RegExp(`^${EDITION.target.replace("-", "[-_]")}`, "i");
-import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone } from "../convo/audioFocus";
+import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone, CAPTURE_SETTLE_MS, msSinceCaptureRelease } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
 import { stretchSpeech } from "./timeStretch";
 import { BIRDSONG, LOOPS, STEPS, type LoopName, type Surface } from "./soundscape";
@@ -462,6 +462,15 @@ export class AudioSystem {
         // source start, and let cancellation invalidate this awaited handoff.
         if (microphoneHandoffState().captures) {
           void waitForMicrophone().then(() => { if (current() && attempt === run) start(); });
+          return;
+        }
+        // Let the phone finish leaving its microphone (call) mode before a voice starts: the playback
+        // category is already set above; only the source start waits (iPhone/iPad path only).
+        const settle = CAPTURE_SETTLE_MS - msSinceCaptureRelease();
+        if (settle > 0) {
+          clearTimeout(timer);
+          diagnostic("buffer.settle");
+          timer = setTimeout(launch, settle);
           return;
         }
         clearTimeout(timer);
