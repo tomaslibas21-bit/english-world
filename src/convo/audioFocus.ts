@@ -3,6 +3,13 @@
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "./audioDiagnostics";
 const captures = new Set<Promise<void>>();
 export const CAPTURE_RELEASE_TIMEOUT = 1200;
+/** iPhone: after the microphone is released the native session is still leaving its call (voice-processing)
+ *  mode for a moment; a sentence started inside that window comes out loud, then drops (owner's report, 28 Nov
+ *  2026: 21.020 s play vs 20.994 s release). Recorded voices start at least this long after a release. */
+export const CAPTURE_SETTLE_MS = 500;
+let lastCaptureRelease = Number.NEGATIVE_INFINITY;
+/** Milliseconds since the last microphone release (Infinity before the first one). */
+export function msSinceCaptureRelease(): number { return Date.now() - lastCaptureRelease; }
 let recoveryPending = false;
 let playbacks = 0;
 let leaseId = 0, unconfirmed = 0;
@@ -91,6 +98,7 @@ export function captureAudio(recognizerId?: number) {
     released = true;
     clearTimeout(timer);
     captures.delete(done);
+    lastCaptureRelease = Date.now();
     if (!captures.size) tellMicrophoneWatchers(false);
     if (reason !== "recognition-end") { timedOut = true; unconfirmed++; }
     audioDiagnostic("capture.release", { ...detail(), reason });

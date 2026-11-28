@@ -2,7 +2,7 @@
 // or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
-import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone } from "../convo/audioFocus";
+import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone, CAPTURE_SETTLE_MS, msSinceCaptureRelease } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
 import { stretchSpeech } from "./timeStretch";
 import { BIRDSONG, LOOPS, STEPS, type LoopName, type Surface } from "./soundscape";
@@ -64,6 +64,10 @@ export function clipUrl(base: string, key: string, version?: string, token?: str
   const query = [version ? `v=${version.slice(0, 12)}` : "", token ? `t=${encodeURIComponent(token)}` : ""].filter(Boolean).join("&");
   return base + key + ".mp3" + (query ? `?${query}` : "");
 }
+
+/** iPhone/iPad: recorded voices play about 5 dB louder, through a peak limiter, so iOS's own dictation chime
+ *  (mic on/off) no longer sounds twice as loud as the characters (owner, 28 Nov 2026). */
+export const IOS_VOICE_BOOST = 1.78;
 
 export class AudioSystem {
   manifest: Record<string, number> = {};
@@ -453,13 +457,22 @@ export class AudioSystem {
           void waitForMicrophone().then(() => { if (current() && attempt === run) start(); });
           return;
         }
+        // Let the phone finish leaving its microphone (call) mode before a voice starts: the playback
+        // category is already set above; only the source start waits (iPhone/iPad path only).
+        const settle = CAPTURE_SETTLE_MS - msSinceCaptureRelease();
+        if (settle > 0) {
+          clearTimeout(timer);
+          diagnostic("buffer.settle");
+          timer = setTimeout(launch, settle);
+          return;
+        }
         clearTimeout(timer);
         try {
           source = ctx.createBufferSource(); gain = ctx.createGain();
           const active = source;
           source.buffer = buffer; source.playbackRate.value = 1;
-          gain.gain.value = this.volume;
-          source.connect(gain); gain.connect(ctx.destination);
+          gain.gain.value = this.volume * IOS_VOICE_BOOST;
+          source.connect(gain); gain.connect(this.voiceOut(ctx));
           source.onended = () => {
             if (!current() || source !== active || attempt !== run) return;
             // stop()/interruption can also produce ended. Only the context's
@@ -865,6 +878,22 @@ export class AudioSystem {
    *  output.ts). Not resumed here: a tap does that (unlock()). */
   context(): AudioContext | null {
     try { return this.ac(false); } catch { return null; }
+  }
+
+  private voiceLimiters = new WeakMap<AudioContext, AudioNode>();
+  /** The iPhone voices' output: a peak limiter in front of the speakers, so the louder voices never clip. */
+  private voiceOut(ctx: AudioContext): AudioNode {
+    let node = this.voiceLimiters.get(ctx);
+    if (!node) {
+      try {
+        const limiter = ctx.createDynamicsCompressor();
+        limiter.threshold.value = -3; limiter.knee.value = 3; limiter.ratio.value = 20;
+        limiter.attack.value = 0.002; limiter.release.value = 0.12;
+        limiter.connect(ctx.destination); node = limiter;
+      } catch { node = ctx.destination; }
+      this.voiceLimiters.set(ctx, node);
+    }
+    return node;
   }
 
   private ac(resume = true) {
